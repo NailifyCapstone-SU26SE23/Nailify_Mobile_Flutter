@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/constants/app_colors.dart';
 import 'package:go_router/go_router.dart';
 
 class HomeGallery extends StatelessWidget {
@@ -14,7 +15,7 @@ class HomeGallery extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Đóng', style: TextStyle(color: Colors.black87)),
+            child: const Text('Đóng', style: TextStyle(color: AppColors.textPrimary)),
           ),
         ],
       ),
@@ -40,10 +41,10 @@ class HomeGallery extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
           // Mã màu Gradient
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             colors: [
-              Color(0xFFFF66C4), // Hồng
-              Color(0xFFFDF7FA), // Vàng
+              AppColors.primary,
+              AppColors.secondary.withOpacity(0.1),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -62,7 +63,7 @@ class HomeGallery extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: AppColors.surface,
                   ),
                 ),
                 // TextButton(
@@ -99,8 +100,8 @@ class HomeGallery extends StatelessWidget {
                       galleryImages[index],
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => Container(
-                        color: Colors.white.withOpacity(0.3), // Nền báo lỗi mờ
-                        child: const Icon(Icons.image, color: Colors.white),
+                      color: AppColors.surface.withOpacity(0.3), // Nền báo lỗi mờ
+                      child: const Icon(Icons.image, color: AppColors.surface),
                       ),
                     ),
                   ),
@@ -116,8 +117,8 @@ class HomeGallery extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: () => context.push('/catalog'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF66C4),
-                  foregroundColor: Colors.white,
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.surface,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(25),

@@ -1,7 +1,7 @@
-// lib/features/auth/presentation/pages/login_page.dart
 import 'package:flutter/material.dart';
 import '../../data/models/user_mock_data.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/constants/app_colors.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -23,16 +23,16 @@ class _LoginPageState extends State<LoginPage> {
     final password = _passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      _showSnackBar('Vui lòng nhập đầy đủ Email và Mật khẩu', Colors.redAccent);
+      _showSnackBar('Vui lòng nhập đầy đủ Email và Mật khẩu', AppColors.error);
       return;
     }
 
     // So khớp với Mock Data
     if (email == UserMockData.testEmail && password == UserMockData.testPassword) {
-      _showSnackBar('Đăng nhập thành công! Chào mừng ${UserMockData.mockCustomer['fullName']}', Colors.green);
+      _showSnackBar('Đăng nhập thành công! Chào mừng ${UserMockData.mockCustomer['fullName']}', AppColors.success);
       // Chuyển hướng sang HomePage bằng GoRouter sẽ được cấu hình sau
     } else {
-      _showSnackBar('Email hoặc mật khẩu không chính xác', Colors.redAccent);
+      _showSnackBar('Email hoặc mật khẩu không chính xác', AppColors.error);
     }
   }
 
@@ -62,9 +62,9 @@ class _LoginPageState extends State<LoginPage> {
             minHeight: MediaQuery.of(context).size.height,
           ),
           decoration: const BoxDecoration(
-            // Dải màu thương hiệu Nhất quán với Banner trang chủ
+
             gradient: LinearGradient(
-              colors: [Color(0xFFFF66C4), Color(0xFFFFDE59)],
+              colors: [AppColors.primary, AppColors.secondary],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -88,7 +88,7 @@ class _LoginPageState extends State<LoginPage> {
                       style: TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: AppColors.background,
                         letterSpacing: 2.0,
                       ),
                     ),
@@ -98,11 +98,11 @@ class _LoginPageState extends State<LoginPage> {
                     Container(
                       padding: const EdgeInsets.all(24.0),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.background,
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: AppColors.textPrimary.withOpacity(0.1),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -117,7 +117,7 @@ class _LoginPageState extends State<LoginPage> {
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
-                              color: Colors.black87,
+                              color: AppColors.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 24),
@@ -128,13 +128,13 @@ class _LoginPageState extends State<LoginPage> {
                             keyboardType: TextInputType.emailAddress,
                             decoration: InputDecoration(
                               labelText: 'Email',
-                              prefixIcon: const Icon(Icons.email_outlined, color: Colors.grey),
+                              prefixIcon: const Icon(Icons.email_outlined, color: AppColors.textSecondary),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFFF66C4), width: 2),
+                                borderSide: const BorderSide(color: AppColors.primary, width: 2),
                               ),
                             ),
                           ),
@@ -145,11 +145,11 @@ class _LoginPageState extends State<LoginPage> {
                             obscureText: _obscurePassword, //  ẩn/hiện ký tự
                             decoration: InputDecoration(
                               labelText: 'Mật khẩu',
-                              prefixIcon: const Icon(Icons.lock_outline, color: Colors.grey),
+                              prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textSecondary),
                               suffixIcon: IconButton(
                                 icon: Icon(
                                   _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                                  color: Colors.grey,
+                                  color: AppColors.textSecondary,
                                 ),
                                 onPressed: () {
                                   //  con mắt
@@ -163,7 +163,7 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFFF66C4), width: 2),
+                                borderSide: const BorderSide(color: AppColors.primary, width: 2),
                               ),
                             ),
                           ),
@@ -176,7 +176,7 @@ class _LoginPageState extends State<LoginPage> {
                               onPressed: () {},
                               child: const Text(
                                 'Quên mật khẩu?',
-                                style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600),
+                                style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w600),
                               ),
                             ),
                           ),
@@ -188,8 +188,8 @@ class _LoginPageState extends State<LoginPage> {
                             child: ElevatedButton(
                               onPressed: _handleLogin,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFFF66C4), // Hồng chủ đạo
-                                foregroundColor: Colors.white,
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: AppColors.background,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -208,16 +208,17 @@ class _LoginPageState extends State<LoginPage> {
                             children: [
                               const Text(
                                 'Bạn chưa có tài khoản? ',
-                                style: TextStyle(color: Colors.grey, fontSize: 14),
+                                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
                               ),
                               GestureDetector(
                                 onTap: () => context.push('/register'),
                                 child: const Text(
                                   'Đăng ký ngay',
                                   style: TextStyle(
-                                    color: Color(0xFFFF66C4),
+                                    color: AppColors.primary,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
+                                    decorationColor: AppColors.primary,
                                     decoration: TextDecoration.underline,
                                   ),
                                 ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/constants/app_colors.dart';
 
 class QuizBanner extends StatelessWidget {
   const QuizBanner({super.key});
@@ -10,20 +11,20 @@ class QuizBanner extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFF66C4), Color(0xFFFFDE59)],
+        gradient: LinearGradient(
+          colors: [AppColors.primary, AppColors.secondary],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
       ),
       child: Column(
         children: [
-          const Icon(Icons.auto_awesome, color: Colors.white, size: 32),
+          const Icon(Icons.auto_awesome, color: AppColors.surface, size: 32),
           const SizedBox(height: 12),
           const Text(
             "If you haven't found a nail design that suits you yet, Bloom can help.",
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+            style: TextStyle(color: AppColors.surface, fontSize: 14, fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 16),
           ElevatedButton(
@@ -33,8 +34,8 @@ class QuizBanner extends StatelessWidget {
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFFFF66C4),
+              backgroundColor: AppColors.surface,
+              foregroundColor: AppColors.primary,
               elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),

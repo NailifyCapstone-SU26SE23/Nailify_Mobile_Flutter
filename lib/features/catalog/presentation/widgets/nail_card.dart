@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/constants/app_colors.dart';
 
 class NailCard extends StatelessWidget {
   // Thay đổi: Nhận toàn bộ Map data của mẫu nail để truyền đi dễ dàng
@@ -18,12 +19,12 @@ class NailCard extends StatelessWidget {
       onTap: () => context.push('/catalog/details', extra: nailData),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: AppColors.textPrimary.withOpacity(0.1)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: AppColors.textPrimary.withOpacity(0.04),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
@@ -39,8 +40,8 @@ class NailCard extends StatelessWidget {
                   imagePath,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) => Container(
-                    color: Colors.pink.shade50,
-                    child: const Icon(Icons.image, color: Colors.grey),
+                    color: AppColors.primary.withOpacity(0.05),
+                    child: const Icon(Icons.image, color: AppColors.textSecondary),
                   ),
                 ),
               ),
@@ -52,7 +53,7 @@ class NailCard extends StatelessWidget {
                 children: [
                   Text(
                     name,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -63,10 +64,10 @@ class NailCard extends StatelessWidget {
                     children: tags.take(2).map((tag) => Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
+                        color: AppColors.textPrimary.withOpacity(0.05),
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: Text(tag, style: const TextStyle(fontSize: 10, color: Colors.black54)),
+                      child: Text(tag, style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
                     )).toList(),
                   ),
                 ],

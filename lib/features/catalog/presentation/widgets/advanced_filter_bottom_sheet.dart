@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/models/catalog_mock_data.dart';
+import '../../../../core/constants/app_colors.dart';
 
 class AdvancedFilterBottomSheet extends StatefulWidget {
   // Nhận trạng thái bộ lọc hiện tại để duy trì UI khi mở lại bottom sheet
@@ -54,14 +55,14 @@ class _AdvancedFilterBottomSheetState extends State<AdvancedFilterBottomSheet> {
             return ChoiceChip(
               label: Text(option),
               selected: isSelected,
-              selectedColor: const Color(0xFFFF66C4).withOpacity(0.2),
+              selectedColor: AppColors.primary.withOpacity(0.2),
               backgroundColor: Colors.grey.shade100,
               labelStyle: TextStyle(
-                color: isSelected ? const Color(0xFFFF66C4) : Colors.black87,
+                color: isSelected ? AppColors.primary : AppColors.textSecondary,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
               side: BorderSide(
-                color: isSelected ? const Color(0xFFFF66C4) : Colors.transparent,
+                color: isSelected ? AppColors.primary : Colors.transparent,
               ),
               onSelected: (selected) {
                 setState(() {
@@ -81,7 +82,7 @@ class _AdvancedFilterBottomSheetState extends State<AdvancedFilterBottomSheet> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: const BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
@@ -136,8 +137,8 @@ class _AdvancedFilterBottomSheetState extends State<AdvancedFilterBottomSheet> {
                     });
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF66C4),
-                    foregroundColor: Colors.white,
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.surface,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),

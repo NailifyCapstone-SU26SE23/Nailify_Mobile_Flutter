@@ -1,5 +1,5 @@
-// lib/features/home/presentation/pages/home_page.dart
 import 'package:flutter/material.dart';
+import '../../../../core/constants/app_colors.dart';
 import '../widgets/home_banner.dart';
 import '../widgets/home_services.dart';
 import '../widgets/home_gallery.dart';
@@ -58,7 +58,7 @@ Widget _buildCallToAction() {
     child: Container(
       width: double.infinity,
       decoration: const BoxDecoration(
-        color: Color(0xFFF8EBE2), // Màu nền be nhạt
+        color: AppColors.background, // Màu nền be nhạt
       ),
       child: Stack(
         children: [
@@ -69,7 +69,7 @@ Widget _buildCallToAction() {
               width: 200,
               height: 200,
               decoration: BoxDecoration(
-                color: const Color(0xFFFF66C4).withOpacity(0.12),
+                color: AppColors.primary.withOpacity(0.12),
                 shape: BoxShape.circle,
               ),
             ),
@@ -88,7 +88,7 @@ Widget _buildCallToAction() {
                     fontWeight: FontWeight.w500,
                     fontStyle: FontStyle.italic,
                     // fontFamily: 'Khum biet font gi',
-                    color: Colors.black87,
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -97,7 +97,7 @@ Widget _buildCallToAction() {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 15,
-                    color: Colors.black54,
+                    color: AppColors.textSecondary,
                     height: 1.6,
                   ),
                 ),
@@ -109,7 +109,7 @@ Widget _buildCallToAction() {
                   icon: const Icon(
                     Icons.calendar_today_outlined,
                     size: 20,
-                    color: Colors.white,
+                    color: AppColors.surface,
                   ),
                   label: const Text(
                     'BOOK AN APPOINTMENT',
@@ -118,12 +118,12 @@ Widget _buildCallToAction() {
                       letterSpacing: 1.2,
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
-                      color: Colors.white,
+                      color: AppColors.surface,
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1E1E1E),
-                    foregroundColor: Colors.white,
+                    backgroundColor: AppColors.textPrimary,
+                    foregroundColor: AppColors.surface,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
                     shape: RoundedRectangleBorder(

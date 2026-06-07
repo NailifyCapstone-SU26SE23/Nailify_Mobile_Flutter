@@ -1,6 +1,7 @@
 // lib/features/auth/presentation/pages/register_page.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/constants/app_colors.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -81,7 +82,7 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFFFF66C4), Color(0xFFFFDE59)],
+              colors: [AppColors.primary, Color(0xFFFFDE59)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -93,11 +94,11 @@ class _RegisterPageState extends State<RegisterPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.spa, size: 64, color: Colors.white),
+                    const Icon(Icons.spa, size: 64, color: AppColors.background),
                     const SizedBox(height: 8),
                     const Text(
                       'Nailify',
-                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1.5),
+                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.background, letterSpacing: 1.5),
                     ),
                     const SizedBox(height: 24),
 
@@ -105,7 +106,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     Container(
                       padding: const EdgeInsets.all(24.0),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.background,
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
@@ -121,7 +122,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           const Text(
                             'Tạo tài khoản mới',
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
+                            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                           ),
                           const SizedBox(height: 24),
 
@@ -131,7 +132,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             keyboardType: TextInputType.emailAddress,
                             decoration: InputDecoration(
                               labelText: 'Email',
-                              prefixIcon: const Icon(Icons.email_outlined, color: Colors.grey),
+                              prefixIcon: const Icon(Icons.email_outlined, color: AppColors.textSecondary),
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                           ),
@@ -171,7 +172,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             keyboardType: TextInputType.phone,
                             decoration: InputDecoration(
                               labelText: 'Số điện thoại',
-                              prefixIcon: const Icon(Icons.phone_android_outlined, color: Colors.grey),
+                              prefixIcon: const Icon(Icons.phone_android_outlined, color: AppColors.textSecondary),
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                           ),
@@ -183,9 +184,9 @@ class _RegisterPageState extends State<RegisterPage> {
                             obscureText: _obscurePassword,
                             decoration: InputDecoration(
                               labelText: 'Mật khẩu',
-                              prefixIcon: const Icon(Icons.lock_outline, color: Colors.grey),
+                              prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textSecondary),
                               suffixIcon: IconButton(
-                                icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: Colors.grey),
+                                icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: AppColors.textSecondary),
                                 onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                               ),
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -199,9 +200,9 @@ class _RegisterPageState extends State<RegisterPage> {
                             obscureText: _obscureConfirmPassword,
                             decoration: InputDecoration(
                               labelText: 'Xác nhận mật khẩu',
-                              prefixIcon: const Icon(Icons.lock_outline, color: Colors.grey),
+                              prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textSecondary),
                               suffixIcon: IconButton(
-                                icon: Icon(_obscureConfirmPassword ? Icons.visibility_off : Icons.visibility, color: Colors.grey),
+                                icon: Icon(_obscureConfirmPassword ? Icons.visibility_off : Icons.visibility, color: AppColors.textSecondary),
                                 onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
                               ),
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -217,7 +218,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                 height: 24,
                                 child: Checkbox(
                                   value: _agreeToTerms,
-                                  activeColor: const Color(0xFFFF66C4),
+                                  activeColor: AppColors.primary,
                                   onChanged: (value) {
                                     setState(() {
                                       _agreeToTerms = value ?? false;
@@ -228,8 +229,8 @@ class _RegisterPageState extends State<RegisterPage> {
                               const SizedBox(width: 10),
                               const Expanded(
                                 child: Text(
-                                  'Tôi đồng ý với các điều khoản dịch vụ',
-                                  style: TextStyle(color: Colors.black54, fontSize: 13),
+                                  'Tôi đong tinh với các điều khoản dịch vụ',
+                                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                                 ),
                               ),
                             ],
@@ -242,8 +243,8 @@ class _RegisterPageState extends State<RegisterPage> {
                             child: ElevatedButton(
                               onPressed: _handleRegister,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFFF66C4),
-                                foregroundColor: Colors.white,
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: AppColors.background,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 elevation: 0,
                               ),
@@ -256,13 +257,13 @@ class _RegisterPageState extends State<RegisterPage> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Text('Bạn đã có tài khoản? ', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                              const Text('Bạn đã có tài khoản? ', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
                               GestureDetector(
                                 onTap: () => context.pop(), // Quay về trang Login nằm trước đó trong ngăn xếp
                                 child: const Text(
                                   'Đăng nhập',
                                   style: TextStyle(
-                                    color: Color(0xFFFF66C4),
+                                    color: AppColors.primary,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 13,
                                     decoration: TextDecoration.underline,

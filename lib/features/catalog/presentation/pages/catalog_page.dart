@@ -3,6 +3,7 @@ import '../../data/models/catalog_mock_data.dart';
 import '../widgets/nail_card.dart';
 import '../widgets/quiz_banner.dart';
 import '../widgets/advanced_filter_bottom_sheet.dart';
+import '../../../../core/constants/app_colors.dart';
 
 class CatalogPage extends StatefulWidget {
   const CatalogPage({super.key});
@@ -132,10 +133,10 @@ class _CatalogPageState extends State<CatalogPage> {
                           controller: _searchController,
                           decoration: InputDecoration(
                             hintText: 'Search for designs...',
-                            hintStyle: const TextStyle(color: Colors.grey),
-                            prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                            hintStyle: const TextStyle(color: AppColors.textSecondary),
+                            prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
                             filled: true,
-                            fillColor: Colors.grey.shade100,
+                            fillColor: AppColors.surface,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
@@ -147,11 +148,11 @@ class _CatalogPageState extends State<CatalogPage> {
                       const SizedBox(width: 8),
                       Container(
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFF66C4).withOpacity(0.1),
+                          color: AppColors.primary.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: IconButton(
-                          icon: const Icon(Icons.tune, color: Color(0xFFFF66C4)),
+                          icon: const Icon(Icons.tune, color: AppColors.primary),
                           onPressed: _openAdvancedFilter,
                         ),
                       ),
@@ -169,15 +170,15 @@ class _CatalogPageState extends State<CatalogPage> {
                         height: 36,
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: Colors.grey.shade300),
+                          color: AppColors.surface,
+                          border: Border.all(color: AppColors.border),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
                             value: _selectedEvent,
-                            hint: const Text('Event', style: TextStyle(fontSize: 14, color: Colors.black87)),
-                            icon: const Icon(Icons.keyboard_arrow_down, size: 18, color: Colors.black87),
+                            hint: const Text('Event', style: TextStyle(fontSize: 14, color: AppColors.textPrimary)),
+                            icon: const Icon(Icons.keyboard_arrow_down, size: 18, color: AppColors.textPrimary),
                             isDense: true,
                             items: ['All Events', ...CatalogMockData.occasions].map((String value) {
                               return DropdownMenuItem<String>(
@@ -205,16 +206,16 @@ class _CatalogPageState extends State<CatalogPage> {
                             Icon(
                               Icons.filter_list,
                               size: 16,
-                              color: _advancedFilters.values.any((s) => s.isNotEmpty) ? const Color(0xFFFF66C4) : Colors.black87,
+                              color: _advancedFilters.values.any((s) => s.isNotEmpty) ? AppColors.primary : AppColors.textPrimary,
                             )
                           ],
                         ),
                         onPressed: _openAdvancedFilter,
-                        backgroundColor: Colors.white,
+                        backgroundColor: AppColors.surface,
                         side: BorderSide(
                           color: _advancedFilters.values.any((s) => s.isNotEmpty)
-                              ? const Color(0xFFFF66C4)
-                              : Colors.grey.shade300,
+                              ? AppColors.primary
+                              : AppColors.border,
                         ),
                       ),
                     ],
@@ -232,7 +233,7 @@ class _CatalogPageState extends State<CatalogPage> {
                     child: Center(
                       child: Text(
                         'Không tìm thấy mẫu móng nào phù hợp với bộ lọc.',
-                        style: TextStyle(color: Colors.grey),
+                        style: TextStyle(color: AppColors.textSecondary),
                         textAlign: TextAlign.center,
                       ),
                     ),

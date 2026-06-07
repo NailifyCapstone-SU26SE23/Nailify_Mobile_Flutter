@@ -1,6 +1,7 @@
 // lib/core/widgets/main_shell.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../constants/app_colors.dart';
 
 class MainShell extends StatefulWidget {
   final Widget child;
@@ -11,21 +12,18 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
-  // 1. Hàm tính toán vị trí Tab hiện tại dựa trên tuyến đường của GoRouter
-  // Đưa hàm này vào trong State Class để tránh lỗi Compiler
   int _calculateCurrentIndex(BuildContext context) {
     final String location = GoRouterState.of(context).matchedLocation;
     if (location.startsWith('/appointments')) return 1;
     if (location.startsWith('/chatbot')) return 2;
     if (location.startsWith('/profile')) return 3;
-    return 0; // Mặc định là trang chủ '/'
+    return 0;
   }
 
-  // 2. Xử lý điều hướng: Chỉ '/' hoạt động, các tính năng khác hiển thị thông báo
   void _onTabTapped(BuildContext context, int index) {
     switch (index) {
       case 0:
-        context.go('/'); // Chỉ chuyển trang đối với HomePage
+        context.go('/');
         break;
       case 1:
         _showPopupNotification(context, 'Lịch hẹn');
@@ -39,7 +37,6 @@ class _MainShellState extends State<MainShell> {
     }
   }
 
-  // 3. Cửa sổ thông báo bảo trì phân hệ chưa có Page
   void _showPopupNotification(BuildContext context, String actionName) {
     showDialog(
       context: context,
@@ -56,7 +53,7 @@ class _MainShellState extends State<MainShell> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Đóng', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+            child: const Text('Đóng', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
           ),
         ],
       ),
@@ -66,19 +63,15 @@ class _MainShellState extends State<MainShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
 
-      // 1. HEADER DÙNG CHUNG
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         toolbarHeight: 80,
-        // -- Logo góc trái --
         title: GestureDetector(
-          onTap: () {
-            context.go('/');
-          },
+          onTap: () => context.go('/'),
           child: Padding(
             padding: const EdgeInsets.only(left: 8.0),
             child: Image.asset(
@@ -88,68 +81,48 @@ class _MainShellState extends State<MainShell> {
               errorBuilder: (context, error, stackTrace) => const Text(
                 'Nailify',
                 style: TextStyle(
-                  color: Color(0xFFFF66C4),
+                  color: AppColors.primary,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
           ),
         ),
-        // -- Nút Sign in & Register --
         actions: [
           OutlinedButton(
             onPressed: () => context.push('/login'),
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFFFF66C4), width: 1.2),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+              side: const BorderSide(color: AppColors.primary, width: 1.2),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
             ),
-            child: const Text(
-              'Sign in',
-              style: TextStyle(
-                color: Color(0xFFFF66C4),
-                fontWeight: FontWeight.w500,
-                fontSize: 14,
-              ),
-            ),
+            child: const Text('Sign in', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w500, fontSize: 14)),
           ),
           const SizedBox(width: 8),
           ElevatedButton(
             onPressed: () => context.push('/register'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF66C4),
+              backgroundColor: AppColors.primary, // Sử dụng constant
               foregroundColor: Colors.white,
               elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
             ),
-            child: const Text(
-              'Register',
-              style: TextStyle(
-                fontWeight: FontWeight.w500,
-                fontSize: 14,
-              ),
-            ),
+            child: const Text('Register', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
           ),
           const SizedBox(width: 16),
         ],
       ),
 
-      // PHẦN THÂN (FRAGMENT)
       body: widget.child,
 
-      // FOOTER DÙNG CHUNG
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _calculateCurrentIndex(context),
-        onTap: (index) => _onTabTapped(context, index), // SỬA LỖI: Truyền chính xác context của widget vào hàm điều hướng
+        onTap: (index) => _onTabTapped(context, index),
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.pinkAccent,
-        unselectedItemColor: Colors.grey,
-        backgroundColor: Colors.white,
+        selectedItemColor: AppColors.primary, // Màu hồng khi chọn tab
+        unselectedItemColor: AppColors.textSecondary, // Màu xám khi chưa chọn tab
+        backgroundColor: AppColors.background,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Trang chủ'),
           BottomNavigationBarItem(icon: Icon(Icons.calendar_month), label: 'Lịch hẹn'),

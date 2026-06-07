@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 class HomeBanner extends StatelessWidget {
   const HomeBanner({super.key});
 
-  // chưa có page booking nên chèn đỡ
+  // chưa có pages booking nên chèn đỡ
   void _showBookingPopup(BuildContext context) {
     showDialog(
       context: context,

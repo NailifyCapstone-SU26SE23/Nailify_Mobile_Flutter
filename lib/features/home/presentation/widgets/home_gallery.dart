@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class HomeGallery extends StatelessWidget {
   const HomeGallery({super.key});
@@ -113,7 +114,7 @@ class HomeGallery extends StatelessWidget {
               width: 302,
               height: 50,
               child: ElevatedButton(
-                onPressed: () => _showPopup(context),
+                onPressed: () => context.push('/catalog'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFFF66C4),
                   foregroundColor: Colors.white,

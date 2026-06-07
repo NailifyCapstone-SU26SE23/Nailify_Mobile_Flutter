@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class HomeServices extends StatelessWidget {
   const HomeServices({super.key});
@@ -45,7 +46,7 @@ class HomeServices extends StatelessWidget {
                 ),
               ),
               TextButton(
-                onPressed: () => _showPopup(context, 'Xem tất cả dịch vụ'),
+                onPressed: null,
                 child: const Text(
                   'Xem tất cả',
                   style: TextStyle(

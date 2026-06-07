@@ -3,6 +3,9 @@ import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../network/api_client.dart';
 import '../network/network_info.dart';
+import '../../features/nails/data/datasources/nail_api_service.dart';
+import '../../features/nails/data/repositories/nail_repository.dart';
+import '../../features/nails/services/ar_try_on_service.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -18,5 +21,14 @@ Future<void> configureDependencies() async {
   );
 
   // Đăng ký ApiClient làm Engine kết nối mạng chính toàn app
-  getIt.registerLazySingleton<ApiClient>(() => ApiClient());
+  getIt.registerLazySingleton<ApiClient>(
+    () => ApiClient(preferences: getIt<SharedPreferences>()),
+  );
+  getIt.registerLazySingleton<NailApiService>(
+    () => NailApiService(getIt<ApiClient>()),
+  );
+  getIt.registerLazySingleton<NailRepository>(
+    () => NailRepository(getIt<NailApiService>()),
+  );
+  getIt.registerLazySingleton<ArTryOnService>(ArTryOnService.new);
 }

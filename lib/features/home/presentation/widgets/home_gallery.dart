@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class HomeGallery extends StatelessWidget {
   const HomeGallery({super.key});
@@ -64,16 +65,7 @@ class HomeGallery extends StatelessWidget {
                     color: Colors.white,
                   ),
                 ),
-                // TextButton(
-                //   onPressed: () => _showPopup(context),
-                //   child: const Text(
-                //     'Xem tất cả',
-                //     style: TextStyle(
-                //       color: Colors.white, // Đổi sang màu trắng cho dễ đọc
-                //       fontWeight: FontWeight.w600,
-                //     ),
-                //   ),
-                // ),
+
               ],
             ),
             const SizedBox(height: 12),
@@ -98,7 +90,7 @@ class HomeGallery extends StatelessWidget {
                       galleryImages[index],
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => Container(
-                        color: Colors.white.withOpacity(0.3), // Nền báo lỗi mờ
+                        color: Colors.white,
                         child: const Icon(Icons.image, color: Colors.white),
                       ),
                     ),
@@ -113,15 +105,7 @@ class HomeGallery extends StatelessWidget {
               width: 302,
               height: 50,
               child: ElevatedButton(
-                onPressed: () => _showPopup(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF66C4),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                ),
+                onPressed: () => context.go('/nails'),
                 child: const Text(
                   'Xem thêm ->',
                   style: TextStyle(

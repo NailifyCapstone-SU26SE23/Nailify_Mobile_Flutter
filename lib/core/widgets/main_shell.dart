@@ -1,5 +1,6 @@
+// lib/core/widgets/main_shell.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 
 class MainShell extends StatefulWidget {
   final Widget child;
@@ -10,17 +11,35 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
-  int _currentIndex = 0;
+  // 1. Hàm tính toán vị trí Tab hiện tại dựa trên tuyến đường của GoRouter
+  // Đưa hàm này vào trong State Class để tránh lỗi Compiler
+  int _calculateCurrentIndex(BuildContext context) {
+    final String location = GoRouterState.of(context).matchedLocation;
+    if (location.startsWith('/appointments')) return 1;
+    if (location.startsWith('/chatbot')) return 2;
+    if (location.startsWith('/profile')) return 3;
+    return 0; // Mặc định là trang chủ '/'
+  }
 
-  void _onTabTapped(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
-    if (index != 0) {
-      _showPopupNotification(context, 'Chuyển đổi Tab điều hướng');
+  // 2. Xử lý điều hướng: Chỉ '/' hoạt động, các tính năng khác hiển thị thông báo
+  void _onTabTapped(BuildContext context, int index) {
+    switch (index) {
+      case 0:
+        context.go('/'); // Chỉ chuyển trang đối với HomePage
+        break;
+      case 1:
+        _showPopupNotification(context, 'Lịch hẹn');
+        break;
+      case 2:
+        _showPopupNotification(context, 'Chatbot');
+        break;
+      case 3:
+        _showPopupNotification(context, 'Tài khoản');
+        break;
     }
   }
 
+  // 3. Cửa sổ thông báo bảo trì phân hệ chưa có Page
   void _showPopupNotification(BuildContext context, String actionName) {
     showDialog(
       context: context,
@@ -33,11 +52,11 @@ class _MainShellState extends State<MainShell> {
             Text('Thông báo'),
           ],
         ),
-        content: Text('Hành động "$actionName" đang được xử lý. Trang mục tiêu hiện tại chưa được khởi tạo.'),
+        content: Text('Tính năng "$actionName" đang được xử lý. Trang mục tiêu hiện tại chưa được khởi tạo.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Đóng', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text('Đóng', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
           ),
         ],
       ),
@@ -49,27 +68,37 @@ class _MainShellState extends State<MainShell> {
     return Scaffold(
       backgroundColor: Colors.white,
 
-      // HEADER
+      // 1. HEADER DÙNG CHUNG
       appBar: AppBar(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         toolbarHeight: 80,
         // -- Logo góc trái --
-        title: Padding(
-          padding: const EdgeInsets.only(left: 8.0),
-          child: Image.asset(
-            'assets/images/pink.png',
-            height: 40,
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) =>
-            const Text('Nailify', style: TextStyle(color: Color(0xFFFF66C4), fontWeight: FontWeight.bold)),
+        title: GestureDetector(
+          onTap: () {
+            context.go('/');
+          },
+          child: Padding(
+            padding: const EdgeInsets.only(left: 8.0),
+            child: Image.asset(
+              'assets/images/pink.png',
+              height: 40,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => const Text(
+                'Nailify',
+                style: TextStyle(
+                  color: Color(0xFFFF66C4),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
           ),
         ),
-        // -- Nút Sign in & Register  --
+        // -- Nút Sign in & Register --
         actions: [
           OutlinedButton(
-            onPressed: () => _showPopupNotification(context, 'Sign in'),
+            onPressed: () => context.push('/login'),
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: Color(0xFFFF66C4), width: 1.2),
               shape: RoundedRectangleBorder(
@@ -88,11 +117,11 @@ class _MainShellState extends State<MainShell> {
           ),
           const SizedBox(width: 8),
           ElevatedButton(
-            onPressed: () => _showPopupNotification(context, 'Register'),
+            onPressed: () => context.push('/register'),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFF66C4),
               foregroundColor: Colors.white,
-              elevation: 0, // flat design
+              elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(24),
               ),
@@ -106,17 +135,17 @@ class _MainShellState extends State<MainShell> {
               ),
             ),
           ),
-          const SizedBox(width: 16), // Padding lề phải của AppBar
+          const SizedBox(width: 16),
         ],
       ),
 
-      // 2. PHẦN THÂN (FRAGMENT)
+      // PHẦN THÂN (FRAGMENT)
       body: widget.child,
 
-      // 3. FOOTER DÙNG CHUNG TOÀN HỆ THỐNG
+      // FOOTER DÙNG CHUNG
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: _onTabTapped,
+        currentIndex: _calculateCurrentIndex(context),
+        onTap: (index) => _onTabTapped(context, index), // SỬA LỖI: Truyền chính xác context của widget vào hàm điều hướng
         type: BottomNavigationBarType.fixed,
         selectedItemColor: Colors.pinkAccent,
         unselectedItemColor: Colors.grey,

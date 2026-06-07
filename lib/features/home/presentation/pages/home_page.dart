@@ -78,10 +78,11 @@ Widget _buildCallToAction() {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 56.0, horizontal: 24.0),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisSize: MainAxisSize.max,
               children: [
                 const Text(
                   "Let's Book Now!",
+                  textAlign: TextAlign.justify,
                   style: TextStyle(
                     fontSize: 34,
                     fontWeight: FontWeight.w500,
@@ -112,6 +113,7 @@ Widget _buildCallToAction() {
                   ),
                   label: const Text(
                     'BOOK AN APPOINTMENT',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       letterSpacing: 1.2,
                       fontWeight: FontWeight.w600,

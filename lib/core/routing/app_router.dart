@@ -8,6 +8,8 @@ import '../../features/nails/presentation/pages/nail_variant_detail_screen.dart'
 import '../widgets/main_shell.dart';
 import '../../features/auth/presentation/pages/customer_login_page.dart';
 import '../../features/auth/presentation/pages/customer_register_page.dart';
+import '../../features/auth/presentation/pages/profile_page.dart';
+import '../../features/auth/presentation/pages/profile_update_pages.dart';
 
 import '../../features/catalog/presentation/pages/catalog_page.dart';
 import '../../features/catalog/presentation/pages/nail_details_page.dart';
@@ -79,8 +81,56 @@ class AppRouter {
               return NailDetailsPage(nailData: nailData);
             },
           ),
+          GoRoute(
+            path: '/profile',
+            builder: (context, state) => const ProfilePage(),
+          ),
+          GoRoute(
+            path: '/profile/update-info',
+            builder: (context, state) => const UpdateProfilePage(),
+          ),
+          GoRoute(
+            path: '/profile/update-preferences',
+            builder: (context, state) => const UpdatePreferencesPage(),
+          ),
+          GoRoute(
+            path: '/profile/booking-history',
+            builder: (context, state) =>
+                const EmptyProfilePage(title: 'Lịch sử đặt lịch'),
+          ),
+          GoRoute(
+            path: '/profile/invoices',
+            builder: (context, state) =>
+                const EmptyProfilePage(title: 'Hóa đơn'),
+          ),
+          GoRoute(
+            path: '/profile/favorite-nails',
+            builder: (context, state) =>
+                const EmptyProfilePage(title: 'Móng yêu thích'),
+          ),
+          GoRoute(
+            path: '/profile/my-studio',
+            builder: (context, state) =>
+                const EmptyProfilePage(title: 'Studio của tôi'),
+          ),
         ],
       ),
     ],
   );
+}
+
+class EmptyProfilePage extends StatelessWidget {
+  final String title;
+
+  const EmptyProfilePage({super.key, required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        title,
+        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+      ),
+    );
+  }
 }

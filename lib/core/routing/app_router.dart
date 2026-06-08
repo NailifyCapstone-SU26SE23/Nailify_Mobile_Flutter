@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/nails/presentation/pages/nail_detail_screen.dart';
+import '../../features/nails/presentation/pages/customer_studio_page.dart';
 import '../../features/nails/presentation/pages/nail_list_screen.dart';
 import '../../features/nails/presentation/pages/nail_variant_detail_screen.dart';
 import '../widgets/main_shell.dart';
@@ -110,8 +111,7 @@ class AppRouter {
           ),
           GoRoute(
             path: '/profile/my-studio',
-            builder: (context, state) =>
-                const EmptyProfilePage(title: 'Studio của tôi'),
+            builder: (context, state) => const CustomerStudioPage(),
           ),
         ],
       ),

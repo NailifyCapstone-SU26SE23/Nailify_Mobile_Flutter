@@ -133,7 +133,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             ProfileActionTile(title: 'Hóa đơn', route: '/profile/invoices'),
             ProfileActionTile(
-              title: 'Móng yêu thích',
+              title: 'Bộ móng yêu thích',
               route: '/profile/favorite-nails',
             ),
             ProfileActionTile(

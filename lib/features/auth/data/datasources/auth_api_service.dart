@@ -88,6 +88,7 @@ class AuthApiService {
     final response = await _apiClient.put<dynamic>(
       '/Profile',
       data: formData,
+      options: Options(contentType: 'multipart/form-data'),
     );
     return UserProfile.fromJson(_unwrapData(response.data));
   }

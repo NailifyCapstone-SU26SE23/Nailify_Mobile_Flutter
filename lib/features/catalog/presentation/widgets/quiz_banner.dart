@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 
 class QuizBanner extends StatelessWidget {
@@ -28,11 +29,7 @@ class QuizBanner extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Chức năng bài trắc nghiệm đang được phát triển.')),
-              );
-            },
+            onPressed: () => context.go('/quiz'),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.surface,
               foregroundColor: AppColors.primary,

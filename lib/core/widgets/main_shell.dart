@@ -32,7 +32,7 @@ class _MainShellState extends State<MainShell> {
         _showPopupNotification(context, 'Chatbot');
         break;
       case 3:
-        _showPopupNotification(context, 'Tài khoản');
+        context.go('/profile');
         break;
     }
   }

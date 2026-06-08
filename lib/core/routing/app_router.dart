@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../widgets/main_shell.dart';
+
 import '../../features/home/presentation/pages/home_page.dart';
+import '../../features/nails/presentation/pages/nail_detail_screen.dart';
+import '../../features/nails/presentation/pages/nail_list_screen.dart';
+import '../../features/nails/presentation/pages/nail_variant_detail_screen.dart';
+import '../widgets/main_shell.dart';
 import '../../features/auth/presentation/pages/customer_login_page.dart';
 import '../../features/auth/presentation/pages/customer_register_page.dart';
+import '../../features/auth/presentation/pages/profile_page.dart';
+import '../../features/auth/presentation/pages/profile_update_pages.dart';
 
 import '../../features/catalog/presentation/pages/catalog_page.dart';
 import '../../features/catalog/presentation/pages/nail_details_page.dart';
@@ -25,13 +31,42 @@ class AppRouter {
 
       // ShellRoute thiết lập cơ chế nạp trang con vào vùng nội dung của lớp vỏ dùng chung
       ShellRoute(
-        builder: (context, state, child) {
-          return MainShell(child: child); // Khung Activity chứa Header & Footer
-        },
+        builder: (context, state, child) => MainShell(child: child),
         routes: [
           GoRoute(
             path: '/',
-            builder: (context, state) => const HomePage(), // Fragment hiển thị chính
+            builder: (context, state) => const HomePage(),
+          ),
+          GoRoute(
+            path: '/nails',
+            builder: (context, state) => const NailListScreen(),
+          ),
+          GoRoute(
+            path: '/nails/:id',
+            builder: (context, state) {
+              final id = int.tryParse(state.pathParameters['id'] ?? '');
+              return NailDetailScreen(nailDesignId: id ?? 0);
+            },
+          ),
+          GoRoute(
+            path: '/nail-variants/:id',
+            pageBuilder: (context, state) {
+              final id = int.tryParse(state.pathParameters['id'] ?? '');
+              return CustomTransitionPage<void>(
+                key: state.pageKey,
+                child: NailVariantDetailScreen(nailVariantId: id ?? 0),
+                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                  final offset = Tween<Offset>(
+                    begin: const Offset(0, 1),
+                    end: Offset.zero,
+                  ).chain(CurveTween(curve: Curves.easeOutCubic));
+                  return SlideTransition(
+                    position: animation.drive(offset),
+                    child: child,
+                  );
+                },
+              );
+            },
           ),
           //catalog
           GoRoute(
@@ -46,8 +81,56 @@ class AppRouter {
               return NailDetailsPage(nailData: nailData);
             },
           ),
+          GoRoute(
+            path: '/profile',
+            builder: (context, state) => const ProfilePage(),
+          ),
+          GoRoute(
+            path: '/profile/update-info',
+            builder: (context, state) => const UpdateProfilePage(),
+          ),
+          GoRoute(
+            path: '/profile/update-preferences',
+            builder: (context, state) => const UpdatePreferencesPage(),
+          ),
+          GoRoute(
+            path: '/profile/booking-history',
+            builder: (context, state) =>
+                const EmptyProfilePage(title: 'Lịch sử đặt lịch'),
+          ),
+          GoRoute(
+            path: '/profile/invoices',
+            builder: (context, state) =>
+                const EmptyProfilePage(title: 'Hóa đơn'),
+          ),
+          GoRoute(
+            path: '/profile/favorite-nails',
+            builder: (context, state) =>
+                const EmptyProfilePage(title: 'Móng yêu thích'),
+          ),
+          GoRoute(
+            path: '/profile/my-studio',
+            builder: (context, state) =>
+                const EmptyProfilePage(title: 'Studio của tôi'),
+          ),
         ],
       ),
     ],
   );
+}
+
+class EmptyProfilePage extends StatelessWidget {
+  final String title;
+
+  const EmptyProfilePage({super.key, required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        title,
+        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+      ),
+    );
+  }
 }

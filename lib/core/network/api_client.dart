@@ -1,12 +1,15 @@
 import 'package:dio/dio.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_constants.dart';
 import '../error/exceptions.dart';
 
 class ApiClient {
   late final Dio _dio;
+  final SharedPreferences? _preferences;
 
-  ApiClient({String? baseUrl}) {
+  ApiClient({String? baseUrl, SharedPreferences? preferences})
+      : _preferences = preferences {
     _dio = Dio(BaseOptions(
       baseUrl: baseUrl ?? AppConstants.baseUrl + AppConstants.apiVersion,
       connectTimeout: AppConstants.connectTimeout,
@@ -20,6 +23,18 @@ class ApiClient {
   }
 
   void _setupInterceptors() {
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          final token = _preferences?.getString(AppConstants.authTokenKey);
+          if (token != null && token.isNotEmpty) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
+          handler.next(options);
+        },
+      ),
+    );
+
     _dio.interceptors.add(
       PrettyDioLogger(
         requestHeader: true,
@@ -48,10 +63,12 @@ class ApiClient {
 
   void setAuthToken(String token) {
     _dio.options.headers['Authorization'] = 'Bearer $token';
+    _preferences?.setString(AppConstants.authTokenKey, token);
   }
 
   void removeAuthToken() {
     _dio.options.headers.remove('Authorization');
+    _preferences?.remove(AppConstants.authTokenKey);
   }
 
   Future<Response<T>> get<T>(String path, {Map<String, dynamic>? queryParameters, Options? options}) async {
@@ -61,6 +78,21 @@ class ApiClient {
 
   Future<Response<T>> post<T>(String path, {dynamic data, Map<String, dynamic>? queryParameters, Options? options}) async {
     try { return await _dio.post<T>(path, data: data, queryParameters: queryParameters, options: options); }
+    on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<Response<T>> put<T>(String path, {dynamic data, Map<String, dynamic>? queryParameters, Options? options}) async {
+    try { return await _dio.put<T>(path, data: data, queryParameters: queryParameters, options: options); }
+    on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<Response<T>> patch<T>(String path, {dynamic data, Map<String, dynamic>? queryParameters, Options? options}) async {
+    try { return await _dio.patch<T>(path, data: data, queryParameters: queryParameters, options: options); }
+    on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<Response<T>> delete<T>(String path, {dynamic data, Map<String, dynamic>? queryParameters, Options? options}) async {
+    try { return await _dio.delete<T>(path, data: data, queryParameters: queryParameters, options: options); }
     on DioException catch (e) { throw _handleDioError(e); }
   }
 

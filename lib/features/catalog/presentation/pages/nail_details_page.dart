@@ -94,7 +94,7 @@ class NailDetailsPage extends StatelessWidget {
                           const SizedBox(height: 8),
                           Text(
                             'Premium Collection',
-                            style: TextStyle(fontSize: 14, color: AppColors.primary.withOpacity(0.8), fontWeight: FontWeight.w600),
+                            style: TextStyle(fontSize: 14, color: AppColors.primary, fontWeight: FontWeight.w600),
                           ),
                           const SizedBox(height: 16),
                           const Divider(height: 1, color: AppColors.border),
@@ -124,10 +124,10 @@ class NailDetailsPage extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: AppColors.surface.withOpacity(0.85),
+                      color: AppColors.surface,
                       shape: BoxShape.circle,
                       boxShadow: [
-                        BoxShadow(color: AppColors.textPrimary.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 2)),
+                        BoxShadow(color: AppColors.textPrimary, blurRadius: 8, offset: const Offset(0, 2)),
                       ],
                     ),
                     child: const Icon(Icons.arrow_back_ios_new, size: 18, color: AppColors.textPrimary),
@@ -147,7 +147,7 @@ class NailDetailsPage extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: AppColors.surface,
                     boxShadow: [
-                      BoxShadow(color: AppColors.textPrimary.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -4)),
+                      BoxShadow(color: AppColors.textPrimary, blurRadius: 10, offset: const Offset(0, -4)),
                     ],
                   ),
                   child: Row(

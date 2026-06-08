@@ -1,7 +1,11 @@
 // lib/core/widgets/main_shell.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../constants/app_colors.dart';
+import '../constants/app_constants.dart';
+import '../di/injection.dart';
 
 class MainShell extends StatefulWidget {
   final Widget child;
@@ -12,6 +16,12 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
+  bool get _isLoggedIn {
+    final token =
+        getIt<SharedPreferences>().getString(AppConstants.authTokenKey);
+    return token != null && token.isNotEmpty;
+  }
+
   int _calculateCurrentIndex(BuildContext context) {
     final String location = GoRouterState.of(context).matchedLocation;
     if (location.startsWith('/appointments')) return 1;
@@ -21,20 +31,19 @@ class _MainShellState extends State<MainShell> {
   }
 
   void _onTabTapped(BuildContext context, int index) {
-    switch (index) {
-      case 0:
-        context.go('/');
-        break;
-      case 1:
-        _showPopupNotification(context, 'Lịch hẹn');
-        break;
-      case 2:
-        _showPopupNotification(context, 'Chatbot');
-        break;
-      case 3:
-        _showPopupNotification(context, 'Tài khoản');
-        break;
+    if (index == 0) {
+      context.go('/');
+      return;
     }
+    if (index == 1) {
+      _showPopupNotification(context, 'Lich hen');
+      return;
+    }
+    if (index == 2) {
+      _showPopupNotification(context, 'Chatbot');
+      return;
+    }
+    context.go('/profile');
   }
 
   void _showPopupNotification(BuildContext context, String actionName) {
@@ -88,7 +97,9 @@ class _MainShellState extends State<MainShell> {
             ),
           ),
         ),
-        actions: [
+        actions: _isLoggedIn
+            ? const [SizedBox(width: 16)]
+            : [
           OutlinedButton(
             onPressed: () => context.push('/login'),
             style: OutlinedButton.styleFrom(

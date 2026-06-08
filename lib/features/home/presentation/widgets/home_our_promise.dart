@@ -80,7 +80,7 @@ class OurPromisePage extends StatelessWidget {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.secondary.withOpacity(0.1),
+        color: AppColors.secondary,
         borderRadius: BorderRadius.circular(20),
       ),
       clipBehavior: Clip.antiAlias,
@@ -93,7 +93,7 @@ class OurPromisePage extends StatelessWidget {
               width: 90,
               height: 90,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.15),
+                color: AppColors.primary,
                 shape: BoxShape.circle,
               ),
             ),
@@ -110,7 +110,7 @@ class OurPromisePage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
+                        color: Colors.black,
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),

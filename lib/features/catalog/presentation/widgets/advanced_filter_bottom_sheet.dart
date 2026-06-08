@@ -55,7 +55,7 @@ class _AdvancedFilterBottomSheetState extends State<AdvancedFilterBottomSheet> {
             return ChoiceChip(
               label: Text(option),
               selected: isSelected,
-              selectedColor: AppColors.primary.withOpacity(0.2),
+              selectedColor: AppColors.primary,
               backgroundColor: Colors.grey.shade100,
               labelStyle: TextStyle(
                 color: isSelected ? AppColors.primary : AppColors.textSecondary,

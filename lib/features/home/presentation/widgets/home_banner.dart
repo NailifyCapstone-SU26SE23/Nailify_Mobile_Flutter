@@ -1,10 +1,10 @@
-// lib/features/home/presentation/widgets/home_banner.dart
 import 'package:flutter/material.dart';
+import '../../../../core/constants/app_colors.dart';
 
 class HomeBanner extends StatelessWidget {
   const HomeBanner({super.key});
 
-  // chưa có page booking nên chèn đỡ
+  // chưa có pages booking nên chèn đỡ
   void _showBookingPopup(BuildContext context) {
     showDialog(
       context: context,
@@ -12,7 +12,7 @@ class HomeBanner extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Row(
           children: [
-            Icon(Icons.event_available, color: Color(0xFFFF66C4)),
+            Icon(Icons.event_available, color: AppColors.primary),
             SizedBox(width: 8),
             Text('Thông báo'),
           ],
@@ -21,7 +21,7 @@ class HomeBanner extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Đóng', style: TextStyle(color: Colors.black87)),
+            child: const Text('Đóng', style: TextStyle(color: AppColors.textPrimary)),
           ),
         ],
       ),
@@ -39,8 +39,8 @@ class HomeBanner extends StatelessWidget {
           // Mã màu Gradient
           gradient: const LinearGradient(
             colors: [
-              Color(0xFFFF66C4), // Hồng
-              Color(0xFFFFDE59), // Vàng
+              AppColors.primary, // Hồng
+              AppColors.background,
             ],
             // Với bố cục dọc
             begin: Alignment.topLeft,
@@ -48,7 +48,7 @@ class HomeBanner extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFFF66C4).withOpacity(0.3),
+              color: AppColors.primary,
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -71,8 +71,8 @@ class HomeBanner extends StatelessWidget {
                 errorBuilder: (context, error, stackTrace) => Container(
                   width: 140,
                   height: 140,
-                  color: Colors.white.withOpacity(0.3),
-                  child: const Icon(Icons.image_not_supported, color: Colors.white, size: 40),
+                  color: AppColors.background,
+                  child: const Icon(Icons.image_not_supported, color: AppColors.background, size: 40),
                 ),
               ),
             ),
@@ -87,7 +87,7 @@ class HomeBanner extends StatelessWidget {
                 fontSize: 42,
                 fontFamily: "Dancing Script",
                 //fontWeight: FontWeight.bold,
-                color: const Color(0xFFFF66C4),
+                color: AppColors.primary,
                 height: 1.3,
               ),
             ),
@@ -99,7 +99,7 @@ class HomeBanner extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.black,
+                color: AppColors.textPrimary,
                 height: 1.4, // Tạo khoảng cách dòng
               ),
             ),
@@ -112,7 +112,7 @@ class HomeBanner extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: () => _showBookingPopup(context),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF66C4),
+                  backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(

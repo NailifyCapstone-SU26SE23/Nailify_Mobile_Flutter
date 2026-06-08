@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import '../../../../core/constants/app_colors.dart';
 
 class HomeServices extends StatelessWidget {
   const HomeServices({super.key});
@@ -42,7 +42,7 @@ class HomeServices extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: AppColors.textPrimary,
                 ),
               ),
               TextButton(
@@ -50,7 +50,7 @@ class HomeServices extends StatelessWidget {
                 child: const Text(
                   'Xem tất cả',
                   style: TextStyle(
-                    color: Color(0xFFFF66C4),
+                    color: AppColors.primary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -108,7 +108,7 @@ class HomeServices extends StatelessWidget {
                 gradient: LinearGradient(
                   colors: [
                     Colors.transparent,
-                    Color(0xFFFF66C4).withOpacity(0.7),
+                    AppColors.primary,
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -125,7 +125,7 @@ class HomeServices extends StatelessWidget {
               child: Text(
                 title,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppColors.surface,
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,

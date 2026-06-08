@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/constants/app_colors.dart';
 
 class OurPromisePage extends StatelessWidget {
   const OurPromisePage({super.key}); // hoặc const OurPromiseSection({Key? key}) : super(key: key);
@@ -8,7 +9,7 @@ class OurPromisePage extends StatelessWidget {
     // return Scaffold(body: SingleChildScrollView(...)) (con bọ RenderCustomMultiChildLayoutBox object was given an infinite size during layout)
     // chỉ trả về thẳng một Container hoặc Padding
     return Container(
-      color: Colors.white,
+      color: AppColors.background,
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 48.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -17,7 +18,7 @@ class OurPromisePage extends StatelessWidget {
           const Text(
             'OUR PROMISE',
             style: TextStyle(
-              color: Color(0xFFFF66C4),
+              color: AppColors.primary,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.5,
               fontSize: 12,
@@ -27,7 +28,7 @@ class OurPromisePage extends StatelessWidget {
           const Text(
             'Why Choose Us',
             style: TextStyle(
-              color: Color(0xFFFF66C4),
+              color: AppColors.primary,
               fontSize: 32,
               fontWeight: FontWeight.w600,
             ),
@@ -36,7 +37,7 @@ class OurPromisePage extends StatelessWidget {
           const Text(
             'At Nailify, we understand that when it comes to nail art, you have many options to choose from.',
             style: TextStyle(
-              color: Colors.grey,
+              color: AppColors.textSecondary,
               fontSize: 16,
               height: 1.5,
             ),
@@ -79,7 +80,7 @@ class OurPromisePage extends StatelessWidget {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF6E6D7),
+        color: AppColors.secondary,
         borderRadius: BorderRadius.circular(20),
       ),
       clipBehavior: Clip.antiAlias,
@@ -92,7 +93,7 @@ class OurPromisePage extends StatelessWidget {
               width: 90,
               height: 90,
               decoration: BoxDecoration(
-                color: const Color(0xFFFF66C4).withOpacity(0.15),
+                color: AppColors.primary,
                 shape: BoxShape.circle,
               ),
             ),
@@ -105,11 +106,11 @@ class OurPromisePage extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.surface,
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
+                        color: Colors.black,
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -117,7 +118,7 @@ class OurPromisePage extends StatelessWidget {
                   ),
                   child: Icon(
                     icon,
-                    color: const Color(0xFFFF66C4),
+                    color: AppColors.primary,
                     size: 28,
                   ),
                 ),
@@ -132,7 +133,7 @@ class OurPromisePage extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -140,7 +141,7 @@ class OurPromisePage extends StatelessWidget {
                         description,
                         style: const TextStyle(
                           fontSize: 14,
-                          color: Colors.black54,
+                          color: AppColors.textSecondary,
                           height: 1.5,
                         ),
                       ),
@@ -150,7 +151,7 @@ class OurPromisePage extends StatelessWidget {
                           Text(
                             'Read more',
                             style: TextStyle(
-                              color: Colors.black54,
+                              color: AppColors.textSecondary,
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
                             ),
@@ -159,7 +160,7 @@ class OurPromisePage extends StatelessWidget {
                           Icon(
                             Icons.arrow_forward,
                             size: 16,
-                            color: Colors.black54,
+                            color: AppColors.textSecondary,
                           ),
                         ],
                       ),

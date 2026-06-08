@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/constants/app_colors.dart';
 
 class CustomerReviews extends StatelessWidget {
   const CustomerReviews({Key? key}) : super(key: key);
@@ -31,7 +32,7 @@ class CustomerReviews extends StatelessWidget {
     ];
 
     return Container(
-      color: const Color(0xFFFDF7FA), // Màu nền tổng thể nhạt
+      color: AppColors.secondary, // Màu nền tổng thể nhạt
       padding: const EdgeInsets.symmetric(vertical: 48.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -42,7 +43,7 @@ class CustomerReviews extends StatelessWidget {
             child: Text(
               'HAPPY CLIENTS',
               style: TextStyle(
-                color: Color(0xFFFF66C4),
+                color: AppColors.primary,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.5,
                 fontSize: 12,
@@ -55,7 +56,7 @@ class CustomerReviews extends StatelessWidget {
             child: Text(
               'Our Valuable Customers',
               style: TextStyle(
-                color: Color(0xFFFF66C4),
+                color: AppColors.primary,
                 fontSize: 32,
                 fontWeight: FontWeight.w600,
                 fontFamily: 'Cormorant Garamond',
@@ -101,10 +102,10 @@ class CustomerReviews extends StatelessWidget {
       margin: const EdgeInsets.only(right: 16.0),
       padding: const EdgeInsets.all(24.0),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: const Color(0xFFFF66C4).withOpacity(0.3), // Viền hồng nhạt
+          color: AppColors.primary, // Viền hồng nhạt
           width: 1,
         ),
       ),
@@ -129,7 +130,7 @@ class CustomerReviews extends StatelessWidget {
             child: Text(
               reviewText,
               style: const TextStyle(
-                color: Colors.black54,
+                color: AppColors.textSecondary,
                 fontSize: 15,
                 fontStyle: FontStyle.italic,
                 height: 1.5,
@@ -158,7 +159,7 @@ class CustomerReviews extends StatelessWidget {
                 child: Text(
                   initials,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: AppColors.surface,
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
@@ -173,7 +174,7 @@ class CustomerReviews extends StatelessWidget {
                   Text(
                     name,
                     style: const TextStyle(
-                      color: Colors.black87,
+                      color: AppColors.textPrimary,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
@@ -182,7 +183,7 @@ class CustomerReviews extends StatelessWidget {
                   Text(
                     type,
                     style: const TextStyle(
-                      color: Colors.black38,
+                      color: AppColors.textSecondary,
                       fontSize: 14,
                     ),
                   ),

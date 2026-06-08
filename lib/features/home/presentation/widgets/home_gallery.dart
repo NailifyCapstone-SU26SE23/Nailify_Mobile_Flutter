@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/constants/app_colors.dart';
 
 class HomeGallery extends StatelessWidget {
   const HomeGallery({super.key});
@@ -14,7 +15,7 @@ class HomeGallery extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Đóng', style: TextStyle(color: Colors.black87)),
+            child: const Text('Đóng', style: TextStyle(color: AppColors.textPrimary)),
           ),
         ],
       ),
@@ -40,10 +41,10 @@ class HomeGallery extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
           // Mã màu Gradient
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             colors: [
-              Color(0xFFFF66C4), // Hồng
-              Color(0xFFFDF7FA), // Vàng
+              AppColors.primary,
+              AppColors.secondary,
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -62,7 +63,7 @@ class HomeGallery extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: AppColors.surface,
                   ),
                 ),
 
@@ -91,7 +92,7 @@ class HomeGallery extends StatelessWidget {
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => Container(
                         color: Colors.white,
-                        child: const Icon(Icons.image, color: Colors.white),
+                        child: const Icon(Icons.image, color: AppColors.surface),
                       ),
                     ),
                   ),
@@ -106,6 +107,14 @@ class HomeGallery extends StatelessWidget {
               height: 50,
               child: ElevatedButton(
                 onPressed: () => context.go('/nails'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.surface,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                ),
                 child: const Text(
                   'Xem thêm ->',
                   style: TextStyle(

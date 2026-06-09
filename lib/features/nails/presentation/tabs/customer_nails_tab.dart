@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/utils/paginated_response.dart';
 import '../../data/models/customer_nail_models.dart';
-import '../../data/repositories/nail_repository.dart';
+import '../../data/repositories/customer_nail_repository.dart';
+import '../../../try-on/presentation/try_on_setup_screen.dart';
 import '../widgets/customer_nail_card.dart';
 import '../widgets/customer_nail_form_dialog.dart';
 
 class CustomerNailsTab extends StatefulWidget {
-  final NailRepository repository;
+  final CustomerNailRepository repository;
   final VoidCallback onDataChanged;
 
   const CustomerNailsTab({
@@ -130,13 +131,12 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
   }
 
   Future<void> _setupTryOn(CustomerNailModel nail) async {
-    // Navigate to AR try-on with this nail
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Setup try-on cho: ${nail.name}')),
-      );
-      // TODO: Implement navigation to AR screen
-    }
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (context) => TryOnSetupScreen(customerNail: nail),
+      ),
+    );
+    if (result == true) _reload();
   }
 
   @override

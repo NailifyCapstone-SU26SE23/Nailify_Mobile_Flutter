@@ -4,7 +4,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../data/models/customer_nail_models.dart';
-import '../../data/repositories/nail_repository.dart';
+import '../../data/repositories/customer_nail_repository.dart';
 
 class CustomerNailFormDialog extends StatefulWidget {
   final CustomerNailModel? nail;
@@ -57,7 +57,7 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
-    final repository = getIt<NailRepository>();
+    final repository = getIt<CustomerNailRepository>();
 
     try {
       if (widget.nail == null) {
@@ -208,20 +208,21 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
                 ),
                 const SizedBox(height: 12),
 
-                // Switches
-                SwitchListTile(
-                  title: const Text('Yêu thích'),
-                  value: _isFavorite,
-                  onChanged: (value) => setState(() => _isFavorite = value),
-                  contentPadding: EdgeInsets.zero,
-                ),
-                SwitchListTile(
-                  title: const Text('Công khai'),
-                  subtitle: const Text('Mọi người có thể nhìn thấy mẫu này'),
-                  value: _isPublic,
-                  onChanged: (value) => setState(() => _isPublic = value),
-                  contentPadding: EdgeInsets.zero,
-                ),
+                if (widget.nail != null) ...[
+                  SwitchListTile(
+                    title: const Text('Yêu thích'),
+                    value: _isFavorite,
+                    onChanged: (value) => setState(() => _isFavorite = value),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  SwitchListTile(
+                    title: const Text('Công khai'),
+                    subtitle: const Text('Mọi người có thể nhìn thấy mẫu này'),
+                    value: _isPublic,
+                    onChanged: (value) => setState(() => _isPublic = value),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ],
               ],
             ),
           ),

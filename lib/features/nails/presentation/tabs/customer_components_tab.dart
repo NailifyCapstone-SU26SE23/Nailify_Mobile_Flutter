@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/utils/paginated_response.dart';
 import '../../data/models/customer_nail_models.dart';
-import '../../data/repositories/nail_repository.dart';
+import '../../data/repositories/customer_component_repository.dart';
 import '../widgets/customer_component_card.dart';
 import '../widgets/customer_component_form_dialog.dart';
 
 class CustomerComponentsTab extends StatefulWidget {
-  final NailRepository repository;
+  final CustomerComponentRepository repository;
   final VoidCallback onDataChanged;
 
   const CustomerComponentsTab({

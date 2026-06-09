@@ -1,25 +1,26 @@
-import 'package:flutter/material.dart';
+// lib/router/app_router.dart
+import 'package:flutter/cupertino.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../features/home/presentation/pages/home_page.dart';
-import '../../features/nails/presentation/pages/nail_detail_screen.dart';
-import '../../features/nails/presentation/pages/customer_studio_page.dart';
-import '../../features/nails/presentation/pages/nail_list_screen.dart';
-import '../../features/nails/presentation/pages/nail_variant_detail_screen.dart';
-import '../widgets/main_shell.dart';
 import '../../features/auth/presentation/pages/customer_login_page.dart';
 import '../../features/auth/presentation/pages/customer_register_page.dart';
 import '../../features/auth/presentation/pages/profile_page.dart';
 import '../../features/auth/presentation/pages/profile_update_pages.dart';
-
 import '../../features/catalog/presentation/pages/catalog_page.dart';
 import '../../features/catalog/presentation/pages/nail_details_page.dart';
+import '../../features/home/presentation/pages/home_page.dart';
+import '../../features/nails/presentation/pages/customer_studio_page.dart';
+import '../../features/nails/presentation/pages/nail_detail_screen.dart';
+import '../../features/nails/presentation/pages/nail_list_screen.dart';
+import '../../features/nails/presentation/pages/nail_variant_detail_screen.dart';
+import '../../features/try-on/presentation/try_on_setup_screen.dart';
+import '../widgets/main_shell.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: '/',
     routes: [
-      //---login-register
+      // Login/Register - NO shell at all (full screen)
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginPage(),
@@ -28,109 +29,135 @@ class AppRouter {
         path: '/register',
         builder: (context, state) => const RegisterPage(),
       ),
-      //------
 
-      // ShellRoute thiết lập cơ chế nạp trang con vào vùng nội dung của lớp vỏ dùng chung
-      ShellRoute(
-        builder: (context, state, child) => MainShell(child: child),
-        routes: [
-          GoRoute(
-            path: '/',
-            builder: (context, state) => const HomePage(),
+      // ========== ROUTES WITH BOTTOM NAV BUT NO HEADER ==========
+      GoRoute(
+        path: '/try-on',
+        builder: (context, state) => const MainShell(
+          child: TryOnSetupScreen(),
+          showHeader: false, // NO header image
+        ),
+      ),
+
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => const MainShell(
+          child: ProfilePage(),
+          showHeader: false, // NO header image
+        ),
+      ),
+
+      GoRoute(
+        path: '/profile/update-info',
+        builder: (context, state) => const MainShell(
+          child: UpdateProfilePage(),
+          showHeader: false,
+        ),
+      ),
+
+      GoRoute(
+        path: '/profile/update-preferences',
+        builder: (context, state) => const MainShell(
+          child: UpdatePreferencesPage(),
+          showHeader: false,
+        ),
+      ),
+
+      GoRoute(
+        path: '/profile/booking-history',
+        builder: (context, state) => MainShell(
+          child: const Center(
+            child: Text('Lịch sử đặt lịch', style: TextStyle(fontSize: 24)),
           ),
-          GoRoute(
-            path: '/nails',
-            builder: (context, state) => const NailListScreen(),
+          showHeader: false,
+        ),
+      ),
+
+      GoRoute(
+        path: '/profile/invoices',
+        builder: (context, state) => MainShell(
+          child: const Center(
+            child: Text('Hóa đơn', style: TextStyle(fontSize: 24)),
           ),
-          GoRoute(
-            path: '/nails/:id',
-            builder: (context, state) {
-              final id = int.tryParse(state.pathParameters['id'] ?? '');
-              return NailDetailScreen(nailDesignId: id ?? 0);
-            },
+          showHeader: false,
+        ),
+      ),
+
+      GoRoute(
+        path: '/profile/favorite-nails',
+        builder: (context, state) => MainShell(
+          child: const Center(
+            child: Text('Móng yêu thích', style: TextStyle(fontSize: 24)),
           ),
-          GoRoute(
-            path: '/nail-variants/:id',
-            pageBuilder: (context, state) {
-              final id = int.tryParse(state.pathParameters['id'] ?? '');
-              return CustomTransitionPage<void>(
-                key: state.pageKey,
-                child: NailVariantDetailScreen(nailVariantId: id ?? 0),
-                transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                  final offset = Tween<Offset>(
-                    begin: const Offset(0, 1),
-                    end: Offset.zero,
-                  ).chain(CurveTween(curve: Curves.easeOutCubic));
-                  return SlideTransition(
-                    position: animation.drive(offset),
-                    child: child,
-                  );
-                },
-              );
-            },
-          ),
-          //catalog
-          GoRoute(
-            path: '/catalog',
-            builder: (context, state) => const CatalogPage(),
-          ),
-          GoRoute(
-            path: '/catalog/details',
-            builder: (context, state) {
-              // Trích xuất dữ liệu móng được truyền sang thông qua thuộc tính extra
-              final nailData = state.extra as Map<String, dynamic>;
-              return NailDetailsPage(nailData: nailData);
-            },
-          ),
-          GoRoute(
-            path: '/profile',
-            builder: (context, state) => const ProfilePage(),
-          ),
-          GoRoute(
-            path: '/profile/update-info',
-            builder: (context, state) => const UpdateProfilePage(),
-          ),
-          GoRoute(
-            path: '/profile/update-preferences',
-            builder: (context, state) => const UpdatePreferencesPage(),
-          ),
-          GoRoute(
-            path: '/profile/booking-history',
-            builder: (context, state) =>
-                const EmptyProfilePage(title: 'Lịch sử đặt lịch'),
-          ),
-          GoRoute(
-            path: '/profile/invoices',
-            builder: (context, state) =>
-                const EmptyProfilePage(title: 'Hóa đơn'),
-          ),
-          GoRoute(
-            path: '/profile/favorite-nails',
-            builder: (context, state) =>
-                const EmptyProfilePage(title: 'Móng yêu thích'),
-          ),
-          GoRoute(
-            path: '/profile/my-studio',
-            builder: (context, state) => const CustomerStudioPage(),
-          ),
-        ],
+          showHeader: false,
+        ),
+      ),
+
+      GoRoute(
+        path: '/profile/my-studio',
+        builder: (context, state) => const MainShell(
+          child: CustomerStudioPage(),
+          showHeader: false,
+        ),
+      ),
+
+      // ========== ROUTES WITH BOTTOM NAV AND HEADER ==========
+      GoRoute(
+        path: '/',
+        builder: (context, state) => const MainShell(
+          child: HomePage(),
+          showHeader: true, // SHOW header image
+        ),
+      ),
+
+      GoRoute(
+        path: '/nails',
+        builder: (context, state) => const MainShell(
+          child: NailListScreen(),
+          showHeader: true,
+        ),
+      ),
+
+      GoRoute(
+        path: '/nails/:id',
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+          return MainShell(
+            child: NailDetailScreen(nailDesignId: id ?? 0),
+            showHeader: true,
+          );
+        },
+      ),
+
+      GoRoute(
+        path: '/nail-variants/:id',
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+          return MainShell(
+            child: NailVariantDetailScreen(nailVariantId: id ?? 0),
+            showHeader: true,
+          );
+        },
+      ),
+
+      GoRoute(
+        path: '/catalog',
+        builder: (context, state) => const MainShell(
+          child: CatalogPage(),
+          showHeader: true,
+        ),
+      ),
+
+      GoRoute(
+        path: '/catalog/details',
+        builder: (context, state) {
+          final nailData = state.extra as Map<String, dynamic>;
+          return MainShell(
+            child: NailDetailsPage(nailData: nailData),
+            showHeader: true,
+          );
+        },
       ),
     ],
   );
-}
-
-class EmptyProfilePage extends StatelessWidget {
-  final String title;
-
-  const EmptyProfilePage({super.key, required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        title,
-        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
-      ),
-    );
-  }
 }

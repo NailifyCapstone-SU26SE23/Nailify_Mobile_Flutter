@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/di/injection.dart';
-import '../../data/repositories/nail_repository.dart';
+import '../../data/repositories/customer_component_repository.dart';
+import '../../data/repositories/customer_nail_repository.dart';
 import '../tabs/customer_components_tab.dart';
 import '../tabs/customer_nails_tab.dart';
 
@@ -16,7 +17,8 @@ class CustomerStudioPage extends StatefulWidget {
 class _CustomerStudioPageState extends State<CustomerStudioPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final _repository = getIt<NailRepository>();
+  final _customerNailRepository = getIt<CustomerNailRepository>();
+  final _customerComponentRepository = getIt<CustomerComponentRepository>();
 
   @override
   void initState() {
@@ -56,11 +58,11 @@ class _CustomerStudioPageState extends State<CustomerStudioPage>
         controller: _tabController,
         children: [
           CustomerNailsTab(
-            repository: _repository,
+            repository: _customerNailRepository,
             onDataChanged: _reloadData,
           ),
           CustomerComponentsTab(
-            repository: _repository,
+            repository: _customerComponentRepository,
             onDataChanged: _reloadData,
           ),
         ],

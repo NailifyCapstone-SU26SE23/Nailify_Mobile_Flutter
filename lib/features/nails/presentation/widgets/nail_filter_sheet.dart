@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../data/models/category_type_model.dart';
-import '../../data/repositories/nail_repository.dart';
+import '../../data/models/nail_filters.dart';
 
 class NailFilterSheet extends StatefulWidget {
   final NailFilters initialFilters;

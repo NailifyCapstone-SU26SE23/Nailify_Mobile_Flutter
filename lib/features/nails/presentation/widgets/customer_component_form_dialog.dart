@@ -4,7 +4,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../data/models/customer_nail_models.dart';
-import '../../data/repositories/nail_repository.dart';
+import '../../data/repositories/customer_component_repository.dart';
 
 class CustomerComponentFormDialog extends StatefulWidget {
   final CustomerComponentModel? component;
@@ -64,7 +64,7 @@ class _CustomerComponentFormDialogState
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
-    final repository = getIt<NailRepository>();
+    final repository = getIt<CustomerComponentRepository>();
 
     try {
       if (widget.component == null) {

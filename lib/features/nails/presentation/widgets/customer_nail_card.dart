@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../try-on/presentation/try_on_setup_screen.dart';
 import '../../data/models/customer_nail_models.dart';
 
 class CustomerNailCard extends StatelessWidget {
@@ -141,9 +142,15 @@ class CustomerNailCard extends StatelessWidget {
                   color: nail.isPublic ? Colors.blue : Colors.grey,
                 ),
                 const SizedBox(height: 4),
-                // Setup Try On Button
                 ElevatedButton.icon(
-                  onPressed: onSetupTryOn,
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const TryOnSetupScreen(),
+                      ),
+                    );
+                  },
                   icon: const Icon(Icons.visibility, size: 16),
                   label: const Text('Set Up Try On'),
                   style: ElevatedButton.styleFrom(

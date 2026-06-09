@@ -9,7 +9,13 @@ import '../di/injection.dart';
 
 class MainShell extends StatefulWidget {
   final Widget child;
-  const MainShell({super.key, required this.child});
+  final bool showHeader; // Add this parameter
+
+  const MainShell({
+    super.key,
+    required this.child,
+    this.showHeader = true, // Default to true
+  });
 
   @override
   State<MainShell> createState() => _MainShellState();
@@ -18,7 +24,7 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   bool get _isLoggedIn {
     final token =
-        getIt<SharedPreferences>().getString(AppConstants.authTokenKey);
+    getIt<SharedPreferences>().getString(AppConstants.authTokenKey);
     return token != null && token.isNotEmpty;
   }
 
@@ -74,7 +80,8 @@ class _MainShellState extends State<MainShell> {
     return Scaffold(
       backgroundColor: AppColors.background,
 
-      appBar: AppBar(
+      // Conditional AppBar - only show header if showHeader is true
+      appBar: widget.showHeader ? AppBar(
         backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
@@ -113,7 +120,7 @@ class _MainShellState extends State<MainShell> {
           ElevatedButton(
             onPressed: () => context.push('/register'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary, // Sử dụng constant
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -123,16 +130,21 @@ class _MainShellState extends State<MainShell> {
           ),
           const SizedBox(width: 16),
         ],
-      ),
+      ) : null, // No AppBar when showHeader is false
 
-      body: widget.child,
+      // Wrap the body with SafeArea when header is hidden
+      body: widget.showHeader
+          ? widget.child
+          : SafeArea(
+        child: widget.child,
+      ),
 
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _calculateCurrentIndex(context),
         onTap: (index) => _onTabTapped(context, index),
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppColors.primary, // Màu hồng khi chọn tab
-        unselectedItemColor: AppColors.textSecondary, // Màu xám khi chưa chọn tab
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: AppColors.textSecondary,
         backgroundColor: AppColors.background,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Trang chủ'),

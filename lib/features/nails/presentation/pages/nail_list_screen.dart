@@ -3,7 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/di/injection.dart';
-import '../../data/repositories/nail_repository.dart';
+import '../../data/repositories/nail_design_repository.dart';
+import '../../data/models/nail_filters.dart';
 import '../cubit/nail_catalog_cubit.dart';
 import '../widgets/nail_design_card.dart';
 import '../widgets/nail_filter_sheet.dart';
@@ -14,7 +15,7 @@ class NailListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => NailCatalogCubit(getIt<NailRepository>())..loadDesigns(),
+      create: (_) => NailCatalogCubit(getIt<NailDesignRepository>())..loadDesigns(),
       child: const _NailListView(),
     );
   }

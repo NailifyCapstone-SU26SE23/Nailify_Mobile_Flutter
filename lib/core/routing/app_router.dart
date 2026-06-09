@@ -8,6 +8,10 @@ import '../../features/auth/presentation/pages/customer_register_page.dart';
 import '../../features/catalog/presentation/pages/catalog_page.dart';
 import '../../features/catalog/presentation/pages/nail_details_page.dart';
 
+//custom nail
+import '../../features/custom_nail/presentation/pages/custom_nail_stepper_page.dart';
+
+
 class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: '/',
@@ -22,6 +26,11 @@ class AppRouter {
         builder: (context, state) => const RegisterPage(),
       ),
       //------
+      // custom nail page, page này có header và footer riêng
+      GoRoute(
+        path: '/custom-nail',
+        builder: (context, state) => const CustomNailStepperPage(),
+      ),
 
       // ShellRoute thiết lập cơ chế nạp trang con vào vùng nội dung của lớp vỏ dùng chung
       ShellRoute(
@@ -46,6 +55,7 @@ class AppRouter {
               return NailDetailsPage(nailData: nailData);
             },
           ),
+          // custom nail page
         ],
       ),
     ],

@@ -38,7 +38,7 @@ dependencies:
   shared_preferences: ^2.2.2
 
   # Utilities & Dependency Injection
-  get_it: ^7.6.7
+  get_it: ">=7.6.7 <10.0.0"
 
   # Localization (Hỗ trợ core hệ thống)
   flutter_localizations:

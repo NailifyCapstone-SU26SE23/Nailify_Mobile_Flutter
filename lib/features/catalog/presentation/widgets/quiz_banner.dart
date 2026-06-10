@@ -29,7 +29,24 @@ class QuizBanner extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           ElevatedButton(
-             onPressed: () => context.push('/custom-nail'),  // gắn tạm
+             onPressed: ()  // gắn tạm
+            {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Chức năng bài trắc nghiệm đang được phát triển.')),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.surface,
+              foregroundColor: AppColors.primary,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: const Text('Take personality test', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(height: 10),
+          ElevatedButton(
+            onPressed: () => context.push('/custom-nail'),
             // {
             //   ScaffoldMessenger.of(context).showSnackBar(
             //     const SnackBar(content: Text('Chức năng bài trắc nghiệm đang được phát triển.')),
@@ -42,7 +59,7 @@ class QuizBanner extends StatelessWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
-            child: const Text('Take personality test', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text('Customize your Nail', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),

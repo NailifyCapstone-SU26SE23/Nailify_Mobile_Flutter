@@ -27,6 +27,29 @@ class _QuizPageState extends State<QuizPage> {
     setState(() => _selectedOptionIndex = index);
   }
 
+  // ĐÃ SỬA LỖI: Cập nhật hàm xử lý nút Back
+  void _handleBackAction() {
+    if (_currentIndex > 0) {
+      // Nếu đang ở câu hỏi 2 trở đi -> Lùi lại 1 câu hỏi
+      setState(() {
+        _currentIndex--;
+        // Khôi phục lại đáp án đã chọn trước đó để hiển thị trên UI
+        if (_answers.isNotEmpty) {
+          _selectedOptionIndex = _answers.removeLast();
+        } else {
+          _selectedOptionIndex = null;
+        }
+      });
+    } else {
+      // Nếu đang ở câu hỏi đầu tiên -> Thoát khỏi trang Quiz an toàn
+      if (context.canPop()) {
+        context.pop(); // Trả về trang trước đó trong lịch sử GoRouter
+      } else {
+        context.go('/catalog'); // Fallback: Nếu không có lịch sử, ép quay về Catalog (hoặc '/')
+      }
+    }
+  }
+
   void _onNextPressed() {
     if (_selectedOptionIndex == null) return;
 
@@ -45,13 +68,41 @@ class _QuizPageState extends State<QuizPage> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      child: Center(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 402),
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-          child: _buildQuizCard(),
+    // Đánh chặn nút Back vật lý của điện thoại để đồng bộ với nút Back trên UI
+    return PopScope(
+      canPop: _currentIndex == 0,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _handleBackAction();
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white, // Khai báo màu nền tránh đen màn hình
+        body: SafeArea(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Center(
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 402),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Nút Back
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_ios, size: 20, color: AppColors.textPrimary),
+                      onPressed: _handleBackAction,
+                      alignment: Alignment.centerLeft,
+                      padding: EdgeInsets.zero,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Nội dung chính
+                    _buildQuizCard(),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

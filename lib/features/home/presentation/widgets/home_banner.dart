@@ -39,7 +39,7 @@ class HomeBanner extends StatelessWidget {
           // Mã màu Gradient
           gradient: const LinearGradient(
             colors: [
-              AppColors.primary, // Hồng
+              AppColors.secondary , // Hồng
               AppColors.background,
             ],
             // Với bố cục dọc

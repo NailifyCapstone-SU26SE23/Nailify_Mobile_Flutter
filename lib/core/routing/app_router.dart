@@ -13,6 +13,10 @@ import '../../features/another_design/presentation/pages/another_design_page.dar
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/discover/presentation/pages/discover_page.dart';
 
+//custom nail
+import '../../features/custom_nail/presentation/pages/custom_nail_stepper_page.dart';
+
+
 class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: '/',
@@ -53,6 +57,11 @@ class AppRouter {
         builder: (context, state) => const MainShell(child: DiscoverPage()),
       ),
       //------
+      // custom nail page, page này có header và footer riêng
+      GoRoute(
+        path: '/custom-nail',
+        builder: (context, state) => const CustomNailStepperPage(),
+      ),
 
       // ShellRoute thiết lập cơ chế nạp trang con vào vùng nội dung của lớp vỏ dùng chung
       ShellRoute(
@@ -81,6 +90,7 @@ class AppRouter {
             path: '/profile',
             builder: (context, state) => const ProfilePage(),
           ),
+          // custom nail page
         ],
       ),
     ],

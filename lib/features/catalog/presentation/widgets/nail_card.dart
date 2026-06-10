@@ -21,10 +21,10 @@ class NailCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.textPrimary),
+          border: Border.all(color: AppColors.textPrimary.withOpacity(0.1)),
           boxShadow: [
             BoxShadow(
-              color: AppColors.textPrimary,
+              color: AppColors.textPrimary.withOpacity(0.04),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
@@ -40,7 +40,7 @@ class NailCard extends StatelessWidget {
                   imagePath,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) => Container(
-                    color: AppColors.primary,
+                    color: AppColors.primary.withOpacity(0.05),
                     child: const Icon(Icons.image, color: AppColors.textSecondary),
                   ),
                 ),
@@ -64,7 +64,7 @@ class NailCard extends StatelessWidget {
                     children: tags.take(2).map((tag) => Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: AppColors.textPrimary,
+                        color: AppColors.textPrimary.withOpacity(0.05),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(tag, style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),

@@ -39,7 +39,6 @@ dependencies:
 
   # Utilities & Dependency Injection
   get_it: ^7.6.7
-  image_picker: 1.1.2
 
   # Localization (Hỗ trợ core hệ thống)
   flutter_localizations:

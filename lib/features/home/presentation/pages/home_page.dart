@@ -69,7 +69,7 @@ Widget _buildCallToAction() {
               width: 200,
               height: 200,
               decoration: BoxDecoration(
-                color: AppColors.primary,
+                color: AppColors.primary.withOpacity(0.12),
                 shape: BoxShape.circle,
               ),
             ),

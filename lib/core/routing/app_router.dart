@@ -12,6 +12,8 @@ import '../../features/perfect_match/presentation/pages/perfect_match_page.dart'
 import '../../features/another_design/presentation/pages/another_design_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/discover/presentation/pages/discover_page.dart';
+//booking
+import '../../features/nail_booking/presentation/pages/nail_booking_page.dart';
 
 //custom nail
 import '../../features/custom_nail/presentation/pages/custom_nail_stepper_page.dart';
@@ -61,6 +63,15 @@ class AppRouter {
       GoRoute(
         path: '/custom-nail',
         builder: (context, state) => const CustomNailStepperPage(),
+      ),
+      //booking with nail
+      GoRoute(
+        path: '/nail-booking',
+        builder: (context, state) {
+          // Nhận dữ liệu truyền sang nếu có
+          final Map<String, dynamic>? nailData = state.extra as Map<String, dynamic>?;
+          return NailBookingPage(nailData: nailData);
+        },
       ),
 
       // ShellRoute thiết lập cơ chế nạp trang con vào vùng nội dung của lớp vỏ dùng chung

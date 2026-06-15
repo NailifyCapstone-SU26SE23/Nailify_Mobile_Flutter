@@ -7,12 +7,14 @@ class NailShapeSelector extends StatelessWidget {
   final List<NailShapeModel> shapes;
   final NailShapeModel? selectedShape;
   final ValueChanged<NailShapeModel> onSelected;
+  final bool showTitle;
 
   const NailShapeSelector({
     super.key,
     required this.shapes,
     required this.selectedShape,
     required this.onSelected,
+    this.showTitle = true,
   });
 
   @override
@@ -20,13 +22,15 @@ class NailShapeSelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Select Nail Shape',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
+        if (showTitle) ...[
+          Text(
+            'Select Nail Shape',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-        const SizedBox(height: 12),
+          const SizedBox(height: 12),
+        ],
         SizedBox(
           height: 160,
           child: ListView.builder(

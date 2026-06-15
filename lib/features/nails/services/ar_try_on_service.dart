@@ -101,7 +101,7 @@ class ArTryOnService {
   ) {
     return List.generate(5, (fingerIndex) {
       final fingerComponents = components
-          .where((item) => item.fingerIndex == -1 || item.fingerIndex == fingerIndex + 1)
+          .where((item) => _customerComponentAppliesToFinger(item, fingerIndex))
           .toList();
       final appearance = appearances[fingerIndex + 1];
       return {
@@ -113,18 +113,26 @@ class ArTryOnService {
     });
   }
 
+  bool _customerComponentAppliesToFinger(
+    CustomerNailComponentModel item,
+    int zeroBasedFingerIndex,
+  ) {
+    if (item.fingerIndex == -1) return true;
+    return item.fingerIndex == zeroBasedFingerIndex + 1;
+  }
+
   Map<String, dynamic> _customerComponentToDecoration(CustomerNailComponentModel item) {
     final config = NailComponentConfig.fromJsonString(item.configJson);
-    final imageUrl = item.component?.imageUrl ?? item.customerComponent?.imageUrl;
+    final imageUrl = config.imageSrc ?? item.component?.imageUrl ?? item.customerComponent?.imageUrl;
     final componentId = (item.componentId ?? item.customerComponentId ?? item.customerNailComponentId).toString();
     final decoration = config.toArJson(
       fallbackImage: imageUrl,
       fallbackType: _normalizeComponentType(item.component?.componentType ?? item.customerComponent?.componentType),
       componentId: componentId,
     );
-    decoration['id'] = item.customerNailComponentId.toString();
     decoration['x'] = config.x ?? item.posX;
     decoration['y'] = config.y ?? item.posY;
+    decoration['id'] = item.customerNailComponentId.toString();
     return decoration;
   }
 
@@ -162,9 +170,9 @@ class ArTryOnService {
       fallbackType: _normalizeComponentType(item.component?.componentType),
       componentId: item.componentId.toString(),
     );
-    decoration['id'] = item.nailComponentId.toString();
     decoration['x'] = config.x ?? item.posX;
     decoration['y'] = config.y ?? item.posY;
+    decoration['id'] = item.nailComponentId.toString();
     return decoration;
   }
 

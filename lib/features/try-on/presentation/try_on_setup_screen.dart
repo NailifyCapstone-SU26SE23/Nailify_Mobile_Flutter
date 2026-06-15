@@ -8,11 +8,17 @@ import '../../nails/data/models/nail_shape_model.dart';
 import '../../nails/data/repositories/customer_nail_repository.dart';
 import '../../nails/data/repositories/nail_component_repository.dart';
 import '../../nails/services/ar_try_on_service.dart';
+import '../models/placed_component_draft.dart';
 import '../models/try_on_data.dart';
 import '../services/try_on_setup_service.dart';
+import '../utils/try_on_setup_helpers.dart';
 import '../widgets/component_grid.dart';
 import '../widgets/nail_shape_selector.dart';
 import '../widgets/try_on_action_bar.dart';
+import '../widgets/try_on_color_selector.dart';
+import '../widgets/try_on_finger_selector.dart';
+import '../widgets/try_on_placement_controls.dart';
+import '../widgets/try_on_preview_board.dart';
 
 class TryOnSetupScreen extends StatefulWidget {
   final CustomerNailModel? customerNail;
@@ -34,15 +40,27 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
   bool _isLoading = true;
   bool _isSaving = false;
   bool _launching = false;
+  bool _showShapeSection = true;
+  bool _showColorSection = true;
+  bool _showPlacementSection = true;
+  bool _showSystemComponents = true;
+  bool _showCustomerComponents = true;
   String? _error;
   TryOnData? _tryOnData;
   CustomerNailModel? _customerNail;
 
   NailShapeModel? _selectedNailShape;
+  final Map<int, String> _fingerColors = {
+    1: '#FF4081',
+    2: '#FF4081',
+    3: '#FF4081',
+    4: '#FF4081',
+    5: '#FF4081',
+  };
   CombinedComponent? _selectedComponent;
   int _selectedFingerIndex = 1;
   int? _selectedPlacementId;
-  final List<_PlacedComponentDraft> _placements = [];
+  final List<PlacedComponentDraft> _placements = [];
   final Set<int> _deletedPlacementIds = {};
 
   @override
@@ -73,10 +91,43 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
               ? results[1] as CustomerNailModel
               : widget.customerNail;
 
+      final customColorJson = customerNail?.customColor;
+      final Map<int, String> initialColors = {
+        1: '#FF4081',
+        2: '#FF4081',
+        3: '#FF4081',
+        4: '#FF4081',
+        5: '#FF4081',
+      };
+      if (customColorJson != null) {
+        final decoded = decodeTryOnConfig(customColorJson);
+        if (decoded['mode'] == 'perFinger' || decoded['Mode'] == 'perFinger') {
+          final fingers = decoded['fingers'] ?? decoded['Fingers'];
+          if (fingers is List) {
+            for (final finger in fingers) {
+              if (finger is Map) {
+                final fIdx = asTryOnInt(finger['fingerIndex'] ?? finger['FingerIndex']);
+                final color = finger['color'] ?? finger['Color'];
+                if (fIdx >= 1 && fIdx <= 5 && color is String) {
+                  initialColors[fIdx] = color;
+                }
+              }
+            }
+          }
+        } else {
+          final singleColor = decoded['color'] ?? decoded['Color'] ?? '#FF4081';
+          for (var i = 1; i <= 5; i++) {
+            initialColors[i] = singleColor;
+          }
+        }
+      }
+
       setState(() {
         _tryOnData = data;
         _customerNail = customerNail;
         _selectedNailShape = _resolveShape(data.nailShapes, customerNail);
+        _fingerColors.clear();
+        _fingerColors.addAll(initialColors);
         _placements
           ..clear()
           ..addAll(_buildDrafts(customerNail, data.combinedComponents));
@@ -98,7 +149,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
         (shapes.isEmpty ? null : shapes.first);
   }
 
-  List<_PlacedComponentDraft> _buildDrafts(
+  List<PlacedComponentDraft> _buildDrafts(
     CustomerNailModel? nail,
     List<CombinedComponent> components,
   ) {
@@ -109,28 +160,18 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
             component.componentId == item.componentId ||
             component.customerComponentId == item.customerComponentId,
       );
-      final config = _decodeConfig(item.configJson);
-      return _PlacedComponentDraft(
-        localId: item.customerNailComponentId,
-        customerNailComponentId: item.customerNailComponentId,
-        component: component,
-        componentId: item.componentId,
-        customerComponentId: item.customerComponentId,
-        name: component?.name ?? item.component?.name ?? item.customerComponent?.name ?? 'Component',
-        imageUrl: component?.imageUrl ?? item.component?.imageUrl ?? item.customerComponent?.imageUrl ?? '',
-        fingerIndex: item.fingerIndex,
-        posX: item.posX,
-        posY: item.posY,
-        scale: _asDouble(config['scale'], fallback: 0.35),
-        rotation: _asDouble(config['rotation']),
-      );
+      return PlacedComponentDraft.fromCustomerNailComponent(item, component: component);
     }).toList();
   }
 
   void _addSelectedComponent() {
     final component = _selectedComponent;
     if (component == null) return;
-    final draft = _PlacedComponentDraft(
+    if (_selectedFingerIndex == -1) {
+      _showMessage('Chọn một ngón tay trước khi thêm component.');
+      return;
+    }
+    final draft = PlacedComponentDraft(
       localId: DateTime.now().microsecondsSinceEpoch,
       component: component,
       componentId: component.componentId,
@@ -138,9 +179,9 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
       name: component.name,
       imageUrl: component.imageUrl,
       fingerIndex: _selectedFingerIndex,
-      posX: 0.5,
-      posY: 0.5,
-      scale: 0.35,
+      posX: 0,
+      posY: 0,
+      scale: 0.5,
       rotation: 0,
     );
     setState(() {
@@ -167,11 +208,21 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
     final current = _placements[index];
     setState(() {
       _placements[index] = current.copyWith(
-        posX: (current.posX + dx).clamp(0.0, 1.0).toDouble(),
-        posY: (current.posY + dy).clamp(0.0, 1.0).toDouble(),
+        posX: (current.posX + dx).clamp(-0.5, 0.5).toDouble(),
+        posY: (current.posY + dy).clamp(-0.5, 0.5).toDouble(),
         scale: (current.scale + scale).clamp(0.1, 1.5).toDouble(),
         rotation: current.rotation + rotation,
       );
+    });
+  }
+
+  void _selectFinger(int value) {
+    setState(() {
+      _selectedFingerIndex = value;
+      final index = _selectedPlacementIndex;
+      if (index != -1) {
+        _placements[index] = _placements[index].copyWith(fingerIndex: value);
+      }
     });
   }
 
@@ -199,6 +250,22 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
     }
   }
 
+  String _buildColorJson() {
+    return jsonEncode({
+      'mode': 'perFinger',
+      'color': null,
+      'gradient': null,
+      'fingers': [
+        for (var i = 1; i <= 5; i++)
+          {
+            'fingerIndex': i,
+            'color': _fingerColors[i] ?? '#FF4081',
+            'gradient': null,
+          }
+      ],
+    });
+  }
+
   Future<void> _save() async {
     final nail = _customerNail;
     final shape = _selectedNailShape;
@@ -213,7 +280,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
         customerNailId: nail.customerNailId,
         name: nail.name,
         nailShapeId: shape.nailShapeId,
-        customColor: _buildSolidColorJson('#FF4081'),
+        customColor: _buildColorJson(),
         isFavorite: nail.isFavorite,
         isPublic: nail.isPublic,
       );
@@ -253,6 +320,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
       setState(() => _customerNail = fresh);
       _showMessage('Đã lưu thiết lập thử móng.');
       await _fetchData();
+      if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
       _showMessage(error.toString());
     } finally {
@@ -261,26 +329,32 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
   }
 
   CustomerNailModel? _buildPreviewNail() {
-    final nail = _customerNail;
     final shape = _selectedNailShape;
-    if (nail == null || shape == null) return null;
+    if (shape == null) return null;
+    final nail = _customerNail;
     return CustomerNailModel(
-      customerNailId: nail.customerNailId,
-      name: nail.name,
-      imageUrl: nail.imageUrl,
+      customerNailId: nail?.customerNailId ?? 0,
+      name: nail?.name ?? 'Custom Nail',
+      imageUrl: nail?.imageUrl ?? '',
       nailShapeId: shape.nailShapeId,
-      nailSurfaceId: nail.nailSurfaceId,
-      price: nail.price,
-      customColor: nail.customColor ?? _buildSolidColorJson('#FF4081'),
-      duration: nail.duration,
-      isFavorite: nail.isFavorite,
-      isPublic: nail.isPublic,
+      nailSurfaceId: nail?.nailSurfaceId,
+      price: nail?.price,
+      customColor: _buildColorJson(),
+      duration: nail?.duration,
+      isFavorite: nail?.isFavorite ?? false,
+      isPublic: nail?.isPublic ?? false,
       nailShape: shape,
-      nailSurface: nail.nailSurface,
+      nailSurface: nail?.nailSurface,
       customerNailComponents: _placements
-          .map((placement) => placement.toCustomerNailComponent(nail.customerNailId))
+          .map((placement) => placement.toCustomerNailComponent(nail?.customerNailId ?? 0))
           .toList(),
     );
+  }
+
+  String get _activeFingerColor {
+    return _selectedFingerIndex == -1
+        ? (_fingerColors[2] ?? '#FF4081')
+        : (_fingerColors[_selectedFingerIndex] ?? '#FF4081');
   }
 
   @override
@@ -322,69 +396,93 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
       children: [
-        _PreviewBoard(
+        TryOnPreviewBoard(
           nail: _customerNail,
           selectedShape: _selectedNailShape,
+          selectedColor: _activeFingerColor,
+          selectedFingerIndex: _selectedFingerIndex,
           placements: _placements,
           selectedPlacementId: _selectedPlacementId,
           onSelectPlacement: (id) => setState(() => _selectedPlacementId = id),
         ),
         const SizedBox(height: 16),
-        _PlacementControls(
-          selectedPlacement: _selectedPlacement,
-          selectedFingerIndex: _selectedFingerIndex,
-          onFingerChanged: (value) => setState(() {
-            _selectedFingerIndex = value;
-            final index = _selectedPlacementIndex;
-            if (index != -1) {
-              _placements[index] = _placements[index].copyWith(fingerIndex: value);
-            }
-          }),
-          onMoveLeft: () => _nudge(dx: -0.04),
-          onMoveRight: () => _nudge(dx: 0.04),
-          onMoveUp: () => _nudge(dy: -0.04),
-          onMoveDown: () => _nudge(dy: 0.04),
-          onScaleDown: () => _nudge(scale: -0.05),
-          onScaleUp: () => _nudge(scale: 0.05),
-          onRotateLeft: () => _nudge(rotation: -10),
-          onRotateRight: () => _nudge(rotation: 10),
-          onRemove: _removeSelectedPlacement,
-        ),
-        const SizedBox(height: 24),
-        NailShapeSelector(
-          shapes: data.nailShapes,
-          selectedShape: _selectedNailShape,
-          onSelected: (shape) => setState(() => _selectedNailShape = shape),
-        ),
-        const SizedBox(height: 24),
-        _FingerSelector(
+        TryOnFingerSelector(
           value: _selectedFingerIndex,
-          onChanged: (value) => setState(() => _selectedFingerIndex = value),
+          onChanged: _selectFinger,
         ),
         const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: Text('Components', style: Theme.of(context).textTheme.titleLarge),
-            ),
-            FilledButton.icon(
-              onPressed: _selectedComponent == null ? null : _addSelectedComponent,
-              icon: const Icon(Icons.add),
-              label: const Text('Add'),
-            ),
-          ],
+        _CollapsibleTryOnSection(
+          title: 'Shape',
+          expanded: _showShapeSection,
+          onToggle: () => setState(() => _showShapeSection = !_showShapeSection),
+          child: NailShapeSelector(
+            shapes: data.nailShapes,
+            selectedShape: _selectedNailShape,
+            showTitle: false,
+            onSelected: (shape) => setState(() => _selectedNailShape = shape),
+          ),
         ),
-        ComponentGrid(
-          title: 'System components',
-          components: data.combinedComponents.where((item) => !item.isCustomerComponent).toList(),
-          selectedComponent: _selectedComponent,
-          onSelected: (component) => setState(() => _selectedComponent = component),
+        _CollapsibleTryOnSection(
+          title: 'Color',
+          expanded: _showColorSection,
+          onToggle: () => setState(() => _showColorSection = !_showColorSection),
+          child: TryOnColorSelector(
+            selectedColor: _activeFingerColor,
+            showTitle: false,
+            onColorSelected: (color) => setState(() {
+              if (_selectedFingerIndex == -1) {
+                for (var i = 1; i <= 5; i++) {
+                  _fingerColors[i] = color;
+                }
+              } else {
+                _fingerColors[_selectedFingerIndex] = color;
+              }
+            }),
+          ),
         ),
-        ComponentGrid(
-          title: 'My components',
-          components: data.combinedComponents.where((item) => item.isCustomerComponent).toList(),
-          selectedComponent: _selectedComponent,
-          onSelected: (component) => setState(() => _selectedComponent = component),
+        _CollapsibleTryOnSection(
+          title: 'Placement',
+          expanded: _showPlacementSection,
+          onToggle: () => setState(() => _showPlacementSection = !_showPlacementSection),
+          trailing: FilledButton.icon(
+            onPressed: _selectedComponent == null ? null : _addSelectedComponent,
+            icon: const Icon(Icons.add),
+            label: const Text('Add'),
+          ),
+          child: TryOnPlacementControls(
+            selectedPlacement: _selectedPlacement,
+            onMoveLeft: () => _nudge(dx: -0.04),
+            onMoveRight: () => _nudge(dx: 0.04),
+            onMoveUp: () => _nudge(dy: -0.04),
+            onMoveDown: () => _nudge(dy: 0.04),
+            onScaleDown: () => _nudge(scale: -0.05),
+            onScaleUp: () => _nudge(scale: 0.05),
+            onRotateLeft: () => _nudge(rotation: -10),
+            onRotateRight: () => _nudge(rotation: 10),
+            onRemove: _removeSelectedPlacement,
+          ),
+        ),
+        _CollapsibleTryOnSection(
+          title: 'Components',
+          expanded: _showSystemComponents,
+          onToggle: () => setState(() => _showSystemComponents = !_showSystemComponents),
+          child: ComponentGrid(
+            title: 'System components',
+            components: data.combinedComponents.where((item) => !item.isCustomerComponent).toList(),
+            selectedComponent: _selectedComponent,
+            onSelected: (component) => setState(() => _selectedComponent = component),
+          ),
+        ),
+        _CollapsibleTryOnSection(
+          title: 'Customer components',
+          expanded: _showCustomerComponents,
+          onToggle: () => setState(() => _showCustomerComponents = !_showCustomerComponents),
+          child: ComponentGrid(
+            title: 'My components',
+            components: data.combinedComponents.where((item) => item.isCustomerComponent).toList(),
+            selectedComponent: _selectedComponent,
+            onSelected: (component) => setState(() => _selectedComponent = component),
+          ),
         ),
       ],
     );
@@ -412,7 +510,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
     return _placements.indexWhere((item) => item.localId == _selectedPlacementId);
   }
 
-  _PlacedComponentDraft? get _selectedPlacement {
+  PlacedComponentDraft? get _selectedPlacement {
     final index = _selectedPlacementIndex;
     return index == -1 ? null : _placements[index];
   }
@@ -423,353 +521,55 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
   }
 }
 
-class _PreviewBoard extends StatelessWidget {
-  final CustomerNailModel? nail;
-  final NailShapeModel? selectedShape;
-  final List<_PlacedComponentDraft> placements;
-  final int? selectedPlacementId;
-  final ValueChanged<int> onSelectPlacement;
+class _CollapsibleTryOnSection extends StatelessWidget {
+  final String title;
+  final bool expanded;
+  final VoidCallback onToggle;
+  final Widget child;
+  final Widget? trailing;
 
-  const _PreviewBoard({
-    required this.nail,
-    required this.selectedShape,
-    required this.placements,
-    required this.selectedPlacementId,
-    required this.onSelectPlacement,
+  const _CollapsibleTryOnSection({
+    required this.title,
+    required this.expanded,
+    required this.onToggle,
+    required this.child,
+    this.trailing,
   });
 
   @override
   Widget build(BuildContext context) {
-    return AspectRatio(
-      aspectRatio: 1.1,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFF7FB),
-          border: Border.all(color: Colors.black12),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return Stack(
-              children: [
-                Positioned.fill(
-                  child: nail?.imageUrl.isNotEmpty == true
-                      ? Image.network(
-                          nail!.imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const _PreviewFallback(),
-                        )
-                      : const _PreviewFallback(),
-                ),
-                Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 14),
-                    child: Text(
-                      selectedShape?.name ?? 'Select nail shape',
-                      style: const TextStyle(fontWeight: FontWeight.w800),
-                    ),
-                  ),
-                ),
-                ...placements.map((placement) {
-                  final size = 54.0 * placement.scale.clamp(0.35, 1.5).toDouble();
-                  return Positioned(
-                    left: placement.posX * (constraints.maxWidth - size),
-                    top: placement.posY * (constraints.maxHeight - size),
-                    child: GestureDetector(
-                      onTap: () => onSelectPlacement(placement.localId),
-                      child: Transform.rotate(
-                        angle: placement.rotation * 3.14159265359 / 180,
-                        child: Container(
-                          width: size,
-                          height: size,
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.88),
-                            border: Border.all(
-                              color: selectedPlacementId == placement.localId
-                                  ? Colors.purple
-                                  : Colors.black26,
-                              width: selectedPlacementId == placement.localId ? 2 : 1,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: placement.imageUrl.isEmpty
-                              ? const Icon(Icons.auto_awesome, color: Colors.purple)
-                              : Image.network(
-                                  placement.imageUrl,
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (_, __, ___) =>
-                                      const Icon(Icons.auto_awesome, color: Colors.purple),
-                                ),
-                        ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
                       ),
-                    ),
-                  );
-                }),
+                ),
+              ),
+              if (trailing != null) ...[
+                trailing!,
+                const SizedBox(width: 6),
               ],
-            );
-          },
-        ),
+              IconButton(
+                tooltip: expanded ? 'Hide' : 'Show',
+                onPressed: onToggle,
+                icon: Icon(expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down),
+              ),
+            ],
+          ),
+          if (expanded) ...[
+            const SizedBox(height: 8),
+            child,
+          ],
+        ],
       ),
     );
   }
-}
-
-class _PreviewFallback extends StatelessWidget {
-  const _PreviewFallback();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      alignment: Alignment.center,
-      color: const Color(0xFFF8EAF2),
-      child: const Icon(Icons.spa_outlined, size: 52, color: Colors.black38),
-    );
-  }
-}
-
-class _PlacementControls extends StatelessWidget {
-  final _PlacedComponentDraft? selectedPlacement;
-  final int selectedFingerIndex;
-  final ValueChanged<int> onFingerChanged;
-  final VoidCallback onMoveLeft;
-  final VoidCallback onMoveRight;
-  final VoidCallback onMoveUp;
-  final VoidCallback onMoveDown;
-  final VoidCallback onScaleDown;
-  final VoidCallback onScaleUp;
-  final VoidCallback onRotateLeft;
-  final VoidCallback onRotateRight;
-  final VoidCallback onRemove;
-
-  const _PlacementControls({
-    required this.selectedPlacement,
-    required this.selectedFingerIndex,
-    required this.onFingerChanged,
-    required this.onMoveLeft,
-    required this.onMoveRight,
-    required this.onMoveUp,
-    required this.onMoveDown,
-    required this.onScaleDown,
-    required this.onScaleUp,
-    required this.onRotateLeft,
-    required this.onRotateRight,
-    required this.onRemove,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final enabled = selectedPlacement != null;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                selectedPlacement?.name ?? 'Select a placed component',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontWeight: FontWeight.w800),
-              ),
-            ),
-            IconButton(
-              onPressed: enabled ? onRemove : null,
-              icon: const Icon(Icons.delete_outline),
-            ),
-          ],
-        ),
-        _FingerSelector(value: selectedPlacement?.fingerIndex ?? selectedFingerIndex, onChanged: onFingerChanged),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            IconButton.filledTonal(onPressed: enabled ? onMoveLeft : null, icon: const Icon(Icons.chevron_left)),
-            IconButton.filledTonal(onPressed: enabled ? onMoveUp : null, icon: const Icon(Icons.keyboard_arrow_up)),
-            IconButton.filledTonal(onPressed: enabled ? onMoveDown : null, icon: const Icon(Icons.keyboard_arrow_down)),
-            IconButton.filledTonal(onPressed: enabled ? onMoveRight : null, icon: const Icon(Icons.chevron_right)),
-            IconButton.filledTonal(onPressed: enabled ? onScaleDown : null, icon: const Icon(Icons.remove)),
-            IconButton.filledTonal(onPressed: enabled ? onScaleUp : null, icon: const Icon(Icons.add)),
-            IconButton.filledTonal(onPressed: enabled ? onRotateLeft : null, icon: const Icon(Icons.rotate_left)),
-            IconButton.filledTonal(onPressed: enabled ? onRotateRight : null, icon: const Icon(Icons.rotate_right)),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _FingerSelector extends StatelessWidget {
-  final int value;
-  final ValueChanged<int> onChanged;
-
-  const _FingerSelector({
-    required this.value,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    const fingers = [
-      MapEntry(-1, 'All'),
-      MapEntry(1, 'Thumb'),
-      MapEntry(2, 'Index'),
-      MapEntry(3, 'Middle'),
-      MapEntry(4, 'Ring'),
-      MapEntry(5, 'Pinky'),
-    ];
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        for (final finger in fingers)
-          ChoiceChip(
-            label: Text(finger.value),
-            selected: value == finger.key,
-            onSelected: (_) => onChanged(finger.key),
-          ),
-      ],
-    );
-  }
-}
-
-class _PlacedComponentDraft {
-  final int localId;
-  final int? customerNailComponentId;
-  final CombinedComponent? component;
-  final int? componentId;
-  final int? customerComponentId;
-  final String name;
-  final String imageUrl;
-  final int fingerIndex;
-  final double posX;
-  final double posY;
-  final double scale;
-  final double rotation;
-
-  const _PlacedComponentDraft({
-    required this.localId,
-    this.customerNailComponentId,
-    this.component,
-    this.componentId,
-    this.customerComponentId,
-    required this.name,
-    required this.imageUrl,
-    required this.fingerIndex,
-    required this.posX,
-    required this.posY,
-    required this.scale,
-    required this.rotation,
-  });
-
-  _PlacedComponentDraft copyWith({
-    int? fingerIndex,
-    double? posX,
-    double? posY,
-    double? scale,
-    double? rotation,
-  }) {
-    return _PlacedComponentDraft(
-      localId: localId,
-      customerNailComponentId: customerNailComponentId,
-      component: component,
-      componentId: componentId,
-      customerComponentId: customerComponentId,
-      name: name,
-      imageUrl: imageUrl,
-      fingerIndex: fingerIndex ?? this.fingerIndex,
-      posX: posX ?? this.posX,
-      posY: posY ?? this.posY,
-      scale: scale ?? this.scale,
-      rotation: rotation ?? this.rotation,
-    );
-  }
-
-  _CustomerNailComponentPayload toPayload(int customerNailId) {
-    return _CustomerNailComponentPayload(
-      customerNailId: customerNailId,
-      componentId: componentId,
-      customerComponentId: customerComponentId,
-      posX: posX,
-      posY: posY,
-      fingerIndex: fingerIndex,
-      configJson: jsonEncode({
-        'scale': scale,
-        'rotation': rotation,
-      }),
-    );
-  }
-
-  CustomerNailComponentModel toCustomerNailComponent(int customerNailId) {
-    return CustomerNailComponentModel(
-      customerNailComponentId: customerNailComponentId ?? localId,
-      customerNailId: customerNailId,
-      componentId: componentId,
-      customerComponentId: customerComponentId,
-      posX: posX,
-      posY: posY,
-      fingerIndex: fingerIndex,
-      configJson: jsonEncode({
-        'scale': scale,
-        'rotation': rotation,
-        'imageSrc': imageUrl,
-        'type': component?.type.stringValue,
-      }),
-    );
-  }
-}
-
-class _CustomerNailComponentPayload {
-  final int customerNailId;
-  final int? componentId;
-  final int? customerComponentId;
-  final double posX;
-  final double posY;
-  final int fingerIndex;
-  final String configJson;
-
-  const _CustomerNailComponentPayload({
-    required this.customerNailId,
-    required this.componentId,
-    required this.customerComponentId,
-    required this.posX,
-    required this.posY,
-    required this.fingerIndex,
-    required this.configJson,
-  });
-}
-
-extension _FirstWhereOrNull<T> on Iterable<T> {
-  T? firstWhereOrNull(bool Function(T item) test) {
-    for (final item in this) {
-      if (test(item)) return item;
-    }
-    return null;
-  }
-
-  T? get firstOrNull => isEmpty ? null : first;
-}
-
-Map<String, dynamic> _decodeConfig(String value) {
-  try {
-    final decoded = jsonDecode(value);
-    if (decoded is Map<String, dynamic>) return decoded;
-    if (decoded is Map) return Map<String, dynamic>.from(decoded);
-  } catch (_) {}
-  return const {};
-}
-
-double _asDouble(dynamic value, {double fallback = 0}) {
-  if (value is num) return value.toDouble();
-  return double.tryParse(value?.toString() ?? '') ?? fallback;
-}
-
-String _buildSolidColorJson(String color) {
-  return jsonEncode({
-    'mode': 'solid',
-    'color': color,
-    'gradient': null,
-  });
 }

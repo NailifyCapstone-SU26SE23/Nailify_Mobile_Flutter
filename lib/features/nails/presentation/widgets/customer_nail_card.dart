@@ -147,7 +147,7 @@ class CustomerNailCard extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const TryOnSetupScreen(),
+                        builder: (context) => TryOnSetupScreen(customerNail: nail),
                       ),
                     );
                   },

@@ -93,7 +93,9 @@ class CustomerNailComponentModel {
       customerComponentId: _asNullableInt(json['customerComponentId'] ?? json['CustomerComponentId']),
       posX: _asDouble(json['posX'] ?? json['PosX']),
       posY: _asDouble(json['posY'] ?? json['PosY']),
-      fingerIndex: _asInt(json['fingerIndex'] ?? json['FingerIndex'], fallback: -1),
+      fingerIndex: _normalizeFingerIndexFromApi(
+        _asInt(json['fingerIndex'] ?? json['FingerIndex'], fallback: -1),
+      ),
       configJson: (json['configJson'] ?? json['ConfigJson'] ?? '').toString(),
       component: componentJson is Map ? ComponentModel.fromJson(Map<String, dynamic>.from(componentJson)) : null,
       customerComponent: customerComponentJson is Map
@@ -139,6 +141,12 @@ int _asInt(dynamic value, {int fallback = 0}) {
   if (value is int) return value;
   if (value is num) return value.toInt();
   return int.tryParse(value?.toString() ?? '') ?? fallback;
+}
+
+int _normalizeFingerIndexFromApi(int stored) {
+  if (stored == -1) return -1;
+  if (stored >= 0 && stored <= 4) return stored + 1;
+  return stored.clamp(1, 5);
 }
 
 int? _asNullableInt(dynamic value) {

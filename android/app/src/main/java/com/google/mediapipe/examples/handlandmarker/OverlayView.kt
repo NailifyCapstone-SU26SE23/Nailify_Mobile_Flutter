@@ -39,6 +39,7 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
     
     private var nailSetConfig: NailSetConfig = NailSetConfig.default()
     private val bitmapCache = mutableMapOf<String, Bitmap?>()
+    private val loadingBitmaps = mutableSetOf<String>()
 
     private var scaleFactor: Float = 1f
     private var imageWidth: Int = 1
@@ -169,33 +170,45 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
     }
 
     fun setFullDesign(config: NailSetConfig) {
+        if (nailSetConfig == config) return
         nailSetConfig = config
+        preloadDesignBitmaps(config)
         invalidate()
     }
 
     private fun loadBitmapFromUri(uriString: String?): Bitmap? {
         if (uriString == null) return null
         if (bitmapCache.containsKey(uriString)) return bitmapCache[uriString]
-        if (uriString.startsWith("http://") || uriString.startsWith("https://")) {
-            bitmapCache[uriString] = null
-            Thread {
-                val bitmap = try {
+        if (!loadingBitmaps.add(uriString)) return null
+        Thread {
+            val bitmap = try {
+                if (uriString.startsWith("http://") || uriString.startsWith("https://")) {
                     URL(uriString).openStream().use { BitmapFactory.decodeStream(it) }
-                } catch (_: Exception) {
-                    null
+                } else {
+                    val uri = android.net.Uri.parse(uriString)
+                    context.contentResolver.openInputStream(uri).use { inputStream ->
+                        BitmapFactory.decodeStream(inputStream)
+                    }
                 }
-                bitmapCache[uriString] = bitmap
-                postInvalidate()
-            }.start()
-            return null
-        }
-        return try {
-            val uri = android.net.Uri.parse(uriString)
-            context.contentResolver.openInputStream(uri).use { inputStream ->
-                BitmapFactory.decodeStream(inputStream).also { bitmapCache[uriString] = it }
+            } catch (_: Exception) {
+                null
             }
-        } catch (e: Exception) {
-            null.also { bitmapCache[uriString] = null }
+            post {
+                bitmapCache[uriString] = bitmap
+                loadingBitmaps.remove(uriString)
+                invalidate()
+            }
+        }.start()
+        return null
+    }
+
+    private fun preloadDesignBitmaps(config: NailSetConfig) {
+        loadBitmapFromUri(config.shapeImageSrc)
+        config.nails.forEach { design ->
+            loadBitmapFromUri(design.customShapeSrc)
+            design.decorations.forEach { decoration ->
+                loadBitmapFromUri(decoration.imageSrc)
+            }
         }
     }
 

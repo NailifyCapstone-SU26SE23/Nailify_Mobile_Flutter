@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/di/injection.dart';
+import '../../data/repositories/auth_repository.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -23,8 +25,9 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _agreeToTerms = false;
+  bool _isSubmitting = false;
 
-  void _handleRegister() {
+  Future<void> _handleRegister() async {
     final email = _emailController.text.trim();
     final firstName = _firstNameController.text.trim();
     final lastName = _lastNameController.text.trim();
@@ -32,25 +35,42 @@ class _RegisterPageState extends State<RegisterPage> {
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
 
-    // Kiểm tra tính hợp lệ sơ bộ của dữ liệu đầu vào
     if (email.isEmpty || firstName.isEmpty || lastName.isEmpty || phone.isEmpty || password.isEmpty) {
-      _showSnackBar('Vui lòng điền đầy đủ các thông tin bắt buộc', Colors.redAccent);
+      _showSnackBar('Vui long dien day du cac thong tin bat buoc', Colors.redAccent);
       return;
     }
 
     if (password != confirmPassword) {
-      _showSnackBar('Mật khẩu xác nhận không khớp', Colors.redAccent);
+      _showSnackBar('Mat khau xac nhan khong khop', Colors.redAccent);
       return;
     }
 
     if (!_agreeToTerms) {
-      _showSnackBar('Bạn cần đồng ý với điều khoản dịch vụ để tiếp tục', Colors.amber.shade900);
+      _showSnackBar('Ban can dong y voi dieu khoan dich vu de tiep tuc', Colors.amber.shade900);
       return;
     }
 
-    // Giả lập xử lý thành công (Sẽ thay bằng gọi Block/Cubit nghiệp vụ sau này)
-    _showSnackBar('Đăng ký tài khoản thành công!', Colors.green);
-    context.go('/login'); // Hướng người dùng quay lại màn hình đăng nhập
+    setState(() => _isSubmitting = true);
+    try {
+      await getIt<AuthRepository>().register(
+        email: email,
+        password: password,
+        confirmPassword: confirmPassword,
+        firstName: firstName,
+        lastName: lastName,
+        phone: phone,
+      );
+      if (!mounted) return;
+      _showSnackBar('Dang ky tai khoan thanh cong', Colors.green);
+      context.go('/login');
+    } catch (e) {
+      if (!mounted) return;
+      _showSnackBar(e.toString(), Colors.redAccent);
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   void _showSnackBar(String message, Color color) {
@@ -110,7 +130,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black,
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -241,14 +261,20 @@ class _RegisterPageState extends State<RegisterPage> {
                           SizedBox(
                             height: 50,
                             child: ElevatedButton(
-                              onPressed: _handleRegister,
+                              onPressed: _isSubmitting ? null : _handleRegister,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
                                 foregroundColor: AppColors.background,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 elevation: 0,
                               ),
-                              child: const Text('ĐĂNG KÝ NGAY', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                              child: _isSubmitting
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                  : const Text('DANG KY NGAY', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                             ),
                           ),
                           const SizedBox(height: 20),

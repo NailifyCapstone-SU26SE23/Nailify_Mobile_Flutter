@@ -49,7 +49,7 @@ class HomeBanner extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withOpacity(0.3),
+              color: AppColors.primary,
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -72,7 +72,7 @@ class HomeBanner extends StatelessWidget {
                 errorBuilder: (context, error, stackTrace) => Container(
                   width: 140,
                   height: 140,
-                  color: AppColors.background.withOpacity(0.3),
+                  color: AppColors.background,
                   child: const Icon(Icons.image_not_supported, color: AppColors.background, size: 40),
                 ),
               ),

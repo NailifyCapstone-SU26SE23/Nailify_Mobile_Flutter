@@ -46,7 +46,7 @@ class HomeServices extends StatelessWidget {
                 ),
               ),
               TextButton(
-                onPressed: () => _showPopup(context, 'Xem tất cả dịch vụ'),
+                onPressed: null,
                 child: const Text(
                   'Xem tất cả',
                   style: TextStyle(
@@ -108,7 +108,7 @@ class HomeServices extends StatelessWidget {
                 gradient: LinearGradient(
                   colors: [
                     Colors.transparent,
-                    AppColors.primary.withOpacity(0.7),
+                    AppColors.primary,
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,

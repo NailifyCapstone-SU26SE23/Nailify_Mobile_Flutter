@@ -48,6 +48,19 @@ class _MainShellState extends State<MainShell> {
     if (index == 2) {
       _showPopupNotification(context, 'Chatbot');
       return;
+    switch (index) {
+      case 0:
+        context.go('/');
+        break;
+      case 1:
+        _showPopupNotification(context, 'Lịch hẹn');
+        break;
+      case 2:
+        _showPopupNotification(context, 'Chatbot');
+        break;
+      case 3:
+        context.go('/profile');
+        break;
     }
     context.go('/profile');
   }

@@ -37,17 +37,6 @@ class _MainShellState extends State<MainShell> {
   }
 
   void _onTabTapped(BuildContext context, int index) {
-    if (index == 0) {
-      context.go('/');
-      return;
-    }
-    if (index == 1) {
-      _showPopupNotification(context, 'Lich hen');
-      return;
-    }
-    if (index == 2) {
-      _showPopupNotification(context, 'Chatbot');
-      return;
     switch (index) {
       case 0:
         context.go('/');
@@ -62,7 +51,6 @@ class _MainShellState extends State<MainShell> {
         context.go('/profile');
         break;
     }
-    context.go('/profile');
   }
 
   void _showPopupNotification(BuildContext context, String actionName) {

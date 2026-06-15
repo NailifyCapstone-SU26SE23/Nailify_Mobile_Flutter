@@ -12,7 +12,6 @@ import '../../features/quiz/presentation/pages/quiz_page.dart';
 import '../../features/quiz/presentation/pages/analyze_page.dart';
 import '../../features/perfect_match/presentation/pages/perfect_match_page.dart';
 import '../../features/another_design/presentation/pages/another_design_page.dart';
-import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/discover/presentation/pages/discover_page.dart';
 //booking
 import '../../features/nail_booking/presentation/pages/nail_booking_page.dart';
@@ -210,35 +209,6 @@ class AppRouter {
             showHeader: true,
           );
         },
-      // ShellRoute thiết lập cơ chế nạp trang con vào vùng nội dung của lớp vỏ dùng chung
-      ShellRoute(
-        builder: (context, state, child) {
-          return MainShell(child: child); // Khung Activity chứa Header & Footer
-        },
-        routes: [
-          GoRoute(
-            path: '/',
-            builder: (context, state) => const HomePage(), // Fragment hiển thị chính
-          ),
-          //catalog
-          GoRoute(
-            path: '/catalog',
-            builder: (context, state) => const CatalogPage(),
-          ),
-          GoRoute(
-            path: '/catalog/details',
-            builder: (context, state) {
-              // Trích xuất dữ liệu móng được truyền sang thông qua thuộc tính extra
-              final nailData = state.extra as Map<String, dynamic>;
-              return NailDetailsPage(nailData: nailData);
-            },
-          ),
-          GoRoute(
-            path: '/profile',
-            builder: (context, state) => const ProfilePage(),
-          ),
-          // custom nail page
-        ],
       ),
     ],
   );

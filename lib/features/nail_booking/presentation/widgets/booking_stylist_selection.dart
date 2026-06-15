@@ -1,91 +1,81 @@
+// lib/features/nail_booking/presentation/widgets/booking_stylist_selection.dart
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../data/models/booking_mock_data.dart';
 
 class BookingStylistSelection extends StatelessWidget {
+  final List<dynamic> artists;
+  final bool isLoading;
   final String? selectedStylistId;
-  final Function(Map<String, dynamic>) onStylistSelected;
+  final Function(dynamic) onStylistSelected;
 
   const BookingStylistSelection({
     super.key,
+    required this.artists,
+    required this.isLoading,
     required this.selectedStylistId,
     required this.onStylistSelected,
   });
 
-  // Mở popup toàn màn hình (80%)
-  void _showStylistList(BuildContext context) {
+  void _showArtistPicker(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) {
         return Container(
-          height: MediaQuery.of(context).size.height * 0.75,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
+          padding: const EdgeInsets.all(20),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const SizedBox(width: 40),
-                    const Text('Select Staff Member', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
+              const Text(
+                'Chọn thợ làm móng',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
               ),
-              const Divider(height: 1),
-              Expanded(
-                child: ListView.separated(
-                  itemCount: BookingMockData.stylists.length,
-                  separatorBuilder: (context, index) => const Divider(height: 1, indent: 70),
-                  itemBuilder: (context, index) {
-                    final stylist = BookingMockData.stylists[index];
-                    final isSelected = selectedStylistId == stylist['id'];
-                    final isAnyone = stylist['id'] == 'anyone';
+              const SizedBox(height: 16),
+              if (isLoading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: CircularProgressIndicator(),
+                )
+              else if (artists.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Text(
+                    'Không có kỹ thuật viên khả dụng hoặc chưa chọn ngày.',
+                    style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+                    textAlign: TextAlign.center,
+                  ),
+                )
+              else
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: artists.length,
+                    itemBuilder: (context, index) {
+                      final artist = artists[index];
+                      final isSelected = selectedStylistId == artist['nailArtistId'];
 
-                    return ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                      leading: isAnyone
-                          ? CircleAvatar(
-                        backgroundColor: Colors.grey.shade100,
-                        radius: 24,
-                        child: const Icon(Icons.people_alt_outlined, color: Colors.black54),
-                      )
-                          : CircleAvatar(
-                        backgroundColor: AppColors.primary,
-                        radius: 24,
-                        child: Text(stylist['name'][0], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      ),
-                      title: Text(
-                        stylist['name'],
-                        style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, fontSize: 16, color: AppColors.textPrimary),
-                      ),
-                      subtitle: isAnyone
-                          ? const Text('Không ưu tiên thợ', style: TextStyle(fontSize: 13))
-                          : Row(
-                          children: [
-                            const Icon(Icons.star, color: Colors.amber, size: 12),
-                            const SizedBox(width: 4),
-                            Text('${stylist['rating']} - ${stylist['role']}', style: const TextStyle(fontSize: 12)),
-                          ]
-                      ),
-                      trailing: isSelected ? const Icon(Icons.check, color: AppColors.primary) : null,
-                      onTap: () {
-                        onStylistSelected(stylist);
-                        Navigator.pop(context);
-                      },
-                    );
-                  },
+                      return ListTile(
+                        leading: CircleAvatar(
+                          radius: 18,
+                          backgroundImage: artist['avatarUrl'] != null && artist['avatarUrl'] != ""
+                              ? NetworkImage(artist['avatarUrl'])
+                              : null,
+                          child: artist['avatarUrl'] == null || artist['avatarUrl'] == ""
+                              ? const Icon(Icons.person)
+                              : null,
+                        ),
+                        title: Text(artist['fullName'] ?? 'Kỹ thuật viên', style: const TextStyle(fontWeight: FontWeight.w600)),
+                        trailing: isSelected ? const Icon(Icons.check_circle, color: AppColors.primary) : null,
+                        onTap: () {
+                          onStylistSelected(artist);
+                          Navigator.pop(context);
+                        },
+                      );
+                    },
+                  ),
                 ),
-              ),
             ],
           ),
         );
@@ -95,63 +85,50 @@ class BookingStylistSelection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Trích xuất data thợ đang chọn, mặc định Anyone
-    final selectedStylist = BookingMockData.stylists.firstWhere(
-          (s) => s['id'] == selectedStylistId,
-      orElse: () => BookingMockData.stylists[0],
+    // Tìm kiếm thợ hiện tại dựa trên ID đã chọn
+    final currentArtist = artists.firstWhere(
+          (element) => element['nailArtistId'] == selectedStylistId,
+      orElse: () => null,
     );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Chọn thợ làm móng',
+          'Thợ làm móng',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
         ),
         const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.borderLight)
-          ),
-          child: Row(
-            children: [
-              const Text('Staff:', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
-              const SizedBox(width: 12),
-
-              if (selectedStylist['id'] != 'anyone')
-                CircleAvatar(
-                  radius: 14,
-                  backgroundColor: AppColors.primary,
-                  child: Text(selectedStylist['name'][0], style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+        InkWell(
+          onTap: () => _showArtistPicker(context),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.borderLight),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.face_retouching_natural, color: AppColors.primary, size: 22),
+                    const SizedBox(width: 12),
+                    Text(
+                      currentArtist != null ? currentArtist['fullName'] : 'Bấm để chọn thợ thực hiện',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: currentArtist != null ? FontWeight.bold : FontWeight.normal,
+                        color: currentArtist != null ? AppColors.textPrimary : Colors.grey,
+                      ),
+                    ),
+                  ],
                 ),
-              if (selectedStylist['id'] != 'anyone') const SizedBox(width: 12),
-
-              Expanded(
-                child: Text(
-                  selectedStylist['name'],
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary),
-                ),
-              ),
-
-              ElevatedButton(
-                onPressed: () => _showStylistList(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: AppColors.textPrimary,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    side: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  minimumSize: Size.zero,
-                ),
-                child: const Text('Change', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-              ),
-            ],
+                const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+              ],
+            ),
           ),
         ),
       ],

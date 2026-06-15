@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/home/presentation/pages/home_page.dart';
@@ -13,6 +12,18 @@ import '../../features/auth/presentation/pages/profile_update_pages.dart';
 
 import '../../features/catalog/presentation/pages/catalog_page.dart';
 import '../../features/catalog/presentation/pages/nail_details_page.dart';
+import '../../features/quiz/presentation/pages/quiz_page.dart';
+import '../../features/quiz/presentation/pages/analyze_page.dart';
+import '../../features/perfect_match/presentation/pages/perfect_match_page.dart';
+import '../../features/another_design/presentation/pages/another_design_page.dart';
+import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/discover/presentation/pages/discover_page.dart';
+//booking
+import '../../features/nail_booking/presentation/pages/nail_booking_page.dart';
+
+//custom nail
+import '../../features/custom_nail/presentation/pages/custom_nail_stepper_page.dart';
+
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -27,7 +38,47 @@ class AppRouter {
         path: '/register',
         builder: (context, state) => const RegisterPage(),
       ),
+      GoRoute(
+        path: '/quiz',
+        builder: (context, state) => const MainShell(child: QuizPage()),
+      ),
+      GoRoute(
+        path: '/quiz/analyze',
+        builder: (context, state) {
+          final answers = state.extra as List<int>? ?? [];
+          return MainShell(child: AnalyzePage(answers: answers));
+        },
+      ),
+      GoRoute(
+        path: '/perfect-match',
+        builder: (context, state) {
+          final answers = state.extra as List<int>? ?? [];
+          return MainShell(child: PerfectMatchPage(answers: answers));
+        },
+      ),
+      GoRoute(
+        path: '/another-design',
+        builder: (context, state) => const MainShell(child: AnotherDesignPage()),
+      ),
+      GoRoute(
+        path: '/discover',
+        builder: (context, state) => const MainShell(child: DiscoverPage()),
+      ),
       //------
+      // custom nail page, page này có header và footer riêng
+      GoRoute(
+        path: '/custom-nail',
+        builder: (context, state) => const CustomNailStepperPage(),
+      ),
+      //booking with nail
+      GoRoute(
+        path: '/nail-booking',
+        builder: (context, state) {
+          // Nhận dữ liệu truyền sang nếu có
+          final Map<String, dynamic>? nailData = state.extra as Map<String, dynamic>?;
+          return NailBookingPage(nailData: nailData);
+        },
+      ),
 
       // ShellRoute thiết lập cơ chế nạp trang con vào vùng nội dung của lớp vỏ dùng chung
       ShellRoute(
@@ -85,34 +136,7 @@ class AppRouter {
             path: '/profile',
             builder: (context, state) => const ProfilePage(),
           ),
-          GoRoute(
-            path: '/profile/update-info',
-            builder: (context, state) => const UpdateProfilePage(),
-          ),
-          GoRoute(
-            path: '/profile/update-preferences',
-            builder: (context, state) => const UpdatePreferencesPage(),
-          ),
-          GoRoute(
-            path: '/profile/booking-history',
-            builder: (context, state) =>
-                const EmptyProfilePage(title: 'Lịch sử đặt lịch'),
-          ),
-          GoRoute(
-            path: '/profile/invoices',
-            builder: (context, state) =>
-                const EmptyProfilePage(title: 'Hóa đơn'),
-          ),
-          GoRoute(
-            path: '/profile/favorite-nails',
-            builder: (context, state) =>
-                const EmptyProfilePage(title: 'Móng yêu thích'),
-          ),
-          GoRoute(
-            path: '/profile/my-studio',
-            builder: (context, state) =>
-                const EmptyProfilePage(title: 'Studio của tôi'),
-          ),
+          // custom nail page
         ],
       ),
     ],

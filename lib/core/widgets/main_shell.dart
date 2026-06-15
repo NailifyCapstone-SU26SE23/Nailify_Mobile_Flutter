@@ -31,13 +31,19 @@ class _MainShellState extends State<MainShell> {
   }
 
   void _onTabTapped(BuildContext context, int index) {
-    if (index == 0) {
-      context.go('/');
-      return;
-    }
-    if (index == 1) {
-      _showPopupNotification(context, 'Lich hen');
-      return;
+    switch (index) {
+      case 0:
+        context.go('/');
+        break;
+      case 1:
+        _showPopupNotification(context, 'Lịch hẹn');
+        break;
+      case 2:
+        _showPopupNotification(context, 'Chatbot');
+        break;
+      case 3:
+        context.go('/profile');
+        break;
     }
     if (index == 2) {
       _showPopupNotification(context, 'Chatbot');

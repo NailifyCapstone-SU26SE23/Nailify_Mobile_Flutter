@@ -174,10 +174,12 @@ class NailDetailsPage extends StatelessWidget {
                         child: SizedBox(
                           height: 50,
                           child: ElevatedButton(
-                            onPressed: () => _showPopupNotification(context, 'Book Now'),
+                            onPressed: () {
+                              context.push('/nail-booking', extra: nailData);
+                            },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,
-                              foregroundColor: AppColors.surface,
+                              foregroundColor: Colors.white,
                               elevation: 0,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),

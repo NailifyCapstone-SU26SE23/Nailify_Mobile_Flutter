@@ -1,35 +1,33 @@
 import 'package:go_router/go_router.dart';
 
+// --- Features ---
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/nails/presentation/pages/nail_detail_screen.dart';
 import '../../features/nails/presentation/pages/nail_list_screen.dart';
 import '../../features/nails/presentation/pages/nail_variant_detail_screen.dart';
-import '../widgets/main_shell.dart';
-import '../../features/auth/presentation/pages/customer_login_page.dart';
-import '../../features/auth/presentation/pages/customer_register_page.dart';
-import '../../features/auth/presentation/pages/profile_page.dart';
-import '../../features/auth/presentation/pages/profile_update_pages.dart';
-
 import '../../features/catalog/presentation/pages/catalog_page.dart';
 import '../../features/catalog/presentation/pages/nail_details_page.dart';
 import '../../features/quiz/presentation/pages/quiz_page.dart';
 import '../../features/quiz/presentation/pages/analyze_page.dart';
 import '../../features/perfect_match/presentation/pages/perfect_match_page.dart';
 import '../../features/another_design/presentation/pages/another_design_page.dart';
-import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/discover/presentation/pages/discover_page.dart';
-//booking
+import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/nail_booking/presentation/pages/nail_booking_page.dart';
-
-//custom nail
 import '../../features/custom_nail/presentation/pages/custom_nail_stepper_page.dart';
 
+// --- Auth ---
+import '../../features/auth/presentation/pages/customer_login_page.dart';
+import '../../features/auth/presentation/pages/customer_register_page.dart';
+
+// --- Widgets ---
+import '../widgets/main_shell.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: '/',
     routes: [
-      //---login-register
+      // 1. Auth Routes
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginPage(),
@@ -38,6 +36,8 @@ class AppRouter {
         path: '/register',
         builder: (context, state) => const RegisterPage(),
       ),
+
+      // 2. Quiz & Discovery Routes (Với Shell)
       GoRoute(
         path: '/quiz',
         builder: (context, state) => const MainShell(child: QuizPage()),
@@ -64,23 +64,21 @@ class AppRouter {
         path: '/discover',
         builder: (context, state) => const MainShell(child: DiscoverPage()),
       ),
-      //------
-      // custom nail page, page này có header và footer riêng
+
+      // 3. Custom & Booking Routes (Full-screen)
       GoRoute(
         path: '/custom-nail',
         builder: (context, state) => const CustomNailStepperPage(),
       ),
-      //booking with nail
       GoRoute(
         path: '/nail-booking',
         builder: (context, state) {
-          // Nhận dữ liệu truyền sang nếu có
           final Map<String, dynamic>? nailData = state.extra as Map<String, dynamic>?;
           return NailBookingPage(nailData: nailData);
         },
       ),
 
-      // ShellRoute thiết lập cơ chế nạp trang con vào vùng nội dung của lớp vỏ dùng chung
+      // 4. ShellRoute (Bottom Navigation)
       ShellRoute(
         builder: (context, state, child) => MainShell(child: child),
         routes: [
@@ -119,7 +117,6 @@ class AppRouter {
               );
             },
           ),
-          //catalog
           GoRoute(
             path: '/catalog',
             builder: (context, state) => const CatalogPage(),
@@ -127,7 +124,6 @@ class AppRouter {
           GoRoute(
             path: '/catalog/details',
             builder: (context, state) {
-              // Trích xuất dữ liệu móng được truyền sang thông qua thuộc tính extra
               final nailData = state.extra as Map<String, dynamic>;
               return NailDetailsPage(nailData: nailData);
             },
@@ -136,25 +132,8 @@ class AppRouter {
             path: '/profile',
             builder: (context, state) => const ProfilePage(),
           ),
-          // custom nail page
         ],
       ),
     ],
   );
-}
-
-class EmptyProfilePage extends StatelessWidget {
-  final String title;
-
-  const EmptyProfilePage({super.key, required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        title,
-        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
-      ),
-    );
-  }
 }

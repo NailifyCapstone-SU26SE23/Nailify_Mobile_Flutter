@@ -17,8 +17,7 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   bool get _isLoggedIn {
-    final token =
-        getIt<SharedPreferences>().getString(AppConstants.authTokenKey);
+    final token = getIt<SharedPreferences>().getString(AppConstants.authTokenKey);
     return token != null && token.isNotEmpty;
   }
 
@@ -27,7 +26,7 @@ class _MainShellState extends State<MainShell> {
     if (location.startsWith('/appointments')) return 1;
     if (location.startsWith('/chatbot')) return 2;
     if (location.startsWith('/profile')) return 3;
-    return 0;
+    return 0; // Mặc định về trang chủ
   }
 
   void _onTabTapped(BuildContext context, int index) {
@@ -45,11 +44,7 @@ class _MainShellState extends State<MainShell> {
         context.go('/profile');
         break;
     }
-    if (index == 2) {
-      _showPopupNotification(context, 'Chatbot');
-      return;
-    }
-    context.go('/profile');
+    // Đã xóa đoạn code gây lỗi ép chuyển hướng về '/profile' ở đây
   }
 
   void _showPopupNotification(BuildContext context, String actionName) {
@@ -119,7 +114,7 @@ class _MainShellState extends State<MainShell> {
           ElevatedButton(
             onPressed: () => context.push('/register'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary, // Sử dụng constant
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -137,8 +132,8 @@ class _MainShellState extends State<MainShell> {
         currentIndex: _calculateCurrentIndex(context),
         onTap: (index) => _onTabTapped(context, index),
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppColors.primary, // Màu hồng khi chọn tab
-        unselectedItemColor: AppColors.textSecondary, // Màu xám khi chưa chọn tab
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: AppColors.textSecondary,
         backgroundColor: AppColors.background,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Trang chủ'),

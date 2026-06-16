@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 // --- Features ---
@@ -14,6 +15,9 @@ import '../../features/another_design/presentation/pages/another_design_page.dar
 import '../../features/discover/presentation/pages/discover_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/nail_booking/presentation/pages/nail_booking_page.dart';
+import '../../features/nail_booking/presentation/pages/booking_success_page.dart';
+import '../../features/my_booking/presentation/pages/my_booking_list_page.dart';
+import '../../features/my_booking/presentation/pages/my_booking_detail_page.dart';
 import '../../features/custom_nail/presentation/pages/custom_nail_stepper_page.dart';
 
 // --- Auth ---
@@ -77,6 +81,13 @@ class AppRouter {
           return NailBookingPage(nailData: nailData);
         },
       ),
+      GoRoute(
+        path: '/booking-success',
+        builder: (context, state) {
+          final details = state.extra as Map<String, dynamic>? ?? {};
+          return BookingSuccessPage(bookingDetails: details);
+        },
+      ),
 
       // 4. ShellRoute (Bottom Navigation)
       ShellRoute(
@@ -131,6 +142,18 @@ class AppRouter {
           GoRoute(
             path: '/profile',
             builder: (context, state) => const ProfilePage(),
+          ),
+          GoRoute(
+            path: '/my-bookings',
+            builder: (context, state) => const MyBookingListPage(),
+          ),
+          GoRoute(
+            path: '/my-bookings/detail',
+            builder: (context, state) {
+              // Nhận bookingId kiểu String từ extra
+              final bookingId = state.extra as String;
+              return MyBookingDetailPage(bookingId: bookingId);
+            },
           ),
         ],
       ),

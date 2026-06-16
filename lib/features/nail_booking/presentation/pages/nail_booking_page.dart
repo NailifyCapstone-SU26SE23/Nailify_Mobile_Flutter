@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/auth_guard.dart';
+import '../../../../core/utils/price_formatter.dart';
 
 import '../../data/datasources/booking_api_service.dart';
 import '../widgets/branch_selection_list.dart';
@@ -109,24 +110,16 @@ class _NailBookingPageState extends State<NailBookingPage> {
         );
 
         if (!mounted) return;
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: const Row(children: [Icon(Icons.check_circle, color: Colors.green), SizedBox(width: 8), Text('Thành công')]),
-            content: const Text('Đơn đặt lịch của bạn đã được xác nhận thành công!'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  context.go('/');
-                },
-                child: const Text('Quay về trang chủ', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
-              ),
-            ],
-          ),
-        );
+
+        // CHUYỂN  SANG TRANG THÀNH CÔNG VÀ TRUYỀN DATA
+        final bookingDetails = {
+          'serviceName': widget.nailData?['name'] ?? 'Làm móng',
+          'date': _selectedDate,
+          'time': _selectedTime,
+          'stylistName': _selectedStylist?['fullName'] ?? 'Bất kỳ',
+        };
+        context.go('/booking-success', extra: bookingDetails);
+
       } catch (e) {
         _showSnackBar('Lỗi đặt lịch: $e');
       } finally {
@@ -239,6 +232,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                         isLoading: _isLoadingTimes,
                         selectedTime: _selectedTime,
                         canSelect: _selectedStylist != null && _selectedDate != null,
+                        selectedDate: _selectedDate,
                         onTimeChanged: (time) => setState(() => _selectedTime = time),
                       ),
                     ],
@@ -281,7 +275,10 @@ class _NailBookingPageState extends State<NailBookingPage> {
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Expanded(child: Text('Biến thể Nail: ${widget.nailData!['name']}', style: const TextStyle(fontSize: 14))),
-                                    Text('${widget.nailData!['price']} Đ', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                    Text(
+                                      PriceFormatter.format(widget.nailData?['price']),
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -302,7 +299,11 @@ class _NailBookingPageState extends State<NailBookingPage> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 const Text('Tổng cộng tạm tính:', style: TextStyle(fontWeight: FontWeight.bold)),
-                                Text('${widget.nailData?['price'] ?? 0} Đ', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 18)),
+                                //Text('${widget.nailData?['price'] ?? 0} Đ', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 18)),
+                                Text(
+                                  PriceFormatter.format(widget.nailData?['price']),
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
                               ],
                             )
                           ],

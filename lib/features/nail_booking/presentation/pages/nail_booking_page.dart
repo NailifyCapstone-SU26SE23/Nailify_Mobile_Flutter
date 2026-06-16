@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/auth_guard.dart';
+import '../../../../core/utils/price_formatter.dart';
 
 import '../../data/datasources/booking_api_service.dart';
 import '../widgets/branch_selection_list.dart';
@@ -231,6 +232,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                         isLoading: _isLoadingTimes,
                         selectedTime: _selectedTime,
                         canSelect: _selectedStylist != null && _selectedDate != null,
+                        selectedDate: _selectedDate,
                         onTimeChanged: (time) => setState(() => _selectedTime = time),
                       ),
                     ],
@@ -273,7 +275,10 @@ class _NailBookingPageState extends State<NailBookingPage> {
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Expanded(child: Text('Biến thể Nail: ${widget.nailData!['name']}', style: const TextStyle(fontSize: 14))),
-                                    Text('${widget.nailData!['price']} Đ', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                    Text(
+                                      PriceFormatter.format(widget.nailData?['price']),
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -294,7 +299,11 @@ class _NailBookingPageState extends State<NailBookingPage> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 const Text('Tổng cộng tạm tính:', style: TextStyle(fontWeight: FontWeight.bold)),
-                                Text('${widget.nailData?['price'] ?? 0} Đ', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 18)),
+                                //Text('${widget.nailData?['price'] ?? 0} Đ', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 18)),
+                                Text(
+                                  PriceFormatter.format(widget.nailData?['price']),
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
                               ],
                             )
                           ],

@@ -156,9 +156,17 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
     if (nail == null) return const [];
     return nail.customerNailComponents.map((item) {
       final component = components.firstWhereOrNull(
-        (component) =>
-            component.componentId == item.componentId ||
-            component.customerComponentId == item.customerComponentId,
+        (component) {
+          if (item.customerComponentId != null) {
+            return component.isCustomerComponent &&
+                component.customerComponentId == item.customerComponentId;
+          }
+          if (item.componentId != null) {
+            return !component.isCustomerComponent &&
+                component.componentId == item.componentId;
+          }
+          return false;
+        },
       );
       return PlacedComponentDraft.fromCustomerNailComponent(item, component: component);
     }).toList();
@@ -219,10 +227,6 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
   void _selectFinger(int value) {
     setState(() {
       _selectedFingerIndex = value;
-      final index = _selectedPlacementIndex;
-      if (index != -1) {
-        _placements[index] = _placements[index].copyWith(fingerIndex: value);
-      }
     });
   }
 

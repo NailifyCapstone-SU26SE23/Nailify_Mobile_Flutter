@@ -21,67 +21,41 @@ class ComponentGrid extends StatefulWidget {
 }
 
 class _ComponentGridState extends State<ComponentGrid> {
-  int _page = 0;
-
   @override
   Widget build(BuildContext context) {
     if (widget.components.isEmpty) return const SizedBox.shrink();
 
-    final totalPages = (widget.components.length / 3).ceil();
-    final page = _page.clamp(0, totalPages - 1);
-    if (page != _page) _page = page;
-    final visible = widget.components.skip(page * 3).take(3).toList();
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                widget.title,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: Colors.grey.shade800,
-                    ),
+        Text(
+          widget.title,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: Colors.grey.shade800,
               ),
-            ),
-            if (totalPages > 1) ...[
-              IconButton(
-                tooltip: 'Previous',
-                onPressed: page == 0
-                    ? null
-                    : () => setState(() => _page = page - 1),
-                icon: const Icon(Icons.chevron_left),
-              ),
-              Text('${page + 1}/$totalPages'),
-              IconButton(
-                tooltip: 'Next',
-                onPressed: page >= totalPages - 1
-                    ? null
-                    : () => setState(() => _page = page + 1),
-                icon: const Icon(Icons.chevron_right),
-              ),
-            ],
-          ],
         ),
         const SizedBox(height: 8),
-        Row(
-          children: [
-            for (var index = 0; index < 3; index++) ...[
-              Expanded(
-                child: index < visible.length
-                    ? _ComponentCard(
-                        component: visible[index],
-                        isSelected: widget.selectedComponent?.id == visible[index].id &&
-                            widget.selectedComponent?.isCustomerComponent == visible[index].isCustomerComponent,
-                        onTap: () => widget.onSelected(visible[index]),
-                      )
-                    : const SizedBox.shrink(),
-              ),
-              if (index < 2) const SizedBox(width: 8),
-            ],
-          ],
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: widget.components.length,
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 150,
+            mainAxisExtent: 190,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+          ),
+          itemBuilder: (context, index) {
+            final component = widget.components[index];
+            return _ComponentCard(
+              component: component,
+              isSelected: widget.selectedComponent?.id == component.id &&
+                  widget.selectedComponent?.isCustomerComponent ==
+                      component.isCustomerComponent,
+              onTap: () => widget.onSelected(component),
+            );
+          },
         ),
       ],
     );
@@ -115,7 +89,13 @@ class _ComponentCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
             color: Colors.white,
             boxShadow: isSelected
-                ? [BoxShadow(color: Colors.purple.withAlpha(18), blurRadius: 6, offset: const Offset(0, 2))]
+                ? [
+                    BoxShadow(
+                      color: Colors.purple.withAlpha(18),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
                 : null,
           ),
           child: Stack(
@@ -146,7 +126,10 @@ class _ComponentCard extends StatelessWidget {
                       children: [
                         Text(
                           component.name,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -158,7 +141,10 @@ class _ComponentCard extends StatelessWidget {
                             if (component.price != null)
                               Text(
                                 '\$${component.price!.toStringAsFixed(2)}',
-                                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                           ],
                         ),
@@ -195,10 +181,18 @@ class _TypeBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     Color badgeColor;
     switch (type) {
-      case ComponentType.gem: badgeColor = Colors.blue; break;
-      case ComponentType.sticker: badgeColor = Colors.green; break;
-      case ComponentType.charm: badgeColor = Colors.orange; break;
-      case ComponentType.art: badgeColor = Colors.purple; break;
+      case ComponentType.gem:
+        badgeColor = Colors.blue;
+        break;
+      case ComponentType.sticker:
+        badgeColor = Colors.green;
+        break;
+      case ComponentType.charm:
+        badgeColor = Colors.orange;
+        break;
+      case ComponentType.art:
+        badgeColor = Colors.purple;
+        break;
     }
 
     return Container(

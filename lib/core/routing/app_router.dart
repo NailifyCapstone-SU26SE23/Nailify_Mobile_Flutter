@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 // --- Features ---
@@ -14,6 +15,7 @@ import '../../features/another_design/presentation/pages/another_design_page.dar
 import '../../features/discover/presentation/pages/discover_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/nail_booking/presentation/pages/nail_booking_page.dart';
+import '../../features/nail_booking/presentation/pages/booking_success_page.dart';
 import '../../features/custom_nail/presentation/pages/custom_nail_stepper_page.dart';
 
 // --- Auth ---
@@ -75,6 +77,13 @@ class AppRouter {
         builder: (context, state) {
           final Map<String, dynamic>? nailData = state.extra as Map<String, dynamic>?;
           return NailBookingPage(nailData: nailData);
+        },
+      ),
+      GoRoute(
+        path: '/booking-success',
+        builder: (context, state) {
+          final details = state.extra as Map<String, dynamic>? ?? {};
+          return BookingSuccessPage(bookingDetails: details);
         },
       ),
 

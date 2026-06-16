@@ -44,7 +44,6 @@ class _MainShellState extends State<MainShell> {
         context.go('/profile');
         break;
     }
-    // Đã xóa đoạn code gây lỗi ép chuyển hướng về '/profile' ở đây
   }
 
   void _showPopupNotification(BuildContext context, String actionName) {

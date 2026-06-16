@@ -109,24 +109,16 @@ class _NailBookingPageState extends State<NailBookingPage> {
         );
 
         if (!mounted) return;
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: const Row(children: [Icon(Icons.check_circle, color: Colors.green), SizedBox(width: 8), Text('Thành công')]),
-            content: const Text('Đơn đặt lịch của bạn đã được xác nhận thành công!'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  context.go('/');
-                },
-                child: const Text('Quay về trang chủ', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
-              ),
-            ],
-          ),
-        );
+
+        // CHUYỂN  SANG TRANG THÀNH CÔNG VÀ TRUYỀN DATA
+        final bookingDetails = {
+          'serviceName': widget.nailData?['name'] ?? 'Làm móng',
+          'date': _selectedDate,
+          'time': _selectedTime,
+          'stylistName': _selectedStylist?['fullName'] ?? 'Bất kỳ',
+        };
+        context.go('/booking-success', extra: bookingDetails);
+
       } catch (e) {
         _showSnackBar('Lỗi đặt lịch: $e');
       } finally {

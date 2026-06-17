@@ -4,8 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/auth_guard.dart';
 
-import 'package:shared_preferences/shared_preferences.dart';
-
 import '../constants/app_colors.dart';
 import '../constants/app_constants.dart';
 import '../di/injection.dart';
@@ -41,12 +39,6 @@ class _MainShellState extends State<MainShell> {
         const SnackBar(content: Text('Đã đăng xuất thành công!')),
       );
     }
-  }
-
-  bool get _isLoggedIn {
-    final token =
-    getIt<SharedPreferences>().getString(AppConstants.authTokenKey);
-    return token != null && token.isNotEmpty;
   }
 
   int _calculateCurrentIndex(BuildContext context) {
@@ -126,9 +118,6 @@ class _MainShellState extends State<MainShell> {
             ),
           ),
         ),
-        actions: _isLoggedIn
-            ? const [SizedBox(width: 16)]
-            : [
         actions: _isLoggedIn
             ? [
           // HIỂN THỊ NÚT ĐĂNG XUẤT KHI ĐÃ CÓ TOKEN

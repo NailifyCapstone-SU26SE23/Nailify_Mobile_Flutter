@@ -2,6 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/auth_guard.dart';
+
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants/app_colors.dart';
 import '../constants/app_constants.dart';
@@ -22,6 +25,24 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
+  // Biến kiểm tra trạng thái đăng nhập
+  bool get _isLoggedIn {
+    final token = getIt<SharedPreferences>().getString(AppConstants.authTokenKey);
+    return token != null && token.isNotEmpty;
+  }
+
+  // Hàm xử lý Đăng xuất
+  Future<void> _logout() async {
+    await getIt<SharedPreferences>().remove(AppConstants.authTokenKey);
+    if (mounted) {
+      setState(() {}); // Làm mới UI để thanh AppBar vẽ lại nút
+      context.go('/'); // Đưa người dùng về trang chủ
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Đã đăng xuất thành công!')),
+      );
+    }
+  }
+
   bool get _isLoggedIn {
     final token =
     getIt<SharedPreferences>().getString(AppConstants.authTokenKey);
@@ -30,10 +51,10 @@ class _MainShellState extends State<MainShell> {
 
   int _calculateCurrentIndex(BuildContext context) {
     final String location = GoRouterState.of(context).matchedLocation;
-    if (location.startsWith('/appointments')) return 1;
+    if (location.startsWith('/my-bookings')) return 1;
     if (location.startsWith('/chatbot')) return 2;
     if (location.startsWith('/profile')) return 3;
-    return 0;
+    return 0; // Mặc định về trang chủ
   }
 
   void _onTabTapped(BuildContext context, int index) {
@@ -42,7 +63,7 @@ class _MainShellState extends State<MainShell> {
         context.go('/');
         break;
       case 1:
-        _showPopupNotification(context, 'Lịch hẹn');
+        AuthGuard.check(context, () => context.go('/my-bookings'));
         break;
       case 2:
         _showPopupNotification(context, 'Chatbot');
@@ -108,6 +129,23 @@ class _MainShellState extends State<MainShell> {
         actions: _isLoggedIn
             ? const [SizedBox(width: 16)]
             : [
+        actions: _isLoggedIn
+            ? [
+          // HIỂN THỊ NÚT ĐĂNG XUẤT KHI ĐÃ CÓ TOKEN
+          OutlinedButton.icon(
+            onPressed: _logout,
+            icon: const Icon(Icons.logout, size: 18, color: AppColors.primary),
+            label: const Text('Đăng xuất', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w500, fontSize: 14)),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: AppColors.primary, width: 1.2),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+            ),
+          ),
+          const SizedBox(width: 16),
+        ]
+            : [
+          // HIỂN THỊ NÚT ĐĂNG NHẬP/ĐĂNG KÝ KHI CHƯA CÓ TOKEN
           OutlinedButton(
             onPressed: () => context.push('/login'),
             style: OutlinedButton.styleFrom(

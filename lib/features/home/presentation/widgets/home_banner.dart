@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/auth_guard.dart';
 
 class HomeBanner extends StatelessWidget {
   const HomeBanner({super.key});
@@ -111,7 +112,11 @@ class HomeBanner extends StatelessWidget {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: () => context.push('/nail-booking'),
+                onPressed: () {
+                  AuthGuard.check(context, () {
+                    context.push('/nail-booking');
+                  });
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,

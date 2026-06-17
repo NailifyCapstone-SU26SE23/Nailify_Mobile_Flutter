@@ -1,6 +1,13 @@
+import 'package:flutter/material.dart';
 // lib/router/app_router.dart
 import 'package:flutter/cupertino.dart';
 import 'package:go_router/go_router.dart';
+
+// --- Features ---
+import '../../features/home/presentation/pages/home_page.dart';
+import '../../features/nails/presentation/pages/nail_detail_screen.dart';
+import '../../features/nails/presentation/pages/nail_list_screen.dart';
+import '../../features/nails/presentation/pages/nail_variant_detail_screen.dart';
 
 import '../../features/auth/presentation/pages/customer_login_page.dart';
 import '../../features/auth/presentation/pages/customer_register_page.dart';
@@ -13,12 +20,19 @@ import '../../features/quiz/presentation/pages/analyze_page.dart';
 import '../../features/perfect_match/presentation/pages/perfect_match_page.dart';
 import '../../features/another_design/presentation/pages/another_design_page.dart';
 import '../../features/discover/presentation/pages/discover_page.dart';
-//booking
+import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/nail_booking/presentation/pages/nail_booking_page.dart';
-
-//custom nail
+import '../../features/nail_booking/presentation/pages/booking_success_page.dart';
+import '../../features/my_booking/presentation/pages/my_booking_list_page.dart';
+import '../../features/my_booking/presentation/pages/my_booking_detail_page.dart';
 import '../../features/custom_nail/presentation/pages/custom_nail_stepper_page.dart';
 
+// --- Auth ---
+import '../../features/auth/presentation/pages/customer_login_page.dart';
+import '../../features/auth/presentation/pages/customer_register_page.dart';
+
+// --- Widgets ---
+import '../widgets/main_shell.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/nails/presentation/pages/customer_studio_page.dart';
 import '../../features/nails/presentation/pages/nail_detail_screen.dart';
@@ -31,6 +45,7 @@ class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: '/',
     routes: [
+      // 1. Auth Routes
       // Login/Register - NO shell at all (full screen)
       GoRoute(
         path: '/login',
@@ -40,6 +55,8 @@ class AppRouter {
         path: '/register',
         builder: (context, state) => const RegisterPage(),
       ),
+
+      // 2. Quiz & Discovery Routes (Với Shell)
       GoRoute(
         path: '/quiz',
         builder: (context, state) => const MainShell(child: QuizPage()),
@@ -66,19 +83,24 @@ class AppRouter {
         path: '/discover',
         builder: (context, state) => const MainShell(child: DiscoverPage()),
       ),
-      //------
-      // custom nail page, page này có header và footer riêng
+
+      // 3. Custom & Booking Routes (Full-screen)
       GoRoute(
         path: '/custom-nail',
         builder: (context, state) => const CustomNailStepperPage(),
       ),
-      //booking with nail
       GoRoute(
         path: '/nail-booking',
         builder: (context, state) {
-          // Nhận dữ liệu truyền sang nếu có
           final Map<String, dynamic>? nailData = state.extra as Map<String, dynamic>?;
           return NailBookingPage(nailData: nailData);
+        },
+      ),
+      GoRoute(
+        path: '/booking-success',
+        builder: (context, state) {
+          final details = state.extra as Map<String, dynamic>? ?? {};
+          return BookingSuccessPage(bookingDetails: details);
         },
       ),
 
@@ -209,6 +231,73 @@ class AppRouter {
             showHeader: true,
           );
         },
+      // 4. ShellRoute (Bottom Navigation)
+      ShellRoute(
+        builder: (context, state, child) => MainShell(child: child),
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) => const HomePage(),
+          ),
+          GoRoute(
+            path: '/nails',
+            builder: (context, state) => const NailListScreen(),
+          ),
+          GoRoute(
+            path: '/nails/:id',
+            builder: (context, state) {
+              final id = int.tryParse(state.pathParameters['id'] ?? '');
+              return NailDetailScreen(nailDesignId: id ?? 0);
+            },
+          ),
+          GoRoute(
+            path: '/nail-variants/:id',
+            pageBuilder: (context, state) {
+              final id = int.tryParse(state.pathParameters['id'] ?? '');
+              return CustomTransitionPage<void>(
+                key: state.pageKey,
+                child: NailVariantDetailScreen(nailVariantId: id ?? 0),
+                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                  final offset = Tween<Offset>(
+                    begin: const Offset(0, 1),
+                    end: Offset.zero,
+                  ).chain(CurveTween(curve: Curves.easeOutCubic));
+                  return SlideTransition(
+                    position: animation.drive(offset),
+                    child: child,
+                  );
+                },
+              );
+            },
+          ),
+          GoRoute(
+            path: '/catalog',
+            builder: (context, state) => const CatalogPage(),
+          ),
+          GoRoute(
+            path: '/catalog/details',
+            builder: (context, state) {
+              final nailData = state.extra as Map<String, dynamic>;
+              return NailDetailsPage(nailData: nailData);
+            },
+          ),
+          GoRoute(
+            path: '/profile',
+            builder: (context, state) => const ProfilePage(),
+          ),
+          GoRoute(
+            path: '/my-bookings',
+            builder: (context, state) => const MyBookingListPage(),
+          ),
+          GoRoute(
+            path: '/my-bookings/detail',
+            builder: (context, state) {
+              // Nhận bookingId kiểu String từ extra
+              final bookingId = state.extra as String;
+              return MyBookingDetailPage(bookingId: bookingId);
+            },
+          ),
+        ],
       ),
     ],
   );

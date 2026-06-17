@@ -6,7 +6,7 @@ import '../../../../core/utils/auth_guard.dart';
 import '../../../../core/di/injection.dart';
 import '../../data/models/nail_component_model.dart';
 import '../../data/models/nail_variant_model.dart';
-import '../../data/repositories/nail_repository.dart';
+import '../../data/repositories/nail_variant_repository.dart';
 import '../../services/ar_try_on_service.dart';
 
 class NailVariantDetailScreen extends StatefulWidget {
@@ -29,7 +29,7 @@ class _NailVariantDetailScreenState extends State<NailVariantDetailScreen> {
   }
 
   Future<NailVariantModel> _loadVariant() {
-    return getIt<NailRepository>().getNailVariantById(widget.nailVariantId);
+    return getIt<NailVariantRepository>().getNailVariantById(widget.nailVariantId);
   }
 
   Future<void> _openTryOn(Future<void> Function(NailVariantModel) launcher) async {

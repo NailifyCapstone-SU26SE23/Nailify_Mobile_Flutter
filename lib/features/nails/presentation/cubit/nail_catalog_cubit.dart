@@ -3,7 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/models/category_type_model.dart';
 import '../../data/models/nail_design_model.dart';
-import '../../data/repositories/nail_repository.dart';
+import '../../data/models/nail_filters.dart';
+import '../../data/repositories/nail_design_repository.dart';
 
 enum NailCatalogStatus { initial, loading, loaded, error, loadingMore }
 
@@ -52,7 +53,7 @@ class NailCatalogState extends Equatable {
 }
 
 class NailCatalogCubit extends Cubit<NailCatalogState> {
-  final NailRepository _repository;
+  final NailDesignRepository _repository;
   final int _pageSize;
 
   NailCatalogCubit(this._repository, {int pageSize = 10})

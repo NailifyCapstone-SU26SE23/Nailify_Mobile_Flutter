@@ -10,7 +10,13 @@ import '../di/injection.dart';
 
 class MainShell extends StatefulWidget {
   final Widget child;
-  const MainShell({super.key, required this.child});
+  final bool showHeader; // Add this parameter
+
+  const MainShell({
+    super.key,
+    required this.child,
+    this.showHeader = true, // Default to true
+  });
 
   @override
   State<MainShell> createState() => _MainShellState();
@@ -88,7 +94,8 @@ class _MainShellState extends State<MainShell> {
     return Scaffold(
       backgroundColor: AppColors.background,
 
-      appBar: AppBar(
+      // Conditional AppBar - only show header if showHeader is true
+      appBar: widget.showHeader ? AppBar(
         backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
@@ -151,9 +158,14 @@ class _MainShellState extends State<MainShell> {
           ),
           const SizedBox(width: 16),
         ],
-      ),
+      ) : null, // No AppBar when showHeader is false
 
-      body: widget.child,
+      // Wrap the body with SafeArea when header is hidden
+      body: widget.showHeader
+          ? widget.child
+          : SafeArea(
+        child: widget.child,
+      ),
 
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _calculateCurrentIndex(context),

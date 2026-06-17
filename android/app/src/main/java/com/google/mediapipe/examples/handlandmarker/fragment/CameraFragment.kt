@@ -91,9 +91,9 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
 
         // Shut down our background executor
         backgroundExecutor.shutdown()
-        backgroundExecutor.awaitTermination(
-            Long.MAX_VALUE, TimeUnit.NANOSECONDS
-        )
+        if (!backgroundExecutor.awaitTermination(1000, TimeUnit.MILLISECONDS)) {
+            backgroundExecutor.shutdownNow()
+        }
     }
 
     override fun onCreateView(
@@ -345,6 +345,10 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
     }
 
     private fun detectHand(imageProxy: ImageProxy) {
+        if (!this::handLandmarkerHelper.isInitialized || handLandmarkerHelper.isClose()) {
+            imageProxy.close()
+            return
+        }
         handLandmarkerHelper.detectLiveStream(
             imageProxy = imageProxy,
             isFrontCamera = cameraFacing == CameraSelector.LENS_FACING_FRONT

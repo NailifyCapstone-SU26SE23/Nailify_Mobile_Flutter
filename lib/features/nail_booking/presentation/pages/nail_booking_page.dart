@@ -6,6 +6,7 @@ import '../../../../core/utils/auth_guard.dart';
 import '../../../../core/utils/price_formatter.dart';
 
 import '../../data/datasources/booking_api_service.dart';
+import '../../data/models/booking_mock_data.dart';
 import '../widgets/branch_selection_list.dart';
 import '../widgets/booking_service_selection.dart';
 import '../widgets/booking_date_selection.dart';
@@ -29,6 +30,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
 
   // API Lists
   List<dynamic> _salons = [];
+  List<dynamic> _services = [];
   List<dynamic> _artists = [];
   List<dynamic> _timeSlots = [];
 
@@ -38,7 +40,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
 
   // User State
   Map<String, dynamic>? _selectedBranch;
-  List<String?> _selectedExtraServices = [];
+  List<String> _selectedExtraServices = [];
   DateTime? _selectedDate;
   Map<String, dynamic>? _selectedStylist;
   String? _selectedTime;
@@ -47,6 +49,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
   void initState() {
     super.initState();
     _fetchSalons();
+    _fetchServices();
   }
 
   int get _nailVariantId {
@@ -75,7 +78,12 @@ class _NailBookingPageState extends State<NailBookingPage> {
     setState(() { _isLoadingArtists = true; _artists = []; _selectedStylist = null; _selectedTime = null; });
     try {
       final dateStr = _formatBookingDate(_selectedDate!);
-      final data = await _apiService.getSuggestedArtists(_selectedBranch!['salonId'], dateStr, _nailVariantId);
+      final data = await _apiService.getSuggestedArtists(
+        _selectedBranch!['salonId'],
+        dateStr,
+        _nailVariantId,
+        _selectedExtraServices,
+      );
       setState(() { _artists = data; _isLoadingArtists = false; });
     } catch (e) {
       setState(() => _isLoadingArtists = false);
@@ -101,18 +109,20 @@ class _NailBookingPageState extends State<NailBookingPage> {
       if (_isSubmitting) return;
       setState(() => _isSubmitting = true);
       try {
-        await _apiService.createBooking(
+        final booking = await _apiService.createBooking(
             _selectedBranch!['salonId'],
             _formatBookingDate(_selectedDate!),
             _selectedTime!,
             _selectedStylist!['nailArtistId'],
-            _nailVariantId
+            _nailVariantId,
+            _selectedExtraServices,
         );
 
         if (!mounted) return;
 
         // CHUYỂN  SANG TRANG THÀNH CÔNG VÀ TRUYỀN DATA
         final bookingDetails = {
+          'bookingId': booking['bookingId'],
           'serviceName': widget.nailData?['name'] ?? 'Làm móng',
           'date': _selectedDate,
           'time': _selectedTime,
@@ -136,17 +146,84 @@ class _NailBookingPageState extends State<NailBookingPage> {
     }
   }
 
+  Future<void> _fetchServices() async {
+    try {
+      final data = await _apiService.getServices();
+      setState(() => _services = data);
+    } catch (_) {
+      setState(() => _services = BookingMockData.extraServices);
+    }
+  }
+
+  void _handleServiceChanged(List<String> services) {
+    setState(() {
+      _selectedExtraServices = services;
+      _selectedStylist = null;
+      _selectedTime = null;
+      _artists = [];
+      _timeSlots = [];
+    });
+
+    if (_selectedBranch != null && _selectedDate != null) {
+      _fetchArtists();
+    }
+  }
+
+  String _serviceNameById(String serviceId) {
+    final services = _availableServices.where(
+      (service) => _serviceId(service) == serviceId,
+    );
+    return services.isEmpty
+        ? serviceId
+        : _serviceName(services.first).isEmpty
+            ? serviceId
+            : _serviceName(services.first);
+  }
+
+  int get _selectedExtraServicesTotal {
+    return _selectedExtraServices.fold<int>(
+      0,
+      (total, serviceId) =>
+          total + _servicePriceById(serviceId),
+    );
+  }
+
+  List<Map<String, dynamic>> get _availableServices {
+    final source = _services.isEmpty ? BookingMockData.extraServices : _services;
+    return source
+        .whereType<Map>()
+        .map((service) => Map<String, dynamic>.from(service))
+        .toList();
+  }
+
+  String _serviceId(Map<String, dynamic> service) =>
+      service['serviceId']?.toString() ?? service['id']?.toString() ?? '';
+
+  String _serviceName(Map<String, dynamic> service) =>
+      service['serviceName']?.toString() ?? service['name']?.toString() ?? '';
+
+  int _servicePriceById(String serviceId) {
+    final matches = _availableServices.where(
+      (service) => _serviceId(service) == serviceId,
+    );
+    if (matches.isEmpty) return 0;
+    final price = matches.first['price'] ?? matches.first['basePrice'];
+    if (price is num) return price.round();
+    return int.tryParse(price?.toString() ?? '') ?? 0;
+  }
+
+  int get _nailVariantPrice {
+    final price = widget.nailData?['price'];
+    if (price is num) return price.round();
+    return int.tryParse(price?.toString() ?? '') ?? 0;
+  }
+
   void _handleNextAction() {
     if (_currentStep == 0 && _selectedBranch == null) {
       _showSnackBar('Vui lòng chọn một chi nhánh salon!'); return;
     }
-    if (_currentStep == 1) {
-      if (widget.nailData == null && (_selectedExtraServices.isEmpty || _selectedExtraServices.every((e) => e == null))) {
-        _showSnackBar('Vui lòng chọn ít nhất 1 dịch vụ để tiếp tục!'); return;
-      }
-      if (_selectedExtraServices.any((s) => s == null)) {
-        _showSnackBar('Có trường dịch vụ phụ trợ đang bị bỏ trống!'); return;
-      }
+    if (_currentStep == 1 && widget.nailData == null && _selectedExtraServices.isEmpty) {
+      _showSnackBar('Vui lòng chọn ít nhất 1 dịch vụ để tiếp tục!'); return;
     }
     if (_currentStep == 2 && (_selectedDate == null || _selectedStylist == null || _selectedTime == null)) {
       _showSnackBar('Vui lòng chọn đầy đủ ngày, thợ và khung giờ!'); return;
@@ -196,8 +273,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
                   padding: const EdgeInsets.all(20),
                   child: BookingServiceSelection(
                     nailData: widget.nailData,
+                    services: _services,
                     selectedExtraServices: _selectedExtraServices,
-                    onChanged: (services) => setState(() => _selectedExtraServices = services),
+                    onChanged: _handleServiceChanged,
                   ),
                 ),
 
@@ -282,14 +360,19 @@ class _NailBookingPageState extends State<NailBookingPage> {
                                   ],
                                 ),
                               ),
-                            ..._selectedExtraServices.map((serviceName) {
+                            ..._selectedExtraServices.map((serviceId) {
+                              final serviceName = _serviceNameById(serviceId);
+                              final servicePrice = _servicePriceById(serviceId);
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 8.0),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text('Dịch vụ thêm: $serviceName', style: const TextStyle(fontSize: 14, color: Colors.grey)),
-                                    const Text('Phí tại quầy', style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey, fontSize: 13)),
+                                    Text(
+                                      PriceFormatter.format(servicePrice),
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                    )
                                   ],
                                 ),
                               );
@@ -301,7 +384,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                                 const Text('Tổng cộng tạm tính:', style: TextStyle(fontWeight: FontWeight.bold)),
                                 //Text('${widget.nailData?['price'] ?? 0} Đ', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 18)),
                                 Text(
-                                  PriceFormatter.format(widget.nailData?['price']),
+                                  PriceFormatter.format(_nailVariantPrice + _selectedExtraServicesTotal),
                                   style: const TextStyle(fontWeight: FontWeight.bold),
                                 ),
                               ],

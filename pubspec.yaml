@@ -22,24 +22,24 @@ dependencies:
   flutter_svg: ^2.0.9
 
   # State Management (BLoC/Cubit)
-  flutter_bloc: ^8.1.3
+  flutter_bloc: ^9.1.1
   equatable: ^2.0.5
   provider: ^6.1.2
 
   # Navigation
-  go_router: ^12.1.3
+  go_router: ^17.3.0
 
   # Network & API
   dio: ^5.4.0
   pretty_dio_logger: ^1.3.1
-  connectivity_plus: ^5.0.2
+  connectivity_plus: ^7.1.1
 
   # Local Storage
   shared_preferences: ^2.2.2
 
   # Utilities & Dependency Injection
-  get_it: ^7.6.7
-  image_picker: 1.1.2
+  get_it: ^9.2.1
+  image_picker: ^1.2.2
 
   # Localization (Hỗ trợ core hệ thống)
   flutter_localizations:

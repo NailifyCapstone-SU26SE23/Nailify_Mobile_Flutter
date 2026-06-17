@@ -363,15 +363,20 @@ class _UpdatePageShell extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: OutlinedButton.icon(
+            onPressed: () => context.go('/profile'),
+            icon: const Icon(Icons.arrow_back),
+            label: const Text('Quay lại'),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
         Text(
           title,
           style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
-        ),
-        const SizedBox(height: 16),
-        OutlinedButton.icon(
-          onPressed: () => context.go('/profile'),
-          icon: const Icon(Icons.arrow_back),
-          label: const Text('Quay lại'),
         ),
         const SizedBox(height: 24),
         ...children,

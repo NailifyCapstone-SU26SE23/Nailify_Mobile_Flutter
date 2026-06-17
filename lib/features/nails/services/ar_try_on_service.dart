@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 
+import '../data/models/customer_nail_models.dart';
+import '../data/models/nail_component_config.dart';
 import '../data/models/nail_component_model.dart';
 import '../data/models/nail_variant_model.dart';
 
@@ -22,6 +24,14 @@ class ArTryOnService {
     return _launch(nailVariant, mode: 'photo');
   }
 
+  Future<void> launchCustomerLive(CustomerNailModel customerNail) {
+    return _launchConfig(_convertCustomerToArFormat(customerNail), mode: 'live');
+  }
+
+  Future<void> launchCustomerPhoto(CustomerNailModel customerNail) {
+    return _launchConfig(_convertCustomerToArFormat(customerNail), mode: 'photo');
+  }
+
   Future<void> launch(NailVariantModel nailVariant) {
     return launchLive(nailVariant);
   }
@@ -30,8 +40,15 @@ class ArTryOnService {
     if (!Platform.isAndroid) {
       throw UnsupportedError('Virtual try-on is only available on Android.');
     }
+    await _launchConfig(_convertToArFormat(nailVariant), mode: mode);
+  }
+
+  Future<void> _launchConfig(Map<String, dynamic> config, {required String mode}) async {
+    if (!Platform.isAndroid) {
+      throw UnsupportedError('Virtual try-on is only available on Android.');
+    }
     await _channel.invokeMethod<void>('launch', {
-      'config': _convertToArFormat(nailVariant),
+      'config': config,
       'mode': mode,
     });
   }
@@ -57,6 +74,66 @@ class ArTryOnService {
         _parseVariantColorJson(nail.colorJson),
       ),
     };
+  }
+
+  Map<String, dynamic> _convertCustomerToArFormat(CustomerNailModel nail) {
+    return {
+      'shape': _normalizeShape(nail.nailShape?.name),
+      'shapeImageSrc': _nullableText(nail.nailShape?.imageUrl),
+      'length': 1.0,
+      'material': 'standard',
+      'gradient': {
+        'enabled': false,
+        'type': 'linear',
+        'stops': ['#FF4081', '#FFFFFF', '#000000'],
+        'stopCount': 2,
+      },
+      'nails': _buildCustomerFingerDesigns(
+        nail.customerNailComponents,
+        _parseVariantColorJson(nail.customColor),
+      ),
+    };
+  }
+
+  List<Map<String, dynamic>> _buildCustomerFingerDesigns(
+    List<CustomerNailComponentModel> components,
+    Map<int, _FingerAppearance> appearances,
+  ) {
+    return List.generate(5, (fingerIndex) {
+      final fingerComponents = components
+          .where((item) => _customerComponentAppliesToFinger(item, fingerIndex))
+          .toList();
+      final appearance = appearances[fingerIndex + 1];
+      return {
+        'color': appearance?.color ?? '#FF4081',
+        'customShapeSrc': null,
+        'gradient': appearance?.gradient,
+        'decorations': fingerComponents.map(_customerComponentToDecoration).toList(),
+      };
+    });
+  }
+
+  bool _customerComponentAppliesToFinger(
+    CustomerNailComponentModel item,
+    int zeroBasedFingerIndex,
+  ) {
+    if (item.fingerIndex == -1) return true;
+    return item.fingerIndex == zeroBasedFingerIndex + 1;
+  }
+
+  Map<String, dynamic> _customerComponentToDecoration(CustomerNailComponentModel item) {
+    final config = NailComponentConfig.fromJsonString(item.configJson);
+    final imageUrl = config.imageSrc ?? item.component?.imageUrl ?? item.customerComponent?.imageUrl;
+    final componentId = (item.componentId ?? item.customerComponentId ?? item.customerNailComponentId).toString();
+    final decoration = config.toArJson(
+      fallbackImage: imageUrl,
+      fallbackType: _normalizeComponentType(item.component?.componentType ?? item.customerComponent?.componentType),
+      componentId: componentId,
+    );
+    decoration['x'] = config.x ?? item.posX;
+    decoration['y'] = config.y ?? item.posY;
+    decoration['id'] = item.customerNailComponentId.toString();
+    return decoration;
   }
 
   List<Map<String, dynamic>> _buildFingerDesigns(
@@ -93,9 +170,9 @@ class ArTryOnService {
       fallbackType: _normalizeComponentType(item.component?.componentType),
       componentId: item.componentId.toString(),
     );
-    decoration['id'] = item.nailComponentId.toString();
     decoration['x'] = config.x ?? item.posX;
     decoration['y'] = config.y ?? item.posY;
+    decoration['id'] = item.nailComponentId.toString();
     return decoration;
   }
 

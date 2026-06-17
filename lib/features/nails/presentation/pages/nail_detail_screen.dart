@@ -5,7 +5,7 @@ import '../../../../core/di/injection.dart';
 import '../../data/models/nail_component_model.dart';
 import '../../data/models/nail_design_model.dart';
 import '../../data/models/nail_variant_model.dart';
-import '../../data/repositories/nail_repository.dart';
+import '../../data/repositories/nail_design_repository.dart';
 
 class NailDetailScreen extends StatefulWidget {
   final int nailDesignId;
@@ -22,7 +22,7 @@ class _NailDetailScreenState extends State<NailDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _future = getIt<NailRepository>().getNailDesignById(widget.nailDesignId);
+    _future = getIt<NailDesignRepository>().getNailDesignById(widget.nailDesignId);
   }
 
   @override
@@ -44,7 +44,7 @@ class _NailDetailScreenState extends State<NailDetailScreen> {
                   const SizedBox(height: 12),
                   FilledButton.icon(
                     onPressed: () => setState(() {
-                      _future = getIt<NailRepository>().getNailDesignById(widget.nailDesignId);
+                      _future = getIt<NailDesignRepository>().getNailDesignById(widget.nailDesignId);
                     }),
                     icon: const Icon(Icons.refresh),
                     label: const Text('Retry'),

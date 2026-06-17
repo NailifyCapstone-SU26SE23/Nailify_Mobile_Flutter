@@ -55,17 +55,71 @@ class NailComponentConfig {
     );
   }
 
-  Map<String, dynamic> toArJson({String? fallbackImage, String? fallbackType, String? componentId}) {
+  Map<String, dynamic> toArJson({
+    String? fallbackImage,
+    String? fallbackType,
+    String? componentId,
+    double? fallbackPosX,
+    double? fallbackPosY,
+  }) {
+    final arX = x ?? (fallbackPosX != null ? previewPosToArOffset(fallbackPosX, scale) : 0);
+    final arY = y ?? (fallbackPosY != null ? previewPosToArOffset(fallbackPosY, scale) : 0);
     return {
       'id': componentId ?? '',
       'type': type ?? fallbackType ?? 'pattern',
       'componentId': componentId,
       'imageSrc': imageSrc ?? fallbackImage ?? '',
-      'x': x ?? 0,
-      'y': y ?? 0,
+      'x': arX,
+      'y': arY,
       'scale': scale,
       'rotation': rotation,
     };
+  }
+
+  Map<String, dynamic> toStorageMap({
+    String? imageSrc,
+    String? type,
+  }) {
+    return {
+      'scale': scale,
+      'rotation': rotation,
+      'x': x ?? 0,
+      'y': y ?? 0,
+      if (imageSrc != null) 'imageSrc': imageSrc,
+      if (type != null) 'type': type,
+    };
+  }
+
+  /// Preview board uses top-left normalized [0, 1]; AR uses offset from nail center.
+  static double previewPosToArOffset(double pos, double scale) {
+    final center = pos * (1 - scale) + scale / 2;
+    return center - 0.5;
+  }
+
+  static double arOffsetToPreviewPos(double offset, double scale) {
+    if (scale >= 1.0) {
+      return (offset + 0.5).clamp(0.0, 1.0);
+    }
+    final center = offset + 0.5;
+    return ((center - scale / 2) / (1 - scale)).clamp(0.0, 1.0);
+  }
+
+  static NailComponentConfig fromPreviewPlacement({
+    required double posX,
+    required double posY,
+    required double scale,
+    required double rotation,
+    String? imageSrc,
+    String? type,
+  }) {
+    return NailComponentConfig(
+      scale: scale,
+      rotation: rotation,
+      imageSrc: imageSrc,
+      type: type,
+      x: previewPosToArOffset(posX, scale),
+      y: previewPosToArOffset(posY, scale),
+    );
   }
 
   static String? _asNullableString(dynamic value) {

@@ -1,4 +1,3 @@
-
 class BookingMockData {
   static const List<Map<String, String>> branches = [
     {
@@ -24,7 +23,6 @@ class BookingMockData {
     },
   ];
 
-  // Danh sách Kỹ thuật viên kèm lịch bận (busySchedules)
   static const List<Map<String, dynamic>> stylists = [
     {
       'id': 'anyone',
@@ -32,7 +30,7 @@ class BookingMockData {
       'role': 'Không ưu tiên thợ',
       'rating': '',
       'experience': '',
-      'busySchedules': <int, List<String>>{}, // Không có lịch bận
+      'busySchedules': <int, List<String>>{},
     },
     {
       'id': 'stylist_1',
@@ -41,11 +39,25 @@ class BookingMockData {
       'rating': '4.9',
       'experience': '5 năm EXP',
       'busySchedules': <int, List<String>>{
-        14: ['09:30', '13:30', '14:30', '15:00', '15:30',],
+        14: ['09:30', '13:30', '14:30', '15:00', '15:30'],
         16: ['09:30', '13:30'],
-        17: ['09:00', '09:30', '10:00', '10:30', '11:00',
-          '13:30', '14:00', '14:30', '15:00', '15:30',
-          '16:00', '16:30', '17:00', '17:30', '18:00'],
+        17: [
+          '09:00',
+          '09:30',
+          '10:00',
+          '10:30',
+          '11:00',
+          '13:30',
+          '14:00',
+          '14:30',
+          '15:00',
+          '15:30',
+          '16:00',
+          '16:30',
+          '17:00',
+          '17:30',
+          '18:00',
+        ],
       },
     },
     {
@@ -67,19 +79,53 @@ class BookingMockData {
   ];
 
   static const List<String> timeSlots = [
-    '09:00', '09:30', '10:00', '10:30', '11:00',
-    '13:30', '14:00', '14:30', '15:00', '15:30',
-    '16:00', '16:30', '17:00', '17:30', '18:00',
+    '09:00',
+    '09:30',
+    '10:00',
+    '10:30',
+    '11:00',
+    '13:30',
+    '14:00',
+    '14:30',
+    '15:00',
+    '15:30',
+    '16:00',
+    '16:30',
+    '17:00',
+    '17:30',
+    '18:00',
   ];
-  //static const List<String> serviceGroups = ['NAIL', 'NAIL CARE'];
 
-  static const List<String> extraServices = [
-    'Tẩy gel', 'Làm sạch móng (Cắt da)',
-    'Dưỡng móng cơ bản', 'Phục hồi móng hư tổn'
+  static const List<Map<String, dynamic>> extraServices = [
+    {
+      'id': 'f512b732-231c-4584-b3f0-647603b1f167',
+      'name': 'Chà gót chân',
+      'price': 12000,
+    },
+    {
+      'id': 'tay-gel',
+      'name': 'Tẩy gel',
+      'price': 30000,
+    },
+    {
+      'id': 'lam-sach-mong',
+      'name': 'Làm sạch móng (Cắt da)',
+      'price': 40000,
+    },
+    {
+      'id': 'duong-mong-co-ban',
+      'name': 'Dưỡng móng cơ bản',
+      'price': 50000,
+    },
+    {
+      'id': 'phuc-hoi-mong',
+      'name': 'Phục hồi móng hư tổn',
+      'price': 100000,
+    },
   ];
 
-  static const Map<String, int> servicePrices = {
-    'Tẩy gel': 30000, 'Làm sạch móng (Cắt da)': 40000,
-    'Dưỡng móng cơ bản': 50000, 'Phục hồi móng hư tổn': 100000,
+  static final Map<String, int> servicePrices = {
+    for (final service in extraServices)
+      service['id'] as String: service['price'] as int,
   };
 }

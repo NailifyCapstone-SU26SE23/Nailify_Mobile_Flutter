@@ -105,7 +105,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ? const Icon(Icons.person, size: 60, color: AppColors.primary)
                     : null,
                 onBackgroundImageError: avatarUrl != null
-                    ? (_, __) {
+                    ? (_, _) {
                   // Log error silently or show debug message only in development
                   debugPrint('Failed to load avatar: $avatarUrl');
                 }
@@ -114,8 +114,21 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             const SizedBox(height: 24),
 
-            // Profile info
-            ProfileInfoTile(label: 'Tên', value: user.fullName),
+            Center(
+              child: Column(
+                children: [
+                  Text(
+                    user.fullName,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
             const SizedBox(height: 16),
 
             // Action tiles
@@ -133,7 +146,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             ProfileActionTile(title: 'Hóa đơn', route: '/profile/invoices'),
             ProfileActionTile(
-              title: 'Móng yêu thích',
+              title: 'Bộ móng yêu thích',
               route: '/profile/favorite-nails',
             ),
             ProfileActionTile(

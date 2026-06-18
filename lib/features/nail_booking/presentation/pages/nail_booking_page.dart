@@ -1,4 +1,3 @@
-// lib/features/nail_booking/presentation/pages/nail_booking_page.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -40,7 +39,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
 
   // User State
   Map<String, dynamic>? _selectedBranch;
-  List<String> _selectedExtraServices = [];
+  List<String?> _selectedExtraServices = []; // Chứa String? để cho phép null
   DateTime? _selectedDate;
   Map<String, dynamic>? _selectedStylist;
   String? _selectedTime;
@@ -82,7 +81,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
         _selectedBranch!['salonId'],
         dateStr,
         _nailVariantId,
-        _selectedExtraServices,
+        _selectedExtraServices.whereType<String>().toList(), // Lọc bỏ null trước khi gọi API
       );
       setState(() { _artists = data; _isLoadingArtists = false; });
     } catch (e) {
@@ -110,17 +109,17 @@ class _NailBookingPageState extends State<NailBookingPage> {
       setState(() => _isSubmitting = true);
       try {
         final booking = await _apiService.createBooking(
-            _selectedBranch!['salonId'],
-            _formatBookingDate(_selectedDate!),
-            _selectedTime!,
-            _selectedStylist!['nailArtistId'],
-            _nailVariantId,
-            _selectedExtraServices,
+          _selectedBranch!['salonId'],
+          _formatBookingDate(_selectedDate!),
+          _selectedTime!,
+          _selectedStylist!['nailArtistId'],
+          _nailVariantId,
+          _selectedExtraServices.whereType<String>().toList(), // Lọc bỏ null
         );
 
         if (!mounted) return;
 
-        // CHUYỂN  SANG TRANG THÀNH CÔNG VÀ TRUYỀN DATA
+        // CHUYỂN SANG TRANG THÀNH CÔNG VÀ TRUYỀN DATA
         final bookingDetails = {
           'bookingId': booking['bookingId'],
           'serviceName': widget.nailData?['name'] ?? 'Làm móng',
@@ -155,7 +154,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
     }
   }
 
-  void _handleServiceChanged(List<String> services) {
+  void _handleServiceChanged(List<String?> services) {
     setState(() {
       _selectedExtraServices = services;
       _selectedStylist = null;
@@ -169,22 +168,25 @@ class _NailBookingPageState extends State<NailBookingPage> {
     }
   }
 
-  String _serviceNameById(String serviceId) {
+  // Fix: Nhận String? để tránh lỗi Mismatch
+  String _serviceNameById(String? serviceId) {
+    if (serviceId == null) return '';
     final services = _availableServices.where(
-      (service) => _serviceId(service) == serviceId,
+          (service) => _serviceId(service) == serviceId,
     );
     return services.isEmpty
         ? serviceId
         : _serviceName(services.first).isEmpty
-            ? serviceId
-            : _serviceName(services.first);
+        ? serviceId
+        : _serviceName(services.first);
   }
 
+  // Fix: Chỉ tính tổng tiền của các dịch vụ đã chọn (bỏ qua null)
   int get _selectedExtraServicesTotal {
-    return _selectedExtraServices.fold<int>(
+    return _selectedExtraServices.whereType<String>().fold<int>(
       0,
-      (total, serviceId) =>
-          total + _servicePriceById(serviceId),
+          (total, serviceId) =>
+      total + _servicePriceById(serviceId),
     );
   }
 
@@ -202,9 +204,11 @@ class _NailBookingPageState extends State<NailBookingPage> {
   String _serviceName(Map<String, dynamic> service) =>
       service['serviceName']?.toString() ?? service['name']?.toString() ?? '';
 
-  int _servicePriceById(String serviceId) {
+  // Fix: Nhận String? để tránh lỗi Mismatch
+  int _servicePriceById(String? serviceId) {
+    if (serviceId == null) return 0;
     final matches = _availableServices.where(
-      (service) => _serviceId(service) == serviceId,
+          (service) => _serviceId(service) == serviceId,
     );
     if (matches.isEmpty) return 0;
     final price = matches.first['price'] ?? matches.first['basePrice'];
@@ -222,8 +226,15 @@ class _NailBookingPageState extends State<NailBookingPage> {
     if (_currentStep == 0 && _selectedBranch == null) {
       _showSnackBar('Vui lòng chọn một chi nhánh salon!'); return;
     }
-    if (_currentStep == 1 && widget.nailData == null && _selectedExtraServices.isEmpty) {
-      _showSnackBar('Vui lòng chọn ít nhất 1 dịch vụ để tiếp tục!'); return;
+    if (_currentStep == 1) {
+      // Bắt lỗi nếu bấm "Thêm dịch vụ" nhưng thả trống Dropdown
+      if (_selectedExtraServices.contains(null)) {
+        _showSnackBar('Có ô dịch vụ đang bị bỏ trống. Vui lòng chọn hoặc xóa nó đi!'); return;
+      }
+      final validServices = _selectedExtraServices.whereType<String>().toList();
+      if (widget.nailData == null && validServices.isEmpty) {
+        _showSnackBar('Vui lòng chọn ít nhất 1 dịch vụ để tiếp tục!'); return;
+      }
     }
     if (_currentStep == 2 && (_selectedDate == null || _selectedStylist == null || _selectedTime == null)) {
       _showSnackBar('Vui lòng chọn đầy đủ ngày, thợ và khung giờ!'); return;
@@ -268,7 +279,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                   ),
                 ),
 
-                // BƯỚC 2: CHỌN DỊCH VỤ (MỚI TÁI TÍCH HỢP)
+                // BƯỚC 2: CHỌN DỊCH VỤ
                 SingleChildScrollView(
                   padding: const EdgeInsets.all(20),
                   child: BookingServiceSelection(
@@ -279,7 +290,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                   ),
                 ),
 
-                // BƯỚC 3: NGÀY -> THỢ -> GIỜ (ĐÃ SỬA Ô CHỌN THỢ LUÔN HIỆN)
+                // BƯỚC 3: NGÀY -> THỢ -> GIỜ
                 SingleChildScrollView(
                   padding: const EdgeInsets.all(20),
                   child: Column(
@@ -289,7 +300,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                         selectedDate: _selectedDate,
                         onDateChanged: (date) {
                           setState(() => _selectedDate = date);
-                          _fetchArtists(); // Tự động cập nhật danh sách thợ
+                          _fetchArtists();
                         },
                       ),
                       const SizedBox(height: 24),
@@ -300,7 +311,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                         selectedStylistId: _selectedStylist?['nailArtistId'],
                         onStylistSelected: (artist) {
                           setState(() => _selectedStylist = artist);
-                          _fetchTimeSlots(); // Tìm giờ rảnh của thợ vừa chọn
+                          _fetchTimeSlots();
                         },
                       ),
                       const SizedBox(height: 24),
@@ -360,7 +371,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
                                   ],
                                 ),
                               ),
-                            ..._selectedExtraServices.map((serviceId) {
+
+                            // Fix: Lọc bỏ null trước khi render list summary
+                            ..._selectedExtraServices.whereType<String>().map((serviceId) {
                               final serviceName = _serviceNameById(serviceId);
                               final servicePrice = _servicePriceById(serviceId);
                               return Padding(
@@ -382,10 +395,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 const Text('Tổng cộng tạm tính:', style: TextStyle(fontWeight: FontWeight.bold)),
-                                //Text('${widget.nailData?['price'] ?? 0} Đ', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 18)),
                                 Text(
                                   PriceFormatter.format(_nailVariantPrice + _selectedExtraServicesTotal),
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 18),
                                 ),
                               ],
                             )
@@ -446,8 +458,20 @@ class _NailBookingPageState extends State<NailBookingPage> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          if (_currentStep > 0)
+            OutlinedButton(
+              onPressed: _isSubmitting ? null : _handleBackAction,
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
+                side: const BorderSide(color: AppColors.primary),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Quay lại', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+            )
+          else
+            const SizedBox.shrink(),
           ElevatedButton(
             onPressed: _isSubmitting ? null : _handleNextAction,
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),

@@ -55,6 +55,7 @@ class AppRouter {
           return NailBookingPage(nailData: nailData);
         },
       ),
+
       GoRoute(
         path: '/booking-success',
         builder: (context, state) {
@@ -67,7 +68,6 @@ class AppRouter {
       ShellRoute(
         builder: (context, state, child) => MainShell(child: child),
         routes: [
-          // -- Trang chủ & Khám phá --
           GoRoute(
             path: '/',
             builder: (context, state) => const HomePage(),
@@ -75,6 +75,11 @@ class AppRouter {
           GoRoute(
             path: '/discover',
             builder: (context, state) => const DiscoverPage(),
+          ),
+
+          GoRoute(
+            path: '/custom-nail',
+            builder: (context, state) => const CustomNailStepperPage(),
           ),
 
           // -- Tính năng Nails --
@@ -131,7 +136,8 @@ class AppRouter {
           GoRoute(
             path: '/my-bookings/detail',
             builder: (context, state) {
-              final bookingId = state.extra as String;
+              //final bookingId = state.extra as String;
+              final bookingId = state.extra?.toString() ?? '';
               return MyBookingDetailPage(bookingId: bookingId);
             },
           ),

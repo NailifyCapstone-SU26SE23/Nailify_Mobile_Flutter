@@ -58,7 +58,8 @@ class _MainShellState extends State<MainShell> {
         AuthGuard.check(context, () => context.go('/my-bookings'));
         break;
       case 2:
-        _showPopupNotification(context, 'Chatbot');
+        //_showPopupNotification(context, 'Chatbot');
+        context.go('/custom-nail');
         break;
       case 3:
         context.go('/profile');

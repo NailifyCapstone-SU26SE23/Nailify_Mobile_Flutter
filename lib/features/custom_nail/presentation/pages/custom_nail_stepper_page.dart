@@ -61,7 +61,7 @@ class _CustomNailStepperPageState extends State<CustomNailStepperPage> {
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              Navigator.of(context).pop();
+              // Navigator.of(context).pop();
             },
             child: const Text('Quay về trang chủ', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
           ),
@@ -152,8 +152,12 @@ class _CustomNailStepperPageState extends State<CustomNailStepperPage> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: _currentStep == 0,
-      onPopInvokedWithResult: (didPop, result) { if (didPop) return; _handleBackAction(); },
+      // canPop: _currentStep == 0,
+      // onPopInvokedWithResult: (didPop, result) { if (didPop) return; _handleBackAction(); },
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) {
+        // Không cần làm gì cả
+      },
       child: Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(

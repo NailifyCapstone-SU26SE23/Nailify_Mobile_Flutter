@@ -7,6 +7,7 @@ import '../../features/another_design/presentation/pages/another_design_page.dar
 import '../../features/auth/presentation/pages/customer_login_page.dart';
 import '../../features/auth/presentation/pages/customer_register_page.dart';
 import '../../features/auth/presentation/pages/profile_page.dart' as auth_profile;
+import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/auth/presentation/pages/profile_update_pages.dart';
 import '../../features/catalog/presentation/pages/catalog_page.dart';
 import '../../features/catalog/presentation/pages/nail_details_page.dart';
@@ -44,10 +45,10 @@ class AppRouter {
         path: '/register',
         builder: (context, state) => const RegisterPage(),
       ),
-      GoRoute(
-        path: '/custom-nail',
-        builder: (context, state) => const CustomNailStepperPage(),
-      ),
+      // GoRoute(
+      //   path: '/custom-nail',
+      //   builder: (context, state) => const CustomNailStepperPage(),
+      // ),
       GoRoute(
         path: '/nail-booking',
         builder: (context, state) {
@@ -173,7 +174,7 @@ class AppRouter {
           // -- Hồ Sơ Người Dùng --
           GoRoute(
             path: '/profile',
-            builder: (context, state) => const auth_profile.ProfilePage(),
+            builder: (context, state) => const ProfilePage(),
           ),
           GoRoute(
             path: '/profile/update-info',

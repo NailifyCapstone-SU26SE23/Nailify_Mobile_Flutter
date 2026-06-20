@@ -9,6 +9,7 @@ import '../widgets/summary_preview.dart';
 import '../widgets/summary_notes.dart';
 import '../widgets/summary_details_price.dart';
 import '../../data/models/custom_nail_model.dart';
+import 'package:go_router/go_router.dart';
 
 class CustomNailStepperPage extends StatefulWidget {
   const CustomNailStepperPage({super.key});
@@ -38,7 +39,13 @@ class _CustomNailStepperPageState extends State<CustomNailStepperPage> {
     if (_currentStep > 0) {
       _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
     } else {
-      Navigator.of(context).pop();
+      if (context.canPop()) {
+        // Mở qua push button (Có lịch sử) -> Lùi về trang trước
+        context.pop();
+      } else {
+        // Mở qua footer (Không có lịch sử) -> Trở về trang chủ, chống Crash đen màn hình
+        context.go('/');
+      }
     }
   }
 
@@ -60,8 +67,7 @@ class _CustomNailStepperPageState extends State<CustomNailStepperPage> {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop();
-              // Navigator.of(context).pop();
+              context.go('/');
             },
             child: const Text('Quay về trang chủ', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
           ),
@@ -154,9 +160,10 @@ class _CustomNailStepperPageState extends State<CustomNailStepperPage> {
     return PopScope(
       // canPop: _currentStep == 0,
       // onPopInvokedWithResult: (didPop, result) { if (didPop) return; _handleBackAction(); },
-      canPop: true,
+      canPop: false, // Bắt buộc false để chặn hệ thống tự động thoát
       onPopInvokedWithResult: (didPop, result) {
-        // Không cần làm gì cả
+        if (didPop) return;
+        _handleBackAction();
       },
       child: Scaffold(
         backgroundColor: AppColors.background,

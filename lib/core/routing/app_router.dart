@@ -26,6 +26,10 @@ import '../../features/perfect_match/presentation/pages/perfect_match_page.dart'
 import '../../features/quiz/presentation/pages/analyze_page.dart';
 import '../../features/quiz/presentation/pages/quiz_page.dart';
 import '../../features/try-on/presentation/try_on_setup_screen.dart';
+import '../../features/my_studio/presentation/pages/customer_studio_page.dart' as my_studio;
+import '../../features/my_studio/presentation/pages/customer_nail_detail_page.dart';
+import '../../features/my_studio/data/studio_mock_data.dart';
+import '../../features/nail_booking/presentation/pages/custom_nail_booking_page.dart';
 
 // --- Widgets ---
 import '../widgets/main_shell.dart';
@@ -142,6 +146,25 @@ class AppRouter {
               return MyBookingDetailPage(bookingId: bookingId);
             },
           ),
+          //-- tính năng tự custom
+          GoRoute(
+            path: '/my-studio',
+            builder: (context, state) => const my_studio.CustomerStudioPage(),
+          ),
+          GoRoute(
+            path: '/my-studio/:id',
+            builder: (context, state) {
+              final id = state.pathParameters['id'] ?? '';
+              return CustomerNailDetailPage(id: id);
+            },
+          ),
+          GoRoute(
+            path: '/custom-nail-booking',
+            builder: (context, state) {
+              final nail = state.extra as StudioNailModel;
+              return CustomNailBookingPage(nail: nail);
+            },
+          ),
 
           // -- Trắc nghiệm & Match --
           GoRoute(
@@ -202,10 +225,10 @@ class AppRouter {
               child: Text('Móng yêu thích', style: TextStyle(fontSize: 24)),
             ),
           ),
-          GoRoute(
-            path: '/profile/my-studio',
-            builder: (context, state) => const CustomerStudioPage(),
-          ),
+          // GoRoute(
+          //   path: '/profile/my-studio',
+          //   builder: (context, state) => const CustomerStudioPage(),
+          // ),
         ],
       ),
     ],

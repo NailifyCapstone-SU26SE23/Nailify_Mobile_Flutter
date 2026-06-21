@@ -44,7 +44,7 @@ class _MainShellState extends State<MainShell> {
   int _calculateCurrentIndex(BuildContext context) {
     final String location = GoRouterState.of(context).matchedLocation;
     if (location.startsWith('/my-bookings')) return 1;
-    if (location.startsWith('/chatbot')) return 2;
+    if (location.startsWith('/my-studio')) return 2;
     if (location.startsWith('/profile')) return 3;
     return 0; // Mặc định về trang chủ
   }
@@ -59,7 +59,7 @@ class _MainShellState extends State<MainShell> {
         break;
       case 2:
         //_showPopupNotification(context, 'Chatbot');
-        context.go('/custom-nail');
+        AuthGuard.check(context, () => context.go('/my-studio'));
         break;
       case 3:
         context.go('/profile');
@@ -178,7 +178,7 @@ class _MainShellState extends State<MainShell> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Trang chủ'),
           BottomNavigationBarItem(icon: Icon(Icons.calendar_month), label: 'Lịch hẹn'),
-          BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline), label: 'Chatbot'),
+          BottomNavigationBarItem(icon: Icon(Icons.palette_outlined), label: 'My Studio'),
           BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Tài khoản'),
         ],
       ),

@@ -63,13 +63,14 @@ class _CustomNailStepperPageState extends State<CustomNailStepperPage> {
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Row(children: [Icon(Icons.check_circle, color: Colors.green), SizedBox(width: 8), Text('Thành công')]),
-        content: Text('Đơn đặt lịch thiết kế móng (${_nailDesign.selectedShape}) đã được ghi nhận hệ thống thành công!'),
+        content: Text('Mẫu thiết kế móng (${_nailDesign.selectedShape}) đã được tạo thành công!'),
         actions: [
           TextButton(
             onPressed: () {
-              context.go('/');
+              context.pop();
+              context.go('/my-studio');
             },
-            child: const Text('Quay về trang chủ', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+            child: const Text('Quay về My Studio', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -329,7 +330,7 @@ class _CustomNailStepperPageState extends State<CustomNailStepperPage> {
           ElevatedButton(
             onPressed: _handleNextAction,
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-            child: Text(_currentStep == 4 ? 'Book Now' : 'Next Step', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+            child: Text(_currentStep == 4 ? 'Tạo' : 'Next Step', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
           ),
         ],
       ),

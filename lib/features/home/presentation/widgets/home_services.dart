@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
+import 'package:go_router/go_router.dart';
 
 class HomeServices extends StatelessWidget {
   const HomeServices({super.key});
@@ -45,16 +46,7 @@ class HomeServices extends StatelessWidget {
                   color: AppColors.textPrimary,
                 ),
               ),
-              TextButton(
-                onPressed: null,
-                child: const Text(
-                  'Xem tất cả',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
+
             ],
           ),
           const SizedBox(height: 8),
@@ -75,6 +67,33 @@ class HomeServices extends StatelessWidget {
               return _buildServiceCard(context, service['title']!, service['image']!);
             },
           ),
+          const SizedBox(height: 32),
+
+          SizedBox(
+            width: 302,
+            height: 50,
+            child: ElevatedButton.icon(
+              onPressed: () => context.go('/services'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.surface,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25),
+                ),
+              ),
+              label: const Text(
+                'Xem thêm',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              icon: const Icon(Icons.arrow_forward, size: 20),
+            ),
+          ),
+          const SizedBox(height: 20),
         ],
       ),
     );
@@ -133,8 +152,11 @@ class HomeServices extends StatelessWidget {
               ),
             ),
           ],
+
         ),
       ),
+
     );
+
   }
 }

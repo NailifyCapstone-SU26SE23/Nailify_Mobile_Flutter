@@ -86,4 +86,29 @@ class BookingApiService {
     });
     return Map<String, dynamic>.from(response.data['data'] ?? {});
   }
+
+  // đặt dịch vụ
+  Future<List<dynamic>> getNailArtistsBySalon(String salonId) async {
+    final response = await _apiClient.get('/NailArtists', queryParameters: {
+      'PageNumber': 1,
+      'PageSize': 20,
+      'salonId': salonId,
+    });
+
+    final items = response.data['data']['items'] as List<dynamic>? ?? [];
+
+    //  bổ sung thêm từ firstname + lastname -> fullName để chạy được với BookingStylistSelection Widget
+    return items.map((artist) {
+      final firstName = artist['firstName']?.toString() ?? '';
+      final lastName = artist['lastName']?.toString() ?? '';
+      return {
+        ...artist,
+        'fullName': '$firstName $lastName'.trim(), // Map lại thành fullName
+      };
+    }).toList();
+  }
+  Future<Map<String, dynamic>> createServiceBooking(Map<String, dynamic> bookingData) async {
+    final response = await _apiClient.post('/Bookings', data: bookingData);
+    return response.data ?? {};
+  }
 }

@@ -30,6 +30,9 @@ import '../../features/my_studio/presentation/pages/customer_studio_page.dart' a
 import '../../features/my_studio/presentation/pages/customer_nail_detail_page.dart';
 import '../../features/my_studio/data/studio_mock_data.dart';
 import '../../features/nail_booking/presentation/pages/custom_nail_booking_page.dart';
+import '../../features/services/presentation/pages/service_list_page.dart';
+import '../../features/services/presentation/pages/service_detail_page.dart';
+import '../../features/nail_booking/presentation/pages/service_booking_page.dart';
 
 // --- Widgets ---
 import '../widgets/main_shell.dart';
@@ -60,12 +63,27 @@ class AppRouter {
           return NailBookingPage(nailData: nailData);
         },
       ),
+      GoRoute(
+        path: '/service-booking',
+        builder: (context, state) {
+          final serviceData = state.extra as Map<String, dynamic>;
+          return ServiceBookingPage(baseService: serviceData);
+        },
+      ),
 
       GoRoute(
         path: '/booking-success',
         builder: (context, state) {
           final details = state.extra as Map<String, dynamic>? ?? {};
           return BookingSuccessPage(bookingDetails: details);
+        },
+      ),
+
+      GoRoute(
+        path: '/services/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          return ServiceDetailPage(serviceId: id);
         },
       ),
 
@@ -164,6 +182,12 @@ class AppRouter {
               final nail = state.extra as StudioNailModel;
               return CustomNailBookingPage(nail: nail);
             },
+          ),
+
+          //-- dịch vụ
+          GoRoute(
+            path: '/services',
+            builder: (context, state) => const ServiceListPage(),
           ),
 
           // -- Trắc nghiệm & Match --

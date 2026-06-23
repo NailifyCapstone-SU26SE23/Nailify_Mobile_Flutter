@@ -264,7 +264,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
           Expanded(
             flex: 4,
             child: Text(
-              PriceFormatter.format(item['price']),
+              PriceFormatter.format(item['price'] * item['quantity']),
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 color: AppColors.primary,

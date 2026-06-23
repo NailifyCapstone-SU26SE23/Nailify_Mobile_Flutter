@@ -71,10 +71,10 @@ class StudioDetailCubit extends Cubit<StudioDetailState> {
       emit(StudioDetailError(e.toString()));
     }
   }
-  Future<bool> submitReview(String id) async {
+  Future<bool> submitReview(String nailId, String salonId) async {
     try {
-      await _apiService.submitNailReview(id);
-      await fetchDetail(id);
+      await _apiService.submitNailReview(nailId, salonId);
+      await fetchDetail(nailId);
       return true;
     } catch (e) {
       emit(StudioDetailError(e.toString()));

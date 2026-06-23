@@ -52,7 +52,7 @@ class CustomerStudioPage extends StatelessWidget {
                 return TabBarView(
                   children: [
                     _buildList(context, state.nails, ['Draft']),
-                    _buildList(context, state.nails, ['Pending']),
+                    _buildList(context, state.nails, ['PendingReview']),
                     _buildList(context, state.nails, ['Review', 'Assigned', 'Reviewed', 'Quoted']),
                     _buildList(context, state.nails, ['Approved']),
                     _buildList(context, state.nails, ['Rejected']),

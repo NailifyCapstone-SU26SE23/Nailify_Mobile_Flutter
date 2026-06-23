@@ -53,7 +53,7 @@ class CustomerNailDetailPage extends StatelessWidget {
                                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                                 onTap: () {
                                   Navigator.pop(sheetContext);
-                                  parentContext.read<StudioDetailCubit>().submitReview(nailId); //sẽ truyền salonId sau (nếu có)
+                                  parentContext.read<StudioDetailCubit>().submitReview(nailId, salonId); //sẽ truyền salonId sau (nếu có)
                                   ScaffoldMessenger.of(parentContext).showSnackBar(
                                       const SnackBar(content: Text('Đang xử lý yêu cầu duyệt...'))
                                   );

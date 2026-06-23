@@ -19,9 +19,9 @@ class StudioApiService {
     final response = await _apiClient.get('/CustomerNails/$id');
     return CustomerNailModel.fromJson(response.data['data']);
   }
-  Future<void> submitNailReview (String id) async {
-    await _apiClient.post('/CustomerNails/$id/submit-review');
-  }
+  // Future<void> submitNailReview (String id) async {
+  //   await _apiClient.post('/CustomerNails/$id/submit-review');
+  // }
   Future<List<dynamic>> getSalons() async {
     // Lưu ý: Thường endpoint liệt kê là GET. Nếu Backend bắt buộc là POST, bạn đổi .get thành .post nhé
     final response = await _apiClient.get('/Salons', queryParameters: {
@@ -31,11 +31,14 @@ class StudioApiService {
     return response.data['data']['items'] ?? [];
   }
 
-  // Future<void> submitForReview(String nailId, String salonId) async {
-  //   await _apiClient.post('/CustomerNails/$nailId/submit-review', data: {
-  //     'salonId': salonId, // Gửi ID salon được chọn vào Body
-  //   });
-  // }
+  Future<void> submitNailReview(String nailId, String salonId) async {
+    await _apiClient.post(
+      '/CustomerNails/$nailId/submit-review',
+      queryParameters: {
+        'salonId': salonId,
+      },
+    );
+  }
   Future<Map<String, dynamic>> getArtistDetail(String artistId) async {
     final response = await _apiClient.get('/NailArtists/$artistId');
     return response.data['data'] ?? {};

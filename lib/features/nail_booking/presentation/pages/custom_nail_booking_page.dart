@@ -62,7 +62,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
 
     try {
       final dateStr = _selectedDate!.toIso8601String().split('T')[0];
-      final artistId = widget.nail.approvedArtistId ?? ''; // Lấy ID thợ từ mẫu móng
+      final artistId = widget.nail.nailArtistId ?? ''; // Lấy nailArtistId từ approved artist
 
       if (artistId.isEmpty) throw Exception('Không tìm thấy thông tin Thợ được chỉ định');
 
@@ -121,14 +121,12 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
     setState(() => _isSubmitting = true);
 
     try {
-      final salonId = widget.nail.salonId ?? '';
-      final artistId = widget.nail.approvedArtistId ?? '';
+      final salonId = widget.nail.salonId;
+      final artistId = widget.nail.nailArtistId ?? '';
+      final nailId = widget.nail.customerNailId; // Đã là int, không cần parse
 
-      // FIX: Kiểm tra ID móng nghiêm ngặt, không ép mặc định về 0 nữa
-      final nailId = int.tryParse(widget.nail.id);
-
-      if (nailId == null || nailId <= 0) {
-        throw Exception('ID Móng không hợp lệ (Có thể bạn đang dùng dữ liệu Mock/Thử nghiệm thay vì data thật từ API).');
+      if (nailId <= 0) {
+        throw Exception('ID Móng không hợp lệ.');
       }
 
       if (salonId.isEmpty || artistId.isEmpty) {
@@ -147,7 +145,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
         formattedDate,
         formattedTime,
         artistId,
-        nailId, // Chắc chắn > 0
+        nailId,
         _groupedServicesMap,
       );
 
@@ -157,14 +155,13 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
           'serviceName': 'Custom: ${widget.nail.name}',
           'date': _selectedDate,
           'time': formattedTime,
-          'stylistName': widget.nail.stylistName ?? 'Đã được chỉ định',
+          'stylistName': widget.nail.stylistName,
         };
         context.go('/booking-success', extra: bookingDetails);
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isSubmitting = false);
-        // Hiển thị lỗi rõ ràng để bạn dễ debug
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString().replaceAll('Exception: ', 'Lỗi: '))),
         );
@@ -255,7 +252,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const Text('Chuyên viên thực hiện:', style: TextStyle(color: Colors.blue, fontSize: 12)),
-                                  Text(widget.nail.stylistName ?? 'Đã được tiệm chỉ định', style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 16)),
+                                  Text(widget.nail.stylistName, style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 16)),
                                 ],
                               ),
                             ),
@@ -300,7 +297,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                             // Ko hiện tên Salon ở đây vì trong Móng Custom làm méo gì có tên Salon, hiện Thợ là đủ uy tín (uy tin như nha cai den tu chauau)
                             _buildSummaryRow(Icons.calendar_month, 'Ngày hẹn', _selectedDate != null ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}' : ''),
                             _buildSummaryRow(Icons.access_time, 'Thời gian', _selectedTime ?? ''),
-                            _buildSummaryRow(Icons.face, 'Thợ thực hiện', widget.nail.stylistName ?? 'Đã được chỉ định'),
+                            _buildSummaryRow(Icons.face, 'Thợ thực hiện', widget.nail.stylistName),
                           ],
                         ),
                       ),

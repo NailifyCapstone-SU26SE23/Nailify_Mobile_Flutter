@@ -5,75 +5,11 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../cubit/studio_cubit.dart';
 import '../../data/models/customer_nail_model.dart';
-import '../../data/datasources/studio_api_service.dart';
 
 class CustomerNailDetailPage extends StatelessWidget {
-  final String id;
+  final String id; // customerNailRequestId
 
   const CustomerNailDetailPage({super.key, required this.id});
-
-  void _showSalonSelection(BuildContext parentContext, String nailId) {
-    final apiService = StudioApiService();
-
-    showModalBottomSheet(
-      context: parentContext,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (sheetContext) => FutureBuilder<List<dynamic>>(
-        future: apiService.getSalons(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const SizedBox(height: 200, child: Center(child: CircularProgressIndicator()));
-          }
-          if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-            return const SizedBox(height: 200, child: Center(child: Text('Không tải được danh sách Salon.')));
-          }
-
-          final salons = snapshot.data!;
-          return SafeArea(
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Chọn Salon yêu cầu duyệt', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  Flexible(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        children: salons.map((salon) {
-                          final salonName = salon['name']?.toString() ?? 'Chi nhánh Nailify';
-                          final salonId = salon['salonId']?.toString() ?? '';
-
-                          return Column(
-                            children: [
-                              ListTile(
-                                leading: const Icon(Icons.storefront, color: AppColors.primary),
-                                title: Text(salonName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                                onTap: () {
-                                  Navigator.pop(sheetContext);
-                                  parentContext.read<StudioDetailCubit>().submitReview(nailId, salonId); //sẽ truyền salonId sau (nếu có)
-                                  ScaffoldMessenger.of(parentContext).showSnackBar(
-                                      const SnackBar(content: Text('Đang xử lý yêu cầu duyệt...'))
-                                  );
-                                },
-                              ),
-                              const Divider(height: 1),
-                            ],
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +19,7 @@ class CustomerNailDetailPage extends StatelessWidget {
         backgroundColor: AppColors.background,
         appBar: AppBar(
           leading: IconButton(icon: const Icon(Icons.arrow_back_ios, size: 20), onPressed: () => context.pop()),
-          title: const Text('Chi tiết thiết kế', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+          title: const Text('Chi tiết yêu cầu duyệt', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
           centerTitle: true,
           backgroundColor: Colors.white,
           elevation: 0,
@@ -99,6 +35,7 @@ class CustomerNailDetailPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Ảnh mẫu nail
                     ClipRRect(
                       borderRadius: BorderRadius.circular(16),
                       child: nail.imageUrl != null
@@ -107,14 +44,30 @@ class CustomerNailDetailPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     Text(nail.name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
 
+                    // Tên salon
+                    if (nail.salonName != null && nail.salonName!.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.storefront, size: 18, color: AppColors.textSecondary),
+                            const SizedBox(width: 6),
+                            Text(nail.salonName!, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+                          ],
+                        ),
+                      ),
+
+                    // --- TRẠNG THÁI: TỪ CHỐI ---
                     if (nail.status == 'Rejected' && nail.rejectReason != null)
                       _buildAlertBox(Colors.red, Icons.error_outline, 'Lý do từ chối:', nail.rejectReason!),
 
-                    if (['Review', 'Assigned', 'Reviewed', 'Quoted', 'Pending'].contains(nail.status))
+                    // --- TRẠNG THÁI: ĐANG XỬ LÝ ---
+                    if (['Pending', 'PendingReview', 'Review', 'Assigned', 'Reviewed', 'Quoted'].contains(nail.status))
                       _buildAlertBox(Colors.orange, Icons.hourglass_top, 'Đang xử lý:', 'Mẫu móng của bạn đang được chuyên viên tại tiệm đánh giá tính khả thi và báo giá.'),
 
+                    // --- TRẠNG THÁI: ĐÃ DUYỆT ---
                     if (nail.status == 'Approved')
                       Container(
                         margin: const EdgeInsets.only(bottom: 20),
@@ -130,12 +83,12 @@ class CustomerNailDetailPage extends StatelessWidget {
                             const SizedBox(height: 8),
                             _buildPriceDurationRow('Thời gian dự kiến:', '${nail.duration} phút'),
                             const SizedBox(height: 8),
-                            // FIX: HIỂN THỊ TÊN THỢ TỪ MODEL ĐÃ BÓC TÁCH TỪ API
-                            _buildPriceDurationRow('Thợ chỉ định:', nail.stylistName ?? 'Chưa gán'),
+                            _buildPriceDurationRow('Thợ chỉ định:', nail.stylistName),
                           ],
                         ),
                       ),
 
+                    // --- CHI TIẾT KỸ THUẬT ---
                     const Text('Chi tiết kỹ thuật', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
                     Container(
@@ -207,26 +160,18 @@ class CustomerNailDetailPage extends StatelessWidget {
     );
   }
 
+  /// Footer action button:
+  /// - Approved => "Đặt lịch ngay" -> forward data sang CustomNailBookingPage
   Widget? _buildFooterAction(BuildContext context, CustomerNailModel nail) {
-    if (nail.status == 'Draft') {
-      return Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),
-        child: ElevatedButton.icon(
-          onPressed: () => _showSalonSelection(context, nail.id),
-          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-          icon: const Icon(Icons.send, color: Colors.white),
-          label: const Text('Gửi yêu cầu duyệt', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-        ),
-      );
-    }
-
     if (nail.status == 'Approved') {
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),
         child: ElevatedButton.icon(
-          onPressed: () => context.push('/custom-nail-booking', extra: nail),
+          onPressed: () {
+            // Forward data cần thiết sang trang đặt lịch custom nail
+            context.push('/custom-nail-booking', extra: nail);
+          },
           style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
           icon: const Icon(Icons.calendar_month, color: Colors.white),
           label: const Text('Đặt lịch ngay', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),

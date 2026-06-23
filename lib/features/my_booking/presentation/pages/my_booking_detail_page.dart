@@ -160,20 +160,64 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AppColors.primary.withOpacity(0.2)),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
                 children: [
-                  const Text(
-                    'Tổng thanh toán:',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  // 1. Giá gốc
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Giá gốc:',
+                        style: TextStyle(color: Colors.grey, fontSize: 14),
+                      ),
+                      Text(
+                        PriceFormatter.format(booking['price'] ?? 0),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
                   ),
-                  Text(
-                    PriceFormatter.format(booking['totalPrice']),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: AppColors.primary,
-                    ),
+                  const SizedBox(height: 8),
+
+                  // 2. Khuyến mãi (Giảm giá)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Khuyến mãi:',
+                        style: TextStyle(color: Colors.grey, fontSize: 14),
+                      ),
+                      Text(
+                        '${PriceFormatter.format(booking['discount'] ?? 0)}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Colors.green, // Dùng màu xanh lá để nhấn mạnh số tiền được giảm
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 24),
+
+                  // 3. Tổng thanh toán
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Tổng thanh toán:',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      Text(
+                        PriceFormatter.format(booking['totalPrice'] ?? 0),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../data/models/customer_nail_model.dart';
-//import '../../data/studio_mock_data.dart';
 
 class StudioNailCard extends StatelessWidget {
   final CustomerNailModel nail;
@@ -11,23 +10,23 @@ class StudioNailCard extends StatelessWidget {
 
   Color _getStatusColor(String status) {
     switch (status) {
-      case 'Draft': return Colors.grey.shade600;
       case 'Pending': return Colors.orange;
+      case 'PendingReview': return Colors.orange;
       case 'Review':
       case 'Assigned':
       case 'Reviewed':
       case 'Quoted':
-        return Colors.amber.shade600; // vàng khè
+        return Colors.amber.shade600;
       case 'Approved': return Colors.green;
       case 'Rejected': return Colors.red;
-      default: return Colors.black;
+      default: return Colors.grey.shade600;
     }
   }
 
   String _getStatusText(String status) {
     switch (status) {
-      case 'Draft': return 'Bản nháp';
       case 'Pending': return 'Chờ duyệt';
+      case 'PendingReview': return 'Chờ duyệt';
       case 'Review': return 'Đang thẩm định';
       case 'Assigned': return 'Đã gán thợ';
       case 'Reviewed': return 'Thợ đã đánh giá';
@@ -71,8 +70,10 @@ class StudioNailCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(nail.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
-                    const SizedBox(height: 6),
-                    Text('${nail.shapeName} • ${nail.surfaceName}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                    const SizedBox(height: 4),
+                    // Hiển thị tên salon nếu có
+                    if (nail.salonName != null && nail.salonName!.isNotEmpty)
+                      Text(nail.salonName!, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

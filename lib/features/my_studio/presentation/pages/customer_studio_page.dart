@@ -15,7 +15,7 @@ class CustomerStudioPage extends StatelessWidget {
     return BlocProvider(
       create: (context) => StudioListCubit()..fetchNails(),
       child: DefaultTabController(
-        length: 5,
+        length: 4,
         child: Scaffold(
           backgroundColor: AppColors.background,
           appBar: AppBar(
@@ -31,9 +31,8 @@ class CustomerStudioPage extends StatelessWidget {
               indicatorColor: AppColors.primary,
               tabAlignment: TabAlignment.start,
               tabs: [
-                Tab(text: 'Bản nháp'),
-                Tab(text: 'Chờ duyệt'),
-                Tab(text: 'Đang xử lý'), // Gộp 4 trạng thái Review, Assigned, Reviewed, Quoted
+                Tab(text: 'Tất cả'),
+                Tab(text: 'Đang xử lý'), // Pending, Review, Assigned, Reviewed, Quoted
                 Tab(text: 'Đã duyệt'),
                 Tab(text: 'Từ chối'),
               ],
@@ -51,9 +50,8 @@ class CustomerStudioPage extends StatelessWidget {
               if (state is StudioListLoaded) {
                 return TabBarView(
                   children: [
-                    _buildList(context, state.nails, ['Draft']),
-                    _buildList(context, state.nails, ['PendingReview']),
-                    _buildList(context, state.nails, ['Review', 'Assigned', 'Reviewed', 'Quoted']),
+                    _buildList(context, state.nails, null), // Tất cả
+                    _buildList(context, state.nails, ['Pending', 'PendingReview', 'Review', 'Assigned', 'Reviewed', 'Quoted']),
                     _buildList(context, state.nails, ['Approved']),
                     _buildList(context, state.nails, ['Rejected']),
                   ],
@@ -73,9 +71,11 @@ class CustomerStudioPage extends StatelessWidget {
     );
   }
 
-  Widget _buildList(BuildContext context, List<CustomerNailModel> allNails, List<String> statuses) {
-    // Lọc theo mảng status
-    final items = allNails.where((n) => statuses.contains(n.status)).toList();
+  /// [statuses] == null => hiển thị tất cả
+  Widget _buildList(BuildContext context, List<CustomerNailModel> allNails, List<String>? statuses) {
+    final items = statuses == null
+        ? allNails
+        : allNails.where((n) => statuses.contains(n.status)).toList();
 
     if (items.isEmpty) {
       return Center(
@@ -84,7 +84,7 @@ class CustomerStudioPage extends StatelessWidget {
           children: [
             Icon(Icons.design_services_outlined, size: 64, color: Colors.grey.shade300),
             const SizedBox(height: 16),
-            const Text('Chưa có mẫu móng nào.', style: TextStyle(color: Colors.grey, fontSize: 16)),
+            const Text('Chưa có yêu cầu duyệt nào.', style: TextStyle(color: Colors.grey, fontSize: 16)),
           ],
         ),
       );
@@ -98,7 +98,8 @@ class CustomerStudioPage extends StatelessWidget {
         itemBuilder: (context, index) {
           return StudioNailCard(
             nail: items[index],
-            onTap: () => context.push('/my-studio/${items[index].id}'),
+            // Navigate bằng customerNailRequestId
+            onTap: () => context.push('/my-studio/${items[index].customerNailRequestId}'),
           );
         },
       ),

@@ -2,7 +2,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/datasources/studio_api_service.dart';
 import '../../data/models/customer_nail_model.dart';
 
-// state quản lý danh sách
+// ===================================================================
+// STATE QUẢN LÝ DANH SÁCH (CustomerNailRequests)
+// ===================================================================
 abstract class StudioListState {}
 class StudioListInitial extends StudioListState {}
 class StudioListLoading extends StudioListState {}
@@ -22,7 +24,7 @@ class StudioListCubit extends Cubit<StudioListState> {
   Future<void> fetchNails() async {
     emit(StudioListLoading());
     try {
-      final nails = await _apiService.getMyNails();
+      final nails = await _apiService.getMyNailRequests();
       emit(StudioListLoaded(nails));
     } catch (e) {
       emit(StudioListError(e.toString()));
@@ -30,7 +32,9 @@ class StudioListCubit extends Cubit<StudioListState> {
   }
 }
 
-// state quản lý chi tiết
+// ===================================================================
+// STATE QUẢN LÝ CHI TIẾT (CustomerNailRequest detail)
+// ===================================================================
 abstract class StudioDetailState {}
 class StudioDetailInitial extends StudioDetailState {}
 class StudioDetailLoading extends StudioDetailState {}
@@ -47,34 +51,23 @@ class StudioDetailCubit extends Cubit<StudioDetailState> {
   final StudioApiService _apiService = StudioApiService();
   StudioDetailCubit() : super(StudioDetailInitial());
 
-  Future<void> fetchDetail(String id) async {
+  /// Fetch chi tiết bằng customerNailRequestId
+  Future<void> fetchDetail(String customerNailRequestId) async {
     emit(StudioDetailLoading());
     try {
-      final nail = await _apiService.getNailDetail(id);
-
-      // NẾU MÓNG ĐƯỢC DUYỆT VÀ CÓ ID THỢ, GỌI API ĐỂ LỤM THÔNG TIN
-      if (nail.status == 'Approved' && nail.approvedArtistId != null) {
-        try {
-          final artistData = await _apiService.getArtistDetail(nail.approvedArtistId!);
-          final firstName = artistData['firstName']?.toString() ?? '';
-          final lastName = artistData['lastName']?.toString() ?? '';
-
-          nail.stylistName = '$firstName $lastName'.trim();
-          nail.salonId = artistData['salonId']?.toString();
-        } catch (e) {
-          nail.stylistName = 'Không thể tải tên thợ';
-        }
-      }
-
+      // API mới trả về đầy đủ thông tin salon + artist, không cần gọi thêm API
+      final nail = await _apiService.getNailRequestDetail(customerNailRequestId);
       emit(StudioDetailLoaded(nail));
     } catch (e) {
       emit(StudioDetailError(e.toString()));
     }
   }
+
+  /// Gửi yêu cầu duyệt (submit-review) — dùng customerNailId (int)
   Future<bool> submitReview(String nailId, String salonId) async {
     try {
       await _apiService.submitNailReview(nailId, salonId);
-      await fetchDetail(nailId);
+      // Sau khi gửi xong, refresh danh sách nếu cần
       return true;
     } catch (e) {
       emit(StudioDetailError(e.toString()));

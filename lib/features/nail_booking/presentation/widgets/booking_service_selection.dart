@@ -74,6 +74,17 @@ class BookingServiceSelection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
+        if (nailData != null) _buildNailVariantCard(),
+        if (availableServices.isEmpty)
+          const Text(
+            'Không có dịch vụ phụ trợ',
+            style: TextStyle(color: AppColors.textSecondary),
+          )
+        else
+          ...availableServices.map(_buildServiceRow),
+      ],
+    );
+  }
 
         // 1. Luôn hiển thị mẫu thiết kế Nail Mặc định (nếu có)
         if (nailData != null) _buildNailVariantCard(),

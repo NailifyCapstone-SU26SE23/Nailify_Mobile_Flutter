@@ -87,6 +87,39 @@ class AppRouter {
           return ServiceDetailPage(serviceId: id);
         },
       ),
+      GoRoute(
+        path: '/try-on',
+        builder: (context, state) => const MainShell(
+          child: TryOnSetupScreen(),
+          showHeader: false,
+        ),
+      ),
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => const MainShell(
+          child: auth_profile.ProfilePage(),
+          showHeader: false,
+        ),
+      ),
+      GoRoute(
+        path: '/profile/update-info',
+        builder: (context, state) => const MainShell(
+          child: UpdateProfilePage(),
+          showHeader: false,
+        ),
+      ),
+      GoRoute(
+        path: '/profile/update-preferences',
+        builder: (context, state) => const MainShell(
+          child: UpdatePreferencesPage(),
+          showHeader: false,
+        ),
+      ),
+      GoRoute(
+        path: '/profile/booking-history',
+        builder: (context, state) => const MainShell(
+          child: Center(
+            child: Text('Lịch sử đặt lịch', style: TextStyle(fontSize: 24)),
 
       //ROUTES DÙNG BOTTOM NAVIGATION BAR ()
       ShellRoute(
@@ -144,12 +177,14 @@ class AppRouter {
             path: '/catalog',
             builder: (context, state) => const CatalogPage(),
           ),
-          GoRoute(
-            path: '/catalog/details',
-            builder: (context, state) {
-              final nailData = state.extra as Map<String, dynamic>;
-              return NailDetailsPage(nailData: nailData);
-            },
+          showHeader: false,
+        ),
+      ),
+      GoRoute(
+        path: '/profile/invoices',
+        builder: (context, state) => const MainShell(
+          child: Center(
+            child: Text('Hóa đơn', style: TextStyle(fontSize: 24)),
           ),
 
           // -- Lịch Hẹn Của Tôi --

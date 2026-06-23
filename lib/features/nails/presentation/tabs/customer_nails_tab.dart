@@ -55,15 +55,6 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
     widget.onDataChanged();
   }
 
-  void _clearFilters() {
-    setState(() {
-      _searchController.clear();
-      _isPublicFilter = null;
-      _page = 1;
-    });
-    _load();
-  }
-
   Future<void> _create() async {
     final result = await showDialog<bool>(
       context: context,

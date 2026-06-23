@@ -11,7 +11,6 @@ class CustomerNailModel {
   final double? price;
   final String? customColor;
   final int? duration;
-  final bool isFavorite;
   final bool isPublic;
   final NailShapeModel? nailShape;
   final NailSurfaceModel? nailSurface;
@@ -26,7 +25,6 @@ class CustomerNailModel {
     this.price,
     this.customColor,
     this.duration,
-    required this.isFavorite,
     required this.isPublic,
     this.nailShape,
     this.nailSurface,
@@ -47,7 +45,6 @@ class CustomerNailModel {
       price: _asNullableDouble(json['price'] ?? json['Price']),  // Fixed: use nullable double
       customColor: _asString(json['customColor'] ?? json['CustomColor']),
       duration: _asNullableInt(json['duration'] ?? json['Duration']),
-      isFavorite: _asBool(json['isFavorite'] ?? json['IsFavorite']),
       isPublic: _asBool(json['isPublic'] ?? json['IsPublic']),
       nailShape: shapeJson is Map ? NailShapeModel.fromJson(Map<String, dynamic>.from(shapeJson)) : null,
       nailSurface: surfaceJson is Map ? NailSurfaceModel.fromJson(Map<String, dynamic>.from(surfaceJson)) : null,

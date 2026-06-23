@@ -57,6 +57,13 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
     4: '#FF4081',
     5: '#FF4081',
   };
+  final Map<int, List<String>?> _fingerGradients = {
+    1: null,
+    2: null,
+    3: null,
+    4: null,
+    5: null,
+  };
   CombinedComponent? _selectedComponent;
   int _selectedFingerIndex = 1;
   int? _selectedPlacementId;
@@ -99,6 +106,13 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
         4: '#FF4081',
         5: '#FF4081',
       };
+      final Map<int, List<String>?> initialGradients = {
+        1: null,
+        2: null,
+        3: null,
+        4: null,
+        5: null,
+      };
       if (customColorJson != null) {
         final decoded = decodeTryOnConfig(customColorJson);
         if (decoded['mode'] == 'perFinger' || decoded['Mode'] == 'perFinger') {
@@ -110,6 +124,14 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
                 final color = finger['color'] ?? finger['Color'];
                 if (fIdx >= 1 && fIdx <= 5 && color is String) {
                   initialColors[fIdx] = color;
+                }
+                final gradient = finger['gradient'] ?? finger['Gradient'];
+                if (fIdx >= 1 && fIdx <= 5 && gradient is Map && gradient['enabled'] == true) {
+                  final stops = gradient['stops'];
+                  if (stops is List) {
+                    initialGradients[fIdx] =
+                        stops.map((item) => item.toString()).take(3).toList();
+                  }
                 }
               }
             }
@@ -128,6 +150,9 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
         _selectedNailShape = _resolveShape(data.nailShapes, customerNail);
         _fingerColors.clear();
         _fingerColors.addAll(initialColors);
+        _fingerGradients
+          ..clear()
+          ..addAll(initialGradients);
         _placements
           ..clear()
           ..addAll(_buildDrafts(customerNail, data.combinedComponents));
@@ -264,7 +289,14 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
           {
             'fingerIndex': i,
             'color': _fingerColors[i] ?? '#FF4081',
-            'gradient': null,
+            'gradient': _fingerGradients[i] == null
+                ? null
+                : {
+                    'enabled': true,
+                    'type': 'linear',
+                    'stops': _fingerGradients[i],
+                    'stopCount': _fingerGradients[i]!.length,
+                  },
           }
       ],
     });
@@ -285,7 +317,6 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
         name: nail.name,
         nailShapeId: shape.nailShapeId,
         customColor: _buildColorJson(),
-        isFavorite: nail.isFavorite,
         isPublic: nail.isPublic,
       );
 
@@ -345,7 +376,6 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
       price: nail?.price,
       customColor: _buildColorJson(),
       duration: nail?.duration,
-      isFavorite: nail?.isFavorite ?? false,
       isPublic: nail?.isPublic ?? false,
       nailShape: shape,
       nailSurface: nail?.nailSurface,
@@ -359,6 +389,12 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
     return _selectedFingerIndex == -1
         ? (_fingerColors[2] ?? '#FF4081')
         : (_fingerColors[_selectedFingerIndex] ?? '#FF4081');
+  }
+
+  List<String>? get _activeFingerGradient {
+    return _selectedFingerIndex == -1
+        ? _fingerGradients[2]
+        : _fingerGradients[_selectedFingerIndex];
   }
 
   @override
@@ -404,6 +440,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
           nail: _customerNail,
           selectedShape: _selectedNailShape,
           selectedColor: _activeFingerColor,
+          gradientStops: _activeFingerGradient,
           selectedFingerIndex: _selectedFingerIndex,
           placements: _placements,
           selectedPlacementId: _selectedPlacementId,
@@ -432,6 +469,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
           onToggle: () => setState(() => _showColorSection = !_showColorSection),
           child: TryOnColorSelector(
             selectedColor: _activeFingerColor,
+            gradientStops: _activeFingerGradient,
             showTitle: false,
             onColorSelected: (color) => setState(() {
               if (_selectedFingerIndex == -1) {
@@ -440,6 +478,17 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
                 }
               } else {
                 _fingerColors[_selectedFingerIndex] = color;
+              }
+            }),
+            onGradientChanged: (gradient) => setState(() {
+              if (_selectedFingerIndex == -1) {
+                for (var i = 1; i <= 5; i++) {
+                  _fingerGradients[i] =
+                      gradient == null ? null : [...gradient];
+                }
+              } else {
+                _fingerGradients[_selectedFingerIndex] =
+                    gradient == null ? null : [...gradient];
               }
             }),
           ),

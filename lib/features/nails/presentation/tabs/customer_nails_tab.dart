@@ -25,7 +25,6 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
   final _searchController = TextEditingController();
   int _page = 1;
   bool? _isPublicFilter;
-  bool? _isFavoriteFilter;
   late Future<PaginatedResponse<CustomerNailModel>> _future;
 
   @override
@@ -47,7 +46,6 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
         pageSize: 10,
         name: _searchController.text.isNotEmpty ? _searchController.text : null,
         isPublic: _isPublicFilter,
-        isFavorite: _isFavoriteFilter,
       );
     });
   }
@@ -61,7 +59,6 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
     setState(() {
       _searchController.clear();
       _isPublicFilter = null;
-      _isFavoriteFilter = null;
       _page = 1;
     });
     _load();
@@ -112,7 +109,6 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
     await widget.repository.updateCustomerNail(
       customerNailId: nail.customerNailId,
       name: nail.name,
-      isFavorite: !nail.isFavorite,
       isPublic: nail.isPublic,
       imagePath: null,
     );
@@ -123,7 +119,6 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
     await widget.repository.updateCustomerNail(
       customerNailId: nail.customerNailId,
       name: nail.name,
-      isFavorite: nail.isFavorite,
       isPublic: !nail.isPublic,
       imagePath: null,
     );
@@ -186,17 +181,7 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
               Wrap(
                 spacing: 8,
                 children: [
-                  FilterChip(
-                    label: const Text('Yêu thích'),
-                    selected: _isFavoriteFilter == true,
-                    onSelected: (selected) {
-                      setState(() {
-                        _isFavoriteFilter = selected ? true : null;
-                        _page = 1;
-                      });
-                      _load();
-                    },
-                  ),
+
                   FilterChip(
                     label: const Text('Công khai'),
                     selected: _isPublicFilter == true,
@@ -208,11 +193,7 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
                       _load();
                     },
                   ),
-                  if (_isFavoriteFilter != null || _isPublicFilter != null || _searchController.text.isNotEmpty)
-                    ActionChip(
-                      label: const Text('Bỏ lọc'),
-                      onPressed: _clearFilters,
-                    ),
+
                 ],
               ),
             ],

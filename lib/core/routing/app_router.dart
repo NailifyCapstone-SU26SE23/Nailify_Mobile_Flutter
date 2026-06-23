@@ -25,6 +25,20 @@ import '../../features/perfect_match/presentation/pages/perfect_match_page.dart'
 import '../../features/quiz/presentation/pages/analyze_page.dart';
 import '../../features/quiz/presentation/pages/quiz_page.dart';
 import '../../features/try-on/presentation/try_on_setup_screen.dart';
+import '../../features/another_design/presentation/pages/another_design_page.dart';
+import '../../features/discover/presentation/pages/discover_page.dart';
+import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/nail_booking/presentation/pages/nail_booking_page.dart';
+import '../../features/nail_booking/presentation/pages/booking_success_page.dart';
+import '../../features/my_booking/presentation/pages/my_booking_list_page.dart';
+import '../../features/my_booking/presentation/pages/my_booking_detail_page.dart';
+import '../../features/custom_nail/presentation/pages/custom_nail_stepper_page.dart';
+
+// --- Auth ---
+import '../../features/auth/presentation/pages/customer_login_page.dart';
+import '../../features/auth/presentation/pages/customer_register_page.dart';
+
+// --- Widgets ---
 import '../widgets/main_shell.dart';
 
 class AppRouter {
@@ -116,6 +130,49 @@ class AppRouter {
         builder: (context, state) => const MainShell(
           child: Center(
             child: Text('Lịch sử đặt lịch', style: TextStyle(fontSize: 24)),
+
+      // 4. ShellRoute (Bottom Navigation)
+      ShellRoute(
+        builder: (context, state, child) => MainShell(child: child),
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) => const HomePage(),
+          ),
+          GoRoute(
+            path: '/nails',
+            builder: (context, state) => const NailListScreen(),
+          ),
+          GoRoute(
+            path: '/nails/:id',
+            builder: (context, state) {
+              final id = int.tryParse(state.pathParameters['id'] ?? '');
+              return NailDetailScreen(nailDesignId: id ?? 0);
+            },
+          ),
+          GoRoute(
+            path: '/nail-variants/:id',
+            pageBuilder: (context, state) {
+              final id = int.tryParse(state.pathParameters['id'] ?? '');
+              return CustomTransitionPage<void>(
+                key: state.pageKey,
+                child: NailVariantDetailScreen(nailVariantId: id ?? 0),
+                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                  final offset = Tween<Offset>(
+                    begin: const Offset(0, 1),
+                    end: Offset.zero,
+                  ).chain(CurveTween(curve: Curves.easeOutCubic));
+                  return SlideTransition(
+                    position: animation.drive(offset),
+                    child: child,
+                  );
+                },
+              );
+            },
+          ),
+          GoRoute(
+            path: '/catalog',
+            builder: (context, state) => const CatalogPage(),
           ),
           showHeader: false,
         ),
@@ -212,6 +269,19 @@ class AppRouter {
             showHeader: true,
           );
         },
+          GoRoute(
+            path: '/my-bookings',
+            builder: (context, state) => const MyBookingListPage(),
+          ),
+          GoRoute(
+            path: '/my-bookings/detail',
+            builder: (context, state) {
+              // Nhận bookingId kiểu String từ extra
+              final bookingId = state.extra as String;
+              return MyBookingDetailPage(bookingId: bookingId);
+            },
+          ),
+        ],
       ),
     ],
   );

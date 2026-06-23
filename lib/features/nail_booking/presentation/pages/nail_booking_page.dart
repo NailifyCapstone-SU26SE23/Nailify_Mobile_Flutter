@@ -59,7 +59,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
     final y = date.year.toString().padLeft(4, '0');
     final m = date.month.toString().padLeft(2, '0');
     final d = date.day.toString().padLeft(2, '0');
-    return "$y-$m-${d}T00:00:00.000Z";
+    return "$y-$m-${d}T00:00:00";
   }
 
   Future<void> _fetchSalons() async {
@@ -108,13 +108,16 @@ class _NailBookingPageState extends State<NailBookingPage> {
       if (_isSubmitting) return;
       setState(() => _isSubmitting = true);
       try {
+        // FIX GIỜ: Chuẩn hóa HH:mm:ss
+        final formattedTime = _selectedTime!.length == 5 ? "$_selectedTime:00" : _selectedTime!;
+
         final booking = await _apiService.createBooking(
           _selectedBranch!['salonId'],
           _formatBookingDate(_selectedDate!),
-          _selectedTime!,
+          formattedTime,
           _selectedStylist!['nailArtistId'],
-          _nailVariantId,
-          _selectedExtraServices.whereType<String>().toList(), // Lọc bỏ null
+          _nailVariantId, // Đã được xử lý tự động thành null bên trong ApiService nếu ID <= 0
+          _selectedExtraServices.whereType<String>().toList(),
         );
 
         if (!mounted) return;
@@ -124,7 +127,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
           'bookingId': booking['bookingId'],
           'serviceName': widget.nailData?['name'] ?? 'Làm móng',
           'date': _selectedDate,
-          'time': _selectedTime,
+          'time': formattedTime,
           'stylistName': _selectedStylist?['fullName'] ?? 'Bất kỳ',
         };
         context.go('/booking-success', extra: bookingDetails);

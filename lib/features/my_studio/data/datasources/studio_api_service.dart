@@ -36,4 +36,8 @@ class StudioApiService {
   //     'salonId': salonId, // Gửi ID salon được chọn vào Body
   //   });
   // }
+  Future<Map<String, dynamic>> getArtistDetail(String artistId) async {
+    final response = await _apiClient.get('/NailArtists/$artistId');
+    return response.data['data'] ?? {};
+  }
 }

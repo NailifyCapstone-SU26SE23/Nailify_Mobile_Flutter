@@ -17,6 +17,9 @@ class CustomerNailModel {
   final Map<String, dynamic>? nailSurface;
   final List<dynamic> customerNailComponents;
 
+  String? stylistName;
+  String? salonId;
+
   CustomerNailModel({
     required this.id,
     required this.name,
@@ -33,6 +36,8 @@ class CustomerNailModel {
     this.nailShape,
     this.nailSurface,
     required this.customerNailComponents,
+    this.stylistName,
+    this.salonId,
   });
 
   factory CustomerNailModel.fromJson(Map<String, dynamic> json) {

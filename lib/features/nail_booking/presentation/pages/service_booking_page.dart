@@ -130,17 +130,21 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
     try {
       final bookingItems = _groupedServicesMap.entries.map((entry) {
         return {
-          "nailVariantId": 0, // Theo spec API
+          "nailVariantId": null,
           "serviceId": entry.key,
-          "customerNailId": 0, // Theo spec API
+          "customerNailId": null,
           "quantity": entry.value
         };
       }).toList();
 
+        final formattedDate = "${_selectedDate!.year.toString().padLeft(4, '0')}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}T00:00:00";
+
+          final formattedTime = _selectedTime!.length == 5 ? "$_selectedTime:00" : _selectedTime!;
+
       final payload = {
         "salonId": _selectedSalon!['salonId'],
-        "bookingDate": _selectedDate!.toIso8601String(),
-        "startTime": "$_selectedTime:00",
+        "bookingDate": formattedDate,
+        "startTime": formattedTime,
         "nailArtistId": _selectedStylist!['nailArtistId'],
         "holdToken": "",
         "bookingItems": bookingItems
@@ -153,7 +157,7 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
           'bookingId': 'Đang xử lý',
           'serviceName': widget.baseService['name'],
           'date': _selectedDate,
-          'time': '$_selectedTime:00',
+          'time': formattedTime,
           'stylistName': _selectedStylist!['fullName'],
         };
         context.go('/booking-success', extra: successData);

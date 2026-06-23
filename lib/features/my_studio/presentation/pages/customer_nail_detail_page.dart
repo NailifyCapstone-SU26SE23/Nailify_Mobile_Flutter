@@ -5,14 +5,13 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../cubit/studio_cubit.dart';
 import '../../data/models/customer_nail_model.dart';
-import '../../data/datasources/studio_api_service.dart'; // Thêm import này
+import '../../data/datasources/studio_api_service.dart';
 
 class CustomerNailDetailPage extends StatelessWidget {
   final String id;
 
   const CustomerNailDetailPage({super.key, required this.id});
 
-  // --- HÀM MỞ POPUP CHỌN SALON TỪ API ---
   void _showSalonSelection(BuildContext parentContext, String nailId) {
     final apiService = StudioApiService();
 
@@ -20,7 +19,7 @@ class CustomerNailDetailPage extends StatelessWidget {
       context: parentContext,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (sheetContext) => FutureBuilder<List<dynamic>>(
-        future: apiService.getSalons(), // Lấy danh sách salon từ API
+        future: apiService.getSalons(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const SizedBox(height: 200, child: Center(child: CircularProgressIndicator()));
@@ -42,7 +41,6 @@ class CustomerNailDetailPage extends StatelessWidget {
                   Flexible(
                     child: SingleChildScrollView(
                       child: Column(
-                        // Lọc và chỉ lấy Name + Id để hiện ra list
                         children: salons.map((salon) {
                           final salonName = salon['name']?.toString() ?? 'Chi nhánh Nailify';
                           final salonId = salon['salonId']?.toString() ?? '';
@@ -55,10 +53,7 @@ class CustomerNailDetailPage extends StatelessWidget {
                                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                                 onTap: () {
                                   Navigator.pop(sheetContext);
-
-                                  // Cubit gửi yêu cầu duyệt + Refresh data
-                                  parentContext.read<StudioDetailCubit>().submitReview(nailId );  // sẽ bổ sung kèm salonId
-
+                                  parentContext.read<StudioDetailCubit>().submitReview(nailId); //sẽ truyền salonId sau (nếu có)
                                   ScaffoldMessenger.of(parentContext).showSnackBar(
                                       const SnackBar(content: Text('Đang xử lý yêu cầu duyệt...'))
                                   );
@@ -135,7 +130,8 @@ class CustomerNailDetailPage extends StatelessWidget {
                             const SizedBox(height: 8),
                             _buildPriceDurationRow('Thời gian dự kiến:', '${nail.duration} phút'),
                             const SizedBox(height: 8),
-                            _buildPriceDurationRow('Thợ chỉ định:', nail.approvedArtistId != null ? 'Chuyên gia #${nail.approvedArtistId!.substring(0,4)}' : 'Chưa gán'),
+                            // FIX: HIỂN THỊ TÊN THỢ TỪ MODEL ĐÃ BÓC TÁCH TỪ API
+                            _buildPriceDurationRow('Thợ chỉ định:', nail.stylistName ?? 'Chưa gán'),
                           ],
                         ),
                       ),
@@ -212,13 +208,12 @@ class CustomerNailDetailPage extends StatelessWidget {
   }
 
   Widget? _buildFooterAction(BuildContext context, CustomerNailModel nail) {
-    // Chỉ hiện nút gửi duyệt nếu trạng thái là Bản Nháp (Draft)
     if (nail.status == 'Draft') {
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),
         child: ElevatedButton.icon(
-          onPressed: () => _showSalonSelection(context, nail.id), // Truyền Context và ID
+          onPressed: () => _showSalonSelection(context, nail.id),
           style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
           icon: const Icon(Icons.send, color: Colors.white),
           label: const Text('Gửi yêu cầu duyệt', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
@@ -226,7 +221,6 @@ class CustomerNailDetailPage extends StatelessWidget {
       );
     }
 
-    // Nếu đã duyệt thì hiện nút Đặt lịch
     if (nail.status == 'Approved') {
       return Container(
         padding: const EdgeInsets.all(20),

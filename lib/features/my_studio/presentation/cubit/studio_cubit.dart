@@ -51,6 +51,21 @@ class StudioDetailCubit extends Cubit<StudioDetailState> {
     emit(StudioDetailLoading());
     try {
       final nail = await _apiService.getNailDetail(id);
+
+      // NẾU MÓNG ĐƯỢC DUYỆT VÀ CÓ ID THỢ, GỌI API ĐỂ LỤM THÔNG TIN
+      if (nail.status == 'Approved' && nail.approvedArtistId != null) {
+        try {
+          final artistData = await _apiService.getArtistDetail(nail.approvedArtistId!);
+          final firstName = artistData['firstName']?.toString() ?? '';
+          final lastName = artistData['lastName']?.toString() ?? '';
+
+          nail.stylistName = '$firstName $lastName'.trim();
+          nail.salonId = artistData['salonId']?.toString();
+        } catch (e) {
+          nail.stylistName = 'Không thể tải tên thợ';
+        }
+      }
+
       emit(StudioDetailLoaded(nail));
     } catch (e) {
       emit(StudioDetailError(e.toString()));

@@ -28,6 +28,7 @@ import '../../features/quiz/presentation/pages/quiz_page.dart';
 import '../../features/try-on/presentation/try_on_setup_screen.dart';
 import '../../features/my_studio/presentation/pages/customer_studio_page.dart' as my_studio;
 import '../../features/my_studio/presentation/pages/customer_nail_detail_page.dart';
+import '../../features/my_studio/data/models/customer_nail_model.dart';
 import '../../features/my_studio/data/studio_mock_data.dart';
 import '../../features/nail_booking/presentation/pages/custom_nail_booking_page.dart';
 import '../../features/services/presentation/pages/service_list_page.dart';
@@ -179,7 +180,7 @@ class AppRouter {
           GoRoute(
             path: '/custom-nail-booking',
             builder: (context, state) {
-              final nail = state.extra as StudioNailModel;
+              final nail = state.extra as CustomerNailModel;
               return CustomNailBookingPage(nail: nail);
             },
           ),

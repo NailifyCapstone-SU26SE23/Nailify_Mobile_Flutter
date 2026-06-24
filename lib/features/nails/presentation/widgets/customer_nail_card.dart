@@ -77,7 +77,6 @@ class CustomerNailCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-
                     ],
                   ),
                   const SizedBox(height: 4),

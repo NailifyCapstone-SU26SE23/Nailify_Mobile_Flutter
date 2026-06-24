@@ -29,12 +29,14 @@ class BookingApiService {
         {
           'nailVariantId': nailVariantId,
           'serviceId': null,
+          'customerNailId': null,
           'quantity': 1,
         },
       ...serviceIds.map(
         (serviceId) => {
           'nailVariantId': null,
           'serviceId': serviceId,
+          'customerNailId': null,
           'quantity': 1,
         },
       ),
@@ -82,8 +84,77 @@ class BookingApiService {
       'bookingDate': bookingDate,
       'startTime': startTime,
       'nailArtistId': artistId,
+      'holdToken': '',
       'bookingItems': _buildBookingItems(nailVariantId, serviceIds),
     });
-    return Map<String, dynamic>.from(response.data['data'] ?? {});
+    return Map<String, dynamic>.from(
+      response.data['data'] ?? response.data ?? {},
+    );
+  }
+
+  Future<List<dynamic>> getNailArtistsBySalon(String salonId) async {
+    final response = await _apiClient.get('/NailArtists', queryParameters: {
+      'PageNumber': 1,
+      'PageSize': 50,
+      'salonId': salonId,
+    });
+    final items = response.data['data']['items'] as List<dynamic>? ?? [];
+    return items.map((artist) {
+      final firstName = artist['firstName']?.toString() ?? '';
+      final lastName = artist['lastName']?.toString() ?? '';
+      return {
+        ...artist,
+        'fullName': '$firstName $lastName'.trim(),
+      };
+    }).toList();
+  }
+
+  Future<Map<String, dynamic>> createServiceBooking(
+    Map<String, dynamic> bookingData,
+  ) async {
+    final response = await _apiClient.post('/Bookings', data: bookingData);
+    return Map<String, dynamic>.from(
+      response.data['data'] ?? response.data ?? {},
+    );
+  }
+
+  Future<Map<String, dynamic>> createCustomNailBooking(
+    String salonId,
+    String bookingDate,
+    String startTime,
+    String artistId,
+    int customerNailId,
+    Map<String, int> groupedExtraServices,
+  ) async {
+    final bookingItems = <Map<String, dynamic>>[
+      {
+        'nailVariantId': null,
+        'serviceId': null,
+        'customerNailId': customerNailId,
+        'quantity': 1,
+      },
+    ];
+
+    groupedExtraServices.forEach((serviceId, quantity) {
+      bookingItems.add({
+        'nailVariantId': null,
+        'serviceId': serviceId,
+        'customerNailId': null,
+        'quantity': quantity,
+      });
+    });
+
+    final response = await _apiClient.post('/Bookings', data: {
+      'salonId': salonId,
+      'bookingDate': bookingDate,
+      'startTime': startTime,
+      'nailArtistId': artistId,
+      'holdToken': '',
+      'bookingItems': bookingItems,
+    });
+
+    return Map<String, dynamic>.from(
+      response.data['data'] ?? response.data ?? {},
+    );
   }
 }

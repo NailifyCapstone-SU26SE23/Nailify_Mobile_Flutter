@@ -8,6 +8,7 @@ import '../../data/models/nail_filters.dart';
 import '../cubit/nail_catalog_cubit.dart';
 import '../widgets/nail_design_card.dart';
 import '../widgets/nail_filter_sheet.dart';
+import '../widgets/banner.dart';
 
 class NailListScreen extends StatelessWidget {
   const NailListScreen({super.key});
@@ -59,9 +60,10 @@ class _NailListViewState extends State<_NailListView> {
           child: CustomScrollView(
             controller: _scrollController,
             slivers: [
+              // Tiêu đề và nút Lọc
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 10),
+                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
                   child: Row(
                     children: [
                       const Expanded(child: Text('Nail designs', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800))),
@@ -74,6 +76,12 @@ class _NailListViewState extends State<_NailListView> {
                   ),
                 ),
               ),
+
+              const SliverToBoxAdapter(
+                child: QuizBanner(),
+              ),
+
+              // Trạng thái Loading / Error / Empty / Hiện Grid
               if (state.status == NailCatalogStatus.loading)
                 const SliverFillRemaining(child: Center(child: CircularProgressIndicator()))
               else if (state.status == NailCatalogStatus.error && state.designs.isEmpty)
@@ -84,27 +92,29 @@ class _NailListViewState extends State<_NailListView> {
                   ),
                 )
               else if (state.designs.isEmpty)
-                const SliverFillRemaining(child: Center(child: Text('No nail designs found.')))
-              else
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                  sliver: SliverGrid.builder(
-                    itemCount: state.designs.length,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
-                      childAspectRatio: 0.72,
+                  const SliverFillRemaining(child: Center(child: Text('No nail designs found.')))
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                    sliver: SliverGrid.builder(
+                      itemCount: state.designs.length,
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        mainAxisSpacing: 12,
+                        crossAxisSpacing: 12,
+                        childAspectRatio: 0.72,
+                      ),
+                      itemBuilder: (context, index) {
+                        final design = state.designs[index];
+                        return NailDesignCard(
+                          design: design,
+                          onTap: () => context.go('/nails/${design.nailDesignId}'),
+                        );
+                      },
                     ),
-                    itemBuilder: (context, index) {
-                      final design = state.designs[index];
-                      return NailDesignCard(
-                        design: design,
-                        onTap: () => context.go('/nails/${design.nailDesignId}'),
-                      );
-                    },
                   ),
-                ),
+
+              // Loading thêm khi cuộn
               if (state.status == NailCatalogStatus.loadingMore)
                 const SliverToBoxAdapter(
                   child: Padding(

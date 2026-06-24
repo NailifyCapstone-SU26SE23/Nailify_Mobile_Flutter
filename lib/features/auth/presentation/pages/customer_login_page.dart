@@ -34,7 +34,7 @@ class _LoginPageState extends State<LoginPage> {
       await getIt<AuthRepository>().login(email: email, password: password);
       if (!mounted) return;
       _showSnackBar('Dang nhap thanh cong', AppColors.success);
-      context.go('/profile');
+      context.go('/');
     } catch (e) {
       if (!mounted) return;
       _showSnackBar(e.toString(), AppColors.error);

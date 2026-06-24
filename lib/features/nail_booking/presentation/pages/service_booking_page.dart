@@ -312,9 +312,22 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
                                 padding: const EdgeInsets.only(bottom: 12.0),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  crossAxisAlignment: CrossAxisAlignment.start, // Căn trên cùng
                                   children: [
-                                    Expanded(child: Text('${qty}x $name', style: const TextStyle(fontSize: 14))),
-                                    Text(PriceFormatter.format(price * qty), style: const TextStyle(fontWeight: FontWeight.bold)),
+                                    // BỌC THÊM PADDING BÊN TRONG EXPANDED
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(right: 12.0),
+                                        child: Text(
+                                          '${qty}x $name',
+                                          style: const TextStyle(fontSize: 14),
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      PriceFormatter.format(price * qty),
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                    ),
                                   ],
                                 ),
                               );

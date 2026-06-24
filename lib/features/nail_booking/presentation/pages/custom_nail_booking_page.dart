@@ -333,9 +333,22 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                                 padding: const EdgeInsets.only(bottom: 8.0),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text('${qty}x ${_serviceNameById(serviceId)}', style: const TextStyle(fontSize: 14, color: Colors.grey)),
-                                    Text(PriceFormatter.format(price * qty), style: const TextStyle(fontWeight: FontWeight.bold))
+                                    // BỌC EXPANDED Ở ĐÂY
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(right: 12.0), // Cách phần giá một khoảng an toàn
+                                        child: Text(
+                                          '${qty}x ${_serviceNameById(serviceId)}',
+                                          style: const TextStyle(fontSize: 14, color: Colors.grey),
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      PriceFormatter.format(price * qty),
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                    )
                                   ],
                                 ),
                               );

@@ -375,7 +375,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                                 ),
                               ),
 
-                            // Fix: Lọc bỏ null trước khi render list summary
+                                  // Fix: Lọc bỏ null trước khi render list summary
                             ..._selectedExtraServices.whereType<String>().map((serviceId) {
                               final serviceName = _serviceNameById(serviceId);
                               final servicePrice = _servicePriceById(serviceId);
@@ -383,8 +383,17 @@ class _NailBookingPageState extends State<NailBookingPage> {
                                 padding: const EdgeInsets.only(bottom: 8.0),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text('Dịch vụ thêm: $serviceName', style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(right: 12.0), // Cách giá tiền một khoảng nhỏ
+                                        child: Text(
+                                          'Dịch vụ thêm: $serviceName',
+                                          style: const TextStyle(fontSize: 14, color: Colors.grey),
+                                        ),
+                                      ),
+                                    ),
                                     Text(
                                       PriceFormatter.format(servicePrice),
                                       style: const TextStyle(fontWeight: FontWeight.bold),

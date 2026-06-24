@@ -14,8 +14,6 @@ import '../../features/my_booking/presentation/pages/my_booking_detail_page.dart
 import '../../features/my_booking/presentation/pages/my_booking_list_page.dart';
 import '../../features/my_studio/data/models/customer_nail_model.dart';
 import '../../features/my_studio/presentation/pages/customer_nail_detail_page.dart';
-import '../../features/my_studio/presentation/pages/customer_studio_page.dart'
-    as my_studio;
 import '../../features/nail_booking/presentation/pages/booking_success_page.dart';
 import '../../features/nail_booking/presentation/pages/custom_nail_booking_page.dart';
 import '../../features/nail_booking/presentation/pages/nail_booking_page.dart';
@@ -159,7 +157,7 @@ class AppRouter {
           ),
           GoRoute(
             path: '/my-studio',
-            builder: (context, state) => const my_studio.CustomerStudioPage(),
+            builder: (context, state) => const CustomerStudioPage(),
           ),
           GoRoute(
             path: '/my-studio/:id',

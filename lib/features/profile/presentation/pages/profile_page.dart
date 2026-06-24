@@ -26,6 +26,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   bool _isLoading = true;
   Map<String, dynamic>? _profileData;
+  Map<String, dynamic>? _loyaltyData;
 
   // state cho các widget
   Set<String> _selectedPersonalities = Set.from(ProfileMockData.initialSelectedPersonalities);
@@ -57,17 +58,25 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _fetchProfile() async {
     try {
-      final response = await _apiClient.get('/Profile/customers');
+      final results = await Future.wait([
+        _apiClient.get('/Profile/customers'),
+        _apiClient.get('/Loyalty/me'),
+      ]);
 
-      if (response.data != null && response.data['isSucceeded'] == true) {
+      final profileResponse = results[0];
+      final loyaltyResponse = results[1];
+
+      if (profileResponse.data != null &&
+          profileResponse.data['isSucceeded'] == true) {
         if (mounted) {
           setState(() {
-            _profileData = response.data['data'];
+            _profileData = profileResponse.data['data'];
+            _loyaltyData = loyaltyResponse.data?['data'];
             _isLoading = false;
           });
         }
       } else {
-        throw Exception(response.data?['message'] ?? 'Lỗi không xác định');
+        throw Exception(profileResponse.data?['message'] ?? 'Lỗi không xác định');
       }
     } catch (e) {
       if (mounted) {
@@ -203,7 +212,12 @@ class _ProfilePageState extends State<ProfilePage> {
     final lastName = _profileData?['lastName']?.toString() ?? '';
     final phone = _profileData?['phone']?.toString() ?? 'Chưa cập nhật';
     final status = _profileData?['status']?.toString() ?? 'N/A';
-    final loyaltyPoint = _profileData?['loyaltyPoint']?.toString() ?? '0';
+    final loyaltyPoint = _loyaltyData?['loyaltyPoint']?.toString() ??
+        _profileData?['loyaltyPoint']?.toString() ??
+        '0';
+    final loyaltyTier =
+        (_loyaltyData?['loyaltyTier'] as Map<String, dynamic>?)?['name']
+            ?.toString();
 
     return Container(
       width: double.infinity,
@@ -259,6 +273,26 @@ class _ProfilePageState extends State<ProfilePage> {
                         Text('$loyaltyPoint điểm', style: const TextStyle(color: Colors.yellowAccent, fontWeight: FontWeight.bold, fontSize: 14)),
                       ],
                     ),
+                    if (loyaltyTier != null && loyaltyTier.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.workspace_premium,
+                            size: 16,
+                            color: Colors.white70,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Hạng $loyaltyTier',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/auth_guard.dart';
+import '../../../../core/utils/price_formatter.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../data/models/nail_component_model.dart';
@@ -144,9 +145,10 @@ class _DetailContent extends StatelessWidget {
               Text(variant.name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
               const SizedBox(height: 8),
               Text(
-                '${variant.price.toStringAsFixed(0)} VND',
+                PriceFormatter.format(variant.price),
                 style: const TextStyle(fontSize: 20, color: AppColors.primary, fontWeight: FontWeight.bold),
               ),
+
               const SizedBox(height: 16),
 
               // 3. Các đặc điểm nổi bật (Chips)

@@ -1,10 +1,4 @@
 import 'dart:typed_data';
-
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-
-// lib/features/my_booking/presentation/pages/my_booking_detail_page.dart
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -71,6 +65,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
 
     final booking = _booking!;
     final bookingDate = DateTime.parse(booking['bookingDate']);
+    final isUpcoming = bookingDate.isAfter(DateTime.now());
     final items = booking['bookingItems'] as List<dynamic>? ?? [];
     final status = _bookingStatus(booking['status']?.toString());
     final rawQrString = booking['qrCode']?.toString();
@@ -100,6 +95,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header Trạng thái
             Center(
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -153,6 +149,8 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
             const SizedBox(height: 12),
             ...items.map(_buildBookingItem),
             const SizedBox(height: 24),
+
+            // Thanh toán
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -223,6 +221,8 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
               ),
             ),
             const SizedBox(height: 24),
+
+            // Mã QR CODE
             if (rawQrString != null && rawQrString.isNotEmpty) ...[
               const Text(
                 'Mã Check-in',
@@ -236,6 +236,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: AppColors.borderLight),
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
                 ),
                 child: Column(
                   children: [
@@ -244,6 +245,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                       style: TextStyle(color: Colors.grey, fontSize: 13),
                     ),
                     const SizedBox(height: 16),
+
                     if (qrImageBytes != null)
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
@@ -261,7 +263,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   ],
                 ),
               ),
-            ],
+            ]
           ],
         ),
       ),

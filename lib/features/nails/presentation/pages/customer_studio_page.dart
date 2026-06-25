@@ -5,6 +5,7 @@ import '../../../../core/di/injection.dart';
 import '../../data/repositories/customer_component_repository.dart';
 import '../../data/repositories/customer_nail_repository.dart';
 import '../tabs/customer_components_tab.dart';
+import '../tabs/customer_nail_requests_tab.dart';
 import '../tabs/customer_nails_tab.dart';
 
 class CustomerStudioPage extends StatefulWidget {
@@ -23,7 +24,7 @@ class _CustomerStudioPageState extends State<CustomerStudioPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -33,7 +34,6 @@ class _CustomerStudioPageState extends State<CustomerStudioPage>
   }
 
   void _reloadData() {
-    // This will trigger both tabs to refresh via their own state management
     setState(() {});
   }
 
@@ -41,16 +41,13 @@ class _CustomerStudioPageState extends State<CustomerStudioPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Studio của tôi'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/profile'),
-        ),
+        title: const Text('My Studio'),
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
-            Tab(icon: Icon(Icons.spa), text: 'Móng của tôi'),
-            Tab(icon: Icon(Icons.star), text: 'Thành phần của tôi'),
+            Tab(icon: Icon(Icons.spa), text: 'My nails'),
+            Tab(icon: Icon(Icons.star), text: 'My components'),
+            Tab(icon: Icon(Icons.assignment), text: 'Requests'),
           ],
         ),
       ),
@@ -65,6 +62,7 @@ class _CustomerStudioPageState extends State<CustomerStudioPage>
             repository: _customerComponentRepository,
             onDataChanged: _reloadData,
           ),
+          const CustomerNailRequestsTab(),
         ],
       ),
     );

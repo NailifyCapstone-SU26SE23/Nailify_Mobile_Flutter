@@ -23,7 +23,6 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
   final _nameController = TextEditingController();
   final _picker = ImagePicker();
 
-  bool _isFavorite = false;
   bool _isPublic = false;
   XFile? _imageFile;
   bool _isLoading = false;
@@ -33,7 +32,6 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
     super.initState();
     final nail = widget.nail;
     _nameController.text = nail?.name ?? '';
-    _isFavorite = nail?.isFavorite ?? false;
     _isPublic = nail?.isPublic ?? false;
   }
 
@@ -64,7 +62,6 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
         // CREATE
         await repository.createCustomerNail(
           name: _nameController.text.trim(),
-          isFavorite: _isFavorite,
           isPublic: _isPublic,
           imagePath: _imageFile?.path,
         );
@@ -73,7 +70,6 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
         await repository.updateCustomerNail(
           customerNailId: widget.nail!.customerNailId,
           name: _nameController.text.trim(),
-          isFavorite: _isFavorite,
           isPublic: _isPublic,
           imagePath: _imageFile?.path,
         );
@@ -209,12 +205,7 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
                 const SizedBox(height: 12),
 
                 if (widget.nail != null) ...[
-                  SwitchListTile(
-                    title: const Text('Yêu thích'),
-                    value: _isFavorite,
-                    onChanged: (value) => setState(() => _isFavorite = value),
-                    contentPadding: EdgeInsets.zero,
-                  ),
+
                   SwitchListTile(
                     title: const Text('Công khai'),
                     subtitle: const Text('Mọi người có thể nhìn thấy mẫu này'),

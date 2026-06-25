@@ -77,16 +77,6 @@ class CustomerNailCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      IconButton(
-                        icon: Icon(
-                          nail.isFavorite ? Icons.favorite : Icons.favorite_border,
-                          color: nail.isFavorite ? Colors.red : Colors.grey,
-                          size: 20,
-                        ),
-                        onPressed: onToggleFavorite,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 4),

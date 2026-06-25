@@ -9,6 +9,7 @@ class TryOnPreviewBoard extends StatelessWidget {
   final CustomerNailModel? nail;
   final NailShapeModel? selectedShape;
   final String selectedColor;
+  final List<String>? gradientStops;
   final int selectedFingerIndex;
   final List<PlacedComponentDraft> placements;
   final int? selectedPlacementId;
@@ -19,6 +20,7 @@ class TryOnPreviewBoard extends StatelessWidget {
     required this.nail,
     required this.selectedShape,
     required this.selectedColor,
+    required this.gradientStops,
     required this.selectedFingerIndex,
     required this.placements,
     required this.selectedPlacementId,
@@ -55,12 +57,10 @@ class TryOnPreviewBoard extends StatelessWidget {
                     top: nailTop,
                     width: nailWidth,
                     height: nailHeight,
-                    child: Image.network(
-                      selectedShape!.imageUrl,
-                      fit: BoxFit.contain,
-                      color: parseTryOnHexColor(selectedColor),
-                      colorBlendMode: BlendMode.srcIn,
-                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    child: _NailColorPreview(
+                      imageUrl: selectedShape!.imageUrl,
+                      color: selectedColor,
+                      gradientStops: gradientStops,
                     ),
                   )
                 else
@@ -164,6 +164,48 @@ class TryOnPreviewBoard extends StatelessWidget {
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+class _NailColorPreview extends StatelessWidget {
+  final String imageUrl;
+  final String color;
+  final List<String>? gradientStops;
+
+  const _NailColorPreview({
+    required this.imageUrl,
+    required this.color,
+    required this.gradientStops,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final stops = gradientStops;
+    if (stops == null || stops.length < 2) {
+      return Image.network(
+        imageUrl,
+        fit: BoxFit.contain,
+        color: parseTryOnHexColor(color),
+        colorBlendMode: BlendMode.srcIn,
+        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+      );
+    }
+
+    return ShaderMask(
+      blendMode: BlendMode.srcIn,
+      shaderCallback: (bounds) => LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: stops.take(3).map(parseTryOnHexColor).toList(),
+      ).createShader(bounds),
+      child: Image.network(
+        imageUrl,
+        fit: BoxFit.contain,
+        color: Colors.white,
+        colorBlendMode: BlendMode.srcIn,
+        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
       ),
     );
   }

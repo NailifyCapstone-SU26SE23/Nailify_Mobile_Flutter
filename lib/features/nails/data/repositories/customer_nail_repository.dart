@@ -14,7 +14,6 @@ class CustomerNailRepository {
     int pageSize = 10,
     String? name,
     bool? isPublic,
-    bool? isFavorite,
   }) async {
     final response = await _apiClient.get<dynamic>(
       '/CustomerNails',
@@ -23,7 +22,6 @@ class CustomerNailRepository {
         'pageSize': pageSize,
         if (name != null && name.trim().isNotEmpty) 'name': name.trim(),
         if (isPublic != null) 'isPublic': isPublic,
-        if (isFavorite != null) 'isFavorite': isFavorite,
       },
     );
     return PaginatedResponse.fromJson(
@@ -40,13 +38,11 @@ class CustomerNailRepository {
 
   Future<int> createCustomerNail({
     required String name,
-    bool isFavorite = false,
     bool isPublic = false,
     String? imagePath,
   }) async {
     final formData = FormData.fromMap({
       'Name': name,
-      'IsFavorite': isFavorite.toString(),
       'IsPublic': isPublic.toString()
     });
     if (imagePath != null && imagePath.isNotEmpty) {
@@ -69,13 +65,11 @@ class CustomerNailRepository {
     int? nailSurfaceId,
     String? customColor,
     int? duration,
-    bool isFavorite = false,
     bool isPublic = false,
     String? imagePath,
   }) async {
     final formData = FormData.fromMap({
       'Name': name,
-      'IsFavorite': isFavorite.toString(),
       'IsPublic': isPublic.toString(),
       if (nailShapeId != null) 'NailShapeId': nailShapeId.toString(),
       if (nailSurfaceId != null) 'NailSurfaceId': nailSurfaceId.toString(),

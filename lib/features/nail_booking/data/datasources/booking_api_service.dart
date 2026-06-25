@@ -21,22 +21,22 @@ class BookingApiService {
   }
 
   List<Map<String, dynamic>> _buildBookingItems(
-      int nailVariantId,
-      List<String> serviceIds,
-      ) {
+    int nailVariantId,
+    List<String> serviceIds,
+  ) {
     return [
       if (nailVariantId > 0)
         {
           'nailVariantId': nailVariantId,
           'serviceId': null,
-          'customerNailId': null, // FIX: Thêm null tường minh
+          'customerNailId': null,
           'quantity': 1,
         },
       ...serviceIds.map(
-            (serviceId) => {
-          'nailVariantId': null, // FIX: Đổi 0 thành null
+        (serviceId) => {
+          'nailVariantId': null,
           'serviceId': serviceId,
-          'customerNailId': null, // FIX: Đổi 0 thành null
+          'customerNailId': null,
           'quantity': 1,
         },
       ),
@@ -44,11 +44,11 @@ class BookingApiService {
   }
 
   Future<List<dynamic>> getSuggestedArtists(
-      String salonId,
-      String bookingDate,
-      int nailVariantId,
-      List<String> serviceIds,
-      ) async {
+    String salonId,
+    String bookingDate,
+    int nailVariantId,
+    List<String> serviceIds,
+  ) async {
     final response = await _apiClient.post('/Bookings/suggested-artists', data: {
       'salonId': salonId,
       'bookingDate': bookingDate,
@@ -58,9 +58,9 @@ class BookingApiService {
   }
 
   Future<List<dynamic>> getArtistAvailableSlots(
-      String artistId,
-      String bookingDate,
-      ) async {
+    String artistId,
+    String bookingDate,
+  ) async {
     final response = await _apiClient.get(
       '/Bookings/artist-available-slots',
       queryParameters: {
@@ -72,13 +72,13 @@ class BookingApiService {
   }
 
   Future<Map<String, dynamic>> createBooking(
-      String salonId,
-      String bookingDate,
-      String startTime,
-      String artistId,
-      int nailVariantId,
-      List<String> serviceIds,
-      ) async {
+    String salonId,
+    String bookingDate,
+    String startTime,
+    String artistId,
+    int nailVariantId,
+    List<String> serviceIds,
+  ) async {
     final response = await _apiClient.post('/Bookings', data: {
       'salonId': salonId,
       'bookingDate': bookingDate,
@@ -90,9 +90,6 @@ class BookingApiService {
     return response.data['data'] ?? {};
   }
 
-  // =================================================================
-  // CÁC HÀM BỔ SUNG CHO LUỒNG ĐẶT DỊCH VỤ ĐỘC LẬP
-  // =================================================================
   Future<List<dynamic>> getNailArtistsBySalon(String salonId) async {
     final response = await _apiClient.get('/NailArtists', queryParameters: {
       'PageNumber': 1,
@@ -110,50 +107,46 @@ class BookingApiService {
     }).toList();
   }
 
-  Future<Map<String, dynamic>> createServiceBooking(Map<String, dynamic> bookingData) async {
+  Future<Map<String, dynamic>> createServiceBooking(
+    Map<String, dynamic> bookingData,
+  ) async {
     final response = await _apiClient.post('/Bookings', data: bookingData);
     return response.data['data'] ?? {};
   }
 
-  // =================================================================
-  // CÁC HÀM BỔ SUNG CHO LUỒNG CUSTOM NAIL BOOKING
-  // =================================================================
   Future<Map<String, dynamic>> createCustomNailBooking(
-      String salonId,
-      String bookingDate,
-      String startTime,
-      String artistId,
-      int customerNailId,
-      Map<String, int> groupedExtraServices,
-      ) async {
-    // 1. Tạo item chính là Móng Custom
-    List<Map<String, dynamic>> bookingItems = [
+    String salonId,
+    String bookingDate,
+    String startTime,
+    String artistId,
+    int customerNailId,
+    Map<String, int> groupedExtraServices,
+  ) async {
+    final bookingItems = <Map<String, dynamic>>[
       {
-        "nailVariantId": null, // FIX: Đổi 0 thành null
-        "serviceId": null,
-        "customerNailId": customerNailId,
-        "quantity": 1
-      }
+        'nailVariantId': null,
+        'serviceId': null,
+        'customerNailId': customerNailId,
+        'quantity': 1,
+      },
     ];
 
-    // 2. Thêm các dịch vụ phụ trợ (kèm số lượng x2, x3 nếu có)
     groupedExtraServices.forEach((serviceId, quantity) {
       bookingItems.add({
-        "nailVariantId": null, // FIX: Đổi 0 thành null
-        "serviceId": serviceId,
-        "customerNailId": null, // FIX: Đổi 0 thành null
-        "quantity": quantity
+        'nailVariantId': null,
+        'serviceId': serviceId,
+        'customerNailId': null,
+        'quantity': quantity,
       });
     });
 
-    // 3. Gửi payload lên API
     final response = await _apiClient.post('/Bookings', data: {
-      "salonId": salonId,
-      "bookingDate": bookingDate,
-      "startTime": startTime,
-      "nailArtistId": artistId,
-      "holdToken": "",
-      "bookingItems": bookingItems
+      'salonId': salonId,
+      'bookingDate': bookingDate,
+      'startTime': startTime,
+      'nailArtistId': artistId,
+      'holdToken': '',
+      'bookingItems': bookingItems,
     });
 
     return response.data['data'] ?? {};

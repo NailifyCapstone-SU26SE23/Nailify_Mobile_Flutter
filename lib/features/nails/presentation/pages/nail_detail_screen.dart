@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/utils/price_formatter.dart';
 import '../../../../core/di/injection.dart';
 import '../../data/models/nail_component_model.dart';
 import '../../data/models/nail_design_model.dart';
@@ -90,7 +91,7 @@ class _DesignDetailContent extends StatelessWidget {
         Text(design.name, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800)),
         const SizedBox(height: 8),
         Text(
-          '${design.minPrice.toStringAsFixed(0)} - ${design.maxPrice.toStringAsFixed(0)} VND',
+          '${PriceFormatter.format(design.minPrice).replaceAll(' VNĐ', '')} - ${PriceFormatter.format(design.maxPrice)}',
           style: const TextStyle(color: Color(0xFFFF66C4), fontWeight: FontWeight.w800),
         ),
         if (design.description.isNotEmpty) ...[
@@ -207,7 +208,7 @@ class _VariantSection extends StatelessWidget {
                   children: [
                     Text(variant.name, style: const TextStyle(fontWeight: FontWeight.w800)),
                     const SizedBox(height: 6),
-                    Text('${variant.price.toStringAsFixed(0)} VND', style: const TextStyle(color: Color(0xFFFF66C4), fontWeight: FontWeight.w700)),
+                    Text(PriceFormatter.format(variant.price), style: const TextStyle(color: Color(0xFFFF66C4), fontWeight: FontWeight.w700)),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 6,

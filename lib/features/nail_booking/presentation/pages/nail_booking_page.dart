@@ -108,7 +108,6 @@ class _NailBookingPageState extends State<NailBookingPage> {
       if (_isSubmitting) return;
       setState(() => _isSubmitting = true);
       try {
-        // FIX GIỜ: Chuẩn hóa HH:mm:ss
         final formattedTime = _selectedTime!.length == 5 ? "$_selectedTime:00" : _selectedTime!;
 
         final booking = await _apiService.createBooking(
@@ -116,15 +115,14 @@ class _NailBookingPageState extends State<NailBookingPage> {
           _formatBookingDate(_selectedDate!),
           formattedTime,
           _selectedStylist!['nailArtistId'],
-          _nailVariantId, // Đã được xử lý tự động thành null bên trong ApiService nếu ID <= 0
+          _nailVariantId,
           _selectedExtraServices.whereType<String>().toList(),
         );
 
         if (!mounted) return;
 
-        // CHUYỂN SANG TRANG THÀNH CÔNG VÀ TRUYỀN DATA
         final bookingDetails = {
-          'bookingId': booking['bookingId'],
+          'bookingId': booking['bookingId']?.toString() ?? '',
           'serviceName': widget.nailData?['name'] ?? 'Làm móng',
           'date': _selectedDate,
           'time': formattedTime,

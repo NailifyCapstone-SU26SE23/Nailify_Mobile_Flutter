@@ -137,9 +137,8 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
         };
       }).toList();
 
-        final formattedDate = "${_selectedDate!.year.toString().padLeft(4, '0')}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}T00:00:00";
-
-          final formattedTime = _selectedTime!.length == 5 ? "$_selectedTime:00" : _selectedTime!;
+      final formattedDate = "${_selectedDate!.year.toString().padLeft(4, '0')}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}T00:00:00";
+      final formattedTime = _selectedTime!.length == 5 ? "$_selectedTime:00" : _selectedTime!;
 
       final payload = {
         "salonId": _selectedSalon!['salonId'],
@@ -150,11 +149,11 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
         "bookingItems": bookingItems
       };
 
-      await _apiService.createServiceBooking(payload);
+       final response = await _apiService.createServiceBooking(payload);
 
       if (mounted) {
         final successData = {
-          'bookingId': 'Đang xử lý',
+          'bookingId': response['bookingId']?.toString() ?? '',
           'serviceName': widget.baseService['name'],
           'date': _selectedDate,
           'time': formattedTime,

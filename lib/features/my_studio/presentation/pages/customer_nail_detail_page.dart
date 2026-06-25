@@ -5,6 +5,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../cubit/studio_cubit.dart';
 import '../../data/models/customer_nail_model.dart';
+import '../../../../core/utils/duration_formatter.dart';
 
 class CustomerNailDetailPage extends StatelessWidget {
   final String id; // customerNailRequestId
@@ -81,7 +82,7 @@ class CustomerNailDetailPage extends StatelessWidget {
                             const SizedBox(height: 8),
                             _buildPriceDurationRow('Báo giá dự kiến:', PriceFormatter.format(nail.price)),
                             const SizedBox(height: 8),
-                            _buildPriceDurationRow('Thời gian dự kiến:', '${nail.duration} phút'),
+                            _buildPriceDurationRow('Thời gian dự kiến:', DurationFormatter.format(nail.duration)),
                             const SizedBox(height: 8),
                             _buildPriceDurationRow('Thợ chỉ định:', nail.stylistName),
                           ],

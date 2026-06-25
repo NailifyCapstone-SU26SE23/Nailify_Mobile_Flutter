@@ -123,23 +123,19 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
     try {
       final salonId = widget.nail.salonId;
       final artistId = widget.nail.nailArtistId ?? '';
-      final nailId = widget.nail.customerNailId; // Đã là int, không cần parse
+      final nailId = widget.nail.customerNailId;
 
       if (nailId <= 0) {
         throw Exception('ID Móng không hợp lệ.');
       }
 
-      if (salonId.isEmpty || artistId.isEmpty) {
+      if (salonId == null || salonId.isEmpty || artistId.isEmpty) {
         throw Exception('Dữ liệu Móng Custom bị thiếu thông tin Chi nhánh hoặc Thợ');
       }
 
-      // 1. CHUẨN HÓA ĐỊNH DẠNG NGÀY (YYYY-MM-DDT00:00:00)
       final formattedDate = "${_selectedDate!.year.toString().padLeft(4, '0')}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}T00:00:00";
-
-      // 2. CHUẨN HÓA ĐỊNH DẠNG GIỜ (HH:mm:ss)
       final formattedTime = _selectedTime!.length == 5 ? "$_selectedTime:00" : _selectedTime!;
 
-      // 3. GỌI API ĐẶT LỊCH
       final response = await _apiService.createCustomNailBooking(
         salonId,
         formattedDate,
@@ -151,7 +147,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
 
       if (mounted) {
         final bookingDetails = {
-          'bookingId': response['data']?['bookingId'] ?? 'Đang xử lý',
+          'bookingId': response['bookingId']?.toString() ?? '',
           'serviceName': 'Custom: ${widget.nail.name}',
           'date': _selectedDate,
           'time': formattedTime,

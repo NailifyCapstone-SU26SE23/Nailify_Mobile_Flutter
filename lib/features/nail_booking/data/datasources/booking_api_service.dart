@@ -87,7 +87,7 @@ class BookingApiService {
       'holdToken': '',
       'bookingItems': _buildBookingItems(nailVariantId, serviceIds),
     });
-    return response.data ?? {};
+    return response.data['data'] ?? {};
   }
 
   // =================================================================
@@ -112,7 +112,7 @@ class BookingApiService {
 
   Future<Map<String, dynamic>> createServiceBooking(Map<String, dynamic> bookingData) async {
     final response = await _apiClient.post('/Bookings', data: bookingData);
-    return response.data ?? {};
+    return response.data['data'] ?? {};
   }
 
   // =================================================================
@@ -156,6 +156,6 @@ class BookingApiService {
       "bookingItems": bookingItems
     });
 
-    return response.data ?? {};
+    return response.data['data'] ?? {};
   }
 }

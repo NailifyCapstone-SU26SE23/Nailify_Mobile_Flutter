@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/models/customer_nail_models.dart';
+import '../../../../core/utils/price_formatter.dart';
 
 class CustomerComponentCard extends StatelessWidget {
   final CustomerComponentModel component;
@@ -100,7 +101,7 @@ class CustomerComponentCard extends StatelessWidget {
                       ),
                       if (component.price > 0)
                         Text(
-                          '${component.price.toStringAsFixed(0)} VND',
+                          PriceFormatter.format(component.price),
                           style: const TextStyle(
                             fontSize: 12,
                             color: Colors.green,

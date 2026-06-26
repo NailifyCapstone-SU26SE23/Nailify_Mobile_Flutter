@@ -49,7 +49,6 @@ class _MyBookingListPageState extends State<MyBookingListPage> {
       final data = await _apiService.getMyBookings();
 
       final List<Map<String, dynamic>> validBookings = [];
-      if (data != null) {
         for (var item in data) {
           if (item is Map) {
             final safeMap = <String, dynamic>{};
@@ -59,7 +58,7 @@ class _MyBookingListPageState extends State<MyBookingListPage> {
             validBookings.add(safeMap);
           }
         }
-      }
+
 
       // SẮP XẾP: Ưu tiên ngày mới nhất (Tương lai -> Hiện tại -> Quá khứ)
       validBookings.sort((a, b) {

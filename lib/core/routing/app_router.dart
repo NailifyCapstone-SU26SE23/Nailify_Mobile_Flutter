@@ -18,7 +18,7 @@ import '../../features/nail_booking/presentation/pages/booking_success_page.dart
 import '../../features/nail_booking/presentation/pages/custom_nail_booking_page.dart';
 import '../../features/nail_booking/presentation/pages/nail_booking_page.dart';
 import '../../features/nail_booking/presentation/pages/service_booking_page.dart';
-import '../../features/nails/presentation/pages/customer_studio_page.dart';
+import '../../features/my_studio/presentation/pages/my_studio_tab_page.dart';
 import '../../features/nails/presentation/pages/nail_detail_screen.dart';
 import '../../features/nails/presentation/pages/nail_list_screen.dart';
 import '../../features/nails/presentation/pages/nail_variant_detail_screen.dart';
@@ -157,7 +157,7 @@ class AppRouter {
           ),
           GoRoute(
             path: '/my-studio',
-            builder: (context, state) => const CustomerStudioPage(),
+            builder: (context, state) => const MyStudioTabPage(),
           ),
           GoRoute(
             path: '/my-studio/:id',
@@ -224,7 +224,7 @@ class AppRouter {
           ),
           GoRoute(
             path: '/profile/my-studio',
-            builder: (context, state) => const CustomerStudioPage(),
+            builder: (context, state) => const MyStudioTabPage(),
           ),
         ],
       ),

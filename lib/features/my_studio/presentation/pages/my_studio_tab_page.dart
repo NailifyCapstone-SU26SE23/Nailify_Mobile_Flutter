@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
+
 import '../../../../core/di/injection.dart';
-import '../../data/repositories/customer_component_repository.dart';
-import '../../data/repositories/customer_nail_repository.dart';
+import '../../../nails/data/repositories/customer_component_repository.dart';
+import '../../../nails/data/repositories/customer_nail_repository.dart';
 import '../tabs/customer_components_tab.dart';
 import '../tabs/customer_nail_requests_tab.dart';
 import '../tabs/customer_nails_tab.dart';
 
-class CustomerStudioPage extends StatefulWidget {
-  const CustomerStudioPage({super.key});
+/// Trang studio với 3 tab: My Nails, My Components, Requests.
+/// Được điều hướng từ footer "My Studio".
+class MyStudioTabPage extends StatefulWidget {
+  const MyStudioTabPage({super.key});
 
   @override
-  State<CustomerStudioPage> createState() => _CustomerStudioPageState();
+  State<MyStudioTabPage> createState() => _MyStudioTabPageState();
 }
 
-class _CustomerStudioPageState extends State<CustomerStudioPage>
+class _MyStudioTabPageState extends State<MyStudioTabPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _customerNailRepository = getIt<CustomerNailRepository>();

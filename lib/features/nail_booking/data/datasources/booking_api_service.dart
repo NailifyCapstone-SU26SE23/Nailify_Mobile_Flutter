@@ -92,6 +92,9 @@ class BookingApiService {
     );
   }
 
+  // =================================================================
+  // CÁC HÀM BỔ SUNG CHO LUỒNG ĐẶT DỊCH VỤ ĐỘC LẬP
+  // =================================================================
   Future<List<dynamic>> getNailArtistsBySalon(String salonId) async {
     final response = await _apiClient.get('/NailArtists', queryParameters: {
       'PageNumber': 1,

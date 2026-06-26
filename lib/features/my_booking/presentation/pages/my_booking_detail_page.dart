@@ -1,10 +1,13 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/base64_image_converter.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../data/datasources/my_booking_api_service.dart';
+import '../widgets/cancel_booking_dialog.dart';
 
 class MyBookingDetailPage extends StatefulWidget {
   final String bookingId;
@@ -43,6 +46,93 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     }
   }
 
+  void _showMapPopup(BuildContext context, String salonName, String? address, double? latitude, double? longitude) {
+    // Tọa độ
+    final double lat = latitude ?? 10.993592755518687;
+    final double lng = longitude ?? 106.65636465428618;
+    final LatLng targetPosition = LatLng(lat, lng);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        final double height = MediaQuery.of(context).size.height * 0.8;
+
+        return Container(
+          height: height,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              // Thanh kéo & Thông tin
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                child: Column(
+                  children: [
+                    Container(
+                        width: 40, height: 5,
+                        decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10))
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Vị trí: $salonName',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      address ?? 'Chi nhánh của Nailify',
+                      style: const TextStyle(fontSize: 13, color: Colors.grey),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+
+              // Bản đồ
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                  child: FlutterMap(
+                    options: MapOptions(
+                      initialCenter: targetPosition,
+                      initialZoom: 16.0,
+                    ),
+                    children: [
+                      TileLayer(
+                        // Dùng CartoDB
+                        urlTemplate: 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.nailify.app',
+                      ),
+                      MarkerLayer(
+                        markers: [
+                          Marker(
+                            point: targetPosition,
+                            width: 50,
+                            height: 50,
+                            child: const Icon(
+                              Icons.location_on,
+                              color: AppColors.primary,
+                              size: 40,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -65,18 +155,20 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
 
     final booking = _booking!;
     final bookingDate = DateTime.parse(booking['bookingDate']);
-    final isUpcoming = bookingDate.isAfter(DateTime.now());
     final items = booking['bookingItems'] as List<dynamic>? ?? [];
-    final status = _bookingStatus(booking['status']?.toString());
+    final rawStatus = booking['status']?.toString();
+    final status = _bookingStatus(rawStatus);
     final rawQrString = booking['qrCode']?.toString();
     final Uint8List? qrImageBytes = Base64ImageConverter.decode(rawQrString);
+    final canCancel = rawStatus == 'Pending' || rawStatus == 'Approved' || rawStatus == 'Assigned';
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, size: 20),
-          onPressed: () => context.pop(),
+          onPressed: () => context.go('/my-bookings'),
+              // context.pop(),
         ),
         title: const Text(
           'Chi tiết lịch hẹn',
@@ -127,7 +219,55 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
               ),
               child: Column(
                 children: [
-                  _buildRow('Chi nhánh', booking['salonName']?.toString()),
+                  //_buildRow('Chi nhánh', booking['salonName']?.toString()),
+                  //map xịn
+                  Material(
+                    color: Colors.transparent, // Đảm bảo hiệu ứng chạm hiển thị đúng
+                    child: InkWell(
+                      onTap: () {
+                        final salonName = _booking?['salonName']?.toString() ?? 'Chi nhánh Nailify';
+                        final address = _booking?['salonAddress']?.toString();
+                        final latitude = _booking?['latitude'] as double?;
+                        final longitude = _booking?['longitude'] as double?;
+                        _showMapPopup(context, salonName, address, latitude, longitude);
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Row(
+                          children: [
+
+                            Expanded(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Chi nhánh',
+                                    style: TextStyle(color: Colors.grey, fontSize: 15),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      _booking?['salonName']?.toString() ?? 'Đang tải...',
+                                      textAlign: TextAlign.right,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                        color: AppColors.primary,
+                                        decorationColor: AppColors.primary,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                   _buildRow('Kỹ thuật viên', booking['artistName']?.toString()),
                   _buildRow(
                     'Ngày hẹn',
@@ -263,7 +403,70 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   ],
                 ),
               ),
-            ]
+            ],
+            if (canCancel) ...[
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => CancelBookingDialog(
+                        bookingId: widget.bookingId,
+                        onConfirm: (reason) async {
+                          /* TODO: Bỏ chú thích khi API hoàn thiện
+                          try {
+                            final success = await _apiService.cancelBooking(
+                              widget.bookingId, 
+                              reason: reason,
+                            );
+                            if (success && mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Hủy lịch thành công')),
+                              );
+                              _fetchBookingDetail(); // Load lại trang
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Hủy lịch thất bại')),
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Lỗi: $e')),
+                              );
+                            }
+                          }
+                          */
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('API chưa hoàn thiện')),
+                            );
+                          }
+                        },
+                      ),
+                    );
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Hủy đặt lịch',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 24),
           ],
         ),
       ),

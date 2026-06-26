@@ -16,7 +16,6 @@ import '../widgets/component_grid.dart';
 import '../widgets/nail_shape_selector.dart';
 import '../widgets/try_on_action_bar.dart';
 import '../widgets/try_on_color_selector.dart';
-import '../widgets/try_on_finger_selector.dart';
 import '../widgets/try_on_placement_controls.dart';
 import '../widgets/try_on_preview_board.dart';
 
@@ -65,7 +64,8 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
     5: null,
   };
   CombinedComponent? _selectedComponent;
-  int _selectedFingerIndex = 1;
+  int _selectedFingerIndex = -1;
+  int? _previewDetailFingerIndex;
   int? _selectedPlacementId;
   final List<PlacedComponentDraft> _placements = [];
   final Set<int> _deletedPlacementIds = {};
@@ -200,26 +200,28 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
   void _addSelectedComponent() {
     final component = _selectedComponent;
     if (component == null) return;
-    if (_selectedFingerIndex == -1) {
-      _showMessage('Chọn một ngón tay trước khi thêm component.');
-      return;
-    }
-    final draft = PlacedComponentDraft(
-      localId: DateTime.now().microsecondsSinceEpoch,
-      component: component,
-      componentId: component.componentId,
-      customerComponentId: component.customerComponentId,
-      name: component.name,
-      imageUrl: component.imageUrl,
-      fingerIndex: _selectedFingerIndex,
-      posX: 0,
-      posY: 0,
-      scale: 0.5,
-      rotation: 0,
-    );
+    final targetFingers =
+        _selectedFingerIndex == -1 ? [1, 2, 3, 4, 5] : [_selectedFingerIndex];
+    final createdAt = DateTime.now().microsecondsSinceEpoch;
+    final drafts = [
+      for (var index = 0; index < targetFingers.length; index++)
+        PlacedComponentDraft(
+          localId: createdAt + index,
+          component: component,
+          componentId: component.componentId,
+          customerComponentId: component.customerComponentId,
+          name: component.name,
+          imageUrl: component.imageUrl,
+          fingerIndex: targetFingers[index],
+          posX: 0,
+          posY: 0,
+          scale: 0.5,
+          rotation: 0,
+        ),
+    ];
     setState(() {
-      _placements.add(draft);
-      _selectedPlacementId = draft.localId;
+      _placements.addAll(drafts);
+      _selectedPlacementId = drafts.last.localId;
     });
   }
 
@@ -249,9 +251,11 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
     });
   }
 
-  void _selectFinger(int value) {
+  void _togglePreviewDetailFinger(int fingerIndex) {
     setState(() {
-      _selectedFingerIndex = value;
+      _previewDetailFingerIndex =
+          _previewDetailFingerIndex == fingerIndex ? null : fingerIndex;
+      _selectedFingerIndex = _previewDetailFingerIndex ?? -1;
     });
   }
 
@@ -441,16 +445,16 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
           selectedShape: _selectedNailShape,
           selectedColor: _activeFingerColor,
           gradientStops: _activeFingerGradient,
+          fingerColors: _fingerColors,
+          fingerGradients: _fingerGradients,
           selectedFingerIndex: _selectedFingerIndex,
+          detailFingerIndex: _previewDetailFingerIndex,
           placements: _placements,
           selectedPlacementId: _selectedPlacementId,
           onSelectPlacement: (id) => setState(() => _selectedPlacementId = id),
+          onToggleDetailFinger: _togglePreviewDetailFinger,
         ),
         const SizedBox(height: 16),
-        TryOnFingerSelector(
-          value: _selectedFingerIndex,
-          onChanged: _selectFinger,
-        ),
         _CollapsibleTryOnSection(
           title: 'Placement',
           expanded: _showPlacementSection,

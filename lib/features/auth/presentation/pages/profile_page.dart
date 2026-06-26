@@ -101,14 +101,14 @@ class _ProfilePageState extends State<ProfilePage> {
                 backgroundImage: avatarUrl != null
                     ? NetworkImage(avatarUrl)
                     : null,
-                child: avatarUrl == null
-                    ? const Icon(Icons.person, size: 60, color: AppColors.primary)
-                    : null,
                 onBackgroundImageError: avatarUrl != null
                     ? (_, _) {
                   // Log error silently or show debug message only in development
                   debugPrint('Failed to load avatar: $avatarUrl');
                 }
+                    : null,
+                child: avatarUrl == null
+                    ? const Icon(Icons.person, size: 60, color: AppColors.primary)
                     : null,
               ),
             ),

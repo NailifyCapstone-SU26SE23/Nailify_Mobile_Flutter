@@ -21,7 +21,7 @@ class CustomerNailRepository {
         'pageNumber': page,
         'pageSize': pageSize,
         if (name != null && name.trim().isNotEmpty) 'name': name.trim(),
-        if (isPublic != null) 'isPublic': isPublic,
+        'isPublic': ?isPublic,
       },
     );
     return PaginatedResponse.fromJson(
@@ -73,7 +73,7 @@ class CustomerNailRepository {
       'IsPublic': isPublic.toString(),
       if (nailShapeId != null) 'NailShapeId': nailShapeId.toString(),
       if (nailSurfaceId != null) 'NailSurfaceId': nailSurfaceId.toString(),
-      if (customColor != null) 'CustomColor': customColor,
+      'CustomColor': ?customColor,
       if (duration != null) 'Duration': duration.toString(),
     });
 

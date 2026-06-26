@@ -111,7 +111,7 @@ class TryOnPreviewBoard extends StatelessWidget {
                                     : Image.network(
                                         placement.imageUrl,
                                         fit: BoxFit.contain,
-                                        errorBuilder: (_, __, ___) =>
+                                        errorBuilder: (_, _, _) =>
                                             const Icon(Icons.auto_awesome, color: Colors.purple, size: 16),
                                       ),
                               ),
@@ -152,7 +152,7 @@ class TryOnPreviewBoard extends StatelessWidget {
                                 : Image.network(
                                     placement.imageUrl,
                                     fit: BoxFit.contain,
-                                    errorBuilder: (_, __, ___) =>
+                                    errorBuilder: (_, _, _) =>
                                         const Icon(Icons.auto_awesome, color: Colors.purple),
                                   ),
                           ),
@@ -189,7 +189,7 @@ class _NailColorPreview extends StatelessWidget {
         fit: BoxFit.contain,
         color: parseTryOnHexColor(color),
         colorBlendMode: BlendMode.srcIn,
-        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+        errorBuilder: (_, _, _) => const SizedBox.shrink(),
       );
     }
 
@@ -205,7 +205,7 @@ class _NailColorPreview extends StatelessWidget {
         fit: BoxFit.contain,
         color: Colors.white,
         colorBlendMode: BlendMode.srcIn,
-        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+        errorBuilder: (_, _, _) => const SizedBox.shrink(),
       ),
     );
   }

@@ -56,7 +56,7 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
             children: [
               Expanded(
                 child: DropdownButtonFormField<String?>(
-                  value: _statusFilter,
+                  initialValue: _statusFilter,
                   decoration: InputDecoration(
                     labelText: 'Filter by status',
                     border: OutlineInputBorder(

@@ -328,7 +328,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                         style: TextStyle(color: Colors.grey, fontSize: 14),
                       ),
                       Text(
-                        '${PriceFormatter.format(booking['discount'] ?? 0)}',
+                        PriceFormatter.format(booking['discount'] ?? 0),
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
@@ -394,7 +394,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                           width: 200,
                           height: 200,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
+                          errorBuilder: (_, _, _) =>
                               const _QrErrorPlaceholder(),
                         ),
                       )

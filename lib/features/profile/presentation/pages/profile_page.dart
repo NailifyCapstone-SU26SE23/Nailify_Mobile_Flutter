@@ -29,10 +29,10 @@ class _ProfilePageState extends State<ProfilePage> {
   Map<String, dynamic>? _loyaltyData;
 
   // state cho các widget
-  Set<String> _selectedPersonalities = Set.from(ProfileMockData.initialSelectedPersonalities);
-  Set<String> _selectedColors = Set.from(ProfileMockData.initialSelectedColors);
+  final Set<String> _selectedPersonalities = Set.from(ProfileMockData.initialSelectedPersonalities);
+  final Set<String> _selectedColors = Set.from(ProfileMockData.initialSelectedColors);
   String _selectedMainStyle = ProfileMockData.initialMainStyleId;
-  Set<String> _selectedOccasions = Set.from(ProfileMockData.initialSelectedOccasions);
+  final Set<String> _selectedOccasions = Set.from(ProfileMockData.initialSelectedOccasions);
   final Map<String, TextEditingController> _noteControllers = {};
 
   @override

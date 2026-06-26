@@ -151,7 +151,7 @@ class _ImageGallery extends StatelessWidget {
               child: Image.network(
                 imageUrls[index],
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+                errorBuilder: (_, _, _) => Container(
                   color: const Color(0xFFF7E8F1),
                   alignment: Alignment.center,
                   child: const Icon(Icons.broken_image_outlined),

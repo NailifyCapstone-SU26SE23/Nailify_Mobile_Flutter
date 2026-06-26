@@ -59,7 +59,7 @@ class StudioNailCard extends StatelessWidget {
                   width: 100,
                   height: 100,
                   fit: BoxFit.cover,
-                  errorBuilder: (_,__,___) => _fallbackImage()
+                  errorBuilder: (_,_,_) => _fallbackImage()
               )
                   : _fallbackImage(),
             ),

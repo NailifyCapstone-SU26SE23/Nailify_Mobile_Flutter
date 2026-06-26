@@ -40,7 +40,7 @@ class CustomerNailDetailPage extends StatelessWidget {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(16),
                       child: nail.imageUrl != null
-                          ? Image.network(nail.imageUrl!, width: double.infinity, height: 250, fit: BoxFit.cover, errorBuilder: (_,__,___) => _fallbackImage())
+                          ? Image.network(nail.imageUrl!, width: double.infinity, height: 250, fit: BoxFit.cover, errorBuilder: (_,_,_) => _fallbackImage())
                           : _fallbackImage(),
                     ),
                     const SizedBox(height: 24),

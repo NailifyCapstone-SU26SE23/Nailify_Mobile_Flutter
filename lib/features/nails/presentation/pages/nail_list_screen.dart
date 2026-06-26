@@ -66,6 +66,10 @@ class _NailListViewState extends State<_NailListView> {
                   padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
                   child: Row(
                     children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back_ios, size: 20),
+                        onPressed: () => context.go('/'),
+                      ),
                       const Expanded(child: Text('Nail designs', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800))),
                       IconButton.filledTonal(
                         tooltip: 'Filter',

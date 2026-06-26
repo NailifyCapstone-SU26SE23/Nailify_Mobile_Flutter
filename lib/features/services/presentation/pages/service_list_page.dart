@@ -45,13 +45,16 @@ class _ServiceListPageState extends State<ServiceListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+
       appBar: AppBar(
         title: const Text('Dịch vụ', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
-        // Nếu trang này nằm trong MainShell (Bottom Navigation), ẩn nút Back
-        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, size: 20),
+          onPressed: () => context.go('/'),
+        ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

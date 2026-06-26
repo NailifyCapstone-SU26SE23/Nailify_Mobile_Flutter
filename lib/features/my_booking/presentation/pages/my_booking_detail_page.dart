@@ -7,6 +7,7 @@ import '../../../../core/utils/price_formatter.dart';
 import '../../data/datasources/my_booking_api_service.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import '../widgets/cancel_booking_dialog.dart';
 
 class MyBookingDetailPage extends StatefulWidget {
   final String bookingId;
@@ -156,9 +157,11 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     final bookingDate = DateTime.parse(booking['bookingDate']);
     final isUpcoming = bookingDate.isAfter(DateTime.now());
     final items = booking['bookingItems'] as List<dynamic>? ?? [];
-    final status = _bookingStatus(booking['status']?.toString());
+    final rawStatus = booking['status']?.toString();
+    final status = _bookingStatus(rawStatus);
     final rawQrString = booking['qrCode']?.toString();
     final Uint8List? qrImageBytes = Base64ImageConverter.decode(rawQrString);
+    final canCancel = rawStatus == 'Pending' || rawStatus == 'Approved' || rawStatus == 'Assigned';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -401,7 +404,70 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   ],
                 ),
               ),
-            ]
+            ],
+            if (canCancel) ...[
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => CancelBookingDialog(
+                        bookingId: widget.bookingId,
+                        onConfirm: (reason) async {
+                          /* TODO: Bỏ chú thích khi API hoàn thiện
+                          try {
+                            final success = await _apiService.cancelBooking(
+                              widget.bookingId, 
+                              reason: reason,
+                            );
+                            if (success && mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Hủy lịch thành công')),
+                              );
+                              _fetchBookingDetail(); // Load lại trang
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Hủy lịch thất bại')),
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Lỗi: $e')),
+                              );
+                            }
+                          }
+                          */
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('API chưa hoàn thiện')),
+                            );
+                          }
+                        },
+                      ),
+                    );
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Hủy đặt lịch',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 24),
           ],
         ),
       ),

@@ -44,6 +44,7 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
   DateTime? _selectedDate;
   Map<String, dynamic>? _selectedStylist;
   String? _selectedTime;
+  bool _noArtistSelected = false;
 
   @override
   void initState() {
@@ -72,13 +73,28 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
     setState(() { _isLoadingArtists = true; _artists = []; _selectedStylist = null; _selectedTime = null; });
     try {
       final artists = await _apiService.getNailArtistsBySalon(_selectedSalon!['salonId']);
-      if (mounted) setState(() { _artists = artists; _isLoadingArtists = false; });
+      if (mounted) {
+        setState(() { 
+          _artists = artists; 
+          _isLoadingArtists = false; 
+          if (_artists.isEmpty) {
+            _noArtistSelected = true;
+          }
+        });
+        if (_artists.isEmpty) {
+          _fetchTimeSlots();
+        }
+      }
     } catch (e) {
       if (mounted) setState(() => _isLoadingArtists = false);
     }
   }
 
   Future<void> _fetchTimeSlots() async {
+    if (_noArtistSelected) {
+      _loadSalonSlots();
+      return;
+    }
     if (_selectedStylist == null || _selectedDate == null) return;
     setState(() { _isLoadingTimes = true; _timeSlots = []; _selectedTime = null; });
     try {
@@ -88,6 +104,14 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
     } catch (e) {
       if (mounted) setState(() => _isLoadingTimes = false);
     }
+  }
+
+  void _loadSalonSlots() {
+    if (_selectedSalon == null || _selectedDate == null) return;
+    setState(() {
+      _timeSlots = _apiService.getSalonOperatingSlots(_selectedSalon!, _selectedDate!);
+      _selectedTime = null;
+    });
   }
 
   // --- LOGIC XỬ LÝ GỘP DỊCH VỤ VÀ TÍNH TIỀN ---
@@ -144,8 +168,8 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
         "salonId": _selectedSalon!['salonId'],
         "bookingDate": formattedDate,
         "startTime": formattedTime,
-        "nailArtistId": _selectedStylist!['nailArtistId'],
-        "holdToken": "",
+        "nailArtistId": _noArtistSelected ? null : _selectedStylist!['nailArtistId'],
+        "holdToken": null,
         "bookingItems": bookingItems
       };
 
@@ -157,7 +181,7 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
           'serviceName': widget.baseService['name'],
           'date': _selectedDate,
           'time': formattedTime,
-          'stylistName': _selectedStylist!['fullName'],
+          'stylistName': _noArtistSelected ? 'Tự động phân công' : _selectedStylist!['fullName'],
         };
         context.go('/booking-success', extra: successData);
       }
@@ -177,8 +201,8 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
     if (_currentStep == 1 && _selectedExtraServices.contains(null)) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Có ô dịch vụ đang bị bỏ trống!'))); return;
     }
-    if (_currentStep == 2 && (_selectedDate == null || _selectedStylist == null || _selectedTime == null)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng chọn đầy đủ ngày, thợ và khung giờ!'))); return;
+    if (_currentStep == 2 && (_selectedDate == null || (_selectedStylist == null && !_noArtistSelected) || _selectedTime == null)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng chọn đầy đủ ngày, thợ (hoặc để tự động) và khung giờ!'))); return;
     }
 
     if (_currentStep < 3) {
@@ -255,15 +279,30 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
                       const SizedBox(height: 24),
                       BookingStylistSelection(
                         artists: _artists, isLoading: _isLoadingArtists, selectedStylistId: _selectedStylist?['nailArtistId'],
+                        noArtistSelected: _noArtistSelected,
                         onStylistSelected: (artist) {
-                          setState(() => _selectedStylist = artist);
+                          setState(() {
+                            if (artist != null) {
+                              _noArtistSelected = false;
+                              _selectedStylist = artist;
+                              _selectedTime = null;
+                            }
+                          });
+                          if (artist != null) _fetchTimeSlots();
+                        },
+                        onModeChanged: (isNoArtist) {
+                          setState(() {
+                            _noArtistSelected = isNoArtist;
+                            if (isNoArtist) _selectedStylist = null;
+                            _selectedTime = null;
+                          });
                           _fetchTimeSlots();
                         },
                       ),
                       const SizedBox(height: 24),
                       BookingTimeSelection(
                         timeSlots: _timeSlots, isLoading: _isLoadingTimes, selectedTime: _selectedTime,
-                        canSelect: _selectedStylist != null && _selectedDate != null, selectedDate: _selectedDate,
+                        canSelect: (_selectedStylist != null || _noArtistSelected) && _selectedDate != null, selectedDate: _selectedDate,
                         onTimeChanged: (time) => setState(() => _selectedTime = time),
                       ),
                     ],
@@ -286,7 +325,8 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
                             _buildSummaryRow(Icons.storefront, 'Chi nhánh', _selectedSalon?['name'] ?? ''),
                             _buildSummaryRow(Icons.calendar_month, 'Ngày hẹn', _selectedDate != null ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}' : ''),
                             _buildSummaryRow(Icons.access_time, 'Thời gian', _selectedTime ?? ''),
-                            _buildSummaryRow(Icons.face, 'Thợ thực hiện', _selectedStylist?['fullName'] ?? ''),
+                            _buildSummaryRow(Icons.face, 'Thợ thực hiện',
+                              _noArtistSelected ? 'Tự động phân công' : (_selectedStylist?['fullName'] ?? '')),
                           ],
                         ),
                       ),

@@ -71,11 +71,52 @@ class BookingApiService {
     return response.data['data']['timeSlots'] ?? [];
   }
 
+  /// Tạo danh sách khung giờ từ lịch hoạt động của salon (không cần chọn thợ).
+  /// Trả về cùng định dạng với [getArtistAvailableSlots] để widget dùng chung.
+  List<dynamic> getSalonOperatingSlots(
+    Map<String, dynamic> salon,
+    DateTime date,
+  ) {
+    final List<dynamic> hours = salon['operatingHours'] ?? [];
+    final int dayOfWeek = date.weekday % 7; // Dart: Mon=1..Sun=7 → 0=Sun,1=Mon,...6=Sat
+    final Map<String, dynamic>? todayHours = hours.cast<Map<String, dynamic>?>().firstWhere(
+      (h) => h?['dayOfWeek'] == dayOfWeek,
+      orElse: () => null,
+    );
+    if (todayHours == null || todayHours['isClosed'] == true) return [];
+
+    final String openStr = todayHours['openTime'] ?? '08:00:00';
+    final String closeStr = todayHours['closeTime'] ?? '19:00:00';
+
+    int _toMinutes(String t) {
+      final parts = t.split(':');
+      return int.parse(parts[0]) * 60 + int.parse(parts[1]);
+    }
+    String _fromMinutes(int m) {
+      final h = (m ~/ 60).toString().padLeft(2, '0');
+      final min = (m % 60).toString().padLeft(2, '0');
+      return '$h:$min:00';
+    }
+
+    final int openMin = _toMinutes(openStr);
+    final int closeMin = _toMinutes(closeStr);
+    final List<Map<String, dynamic>> slots = [];
+    for (int m = openMin; m + 30 <= closeMin; m += 30) {
+      slots.add({
+        'startTime': _fromMinutes(m),
+        'endTime': _fromMinutes(m + 30),
+        'isAvailable': true,
+        'isHeld': false,
+      });
+    }
+    return slots;
+  }
+
   Future<Map<String, dynamic>> createBooking(
     String salonId,
     String bookingDate,
     String startTime,
-    String artistId,
+    String? artistId,
     int nailVariantId,
     List<String> serviceIds,
   ) async {
@@ -83,8 +124,8 @@ class BookingApiService {
       'salonId': salonId,
       'bookingDate': bookingDate,
       'startTime': startTime,
-      'nailArtistId': artistId,
-      'holdToken': '',
+      'nailArtistId': artistId?.isEmpty == true ? null : artistId,
+      'holdToken': null,
       'bookingItems': _buildBookingItems(nailVariantId, serviceIds),
     });
     return Map<String, dynamic>.from(

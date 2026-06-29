@@ -294,6 +294,7 @@ class _MyBookingListPageState extends State<MyBookingListPage> {
     final bookingDate = DateTime.tryParse(dateStr) ?? DateTime.now();
 
     final status = _bookingStatus(booking['status']?.toString());
+    final rawStatus = booking['status']?.toString();
     final items = booking['bookingItems'] as List<dynamic>? ?? [];
     var nailName = 'Dịch vụ làm móng';
 
@@ -319,6 +320,7 @@ class _MyBookingListPageState extends State<MyBookingListPage> {
 
     final artistName = booking['artistName']?.toString() ?? 'Bất kỳ';
     final bookingIdStr = booking['bookingId']?.toString() ?? '';
+    final canRate = rawStatus == 'Completed' && !_isRated(booking);
 
     return GestureDetector(
       onTap: () {
@@ -365,6 +367,27 @@ class _MyBookingListPageState extends State<MyBookingListPage> {
                 Expanded(child: Text(artistName, style: const TextStyle(color: Colors.grey, fontSize: 13), overflow: TextOverflow.ellipsis)),
               ],
             ),
+            if (canRate && bookingIdStr.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => context.push(
+                    '/my-bookings/rate',
+                    extra: bookingIdStr,
+                  ),
+                  icon: const Icon(Icons.star_border, size: 18),
+                  label: const Text('Rate'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -385,6 +408,12 @@ class _MyBookingListPageState extends State<MyBookingListPage> {
       case 'Repaired': return _BookingStatusView('Đã bảo hành', Colors.cyan.shade50, Colors.cyan.shade800);
       default: return _BookingStatusView(status ?? 'N/A', Colors.grey.shade100, Colors.grey.shade800);
     }
+  }
+
+  bool _isRated(Map<String, dynamic> booking) {
+    final value = booking['IsRated'];
+    if (value is bool) return value;
+    return value?.toString().toLowerCase() == 'true';
   }
 }
 

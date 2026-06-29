@@ -158,9 +158,11 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     final items = booking['bookingItems'] as List<dynamic>? ?? [];
     final rawStatus = booking['status']?.toString();
     final status = _bookingStatus(rawStatus);
+    final discounts = _discounts;
     final rawQrString = booking['qrCode']?.toString();
     final Uint8List? qrImageBytes = Base64ImageConverter.decode(rawQrString);
     final canCancel = rawStatus == 'Pending' || rawStatus == 'Approved' || rawStatus == 'Assigned';
+    final canRate = rawStatus == 'Completed' && !_isRated(booking);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -320,7 +322,10 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   const SizedBox(height: 8),
 
                   // 2. Khuyến mãi (Giảm giá)
-                  Row(
+                  if (discounts.isNotEmpty)
+                    ...discounts.map(_buildDiscountRow)
+                  else
+                    Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
@@ -466,6 +471,34 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                 ),
               ),
             ],
+            if (canRate) ...[
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => context.push(
+                    '/my-bookings/rate',
+                    extra: widget.bookingId,
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  icon: const Icon(Icons.star, color: Colors.white),
+                  label: const Text(
+                    'Rate',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 24),
           ],
         ),
@@ -527,6 +560,44 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     );
   }
 
+  List<Map<String, dynamic>> get _discounts {
+    final raw = _booking?['discounts'] ?? _booking?['discountBreakdown'];
+    if (raw is! List) return [];
+    return raw
+        .whereType<Map>()
+        .map((discount) => Map<String, dynamic>.from(discount))
+        .toList();
+  }
+
+  Widget _buildDiscountRow(Map<String, dynamic> discount) {
+    final name = discount['name']?.toString() ?? 'Giảm giá';
+    final amountDisplay = discount['amountDisplay']?.toString();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text(
+              name,
+              style: const TextStyle(color: Colors.grey, fontSize: 14),
+            ),
+          ),
+          Text(
+            amountDisplay?.isNotEmpty == true
+                ? amountDisplay!
+                : PriceFormatter.format(-(discount['amount'] ?? 0)),
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              color: Colors.green,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildRow(String label, String? value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -546,6 +617,12 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
         ],
       ),
     );
+  }
+
+  bool _isRated(Map<String, dynamic> booking) {
+    final value = booking['isRated'] ?? booking['IsRated'];
+    if (value is bool) return value;
+    return value?.toString().toLowerCase() == 'true';
   }
 
   _BookingStatusView _bookingStatus(String? status) {

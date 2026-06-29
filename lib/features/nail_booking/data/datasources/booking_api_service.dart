@@ -118,8 +118,9 @@ class BookingApiService {
     String startTime,
     String? artistId,
     int nailVariantId,
-    List<String> serviceIds,
-  ) async {
+    List<String> serviceIds, {
+      List<int>? selectedPromotionIds,
+    }) async {
     final response = await _apiClient.post('/Bookings', data: {
       'salonId': salonId,
       'bookingDate': bookingDate,
@@ -127,6 +128,30 @@ class BookingApiService {
       'nailArtistId': artistId?.isEmpty == true ? null : artistId,
       'holdToken': null,
       'bookingItems': _buildBookingItems(nailVariantId, serviceIds),
+      'selectedPromotionIds': selectedPromotionIds,
+    });
+    return Map<String, dynamic>.from(
+      response.data['data'] ?? response.data ?? {},
+    );
+  }
+
+  Future<Map<String, dynamic>> reviewBookingPrice({
+    required String salonId,
+    required String bookingDate,
+    required String startTime,
+    required String? artistId,
+    required int nailVariantId,
+    required List<String> serviceIds,
+    List<int>? selectedPromotionIds,
+  }) async {
+    final response = await _apiClient.post('/Bookings/price', data: {
+      'salonId': salonId,
+      'bookingDate': bookingDate,
+      'startTime': startTime,
+      'nailArtistId': artistId?.isEmpty == true ? null : artistId,
+      'holdToken': null,
+      'bookingItems': _buildBookingItems(nailVariantId, serviceIds),
+      'selectedPromotionIds': selectedPromotionIds,
     });
     return Map<String, dynamic>.from(
       response.data['data'] ?? response.data ?? {},

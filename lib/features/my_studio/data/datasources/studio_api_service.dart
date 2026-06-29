@@ -36,8 +36,9 @@ class StudioApiService {
   /// Gửi yêu cầu duyệt mẫu nail (submit-review)
   Future<void> submitNailReview(String nailId, String salonId) async {
     await _apiClient.post(
-      '/CustomerNails/$nailId/submit-review',
-      queryParameters: {
+      '/CustomerNails/requests/submit',
+      data: {
+        'customerNailId': int.tryParse(nailId) ?? nailId,
         'salonId': salonId,
       },
     );

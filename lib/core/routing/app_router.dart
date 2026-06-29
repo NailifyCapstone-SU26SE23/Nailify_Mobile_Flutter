@@ -12,6 +12,7 @@ import '../../features/discover/presentation/pages/discover_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/my_booking/presentation/pages/my_booking_detail_page.dart';
 import '../../features/my_booking/presentation/pages/my_booking_list_page.dart';
+import '../../features/my_booking/presentation/pages/booking_rating_page.dart';
 import '../../features/my_studio/data/models/customer_nail_model.dart';
 import '../../features/my_studio/presentation/pages/customer_nail_detail_page.dart';
 import '../../features/nail_booking/presentation/pages/booking_success_page.dart';
@@ -153,6 +154,13 @@ class AppRouter {
             builder: (context, state) {
               final bookingId = state.extra?.toString() ?? '';
               return MyBookingDetailPage(bookingId: bookingId);
+            },
+          ),
+          GoRoute(
+            path: '/my-bookings/rate',
+            builder: (context, state) {
+              final bookingId = state.extra?.toString() ?? '';
+              return BookingRatingPage(bookingId: bookingId);
             },
           ),
           GoRoute(

@@ -88,23 +88,23 @@ class BookingApiService {
     final String openStr = todayHours['openTime'] ?? '08:00:00';
     final String closeStr = todayHours['closeTime'] ?? '19:00:00';
 
-    int _toMinutes(String t) {
+    int toMinutes(String t) {
       final parts = t.split(':');
       return int.parse(parts[0]) * 60 + int.parse(parts[1]);
     }
-    String _fromMinutes(int m) {
+    String fromMinutes(int m) {
       final h = (m ~/ 60).toString().padLeft(2, '0');
       final min = (m % 60).toString().padLeft(2, '0');
       return '$h:$min:00';
     }
 
-    final int openMin = _toMinutes(openStr);
-    final int closeMin = _toMinutes(closeStr);
+    final int openMin = toMinutes(openStr);
+    final int closeMin = toMinutes(closeStr);
     final List<Map<String, dynamic>> slots = [];
     for (int m = openMin; m + 30 <= closeMin; m += 30) {
       slots.add({
-        'startTime': _fromMinutes(m),
-        'endTime': _fromMinutes(m + 30),
+        'startTime': fromMinutes(m),
+        'endTime': fromMinutes(m + 30),
         'isAvailable': true,
         'isHeld': false,
       });

@@ -1,13 +1,17 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 import '../../nails/data/models/customer_nail_models.dart';
 import '../../nails/data/models/nail_shape_model.dart';
+import '../../nails/data/models/nail_surface_model.dart';
 import '../models/placed_component_draft.dart';
 import '../utils/try_on_setup_helpers.dart';
 
 class TryOnPreviewBoard extends StatelessWidget {
   final CustomerNailModel? nail;
   final NailShapeModel? selectedShape;
+  final NailSurfaceModel? selectedSurface;
   final String selectedColor;
   final List<String>? gradientStops;
   final Map<int, String> fingerColors;
@@ -23,6 +27,7 @@ class TryOnPreviewBoard extends StatelessWidget {
     super.key,
     required this.nail,
     required this.selectedShape,
+    required this.selectedSurface,
     required this.selectedColor,
     required this.gradientStops,
     required this.fingerColors,
@@ -54,6 +59,7 @@ class TryOnPreviewBoard extends StatelessWidget {
                   Expanded(
                     child: _FingerPreviewTile(
                       selectedShape: selectedShape,
+                      selectedSurface: selectedSurface,
                       color: fingerColors[finger] ?? selectedColor,
                       gradientStops: fingerGradients[finger] ?? gradientStops,
                       placements: placements
@@ -84,6 +90,7 @@ class TryOnPreviewBoard extends StatelessWidget {
       aspectRatio: 1.1,
       child: _FingerPreviewTile(
         selectedShape: selectedShape,
+        selectedSurface: selectedSurface,
         color: selectedFingerIndex == -1
             ? fingerColors[previewFingerIndex] ?? selectedColor
             : selectedColor,
@@ -107,6 +114,7 @@ class TryOnPreviewBoard extends StatelessWidget {
 
 class _FingerPreviewTile extends StatelessWidget {
   final NailShapeModel? selectedShape;
+  final NailSurfaceModel? selectedSurface;
   final String color;
   final List<String>? gradientStops;
   final List<PlacedComponentDraft> placements;
@@ -117,6 +125,7 @@ class _FingerPreviewTile extends StatelessWidget {
 
   const _FingerPreviewTile({
     required this.selectedShape,
+    required this.selectedSurface,
     required this.color,
     required this.gradientStops,
     required this.placements,
@@ -157,6 +166,7 @@ class _FingerPreviewTile extends StatelessWidget {
                       imageUrl: selectedShape!.imageUrl,
                       color: color,
                       gradientStops: gradientStops,
+                      surface: selectedSurface,
                     ),
                   )
                 else
@@ -293,33 +303,154 @@ class _NailColorPreview extends StatelessWidget {
   final String imageUrl;
   final String color;
   final List<String>? gradientStops;
+  final NailSurfaceModel? surface;
 
   const _NailColorPreview({
     required this.imageUrl,
     required this.color,
     required this.gradientStops,
+    required this.surface,
   });
 
   @override
   Widget build(BuildContext context) {
     final stops = gradientStops;
+    final baseColor = _applySurfaceOffsets(parseTryOnHexColor(color), surface);
+    final adjustedStops = stops
+        ?.take(3)
+        .map((item) => _applySurfaceOffsets(parseTryOnHexColor(item), surface))
+        .toList();
+    final shader = _SurfaceShader.fromSurface(surface);
+
+    Widget nailImage;
     if (stops == null || stops.length < 2) {
-      return Image.network(
+      nailImage = Image.network(
         imageUrl,
         fit: BoxFit.contain,
-        color: parseTryOnHexColor(color),
+        color: baseColor,
         colorBlendMode: BlendMode.srcIn,
         errorBuilder: (_, _, _) => const SizedBox.shrink(),
       );
+    } else {
+      nailImage = ShaderMask(
+        blendMode: BlendMode.srcIn,
+        shaderCallback: (bounds) => LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: adjustedStops ?? [baseColor, baseColor],
+        ).createShader(bounds),
+        child: Image.network(
+          imageUrl,
+          fit: BoxFit.contain,
+          color: Colors.white,
+          colorBlendMode: BlendMode.srcIn,
+          errorBuilder: (_, _, _) => const SizedBox.shrink(),
+        ),
+      );
     }
 
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        nailImage,
+        if (shader.matte)
+          _GradientNailLayer(
+            imageUrl: imageUrl,
+            gradient: LinearGradient(
+              colors: [
+                Colors.black.withOpacity(0.08),
+                Colors.black.withOpacity(0.08),
+              ],
+            ),
+          ),
+        if (shader.gradient)
+          _GradientNailLayer(
+            imageUrl: imageUrl,
+            gradient: LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: [
+                Colors.black.withOpacity(0.18),
+                Colors.transparent,
+                Colors.white.withOpacity(0.22),
+              ],
+            ),
+          ),
+        if (shader.stripe)
+          _GradientNailLayer(
+            imageUrl: imageUrl,
+            gradient: LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: [
+                Colors.transparent,
+                Colors.white.withOpacity(0.42),
+                Colors.transparent,
+              ],
+              stops: const [0.38, 0.5, 0.62],
+            ),
+          ),
+        if (shader.rainbow)
+          _GradientNailLayer(
+            imageUrl: imageUrl,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.red.withOpacity(0.28),
+                Colors.yellow.withOpacity(0.24),
+                Colors.green.withOpacity(0.22),
+                Colors.blue.withOpacity(0.24),
+                Colors.purple.withOpacity(0.28),
+              ],
+            ),
+          ),
+        if (shader.metallic)
+          _GradientNailLayer(
+            imageUrl: imageUrl,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white.withOpacity(0.52),
+                Colors.transparent,
+                Colors.black.withOpacity(0.16),
+                Colors.white.withOpacity(0.36),
+              ],
+              stops: const [0, 0.32, 0.62, 1],
+            ),
+          ),
+        if (shader.shine)
+          _GradientNailLayer(
+            imageUrl: imageUrl,
+            gradient: RadialGradient(
+              center: shader.shineAlignment,
+              radius: shader.shineSize,
+              colors: [
+                Colors.white.withOpacity(shader.shineOpacity),
+                Colors.white.withOpacity(0),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _GradientNailLayer extends StatelessWidget {
+  final String imageUrl;
+  final Gradient gradient;
+
+  const _GradientNailLayer({
+    required this.imageUrl,
+    required this.gradient,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return ShaderMask(
       blendMode: BlendMode.srcIn,
-      shaderCallback: (bounds) => LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: stops.take(3).map(parseTryOnHexColor).toList(),
-      ).createShader(bounds),
+      shaderCallback: gradient.createShader,
       child: Image.network(
         imageUrl,
         fit: BoxFit.contain,
@@ -328,6 +459,103 @@ class _NailColorPreview extends StatelessWidget {
         errorBuilder: (_, _, _) => const SizedBox.shrink(),
       ),
     );
+  }
+}
+
+Color _applySurfaceOffsets(Color color, NailSurfaceModel? surface) {
+  if (surface == null) return color;
+  final hsl = HSLColor.fromColor(color);
+  return hsl
+      .withHue((hsl.hue + surface.hueOffset) % 360)
+      .withSaturation((hsl.saturation + surface.saturationOffset).clamp(0.0, 1.0))
+      .withLightness((hsl.lightness + surface.lightnessOffset).clamp(0.0, 1.0))
+      .toColor();
+}
+
+class _SurfaceShader {
+  final bool matte;
+  final bool shine;
+  final bool metallic;
+  final bool stripe;
+  final bool gradient;
+  final bool rainbow;
+  final Alignment shineAlignment;
+  final double shineSize;
+  final double shineOpacity;
+
+  const _SurfaceShader({
+    required this.matte,
+    required this.shine,
+    required this.metallic,
+    required this.stripe,
+    required this.gradient,
+    required this.rainbow,
+    required this.shineAlignment,
+    required this.shineSize,
+    required this.shineOpacity,
+  });
+
+  factory _SurfaceShader.fromSurface(NailSurfaceModel? surface) {
+    final params = _decodeShaderParams(surface?.shaderParam);
+    final name = surface?.name.toLowerCase() ?? '';
+    final shine = _asMap(params['shine']);
+    final metalness = _asMap(params['metalness']);
+    final stripe = _asMap(params['stripe']);
+    final gradient = _asMap(params['gradient']);
+    final prism = _asMap(params['prism']);
+    final rainbow = _asMap(params['rainbow']);
+    final iridescence = _asMap(params['iridescence']);
+
+    return _SurfaceShader(
+      matte: name.contains('matte') || _asMap(params['texture'])?['type'] == 'matte',
+      shine: _asEnabled(shine),
+      metallic: name.contains('chrome') || _asEnabled(metalness),
+      stripe: name.contains('cat') || _asEnabled(stripe),
+      gradient: _asEnabled(gradient),
+      rainbow: name.contains('holographic') ||
+          _asEnabled(prism) ||
+          _asEnabled(rainbow) ||
+          _asEnabled(iridescence),
+      shineAlignment: _alignmentFromPosition(shine?['position']?.toString()),
+      shineSize: (_asDouble(shine?['size'], fallback: 0.42)).clamp(0.18, 0.9),
+      shineOpacity: (_asDouble(shine?['opacity'], fallback: 0.55)).clamp(0.0, 1.0),
+    );
+  }
+}
+
+Map<String, dynamic> _decodeShaderParams(String? value) {
+  if (value == null || value.trim().isEmpty) return const {};
+  try {
+    final decoded = jsonDecode(value);
+    if (decoded is Map<String, dynamic>) return decoded;
+    if (decoded is Map) return Map<String, dynamic>.from(decoded);
+  } catch (_) {}
+  return const {};
+}
+
+Map<String, dynamic>? _asMap(dynamic value) {
+  if (value is Map<String, dynamic>) return value;
+  if (value is Map) return Map<String, dynamic>.from(value);
+  return null;
+}
+
+bool _asEnabled(Map<String, dynamic>? value) => value?['enabled'] == true;
+
+double _asDouble(dynamic value, {required double fallback}) {
+  if (value is num) return value.toDouble();
+  return double.tryParse(value?.toString() ?? '') ?? fallback;
+}
+
+Alignment _alignmentFromPosition(String? value) {
+  switch (value) {
+    case 'top-left':
+      return Alignment.topLeft;
+    case 'top-right':
+      return Alignment.topRight;
+    case 'center':
+      return Alignment.center;
+    default:
+      return Alignment.topRight;
   }
 }
 

@@ -3,6 +3,7 @@ import '../../../core/utils/paginated_response.dart';
 import '../../nails/data/models/component_model.dart';
 import '../../nails/data/models/customer_nail_models.dart';
 import '../../nails/data/models/nail_shape_model.dart';
+import '../../nails/data/models/nail_surface_model.dart';
 import '../models/try_on_data.dart';
 import '../../nails/data/repositories/nail_variant_repository.dart';
 import '../../nails/data/repositories/component_catalog_repository.dart';
@@ -25,6 +26,7 @@ class TryOnSetupService {
     // Fetch all data in parallel for performance
     final results = await Future.wait([
       _nailVariantRepo.getNailShapes(),  // Now using NailVariantRepository
+      _nailVariantRepo.getNailSurfaces(),
       _componentRepo.getComponents(),
       _customerComponentRepo.getCustomerComponents(
         page: 1,
@@ -34,8 +36,9 @@ class TryOnSetupService {
 
     return TryOnData(
       nailShapes: results[0] as List<NailShapeModel>,
-      components: results[1] as List<ComponentModel>,
-      customerComponents: (results[2] as PaginatedResponse<CustomerComponentModel>).items,
+      nailSurfaces: results[1] as List<NailSurfaceModel>,
+      components: results[2] as List<ComponentModel>,
+      customerComponents: (results[3] as PaginatedResponse<CustomerComponentModel>).items,
     );
   }
 }

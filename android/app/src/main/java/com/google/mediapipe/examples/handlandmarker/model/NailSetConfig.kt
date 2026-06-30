@@ -15,6 +15,9 @@ data class NailSetConfig(
     @SerializedName("material")
     val material: String = MATERIAL_STANDARD,
 
+    @SerializedName("surface")
+    val surface: NailSurfaceRenderConfig? = null,
+
     @SerializedName("gradient")
     val gradient: GradientConfig = GradientConfig(),
 
@@ -39,3 +42,20 @@ data class NailSetConfig(
             List(FINGER_COUNT) { FingerNailDesign() }
     }
 }
+
+data class NailSurfaceRenderConfig(
+    @SerializedName("name")
+    val name: String? = null,
+
+    @SerializedName("shaderParam")
+    val shaderParam: String? = null,
+
+    @SerializedName("lightnessOffset")
+    val lightnessOffset: Float = 0f,
+
+    @SerializedName("saturationOffset")
+    val saturationOffset: Float = 0f,
+
+    @SerializedName("hueOffset")
+    val hueOffset: Float = 0f,
+)

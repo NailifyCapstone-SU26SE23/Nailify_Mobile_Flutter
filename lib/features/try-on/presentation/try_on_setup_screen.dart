@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/di/injection.dart';
 import '../../nails/data/models/customer_nail_models.dart';
 import '../../nails/data/models/nail_shape_model.dart';
+import '../../nails/data/models/nail_surface_model.dart';
 import '../../nails/data/repositories/customer_nail_repository.dart';
 import '../../nails/data/repositories/nail_component_repository.dart';
 import '../../nails/services/ar_try_on_service.dart';
@@ -14,6 +15,7 @@ import '../services/try_on_setup_service.dart';
 import '../utils/try_on_setup_helpers.dart';
 import '../widgets/component_grid.dart';
 import '../widgets/nail_shape_selector.dart';
+import '../widgets/nail_surface_selector.dart';
 import '../widgets/try_on_action_bar.dart';
 import '../widgets/try_on_color_selector.dart';
 import '../widgets/try_on_placement_controls.dart';
@@ -40,6 +42,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
   bool _isSaving = false;
   bool _launching = false;
   bool _showShapeSection = true;
+  bool _showSurfaceSection = true;
   bool _showColorSection = true;
   bool _showPlacementSection = true;
   bool _showSystemComponents = true;
@@ -49,6 +52,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
   CustomerNailModel? _customerNail;
 
   NailShapeModel? _selectedNailShape;
+  NailSurfaceModel? _selectedNailSurface;
   final Map<int, String> _fingerColors = {
     1: '#FF4081',
     2: '#FF4081',
@@ -148,6 +152,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
         _tryOnData = data;
         _customerNail = customerNail;
         _selectedNailShape = _resolveShape(data.nailShapes, customerNail);
+        _selectedNailSurface = _resolveSurface(data.nailSurfaces, customerNail);
         _fingerColors.clear();
         _fingerColors.addAll(initialColors);
         _fingerGradients
@@ -172,6 +177,13 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
     return shapes.where((shape) => shape.nailShapeId == nail.nailShapeId).firstOrNull ??
         nail.nailShape ??
         (shapes.isEmpty ? null : shapes.first);
+  }
+
+  NailSurfaceModel? _resolveSurface(List<NailSurfaceModel> surfaces, CustomerNailModel? nail) {
+    if (nail == null) return surfaces.isEmpty ? null : surfaces.first;
+    return surfaces.where((surface) => surface.nailSurfaceId == nail.nailSurfaceId).firstOrNull ??
+        nail.nailSurface ??
+        (surfaces.isEmpty ? null : surfaces.first);
   }
 
   List<PlacedComponentDraft> _buildDrafts(
@@ -320,6 +332,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
         customerNailId: nail.customerNailId,
         name: nail.name,
         nailShapeId: shape.nailShapeId,
+        nailSurfaceId: _selectedNailSurface?.nailSurfaceId,
         customColor: _buildColorJson(),
         isPublic: nail.isPublic,
       );
@@ -376,13 +389,13 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
       name: nail?.name ?? 'Custom Nail',
       imageUrl: nail?.imageUrl ?? '',
       nailShapeId: shape.nailShapeId,
-      nailSurfaceId: nail?.nailSurfaceId,
+      nailSurfaceId: _selectedNailSurface?.nailSurfaceId ?? nail?.nailSurfaceId,
       price: nail?.price,
       customColor: _buildColorJson(),
       duration: nail?.duration,
       isPublic: nail?.isPublic ?? false,
       nailShape: shape,
-      nailSurface: nail?.nailSurface,
+      nailSurface: _selectedNailSurface ?? nail?.nailSurface,
       customerNailComponents: _placements
           .map((placement) => placement.toCustomerNailComponent(nail?.customerNailId ?? 0))
           .toList(),
@@ -443,6 +456,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
         TryOnPreviewBoard(
           nail: _customerNail,
           selectedShape: _selectedNailShape,
+          selectedSurface: _selectedNailSurface,
           selectedColor: _activeFingerColor,
           gradientStops: _activeFingerGradient,
           fingerColors: _fingerColors,
@@ -487,6 +501,16 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
             selectedShape: _selectedNailShape,
             showTitle: false,
             onSelected: (shape) => setState(() => _selectedNailShape = shape),
+          ),
+        ),
+        _CollapsibleTryOnSection(
+          title: 'Surface',
+          expanded: _showSurfaceSection,
+          onToggle: () => setState(() => _showSurfaceSection = !_showSurfaceSection),
+          child: NailSurfaceSelector(
+            surfaces: data.nailSurfaces,
+            selectedSurface: _selectedNailSurface,
+            onSelected: (surface) => setState(() => _selectedNailSurface = surface),
           ),
         ),
         _CollapsibleTryOnSection(

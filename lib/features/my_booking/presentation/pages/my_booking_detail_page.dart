@@ -7,6 +7,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/base64_image_converter.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../data/datasources/my_booking_api_service.dart';
+import '../utils/booking_status_utils.dart';
 import '../widgets/cancel_booking_dialog.dart';
 
 class MyBookingDetailPage extends StatefulWidget {
@@ -22,6 +23,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
   final MyBookingApiService _apiService = MyBookingApiService();
   bool _isLoading = true;
   Map<String, dynamic>? _booking;
+  Map<String, dynamic>? _rating;
 
   @override
   void initState() {
@@ -32,9 +34,18 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
   Future<void> _fetchBookingDetail() async {
     try {
       final data = await _apiService.getBookingDetails(widget.bookingId);
+      Map<String, dynamic>? rating;
+      if (bookingIsRated(data)) {
+        try {
+          rating = await _apiService.getRatingByBooking(widget.bookingId);
+        } catch (e) {
+          debugPrint('==== Lỗi tải đánh giá booking: $e ====');
+        }
+      }
       if (!mounted) return;
       setState(() {
         _booking = data;
+        _rating = rating;
         _isLoading = false;
       });
     } catch (e) {
@@ -157,12 +168,13 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     final bookingDate = DateTime.parse(booking['bookingDate']);
     final items = booking['bookingItems'] as List<dynamic>? ?? [];
     final rawStatus = booking['status']?.toString();
-    final status = _bookingStatus(rawStatus);
+    final status = bookingStatusView(rawStatus);
     final discounts = _discounts;
+    final isRated = bookingIsRated(booking);
     final rawQrString = booking['qrCode']?.toString();
     final Uint8List? qrImageBytes = Base64ImageConverter.decode(rawQrString);
     final canCancel = rawStatus == 'Pending' || rawStatus == 'Approved' || rawStatus == 'Assigned';
-    final canRate = rawStatus == 'Completed' && !_isRated(booking);
+    final canRate = rawStatus == 'Completed' && !isRated;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -368,7 +380,17 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
             const SizedBox(height: 24),
 
             // Mã QR CODE
-            if (rawQrString != null && rawQrString.isNotEmpty) ...[
+            if (isRated) ...[
+              const Text(
+                'Đánh giá của bạn',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              _buildRatingCard(),
+              const SizedBox(height: 24),
+            ],
+
+            if (!isRated && rawQrString != null && rawQrString.isNotEmpty) ...[
               const Text(
                 'Mã Check-in',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -619,90 +641,123 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     );
   }
 
-  bool _isRated(Map<String, dynamic> booking) {
-    final value = booking['isRated'] ?? booking['IsRated'];
-    if (value is bool) return value;
-    return value?.toString().toLowerCase() == 'true';
-  }
-
-  _BookingStatusView _bookingStatus(String? status) {
-    switch (status) {
-      case 'Pending':
-        return _BookingStatusView(
-          'Đang chờ xác nhận',
-          Colors.orange.shade50,
-          Colors.orange.shade800,
-        );
-      case 'Assigned':
-        return _BookingStatusView(
-          'Đã xếp lịch',
-          Colors.blue.shade50,
-          Colors.blue.shade800,
-        );
-      case 'Reviewed':
-        return _BookingStatusView(
-          'Đã xem xét',
-          Colors.indigo.shade50,
-          Colors.indigo.shade800,
-        );
-      case 'Approved':
-        return _BookingStatusView(
-          'Đã chấp nhận',
-          Colors.green.shade50,
-          Colors.green.shade800,
-        );
-      case 'Rejected':
-        return _BookingStatusView(
-          'Đã từ chối',
-          Colors.red.shade50,
-          Colors.red.shade800,
-        );
-      case 'Cancelled':
-        return _BookingStatusView(
-          'Đã hủy',
-          Colors.grey.shade200,
-          Colors.grey.shade800,
-        );
-      case 'CheckedIn':
-        return _BookingStatusView(
-          'Đã Checked In',
-          Colors.teal.shade50,
-          Colors.teal.shade800,
-        );
-      case 'InProgress':
-        return _BookingStatusView(
-          'Đang thực hiện',
-          Colors.purple.shade50,
-          Colors.purple.shade800,
-        );
-      case 'Completed':
-        return _BookingStatusView(
-          'Đã hoàn thành',
-          Colors.green.shade50,
-          Colors.green.shade800,
-        );
-      case 'Repaired':
-        return _BookingStatusView(
-          'Đã bảo hành',
-          Colors.cyan.shade50,
-          Colors.cyan.shade800,
-        );
-      default:
-        return _BookingStatusView(
-          status ?? 'N/A',
-          Colors.grey.shade100,
-          Colors.grey.shade800,
-        );
+  Widget _buildRatingCard() {
+    final rating = _rating;
+    if (rating == null || rating.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.borderLight),
+        ),
+        child: const Text(
+          'Chưa tải được thông tin đánh giá.',
+          style: TextStyle(color: Colors.grey),
+        ),
+      );
     }
+
+    final comment = rating['comment']?.toString().trim() ?? '';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Add image if URL exists
+          if (rating['imageUrl'] != null && rating['imageUrl'].toString().isNotEmpty) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                rating['imageUrl'],
+                width: double.infinity,
+                height: 200,
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.broken_image, size: 50),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          _buildRatingRow('Tổng thể', rating['overallScore']),
+          _buildRatingRow('Chất lượng dịch vụ', rating['serviceQuality']),
+          _buildRatingRow('Đúng giờ', rating['punctuality']),
+          _buildRatingRow('Sạch sẽ', rating['cleanliness']),
+
+          if (comment.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            const Text(
+              'Nhận xét',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            Text(comment, style: const TextStyle(color: AppColors.textPrimary)),
+          ],
+        ],
+      ),
+    );
   }
-}
 
-class _BookingStatusView {
-  final String label;
-  final Color backgroundColor;
-  final Color textColor;
+  Widget _buildRatingRow(String label, dynamic score) {
+    final value = int.tryParse(score?.toString() ?? '') ?? 0;
+    final normalizedValue = value.clamp(0, 5);
 
-  const _BookingStatusView(this.label, this.backgroundColor, this.textColor);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(label, style: const TextStyle(color: Colors.grey)),
+          ),
+          Row(
+            children: List.generate(5, (index) {
+              return Icon(
+                index < normalizedValue ? Icons.star : Icons.star_border,
+                size: 18,
+                color: Colors.amber,
+              );
+            }),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '$normalizedValue/5',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
 }
 
 class _QrErrorPlaceholder extends StatelessWidget {

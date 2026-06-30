@@ -323,28 +323,7 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                       nail: request,
                       onTap: () => context.push(
                         '/my-studio/${request.customerNailRequestId}',
-                      ),
-                      action: request.status == 'Quoted'
-                          ? ElevatedButton.icon(
-                              onPressed: () => context.push(
-                                '/custom-nail-booking',
-                                extra: request,
-                              ),
-                              icon: const Icon(
-                                Icons.calendar_month,
-                                color: Colors.white,
-                                size: 18,
-                              ),
-                              label: const Text('Book'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Theme.of(context).primaryColor,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                            )
-                          : null,
+                      )
                     );
                   },
                 ),

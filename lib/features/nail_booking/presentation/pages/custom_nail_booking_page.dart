@@ -129,7 +129,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
         throw Exception('ID Móng không hợp lệ.');
       }
 
-      if (salonId.isEmpty || artistId.isEmpty) {
+      if (salonId == null || salonId.isEmpty || artistId.isEmpty) {
         throw Exception('Dữ liệu Móng Custom bị thiếu thông tin Chi nhánh hoặc Thợ');
       }
 

@@ -130,9 +130,7 @@ class BookingApiService {
       'bookingItems': _buildBookingItems(nailVariantId, serviceIds),
       'selectedPromotionIds': selectedPromotionIds,
     });
-    return Map<String, dynamic>.from(
-      response.data['data'] ?? response.data ?? {},
-    );
+    return response.data['data'] ?? {};
   }
 
   Future<Map<String, dynamic>> reviewBookingPrice({
@@ -182,9 +180,7 @@ class BookingApiService {
     Map<String, dynamic> bookingData,
   ) async {
     final response = await _apiClient.post('/Bookings', data: bookingData);
-    return Map<String, dynamic>.from(
-      response.data['data'] ?? response.data ?? {},
-    );
+    return response.data['data'] ?? {};
   }
 
   Future<Map<String, dynamic>> createCustomNailBooking(
@@ -222,8 +218,6 @@ class BookingApiService {
       'bookingItems': bookingItems,
     });
 
-    return Map<String, dynamic>.from(
-      response.data['data'] ?? response.data ?? {},
-    );
+    return response.data['data'] ?? {};
   }
 }

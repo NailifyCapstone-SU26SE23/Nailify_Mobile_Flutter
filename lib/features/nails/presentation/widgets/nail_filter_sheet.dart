@@ -69,7 +69,7 @@ class _NailFilterSheetState extends State<NailFilterSheet> {
                     ? const Center(child: Text('No categories available.'))
                     : ListView.separated(
                         itemCount: widget.categoryTypes.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 14),
+                        separatorBuilder: (_, _) => const SizedBox(height: 14),
                         itemBuilder: (context, index) {
                           final type = widget.categoryTypes[index];
                           final activeCategories = type.categories.where((category) => category.status.toLowerCase() != 'inactive').toList();

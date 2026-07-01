@@ -40,7 +40,7 @@ class CustomerNailDetailPage extends StatelessWidget {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(16),
                       child: nail.imageUrl != null
-                          ? Image.network(nail.imageUrl!, width: double.infinity, height: 250, fit: BoxFit.cover, errorBuilder: (_,__,___) => _fallbackImage())
+                          ? Image.network(nail.imageUrl!, width: double.infinity, height: 250, fit: BoxFit.cover, errorBuilder: (_,_,_) => _fallbackImage())
                           : _fallbackImage(),
                     ),
                     const SizedBox(height: 24),
@@ -65,11 +65,11 @@ class CustomerNailDetailPage extends StatelessWidget {
                       _buildAlertBox(Colors.red, Icons.error_outline, 'Lý do từ chối:', nail.rejectReason!),
 
                     // --- TRẠNG THÁI: ĐANG XỬ LÝ ---
-                    if (['Pending', 'PendingReview', 'Review', 'Assigned', 'Reviewed', 'Quoted'].contains(nail.status))
+                    if (['Pending', 'PendingReview', 'Review', 'Assigned', 'Reviewed'].contains(nail.status))
                       _buildAlertBox(Colors.orange, Icons.hourglass_top, 'Đang xử lý:', 'Mẫu móng của bạn đang được chuyên viên tại tiệm đánh giá tính khả thi và báo giá.'),
 
                     // --- TRẠNG THÁI: ĐÃ DUYỆT ---
-                    if (nail.status == 'Approved')
+                    if (nail.status == 'Approved' || nail.status == 'Quoted')
                       Container(
                         margin: const EdgeInsets.only(bottom: 20),
                         padding: const EdgeInsets.all(16),
@@ -164,7 +164,7 @@ class CustomerNailDetailPage extends StatelessWidget {
   /// Footer action button:
   /// - Approved => "Đặt lịch ngay" -> forward data sang CustomNailBookingPage
   Widget? _buildFooterAction(BuildContext context, CustomerNailModel nail) {
-    if (nail.status == 'Approved') {
+    if (nail.status == 'Approved' || nail.status == 'Quoted') {
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),

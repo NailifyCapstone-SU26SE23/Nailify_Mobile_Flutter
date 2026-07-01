@@ -27,7 +27,7 @@ class BookingTimeSelection extends StatelessWidget {
         const Text('Khung giờ rảnh', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
         if (!canSelect)
-          const Text('Vui lòng chọn Thợ để xem giờ rảnh.', style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic))
+          const Text('Vui lòng chọn Thợ (hoặc "Không chọn thợ") để xem giờ rảnh.', style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic))
         else if (isLoading)
           const CircularProgressIndicator()
         else if (timeSlots.isEmpty)

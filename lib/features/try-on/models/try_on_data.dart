@@ -1,14 +1,17 @@
 import '../../nails/data/models/component_model.dart';
 import '../../nails/data/models/customer_nail_models.dart';
 import '../../nails/data/models/nail_shape_model.dart';
+import '../../nails/data/models/nail_surface_model.dart';
 
 class TryOnData {
   final List<NailShapeModel> nailShapes;
+  final List<NailSurfaceModel> nailSurfaces;
   final List<ComponentModel> components;
   final List<CustomerComponentModel> customerComponents;
 
   const TryOnData({
     required this.nailShapes,
+    required this.nailSurfaces,
     required this.components,
     required this.customerComponents,
   });

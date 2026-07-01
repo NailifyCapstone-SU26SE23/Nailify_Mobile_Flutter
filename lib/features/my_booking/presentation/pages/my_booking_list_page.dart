@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../data/datasources/my_booking_api_service.dart';
+import '../utils/booking_status_utils.dart';
 
 class MyBookingListPage extends StatefulWidget {
   const MyBookingListPage({super.key});
@@ -49,7 +50,6 @@ class _MyBookingListPageState extends State<MyBookingListPage> {
       final data = await _apiService.getMyBookings();
 
       final List<Map<String, dynamic>> validBookings = [];
-      if (data != null) {
         for (var item in data) {
           if (item is Map) {
             final safeMap = <String, dynamic>{};
@@ -59,7 +59,7 @@ class _MyBookingListPageState extends State<MyBookingListPage> {
             validBookings.add(safeMap);
           }
         }
-      }
+
 
       // SẮP XẾP: Ưu tiên ngày mới nhất (Tương lai -> Hiện tại -> Quá khứ)
       validBookings.sort((a, b) {
@@ -294,7 +294,8 @@ class _MyBookingListPageState extends State<MyBookingListPage> {
     final dateStr = booking['bookingDate']?.toString() ?? '';
     final bookingDate = DateTime.tryParse(dateStr) ?? DateTime.now();
 
-    final status = _bookingStatus(booking['status']?.toString());
+    final status = bookingStatusView(booking['status']?.toString());
+    final rawStatus = booking['status']?.toString();
     final items = booking['bookingItems'] as List<dynamic>? ?? [];
     var nailName = 'Dịch vụ làm móng';
 
@@ -320,6 +321,7 @@ class _MyBookingListPageState extends State<MyBookingListPage> {
 
     final artistName = booking['artistName']?.toString() ?? 'Bất kỳ';
     final bookingIdStr = booking['bookingId']?.toString() ?? '';
+    final canRate = rawStatus == 'Completed' && !bookingIsRated(booking);
 
     return GestureDetector(
       onTap: () {
@@ -366,32 +368,31 @@ class _MyBookingListPageState extends State<MyBookingListPage> {
                 Expanded(child: Text(artistName, style: const TextStyle(color: Colors.grey, fontSize: 13), overflow: TextOverflow.ellipsis)),
               ],
             ),
+            if (canRate && bookingIdStr.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => context.push(
+                    '/my-bookings/rate',
+                    extra: bookingIdStr,
+                  ),
+                  icon: const Icon(Icons.star_border, size: 18),
+                  label: const Text('Rate'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
     );
   }
 
-  _BookingStatusView _bookingStatus(String? status) {
-    switch (status) {
-      case 'Pending': return _BookingStatusView('Chờ xác nhận', Colors.orange.shade50, Colors.orange.shade800);
-      case 'Assigned': return _BookingStatusView('Đã xếp lịch', Colors.blue.shade50, Colors.blue.shade800);
-      case 'Reviewed': return _BookingStatusView('Đã xem xét', Colors.indigo.shade50, Colors.indigo.shade800);
-      case 'Approved': return _BookingStatusView('Đã chấp nhận', Colors.green.shade50, Colors.green.shade800);
-      case 'Rejected': return _BookingStatusView('Đã từ chối', Colors.red.shade50, Colors.red.shade800);
-      case 'Cancelled': return _BookingStatusView('Đã hủy', Colors.grey.shade200, Colors.grey.shade800);
-      case 'CheckedIn': return _BookingStatusView('Đã Checked In', Colors.teal.shade50, Colors.teal.shade800);
-      case 'InProgress': return _BookingStatusView('Đang thực hiện', Colors.purple.shade50, Colors.purple.shade800);
-      case 'Completed': return _BookingStatusView('Đã hoàn thành', Colors.green.shade50, Colors.green.shade800);
-      case 'Repaired': return _BookingStatusView('Đã bảo hành', Colors.cyan.shade50, Colors.cyan.shade800);
-      default: return _BookingStatusView(status ?? 'N/A', Colors.grey.shade100, Colors.grey.shade800);
-    }
-  }
-}
-
-class _BookingStatusView {
-  final String label;
-  final Color backgroundColor;
-  final Color textColor;
-  const _BookingStatusView(this.label, this.backgroundColor, this.textColor);
 }

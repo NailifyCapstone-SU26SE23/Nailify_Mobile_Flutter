@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../data/models/customer_nail_models.dart';
 import '../data/models/nail_component_config.dart';
 import '../data/models/nail_component_model.dart';
+import '../data/models/nail_surface_model.dart';
 import '../data/models/nail_variant_model.dart';
 
 class ArTryOnService {
@@ -16,12 +17,12 @@ class ArTryOnService {
     return await _channel.invokeMethod<bool>('isAvailable') ?? false;
   }
 
-  Future<void> launchLive(NailVariantModel nailVariant) {
-    return _launch(nailVariant, mode: 'live');
+  Future<void> launchLive(NailVariantModel nailVariant, {NailSurfaceModel? surface}) {
+    return _launch(nailVariant, mode: 'live', surface: surface);
   }
 
-  Future<void> launchPhoto(NailVariantModel nailVariant) {
-    return _launch(nailVariant, mode: 'photo');
+  Future<void> launchPhoto(NailVariantModel nailVariant, {NailSurfaceModel? surface}) {
+    return _launch(nailVariant, mode: 'photo', surface: surface);
   }
 
   Future<void> launchCustomerLive(CustomerNailModel customerNail) {
@@ -32,15 +33,19 @@ class ArTryOnService {
     return _launchConfig(_convertCustomerToArFormat(customerNail), mode: 'photo');
   }
 
-  Future<void> launch(NailVariantModel nailVariant) {
-    return launchLive(nailVariant);
+  Future<void> launch(NailVariantModel nailVariant, {NailSurfaceModel? surface}) {
+    return launchLive(nailVariant, surface: surface);
   }
 
-  Future<void> _launch(NailVariantModel nailVariant, {required String mode}) async {
+  Future<void> _launch(
+    NailVariantModel nailVariant, {
+    required String mode,
+    NailSurfaceModel? surface,
+  }) async {
     if (!Platform.isAndroid) {
       throw UnsupportedError('Virtual try-on is only available on Android.');
     }
-    await _launchConfig(_convertToArFormat(nailVariant), mode: mode);
+    await _launchConfig(_convertToArFormat(nailVariant, surface: surface), mode: mode);
   }
 
   Future<void> _launchConfig(Map<String, dynamic> config, {required String mode}) async {
@@ -53,16 +58,18 @@ class ArTryOnService {
     });
   }
 
-  Map<String, dynamic> _convertToArFormat(NailVariantModel nail) {
+  Map<String, dynamic> _convertToArFormat(NailVariantModel nail, {NailSurfaceModel? surface}) {
+    final nailSurface = surface ?? nail.nailSurface;
     return {
       'shape': _normalizeShape(nail.nailShape?.name),
       'shapeImageSrc': _nullableText(nail.nailShape?.imageUrl),
       'length': 1.0,
       'material': _normalizeMaterial(
-        nail.nailSurface?.shaderParam.isNotEmpty == true
-            ? nail.nailSurface?.shaderParam
-            : nail.nailSurface?.name,
+        nailSurface?.shaderParam.isNotEmpty == true
+            ? nailSurface?.shaderParam
+            : nailSurface?.name,
       ),
+      'surface': _surfaceToArJson(nailSurface),
       'gradient': {
         'enabled': false,
         'type': 'linear',
@@ -82,6 +89,7 @@ class ArTryOnService {
       'shapeImageSrc': _nullableText(nail.nailShape?.imageUrl),
       'length': 1.0,
       'material': 'standard',
+      'surface': _surfaceToArJson(nail.nailSurface),
       'gradient': {
         'enabled': false,
         'type': 'linear',
@@ -155,9 +163,9 @@ class ArTryOnService {
           .whereType<Map<String, dynamic>>()
           .firstOrNull;
       return {
-        'color': color ?? appearance?.color ?? '#FF4081',
+        'color': appearance?.color ?? color ?? '#FF4081',
         'customShapeSrc': null,
-        'gradient': gradient ?? appearance?.gradient,
+        'gradient': appearance?.gradient ?? gradient,
         'decorations': fingerComponents.map(_componentToDecoration).toList(),
       };
     });
@@ -196,6 +204,17 @@ class ArTryOnService {
     if (text.contains('iridescent')) return 'iridescent';
     if (text.contains('matte')) return 'matte';
     return 'standard';
+  }
+
+  Map<String, dynamic>? _surfaceToArJson(NailSurfaceModel? surface) {
+    if (surface == null) return null;
+    return {
+      'name': surface.name,
+      'shaderParam': surface.shaderParam,
+      'lightnessOffset': surface.lightnessOffset,
+      'saturationOffset': surface.saturationOffset,
+      'hueOffset': surface.hueOffset,
+    };
   }
 
   String _normalizeComponentType(String? value) {

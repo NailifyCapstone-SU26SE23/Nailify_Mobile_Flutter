@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/price_formatter.dart';
 
 class BookingSuccessPage extends StatelessWidget {
   final Map<String, dynamic> bookingDetails;
@@ -14,16 +15,25 @@ class BookingSuccessPage extends StatelessWidget {
     final dateString =
         date != null ? '${date.day}/${date.month}/${date.year}' : '';
     final bookingId = bookingDetails['bookingId']?.toString();
+    final discounts = _discounts;
+    final hasPrice = bookingDetails['totalPrice'] != null;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final minHeight =
+                constraints.maxHeight > 48 ? constraints.maxHeight - 48 : 0.0;
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: minHeight),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
               const Icon(Icons.check_circle, color: Colors.green, size: 100),
               const SizedBox(height: 24),
               const Text(
@@ -76,6 +86,17 @@ class BookingSuccessPage extends StatelessWidget {
                       'Nhân viên',
                       bookingDetails['stylistName']?.toString() ?? '',
                     ),
+                    if (discounts.isNotEmpty || hasPrice) ...[
+                      const Divider(height: 24, color: AppColors.borderLight),
+                      if (bookingDetails['price'] != null)
+                        _buildAmountRow('Giá gốc', bookingDetails['price']),
+                      ...discounts.map(_buildDiscountRow),
+                      _buildAmountRow(
+                        'Tổng thanh toán',
+                        bookingDetails['totalPrice'],
+                        isTotal: true,
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -114,9 +135,12 @@ class BookingSuccessPage extends StatelessWidget {
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ),
-            ],
+                  ],
+                ),
+              ),
+            );
+          },
           ),
-        ),
       ),
     );
   }
@@ -146,6 +170,65 @@ class BookingSuccessPage extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  List<Map<String, dynamic>> get _discounts {
+    final raw = bookingDetails['discounts'] ?? bookingDetails['discountBreakdown'];
+    if (raw is! List) return [];
+    return raw
+        .whereType<Map>()
+        .map((discount) => Map<String, dynamic>.from(discount))
+        .toList();
+  }
+
+  Widget _buildAmountRow(String label, dynamic amount, {bool isTotal = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: isTotal ? AppColors.textPrimary : Colors.grey,
+              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+          Text(
+            PriceFormatter.format(amount ?? 0),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isTotal ? AppColors.primary : AppColors.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDiscountRow(Map<String, dynamic> discount) {
+    final name = discount['name']?.toString() ?? 'Giảm giá';
+    final amountDisplay = discount['amountDisplay']?.toString();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text(
+              name,
+              style: const TextStyle(color: Colors.green, fontSize: 14),
+            ),
+          ),
+          Text(
+            amountDisplay?.isNotEmpty == true
+                ? amountDisplay!
+                : PriceFormatter.format(-(discount['amount'] ?? 0)),
+            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+          ),
+        ],
+      ),
     );
   }
 }

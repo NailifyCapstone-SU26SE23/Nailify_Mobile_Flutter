@@ -6,6 +6,7 @@ import '../../../../core/utils/price_formatter.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../data/models/nail_component_model.dart';
+import '../../data/models/nail_surface_model.dart';
 import '../../data/models/nail_variant_model.dart';
 import '../../data/repositories/nail_variant_repository.dart';
 import '../../services/ar_try_on_service.dart';
@@ -33,11 +34,14 @@ class _NailVariantDetailScreenState extends State<NailVariantDetailScreen> {
     return getIt<NailVariantRepository>().getNailVariantById(widget.nailVariantId);
   }
 
-  Future<void> _openTryOn(Future<void> Function(NailVariantModel) launcher) async {
+  Future<void> _openTryOn(
+    Future<void> Function(NailVariantModel, NailSurfaceModel?) launcher, {
+    NailSurfaceModel? surface,
+  }) async {
     setState(() => _launching = true);
     try {
       final variant = await _future;
-      await launcher(variant);
+      await launcher(variant, surface);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi khi mở AR: $e')));
@@ -105,7 +109,10 @@ class _NailVariantDetailScreenState extends State<NailVariantDetailScreen> {
 class _DetailContent extends StatelessWidget {
   final NailVariantModel variant;
   final bool launching;
-  final ValueChanged<Future<void> Function(NailVariantModel)> onTryOn;
+  final void Function(
+    Future<void> Function(NailVariantModel, NailSurfaceModel?) launcher, {
+    NailSurfaceModel? surface,
+  }) onTryOn;
 
   const _DetailContent({
     required this.variant,
@@ -149,6 +156,7 @@ class _DetailContent extends StatelessWidget {
                 style: const TextStyle(fontSize: 20, color: AppColors.primary, fontWeight: FontWeight.bold),
               ),
 
+              const SizedBox(height: 16),
               const SizedBox(height: 16),
 
               // 3. Các đặc điểm nổi bật (Chips)
@@ -195,7 +203,10 @@ class _DetailContent extends StatelessWidget {
                           ? null
                           : () {
                         final service = getIt<ArTryOnService>();
-                        onTryOn((nailVariant) => service.launch(nailVariant));
+                        onTryOn(
+                          (nailVariant, surface) => service.launch(nailVariant, surface: surface),
+                          surface: variant.nailSurface,
+                        );
                       },
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.primary,

@@ -1,10 +1,14 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/base64_image_converter.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../data/datasources/my_booking_api_service.dart';
+import '../utils/booking_status_utils.dart';
+import '../widgets/cancel_booking_dialog.dart';
 
 class MyBookingDetailPage extends StatefulWidget {
   final String bookingId;
@@ -19,6 +23,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
   final MyBookingApiService _apiService = MyBookingApiService();
   bool _isLoading = true;
   Map<String, dynamic>? _booking;
+  Map<String, dynamic>? _rating;
 
   @override
   void initState() {
@@ -29,9 +34,18 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
   Future<void> _fetchBookingDetail() async {
     try {
       final data = await _apiService.getBookingDetails(widget.bookingId);
+      Map<String, dynamic>? rating;
+      if (bookingIsRated(data)) {
+        try {
+          rating = await _apiService.getRatingByBooking(widget.bookingId);
+        } catch (e) {
+          debugPrint('==== Lỗi tải đánh giá booking: $e ====');
+        }
+      }
       if (!mounted) return;
       setState(() {
         _booking = data;
+        _rating = rating;
         _isLoading = false;
       });
     } catch (e) {
@@ -41,6 +55,93 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
         SnackBar(content: Text('Lỗi tải chi tiết: $e')),
       );
     }
+  }
+
+  void _showMapPopup(BuildContext context, String salonName, String? address, double? latitude, double? longitude) {
+    // Tọa độ
+    final double lat = latitude ?? 10.993592755518687;
+    final double lng = longitude ?? 106.65636465428618;
+    final LatLng targetPosition = LatLng(lat, lng);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        final double height = MediaQuery.of(context).size.height * 0.8;
+
+        return Container(
+          height: height,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              // Thanh kéo & Thông tin
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                child: Column(
+                  children: [
+                    Container(
+                        width: 40, height: 5,
+                        decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10))
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Vị trí: $salonName',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      address ?? 'Chi nhánh của Nailify',
+                      style: const TextStyle(fontSize: 13, color: Colors.grey),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+
+              // Bản đồ
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                  child: FlutterMap(
+                    options: MapOptions(
+                      initialCenter: targetPosition,
+                      initialZoom: 16.0,
+                    ),
+                    children: [
+                      TileLayer(
+                        // Dùng CartoDB
+                        urlTemplate: 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.nailify.app',
+                      ),
+                      MarkerLayer(
+                        markers: [
+                          Marker(
+                            point: targetPosition,
+                            width: 50,
+                            height: 50,
+                            child: const Icon(
+                              Icons.location_on,
+                              color: AppColors.primary,
+                              size: 40,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -65,18 +166,23 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
 
     final booking = _booking!;
     final bookingDate = DateTime.parse(booking['bookingDate']);
-    final isUpcoming = bookingDate.isAfter(DateTime.now());
     final items = booking['bookingItems'] as List<dynamic>? ?? [];
-    final status = _bookingStatus(booking['status']?.toString());
+    final rawStatus = booking['status']?.toString();
+    final status = bookingStatusView(rawStatus);
+    final discounts = _discounts;
+    final isRated = bookingIsRated(booking);
     final rawQrString = booking['qrCode']?.toString();
     final Uint8List? qrImageBytes = Base64ImageConverter.decode(rawQrString);
+    final canCancel = rawStatus == 'Pending' || rawStatus == 'Approved' || rawStatus == 'Assigned';
+    final canRate = rawStatus == 'Completed' && !isRated;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, size: 20),
-          onPressed: () => context.pop(),
+          onPressed: () => context.go('/my-bookings'),
+              // context.pop(),
         ),
         title: const Text(
           'Chi tiết lịch hẹn',
@@ -127,7 +233,55 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
               ),
               child: Column(
                 children: [
-                  _buildRow('Chi nhánh', booking['salonName']?.toString()),
+                  //_buildRow('Chi nhánh', booking['salonName']?.toString()),
+                  //map xịn
+                  Material(
+                    color: Colors.transparent, // Đảm bảo hiệu ứng chạm hiển thị đúng
+                    child: InkWell(
+                      onTap: () {
+                        final salonName = _booking?['salonName']?.toString() ?? 'Chi nhánh Nailify';
+                        final address = _booking?['salonAddress']?.toString();
+                        final latitude = _booking?['latitude'] as double?;
+                        final longitude = _booking?['longitude'] as double?;
+                        _showMapPopup(context, salonName, address, latitude, longitude);
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Row(
+                          children: [
+
+                            Expanded(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Chi nhánh',
+                                    style: TextStyle(color: Colors.grey, fontSize: 15),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      _booking?['salonName']?.toString() ?? 'Đang tải...',
+                                      textAlign: TextAlign.right,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                        color: AppColors.primary,
+                                        decorationColor: AppColors.primary,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                   _buildRow('Kỹ thuật viên', booking['artistName']?.toString()),
                   _buildRow(
                     'Ngày hẹn',
@@ -180,7 +334,10 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   const SizedBox(height: 8),
 
                   // 2. Khuyến mãi (Giảm giá)
-                  Row(
+                  if (discounts.isNotEmpty)
+                    ...discounts.map(_buildDiscountRow)
+                  else
+                    Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
@@ -188,7 +345,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                         style: TextStyle(color: Colors.grey, fontSize: 14),
                       ),
                       Text(
-                        '${PriceFormatter.format(booking['discount'] ?? 0)}',
+                        PriceFormatter.format(booking['discount'] ?? 0),
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
@@ -223,7 +380,17 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
             const SizedBox(height: 24),
 
             // Mã QR CODE
-            if (rawQrString != null && rawQrString.isNotEmpty) ...[
+            if (isRated) ...[
+              const Text(
+                'Đánh giá của bạn',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              _buildRatingCard(),
+              const SizedBox(height: 24),
+            ],
+
+            if (!isRated && rawQrString != null && rawQrString.isNotEmpty) ...[
               const Text(
                 'Mã Check-in',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -254,7 +421,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                           width: 200,
                           height: 200,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
+                          errorBuilder: (_, _, _) =>
                               const _QrErrorPlaceholder(),
                         ),
                       )
@@ -263,7 +430,98 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   ],
                 ),
               ),
-            ]
+            ],
+            if (canCancel) ...[
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => CancelBookingDialog(
+                        bookingId: widget.bookingId,
+                        onConfirm: (reason) async {
+                          /* TODO: Bỏ chú thích khi API hoàn thiện
+                          try {
+                            final success = await _apiService.cancelBooking(
+                              widget.bookingId, 
+                              reason: reason,
+                            );
+                            if (success && mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Hủy lịch thành công')),
+                              );
+                              _fetchBookingDetail(); // Load lại trang
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Hủy lịch thất bại')),
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Lỗi: $e')),
+                              );
+                            }
+                          }
+                          */
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('API chưa hoàn thiện')),
+                            );
+                          }
+                        },
+                      ),
+                    );
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Hủy đặt lịch',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            if (canRate) ...[
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => context.push(
+                    '/my-bookings/rate',
+                    extra: widget.bookingId,
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  icon: const Icon(Icons.star, color: Colors.white),
+                  label: const Text(
+                    'Rate',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -324,6 +582,44 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     );
   }
 
+  List<Map<String, dynamic>> get _discounts {
+    final raw = _booking?['discounts'] ?? _booking?['discountBreakdown'];
+    if (raw is! List) return [];
+    return raw
+        .whereType<Map>()
+        .map((discount) => Map<String, dynamic>.from(discount))
+        .toList();
+  }
+
+  Widget _buildDiscountRow(Map<String, dynamic> discount) {
+    final name = discount['name']?.toString() ?? 'Giảm giá';
+    final amountDisplay = discount['amountDisplay']?.toString();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text(
+              name,
+              style: const TextStyle(color: Colors.grey, fontSize: 14),
+            ),
+          ),
+          Text(
+            amountDisplay?.isNotEmpty == true
+                ? amountDisplay!
+                : PriceFormatter.format(-(discount['amount'] ?? 0)),
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              color: Colors.green,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildRow(String label, String? value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -345,84 +641,123 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     );
   }
 
-  _BookingStatusView _bookingStatus(String? status) {
-    switch (status) {
-      case 'Pending':
-        return _BookingStatusView(
-          'Đang chờ xác nhận',
-          Colors.orange.shade50,
-          Colors.orange.shade800,
-        );
-      case 'Assigned':
-        return _BookingStatusView(
-          'Đã xếp lịch',
-          Colors.blue.shade50,
-          Colors.blue.shade800,
-        );
-      case 'Reviewed':
-        return _BookingStatusView(
-          'Đã xem xét',
-          Colors.indigo.shade50,
-          Colors.indigo.shade800,
-        );
-      case 'Approved':
-        return _BookingStatusView(
-          'Đã chấp nhận',
-          Colors.green.shade50,
-          Colors.green.shade800,
-        );
-      case 'Rejected':
-        return _BookingStatusView(
-          'Đã từ chối',
-          Colors.red.shade50,
-          Colors.red.shade800,
-        );
-      case 'Cancelled':
-        return _BookingStatusView(
-          'Đã hủy',
-          Colors.grey.shade200,
-          Colors.grey.shade800,
-        );
-      case 'CheckedIn':
-        return _BookingStatusView(
-          'Đã Checked In',
-          Colors.teal.shade50,
-          Colors.teal.shade800,
-        );
-      case 'InProgress':
-        return _BookingStatusView(
-          'Đang thực hiện',
-          Colors.purple.shade50,
-          Colors.purple.shade800,
-        );
-      case 'Completed':
-        return _BookingStatusView(
-          'Đã hoàn thành',
-          Colors.green.shade50,
-          Colors.green.shade800,
-        );
-      case 'Repaired':
-        return _BookingStatusView(
-          'Đã bảo hành',
-          Colors.cyan.shade50,
-          Colors.cyan.shade800,
-        );
-      default:
-        return _BookingStatusView(
-          status ?? 'N/A',
-          Colors.grey.shade100,
-          Colors.grey.shade800,
-        );
+  Widget _buildRatingCard() {
+    final rating = _rating;
+    if (rating == null || rating.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.borderLight),
+        ),
+        child: const Text(
+          'Chưa tải được thông tin đánh giá.',
+          style: TextStyle(color: Colors.grey),
+        ),
+      );
     }
+
+    final comment = rating['comment']?.toString().trim() ?? '';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Add image if URL exists
+          if (rating['imageUrl'] != null && rating['imageUrl'].toString().isNotEmpty) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                rating['imageUrl'],
+                width: double.infinity,
+                height: 200,
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.broken_image, size: 50),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          _buildRatingRow('Tổng thể', rating['overallScore']),
+          _buildRatingRow('Chất lượng dịch vụ', rating['serviceQuality']),
+          _buildRatingRow('Đúng giờ', rating['punctuality']),
+          _buildRatingRow('Sạch sẽ', rating['cleanliness']),
+
+          if (comment.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            const Text(
+              'Nhận xét',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            Text(comment, style: const TextStyle(color: AppColors.textPrimary)),
+          ],
+        ],
+      ),
+    );
   }
-}
 
-class _BookingStatusView {
-  final String label;
-  final Color backgroundColor;
-  final Color textColor;
+  Widget _buildRatingRow(String label, dynamic score) {
+    final value = int.tryParse(score?.toString() ?? '') ?? 0;
+    final normalizedValue = value.clamp(0, 5);
 
-  const _BookingStatusView(this.label, this.backgroundColor, this.textColor);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(label, style: const TextStyle(color: Colors.grey)),
+          ),
+          Row(
+            children: List.generate(5, (index) {
+              return Icon(
+                index < normalizedValue ? Icons.star : Icons.star_border,
+                size: 18,
+                color: Colors.amber,
+              );
+            }),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '$normalizedValue/5',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
 }
 
 class _QrErrorPlaceholder extends StatelessWidget {

@@ -22,6 +22,7 @@ import android.graphics.RadialGradient
 import android.graphics.RectF
 import android.graphics.Shader
 import androidx.core.graphics.withTranslation
+import org.json.JSONObject
 import java.net.URL
 import kotlin.math.atan2
 import kotlin.math.hypot
@@ -134,6 +135,8 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                                 drawBitmap(bitmap, null, destRect, null)
                             }
 
+                            drawNailSurface(this, bitmap, destRect)
+
                             design.decorations.forEach { decoration ->
                                 drawDecoration(this, decoration, destRect)
                             }
@@ -227,16 +230,17 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         nailBounds: RectF
     ): Paint {
         val baseColor = parseColorOrDefault(colorValue)
+        val surfaceColor = applySurfaceOffsets(baseColor)
         return Paint(Paint.ANTI_ALIAS_FLAG).apply {
             shader = if (gradient?.enabled == true) {
                 createGradientShader(gradient, nailBounds)
             } else {
-                createMaterialShader(baseColor, nailBounds)
+                createMaterialShader(surfaceColor, nailBounds)
             }
             if (shader == null) {
                 color = when (nailSetConfig.material) {
-                    NailSetConfig.MATERIAL_MATTE -> adjustColor(baseColor, saturation = 0.55f, brightness = 0.9f)
-                    else -> baseColor
+                    NailSetConfig.MATERIAL_MATTE -> adjustColor(surfaceColor, saturation = 0.55f, brightness = 0.9f)
+                    else -> surfaceColor
                 }
             }
         }
@@ -249,6 +253,7 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         val colors = gradient.stops
             .take(gradient.stopCount.coerceIn(2, 3))
             .map(::parseColorOrDefault)
+            .map(::applySurfaceOffsets)
             .toIntArray()
 
         return when (gradient.type) {
@@ -324,6 +329,182 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         canvas.drawBitmap(shapeBitmap, null, nailBounds, maskPaint)
         maskPaint.xfermode = null
         canvas.restoreToCount(layer)
+    }
+
+    private fun drawNailSurface(canvas: Canvas, shapeBitmap: Bitmap, nailBounds: RectF) {
+        val surface = nailSetConfig.surface ?: return
+        val params = parseSurfaceParams(surface.shaderParam)
+        val name = surface.name.orEmpty().lowercase()
+
+        val hasMatte = name.contains("matte") || params.optJSONObject("texture")?.optString("type") == "matte"
+        val shine = params.optJSONObject("shine")
+        val stripe = params.optJSONObject("stripe")
+        val gradient = params.optJSONObject("gradient")
+        val metalness = params.optJSONObject("metalness")
+        val prism = params.optJSONObject("prism")
+        val rainbow = params.optJSONObject("rainbow")
+        val iridescence = params.optJSONObject("iridescence")
+
+        if (hasMatte) {
+            drawMaskedSurfaceLayer(
+                canvas,
+                shapeBitmap,
+                nailBounds,
+                Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(24, 0, 0, 0) }
+            )
+        }
+
+        if (gradient?.optBoolean("enabled") == true) {
+            drawMaskedSurfaceLayer(
+                canvas,
+                shapeBitmap,
+                nailBounds,
+                Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    shader = LinearGradient(
+                        nailBounds.left,
+                        nailBounds.centerY(),
+                        nailBounds.right,
+                        nailBounds.centerY(),
+                        intArrayOf(Color.argb(46, 0, 0, 0), Color.TRANSPARENT, Color.argb(56, 255, 255, 255)),
+                        null,
+                        Shader.TileMode.CLAMP
+                    )
+                }
+            )
+        }
+
+        if (stripe?.optBoolean("enabled") == true || name.contains("cat")) {
+            drawMaskedSurfaceLayer(
+                canvas,
+                shapeBitmap,
+                nailBounds,
+                Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    shader = LinearGradient(
+                        nailBounds.left,
+                        nailBounds.centerY(),
+                        nailBounds.right,
+                        nailBounds.centerY(),
+                        intArrayOf(Color.TRANSPARENT, Color.argb(112, 255, 255, 255), Color.TRANSPARENT),
+                        floatArrayOf(0.38f, 0.5f, 0.62f),
+                        Shader.TileMode.CLAMP
+                    )
+                }
+            )
+        }
+
+        if (metalness?.optBoolean("enabled") == true || name.contains("chrome")) {
+            drawMaskedSurfaceLayer(
+                canvas,
+                shapeBitmap,
+                nailBounds,
+                Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    shader = LinearGradient(
+                        nailBounds.left,
+                        nailBounds.top,
+                        nailBounds.right,
+                        nailBounds.bottom,
+                        intArrayOf(
+                            Color.argb(132, 255, 255, 255),
+                            Color.TRANSPARENT,
+                            Color.argb(42, 0, 0, 0),
+                            Color.argb(92, 255, 255, 255)
+                        ),
+                        floatArrayOf(0f, 0.32f, 0.62f, 1f),
+                        Shader.TileMode.CLAMP
+                    )
+                }
+            )
+        }
+
+        if (
+            name.contains("holographic") ||
+            prism?.optBoolean("enabled") == true ||
+            rainbow?.optBoolean("enabled") == true ||
+            iridescence?.optBoolean("enabled") == true
+        ) {
+            drawMaskedSurfaceLayer(
+                canvas,
+                shapeBitmap,
+                nailBounds,
+                Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    shader = LinearGradient(
+                        nailBounds.left,
+                        nailBounds.top,
+                        nailBounds.right,
+                        nailBounds.bottom,
+                        intArrayOf(
+                            Color.argb(70, 255, 0, 0),
+                            Color.argb(62, 255, 255, 0),
+                            Color.argb(56, 0, 255, 0),
+                            Color.argb(62, 0, 0, 255),
+                            Color.argb(70, 180, 0, 255)
+                        ),
+                        null,
+                        Shader.TileMode.CLAMP
+                    )
+                }
+            )
+        }
+
+        if (shine?.optBoolean("enabled") == true) {
+            val position = shine.optString("position", "top-right")
+            val centerX = when (position) {
+                "top-left" -> nailBounds.left + nailBounds.width() * 0.28f
+                "center" -> nailBounds.centerX()
+                else -> nailBounds.right - nailBounds.width() * 0.28f
+            }
+            val centerY = when (position) {
+                "center" -> nailBounds.centerY()
+                else -> nailBounds.top + nailBounds.height() * 0.26f
+            }
+            val opacity = (shine.optDouble("opacity", 0.55).toFloat().coerceIn(0f, 1f) * 255).roundToInt()
+            val radius = nailBounds.width() * shine.optDouble("size", 0.42).toFloat().coerceIn(0.18f, 0.9f)
+            drawMaskedSurfaceLayer(
+                canvas,
+                shapeBitmap,
+                nailBounds,
+                Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    shader = RadialGradient(
+                        centerX,
+                        centerY,
+                        radius,
+                        intArrayOf(Color.argb(opacity, 255, 255, 255), Color.TRANSPARENT),
+                        null,
+                        Shader.TileMode.CLAMP
+                    )
+                }
+            )
+        }
+    }
+
+    private fun drawMaskedSurfaceLayer(canvas: Canvas, shapeBitmap: Bitmap, nailBounds: RectF, paint: Paint) {
+        val layer = canvas.saveLayer(nailBounds, null)
+        canvas.drawRect(nailBounds, paint)
+        val maskPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN)
+        }
+        canvas.drawBitmap(shapeBitmap, null, nailBounds, maskPaint)
+        maskPaint.xfermode = null
+        canvas.restoreToCount(layer)
+    }
+
+    private fun parseSurfaceParams(shaderParam: String?): JSONObject {
+        if (shaderParam.isNullOrBlank()) return JSONObject()
+        return try {
+            JSONObject(shaderParam)
+        } catch (_: Exception) {
+            JSONObject()
+        }
+    }
+
+    private fun applySurfaceOffsets(color: Int): Int {
+        val surface = nailSetConfig.surface ?: return color
+        val hsv = FloatArray(3)
+        Color.colorToHSV(color, hsv)
+        hsv[0] = ((hsv[0] + surface.hueOffset) % 360f + 360f) % 360f
+        hsv[1] = (hsv[1] + surface.saturationOffset).coerceIn(0f, 1f)
+        hsv[2] = (hsv[2] + surface.lightnessOffset).coerceIn(0f, 1f)
+        return Color.HSVToColor(Color.alpha(color), hsv)
     }
 
     private fun drawDecoration(canvas: Canvas, decoration: NailDecoration, nailBounds: RectF) {

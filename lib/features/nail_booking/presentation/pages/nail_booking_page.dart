@@ -5,7 +5,9 @@ import '../../../../core/utils/auth_guard.dart';
 import '../../../../core/utils/price_formatter.dart';
 
 import '../../data/datasources/booking_api_service.dart';
+import '../../data/datasources/promotion_api_service.dart';
 import '../../data/models/booking_mock_data.dart';
+import '../../data/models/promotion_model.dart';
 import '../widgets/branch_selection_list.dart';
 import '../widgets/booking_service_selection.dart';
 import '../widgets/booking_date_selection.dart';
@@ -24,6 +26,7 @@ class NailBookingPage extends StatefulWidget {
 class _NailBookingPageState extends State<NailBookingPage> {
   final PageController _pageController = PageController();
   final BookingApiService _apiService = BookingApiService();
+  final PromotionApiService _promotionApiService = PromotionApiService();
   int _currentStep = 0; // 0: Salon, 1: Service, 2: DateTime & Staff, 3: Summary
   bool _isSubmitting = false;
 
@@ -32,23 +35,31 @@ class _NailBookingPageState extends State<NailBookingPage> {
   List<dynamic> _services = [];
   List<dynamic> _artists = [];
   List<dynamic> _timeSlots = [];
+  List<PromotionModel> _promotions = [];
 
   bool _isLoadingSalons = true;
   bool _isLoadingArtists = false;
   bool _isLoadingTimes = false;
+  bool _isLoadingPromotions = false;
+  bool _isPromotionExpanded = false;
+  bool _isReviewingPrice = false;
+  Map<String, dynamic>? _priceReview;
 
   // User State
   Map<String, dynamic>? _selectedBranch;
-  List<String?> _selectedExtraServices = []; // Chứa String? để cho phép null
+  List<String?> _selectedExtraServices = [];
   DateTime? _selectedDate;
   Map<String, dynamic>? _selectedStylist;
   String? _selectedTime;
+  int? _selectedPromotionId;
+  bool _noArtistSelected = false; // Khách không chọn thợ, hệ thống tự phân công
 
   @override
   void initState() {
     super.initState();
     _fetchSalons();
     _fetchServices();
+    _fetchPromotions();
   }
 
   int get _nailVariantId {
@@ -83,7 +94,16 @@ class _NailBookingPageState extends State<NailBookingPage> {
         _nailVariantId,
         _selectedExtraServices.whereType<String>().toList(), // Lọc bỏ null trước khi gọi API
       );
-      setState(() { _artists = data; _isLoadingArtists = false; });
+      setState(() { 
+        _artists = data; 
+        _isLoadingArtists = false; 
+        if (_artists.isEmpty) {
+          _noArtistSelected = true;
+        }
+      });
+      if (_artists.isEmpty) {
+        _fetchTimeSlots();
+      }
     } catch (e) {
       setState(() => _isLoadingArtists = false);
       _showSnackBar('Lỗi tải danh sách thợ: $e');
@@ -91,6 +111,11 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   Future<void> _fetchTimeSlots() async {
+    if (_noArtistSelected) {
+      // Không chọn thợ: generate slots từ lịch salon
+      _loadSalonSlots();
+      return;
+    }
     if (_selectedStylist == null || _selectedDate == null) return;
     setState(() { _isLoadingTimes = true; _timeSlots = []; _selectedTime = null; });
     try {
@@ -103,20 +128,30 @@ class _NailBookingPageState extends State<NailBookingPage> {
     }
   }
 
+  void _loadSalonSlots() {
+    if (_selectedBranch == null || _selectedDate == null) return;
+    setState(() {
+      _timeSlots = _apiService.getSalonOperatingSlots(_selectedBranch!, _selectedDate!);
+      _selectedTime = null;
+    });
+  }
+
   Future<void> _executeBooking() async {
     AuthGuard.check(context, () async {
       if (_isSubmitting) return;
       setState(() => _isSubmitting = true);
       try {
         final formattedTime = _selectedTime!.length == 5 ? "$_selectedTime:00" : _selectedTime!;
+        final artistId = _noArtistSelected ? null : _selectedStylist?['nailArtistId'] as String?;
 
         final booking = await _apiService.createBooking(
           _selectedBranch!['salonId'],
           _formatBookingDate(_selectedDate!),
           formattedTime,
-          _selectedStylist!['nailArtistId'],
+          artistId,
           _nailVariantId,
           _selectedExtraServices.whereType<String>().toList(),
+          selectedPromotionIds: _selectedPromotionIds,
         );
 
         if (!mounted) return;
@@ -126,7 +161,11 @@ class _NailBookingPageState extends State<NailBookingPage> {
           'serviceName': widget.nailData?['name'] ?? 'Làm móng',
           'date': _selectedDate,
           'time': formattedTime,
-          'stylistName': _selectedStylist?['fullName'] ?? 'Bất kỳ',
+          'price': booking['price'] ?? _priceReview?['price'],
+          'discount': booking['discount'] ?? _priceReview?['discount'],
+          'totalPrice': booking['totalPrice'] ?? _priceReview?['totalPrice'],
+          'discounts': booking['discounts'] ?? booking['discountBreakdown'] ?? _priceReview?['discounts'] ?? _priceReview?['discountBreakdown'],
+          'stylistName': _noArtistSelected ? 'Tự động phân công' : (_selectedStylist?['fullName'] ?? 'Bất kỳ'),
         };
         context.go('/booking-success', extra: bookingDetails);
 
@@ -155,11 +194,43 @@ class _NailBookingPageState extends State<NailBookingPage> {
     }
   }
 
+  Future<void> _fetchPromotions() async {
+    setState(() => _isLoadingPromotions = true);
+    try {
+      final data = await _promotionApiService.getVouchers();
+      if (!mounted) return;
+      setState(() {
+        _promotions = data.where((promotion) => promotion.isSelectable).toList();
+        _isLoadingPromotions = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoadingPromotions = false);
+      _showSnackBar('Failed to load promotions: $e');
+    }
+  }
+
+  List<int>? get _selectedPromotionIds {
+    final id = _selectedPromotionId;
+    return id == null ? null : [id];
+  }
+
+  void _handlePromotionChanged(int? promotionId) {
+    setState(() {
+      _selectedPromotionId = promotionId;
+      _priceReview = null;
+    });
+    if (_currentStep == 3) {
+      _reviewPrice();
+    }
+  }
+
   void _handleServiceChanged(List<String?> services) {
     setState(() {
       _selectedExtraServices = services;
       _selectedStylist = null;
       _selectedTime = null;
+      _priceReview = null;
       _artists = [];
       _timeSlots = [];
     });
@@ -223,6 +294,41 @@ class _NailBookingPageState extends State<NailBookingPage> {
     return int.tryParse(price?.toString() ?? '') ?? 0;
   }
 
+  int get _estimatedTotalPrice => _nailVariantPrice + _selectedExtraServicesTotal;
+
+  List<Map<String, dynamic>> get _discountBreakdown {
+    final raw = _priceReview?['discountBreakdown'] ?? _priceReview?['discounts'];
+    if (raw is! List) return [];
+    return raw
+        .whereType<Map>()
+        .map((discount) => Map<String, dynamic>.from(discount))
+        .toList();
+  }
+
+  Future<void> _reviewPrice() async {
+    if (_selectedBranch == null || _selectedDate == null || _selectedTime == null) return;
+    setState(() => _isReviewingPrice = true);
+    try {
+      final formattedTime = _selectedTime!.length == 5 ? "$_selectedTime:00" : _selectedTime!;
+      final artistId = _noArtistSelected ? null : _selectedStylist?['nailArtistId'] as String?;
+      final review = await _apiService.reviewBookingPrice(
+        salonId: _selectedBranch!['salonId'],
+        bookingDate: _formatBookingDate(_selectedDate!),
+        startTime: formattedTime,
+        artistId: artistId,
+        nailVariantId: _nailVariantId,
+        serviceIds: _selectedExtraServices.whereType<String>().toList(),
+        selectedPromotionIds: _selectedPromotionIds,
+      );
+      if (!mounted) return;
+      setState(() => _priceReview = review);
+    } catch (e) {
+      if (mounted) _showSnackBar('Lỗi tính giá: $e');
+    } finally {
+      if (mounted) setState(() => _isReviewingPrice = false);
+    }
+  }
+
   void _handleNextAction() {
     if (_currentStep == 0 && _selectedBranch == null) {
       _showSnackBar('Vui lòng chọn một chi nhánh salon!'); return;
@@ -237,11 +343,14 @@ class _NailBookingPageState extends State<NailBookingPage> {
         _showSnackBar('Vui lòng chọn ít nhất 1 dịch vụ để tiếp tục!'); return;
       }
     }
-    if (_currentStep == 2 && (_selectedDate == null || _selectedStylist == null || _selectedTime == null)) {
-      _showSnackBar('Vui lòng chọn đầy đủ ngày, thợ và khung giờ!'); return;
+    if (_currentStep == 2 && (_selectedDate == null || (_selectedStylist == null && !_noArtistSelected) || _selectedTime == null)) {
+      _showSnackBar('Vui lòng chọn đầy đủ ngày, thợ (hoặc để tự động) và khung giờ!'); return;
     }
 
     if (_currentStep < 3) {
+      if (_currentStep == 2) {
+        _reviewPrice();
+      }
       _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
     } else {
       _executeBooking();
@@ -310,8 +419,23 @@ class _NailBookingPageState extends State<NailBookingPage> {
                         artists: _artists,
                         isLoading: _isLoadingArtists,
                         selectedStylistId: _selectedStylist?['nailArtistId'],
+                        noArtistSelected: _noArtistSelected,
                         onStylistSelected: (artist) {
-                          setState(() => _selectedStylist = artist);
+                          setState(() {
+                            if (artist != null) {
+                              _noArtistSelected = false;
+                              _selectedStylist = artist;
+                              _selectedTime = null;
+                            }
+                          });
+                          if (artist != null) _fetchTimeSlots();
+                        },
+                        onModeChanged: (isNoArtist) {
+                          setState(() {
+                            _noArtistSelected = isNoArtist;
+                            if (isNoArtist) _selectedStylist = null;
+                            _selectedTime = null;
+                          });
                           _fetchTimeSlots();
                         },
                       ),
@@ -321,9 +445,12 @@ class _NailBookingPageState extends State<NailBookingPage> {
                         timeSlots: _timeSlots,
                         isLoading: _isLoadingTimes,
                         selectedTime: _selectedTime,
-                        canSelect: _selectedStylist != null && _selectedDate != null,
+                        canSelect: (_selectedStylist != null || _noArtistSelected) && _selectedDate != null,
                         selectedDate: _selectedDate,
-                        onTimeChanged: (time) => setState(() => _selectedTime = time),
+                        onTimeChanged: (time) => setState(() {
+                          _selectedTime = time;
+                          _priceReview = null;
+                        }),
                       ),
                     ],
                   ),
@@ -345,10 +472,13 @@ class _NailBookingPageState extends State<NailBookingPage> {
                             _buildSummaryRow(Icons.storefront, 'Chi nhánh', _selectedBranch?['name'] ?? ''),
                             _buildSummaryRow(Icons.calendar_month, 'Ngày hẹn', _selectedDate != null ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}' : ''),
                             _buildSummaryRow(Icons.access_time, 'Thời gian', _selectedTime != null ? _selectedTime!.substring(0, 5) : ''),
-                            _buildSummaryRow(Icons.face, 'Thợ thực hiện', _selectedStylist?['fullName'] ?? ''),
+                            _buildSummaryRow(Icons.face, 'Thợ thực hiện',
+                              _noArtistSelected ? 'Tự động phân công' : (_selectedStylist?['fullName'] ?? '')),
                           ],
                         ),
                       ),
+                      const SizedBox(height: 24),
+                      _buildPromotionSelector(),
                       const SizedBox(height: 24),
                       Container(
                         padding: const EdgeInsets.all(16),
@@ -358,6 +488,11 @@ class _NailBookingPageState extends State<NailBookingPage> {
                           children: [
                             const Text('Chi tiết thanh toán', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                             const SizedBox(height: 12),
+                            if (_isReviewingPrice)
+                              const Padding(
+                                padding: EdgeInsets.only(bottom: 12),
+                                child: LinearProgressIndicator(minHeight: 2),
+                              ),
                             if (widget.nailData != null)
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 8.0),
@@ -400,13 +535,17 @@ class _NailBookingPageState extends State<NailBookingPage> {
                                 ),
                               );
                             }),
+                            if (_discountBreakdown.isNotEmpty) ...[
+                              const Divider(height: 24),
+                              ..._discountBreakdown.map((discount) => _buildDiscountRow(discount)),
+                            ],
                             const Divider(height: 24),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text('Tổng cộng tạm tính:', style: TextStyle(fontWeight: FontWeight.bold)),
+                                const Text('Tổng thanh toán:', style: TextStyle(fontWeight: FontWeight.bold)),
                                 Text(
-                                  PriceFormatter.format(_nailVariantPrice + _selectedExtraServicesTotal),
+                                  PriceFormatter.format(_priceReview?['totalPrice'] ?? _estimatedTotalPrice),
                                   style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 18),
                                 ),
                               ],
@@ -440,6 +579,135 @@ class _NailBookingPageState extends State<NailBookingPage> {
               Text(value, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
             ],
           )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPromotionSelector() {
+    final selectedPromotion = _promotions.where(
+      (promotion) => promotion.promotionId == _selectedPromotionId,
+    );
+    final selectedLabel = selectedPromotion.isEmpty
+        ? 'No promotion'
+        : selectedPromotion.first.name;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Promotion',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      selectedLabel,
+                      style: const TextStyle(color: Colors.grey, fontSize: 13),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              if (_isLoadingPromotions)
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                IconButton(
+                  onPressed: () => setState(
+                    () => _isPromotionExpanded = !_isPromotionExpanded,
+                  ),
+                  icon: Icon(
+                    _isPromotionExpanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                  ),
+                  tooltip: _isPromotionExpanded
+                      ? 'Collapse promotions'
+                      : 'Expand promotions',
+                ),
+            ],
+          ),
+          if (_isPromotionExpanded) ...[
+            const SizedBox(height: 8),
+            RadioListTile<int>(
+              value: 0,
+              groupValue: _selectedPromotionId ?? 0,
+              onChanged: (_) => _handlePromotionChanged(null),
+              title: const Text('No promotion'),
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+            ),
+            if (!_isLoadingPromotions && _promotions.isEmpty)
+              const Padding(
+                padding: EdgeInsets.only(top: 4),
+                child: Text(
+                  'No available promotions.',
+                  style: TextStyle(color: Colors.grey, fontSize: 13),
+                ),
+              ),
+            ..._promotions.map(
+              (promotion) => RadioListTile<int>(
+                value: promotion.promotionId,
+                groupValue: _selectedPromotionId ?? 0,
+                onChanged: _handlePromotionChanged,
+                title: Text(
+                  promotion.name,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(
+                  promotion.description.isNotEmpty
+                      ? '${promotion.discountLabel} - ${promotion.description}'
+                      : promotion.discountLabel,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDiscountRow(Map<String, dynamic> discount) {
+    final name = discount['name']?.toString() ?? 'Giảm giá';
+    final amountDisplay = discount['amountDisplay']?.toString();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text(
+              name,
+              style: const TextStyle(fontSize: 14, color: Colors.green),
+            ),
+          ),
+          Text(
+            amountDisplay?.isNotEmpty == true
+                ? amountDisplay!
+                : PriceFormatter.format(-(discount['amount'] ?? 0)),
+            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+          ),
         ],
       ),
     );

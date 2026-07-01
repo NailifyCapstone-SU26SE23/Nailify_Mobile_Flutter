@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/utils/paginated_response.dart';
-import '../models/customer_nail_models.dart';
+import '../models/customer_studio_models.dart';
 
 class CustomerComponentRepository {
   final ApiClient _apiClient;

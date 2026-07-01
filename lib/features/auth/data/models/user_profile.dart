@@ -27,7 +27,7 @@ class UserProfile {
 
   String get fullName {
     final name = [firstName, lastName]
-        .where((part) => part != null && part!.trim().isNotEmpty)
+        .where((part) => part != null && part.trim().isNotEmpty)
         .join(' ');
     return name.isEmpty ? email : name;
   }

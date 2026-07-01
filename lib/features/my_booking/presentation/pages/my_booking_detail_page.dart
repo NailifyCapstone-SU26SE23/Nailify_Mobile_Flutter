@@ -7,7 +7,8 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/base64_image_converter.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../data/datasources/my_booking_api_service.dart';
-import '../utils/booking_status_utils.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../widgets/cancel_booking_dialog.dart';
 
 class MyBookingDetailPage extends StatefulWidget {
@@ -168,13 +169,10 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     final bookingDate = DateTime.parse(booking['bookingDate']);
     final items = booking['bookingItems'] as List<dynamic>? ?? [];
     final rawStatus = booking['status']?.toString();
-    final status = bookingStatusView(rawStatus);
-    final discounts = _discounts;
-    final isRated = bookingIsRated(booking);
+    final status = _bookingStatus(rawStatus);
     final rawQrString = booking['qrCode']?.toString();
     final Uint8List? qrImageBytes = Base64ImageConverter.decode(rawQrString);
     final canCancel = rawStatus == 'Pending' || rawStatus == 'Approved' || rawStatus == 'Assigned';
-    final canRate = rawStatus == 'Completed' && !isRated;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -485,34 +483,6 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   ),
                   child: const Text(
                     'Hủy đặt lịch',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-            if (canRate) ...[
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => context.push(
-                    '/my-bookings/rate',
-                    extra: widget.bookingId,
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  icon: const Icon(Icons.star, color: Colors.white),
-                  label: const Text(
-                    'Rate',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,

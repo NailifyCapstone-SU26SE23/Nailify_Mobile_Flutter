@@ -161,10 +161,6 @@ class _NailBookingPageState extends State<NailBookingPage> {
           'serviceName': widget.nailData?['name'] ?? 'Làm móng',
           'date': _selectedDate,
           'time': formattedTime,
-          'price': booking['price'] ?? _priceReview?['price'],
-          'discount': booking['discount'] ?? _priceReview?['discount'],
-          'totalPrice': booking['totalPrice'] ?? _priceReview?['totalPrice'],
-          'discounts': booking['discounts'] ?? booking['discountBreakdown'] ?? _priceReview?['discounts'] ?? _priceReview?['discountBreakdown'],
           'stylistName': _noArtistSelected ? 'Tự động phân công' : (_selectedStylist?['fullName'] ?? 'Bất kỳ'),
         };
         context.go('/booking-success', extra: bookingDetails);

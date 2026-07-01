@@ -157,7 +157,6 @@ class _DetailContent extends StatelessWidget {
               ),
 
               const SizedBox(height: 16),
-              const SizedBox(height: 16),
 
               // 3. Các đặc điểm nổi bật (Chips)
               Wrap(

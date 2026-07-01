@@ -491,6 +491,28 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
             onRemove: _removeSelectedPlacement,
           ),
         ),
+        _CollapsibleTryOnSection(
+          title: 'Placement',
+          expanded: _showPlacementSection,
+          onToggle: () => setState(() => _showPlacementSection = !_showPlacementSection),
+          trailing: FilledButton.icon(
+            onPressed: _selectedComponent == null ? null : _addSelectedComponent,
+            icon: const Icon(Icons.add),
+            label: const Text('Add'),
+          ),
+          child: TryOnPlacementControls(
+            selectedPlacement: _selectedPlacement,
+            onMoveLeft: () => _nudge(dx: -0.04),
+            onMoveRight: () => _nudge(dx: 0.04),
+            onMoveUp: () => _nudge(dy: -0.04),
+            onMoveDown: () => _nudge(dy: 0.04),
+            onScaleDown: () => _nudge(scale: -0.05),
+            onScaleUp: () => _nudge(scale: 0.05),
+            onRotateLeft: () => _nudge(rotation: -10),
+            onRotateRight: () => _nudge(rotation: 10),
+            onRemove: _removeSelectedPlacement,
+          ),
+        ),
         const SizedBox(height: 16),
         _CollapsibleTryOnSection(
           title: 'Shape',

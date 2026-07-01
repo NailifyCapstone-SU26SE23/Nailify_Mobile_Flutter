@@ -125,7 +125,7 @@ class _CustomerComponentFormDialogState
 
                 // Component Type
                 DropdownButtonFormField<int>(
-                  value: _componentType,
+                  initialValue: _componentType,
                   decoration: const InputDecoration(
                     labelText: 'Loại thành phần *',
                     border: OutlineInputBorder(),

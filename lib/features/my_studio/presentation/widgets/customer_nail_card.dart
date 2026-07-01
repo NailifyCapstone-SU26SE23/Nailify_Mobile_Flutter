@@ -40,7 +40,7 @@ class CustomerNailCard extends StatelessWidget {
                     : Image.network(
                   nail.imageUrl,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) =>
+                  errorBuilder: (_, _, _) =>
                       Container(color: Colors.grey[200], child: const Icon(Icons.broken_image)),
                 ),
               ),

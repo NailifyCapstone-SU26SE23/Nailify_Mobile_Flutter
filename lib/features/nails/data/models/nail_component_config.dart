@@ -85,8 +85,8 @@ class NailComponentConfig {
       'rotation': rotation,
       'x': x ?? 0,
       'y': y ?? 0,
-      if (imageSrc != null) 'imageSrc': imageSrc,
-      if (type != null) 'type': type,
+      'imageSrc': ?imageSrc,
+      'type': ?type,
     };
   }
 

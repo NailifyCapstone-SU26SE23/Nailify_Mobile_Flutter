@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+
 import '../../../../core/di/injection.dart';
 import '../../../../core/network/api_client.dart';
 
@@ -44,6 +46,37 @@ class MyBookingApiService {
       },
     );
     return response.statusCode == 200 || response.statusCode == 204;
+  }
+
+  Future<Map<String, dynamic>?> getRatingByBooking(String bookingId) async {
+    final response = await _apiClient.get('/BookingRatings/by-booking/$bookingId');
+    final data = response.data['data'];
+    return data is Map<String, dynamic> ? data : null;
+  }
+
+  Future<Map<String, dynamic>> createBookingRating({
+    required String bookingId,
+    required int overallScore,
+    required String comment,
+    required int serviceQuality,
+    required int punctuality,
+    required int cleanliness,
+    String? imagePath,
+  }) async {
+    final formData = FormData.fromMap({
+      'BookingId': bookingId,
+      'OverallScore': overallScore,
+      'Comment': comment,
+      'ServiceQuality': serviceQuality,
+      'Punctuality': punctuality,
+      'Cleanliness': cleanliness,
+      if (imagePath != null && imagePath.isNotEmpty)
+        'image': await MultipartFile.fromFile(imagePath),
+    });
+
+    final response = await _apiClient.post('/BookingRatings', data: formData);
+    final data = response.data['data'];
+    return data is Map<String, dynamic> ? data : {};
   }
 
 }

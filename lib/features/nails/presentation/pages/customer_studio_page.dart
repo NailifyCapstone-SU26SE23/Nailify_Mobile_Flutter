@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-
 import '../../../../core/di/injection.dart';
 import '../../data/repositories/customer_component_repository.dart';
 import '../../data/repositories/customer_nail_repository.dart';

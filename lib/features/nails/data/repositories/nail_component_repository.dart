@@ -17,7 +17,7 @@ class NailComponentRepository {
       queryParameters: {
         'pageNumber': page,
         'pageSize': pageSize,
-        if (customerNailId != null) 'customerNailId': customerNailId,
+        'customerNailId': ?customerNailId,
       },
     );
     return PaginatedResponse.fromJson(
@@ -39,8 +39,8 @@ class NailComponentRepository {
       '/CustomerNailComponents',
       data: {
         'CustomerNailId': customerNailId,
-        if (componentId != null) 'ComponentId': componentId,
-        if (customerComponentId != null) 'CustomerComponentId': customerComponentId,
+        'ComponentId': ?componentId,
+        'CustomerComponentId': ?customerComponentId,
         'PosX': posX,
         'PosY': posY,
         'FingerIndex': fingerIndex,
@@ -63,8 +63,8 @@ class NailComponentRepository {
       '/CustomerNailComponents/$customerNailComponentId',
       data: {
         'CustomerNailId': customerNailId,
-        if (componentId != null) 'ComponentId': componentId,
-        if (customerComponentId != null) 'CustomerComponentId': customerComponentId,
+        'ComponentId': ?componentId,
+        'CustomerComponentId': ?customerComponentId,
         'PosX': posX,
         'PosY': posY,
         'FingerIndex': fingerIndex,

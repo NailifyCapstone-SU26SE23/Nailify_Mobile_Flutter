@@ -118,8 +118,9 @@ class BookingApiService {
     String startTime,
     String? artistId,
     int nailVariantId,
-    List<String> serviceIds,
-  ) async {
+    List<String> serviceIds, {
+      List<int>? selectedPromotionIds,
+    }) async {
     final response = await _apiClient.post('/Bookings', data: {
       'salonId': salonId,
       'bookingDate': bookingDate,
@@ -127,10 +128,35 @@ class BookingApiService {
       'nailArtistId': artistId?.isEmpty == true ? null : artistId,
       'holdToken': null,
       'bookingItems': _buildBookingItems(nailVariantId, serviceIds),
+      'selectedPromotionIds': selectedPromotionIds,
     });
     return response.data['data'] ?? {};
   }
 
+  Future<Map<String, dynamic>> reviewBookingPrice({
+    required String salonId,
+    required String bookingDate,
+    required String startTime,
+    required String? artistId,
+    required int nailVariantId,
+    required List<String> serviceIds,
+    List<int>? selectedPromotionIds,
+  }) async {
+    final response = await _apiClient.post('/Bookings/price', data: {
+      'salonId': salonId,
+      'bookingDate': bookingDate,
+      'startTime': startTime,
+      'nailArtistId': artistId?.isEmpty == true ? null : artistId,
+      'holdToken': null,
+      'bookingItems': _buildBookingItems(nailVariantId, serviceIds),
+      'selectedPromotionIds': selectedPromotionIds,
+    });
+    return response.data['data'] ?? {};
+  }
+
+  // =================================================================
+  // CÁC HÀM BỔ SUNG CHO LUỒNG ĐẶT DỊCH VỤ ĐỘC LẬP
+  // =================================================================
   Future<List<dynamic>> getNailArtistsBySalon(String salonId) async {
     final response = await _apiClient.get('/NailArtists', queryParameters: {
       'PageNumber': 1,

@@ -20,7 +20,7 @@ class CustomerComponentRepository {
         'pageNumber': page,
         'pageSize': pageSize,
         if (name != null && name.trim().isNotEmpty) 'name': name.trim(),
-        if (componentType != null) 'componentType': componentType,
+        'componentType': ?componentType,
       },
     );
     return PaginatedResponse.fromJson(
@@ -41,8 +41,8 @@ class CustomerComponentRepository {
       'Name': name,
       'ComponentType': componentType,
       'IsPublic': isPublic.toString(),
-      if (price != null) 'Price': price,
-      if (customDataJson != null) 'CustomDataJson': customDataJson,
+      'Price': ?price,
+      'CustomDataJson': ?customDataJson,
     });
     if (imagePath != null && imagePath.isNotEmpty) {
       formData.files.add(MapEntry('image', await MultipartFile.fromFile(imagePath)));
@@ -68,7 +68,7 @@ class CustomerComponentRepository {
       'ComponentType': componentType,
       'CustomDataJson': customDataJson,
       'IsPublic': isPublic.toString(),
-      if (price != null) 'Price': price,
+      'Price': ?price,
     });
     if (imagePath != null && imagePath.isNotEmpty) {
       formData.files.add(MapEntry('image', await MultipartFile.fromFile(imagePath)));

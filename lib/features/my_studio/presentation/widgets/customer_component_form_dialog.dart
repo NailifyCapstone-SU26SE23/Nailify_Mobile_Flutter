@@ -107,7 +107,7 @@ class _CustomerComponentFormDialogState
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<int>(
-                  value: _componentType,
+                  initialValue: _componentType,
                   decoration: const InputDecoration(labelText: 'Loại thành phần *', border: OutlineInputBorder()),
                   items: const [
                     DropdownMenuItem(value: 0, child: Text('💎 Gem')),

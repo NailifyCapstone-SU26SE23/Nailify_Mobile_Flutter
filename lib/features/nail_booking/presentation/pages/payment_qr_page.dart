@@ -154,33 +154,6 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
                 ),
               ),
               const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _isChecking
-                    ? null
-                    : () => _checkPaymentStatus(showError: true),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: _isChecking
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : const Text(
-                        'Tôi đã thanh toán',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-              ),
-              const SizedBox(height: 12),
               OutlinedButton(
                 onPressed: _isCancelling ? null : _cancelPayment,
                 style: OutlinedButton.styleFrom(

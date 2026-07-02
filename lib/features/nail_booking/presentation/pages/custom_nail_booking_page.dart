@@ -6,10 +6,12 @@ import '../../../../core/utils/price_formatter.dart';
 import '../widgets/booking_service_selection.dart';
 import '../widgets/booking_date_selection.dart';
 import '../widgets/booking_seat_selection.dart'; // IMPORT WIDGET GHE
+import '../widgets/booking_promotion_sheet.dart';
 import '../widgets/booking_time_selection.dart';
 
 // Import API & Model
 import '../../data/datasources/booking_api_service.dart';
+import '../../data/models/promotion_model.dart';
 import '../../../my_studio/data/models/customer_nail_model.dart'; // Đảm bảo import Model chính xác
 
 class CustomNailBookingPage extends StatefulWidget {
@@ -40,6 +42,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   List<String?> _selectedExtraServices = [];
   DateTime? _selectedDate;
   String? _selectedTime;
+  List<PromotionModel> _selectedPromotions = [];
 
   @override
   void initState() {
@@ -117,6 +120,29 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
     return total;
   }
 
+  int get _totalPrice {
+    return widget.nail.price + _selectedExtraServicesTotal;
+  }
+
+  int get _discountAmount {
+    if (_selectedPromotions.isEmpty) return 0;
+    double totalDiscount = 0;
+    final subtotal = _totalPrice.toDouble();
+    for (var promo in _selectedPromotions) {
+      if (promo.discountType == 'Percentage') {
+        totalDiscount += subtotal * (promo.discountValue / 100);
+      } else {
+        totalDiscount += promo.discountValue;
+      }
+    }
+    return totalDiscount.toInt();
+  }
+
+  int get _finalPrice {
+    final finalPrice = _totalPrice - _discountAmount;
+    return finalPrice < 0 ? 0 : finalPrice;
+  }
+
   // SUBMIT API ĐẶT LỊCH
   Future<void> _executeBooking() async {
     if (_isSubmitting) return;
@@ -145,6 +171,9 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
         artistId,
         nailId,
         _groupedServicesMap,
+        selectedPromotionIds: _selectedPromotions.isEmpty
+            ? null
+            : _selectedPromotions.map((p) => p.promotionId).toList(),
       );
 
       if (mounted) {
@@ -314,6 +343,9 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                         ),
                       ),
                       const SizedBox(height: 24),
+                      // Khối chọn khuyến mãi
+                      _buildPromotionSelector(),
+                      const SizedBox(height: 24),
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.borderLight)),
@@ -366,18 +398,40 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                               );
                             }),
 
-                            const Divider(height: 24),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text('Tổng cộng tạm tính:', style: TextStyle(fontWeight: FontWeight.bold)),
-                                Text(
-                                  PriceFormatter.format(widget.nail.price + _selectedExtraServicesTotal),
-                                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 18),
-                                ),
-                              ],
-                            )
-                          ],
+                             const Divider(height: 24),
+                             Row(
+                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                               children: [
+                                 const Text('Tạm tính:', style: TextStyle(fontWeight: FontWeight.bold)),
+                                 Text(
+                                   PriceFormatter.format(_totalPrice),
+                                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                 ),
+                               ],
+                             ),
+                             if (_discountAmount > 0)
+                               Padding(
+                                 padding: const EdgeInsets.only(top: 8.0),
+                                 child: Row(
+                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                   children: [
+                                     const Text('Giảm giá:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                                     Text('-${PriceFormatter.format(_discountAmount)}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 16)),
+                                   ],
+                                 ),
+                               ),
+                             const Divider(height: 16),
+                             Row(
+                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                               children: [
+                                 const Text('Tổng cộng:', style: TextStyle(fontWeight: FontWeight.bold)),
+                                 Text(
+                                   PriceFormatter.format(_finalPrice),
+                                   style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 18),
+                                 ),
+                               ],
+                             )
+                           ],
                         ),
                       )
                     ],
@@ -388,6 +442,55 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
           ),
           _buildFooter(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPromotionSelector() {
+    final hasPromos = _selectedPromotions.isNotEmpty;
+    return GestureDetector(
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => BookingPromotionSheet(
+            selectedPromotions: _selectedPromotions,
+            onConfirm: (promos) => setState(() => _selectedPromotions = promos),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: hasPromos ? AppColors.primary.withOpacity(0.06) : Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: hasPromos ? AppColors.primary.withOpacity(0.5) : Colors.grey.shade300,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.local_offer_outlined,
+                size: 18,
+                color: hasPromos ? AppColors.primary : Colors.grey.shade500),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                hasPromos
+                    ? 'Đã chọn ${_selectedPromotions.length} khuyến mãi'
+                    : 'Chọn voucher / khuyến mãi',
+                style: TextStyle(
+                  color: hasPromos ? AppColors.primary : Colors.grey.shade600,
+                  fontWeight: hasPromos ? FontWeight.w600 : FontWeight.normal,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            Icon(Icons.chevron_right,
+                color: hasPromos ? AppColors.primary : Colors.grey.shade400),
+          ],
+        ),
       ),
     );
   }

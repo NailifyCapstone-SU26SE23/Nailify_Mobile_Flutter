@@ -12,6 +12,7 @@ import '../widgets/branch_selection_list.dart';
 import '../widgets/booking_service_selection.dart';
 import '../widgets/booking_date_selection.dart';
 import '../widgets/booking_seat_selection.dart'; // IMPORT WIDGET GHE
+import '../widgets/booking_promotion_sheet.dart';
 import '../widgets/booking_stylist_selection.dart';
 import '../widgets/booking_time_selection.dart';
 
@@ -27,7 +28,6 @@ class NailBookingPage extends StatefulWidget {
 class _NailBookingPageState extends State<NailBookingPage> {
   final PageController _pageController = PageController();
   final BookingApiService _apiService = BookingApiService();
-  final PromotionApiService _promotionApiService = PromotionApiService();
   int _currentStep = 0; // 0: Salon, 1: Seat, 2: Service, 3: DateTime & Staff, 4: Summary
   bool _isSubmitting = false;
 
@@ -36,15 +36,10 @@ class _NailBookingPageState extends State<NailBookingPage> {
   List<dynamic> _services = [];
   List<dynamic> _artists = [];
   List<dynamic> _timeSlots = [];
-  List<PromotionModel> _promotions = [];
 
   bool _isLoadingSalons = true;
   bool _isLoadingArtists = false;
   bool _isLoadingTimes = false;
-  bool _isLoadingPromotions = false;
-  bool _isPromotionExpanded = false;
-  bool _isReviewingPrice = false;
-  Map<String, dynamic>? _priceReview;
 
   // User State
   Map<String, dynamic>? _selectedBranch;
@@ -53,7 +48,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
   DateTime? _selectedDate;
   Map<String, dynamic>? _selectedStylist;
   String? _selectedTime;
-  int? _selectedPromotionId;
+  List<PromotionModel> _selectedPromotions = [];
   bool _noArtistSelected = false; // Khách không chọn thợ, hệ thống tự phân công
 
   @override
@@ -61,7 +56,6 @@ class _NailBookingPageState extends State<NailBookingPage> {
     super.initState();
     _fetchSalons();
     _fetchServices();
-    _fetchPromotions();
   }
 
   int get _nailVariantId {
@@ -153,7 +147,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
           artistId,
           _nailVariantId,
           _selectedExtraServices.whereType<String>().toList(),
-          selectedPromotionIds: _selectedPromotionIds,
+          selectedPromotionIds: _selectedPromotions.isEmpty
+              ? null
+              : _selectedPromotions.map((p) => p.promotionId).toList(),
         );
 
         if (!mounted) return;
@@ -192,43 +188,16 @@ class _NailBookingPageState extends State<NailBookingPage> {
     }
   }
 
-  Future<void> _fetchPromotions() async {
-    setState(() => _isLoadingPromotions = true);
-    try {
-      final data = await _promotionApiService.getVouchers();
-      if (!mounted) return;
-      setState(() {
-        _promotions = data.where((promotion) => promotion.isSelectable).toList();
-        _isLoadingPromotions = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isLoadingPromotions = false);
-      _showSnackBar('Failed to load promotions: $e');
-    }
-  }
-
-  List<int>? get _selectedPromotionIds {
-    final id = _selectedPromotionId;
-    return id == null ? null : [id];
-  }
-
-  void _handlePromotionChanged(int? promotionId) {
-    setState(() {
-      _selectedPromotionId = promotionId;
-      _priceReview = null;
-    });
-    if (_currentStep == 4) {
-      _reviewPrice();
-    }
-  }
+  // Getter cho _selectedPromotionIds
+  List<int>? get _selectedPromotionIdsOrNull => _selectedPromotions.isEmpty
+      ? null
+      : _selectedPromotions.map((p) => p.promotionId).toList();
 
   void _handleServiceChanged(List<String?> services) {
     setState(() {
       _selectedExtraServices = services;
       _selectedStylist = null;
       _selectedTime = null;
-      _priceReview = null;
       _artists = [];
       _timeSlots = [];
     });
@@ -294,37 +263,23 @@ class _NailBookingPageState extends State<NailBookingPage> {
 
   int get _estimatedTotalPrice => _nailVariantPrice + _selectedExtraServicesTotal;
 
-  List<Map<String, dynamic>> get _discountBreakdown {
-    final raw = _priceReview?['discountBreakdown'] ?? _priceReview?['discounts'];
-    if (raw is! List) return [];
-    return raw
-        .whereType<Map>()
-        .map((discount) => Map<String, dynamic>.from(discount))
-        .toList();
+  int get _discountAmount {
+    if (_selectedPromotions.isEmpty) return 0;
+    double totalDiscount = 0;
+    final subtotal = _estimatedTotalPrice.toDouble();
+    for (var promo in _selectedPromotions) {
+      if (promo.discountType == 'Percentage') {
+        totalDiscount += subtotal * (promo.discountValue / 100);
+      } else {
+        totalDiscount += promo.discountValue;
+      }
+    }
+    return totalDiscount.toInt();
   }
 
-  Future<void> _reviewPrice() async {
-    if (_selectedBranch == null || _selectedDate == null || _selectedTime == null) return;
-    setState(() => _isReviewingPrice = true);
-    try {
-      final formattedTime = _selectedTime!.length == 5 ? "$_selectedTime:00" : _selectedTime!;
-      final artistId = _noArtistSelected ? null : _selectedStylist?['nailArtistId'] as String?;
-      final review = await _apiService.reviewBookingPrice(
-        salonId: _selectedBranch!['salonId'],
-        bookingDate: _formatBookingDate(_selectedDate!),
-        startTime: formattedTime,
-        artistId: artistId,
-        nailVariantId: _nailVariantId,
-        serviceIds: _selectedExtraServices.whereType<String>().toList(),
-        selectedPromotionIds: _selectedPromotionIds,
-      );
-      if (!mounted) return;
-      setState(() => _priceReview = review);
-    } catch (e) {
-      if (mounted) _showSnackBar('Lỗi tính giá: $e');
-    } finally {
-      if (mounted) setState(() => _isReviewingPrice = false);
-    }
+  int get _finalPrice {
+    final finalPrice = _estimatedTotalPrice - _discountAmount;
+    return finalPrice < 0 ? 0 : finalPrice;
   }
 
   void _handleNextAction() {
@@ -349,9 +304,6 @@ class _NailBookingPageState extends State<NailBookingPage> {
     }
 
     if (_currentStep < 4) {
-      if (_currentStep == 3) {
-        _reviewPrice();
-      }
       _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
     } else {
       _executeBooking();
@@ -462,7 +414,6 @@ class _NailBookingPageState extends State<NailBookingPage> {
                         selectedDate: _selectedDate,
                         onTimeChanged: (time) => setState(() {
                           _selectedTime = time;
-                          _priceReview = null;
                         }),
                       ),
                     ],
@@ -502,11 +453,6 @@ class _NailBookingPageState extends State<NailBookingPage> {
                           children: [
                             const Text('Chi tiết thanh toán', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                             const SizedBox(height: 12),
-                            if (_isReviewingPrice)
-                              const Padding(
-                                padding: EdgeInsets.only(bottom: 12),
-                                child: LinearProgressIndicator(minHeight: 2),
-                              ),
                             if (widget.nailData != null)
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 8.0),
@@ -549,21 +495,39 @@ class _NailBookingPageState extends State<NailBookingPage> {
                                 ),
                               );
                             }),
-                            if (_discountBreakdown.isNotEmpty) ...[
-                              const Divider(height: 24),
-                              ..._discountBreakdown.map((discount) => _buildDiscountRow(discount)),
-                            ],
-                            const Divider(height: 24),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text('Tổng thanh toán:', style: TextStyle(fontWeight: FontWeight.bold)),
-                                Text(
-                                  PriceFormatter.format(_priceReview?['totalPrice'] ?? _estimatedTotalPrice),
-                                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 18),
-                                ),
-                              ],
-                            )
+                             const Divider(height: 24),
+                             Row(
+                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                               children: [
+                                 const Text('Tạm tính:', style: TextStyle(fontWeight: FontWeight.bold)),
+                                 Text(
+                                   PriceFormatter.format(_estimatedTotalPrice),
+                                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                 ),
+                               ],
+                             ),
+                             if (_discountAmount > 0)
+                               Padding(
+                                 padding: const EdgeInsets.only(top: 8.0),
+                                 child: Row(
+                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                   children: [
+                                     const Text('Giảm giá:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                                     Text('-${PriceFormatter.format(_discountAmount)}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 16)),
+                                   ],
+                                 ),
+                               ),
+                             const Divider(height: 16),
+                             Row(
+                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                               children: [
+                                 const Text('Tổng cộng:', style: TextStyle(fontWeight: FontWeight.bold)),
+                                 Text(
+                                   PriceFormatter.format(_finalPrice),
+                                   style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 18),
+                                 ),
+                               ],
+                             )
                           ],
                         ),
                       )
@@ -599,130 +563,52 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   Widget _buildPromotionSelector() {
-    final selectedPromotion = _promotions.where(
-      (promotion) => promotion.promotionId == _selectedPromotionId,
-    );
-    final selectedLabel = selectedPromotion.isEmpty
-        ? 'No promotion'
-        : selectedPromotion.first.name;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderLight),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Promotion',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      selectedLabel,
-                      style: const TextStyle(color: Colors.grey, fontSize: 13),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              if (_isLoadingPromotions)
-                const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              else
-                IconButton(
-                  onPressed: () => setState(
-                    () => _isPromotionExpanded = !_isPromotionExpanded,
-                  ),
-                  icon: Icon(
-                    _isPromotionExpanded
-                        ? Icons.keyboard_arrow_up
-                        : Icons.keyboard_arrow_down,
-                  ),
-                  tooltip: _isPromotionExpanded
-                      ? 'Collapse promotions'
-                      : 'Expand promotions',
-                ),
-            ],
+    final hasPromos = _selectedPromotions.isNotEmpty;
+    return GestureDetector(
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => BookingPromotionSheet(
+            selectedPromotions: _selectedPromotions,
+            onConfirm: (promos) => setState(() {
+              _selectedPromotions = promos;
+            }),
           ),
-          if (_isPromotionExpanded) ...[
-            const SizedBox(height: 8),
-            RadioListTile<int>(
-              value: 0,
-              groupValue: _selectedPromotionId ?? 0,
-              onChanged: (_) => _handlePromotionChanged(null),
-              title: const Text('No promotion'),
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-            ),
-            if (!_isLoadingPromotions && _promotions.isEmpty)
-              const Padding(
-                padding: EdgeInsets.only(top: 4),
-                child: Text(
-                  'No available promotions.',
-                  style: TextStyle(color: Colors.grey, fontSize: 13),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: hasPromos ? AppColors.primary.withOpacity(0.06) : Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: hasPromos ? AppColors.primary.withOpacity(0.5) : Colors.grey.shade300,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.local_offer_outlined,
+                size: 18,
+                color: hasPromos ? AppColors.primary : Colors.grey.shade500),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                hasPromos
+                    ? 'Đã chọn ${_selectedPromotions.length} khuyến mãi'
+                    : 'Chọn voucher / khuyến mãi',
+                style: TextStyle(
+                  color: hasPromos ? AppColors.primary : Colors.grey.shade600,
+                  fontWeight: hasPromos ? FontWeight.w600 : FontWeight.normal,
+                  fontSize: 14,
                 ),
               ),
-            ..._promotions.map(
-              (promotion) => RadioListTile<int>(
-                value: promotion.promotionId,
-                groupValue: _selectedPromotionId ?? 0,
-                onChanged: _handlePromotionChanged,
-                title: Text(
-                  promotion.name,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                subtitle: Text(
-                  promotion.description.isNotEmpty
-                      ? '${promotion.discountLabel} - ${promotion.description}'
-                      : promotion.discountLabel,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-              ),
             ),
+            Icon(Icons.chevron_right,
+                color: hasPromos ? AppColors.primary : Colors.grey.shade400),
           ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDiscountRow(Map<String, dynamic> discount) {
-    final name = discount['name']?.toString() ?? 'Giảm giá';
-    final amountDisplay = discount['amountDisplay']?.toString();
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Text(
-              name,
-              style: const TextStyle(fontSize: 14, color: Colors.green),
-            ),
-          ),
-          Text(
-            amountDisplay?.isNotEmpty == true
-                ? amountDisplay!
-                : PriceFormatter.format(-(discount['amount'] ?? 0)),
-            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -175,9 +175,15 @@ class BookingApiService {
   }
 
   Future<Map<String, dynamic>> createServiceBooking(
-    Map<String, dynamic> bookingData,
-  ) async {
-    final response = await _apiClient.post('/Bookings', data: bookingData);
+    Map<String, dynamic> bookingData, {
+    List<int>? selectedPromotionIds,
+  }) async {
+    final payload = {
+      ...bookingData,
+      if (selectedPromotionIds != null && selectedPromotionIds.isNotEmpty)
+        'selectedPromotionIds': selectedPromotionIds,
+    };
+    final response = await _apiClient.post('/Bookings', data: payload);
     return response.data['data'] ?? {};
   }
 
@@ -187,8 +193,9 @@ class BookingApiService {
     String startTime,
     String artistId,
     int customerNailId,
-    Map<String, int> groupedExtraServices,
-  ) async {
+    Map<String, int> groupedExtraServices, {
+    List<int>? selectedPromotionIds,
+  }) async {
     final bookingItems = <Map<String, dynamic>>[
       {
         'nailVariantId': null,
@@ -214,6 +221,8 @@ class BookingApiService {
       'nailArtistId': artistId,
       'holdToken': '',
       'bookingItems': bookingItems,
+      if (selectedPromotionIds != null && selectedPromotionIds.isNotEmpty)
+        'selectedPromotionIds': selectedPromotionIds,
     });
 
     return response.data['data'] ?? {};

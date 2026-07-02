@@ -43,9 +43,9 @@ class TryOnColorSelector extends StatelessWidget {
         if (showTitle) ...[
           Text(
             'Select Color',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
         ],
@@ -75,14 +75,10 @@ class TryOnColorSelector extends StatelessWidget {
         Container(
           height: 64,
           decoration: BoxDecoration(
-            color: gradientEnabled
-                ? null
-                : parseTryOnHexColor(selectedColor),
+            color: gradientEnabled ? null : parseTryOnHexColor(selectedColor),
             gradient: gradientEnabled
                 ? LinearGradient(
-                    colors: displayedColors
-                        .map(parseTryOnHexColor)
-                        .toList(),
+                    colors: displayedColors.map(parseTryOnHexColor).toList(),
                   )
                 : null,
             borderRadius: BorderRadius.circular(12),
@@ -99,8 +95,8 @@ class TryOnColorSelector extends StatelessWidget {
                 for (final colorHex in _presetColors)
                   _ColorCircle(
                     colorHex: colorHex,
-                    selected: selectedColor.toLowerCase() ==
-                        colorHex.toLowerCase(),
+                    selected:
+                        selectedColor.toLowerCase() == colorHex.toLowerCase(),
                     onTap: () => onColorSelected(colorHex),
                   ),
                 _CustomColorButton(
@@ -214,11 +210,7 @@ class _GradientStopButton extends StatelessWidget {
       clipBehavior: Clip.none,
       children: [
         OutlinedButton.icon(
-          onPressed: () => _showColorPicker(
-            context,
-            colorHex,
-            onSelect,
-          ),
+          onPressed: () => _showColorPicker(context, colorHex, onSelect),
           icon: CircleAvatar(
             radius: 12,
             backgroundColor: parseTryOnHexColor(colorHex),
@@ -348,10 +340,7 @@ class _SaturationValuePicker extends StatelessWidget {
   final HSVColor color;
   final ValueChanged<HSVColor> onChanged;
 
-  const _SaturationValuePicker({
-    required this.color,
-    required this.onChanged,
-  });
+  const _SaturationValuePicker({required this.color, required this.onChanged});
 
   void _update(Offset position, Size size) {
     final saturation = (position.dx / size.width).clamp(0.0, 1.0);

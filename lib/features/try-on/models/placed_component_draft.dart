@@ -58,12 +58,7 @@ class PlacedComponentDraft {
   }
 
   String _buildConfigJson() {
-    return jsonEncode(
-      {
-        'scale': scale,
-        'rotation': rotation,
-      },
-    );
+    return jsonEncode({'scale': scale, 'rotation': rotation});
   }
 
   CustomerNailComponentPayload toPayload(int customerNailId) {
@@ -132,11 +127,13 @@ class PlacedComponentDraft {
       component: component,
       componentId: item.componentId,
       customerComponentId: item.customerComponentId,
-      name: component?.name ??
+      name:
+          component?.name ??
           item.component?.name ??
           item.customerComponent?.name ??
           'Component',
-      imageUrl: component?.imageUrl ??
+      imageUrl:
+          component?.imageUrl ??
           item.component?.imageUrl ??
           item.customerComponent?.imageUrl ??
           _nullableString(config['imageSrc'] ?? config['imageUrl']) ??

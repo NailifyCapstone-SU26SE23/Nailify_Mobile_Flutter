@@ -6,7 +6,12 @@ class LengthSlider extends StatelessWidget {
   final Function(double) onChanged;
   final String label;
 
-  const LengthSlider({super.key, required this.currentValue, required this.onChanged, required this.label});
+  const LengthSlider({
+    super.key,
+    required this.currentValue,
+    required this.onChanged,
+    required this.label,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -14,8 +19,17 @@ class LengthSlider extends StatelessWidget {
       children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-          decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(20)),
-          child: Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
         const SizedBox(height: 20),
         SliderTheme(
@@ -40,14 +54,23 @@ class LengthSlider extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Very Short', style: TextStyle(fontSize: 10, color: Colors.grey)),
+              Text(
+                'Very Short',
+                style: TextStyle(fontSize: 10, color: Colors.grey),
+              ),
               Text('Short', style: TextStyle(fontSize: 10, color: Colors.grey)),
-              Text('Medium', style: TextStyle(fontSize: 10, color: Colors.grey)),
+              Text(
+                'Medium',
+                style: TextStyle(fontSize: 10, color: Colors.grey),
+              ),
               Text('Long', style: TextStyle(fontSize: 10, color: Colors.grey)),
-              Text('Very Long', style: TextStyle(fontSize: 10, color: Colors.grey)),
+              Text(
+                'Very Long',
+                style: TextStyle(fontSize: 10, color: Colors.grey),
+              ),
             ],
           ),
-        )
+        ),
       ],
     );
   }

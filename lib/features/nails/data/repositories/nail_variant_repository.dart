@@ -29,7 +29,7 @@ class NailVariantRepository {
     );
     return PaginatedResponse.fromJson(
       response.data,
-          (json) => NailVariantModel.fromJson(json as Map<String, dynamic>),
+      (json) => NailVariantModel.fromJson(json as Map<String, dynamic>),
     );
   }
 

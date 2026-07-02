@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 class AppColors {
   // màu sắc chủ đạo (Brand Colors)
   static const Color primary = Color(0xFFFF66C4);
-  static const Color secondary = Color(0xFFFFDE59);     // Vàng phối gradient
+  static const Color secondary = Color(0xFFFFDE59); // Vàng phối gradient
 
   // màu nền hệ thống
   static const Color background = Colors.white;
-  static const Color surfaceLight = Color(0xFFF5F5F5);  // Màu nền xám nhạt
+  static const Color surfaceLight = Color(0xFFF5F5F5); // Màu nền xám nhạt
   static const Color surface = Colors.white;
   static const Color cardBackground = Colors.white;
 

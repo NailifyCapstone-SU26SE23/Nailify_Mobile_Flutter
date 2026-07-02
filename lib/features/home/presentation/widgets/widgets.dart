@@ -1,3 +1,1 @@
-class Widgets{
-
-}
+class Widgets {}

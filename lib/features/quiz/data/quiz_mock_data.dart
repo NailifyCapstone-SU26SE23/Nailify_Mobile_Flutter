@@ -44,7 +44,8 @@ class QuizMockData {
     ),
     QuizQuestion(
       id: 4,
-      question: "You're choosing a nail set for tonight. What's most important?",
+      question:
+          "You're choosing a nail set for tonight. What's most important?",
       options: [
         'Durability, no peeling in the middle',
         'Colors that stand out under the lights',

@@ -6,7 +6,11 @@ class PatternSelectionGrid extends StatelessWidget {
   final String selectedPattern;
   final Function(String) onChanged;
 
-  const PatternSelectionGrid({super.key, required this.selectedPattern, required this.onChanged});
+  const PatternSelectionGrid({
+    super.key,
+    required this.selectedPattern,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +43,11 @@ class PatternSelectionGrid extends StatelessWidget {
               ),
               boxShadow: [
                 if (isSelected)
-                  BoxShadow(color: AppColors.primary.withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 4)),
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
               ],
             ),
             child: Column(
@@ -47,7 +55,9 @@ class PatternSelectionGrid extends StatelessWidget {
               children: [
                 Expanded(
                   child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(14),
+                    ),
                     child: Image.asset(
                       pattern['image']!,
                       fit: BoxFit.cover,
@@ -59,13 +69,20 @@ class PatternSelectionGrid extends StatelessWidget {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12.0,
+                    horizontal: 8.0,
+                  ),
                   child: Text(
                     pattern['name']!,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                      color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w500,
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.textPrimary,
                     ),
                   ),
                 ),

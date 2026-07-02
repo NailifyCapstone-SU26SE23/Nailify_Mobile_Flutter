@@ -38,17 +38,36 @@ class _NailFilterSheetState extends State<NailFilterSheet> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Padding(
-        padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.viewInsetsOf(context).bottom + 20),
+        padding: EdgeInsets.fromLTRB(
+          20,
+          16,
+          20,
+          MediaQuery.viewInsetsOf(context).bottom + 20,
+        ),
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.82),
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height * 0.82,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  const Expanded(child: Text('Filter designs', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700))),
-                  IconButton(tooltip: 'Close', onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
+                  const Expanded(
+                    child: Text(
+                      'Filter designs',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Close',
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -62,7 +81,10 @@ class _NailFilterSheetState extends State<NailFilterSheet> {
                 ),
               ),
               const SizedBox(height: 16),
-              const Text('Categories', style: TextStyle(fontWeight: FontWeight.w800)),
+              const Text(
+                'Categories',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
               const SizedBox(height: 8),
               Expanded(
                 child: widget.categoryTypes.isEmpty
@@ -72,27 +94,43 @@ class _NailFilterSheetState extends State<NailFilterSheet> {
                         separatorBuilder: (_, _) => const SizedBox(height: 14),
                         itemBuilder: (context, index) {
                           final type = widget.categoryTypes[index];
-                          final activeCategories = type.categories.where((category) => category.status.toLowerCase() != 'inactive').toList();
-                          if (activeCategories.isEmpty) return const SizedBox.shrink();
+                          final activeCategories = type.categories
+                              .where(
+                                (category) =>
+                                    category.status.toLowerCase() != 'inactive',
+                              )
+                              .toList();
+                          if (activeCategories.isEmpty)
+                            return const SizedBox.shrink();
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(type.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+                              Text(
+                                type.name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
                               const SizedBox(height: 8),
                               Wrap(
                                 spacing: 8,
                                 runSpacing: 8,
                                 children: activeCategories.map((category) {
-                                  final selected = _selectedCategoryIds.contains(category.categoryId);
+                                  final selected = _selectedCategoryIds
+                                      .contains(category.categoryId);
                                   return FilterChip(
                                     label: Text(category.name),
                                     selected: selected,
                                     onSelected: (value) {
                                       setState(() {
                                         if (value) {
-                                          _selectedCategoryIds.add(category.categoryId);
+                                          _selectedCategoryIds.add(
+                                            category.categoryId,
+                                          );
                                         } else {
-                                          _selectedCategoryIds.remove(category.categoryId);
+                                          _selectedCategoryIds.remove(
+                                            category.categoryId,
+                                          );
                                         }
                                       });
                                     },
@@ -108,7 +146,11 @@ class _NailFilterSheetState extends State<NailFilterSheet> {
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton(onPressed: () => Navigator.pop(context, const NailFilters()), child: const Text('Reset')),
+                    child: OutlinedButton(
+                      onPressed: () =>
+                          Navigator.pop(context, const NailFilters()),
+                      child: const Text('Reset'),
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(

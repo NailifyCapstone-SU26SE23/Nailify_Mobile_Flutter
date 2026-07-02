@@ -107,7 +107,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
                 DiscoverToolbar(
                   designCount: designs.length,
                   isGridView: _isGridView,
-                  onGridToggle: () => setState(() => _isGridView = !_isGridView),
+                  onGridToggle: () =>
+                      setState(() => _isGridView = !_isGridView),
                   onFilterPressed: _openFilterMenu,
                 ),
                 const SizedBox(height: 24),

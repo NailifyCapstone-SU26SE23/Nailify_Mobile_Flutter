@@ -25,7 +25,9 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   // Biến kiểm tra trạng thái đăng nhập
   bool get _isLoggedIn {
-    final token = getIt<SharedPreferences>().getString(AppConstants.authTokenKey);
+    final token = getIt<SharedPreferences>().getString(
+      AppConstants.authTokenKey,
+    );
     return token != null && token.isNotEmpty;
   }
 
@@ -35,9 +37,9 @@ class _MainShellState extends State<MainShell> {
     if (mounted) {
       setState(() {}); // Làm mới UI để thanh AppBar vẽ lại nút
       context.go('/'); // Đưa người dùng về trang chủ
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã đăng xuất thành công!')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Đã đăng xuất thành công!')));
     }
   }
 
@@ -79,11 +81,19 @@ class _MainShellState extends State<MainShell> {
             Text('Thông báo'),
           ],
         ),
-        content: Text('Tính năng "$actionName" đang được xử lý. Trang mục tiêu hiện tại chưa được khởi tạo.'),
+        content: Text(
+          'Tính năng "$actionName" đang được xử lý. Trang mục tiêu hiện tại chưa được khởi tạo.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Đóng', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+            child: const Text(
+              'Đóng',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
           ),
         ],
       ),
@@ -96,77 +106,110 @@ class _MainShellState extends State<MainShell> {
       backgroundColor: AppColors.background,
 
       // Conditional AppBar - only show header if showHeader is true
-      appBar: widget.showHeader ? AppBar(
-        backgroundColor: AppColors.background,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        toolbarHeight: 80,
-        title: GestureDetector(
-          onTap: () => context.go('/'),
-          child: Padding(
-            padding: const EdgeInsets.only(left: 8.0),
-            child: Image.asset(
-              'assets/images/pink.png',
-              height: 40,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => const Text(
-                'Nailify',
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
+      appBar: widget.showHeader
+          ? AppBar(
+              backgroundColor: AppColors.background,
+              surfaceTintColor: Colors.transparent,
+              elevation: 0,
+              toolbarHeight: 80,
+              title: GestureDetector(
+                onTap: () => context.go('/'),
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: Image.asset(
+                    'assets/images/pink.png',
+                    height: 40,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) => const Text(
+                      'Nailify',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-        ),
-        actions: _isLoggedIn
-            ? [
-          // HIỂN THỊ NÚT ĐĂNG XUẤT KHI ĐÃ CÓ TOKEN
-          OutlinedButton.icon(
-            onPressed: _logout,
-            icon: const Icon(Icons.logout, size: 18, color: AppColors.primary),
-            label: const Text('Đăng xuất', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w500, fontSize: 14)),
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: AppColors.primary, width: 1.2),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-            ),
-          ),
-          const SizedBox(width: 16),
-        ]
-            : [
-          // HIỂN THỊ NÚT ĐĂNG NHẬP/ĐĂNG KÝ KHI CHƯA CÓ TOKEN
-          OutlinedButton(
-            onPressed: () => context.push('/login'),
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: AppColors.primary, width: 1.2),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-            ),
-            child: const Text('Sign in', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w500, fontSize: 14)),
-          ),
-          const SizedBox(width: 8),
-          ElevatedButton(
-            onPressed: () => context.push('/register'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-            ),
-            child: const Text('Register', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
-          ),
-          const SizedBox(width: 16),
-        ],
-      ) : null, // No AppBar when showHeader is false
-
+              actions: _isLoggedIn
+                  ? [
+                      // HIỂN THỊ NÚT ĐĂNG XUẤT KHI ĐÃ CÓ TOKEN
+                      OutlinedButton.icon(
+                        onPressed: _logout,
+                        icon: const Icon(
+                          Icons.logout,
+                          size: 18,
+                          color: AppColors.primary,
+                        ),
+                        label: const Text(
+                          'Đăng xuất',
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(
+                            color: AppColors.primary,
+                            width: 1.2,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                    ]
+                  : [
+                      // HIỂN THỊ NÚT ĐĂNG NHẬP/ĐĂNG KÝ KHI CHƯA CÓ TOKEN
+                      OutlinedButton(
+                        onPressed: () => context.push('/login'),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(
+                            color: AppColors.primary,
+                            width: 1.2,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                        ),
+                        child: const Text(
+                          'Sign in',
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: () => context.push('/register'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                        ),
+                        child: const Text(
+                          'Register',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                    ],
+            )
+          : null, // No AppBar when showHeader is false
       // Wrap the body with SafeArea when header is hidden
-      body: widget.showHeader
-          ? widget.child
-          : SafeArea(
-        child: widget.child,
-      ),
+      body: widget.showHeader ? widget.child : SafeArea(child: widget.child),
 
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _calculateCurrentIndex(context),
@@ -177,9 +220,18 @@ class _MainShellState extends State<MainShell> {
         backgroundColor: AppColors.background,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Trang chủ'),
-          BottomNavigationBarItem(icon: Icon(Icons.calendar_month), label: 'Lịch hẹn'),
-          BottomNavigationBarItem(icon: Icon(Icons.palette_outlined), label: 'My Studio'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Tài khoản'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.calendar_month),
+            label: 'Lịch hẹn',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.palette_outlined),
+            label: 'My Studio',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            label: 'Tài khoản',
+          ),
         ],
       ),
     );

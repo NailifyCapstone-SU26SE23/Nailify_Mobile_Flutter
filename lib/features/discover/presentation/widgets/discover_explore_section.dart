@@ -31,7 +31,9 @@ class DiscoverExploreSection extends StatelessWidget {
           style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.textSecondary,
             side: const BorderSide(color: AppColors.borderLight),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
             padding: const EdgeInsets.symmetric(vertical: 14),
           ),
           child: const Row(

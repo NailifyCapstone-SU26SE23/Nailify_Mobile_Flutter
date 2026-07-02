@@ -32,7 +32,9 @@ class TryOnActionBar extends StatelessWidget {
         left: 20,
         right: 20,
         top: 16,
-        bottom: MediaQuery.of(context).padding.bottom + 16, // Protects safe areas on modern iPhones
+        bottom:
+            MediaQuery.of(context).padding.bottom +
+            16, // Protects safe areas on modern iPhones
       ),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -50,21 +52,15 @@ class TryOnActionBar extends StatelessWidget {
         children: [
           Text(
             canSave ? 'Ready to save' : 'Selection missing',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
           ),
           Text(
             hasShape
                 ? selectedComponent == null
-                    ? selectedNailShape!.name
-                    : '${selectedNailShape!.name} + ${selectedComponent!.name}'
+                      ? selectedNailShape!.name
+                      : '${selectedNailShape!.name} + ${selectedComponent!.name}'
                 : 'Pick a nail shape',
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),

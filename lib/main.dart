@@ -35,10 +35,7 @@ void main() async {
   final localeService = LocaleService(await SharedPreferences.getInstance());
 
   runApp(
-    ChangeNotifierProvider.value(
-      value: localeService,
-      child: const CoreApp(),
-    ),
+    ChangeNotifierProvider.value(value: localeService, child: const CoreApp()),
   );
 }
 

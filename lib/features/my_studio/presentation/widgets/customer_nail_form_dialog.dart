@@ -38,7 +38,10 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
   }
 
   Future<void> _pickImage() async {
-    final image = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    final image = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
     if (image != null) setState(() => _imageFile = image);
   }
 
@@ -63,7 +66,10 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
       }
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -83,8 +89,13 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
               children: [
                 TextFormField(
                   controller: _nameController,
-                  decoration: const InputDecoration(labelText: 'Tên mẫu móng *', border: OutlineInputBorder()),
-                  validator: (value) => value?.trim().isEmpty == true ? 'Vui lòng nhập tên' : null,
+                  decoration: const InputDecoration(
+                    labelText: 'Tên mẫu móng *',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) => value?.trim().isEmpty == true
+                      ? 'Vui lòng nhập tên'
+                      : null,
                 ),
                 const SizedBox(height: 12),
                 Column(
@@ -93,23 +104,48 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
                     OutlinedButton.icon(
                       onPressed: _pickImage,
                       icon: const Icon(Icons.photo_library),
-                      label: Text(_imageFile != null ? 'Đổi ảnh' : 'Chọn ảnh móng'),
+                      label: Text(
+                        _imageFile != null ? 'Đổi ảnh' : 'Chọn ảnh móng',
+                      ),
                     ),
                     const SizedBox(height: 12),
                     if (_imageFile != null) ...[
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: Image.file(File(_imageFile!.path), height: 180, width: double.infinity, fit: BoxFit.cover),
+                        child: Image.file(
+                          File(_imageFile!.path),
+                          height: 180,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
                       ),
                       const SizedBox(height: 4),
-                      Text('Ảnh mới', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
-                    ] else if (widget.nail?.imageUrl != null && widget.nail!.imageUrl.isNotEmpty) ...[
+                      Text(
+                        'Ảnh mới',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ] else if (widget.nail?.imageUrl != null &&
+                        widget.nail!.imageUrl.isNotEmpty) ...[
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: Image.network(widget.nail!.imageUrl, height: 180, width: double.infinity, fit: BoxFit.cover),
+                        child: Image.network(
+                          widget.nail!.imageUrl,
+                          height: 180,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
                       ),
                       const SizedBox(height: 4),
-                      Text('Ảnh hiện tại', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                      Text(
+                        'Ảnh hiện tại',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
                     ],
                   ],
                 ),
@@ -135,7 +171,11 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
         FilledButton(
           onPressed: _isLoading ? null : _save,
           child: _isLoading
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : const Text('Lưu'),
         ),
       ],

@@ -20,7 +20,7 @@ class PriceFormatter {
     // Sử dụng biểu thức chính quy (RegExp) để thêm dấu phẩy ngăn cách mỗi 3 chữ số
     String formattedNumber = intPrice.toString().replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]},',
+      (Match m) => '${m[1]},',
     );
 
     return '$formattedNumber VNĐ';

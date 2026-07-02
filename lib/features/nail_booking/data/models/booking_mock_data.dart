@@ -102,26 +102,10 @@ class BookingMockData {
       'name': 'Chà gót chân',
       'price': 12000,
     },
-    {
-      'id': 'tay-gel',
-      'name': 'Tẩy gel',
-      'price': 30000,
-    },
-    {
-      'id': 'lam-sach-mong',
-      'name': 'Làm sạch móng (Cắt da)',
-      'price': 40000,
-    },
-    {
-      'id': 'duong-mong-co-ban',
-      'name': 'Dưỡng móng cơ bản',
-      'price': 50000,
-    },
-    {
-      'id': 'phuc-hoi-mong',
-      'name': 'Phục hồi móng hư tổn',
-      'price': 100000,
-    },
+    {'id': 'tay-gel', 'name': 'Tẩy gel', 'price': 30000},
+    {'id': 'lam-sach-mong', 'name': 'Làm sạch móng (Cắt da)', 'price': 40000},
+    {'id': 'duong-mong-co-ban', 'name': 'Dưỡng móng cơ bản', 'price': 50000},
+    {'id': 'phuc-hoi-mong', 'name': 'Phục hồi móng hư tổn', 'price': 100000},
   ];
 
   static final Map<String, int> servicePrices = {

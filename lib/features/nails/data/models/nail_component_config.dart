@@ -27,15 +27,19 @@ class NailComponentConfig {
 
   factory NailComponentConfig.fromJsonValue(dynamic value) {
     if (value == null) return const NailComponentConfig();
-    if (value is Map<String, dynamic>) return NailComponentConfig.fromMap(value);
-    if (value is Map) return NailComponentConfig.fromMap(Map<String, dynamic>.from(value));
+    if (value is Map<String, dynamic>)
+      return NailComponentConfig.fromMap(value);
+    if (value is Map)
+      return NailComponentConfig.fromMap(Map<String, dynamic>.from(value));
 
     final jsonString = value.toString();
     if (jsonString.trim().isEmpty) return const NailComponentConfig();
     try {
       final decoded = jsonDecode(jsonString);
-      if (decoded is Map<String, dynamic>) return NailComponentConfig.fromMap(decoded);
-      if (decoded is Map) return NailComponentConfig.fromMap(Map<String, dynamic>.from(decoded));
+      if (decoded is Map<String, dynamic>)
+        return NailComponentConfig.fromMap(decoded);
+      if (decoded is Map)
+        return NailComponentConfig.fromMap(Map<String, dynamic>.from(decoded));
     } catch (_) {
       return const NailComponentConfig();
     }
@@ -62,8 +66,12 @@ class NailComponentConfig {
     double? fallbackPosX,
     double? fallbackPosY,
   }) {
-    final arX = x ?? (fallbackPosX != null ? previewPosToArOffset(fallbackPosX, scale) : 0);
-    final arY = y ?? (fallbackPosY != null ? previewPosToArOffset(fallbackPosY, scale) : 0);
+    final arX =
+        x ??
+        (fallbackPosX != null ? previewPosToArOffset(fallbackPosX, scale) : 0);
+    final arY =
+        y ??
+        (fallbackPosY != null ? previewPosToArOffset(fallbackPosY, scale) : 0);
     return {
       'id': componentId ?? '',
       'type': type ?? fallbackType ?? 'pattern',
@@ -76,10 +84,7 @@ class NailComponentConfig {
     };
   }
 
-  Map<String, dynamic> toStorageMap({
-    String? imageSrc,
-    String? type,
-  }) {
+  Map<String, dynamic> toStorageMap({String? imageSrc, String? type}) {
     return {
       'scale': scale,
       'rotation': rotation,

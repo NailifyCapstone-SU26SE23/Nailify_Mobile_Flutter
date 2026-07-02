@@ -77,12 +77,16 @@ class _AnotherDesignPageState extends State<AnotherDesignPage> {
                 DesignGalleryCta(
                   onBookPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Booking feature coming soon.')),
+                      const SnackBar(
+                        content: Text('Booking feature coming soon.'),
+                      ),
                     );
                   },
                   onCustomPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Custom design feature coming soon.')),
+                      const SnackBar(
+                        content: Text('Custom design feature coming soon.'),
+                      ),
                     );
                   },
                 ),

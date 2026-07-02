@@ -9,10 +9,7 @@ import '../../data/repositories/customer_nail_repository.dart';
 class CustomerNailFormDialog extends StatefulWidget {
   final CustomerNailModel? nail;
 
-  const CustomerNailFormDialog({
-    super.key,
-    this.nail,
-  });
+  const CustomerNailFormDialog({super.key, this.nail});
 
   @override
   State<CustomerNailFormDialog> createState() => _CustomerNailFormDialogState();
@@ -77,9 +74,9 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -105,8 +102,9 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
                     labelText: 'Tên mẫu móng *',
                     border: OutlineInputBorder(),
                   ),
-                  validator: (value) =>
-                  value?.trim().isEmpty == true ? 'Vui lòng nhập tên' : null,
+                  validator: (value) => value?.trim().isEmpty == true
+                      ? 'Vui lòng nhập tên'
+                      : null,
                 ),
                 const SizedBox(height: 12),
 
@@ -117,7 +115,9 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
                     OutlinedButton.icon(
                       onPressed: _pickImage,
                       icon: const Icon(Icons.photo_library),
-                      label: Text(_imageFile != null ? 'Đổi ảnh' : 'Chọn ảnh móng'),
+                      label: Text(
+                        _imageFile != null ? 'Đổi ảnh' : 'Chọn ảnh móng',
+                      ),
                     ),
                     const SizedBox(height: 12),
 
@@ -144,9 +144,13 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
                       const SizedBox(height: 4),
                       Text(
                         'Ảnh mới',
-                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade600,
+                        ),
                       ),
-                    ] else if (widget.nail?.imageUrl != null && widget.nail!.imageUrl.isNotEmpty) ...[
+                    ] else if (widget.nail?.imageUrl != null &&
+                        widget.nail!.imageUrl.isNotEmpty) ...[
                       Container(
                         height: 180,
                         width: double.infinity,
@@ -166,9 +170,10 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
                               if (loadingProgress == null) return child;
                               return Center(
                                 child: CircularProgressIndicator(
-                                  value: loadingProgress.expectedTotalBytes != null
+                                  value:
+                                      loadingProgress.expectedTotalBytes != null
                                       ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
+                                            loadingProgress.expectedTotalBytes!
                                       : null,
                                 ),
                               );
@@ -180,11 +185,18 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                                      Icon(
+                                        Icons.broken_image,
+                                        size: 50,
+                                        color: Colors.grey,
+                                      ),
                                       SizedBox(height: 8),
                                       Text(
                                         'Không thể tải ảnh',
-                                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -197,7 +209,10 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
                       const SizedBox(height: 4),
                       Text(
                         'Ảnh hiện tại',
-                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade600,
+                        ),
                       ),
                     ],
                   ],
@@ -205,7 +220,6 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
                 const SizedBox(height: 12),
 
                 if (widget.nail != null) ...[
-
                   SwitchListTile(
                     title: const Text('Công khai'),
                     subtitle: const Text('Mọi người có thể nhìn thấy mẫu này'),
@@ -228,10 +242,10 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
           onPressed: _isLoading ? null : _save,
           child: _isLoading
               ? const SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          )
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : const Text('Lưu'),
         ),
       ],

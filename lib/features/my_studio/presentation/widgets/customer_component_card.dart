@@ -44,15 +44,21 @@ class CustomerComponentCard extends StatelessWidget {
                 height: 60,
                 child: component.imageUrl.isEmpty
                     ? Container(
-                  color: Colors.grey[200],
-                  child: Icon(Icons.image_outlined, size: 30, color: Colors.grey[400]),
-                )
+                        color: Colors.grey[200],
+                        child: Icon(
+                          Icons.image_outlined,
+                          size: 30,
+                          color: Colors.grey[400],
+                        ),
+                      )
                     : Image.network(
-                  component.imageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) =>
-                      Container(color: Colors.grey[200], child: const Icon(Icons.broken_image)),
-                ),
+                        component.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: Colors.grey[200],
+                          child: const Icon(Icons.broken_image),
+                        ),
+                      ),
               ),
             ),
             const SizedBox(width: 12),
@@ -60,24 +66,56 @@ class CustomerComponentCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(component.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  Text(
+                    component.name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Wrap(
                     spacing: 8,
                     runSpacing: 4,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(color: Colors.blue[100], borderRadius: BorderRadius.circular(4)),
-                        child: Text(_getComponentTypeName(int.tryParse(component.componentType) ?? 0), style: const TextStyle(fontSize: 11)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.blue[100],
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          _getComponentTypeName(
+                            int.tryParse(component.componentType) ?? 0,
+                          ),
+                          style: const TextStyle(fontSize: 11),
+                        ),
                       ),
                       if (component.price > 0)
-                        Text(PriceFormatter.format(component.price), style: const TextStyle(fontSize: 12, color: Colors.green)),
+                        Text(
+                          PriceFormatter.format(component.price),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.green,
+                          ),
+                        ),
                       if (component.isPublic)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(color: Colors.purple[100], borderRadius: BorderRadius.circular(4)),
-                          child: const Text('Công khai', style: TextStyle(fontSize: 11)),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.purple[100],
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'Công khai',
+                            style: TextStyle(fontSize: 11),
+                          ),
                         ),
                     ],
                   ),
@@ -86,8 +124,17 @@ class CustomerComponentCard extends StatelessWidget {
             ),
             Row(
               children: [
-                IconButton(icon: const Icon(Icons.edit_outlined), onPressed: onEdit, tooltip: 'Sửa'),
-                IconButton(icon: const Icon(Icons.delete_outline), onPressed: onDelete, tooltip: 'Xóa', color: Colors.red),
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: onEdit,
+                  tooltip: 'Sửa',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: onDelete,
+                  tooltip: 'Xóa',
+                  color: Colors.red,
+                ),
               ],
             ),
           ],

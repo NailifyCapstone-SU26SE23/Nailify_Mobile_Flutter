@@ -80,15 +80,15 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
         imagePath: _selectedImage?.path,
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã cập nhật thông tin')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Đã cập nhật thông tin')));
       context.go('/profile');
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Cập nhật thất bại: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Cập nhật thất bại: $error')));
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -126,9 +126,10 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
                 backgroundImage: _selectedImage != null
                     ? FileImage(File(_selectedImage!.path))
                     : _currentAvatarUrl?.trim().isNotEmpty == true
-                        ? NetworkImage(_currentAvatarUrl!.trim())
-                        : null,
-                child: _selectedImage == null &&
+                    ? NetworkImage(_currentAvatarUrl!.trim())
+                    : null,
+                child:
+                    _selectedImage == null &&
                         (_currentAvatarUrl == null ||
                             _currentAvatarUrl!.trim().isEmpty)
                     ? const Icon(
@@ -171,7 +172,9 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _phoneController,
-                    decoration: const InputDecoration(labelText: 'Số điện thoại'),
+                    decoration: const InputDecoration(
+                      labelText: 'Số điện thoại',
+                    ),
                     keyboardType: TextInputType.phone,
                     validator: _requiredValidator,
                   ),
@@ -257,15 +260,15 @@ class _UpdatePreferencesPageState extends State<UpdatePreferencesPage> {
         personaId: _personaIdController.text.trim(),
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã cập nhật sở thích')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Đã cập nhật sở thích')));
       context.go('/profile');
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Cập nhật thất bại: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Cập nhật thất bại: $error')));
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -314,8 +317,9 @@ class _UpdatePreferencesPageState extends State<UpdatePreferencesPage> {
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _nailConditionController,
-                    decoration:
-                        const InputDecoration(labelText: 'Tình trạng móng'),
+                    decoration: const InputDecoration(
+                      labelText: 'Tình trạng móng',
+                    ),
                     validator: _requiredValidator,
                   ),
                   const SizedBox(height: 12),
@@ -353,10 +357,7 @@ class _UpdatePageShell extends StatelessWidget {
   final String title;
   final List<Widget> children;
 
-  const _UpdatePageShell({
-    required this.title,
-    required this.children,
-  });
+  const _UpdatePageShell({required this.title, required this.children});
 
   @override
   Widget build(BuildContext context) {

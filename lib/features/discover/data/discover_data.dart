@@ -28,11 +28,11 @@ class DiscoverNailItem {
   });
 
   Map<String, dynamic> toNailData() => {
-        'id': id,
-        'name': name,
-        'image': image,
-        'tags': tags,
-      };
+    'id': id,
+    'name': name,
+    'image': image,
+    'tags': tags,
+  };
 }
 
 class DiscoverPersonalityFilter {
@@ -150,13 +150,41 @@ class DiscoverMockData {
   ];
 
   static const List<DiscoverPersonalityFilter> personalityFilters = [
-    DiscoverPersonalityFilter(id: 'gentle_cute', label: 'Gentle & Cute', count: 24),
-    DiscoverPersonalityFilter(id: 'elegant', label: 'Elegant & Sophisticated', count: 18),
-    DiscoverPersonalityFilter(id: 'personality', label: 'Personality & Strength', count: 15),
-    DiscoverPersonalityFilter(id: 'creativity', label: 'Creativity & Art', count: 20),
-    DiscoverPersonalityFilter(id: 'natural', label: 'Natural & Organic', count: 12),
-    DiscoverPersonalityFilter(id: 'party', label: 'Featured & Party', count: 16),
-    DiscoverPersonalityFilter(id: 'professional', label: 'Professional', count: 10),
+    DiscoverPersonalityFilter(
+      id: 'gentle_cute',
+      label: 'Gentle & Cute',
+      count: 24,
+    ),
+    DiscoverPersonalityFilter(
+      id: 'elegant',
+      label: 'Elegant & Sophisticated',
+      count: 18,
+    ),
+    DiscoverPersonalityFilter(
+      id: 'personality',
+      label: 'Personality & Strength',
+      count: 15,
+    ),
+    DiscoverPersonalityFilter(
+      id: 'creativity',
+      label: 'Creativity & Art',
+      count: 20,
+    ),
+    DiscoverPersonalityFilter(
+      id: 'natural',
+      label: 'Natural & Organic',
+      count: 12,
+    ),
+    DiscoverPersonalityFilter(
+      id: 'party',
+      label: 'Featured & Party',
+      count: 16,
+    ),
+    DiscoverPersonalityFilter(
+      id: 'professional',
+      label: 'Professional',
+      count: 10,
+    ),
   ];
 
   static const List<DiscoverColorFilter> colorFilters = [
@@ -229,8 +257,7 @@ class DiscoverMockData {
       if (shape.isNotEmpty && item.nailShape != shape) {
         return false;
       }
-      if (occasions.isNotEmpty &&
-          !item.occasionIds.any(occasions.contains)) {
+      if (occasions.isNotEmpty && !item.occasionIds.any(occasions.contains)) {
         return false;
       }
       return true;

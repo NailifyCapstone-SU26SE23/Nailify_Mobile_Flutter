@@ -54,14 +54,38 @@ class TryOnPlacementControls extends StatelessWidget {
           spacing: 8,
           runSpacing: 8,
           children: [
-            IconButton.filledTonal(onPressed: enabled ? onMoveLeft : null, icon: const Icon(Icons.chevron_left)),
-            IconButton.filledTonal(onPressed: enabled ? onMoveUp : null, icon: const Icon(Icons.keyboard_arrow_up)),
-            IconButton.filledTonal(onPressed: enabled ? onMoveDown : null, icon: const Icon(Icons.keyboard_arrow_down)),
-            IconButton.filledTonal(onPressed: enabled ? onMoveRight : null, icon: const Icon(Icons.chevron_right)),
-            IconButton.filledTonal(onPressed: enabled ? onScaleDown : null, icon: const Icon(Icons.remove)),
-            IconButton.filledTonal(onPressed: enabled ? onScaleUp : null, icon: const Icon(Icons.add)),
-            IconButton.filledTonal(onPressed: enabled ? onRotateLeft : null, icon: const Icon(Icons.rotate_left)),
-            IconButton.filledTonal(onPressed: enabled ? onRotateRight : null, icon: const Icon(Icons.rotate_right)),
+            IconButton.filledTonal(
+              onPressed: enabled ? onMoveLeft : null,
+              icon: const Icon(Icons.chevron_left),
+            ),
+            IconButton.filledTonal(
+              onPressed: enabled ? onMoveUp : null,
+              icon: const Icon(Icons.keyboard_arrow_up),
+            ),
+            IconButton.filledTonal(
+              onPressed: enabled ? onMoveDown : null,
+              icon: const Icon(Icons.keyboard_arrow_down),
+            ),
+            IconButton.filledTonal(
+              onPressed: enabled ? onMoveRight : null,
+              icon: const Icon(Icons.chevron_right),
+            ),
+            IconButton.filledTonal(
+              onPressed: enabled ? onScaleDown : null,
+              icon: const Icon(Icons.remove),
+            ),
+            IconButton.filledTonal(
+              onPressed: enabled ? onScaleUp : null,
+              icon: const Icon(Icons.add),
+            ),
+            IconButton.filledTonal(
+              onPressed: enabled ? onRotateLeft : null,
+              icon: const Icon(Icons.rotate_left),
+            ),
+            IconButton.filledTonal(
+              onPressed: enabled ? onRotateRight : null,
+              icon: const Icon(Icons.rotate_right),
+            ),
           ],
         ),
       ],

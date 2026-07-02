@@ -9,10 +9,10 @@ class PromotionApiService {
     int pageNumber = 1,
     int pageSize = 10,
   }) async {
-    final response = await _apiClient.get('/Promotions/today', queryParameters: {
-      'pageNumber': pageNumber,
-      'pageSize': pageSize
-    });
+    final response = await _apiClient.get(
+      '/Promotions/today',
+      queryParameters: {'pageNumber': pageNumber, 'pageSize': pageSize},
+    );
 
     final items = response.data['data']?['items'] as List<dynamic>? ?? [];
     return items

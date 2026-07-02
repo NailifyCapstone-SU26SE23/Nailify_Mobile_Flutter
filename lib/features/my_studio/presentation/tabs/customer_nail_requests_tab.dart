@@ -13,7 +13,8 @@ class CustomerNailRequestsTab extends StatefulWidget {
   const CustomerNailRequestsTab({super.key});
 
   @override
-  State<CustomerNailRequestsTab> createState() => _CustomerNailRequestsTabState();
+  State<CustomerNailRequestsTab> createState() =>
+      _CustomerNailRequestsTabState();
 }
 
 class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
@@ -80,8 +81,9 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
               final salonOptions = salons
                   .whereType<Map>()
                   .map((salon) => Map<String, dynamic>.from(salon))
-                  .where((salon) =>
-                      (salon['salonId']?.toString() ?? '').isNotEmpty)
+                  .where(
+                    (salon) => (salon['salonId']?.toString() ?? '').isNotEmpty,
+                  )
                   .toList();
 
               Future<void> submit() async {
@@ -130,7 +132,7 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                         onChanged: isSubmitting
                             ? null
                             : (value) =>
-                                setDialogState(() => selectedNail = value),
+                                  setDialogState(() => selectedNail = value),
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
@@ -155,15 +157,14 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                         onChanged: isSubmitting
                             ? null
                             : (value) => setDialogState(() {
-                                  selectedSalon = null;
-                                  for (final salon in salonOptions) {
-                                    if (salon['salonId']?.toString() ==
-                                        value) {
-                                      selectedSalon = salon;
-                                      break;
-                                    }
+                                selectedSalon = null;
+                                for (final salon in salonOptions) {
+                                  if (salon['salonId']?.toString() == value) {
+                                    selectedSalon = salon;
+                                    break;
                                   }
-                                }),
+                                }
+                              }),
                       ),
                     ],
                   ),
@@ -176,7 +177,8 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                     child: const Text('Cancel'),
                   ),
                   FilledButton(
-                    onPressed: isSubmitting ||
+                    onPressed:
+                        isSubmitting ||
                             selectedNail == null ||
                             selectedSalon == null
                         ? null
@@ -199,9 +201,9 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
       if (submitted == true) {
         _load();
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Request submitted.')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Request submitted.')));
         }
       }
     } catch (e) {
@@ -323,7 +325,7 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                       nail: request,
                       onTap: () => context.push(
                         '/my-studio/${request.customerNailRequestId}',
-                      )
+                      ),
                     );
                   },
                 ),

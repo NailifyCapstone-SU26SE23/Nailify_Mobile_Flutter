@@ -41,24 +41,24 @@ class CombinedComponent {
   final int? componentId;
 
   CombinedComponent.public(ComponentModel component)
-      : id = component.componentId,
-        name = component.name,
-        imageUrl = component.imageUrl,
-        type = _convertComponentType(component.componentType), // Convert here
-        price = component.price.toDouble(),
-        isCustomerComponent = false,
-        customerComponentId = null,
-        componentId = component.componentId;
+    : id = component.componentId,
+      name = component.name,
+      imageUrl = component.imageUrl,
+      type = _convertComponentType(component.componentType), // Convert here
+      price = component.price.toDouble(),
+      isCustomerComponent = false,
+      customerComponentId = null,
+      componentId = component.componentId;
 
   CombinedComponent.customer(CustomerComponentModel component)
-      : id = component.customerComponentId,
-        name = component.name,
-        imageUrl = component.imageUrl,
-        type = _convertComponentType(component.componentType), // Convert here
-        price = component.price,
-        isCustomerComponent = true,
-        customerComponentId = component.customerComponentId,
-        componentId = null;
+    : id = component.customerComponentId,
+      name = component.name,
+      imageUrl = component.imageUrl,
+      type = _convertComponentType(component.componentType), // Convert here
+      price = component.price,
+      isCustomerComponent = true,
+      customerComponentId = component.customerComponentId,
+      componentId = null;
 
   // Helper method to convert from whatever type your API uses to ComponentType enum
   static ComponentType _convertComponentType(dynamic apiType) {
@@ -97,7 +97,7 @@ enum ComponentType {
 
   static ComponentType fromValue(int value) {
     return ComponentType.values.firstWhere(
-          (e) => e.value == value,
+      (e) => e.value == value,
       orElse: () => ComponentType.gem,
     );
   }

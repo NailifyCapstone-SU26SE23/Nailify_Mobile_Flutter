@@ -7,7 +7,8 @@ import '../../../../core/utils/duration_formatter.dart';
 class BookingServiceSelection extends StatelessWidget {
   final Map<String, dynamic>? nailData;
   final List<dynamic> services;
-  final List<String?> selectedExtraServices; // cho phép null để hiển thị ô trống khi mới thêm
+  final List<String?>
+  selectedExtraServices; // cho phép null để hiển thị ô trống khi mới thêm
   final ValueChanged<List<String?>> onChanged;
 
   const BookingServiceSelection({
@@ -32,7 +33,9 @@ class BookingServiceSelection extends StatelessWidget {
       service['serviceId']?.toString() ?? service['id']?.toString() ?? '';
 
   String _serviceName(Map<String, dynamic> service) =>
-      service['name']?.toString() ?? service['serviceName']?.toString() ?? 'Dịch vụ';
+      service['name']?.toString() ??
+      service['serviceName']?.toString() ??
+      'Dịch vụ';
 
   dynamic _servicePrice(Map<String, dynamic> service) =>
       service['price'] ?? service['basePrice'] ?? 0;
@@ -93,7 +96,10 @@ class BookingServiceSelection extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), // Mở rộng height để chứa cả tên và duration
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ), // Mở rộng height để chứa cả tên và duration
                         decoration: BoxDecoration(
                           color: Colors.white,
                           border: Border.all(color: Colors.grey.shade300),
@@ -102,11 +108,21 @@ class BookingServiceSelection extends StatelessWidget {
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
                             value: selectedId,
-                            hint: const Text('Chọn dịch vụ phụ trợ...', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                            hint: const Text(
+                              'Chọn dịch vụ phụ trợ...',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                              ),
+                            ),
                             isExpanded: true,
-                            icon: const Icon(Icons.keyboard_arrow_down, size: 20, color: Colors.grey),
-                            itemHeight: 64, // Chiều cao mỗi thẻ trong dropdown để không bị lỗi overflow
-
+                            icon: const Icon(
+                              Icons.keyboard_arrow_down,
+                              size: 20,
+                              color: Colors.grey,
+                            ),
+                            itemHeight:
+                                64, // Chiều cao mỗi thẻ trong dropdown để không bị lỗi overflow
                             // Tạo giao diện từng dòng (Item) trong Dropdown
                             items: availableServices.map((service) {
                               final id = _serviceId(service);
@@ -120,19 +136,28 @@ class BookingServiceSelection extends StatelessWidget {
                                   children: [
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
                                           Text(
                                             name,
-                                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.textPrimary,
+                                            ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
                                             DurationFormatter.format(duration),
-                                            style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey,
+                                            ),
                                           ),
                                         ],
                                       ),
@@ -140,7 +165,11 @@ class BookingServiceSelection extends StatelessWidget {
                                     const SizedBox(width: 8),
                                     Text(
                                       PriceFormatter.format(price),
-                                      style: const TextStyle(fontSize: 14, color: AppColors.primary, fontWeight: FontWeight.bold),
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: AppColors.primary,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -156,7 +185,7 @@ class BookingServiceSelection extends StatelessWidget {
                     IconButton(
                       icon: const Icon(Icons.cancel, color: Colors.redAccent),
                       onPressed: () => _removeService(index),
-                    )
+                    ),
                   ],
                 ),
               );
@@ -169,19 +198,27 @@ class BookingServiceSelection extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: _addService,
             icon: const Icon(Icons.add, size: 18),
-            label: const Text('Thêm dịch vụ', style: TextStyle(fontWeight: FontWeight.bold)),
+            label: const Text(
+              'Thêm dịch vụ',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.primary,
               side: const BorderSide(color: AppColors.primary),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             ),
           ),
         ] else ...[
           const Text(
             'Hiện không có dịch vụ phụ trợ nào.',
-            style: TextStyle(color: AppColors.textSecondary, fontStyle: FontStyle.italic),
-          )
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
         ],
       ],
     );
@@ -206,7 +243,10 @@ class BookingServiceSelection extends StatelessWidget {
               children: [
                 const Text(
                   'Dịch vụ thiết kế Nail (Mặc định)',
-                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(

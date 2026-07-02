@@ -25,7 +25,8 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
   final PageController _pageController = PageController();
   final BookingApiService _apiService = BookingApiService();
 
-  int _currentStep = 0; // 0: Salon, 1: Services, 2: DateTime & Stylist, 3: Summary
+  int _currentStep =
+      0; // 0: Salon, 1: Services, 2: DateTime & Stylist, 3: Summary
   bool _isSubmitting = false;
 
   // Data
@@ -70,13 +71,20 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
 
   Future<void> _fetchArtists() async {
     if (_selectedSalon == null || _selectedDate == null) return;
-    setState(() { _isLoadingArtists = true; _artists = []; _selectedStylist = null; _selectedTime = null; });
+    setState(() {
+      _isLoadingArtists = true;
+      _artists = [];
+      _selectedStylist = null;
+      _selectedTime = null;
+    });
     try {
-      final artists = await _apiService.getNailArtistsBySalon(_selectedSalon!['salonId']);
+      final artists = await _apiService.getNailArtistsBySalon(
+        _selectedSalon!['salonId'],
+      );
       if (mounted) {
-        setState(() { 
-          _artists = artists; 
-          _isLoadingArtists = false; 
+        setState(() {
+          _artists = artists;
+          _isLoadingArtists = false;
           if (_artists.isEmpty) {
             _noArtistSelected = true;
           }
@@ -96,11 +104,22 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
       return;
     }
     if (_selectedStylist == null || _selectedDate == null) return;
-    setState(() { _isLoadingTimes = true; _timeSlots = []; _selectedTime = null; });
+    setState(() {
+      _isLoadingTimes = true;
+      _timeSlots = [];
+      _selectedTime = null;
+    });
     try {
       final dateStr = _selectedDate!.toIso8601String().split('T')[0];
-      final times = await _apiService.getArtistAvailableSlots(_selectedStylist!['nailArtistId'], dateStr);
-      if (mounted) setState(() { _timeSlots = times; _isLoadingTimes = false; });
+      final times = await _apiService.getArtistAvailableSlots(
+        _selectedStylist!['nailArtistId'],
+        dateStr,
+      );
+      if (mounted)
+        setState(() {
+          _timeSlots = times;
+          _isLoadingTimes = false;
+        });
     } catch (e) {
       if (mounted) setState(() => _isLoadingTimes = false);
     }
@@ -109,7 +128,10 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
   void _loadSalonSlots() {
     if (_selectedSalon == null || _selectedDate == null) return;
     setState(() {
-      _timeSlots = _apiService.getSalonOperatingSlots(_selectedSalon!, _selectedDate!);
+      _timeSlots = _apiService.getSalonOperatingSlots(
+        _selectedSalon!,
+        _selectedDate!,
+      );
       _selectedTime = null;
     });
   }
@@ -157,23 +179,28 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
           "nailVariantId": null,
           "serviceId": entry.key,
           "customerNailId": null,
-          "quantity": entry.value
+          "quantity": entry.value,
         };
       }).toList();
 
-      final formattedDate = "${_selectedDate!.year.toString().padLeft(4, '0')}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}T00:00:00";
-      final formattedTime = _selectedTime!.length == 5 ? "$_selectedTime:00" : _selectedTime!;
+      final formattedDate =
+          "${_selectedDate!.year.toString().padLeft(4, '0')}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}T00:00:00";
+      final formattedTime = _selectedTime!.length == 5
+          ? "$_selectedTime:00"
+          : _selectedTime!;
 
       final payload = {
         "salonId": _selectedSalon!['salonId'],
         "bookingDate": formattedDate,
         "startTime": formattedTime,
-        "nailArtistId": _noArtistSelected ? null : _selectedStylist!['nailArtistId'],
+        "nailArtistId": _noArtistSelected
+            ? null
+            : _selectedStylist!['nailArtistId'],
         "holdToken": null,
-        "bookingItems": bookingItems
+        "bookingItems": bookingItems,
       };
 
-       final response = await _apiService.createServiceBooking(payload);
+      final response = await _apiService.createServiceBooking(payload);
 
       if (mounted) {
         final successData = {
@@ -181,14 +208,18 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
           'serviceName': widget.baseService['name'],
           'date': _selectedDate,
           'time': formattedTime,
-          'stylistName': _noArtistSelected ? 'Tự động phân công' : _selectedStylist!['fullName'],
+          'stylistName': _noArtistSelected
+              ? 'Tự động phân công'
+              : _selectedStylist!['fullName'],
         };
         context.go('/booking-success', extra: successData);
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isSubmitting = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi đặt lịch: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi đặt lịch: $e')));
       }
     }
   }
@@ -196,17 +227,36 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
   // --- ĐIỀU HƯỚNG ---
   void _handleNextAction() {
     if (_currentStep == 0 && _selectedSalon == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng chọn 1 chi nhánh!'))); return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng chọn 1 chi nhánh!')),
+      );
+      return;
     }
     if (_currentStep == 1 && _selectedExtraServices.contains(null)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Có ô dịch vụ đang bị bỏ trống!'))); return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Có ô dịch vụ đang bị bỏ trống!')),
+      );
+      return;
     }
-    if (_currentStep == 2 && (_selectedDate == null || (_selectedStylist == null && !_noArtistSelected) || _selectedTime == null)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng chọn đầy đủ ngày, thợ (hoặc để tự động) và khung giờ!'))); return;
+    if (_currentStep == 2 &&
+        (_selectedDate == null ||
+            (_selectedStylist == null && !_noArtistSelected) ||
+            _selectedTime == null)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Vui lòng chọn đầy đủ ngày, thợ (hoặc để tự động) và khung giờ!',
+          ),
+        ),
+      );
+      return;
     }
 
     if (_currentStep < 3) {
-      _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     } else {
       _executeBooking();
     }
@@ -220,9 +270,25 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        leading: IconButton(icon: const Icon(Icons.arrow_back_ios, size: 20), onPressed: () => _currentStep > 0 ? _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut) : context.pop()),
-        title: const Text('Đặt Lịch Dịch Vụ', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-        backgroundColor: Colors.white, elevation: 0, centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, size: 20),
+          onPressed: () => _currentStep > 0
+              ? _pageController.previousPage(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                )
+              : context.pop(),
+        ),
+        title: const Text(
+          'Đặt Lịch Dịch Vụ',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
       ),
       body: Column(
         children: [
@@ -237,8 +303,15 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
                 SingleChildScrollView(
                   padding: const EdgeInsets.all(20),
                   child: BranchSelectionList(
-                    salons: _salons, isLoading: _isLoadingSalons, selectedBranchId: _selectedSalon?['salonId'],
-                    onBranchSelected: (salon) => setState(() { _selectedSalon = salon; _artists.clear(); _selectedStylist = null; _selectedTime = null; }),
+                    salons: _salons,
+                    isLoading: _isLoadingSalons,
+                    selectedBranchId: _selectedSalon?['salonId'],
+                    onBranchSelected: (salon) => setState(() {
+                      _selectedSalon = salon;
+                      _artists.clear();
+                      _selectedStylist = null;
+                      _selectedTime = null;
+                    }),
                   ),
                 ),
 
@@ -248,16 +321,24 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Dịch vụ đã chọn', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      const Text(
+                        'Dịch vụ đã chọn',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 12),
                       _buildBaseServiceCard(), // Widget hiển thị dịch vụ gốc
                       const SizedBox(height: 24),
                       const Divider(),
                       BookingServiceSelection(
-                        nailData: dummyNailData, // Pass dummy để tắt tính năng móng
+                        nailData:
+                            dummyNailData, // Pass dummy để tắt tính năng móng
                         services: _services,
                         selectedExtraServices: _selectedExtraServices,
-                        onChanged: (services) => setState(() => _selectedExtraServices = services),
+                        onChanged: (services) =>
+                            setState(() => _selectedExtraServices = services),
                       ),
                     ],
                   ),
@@ -278,7 +359,9 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
                       ),
                       const SizedBox(height: 24),
                       BookingStylistSelection(
-                        artists: _artists, isLoading: _isLoadingArtists, selectedStylistId: _selectedStylist?['nailArtistId'],
+                        artists: _artists,
+                        isLoading: _isLoadingArtists,
+                        selectedStylistId: _selectedStylist?['nailArtistId'],
                         noArtistSelected: _noArtistSelected,
                         onStylistSelected: (artist) {
                           setState(() {
@@ -301,9 +384,15 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
                       ),
                       const SizedBox(height: 24),
                       BookingTimeSelection(
-                        timeSlots: _timeSlots, isLoading: _isLoadingTimes, selectedTime: _selectedTime,
-                        canSelect: (_selectedStylist != null || _noArtistSelected) && _selectedDate != null, selectedDate: _selectedDate,
-                        onTimeChanged: (time) => setState(() => _selectedTime = time),
+                        timeSlots: _timeSlots,
+                        isLoading: _isLoadingTimes,
+                        selectedTime: _selectedTime,
+                        canSelect:
+                            (_selectedStylist != null || _noArtistSelected) &&
+                            _selectedDate != null,
+                        selectedDate: _selectedDate,
+                        onTimeChanged: (time) =>
+                            setState(() => _selectedTime = time),
                       ),
                     ],
                   ),
@@ -315,48 +404,92 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Xác nhận thông tin', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      const Text(
+                        'Xác nhận thông tin',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 16),
                       Container(
                         padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.borderLight)),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.borderLight),
+                        ),
                         child: Column(
                           children: [
-                            _buildSummaryRow(Icons.storefront, 'Chi nhánh', _selectedSalon?['name'] ?? ''),
-                            _buildSummaryRow(Icons.calendar_month, 'Ngày hẹn', _selectedDate != null ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}' : ''),
-                            _buildSummaryRow(Icons.access_time, 'Thời gian', _selectedTime ?? ''),
-                            _buildSummaryRow(Icons.face, 'Thợ thực hiện',
-                              _noArtistSelected ? 'Tự động phân công' : (_selectedStylist?['fullName'] ?? '')),
+                            _buildSummaryRow(
+                              Icons.storefront,
+                              'Chi nhánh',
+                              _selectedSalon?['name'] ?? '',
+                            ),
+                            _buildSummaryRow(
+                              Icons.calendar_month,
+                              'Ngày hẹn',
+                              _selectedDate != null
+                                  ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
+                                  : '',
+                            ),
+                            _buildSummaryRow(
+                              Icons.access_time,
+                              'Thời gian',
+                              _selectedTime ?? '',
+                            ),
+                            _buildSummaryRow(
+                              Icons.face,
+                              'Thợ thực hiện',
+                              _noArtistSelected
+                                  ? 'Tự động phân công'
+                                  : (_selectedStylist?['fullName'] ?? ''),
+                            ),
                           ],
                         ),
                       ),
                       const SizedBox(height: 24),
                       Container(
                         padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.borderLight)),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.borderLight),
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Chi tiết thanh toán', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            const Text(
+                              'Chi tiết thanh toán',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
                             const SizedBox(height: 16),
 
                             // Render Danh sách dịch vụ gộp
                             ..._groupedServicesMap.entries.map((entry) {
                               final svc = _getServiceDetail(entry.key);
                               final name = svc?['name'] ?? 'N/A';
-                              final price = (svc?['price'] as num?)?.toInt() ?? 0;
+                              final price =
+                                  (svc?['price'] as num?)?.toInt() ?? 0;
                               final qty = entry.value;
 
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 12.0),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  crossAxisAlignment: CrossAxisAlignment.start, // Căn trên cùng
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start, // Căn trên cùng
                                   children: [
                                     // BỌC THÊM PADDING BÊN TRONG EXPANDED
                                     Expanded(
                                       child: Padding(
-                                        padding: const EdgeInsets.only(right: 12.0),
+                                        padding: const EdgeInsets.only(
+                                          right: 12.0,
+                                        ),
                                         child: Text(
                                           '${qty}x $name',
                                           style: const TextStyle(fontSize: 14),
@@ -365,7 +498,9 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
                                     ),
                                     Text(
                                       PriceFormatter.format(price * qty),
-                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -376,13 +511,23 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text('Tổng cộng tạm tính:', style: TextStyle(fontWeight: FontWeight.bold)),
-                                Text(PriceFormatter.format(_totalPrice), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 18)),
+                                const Text(
+                                  'Tổng cộng tạm tính:',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                Text(
+                                  PriceFormatter.format(_totalPrice),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primary,
+                                    fontSize: 18,
+                                  ),
+                                ),
                               ],
-                            )
+                            ),
                           ],
                         ),
-                      )
+                      ),
                     ],
                   ),
                 ),
@@ -412,21 +557,44 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
         children: [
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-            child: const Icon(Icons.spa_outlined, color: AppColors.primary, size: 20),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.spa_outlined,
+              color: AppColors.primary,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary)),
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(DurationFormatter.format(duration), style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                Text(
+                  DurationFormatter.format(duration),
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
               ],
             ),
           ),
-          Text(PriceFormatter.format(price), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
+          Text(
+            PriceFormatter.format(price),
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary,
+            ),
+          ),
         ],
       ),
     );
@@ -438,11 +606,24 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: AppColors.primary), const SizedBox(width: 12),
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(title, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-            Text(value, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-          ])
+          Icon(icon, size: 20, color: AppColors.primary),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -450,15 +631,32 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
 
   Widget _buildStepIndicator() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16), color: Colors.white,
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      color: Colors.white,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(4, (index) {
           bool isCompleted = index <= _currentStep;
           return Row(
             children: [
-              CircleAvatar(radius: 12, backgroundColor: isCompleted ? AppColors.primary : Colors.grey.shade300, child: Text('${index + 1}', style: const TextStyle(color: Colors.white, fontSize: 11))),
-              if (index < 3) Container(width: 30, height: 2, color: index < _currentStep ? AppColors.primary : Colors.grey.shade300),
+              CircleAvatar(
+                radius: 12,
+                backgroundColor: isCompleted
+                    ? AppColors.primary
+                    : Colors.grey.shade300,
+                child: Text(
+                  '${index + 1}',
+                  style: const TextStyle(color: Colors.white, fontSize: 11),
+                ),
+              ),
+              if (index < 3)
+                Container(
+                  width: 30,
+                  height: 2,
+                  color: index < _currentStep
+                      ? AppColors.primary
+                      : Colors.grey.shade300,
+                ),
             ],
           );
         }),
@@ -469,14 +667,42 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
   Widget _buildFooter() {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           ElevatedButton(
             onPressed: _isSubmitting ? null : _handleNextAction,
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-            child: _isSubmitting ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Text(_currentStep == 3 ? 'Xác nhận Đặt lịch' : 'Tiếp tục', style: const TextStyle(fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 15),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: _isSubmitting
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : Text(
+                    _currentStep == 3 ? 'Xác nhận Đặt lịch' : 'Tiếp tục',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
           ),
         ],
       ),

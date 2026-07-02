@@ -6,7 +6,11 @@ class AccessorySelectionGrid extends StatelessWidget {
   final List<String> selectedAccessories;
   final Function(String) onToggle;
 
-  const AccessorySelectionGrid({super.key, required this.selectedAccessories, required this.onToggle});
+  const AccessorySelectionGrid({
+    super.key,
+    required this.selectedAccessories,
+    required this.onToggle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -32,14 +36,18 @@ class AccessorySelectionGrid extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: isSelected ? AppColors.primary : Colors.grey.shade200),
+            border: Border.all(
+              color: isSelected ? AppColors.primary : Colors.grey.shade200,
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
                 child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(14),
+                  ),
                   child: Image.asset(
                     accessory['image']!,
                     fit: BoxFit.cover,
@@ -57,7 +65,10 @@ class AccessorySelectionGrid extends StatelessWidget {
                     Text(
                       name,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 13,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -68,15 +79,24 @@ class AccessorySelectionGrid extends StatelessWidget {
                       child: ElevatedButton(
                         onPressed: () => onToggle(name),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: isSelected ? Colors.grey.shade200 : Colors.black87,
-                          foregroundColor: isSelected ? Colors.black87 : Colors.white,
+                          backgroundColor: isSelected
+                              ? Colors.grey.shade200
+                              : Colors.black87,
+                          foregroundColor: isSelected
+                              ? Colors.black87
+                              : Colors.white,
                           elevation: 0,
                           padding: EdgeInsets.zero,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                         child: Text(
                           isSelected ? 'Added' : 'Add',
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),

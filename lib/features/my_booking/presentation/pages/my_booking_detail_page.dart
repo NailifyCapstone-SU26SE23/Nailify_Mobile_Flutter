@@ -51,13 +51,19 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi tải chi tiết: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Lỗi tải chi tiết: $e')));
     }
   }
 
-  void _showMapPopup(BuildContext context, String salonName, String? address, double? latitude, double? longitude) {
+  void _showMapPopup(
+    BuildContext context,
+    String salonName,
+    String? address,
+    double? latitude,
+    double? longitude,
+  ) {
     // Tọa độ
     final double lat = latitude ?? 10.993592755518687;
     final double lng = longitude ?? 106.65636465428618;
@@ -80,17 +86,27 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
             children: [
               // Thanh kéo & Thông tin
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 20,
+                ),
                 child: Column(
                   children: [
                     Container(
-                        width: 40, height: 5,
-                        decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10))
+                      width: 40,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       'Vị trí: $salonName',
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 4),
@@ -107,7 +123,9 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
               // Bản đồ
               Expanded(
                 child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                  borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(20),
+                  ),
                   child: FlutterMap(
                     options: MapOptions(
                       initialCenter: targetPosition,
@@ -116,7 +134,8 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                     children: [
                       TileLayer(
                         // Dùng CartoDB
-                        urlTemplate: 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                        urlTemplate:
+                            'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
                         userAgentPackageName: 'com.nailify.app',
                       ),
                       MarkerLayer(
@@ -173,7 +192,10 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     final isRated = bookingIsRated(booking);
     final rawQrString = booking['qrCode']?.toString();
     final Uint8List? qrImageBytes = Base64ImageConverter.decode(rawQrString);
-    final canCancel = rawStatus == 'Pending' || rawStatus == 'Approved' || rawStatus == 'Assigned';
+    final canCancel =
+        rawStatus == 'Pending' ||
+        rawStatus == 'Approved' ||
+        rawStatus == 'Assigned';
     final canRate = rawStatus == 'Completed' && !isRated;
 
     return Scaffold(
@@ -182,7 +204,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, size: 20),
           onPressed: () => context.go('/my-bookings'),
-              // context.pop(),
+          // context.pop(),
         ),
         title: const Text(
           'Chi tiết lịch hẹn',
@@ -204,7 +226,10 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
             // Header Trạng thái
             Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: status.backgroundColor,
                   borderRadius: BorderRadius.circular(20),
@@ -236,33 +261,46 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   //_buildRow('Chi nhánh', booking['salonName']?.toString()),
                   //map xịn
                   Material(
-                    color: Colors.transparent, // Đảm bảo hiệu ứng chạm hiển thị đúng
+                    color: Colors
+                        .transparent, // Đảm bảo hiệu ứng chạm hiển thị đúng
                     child: InkWell(
                       onTap: () {
-                        final salonName = _booking?['salonName']?.toString() ?? 'Chi nhánh Nailify';
+                        final salonName =
+                            _booking?['salonName']?.toString() ??
+                            'Chi nhánh Nailify';
                         final address = _booking?['salonAddress']?.toString();
                         final latitude = _booking?['latitude'] as double?;
                         final longitude = _booking?['longitude'] as double?;
-                        _showMapPopup(context, salonName, address, latitude, longitude);
+                        _showMapPopup(
+                          context,
+                          salonName,
+                          address,
+                          latitude,
+                          longitude,
+                        );
                       },
                       borderRadius: BorderRadius.circular(8),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8.0),
                         child: Row(
                           children: [
-
                             Expanded(
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text(
                                     'Chi nhánh',
-                                    style: TextStyle(color: Colors.grey, fontSize: 15),
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 15,
+                                    ),
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      _booking?['salonName']?.toString() ?? 'Đang tải...',
+                                      _booking?['salonName']?.toString() ??
+                                          'Đang tải...',
                                       textAlign: TextAlign.right,
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
@@ -338,22 +376,23 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                     ...discounts.map(_buildDiscountRow)
                   else
                     Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Khuyến mãi:',
-                        style: TextStyle(color: Colors.grey, fontSize: 14),
-                      ),
-                      Text(
-                        PriceFormatter.format(booking['discount'] ?? 0),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: Colors.green, // Dùng màu xanh lá để nhấn mạnh số tiền được giảm
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Khuyến mãi:',
+                          style: TextStyle(color: Colors.grey, fontSize: 14),
                         ),
-                      ),
-                    ],
-                  ),
+                        Text(
+                          PriceFormatter.format(booking['discount'] ?? 0),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: Colors
+                                .green, // Dùng màu xanh lá để nhấn mạnh số tiền được giảm
+                          ),
+                        ),
+                      ],
+                    ),
                   const Divider(height: 24),
 
                   // 3. Tổng thanh toán
@@ -362,7 +401,10 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                     children: [
                       const Text(
                         'Tổng thanh toán:',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                       Text(
                         PriceFormatter.format(booking['totalPrice'] ?? 0),
@@ -403,7 +445,13 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: AppColors.borderLight),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.02),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Column(
                   children: [
@@ -468,7 +516,9 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                           */
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('API chưa hoàn thiện')),
+                              const SnackBar(
+                                content: Text('API chưa hoàn thiện'),
+                              ),
                             );
                           }
                         },
@@ -485,10 +535,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   ),
                   child: const Text(
                     'Hủy đặt lịch',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -513,10 +560,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   icon: const Icon(Icons.star, color: Colors.white),
                   label: const Text(
                     'Rate',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -673,7 +717,8 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Add image if URL exists
-          if (rating['imageUrl'] != null && rating['imageUrl'].toString().isNotEmpty) ...[
+          if (rating['imageUrl'] != null &&
+              rating['imageUrl'].toString().isNotEmpty) ...[
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Image.network(
@@ -689,9 +734,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                       color: Colors.grey[200],
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Center(
-                      child: CircularProgressIndicator(),
-                    ),
+                    child: const Center(child: CircularProgressIndicator()),
                   );
                 },
                 errorBuilder: (context, error, stackTrace) {
@@ -757,7 +800,6 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
       ),
     );
   }
-
 }
 
 class _QrErrorPlaceholder extends StatelessWidget {

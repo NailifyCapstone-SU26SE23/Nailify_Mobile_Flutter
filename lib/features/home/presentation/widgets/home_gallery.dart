@@ -11,11 +11,16 @@ class HomeGallery extends StatelessWidget {
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Thông báo'),
-        content: const Text('Chuyển hướng đến Thư viện ảnh đầy đủ.\nTính năng này đang được phát triển.'),
+        content: const Text(
+          'Chuyển hướng đến Thư viện ảnh đầy đủ.\nTính năng này đang được phát triển.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Đóng', style: TextStyle(color: AppColors.textPrimary)),
+            child: const Text(
+              'Đóng',
+              style: TextStyle(color: AppColors.textPrimary),
+            ),
           ),
         ],
       ),
@@ -42,17 +47,13 @@ class HomeGallery extends StatelessWidget {
           borderRadius: BorderRadius.circular(10),
           // Mã màu Gradient
           gradient: LinearGradient(
-            colors: [
-              AppColors.primary,
-              AppColors.secondary,
-            ],
+            colors: [AppColors.primary, AppColors.secondary],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
         ),
 
         child: Column(
-
           children: [
             const SizedBox(height: 5),
             Row(
@@ -66,7 +67,6 @@ class HomeGallery extends StatelessWidget {
                     color: AppColors.surface,
                   ),
                 ),
-
               ],
             ),
             const SizedBox(height: 12),
@@ -92,7 +92,10 @@ class HomeGallery extends StatelessWidget {
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => Container(
                         color: Colors.white,
-                        child: const Icon(Icons.image, color: AppColors.surface),
+                        child: const Icon(
+                          Icons.image,
+                          color: AppColors.surface,
+                        ),
                       ),
                     ),
                   ),

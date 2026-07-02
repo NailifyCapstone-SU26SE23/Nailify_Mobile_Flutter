@@ -46,12 +46,10 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _showSnackBar(String message, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: color),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
   }
-
-
 
   @override
   void dispose() {
@@ -71,7 +69,6 @@ class _LoginPageState extends State<LoginPage> {
             minHeight: MediaQuery.of(context).size.height,
           ),
           decoration: const BoxDecoration(
-
             gradient: LinearGradient(
               colors: [AppColors.primary, AppColors.secondary],
               begin: Alignment.topLeft,
@@ -137,13 +134,19 @@ class _LoginPageState extends State<LoginPage> {
                             keyboardType: TextInputType.emailAddress,
                             decoration: InputDecoration(
                               labelText: 'Email',
-                              prefixIcon: const Icon(Icons.email_outlined, color: AppColors.textSecondary),
+                              prefixIcon: const Icon(
+                                Icons.email_outlined,
+                                color: AppColors.textSecondary,
+                              ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                                borderSide: const BorderSide(
+                                  color: AppColors.primary,
+                                  width: 2,
+                                ),
                               ),
                             ),
                           ),
@@ -154,10 +157,15 @@ class _LoginPageState extends State<LoginPage> {
                             obscureText: _obscurePassword, //  ẩn/hiện ký tự
                             decoration: InputDecoration(
                               labelText: 'Mật khẩu',
-                              prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textSecondary),
+                              prefixIcon: const Icon(
+                                Icons.lock_outline,
+                                color: AppColors.textSecondary,
+                              ),
                               suffixIcon: IconButton(
                                 icon: Icon(
-                                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                                  _obscurePassword
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
                                   color: AppColors.textSecondary,
                                 ),
                                 onPressed: () {
@@ -172,7 +180,10 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                                borderSide: const BorderSide(
+                                  color: AppColors.primary,
+                                  width: 2,
+                                ),
                               ),
                             ),
                           ),
@@ -185,7 +196,10 @@ class _LoginPageState extends State<LoginPage> {
                               onPressed: () {},
                               child: const Text(
                                 'Quên mật khẩu?',
-                                style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),
@@ -208,11 +222,17 @@ class _LoginPageState extends State<LoginPage> {
                                   ? const SizedBox(
                                       width: 20,
                                       height: 20,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
                                     )
                                   : const Text(
                                       'DANG NHAP',
-                                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.0,
+                                      ),
                                     ),
                             ),
                           ),
@@ -223,7 +243,10 @@ class _LoginPageState extends State<LoginPage> {
                             children: [
                               const Text(
                                 'Bạn chưa có tài khoản? ',
-                                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 14,
+                                ),
                               ),
                               GestureDetector(
                                 onTap: () => context.push('/register'),

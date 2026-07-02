@@ -17,8 +17,7 @@ class _QuizPageState extends State<QuizPage> {
 
   QuizQuestion get _currentQuestion => QuizMockData.questions[_currentIndex];
 
-  double get _progress =>
-      (_currentIndex + 1) / QuizMockData.questions.length;
+  double get _progress => (_currentIndex + 1) / QuizMockData.questions.length;
 
   bool get _isLastQuestion =>
       _currentIndex == QuizMockData.questions.length - 1;
@@ -45,7 +44,9 @@ class _QuizPageState extends State<QuizPage> {
       if (context.canPop()) {
         context.pop(); // Trả về trang trước đó trong lịch sử GoRouter
       } else {
-        context.go('/catalog'); // Fallback: Nếu không có lịch sử, ép quay về Catalog (hoặc '/')
+        context.go(
+          '/catalog',
+        ); // Fallback: Nếu không có lịch sử, ép quay về Catalog (hoặc '/')
       }
     }
   }
@@ -89,7 +90,11 @@ class _QuizPageState extends State<QuizPage> {
                   children: [
                     // Nút Back
                     IconButton(
-                      icon: const Icon(Icons.arrow_back_ios, size: 20, color: AppColors.textPrimary),
+                      icon: const Icon(
+                        Icons.arrow_back_ios,
+                        size: 20,
+                        color: AppColors.textPrimary,
+                      ),
                       onPressed: _handleBackAction,
                       alignment: Alignment.centerLeft,
                       padding: EdgeInsets.zero,
@@ -154,8 +159,7 @@ class _QuizPageState extends State<QuizPage> {
 
   Widget _buildTitle() {
     return ShaderMask(
-      shaderCallback: (bounds) =>
-          AppColors.bannerGradient.createShader(bounds),
+      shaderCallback: (bounds) => AppColors.bannerGradient.createShader(bounds),
       child: const Text(
         'Personality Test',
         style: TextStyle(

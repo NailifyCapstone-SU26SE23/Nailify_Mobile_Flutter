@@ -35,7 +35,9 @@ class _CustomerComponentFormDialogState
     final component = widget.component;
     if (component != null) {
       _nameController.text = component.name;
-      _priceController.text = component.price > 0 ? component.price.toString() : '';
+      _priceController.text = component.price > 0
+          ? component.price.toString()
+          : '';
       _customDataController.text = component.customDataJson;
       _componentType = int.tryParse(component.componentType) ?? 0;
       _isPublic = component.isPublic;
@@ -51,7 +53,10 @@ class _CustomerComponentFormDialogState
   }
 
   Future<void> _pickImage() async {
-    final image = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    final image = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
     if (image != null) setState(() => _imageFile = image);
   }
 
@@ -82,7 +87,10 @@ class _CustomerComponentFormDialogState
       }
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -91,7 +99,9 @@ class _CustomerComponentFormDialogState
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.component == null ? 'Tạo thành phần mới' : 'Sửa thành phần'),
+      title: Text(
+        widget.component == null ? 'Tạo thành phần mới' : 'Sửa thành phần',
+      ),
       content: SizedBox(
         width: MediaQuery.of(context).size.width * 0.8,
         child: Form(
@@ -102,20 +112,29 @@ class _CustomerComponentFormDialogState
               children: [
                 TextFormField(
                   controller: _nameController,
-                  decoration: const InputDecoration(labelText: 'Tên thành phần *', border: OutlineInputBorder()),
-                  validator: (value) => value?.trim().isEmpty == true ? 'Vui lòng nhập tên' : null,
+                  decoration: const InputDecoration(
+                    labelText: 'Tên thành phần *',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) => value?.trim().isEmpty == true
+                      ? 'Vui lòng nhập tên'
+                      : null,
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<int>(
                   initialValue: _componentType,
-                  decoration: const InputDecoration(labelText: 'Loại thành phần *', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(
+                    labelText: 'Loại thành phần *',
+                    border: OutlineInputBorder(),
+                  ),
                   items: const [
                     DropdownMenuItem(value: 0, child: Text('💎 Gem')),
                     DropdownMenuItem(value: 1, child: Text('📝 Sticker')),
                     DropdownMenuItem(value: 2, child: Text('🔗 Charm')),
                     DropdownMenuItem(value: 3, child: Text('🎨 Art')),
                   ],
-                  onChanged: (value) => setState(() => _componentType = value ?? 0),
+                  onChanged: (value) =>
+                      setState(() => _componentType = value ?? 0),
                 ),
                 const SizedBox(height: 12),
                 Column(
@@ -130,24 +149,49 @@ class _CustomerComponentFormDialogState
                     if (_imageFile != null) ...[
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: Image.file(File(_imageFile!.path), height: 180, width: double.infinity, fit: BoxFit.cover),
+                        child: Image.file(
+                          File(_imageFile!.path),
+                          height: 180,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
                       ),
                       const SizedBox(height: 4),
-                      Text('Ảnh mới', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
-                    ] else if (widget.component?.imageUrl != null && widget.component!.imageUrl.isNotEmpty) ...[
+                      Text(
+                        'Ảnh mới',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ] else if (widget.component?.imageUrl != null &&
+                        widget.component!.imageUrl.isNotEmpty) ...[
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: Image.network(widget.component!.imageUrl, height: 180, width: double.infinity, fit: BoxFit.cover),
+                        child: Image.network(
+                          widget.component!.imageUrl,
+                          height: 180,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
                       ),
                       const SizedBox(height: 4),
-                      Text('Ảnh hiện tại', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                      Text(
+                        'Ảnh hiện tại',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
                     ],
                   ],
                 ),
                 const SizedBox(height: 12),
                 SwitchListTile(
                   title: const Text('Công khai'),
-                  subtitle: const Text('Mọi người có thể sử dụng thành phần này'),
+                  subtitle: const Text(
+                    'Mọi người có thể sử dụng thành phần này',
+                  ),
                   value: _isPublic,
                   onChanged: (value) => setState(() => _isPublic = value),
                   contentPadding: EdgeInsets.zero,
@@ -165,7 +209,11 @@ class _CustomerComponentFormDialogState
         FilledButton(
           onPressed: _isLoading ? null : _save,
           child: _isLoading
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : const Text('Lưu'),
         ),
       ],

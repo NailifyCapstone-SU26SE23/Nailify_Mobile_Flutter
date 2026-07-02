@@ -35,14 +35,30 @@ class NailDesignModel {
       name: (json['name'] ?? json['Name'] ?? '').toString(),
       minPrice: _asDouble(json['minPrice'] ?? json['MinPrice']),
       maxPrice: _asDouble(json['maxPrice'] ?? json['MaxPrice']),
-      description: (json['description'] ?? json['Description'] ?? '').toString(),
+      description: (json['description'] ?? json['Description'] ?? '')
+          .toString(),
       status: (json['status'] ?? json['Status'] ?? '').toString(),
-      imageUrls: imageUrlsJson is List ? imageUrlsJson.map((item) => item.toString()).toList() : const [],
+      imageUrls: imageUrlsJson is List
+          ? imageUrlsJson.map((item) => item.toString()).toList()
+          : const [],
       categories: categoriesJson is List
-          ? categoriesJson.whereType<Map>().map((item) => CategoryModel.fromJson(Map<String, dynamic>.from(item))).toList()
+          ? categoriesJson
+                .whereType<Map>()
+                .map(
+                  (item) =>
+                      CategoryModel.fromJson(Map<String, dynamic>.from(item)),
+                )
+                .toList()
           : const [],
       nailVariants: variantsJson is List
-          ? variantsJson.whereType<Map>().map((item) => NailVariantModel.fromJson(Map<String, dynamic>.from(item))).toList()
+          ? variantsJson
+                .whereType<Map>()
+                .map(
+                  (item) => NailVariantModel.fromJson(
+                    Map<String, dynamic>.from(item),
+                  ),
+                )
+                .toList()
           : const [],
     );
   }

@@ -7,11 +7,14 @@ class StudioApiService {
 
   /// Lấy danh sách yêu cầu duyệt mẫu nail
   /// GET /api/CustomerNailRequests
-  Future<List<CustomerNailModel>> getMyNailRequests({int pageNumber = 1, int pageSize = 20}) async {
-    final response = await _apiClient.get('/CustomerNailRequests/me', queryParameters: {
-      'pageNumber': pageNumber,
-      'pageSize': pageSize,
-    });
+  Future<List<CustomerNailModel>> getMyNailRequests({
+    int pageNumber = 1,
+    int pageSize = 20,
+  }) async {
+    final response = await _apiClient.get(
+      '/CustomerNailRequests/me',
+      queryParameters: {'pageNumber': pageNumber, 'pageSize': pageSize},
+    );
 
     final items = response.data['data']['items'] as List<dynamic>? ?? [];
     return items.map((json) => CustomerNailModel.fromJson(json)).toList();
@@ -19,17 +22,21 @@ class StudioApiService {
 
   /// Lấy chi tiết yêu cầu duyệt mẫu nail
   /// GET /api/CustomerNailRequests/{id}
-  Future<CustomerNailModel> getNailRequestDetail(String customerNailRequestId) async {
-    final response = await _apiClient.get('/CustomerNailRequests/$customerNailRequestId');
+  Future<CustomerNailModel> getNailRequestDetail(
+    String customerNailRequestId,
+  ) async {
+    final response = await _apiClient.get(
+      '/CustomerNailRequests/$customerNailRequestId',
+    );
     return CustomerNailModel.fromJson(response.data['data']);
   }
 
   /// Lấy danh sách salons (dùng cho chọn salon gửi duyệt)
   Future<List<dynamic>> getSalons() async {
-    final response = await _apiClient.get('/Salons', queryParameters: {
-      'PageIndex': 1,
-      'PageSize': 20,
-    });
+    final response = await _apiClient.get(
+      '/Salons',
+      queryParameters: {'PageIndex': 1, 'PageSize': 20},
+    );
     return response.data['data']['items'] ?? [];
   }
 

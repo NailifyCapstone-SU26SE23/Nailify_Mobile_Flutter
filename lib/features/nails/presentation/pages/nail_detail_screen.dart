@@ -23,7 +23,9 @@ class _NailDetailScreenState extends State<NailDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _future = getIt<NailDesignRepository>().getNailDesignById(widget.nailDesignId);
+    _future = getIt<NailDesignRepository>().getNailDesignById(
+      widget.nailDesignId,
+    );
   }
 
   @override
@@ -41,11 +43,16 @@ class _NailDetailScreenState extends State<NailDetailScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(snapshot.error?.toString() ?? 'Could not load nail design.', textAlign: TextAlign.center),
+                  Text(
+                    snapshot.error?.toString() ?? 'Could not load nail design.',
+                    textAlign: TextAlign.center,
+                  ),
                   const SizedBox(height: 12),
                   FilledButton.icon(
                     onPressed: () => setState(() {
-                      _future = getIt<NailDesignRepository>().getNailDesignById(widget.nailDesignId);
+                      _future = getIt<NailDesignRepository>().getNailDesignById(
+                        widget.nailDesignId,
+                      );
                     }),
                     icon: const Icon(Icons.refresh),
                     label: const Text('Retry'),
@@ -88,11 +95,17 @@ class _DesignDetailContent extends StatelessWidget {
         const SizedBox(height: 8),
         _ImageGallery(imageUrls: design.imageUrls),
         const SizedBox(height: 16),
-        Text(design.name, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800)),
+        Text(
+          design.name,
+          style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800),
+        ),
         const SizedBox(height: 8),
         Text(
           '${PriceFormatter.format(design.minPrice).replaceAll(' VNĐ', '')} - ${PriceFormatter.format(design.maxPrice)}',
-          style: const TextStyle(color: Color(0xFFFF66C4), fontWeight: FontWeight.w800),
+          style: const TextStyle(
+            color: Color(0xFFFF66C4),
+            fontWeight: FontWeight.w800,
+          ),
         ),
         if (design.description.isNotEmpty) ...[
           const SizedBox(height: 12),
@@ -103,16 +116,25 @@ class _DesignDetailContent extends StatelessWidget {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: design.categories.map((category) => Chip(label: Text(category.name))).toList(),
+            children: design.categories
+                .map((category) => Chip(label: Text(category.name)))
+                .toList(),
           ),
         ],
         const SizedBox(height: 24),
-        Text('Variants (${design.nailVariants.length})', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+        Text(
+          'Variants (${design.nailVariants.length})',
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+        ),
         const SizedBox(height: 12),
         if (design.nailVariants.isEmpty)
-          const Text('No variants are available for this design yet.', style: TextStyle(color: Colors.black54))
+          const Text(
+            'No variants are available for this design yet.',
+            style: TextStyle(color: Colors.black54),
+          )
         else
-          for (final variant in design.nailVariants) _VariantSection(variant: variant),
+          for (final variant in design.nailVariants)
+            _VariantSection(variant: variant),
       ],
     );
   }
@@ -145,7 +167,9 @@ class _ImageGallery extends StatelessWidget {
         itemCount: imageUrls.length,
         itemBuilder: (context, index) {
           return Padding(
-            padding: EdgeInsets.only(right: index == imageUrls.length - 1 ? 0 : 8),
+            padding: EdgeInsets.only(
+              right: index == imageUrls.length - 1 ? 0 : 8,
+            ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Image.network(
@@ -197,7 +221,10 @@ class _VariantSection extends StatelessWidget {
                   width: 82,
                   height: 82,
                   child: variant.imageUrl.isEmpty
-                      ? Container(color: const Color(0xFFF7E8F1), child: const Icon(Icons.spa_outlined))
+                      ? Container(
+                          color: const Color(0xFFF7E8F1),
+                          child: const Icon(Icons.spa_outlined),
+                        )
                       : Image.network(variant.imageUrl, fit: BoxFit.cover),
                 ),
               ),
@@ -206,17 +233,29 @@ class _VariantSection extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(variant.name, style: const TextStyle(fontWeight: FontWeight.w800)),
+                    Text(
+                      variant.name,
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
                     const SizedBox(height: 6),
-                    Text(PriceFormatter.format(variant.price), style: const TextStyle(color: Color(0xFFFF66C4), fontWeight: FontWeight.w700)),
+                    Text(
+                      PriceFormatter.format(variant.price),
+                      style: const TextStyle(
+                        color: Color(0xFFFF66C4),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 6,
                       runSpacing: 6,
                       children: [
                         _SmallChip(label: variant.nailShape?.name ?? 'Shape'),
-                        _SmallChip(label: variant.nailSurface?.name ?? 'Surface'),
-                        if (variant.duration != null) _SmallChip(label: '${variant.duration} min'),
+                        _SmallChip(
+                          label: variant.nailSurface?.name ?? 'Surface',
+                        ),
+                        if (variant.duration != null)
+                          _SmallChip(label: '${variant.duration} min'),
                       ],
                     ),
                   ],
@@ -229,9 +268,8 @@ class _VariantSection extends StatelessWidget {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => context.push(
-                    '/nail-variants/${variant.nailVariantId}',
-                  ),
+                  onPressed: () =>
+                      context.push('/nail-variants/${variant.nailVariantId}'),
                   icon: const Icon(Icons.keyboard_arrow_up),
                   label: const Text('Variant detail'),
                 ),
@@ -239,10 +277,22 @@ class _VariantSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          const Text('Components', style: TextStyle(fontWeight: FontWeight.w700)),
+          const Text(
+            'Components',
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
           const SizedBox(height: 8),
-          for (var finger = 0; finger < 5; finger++) _FingerComponents(fingerIndex: finger, components: grouped[finger] ?? const []),
-          if (grouped[-1]?.isNotEmpty == true) _FingerComponents(fingerIndex: -1, components: grouped[-1]!, title: 'Shared'),
+          for (var finger = 0; finger < 5; finger++)
+            _FingerComponents(
+              fingerIndex: finger,
+              components: grouped[finger] ?? const [],
+            ),
+          if (grouped[-1]?.isNotEmpty == true)
+            _FingerComponents(
+              fingerIndex: -1,
+              components: grouped[-1]!,
+              title: 'Shared',
+            ),
         ],
       ),
     );
@@ -254,7 +304,11 @@ class _FingerComponents extends StatelessWidget {
   final List<NailComponentModel> components;
   final String? title;
 
-  const _FingerComponents({required this.fingerIndex, required this.components, this.title});
+  const _FingerComponents({
+    required this.fingerIndex,
+    required this.components,
+    this.title,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -266,13 +320,18 @@ class _FingerComponents extends StatelessWidget {
         children: [
           SizedBox(
             width: 58,
-            child: Text(title ?? _fingerName(fingerIndex), style: Theme.of(context).textTheme.bodySmall),
+            child: Text(
+              title ?? _fingerName(fingerIndex),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           ),
           Expanded(
             child: Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: components.map((component) => _ComponentChip(component: component)).toList(),
+              children: components
+                  .map((component) => _ComponentChip(component: component))
+                  .toList(),
             ),
           ),
         ],
@@ -294,7 +353,8 @@ class _ComponentChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final config = component.config;
-    final subtitle = 'x ${component.posX.toStringAsFixed(2)}, y ${component.posY.toStringAsFixed(2)}, scale ${config.scale.toStringAsFixed(2)}';
+    final subtitle =
+        'x ${component.posX.toStringAsFixed(2)}, y ${component.posY.toStringAsFixed(2)}, scale ${config.scale.toStringAsFixed(2)}';
     return Container(
       constraints: const BoxConstraints(maxWidth: 230),
       padding: const EdgeInsets.all(8),
@@ -310,7 +370,10 @@ class _ComponentChip extends StatelessWidget {
             width: 34,
             height: 34,
             child: component.component?.imageUrl.isNotEmpty == true
-                ? Image.network(component.component!.imageUrl, fit: BoxFit.contain)
+                ? Image.network(
+                    component.component!.imageUrl,
+                    fit: BoxFit.contain,
+                  )
                 : const Icon(Icons.auto_awesome, color: Color(0xFFFF66C4)),
           ),
           const SizedBox(width: 8),
@@ -319,8 +382,18 @@ class _ComponentChip extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(component.component?.name ?? 'Component ${component.componentId}', maxLines: 1, overflow: TextOverflow.ellipsis),
-                Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodySmall),
+                Text(
+                  component.component?.name ??
+                      'Component ${component.componentId}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ],
             ),
           ),

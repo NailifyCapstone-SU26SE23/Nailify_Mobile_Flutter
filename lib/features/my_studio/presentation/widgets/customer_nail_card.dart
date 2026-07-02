@@ -36,13 +36,22 @@ class CustomerNailCard extends StatelessWidget {
                 width: 70,
                 height: 70,
                 child: nail.imageUrl.isEmpty
-                    ? Container(color: Colors.pink[50], child: const Icon(Icons.spa, size: 30, color: Colors.pink))
+                    ? Container(
+                        color: Colors.pink[50],
+                        child: const Icon(
+                          Icons.spa,
+                          size: 30,
+                          color: Colors.pink,
+                        ),
+                      )
                     : Image.network(
-                  nail.imageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) =>
-                      Container(color: Colors.grey[200], child: const Icon(Icons.broken_image)),
-                ),
+                        nail.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => Container(
+                          color: Colors.grey[200],
+                          child: const Icon(Icons.broken_image),
+                        ),
+                      ),
               ),
             ),
             const SizedBox(width: 12),
@@ -52,40 +61,72 @@ class CustomerNailCard extends StatelessWidget {
                 children: [
                   Text(
                     nail.name,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   if (nail.isPublic)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(color: Colors.purple[100], borderRadius: BorderRadius.circular(4)),
-                      child: const Text('Công khai', style: TextStyle(fontSize: 10)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.purple[100],
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'Công khai',
+                        style: TextStyle(fontSize: 10),
+                      ),
                     ),
                 ],
               ),
             ),
             Column(
               children: [
-                IconButton(icon: const Icon(Icons.edit_outlined, size: 20), onPressed: onEdit, tooltip: 'Sửa'),
-                IconButton(icon: const Icon(Icons.delete_outline, size: 20), onPressed: onDelete, tooltip: 'Xóa', color: Colors.red),
                 IconButton(
-                  icon: Icon(nail.isPublic ? Icons.public : Icons.public_off, size: 20),
+                  icon: const Icon(Icons.edit_outlined, size: 20),
+                  onPressed: onEdit,
+                  tooltip: 'Sửa',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 20),
+                  onPressed: onDelete,
+                  tooltip: 'Xóa',
+                  color: Colors.red,
+                ),
+                IconButton(
+                  icon: Icon(
+                    nail.isPublic ? Icons.public : Icons.public_off,
+                    size: 20,
+                  ),
                   onPressed: onTogglePublic,
-                  tooltip: nail.isPublic ? 'Chuyển thành riêng tư' : 'Chuyển thành công khai',
+                  tooltip: nail.isPublic
+                      ? 'Chuyển thành riêng tư'
+                      : 'Chuyển thành công khai',
                   color: nail.isPublic ? Colors.blue : Colors.grey,
                 ),
                 const SizedBox(height: 4),
                 ElevatedButton.icon(
                   onPressed: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => TryOnSetupScreen(customerNail: nail)),
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          TryOnSetupScreen(customerNail: nail),
+                    ),
                   ),
                   icon: const Icon(Icons.visibility, size: 16),
                   label: const Text('Set Up Try On'),
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),

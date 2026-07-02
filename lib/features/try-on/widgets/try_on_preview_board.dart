@@ -64,7 +64,8 @@ class TryOnPreviewBoard extends StatelessWidget {
                       gradientStops: fingerGradients[finger] ?? gradientStops,
                       placements: placements
                           .where(
-                            (p) => placementMatchesFinger(p.fingerIndex, finger),
+                            (p) =>
+                                placementMatchesFinger(p.fingerIndex, finger),
                           )
                           .toList(),
                       selectedPlacementId: selectedPlacementId,
@@ -194,7 +195,8 @@ class _FingerPreviewTile extends StatelessWidget {
                       children: placements.map((placement) {
                         final size =
                             nailWidth * placement.scale.clamp(0.1, 1.5);
-                        final centerX = nailWidth / 2 + placement.posX * nailWidth;
+                        final centerX =
+                            nailWidth / 2 + placement.posX * nailWidth;
                         final centerY =
                             nailHeight / 2 + placement.posY * nailHeight;
                         return _PlacedComponentPreview(
@@ -211,12 +213,15 @@ class _FingerPreviewTile extends StatelessWidget {
                   )
                 else
                   ...placements.map((placement) {
-                    final size = constraints.maxWidth *
+                    final size =
+                        constraints.maxWidth *
                         0.6 *
                         placement.scale.clamp(0.1, 1.5);
-                    final centerX = constraints.maxWidth / 2 +
+                    final centerX =
+                        constraints.maxWidth / 2 +
                         placement.posX * constraints.maxWidth;
-                    final centerY = constraints.maxHeight / 2 +
+                    final centerY =
+                        constraints.maxHeight / 2 +
                         placement.posY * constraints.maxHeight;
                     return _PlacedComponentPreview(
                       placement: placement,
@@ -441,10 +446,7 @@ class _GradientNailLayer extends StatelessWidget {
   final String imageUrl;
   final Gradient gradient;
 
-  const _GradientNailLayer({
-    required this.imageUrl,
-    required this.gradient,
-  });
+  const _GradientNailLayer({required this.imageUrl, required this.gradient});
 
   @override
   Widget build(BuildContext context) {
@@ -467,7 +469,9 @@ Color _applySurfaceOffsets(Color color, NailSurfaceModel? surface) {
   final hsl = HSLColor.fromColor(color);
   return hsl
       .withHue((hsl.hue + surface.hueOffset) % 360)
-      .withSaturation((hsl.saturation + surface.saturationOffset).clamp(0.0, 1.0))
+      .withSaturation(
+        (hsl.saturation + surface.saturationOffset).clamp(0.0, 1.0),
+      )
       .withLightness((hsl.lightness + surface.lightnessOffset).clamp(0.0, 1.0))
       .toColor();
 }
@@ -507,18 +511,24 @@ class _SurfaceShader {
     final iridescence = _asMap(params['iridescence']);
 
     return _SurfaceShader(
-      matte: name.contains('matte') || _asMap(params['texture'])?['type'] == 'matte',
+      matte:
+          name.contains('matte') ||
+          _asMap(params['texture'])?['type'] == 'matte',
       shine: _asEnabled(shine),
       metallic: name.contains('chrome') || _asEnabled(metalness),
       stripe: name.contains('cat') || _asEnabled(stripe),
       gradient: _asEnabled(gradient),
-      rainbow: name.contains('holographic') ||
+      rainbow:
+          name.contains('holographic') ||
           _asEnabled(prism) ||
           _asEnabled(rainbow) ||
           _asEnabled(iridescence),
       shineAlignment: _alignmentFromPosition(shine?['position']?.toString()),
       shineSize: (_asDouble(shine?['size'], fallback: 0.42)).clamp(0.18, 0.9),
-      shineOpacity: (_asDouble(shine?['opacity'], fallback: 0.55)).clamp(0.0, 1.0),
+      shineOpacity: (_asDouble(
+        shine?['opacity'],
+        fallback: 0.55,
+      )).clamp(0.0, 1.0),
     );
   }
 }
@@ -564,9 +574,6 @@ class _TryOnPreviewFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      alignment: Alignment.center,
-      color: Colors.white,
-    );
+    return Container(alignment: Alignment.center, color: Colors.white);
   }
 }

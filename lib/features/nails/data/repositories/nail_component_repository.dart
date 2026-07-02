@@ -7,7 +7,8 @@ class NailComponentRepository {
 
   NailComponentRepository(this._apiClient);
 
-  Future<PaginatedResponse<CustomerNailComponentModel>> getCustomerNailComponents({
+  Future<PaginatedResponse<CustomerNailComponentModel>>
+  getCustomerNailComponents({
     required int page,
     int pageSize = 50,
     int? customerNailId,
@@ -22,7 +23,8 @@ class NailComponentRepository {
     );
     return PaginatedResponse.fromJson(
       response.data,
-          (json) => CustomerNailComponentModel.fromJson(json as Map<String, dynamic>),
+      (json) =>
+          CustomerNailComponentModel.fromJson(json as Map<String, dynamic>),
     );
   }
 

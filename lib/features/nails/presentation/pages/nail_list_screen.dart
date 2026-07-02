@@ -16,7 +16,8 @@ class NailListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => NailCatalogCubit(getIt<NailDesignRepository>())..loadDesigns(),
+      create: (_) =>
+          NailCatalogCubit(getIt<NailDesignRepository>())..loadDesigns(),
       child: const _NailListView(),
     );
   }
@@ -70,7 +71,15 @@ class _NailListViewState extends State<_NailListView> {
                         icon: const Icon(Icons.arrow_back_ios, size: 20),
                         onPressed: () => context.go('/'),
                       ),
-                      const Expanded(child: Text('Nail designs', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800))),
+                      const Expanded(
+                        child: Text(
+                          'Nail designs',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
                       IconButton.filledTonal(
                         tooltip: 'Filter',
                         onPressed: () => _openFilters(context, state),
@@ -81,42 +90,48 @@ class _NailListViewState extends State<_NailListView> {
                 ),
               ),
 
-              const SliverToBoxAdapter(
-                child: QuizBanner(),
-              ),
+              const SliverToBoxAdapter(child: QuizBanner()),
 
               // Trạng thái Loading / Error / Empty / Hiện Grid
               if (state.status == NailCatalogStatus.loading)
-                const SliverFillRemaining(child: Center(child: CircularProgressIndicator()))
-              else if (state.status == NailCatalogStatus.error && state.designs.isEmpty)
+                const SliverFillRemaining(
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (state.status == NailCatalogStatus.error &&
+                  state.designs.isEmpty)
                 SliverFillRemaining(
                   child: _ErrorState(
                     message: state.errorMessage ?? 'Could not load nails.',
-                    onRetry: () => context.read<NailCatalogCubit>().loadDesigns(),
+                    onRetry: () =>
+                        context.read<NailCatalogCubit>().loadDesigns(),
                   ),
                 )
               else if (state.designs.isEmpty)
-                  const SliverFillRemaining(child: Center(child: Text('No nail designs found.')))
-                else
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                    sliver: SliverGrid.builder(
-                      itemCount: state.designs.length,
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        mainAxisSpacing: 12,
-                        crossAxisSpacing: 12,
-                        childAspectRatio: 0.72,
-                      ),
-                      itemBuilder: (context, index) {
-                        final design = state.designs[index];
-                        return NailDesignCard(
-                          design: design,
-                          onTap: () => context.go('/nails/${design.nailDesignId}'),
-                        );
-                      },
-                    ),
+                const SliverFillRemaining(
+                  child: Center(child: Text('No nail designs found.')),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                  sliver: SliverGrid.builder(
+                    itemCount: state.designs.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: 12,
+                          childAspectRatio: 0.72,
+                        ),
+                    itemBuilder: (context, index) {
+                      final design = state.designs[index];
+                      return NailDesignCard(
+                        design: design,
+                        onTap: () =>
+                            context.go('/nails/${design.nailDesignId}'),
+                      );
+                    },
                   ),
+                ),
 
               // Loading thêm khi cuộn
               if (state.status == NailCatalogStatus.loadingMore)
@@ -133,7 +148,10 @@ class _NailListViewState extends State<_NailListView> {
     );
   }
 
-  Future<void> _openFilters(BuildContext context, NailCatalogState state) async {
+  Future<void> _openFilters(
+    BuildContext context,
+    NailCatalogState state,
+  ) async {
     final filters = await showModalBottomSheet<NailFilters>(
       context: context,
       isScrollControlled: true,
@@ -164,7 +182,11 @@ class _ErrorState extends StatelessWidget {
           children: [
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 12),
-            FilledButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: const Text('Retry')),
+            FilledButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
           ],
         ),
       ),

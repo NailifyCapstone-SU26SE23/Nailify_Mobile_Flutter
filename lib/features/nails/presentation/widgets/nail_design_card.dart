@@ -7,11 +7,7 @@ class NailDesignCard extends StatelessWidget {
   final NailDesignModel design;
   final VoidCallback onTap;
 
-  const NailDesignCard({
-    super.key,
-    required this.design,
-    required this.onTap,
-  });
+  const NailDesignCard({super.key, required this.design, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +25,9 @@ class NailDesignCard extends StatelessWidget {
           children: [
             Expanded(
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(8),
+                ),
                 child: design.primaryImageUrl.isEmpty
                     ? Container(
                         color: const Color(0xFFF7E8F1),
@@ -53,7 +51,12 @@ class NailDesignCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(design.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700)),
+                  Text(
+                    design.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
                   const SizedBox(height: 4),
                   Text(
                     '${design.nailVariants.length} variants',
@@ -64,7 +67,10 @@ class NailDesignCard extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     '${PriceFormatter.format(design.minPrice).replaceAll(' VNĐ', '')} - ${PriceFormatter.format(design.maxPrice)}',
-                    style: const TextStyle(color: Color(0xFFFF66C4), fontWeight: FontWeight.w700),
+                    style: const TextStyle(
+                      color: Color(0xFFFF66C4),
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ],
               ),

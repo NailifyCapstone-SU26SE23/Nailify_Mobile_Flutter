@@ -203,7 +203,11 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                      const Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: Colors.red,
+                      ),
                       const SizedBox(height: 8),
                       Text('Lỗi: ${snapshot.error}'),
                       const SizedBox(height: 8),
@@ -222,7 +226,11 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.spa_outlined, size: 64, color: Colors.grey),
+                      const Icon(
+                        Icons.spa_outlined,
+                        size: 64,
+                        color: Colors.grey,
+                      ),
                       const SizedBox(height: 16),
                       const Text('Chưa có mẫu móng nào'),
                       const SizedBox(height: 8),
@@ -268,19 +276,21 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
                   IconButton(
                     onPressed: response.hasPrevious
                         ? () {
-                      setState(() => _page--);
-                      _load();
-                    }
+                            setState(() => _page--);
+                            _load();
+                          }
                         : null,
                     icon: const Icon(Icons.chevron_left),
                   ),
-                  Text('Trang ${response.currentPage} / ${response.totalPages}'),
+                  Text(
+                    'Trang ${response.currentPage} / ${response.totalPages}',
+                  ),
                   IconButton(
                     onPressed: response.hasNext
                         ? () {
-                      setState(() => _page++);
-                      _load();
-                    }
+                            setState(() => _page++);
+                            _load();
+                          }
                         : null,
                     icon: const Icon(Icons.chevron_right),
                   ),

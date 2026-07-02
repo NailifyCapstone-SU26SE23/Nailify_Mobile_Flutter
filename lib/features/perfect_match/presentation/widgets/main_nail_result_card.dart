@@ -41,7 +41,11 @@ class MainNailResultCard extends StatelessWidget {
               errorBuilder: (_, _, _) => Container(
                 height: 200,
                 color: AppColors.surfaceLight,
-                child: const Icon(Icons.image, size: 48, color: AppColors.textSecondary),
+                child: const Icon(
+                  Icons.image,
+                  size: 48,
+                  color: AppColors.textSecondary,
+                ),
               ),
             ),
           ),

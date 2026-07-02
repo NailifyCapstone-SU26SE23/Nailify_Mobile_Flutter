@@ -38,23 +38,23 @@ class CustomerNailCard extends StatelessWidget {
                 height: 70,
                 child: nail.imageUrl.isEmpty
                     ? Container(
-                  color: Colors.pink[50],
-                  child: const Icon(
-                    Icons.spa,
-                    size: 30,
-                    color: Colors.pink,
-                  ),
-                )
+                        color: Colors.pink[50],
+                        child: const Icon(
+                          Icons.spa,
+                          size: 30,
+                          color: Colors.pink,
+                        ),
+                      )
                     : Image.network(
-                  nail.imageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: Colors.grey[200],
-                      child: const Icon(Icons.broken_image),
-                    );
-                  },
-                ),
+                        nail.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey[200],
+                            child: const Icon(Icons.broken_image),
+                          );
+                        },
+                      ),
               ),
             ),
             const SizedBox(width: 12),
@@ -102,8 +102,8 @@ class CustomerNailCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 6),
-                  // Color preview
 
+                  // Color preview
                 ],
               ),
             ),
@@ -128,7 +128,9 @@ class CustomerNailCard extends StatelessWidget {
                     size: 20,
                   ),
                   onPressed: onTogglePublic,
-                  tooltip: nail.isPublic ? 'Chuyển thành riêng tư' : 'Chuyển thành công khai',
+                  tooltip: nail.isPublic
+                      ? 'Chuyển thành riêng tư'
+                      : 'Chuyển thành công khai',
                   color: nail.isPublic ? Colors.blue : Colors.grey,
                 ),
                 const SizedBox(height: 4),
@@ -137,14 +139,18 @@ class CustomerNailCard extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => TryOnSetupScreen(customerNail: nail),
+                        builder: (context) =>
+                            TryOnSetupScreen(customerNail: nail),
                       ),
                     );
                   },
                   icon: const Icon(Icons.visibility, size: 16),
                   label: const Text('Set Up Try On'),
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),

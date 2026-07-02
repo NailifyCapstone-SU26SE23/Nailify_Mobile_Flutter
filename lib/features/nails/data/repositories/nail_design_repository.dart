@@ -20,13 +20,14 @@ class NailDesignRepository {
       queryParameters: {
         'pageNumber': page,
         'pageSize': pageSize,
-        if (filters.name != null && filters.name!.trim().isNotEmpty) 'name': filters.name!.trim(),
+        if (filters.name != null && filters.name!.trim().isNotEmpty)
+          'name': filters.name!.trim(),
         if (filters.categoryIds.isNotEmpty) 'categoryIds': filters.categoryIds,
       },
     );
     return PaginatedResponse.fromJson(
       response.data,
-          (json) => NailDesignModel.fromJson(json as Map<String, dynamic>),
+      (json) => NailDesignModel.fromJson(json as Map<String, dynamic>),
     );
   }
 
@@ -39,14 +40,11 @@ class NailDesignRepository {
   Future<List<CategoryTypeModel>> getCategoryTypes() async {
     final response = await _apiClient.get<dynamic>(
       '/CategoryTypes',
-      queryParameters: {
-        'pageNumber': 1,
-        'pageSize': 100,
-      },
+      queryParameters: {'pageNumber': 1, 'pageSize': 100},
     );
     final paginatedResponse = PaginatedResponse.fromJson(
       response.data,
-          (json) => CategoryTypeModel.fromJson(json as Map<String, dynamic>),
+      (json) => CategoryTypeModel.fromJson(json as Map<String, dynamic>),
     );
     return paginatedResponse.items;
   }

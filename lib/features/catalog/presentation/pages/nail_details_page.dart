@@ -19,11 +19,19 @@ class NailDetailsPage extends StatelessWidget {
             Text('Thông báo'),
           ],
         ),
-        content: Text('Tính năng "$actionName" cho mẫu móng này hiện đang được tích hợp hệ thống.'),
+        content: Text(
+          'Tính năng "$actionName" cho mẫu móng này hiện đang được tích hợp hệ thống.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Đóng', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Đóng',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -38,13 +46,24 @@ class NailDetailsPage extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(label, style: const TextStyle(fontSize: 14, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: const TextStyle(fontSize: 14, color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -58,11 +77,12 @@ class NailDetailsPage extends StatelessWidget {
       backgroundColor: AppColors.background,
       body: Center(
         child: Container(
-          constraints: const BoxConstraints(maxWidth: 402), // Đồng bộ kích thước khung dự án
+          constraints: const BoxConstraints(
+            maxWidth: 402,
+          ), // Đồng bộ kích thước khung dự án
           child: Stack(
             children: [
               // HÌNH ẢNH VÀ THÔNG TIN CHI TIẾT (CUỘN DỌC)
-
               SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 child: Column(
@@ -77,37 +97,75 @@ class NailDetailsPage extends StatelessWidget {
                       errorBuilder: (context, error, stackTrace) => Container(
                         height: MediaQuery.of(context).size.height * 0.42,
                         color: AppColors.surface,
-                        child: const Icon(Icons.image, size: 64, color: AppColors.textSecondary),
+                        child: const Icon(
+                          Icons.image,
+                          size: 64,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ),
 
                     // MẢNG 2: Tên và bảng 7 thông số kỹ thuật chi tiết sản phẩm
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 100), // Thừa khoảng trống đáy để không bị cụm nút che
+                      padding: const EdgeInsets.fromLTRB(
+                        20,
+                        24,
+                        20,
+                        100,
+                      ), // Thừa khoảng trống đáy để không bị cụm nút che
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             nailData['name'] ?? 'Nail Design',
-                            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                            style: const TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             'Premium Collection',
-                            style: TextStyle(fontSize: 14, color: AppColors.primary, fontWeight: FontWeight.w600),
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                           const SizedBox(height: 16),
                           const Divider(height: 1, color: AppColors.border),
                           const SizedBox(height: 8),
 
                           // Hiển thị danh sách 7 thuộc tính kỹ thuật
-                          _buildInfoRow('Shape', nailData['shape'] ?? 'Standard'),
-                          _buildInfoRow('Length', nailData['length'] ?? 'Medium'),
-                          _buildInfoRow('Surface', nailData['surface'] ?? 'Glossy'),
-                          _buildInfoRow('Decorate', nailData['decorate'] ?? 'None'),
-                          _buildInfoRow('Occasion', nailData['occasion'] ?? 'General'),
-                          _buildInfoRow('Color', nailData['color'] ?? 'Multi-color'),
-                          _buildInfoRow('Personality', nailData['personality'] ?? 'Trendy'),
+                          _buildInfoRow(
+                            'Shape',
+                            nailData['shape'] ?? 'Standard',
+                          ),
+                          _buildInfoRow(
+                            'Length',
+                            nailData['length'] ?? 'Medium',
+                          ),
+                          _buildInfoRow(
+                            'Surface',
+                            nailData['surface'] ?? 'Glossy',
+                          ),
+                          _buildInfoRow(
+                            'Decorate',
+                            nailData['decorate'] ?? 'None',
+                          ),
+                          _buildInfoRow(
+                            'Occasion',
+                            nailData['occasion'] ?? 'General',
+                          ),
+                          _buildInfoRow(
+                            'Color',
+                            nailData['color'] ?? 'Multi-color',
+                          ),
+                          _buildInfoRow(
+                            'Personality',
+                            nailData['personality'] ?? 'Trendy',
+                          ),
                         ],
                       ),
                     ),
@@ -127,17 +185,23 @@ class NailDetailsPage extends StatelessWidget {
                       color: AppColors.surface,
                       shape: BoxShape.circle,
                       boxShadow: [
-                        BoxShadow(color: AppColors.textPrimary, blurRadius: 8, offset: const Offset(0, 2)),
+                        BoxShadow(
+                          color: AppColors.textPrimary,
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
                       ],
                     ),
-                    child: const Icon(Icons.arrow_back_ios_new, size: 18, color: AppColors.textPrimary),
+                    child: const Icon(
+                      Icons.arrow_back_ios_new,
+                      size: 18,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ),
               ),
 
-
               //CỤM NÚT HÀNH ĐỘNG (BOOK NOW & VIRTUAL TRY ON)
-
               Positioned(
                 bottom: 0,
                 left: 0,
@@ -147,7 +211,11 @@ class NailDetailsPage extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: AppColors.surface,
                     boxShadow: [
-                      BoxShadow(color: AppColors.textPrimary, blurRadius: 10, offset: const Offset(0, -4)),
+                      BoxShadow(
+                        color: AppColors.textPrimary,
+                        blurRadius: 10,
+                        offset: const Offset(0, -4),
+                      ),
                     ],
                   ),
                   child: Row(
@@ -157,12 +225,31 @@ class NailDetailsPage extends StatelessWidget {
                         child: SizedBox(
                           height: 50,
                           child: OutlinedButton.icon(
-                            onPressed: () => _showPopupNotification(context, 'Virtual Try On'),
-                            icon: const Icon(Icons.camera_alt_outlined, color: AppColors.primary, size: 20),
-                            label: const Text('Virtual Try On', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 14)),
+                            onPressed: () => _showPopupNotification(
+                              context,
+                              'Virtual Try On',
+                            ),
+                            icon: const Icon(
+                              Icons.camera_alt_outlined,
+                              color: AppColors.primary,
+                              size: 20,
+                            ),
+                            label: const Text(
+                              'Virtual Try On',
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
                             style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: AppColors.primary, width: 1.5),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              side: const BorderSide(
+                                color: AppColors.primary,
+                                width: 1.5,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                           ),
                         ),
@@ -181,9 +268,17 @@ class NailDetailsPage extends StatelessWidget {
                               backgroundColor: AppColors.primary,
                               foregroundColor: Colors.white,
                               elevation: 0,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
-                            child: const Text('Book Now', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                            child: const Text(
+                              'Book Now',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
                           ),
                         ),
                       ),

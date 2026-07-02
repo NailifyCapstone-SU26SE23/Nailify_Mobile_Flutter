@@ -5,11 +5,7 @@ class DesignGalleryCta extends StatelessWidget {
   final VoidCallback? onBookPressed;
   final VoidCallback? onCustomPressed;
 
-  const DesignGalleryCta({
-    super.key,
-    this.onBookPressed,
-    this.onCustomPressed,
-  });
+  const DesignGalleryCta({super.key, this.onBookPressed, this.onCustomPressed});
 
   @override
   Widget build(BuildContext context) {

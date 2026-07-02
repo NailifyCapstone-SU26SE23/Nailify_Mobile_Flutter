@@ -1,11 +1,53 @@
 class CatalogMockData {
-  static const List<String> styles = ['Cute & Sweet', 'Minimalist Cool', 'Luxury Art', 'Y2K', 'Vintage'];
-  static const List<String> themes = ['Floral', 'Geometric', 'Abstract', 'Animal Print', 'Seasonal'];
-  static const List<String> designs = ['French Tip', 'Ombre', 'Solid Color', '3D Art', 'Hand-painted'];
-  static const List<String> variants = ['Short Round', 'Medium Almond', 'Long Coffin', 'Square', 'Stiletto'];
-  static const List<String> detailElement = ['Stones/Pearls', 'Charms', 'Foil', 'Ribbon', 'Dried Flowers'];
-  static const List<String> surfaces = ['Glossy Shine', 'Matte Velvet', 'Glitter Sparkle', 'Metallic', 'Chrome'];
-  static const List<String> occasions = ['Go to work', 'Party/event', 'Wedding', 'Tourism', 'Date night'];
+  static const List<String> styles = [
+    'Cute & Sweet',
+    'Minimalist Cool',
+    'Luxury Art',
+    'Y2K',
+    'Vintage',
+  ];
+  static const List<String> themes = [
+    'Floral',
+    'Geometric',
+    'Abstract',
+    'Animal Print',
+    'Seasonal',
+  ];
+  static const List<String> designs = [
+    'French Tip',
+    'Ombre',
+    'Solid Color',
+    '3D Art',
+    'Hand-painted',
+  ];
+  static const List<String> variants = [
+    'Short Round',
+    'Medium Almond',
+    'Long Coffin',
+    'Square',
+    'Stiletto',
+  ];
+  static const List<String> detailElement = [
+    'Stones/Pearls',
+    'Charms',
+    'Foil',
+    'Ribbon',
+    'Dried Flowers',
+  ];
+  static const List<String> surfaces = [
+    'Glossy Shine',
+    'Matte Velvet',
+    'Glitter Sparkle',
+    'Metallic',
+    'Chrome',
+  ];
+  static const List<String> occasions = [
+    'Go to work',
+    'Party/event',
+    'Wedding',
+    'Tourism',
+    'Date night',
+  ];
 
   // Cập nhật danh sách Nails đầy đủ các thuộc tính chi tiết phục vụ trang Nail Details
   static final List<Map<String, dynamic>> nails = [
@@ -20,7 +62,7 @@ class CatalogMockData {
       'decorate': 'Flower Art & Ribbon',
       'occasion': 'Date night',
       'color': 'Pastel Pink & White',
-      'personality': 'Cute & Sweet'
+      'personality': 'Cute & Sweet',
     },
     {
       'id': '2',
@@ -33,7 +75,7 @@ class CatalogMockData {
       'decorate': 'Stones & Crystals',
       'occasion': 'Party/event',
       'color': 'Deep Purple & Silver',
-      'personality': 'Luxury Art'
+      'personality': 'Luxury Art',
     },
     {
       'id': '3',
@@ -46,7 +88,7 @@ class CatalogMockData {
       'decorate': 'Geometric Lines',
       'occasion': 'Go to work',
       'color': 'Nude Brown & Beige',
-      'personality': 'Minimalist Cool'
+      'personality': 'Minimalist Cool',
     },
     {
       'id': '4',
@@ -59,7 +101,7 @@ class CatalogMockData {
       'decorate': 'Pearls & Dried Flowers',
       'occasion': 'Wedding',
       'color': 'Soft Cream & Gold Foil',
-      'personality': 'Elegant Luxury'
-    }
+      'personality': 'Elegant Luxury',
+    },
   ];
 }

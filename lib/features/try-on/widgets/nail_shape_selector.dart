@@ -25,9 +25,9 @@ class NailShapeSelector extends StatelessWidget {
         if (showTitle) ...[
           Text(
             'Select Nail Shape',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
         ],
@@ -38,7 +38,8 @@ class NailShapeSelector extends StatelessWidget {
             itemCount: shapes.length,
             itemBuilder: (context, index) {
               final shape = shapes[index];
-              final isSelected = selectedShape?.nailShapeId == shape.nailShapeId;
+              final isSelected =
+                  selectedShape?.nailShapeId == shape.nailShapeId;
 
               return _NailShapeCard(
                 shape: shape,
@@ -80,12 +81,12 @@ class _NailShapeCard extends StatelessWidget {
           color: Colors.white,
           boxShadow: isSelected
               ? [
-            BoxShadow(
-              color: Colors.purple.withAlpha(30),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            )
-          ]
+                  BoxShadow(
+                    color: Colors.purple.withAlpha(30),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
               : null,
         ),
         child: Column(
@@ -95,24 +96,26 @@ class _NailShapeCard extends StatelessWidget {
             Expanded(
               flex: 2,
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(10),
+                ),
                 child: shape.imageUrl.isNotEmpty
                     ? Image.network(
-                  shape.imageUrl,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  errorBuilder: (_, _, _) => const _FallbackIcon(),
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return const Center(
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    );
-                  },
-                )
+                        shape.imageUrl,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        errorBuilder: (_, _, _) => const _FallbackIcon(),
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return const Center(
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          );
+                        },
+                      )
                     : const _FallbackIcon(),
               ),
             ),
@@ -126,7 +129,9 @@ class _NailShapeCard extends StatelessWidget {
                   Text(
                     shape.name,
                     style: TextStyle(
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w500,
                       fontSize: 13,
                     ),
                     maxLines: 1,
@@ -169,11 +174,7 @@ class _FallbackIcon extends StatelessWidget {
     return Container(
       color: Colors.grey.shade100,
       width: double.infinity,
-      child: Icon(
-        Icons.search,
-        size: 32,
-        color: Colors.grey.shade400,
-      ),
+      child: Icon(Icons.search, size: 32, color: Colors.grey.shade400),
     );
   }
 }

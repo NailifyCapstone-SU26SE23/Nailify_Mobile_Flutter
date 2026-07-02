@@ -9,7 +9,8 @@ class CustomerNailRequestsTab extends StatefulWidget {
   const CustomerNailRequestsTab({super.key});
 
   @override
-  State<CustomerNailRequestsTab> createState() => _CustomerNailRequestsTabState();
+  State<CustomerNailRequestsTab> createState() =>
+      _CustomerNailRequestsTabState();
 }
 
 class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {

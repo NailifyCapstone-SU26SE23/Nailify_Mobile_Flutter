@@ -5,6 +5,7 @@ import '../../../../core/utils/price_formatter.dart';
 
 import '../widgets/booking_service_selection.dart';
 import '../widgets/booking_date_selection.dart';
+import '../widgets/booking_seat_selection.dart'; // IMPORT WIDGET GHE
 import '../widgets/booking_time_selection.dart';
 
 // Import API & Model
@@ -24,7 +25,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   final PageController _pageController = PageController();
   final BookingApiService _apiService = BookingApiService();
 
-  int _currentStep = 0; // 0: Dịch vụ thêm, 1: Ngày/Giờ, 2: Xác nhận
+  int _currentStep = 0; // 0: Seat, 1: Dịch vụ thêm, 2: Ngày/Giờ, 3: Xác nhận
   bool _isSubmitting = false;
 
   // Data
@@ -35,6 +36,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   bool _isLoadingTimes = false;
 
   // Selections
+  String? _selectedSeat; // Thêm biến lưu ghế
   List<String?> _selectedExtraServices = [];
   DateTime? _selectedDate;
   String? _selectedTime;
@@ -175,16 +177,20 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   }
 
   void _handleNextAction() {
-    if (_currentStep == 0 && _selectedExtraServices.contains(null)) {
+    if (_currentStep == 0 && _selectedSeat == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng chọn ghế ngồi!')));
+      return;
+    }
+    if (_currentStep == 1 && _selectedExtraServices.contains(null)) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Có ô dịch vụ đang bị bỏ trống!')));
       return;
     }
-    if (_currentStep == 1 && (_selectedDate == null || _selectedTime == null)) {
+    if (_currentStep == 2 && (_selectedDate == null || _selectedTime == null)) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng chọn đầy đủ ngày và khung giờ!')));
       return;
     }
 
-    if (_currentStep < 2) {
+    if (_currentStep < 3) {
       _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
     } else {
       _executeBooking();
@@ -217,7 +223,16 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
               physics: const NeverScrollableScrollPhysics(),
               onPageChanged: (idx) => setState(() => _currentStep = idx),
               children: [
-                // CHỌN DỊCH VỤ THÊM
+                // BƯỚC 0: CHỌN GHẾ
+                SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: BookingSeatSelection(
+                    selectedSeatId: _selectedSeat,
+                    onSeatSelected: (seatId) => setState(() => _selectedSeat = seatId),
+                  ),
+                ),
+
+                // BƯỚC 1: CHỌN DỊCH VỤ THÊM
                 SingleChildScrollView(
                   padding: const EdgeInsets.all(20),
                   child: BookingServiceSelection(
@@ -291,6 +306,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                         child: Column(
                           children: [
                             // Ko hiện tên Salon ở đây vì trong Móng Custom làm méo gì có tên Salon, hiện Thợ là đủ uy tín (uy tin như nha cai den tu chauau)
+                            _buildSummaryRow(Icons.chair, 'Ghế', _selectedSeat != null ? 'Ghế ${_selectedSeat!.split('_').last}' : ''),
                             _buildSummaryRow(Icons.calendar_month, 'Ngày hẹn', _selectedDate != null ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}' : ''),
                             _buildSummaryRow(Icons.access_time, 'Thời gian', _selectedTime ?? ''),
                             _buildSummaryRow(Icons.face, 'Thợ thực hiện', widget.nail.stylistName),
@@ -400,12 +416,12 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
       padding: const EdgeInsets.symmetric(vertical: 16), color: Colors.white,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(3, (index) {
+        children: List.generate(4, (index) {
           bool isCompleted = index <= _currentStep;
           return Row(
             children: [
               CircleAvatar(radius: 12, backgroundColor: isCompleted ? AppColors.primary : Colors.grey.shade300, child: Text('${index + 1}', style: const TextStyle(color: Colors.white, fontSize: 11))),
-              if (index < 2) Container(width: 40, height: 2, color: index < _currentStep ? AppColors.primary : Colors.grey.shade300),
+              if (index < 3) Container(width: 40, height: 2, color: index < _currentStep ? AppColors.primary : Colors.grey.shade300),
             ],
           );
         }),
@@ -434,7 +450,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
             child: _isSubmitting
                 ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                : Text(_currentStep == 2 ? 'Xác nhận Đặt lịch' : 'Tiếp tục', style: const TextStyle(fontWeight: FontWeight.bold)),
+                : Text(_currentStep == 3 ? 'Xác nhận Đặt lịch' : 'Tiếp tục', style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),

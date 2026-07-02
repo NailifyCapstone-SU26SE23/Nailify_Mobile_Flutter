@@ -9,6 +9,7 @@ import '../../../nail_booking/data/datasources/booking_api_service.dart';
 import '../../../nail_booking/presentation/widgets/branch_selection_list.dart';
 import '../../../nail_booking/presentation/widgets/booking_service_selection.dart';
 import '../../../nail_booking/presentation/widgets/booking_date_selection.dart';
+import '../../../nail_booking/presentation/widgets/booking_seat_selection.dart'; // IMPORT WIDGET GHE
 import '../../../nail_booking/presentation/widgets/booking_stylist_selection.dart';
 import '../../../nail_booking/presentation/widgets/booking_time_selection.dart';
 
@@ -25,7 +26,7 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
   final PageController _pageController = PageController();
   final BookingApiService _apiService = BookingApiService();
 
-  int _currentStep = 0; // 0: Salon, 1: Services, 2: DateTime & Stylist, 3: Summary
+  int _currentStep = 0; // 0: Salon, 1: Seat, 2: Services, 3: DateTime & Stylist, 4: Summary
   bool _isSubmitting = false;
 
   // Data
@@ -40,6 +41,7 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
 
   // Selections
   Map<String, dynamic>? _selectedSalon;
+  String? _selectedSeat; // Thêm biến lưu ghế
   List<String?> _selectedExtraServices = [];
   DateTime? _selectedDate;
   Map<String, dynamic>? _selectedStylist;
@@ -198,14 +200,17 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
     if (_currentStep == 0 && _selectedSalon == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng chọn 1 chi nhánh!'))); return;
     }
-    if (_currentStep == 1 && _selectedExtraServices.contains(null)) {
+    if (_currentStep == 1 && _selectedSeat == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng chọn ghế ngồi!'))); return;
+    }
+    if (_currentStep == 2 && _selectedExtraServices.contains(null)) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Có ô dịch vụ đang bị bỏ trống!'))); return;
     }
-    if (_currentStep == 2 && (_selectedDate == null || (_selectedStylist == null && !_noArtistSelected) || _selectedTime == null)) {
+    if (_currentStep == 3 && (_selectedDate == null || (_selectedStylist == null && !_noArtistSelected) || _selectedTime == null)) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng chọn đầy đủ ngày, thợ (hoặc để tự động) và khung giờ!'))); return;
     }
 
-    if (_currentStep < 3) {
+    if (_currentStep < 4) {
       _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
     } else {
       _executeBooking();
@@ -238,7 +243,22 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
                   padding: const EdgeInsets.all(20),
                   child: BranchSelectionList(
                     salons: _salons, isLoading: _isLoadingSalons, selectedBranchId: _selectedSalon?['salonId'],
-                    onBranchSelected: (salon) => setState(() { _selectedSalon = salon; _artists.clear(); _selectedStylist = null; _selectedTime = null; }),
+                    onBranchSelected: (salon) => setState(() { 
+                      _selectedSalon = salon; 
+                      _selectedSeat = null; // Reset ghế
+                      _artists.clear(); 
+                      _selectedStylist = null; 
+                      _selectedTime = null; 
+                    }),
+                  ),
+                ),
+
+                // STEP 1: CHỌN GHẾ
+                SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: BookingSeatSelection(
+                    selectedSeatId: _selectedSeat,
+                    onSeatSelected: (seatId) => setState(() => _selectedSeat = seatId),
                   ),
                 ),
 
@@ -323,6 +343,7 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
                         child: Column(
                           children: [
                             _buildSummaryRow(Icons.storefront, 'Chi nhánh', _selectedSalon?['name'] ?? ''),
+                            _buildSummaryRow(Icons.chair, 'Ghế', _selectedSeat != null ? 'Ghế ${_selectedSeat!.split('_').last}' : ''),
                             _buildSummaryRow(Icons.calendar_month, 'Ngày hẹn', _selectedDate != null ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}' : ''),
                             _buildSummaryRow(Icons.access_time, 'Thời gian', _selectedTime ?? ''),
                             _buildSummaryRow(Icons.face, 'Thợ thực hiện',
@@ -453,12 +474,12 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
       padding: const EdgeInsets.symmetric(vertical: 16), color: Colors.white,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(4, (index) {
+        children: List.generate(5, (index) {
           bool isCompleted = index <= _currentStep;
           return Row(
             children: [
               CircleAvatar(radius: 12, backgroundColor: isCompleted ? AppColors.primary : Colors.grey.shade300, child: Text('${index + 1}', style: const TextStyle(color: Colors.white, fontSize: 11))),
-              if (index < 3) Container(width: 30, height: 2, color: index < _currentStep ? AppColors.primary : Colors.grey.shade300),
+              if (index < 4) Container(width: 30, height: 2, color: index < _currentStep ? AppColors.primary : Colors.grey.shade300),
             ],
           );
         }),
@@ -476,7 +497,7 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
           ElevatedButton(
             onPressed: _isSubmitting ? null : _handleNextAction,
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-            child: _isSubmitting ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Text(_currentStep == 3 ? 'Xác nhận Đặt lịch' : 'Tiếp tục', style: const TextStyle(fontWeight: FontWeight.bold)),
+            child: _isSubmitting ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Text(_currentStep == 4 ? 'Xác nhận Đặt lịch' : 'Tiếp tục', style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),

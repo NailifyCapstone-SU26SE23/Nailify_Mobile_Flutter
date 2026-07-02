@@ -7,8 +7,9 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/base64_image_converter.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../data/datasources/my_booking_api_service.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+//import 'package:flutter_map/flutter_map.dart';
+import '../../../../core/utils/duration_formatter.dart';
+import '../utils/booking_status_utils.dart';
 import '../widgets/cancel_booking_dialog.dart';
 
 class MyBookingDetailPage extends StatefulWidget {
@@ -169,10 +170,11 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     final bookingDate = DateTime.parse(booking['bookingDate']);
     final items = booking['bookingItems'] as List<dynamic>? ?? [];
     final rawStatus = booking['status']?.toString();
-    final status = _bookingStatus(rawStatus);
+    final status = bookingStatusView(rawStatus);
     final rawQrString = booking['qrCode']?.toString();
     final Uint8List? qrImageBytes = Base64ImageConverter.decode(rawQrString);
     final canCancel = rawStatus == 'Pending' || rawStatus == 'Approved' || rawStatus == 'Assigned';
+    final isRated = bookingIsRated(booking);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -289,7 +291,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                     'Giờ bắt đầu',
                     booking['startTime']?.toString().substring(0, 5),
                   ),
-                  _buildRow('Thời lượng', '${booking['totalDuration']} phút'),
+                  _buildRow('Thời lượng', '${DurationFormatter.format(booking['totalDuration'])} '),
                 ],
               ),
             ),
@@ -332,8 +334,8 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   const SizedBox(height: 8),
 
                   // 2. Khuyến mãi (Giảm giá)
-                  if (discounts.isNotEmpty)
-                    ...discounts.map(_buildDiscountRow)
+                  if (_discounts.isNotEmpty)
+                    ..._discounts.map(_buildDiscountRow)
                   else
                     Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,

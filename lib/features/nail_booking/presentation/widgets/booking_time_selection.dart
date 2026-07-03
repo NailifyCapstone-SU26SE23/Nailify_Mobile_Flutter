@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 
-class BookingTimeSelection extends StatelessWidget {
+class BookingTimeSelection extends StatefulWidget {
   final List<dynamic> timeSlots;
   final bool isLoading;
   final String? selectedTime;
   final bool canSelect;
-  final DateTime? selectedDate; // BỔ SUNG: Nhận vào ngày đang chọn từ trang tổng
+  final DateTime? selectedDate; // Nhận vào ngày đang chọn từ trang tổng
   final Function(String) onTimeChanged;
 
   const BookingTimeSelection({
@@ -15,86 +16,420 @@ class BookingTimeSelection extends StatelessWidget {
     required this.isLoading,
     required this.selectedTime,
     required this.canSelect,
-    required this.selectedDate, // Khai báo bắt buộc
-    required this.onTimeChanged
+    required this.selectedDate,
+    required this.onTimeChanged,
   });
+
+  @override
+  State<BookingTimeSelection> createState() => _BookingTimeSelectionState();
+}
+
+class _BookingTimeSelectionState extends State<BookingTimeSelection> {
+  final Set<String> _waitlistedTimes = {};
+
+  void _showWaitlistBottomSheet(String time) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _WaitlistJoinSheet(
+        time: time.substring(0, 5),
+        onJoin: () {
+          setState(() {
+            _waitlistedTimes.add(time);
+          });
+        },
+        onPickOther: () => Navigator.pop(context),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Khung giờ rảnh', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        const Text('Khung giờ rảnh',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
-        if (!canSelect)
-          const Text('Vui lòng chọn Thợ (hoặc "Không chọn thợ") để xem giờ rảnh.', style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic))
-        else if (isLoading)
+        if (!widget.canSelect)
+          const Text('Vui lòng chọn Thợ (hoặc "Không chọn thợ") để xem giờ rảnh.',
+              style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic))
+        else if (widget.isLoading)
           const CircularProgressIndicator()
-        else if (timeSlots.isEmpty)
-            const Text('Thợ không có lịch làm việc vào ngày này.')
-          else
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3, childAspectRatio: 2.5, crossAxisSpacing: 10, mainAxisSpacing: 10
-              ),
-              itemCount: timeSlots.length,
-              itemBuilder: (context, index) {
-                final slot = timeSlots[index];
-                final String time = slot['startTime']; // Định dạng từ API: "09:30:00"
-                bool isAvail = slot['isAvailable'] == true;
-                final bool isSelected = selectedTime == time;
+        else if (widget.timeSlots.isEmpty)
+          const Text('Thợ không có lịch làm việc vào ngày này.')
+        else
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                childAspectRatio: 2.5,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10),
+            itemCount: widget.timeSlots.length,
+            itemBuilder: (context, index) {
+              final slot = widget.timeSlots[index];
+              final String time = slot['startTime']; // "09:30:00"
+              final bool isAvailableApi = slot['isAvailable'] == true;
+              final bool isSelected = widget.selectedTime == time;
+              final bool isWaitlisted = _waitlistedTimes.contains(time);
 
-                // ==========================================
-                // LOGIC CHỐT CHẶN KHÔNG CHO CHỌN GIỜ QUÁ KHỨ
-                // ==========================================
-                if (isAvail && selectedDate != null) {
-                  final now = DateTime.now();
-                  // Kiểm tra xem ngày người dùng chọn có phải là NGÀY HÔM NAY không
-                  final bool isToday = selectedDate!.year == now.year &&
-                      selectedDate!.month == now.month &&
-                      selectedDate!.day == now.day;
+              bool isPast = false;
 
-                  if (isToday) {
-                    // Cắt chuỗi "09:30:00" thành [09, 30, 00]
-                    final List<String> timeParts = time.split(':');
-                    final int slotHour = int.tryParse(timeParts[0]) ?? 0;
-                    final int slotMinute = int.tryParse(timeParts[1]) ?? 0;
+              // ==========================================
+              // LOGIC CHỐT CHẶN KHÔNG CHO CHỌN GIỜ QUÁ KHỨ
+              // ==========================================
+              if (widget.selectedDate != null) {
+                final now = DateTime.now();
+                final bool isToday = widget.selectedDate!.year == now.year &&
+                    widget.selectedDate!.month == now.month &&
+                    widget.selectedDate!.day == now.day;
 
-                    // Nếu giờ của slot nhỏ hơn giờ hiện tại, hoặc bằng giờ hiện tại nhưng phút nhỏ hơn/bằng phút hiện tại
-                    if (slotHour < now.hour || (slotHour == now.hour && slotMinute <= now.minute)) {
-                      isAvail = false; // Ép trạng thái khả dụng về false để làm mờ ô này đi
-                    }
+                if (isToday) {
+                  final List<String> timeParts = time.split(':');
+                  final int slotHour = int.tryParse(timeParts[0]) ?? 0;
+                  final int slotMinute = int.tryParse(timeParts[1]) ?? 0;
+
+                  if (slotHour < now.hour ||
+                      (slotHour == now.hour && slotMinute <= now.minute)) {
+                    isPast = true;
                   }
                 }
-                // ==========================================
+              }
+              // ==========================================
 
-                return GestureDetector(
-                  // KHÓA SỰ KIỆN BẤM NẾU GIỜ ĐÃ QUA HOẶC THỢ BẬN
-                  onTap: isAvail ? () => onTimeChanged(time) : null,
-                  child: Container(
-                    decoration: BoxDecoration(
-                        color: isSelected ? AppColors.primary : (isAvail ? Colors.white : Colors.grey.shade100),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                            color: isSelected ? AppColors.primary : (isAvail ? Colors.grey.shade300 : Colors.transparent)
-                        )
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                        time.substring(0, 5), // Chỉ hiện "09:30"
-                        style: TextStyle(
-                          fontWeight: isAvail ? FontWeight.bold : FontWeight.normal,
-                          color: isSelected ? Colors.white : (isAvail ? Colors.black : Colors.grey.shade400),
-                          decoration: isAvail ? null : TextDecoration.lineThrough, // Gạch ngang nếu là giờ quá khứ/bận
-                        )
-                    ),
+              final bool isAvail = isAvailableApi && !isPast;
+              final bool isFull = !isAvailableApi && !isPast;
+
+              // Xác định style cho ô
+              Color bgColor;
+              Color borderColor;
+              Color textColor;
+              bool showBell = false;
+              bool lineThrough = false;
+              FontWeight fontWeight = FontWeight.normal;
+
+              if (isSelected) {
+                bgColor = AppColors.primary;
+                borderColor = AppColors.primary;
+                textColor = Colors.white;
+                fontWeight = FontWeight.bold;
+              } else if (isWaitlisted) {
+                bgColor = AppColors.primary.withOpacity(0.08);
+                borderColor = AppColors.primary.withOpacity(0.5);
+                textColor = AppColors.primary;
+                fontWeight = FontWeight.bold;
+                showBell = true;
+              } else if (isAvail) {
+                bgColor = Colors.white;
+                borderColor = Colors.grey.shade300;
+                textColor = Colors.black;
+                fontWeight = FontWeight.bold;
+              } else if (isPast) {
+                bgColor = Colors.grey.shade50;
+                borderColor = Colors.transparent;
+                textColor = Colors.grey.shade300;
+                lineThrough = true;
+              } else {
+                // isFull (hết chỗ)
+                bgColor = Colors.grey.shade100;
+                borderColor = Colors.grey.shade200;
+                textColor = Colors.grey.shade400;
+              }
+
+              return GestureDetector(
+                onTap: () {
+                  if (isAvail) {
+                    widget.onTimeChanged(time);
+                  } else if (isWaitlisted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Row(
+                          children: [
+                            const Icon(Icons.notifications_active,
+                                color: Colors.white, size: 16),
+                            const SizedBox(width: 8),
+                            Text('Bạn đã đăng ký chờ cho giờ ${time.substring(0, 5)}'),
+                          ],
+                        ),
+                        backgroundColor: AppColors.primary,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
+                    );
+                  } else if (isFull) {
+                    _showWaitlistBottomSheet(time);
+                  }
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOut,
+                  decoration: BoxDecoration(
+                    color: bgColor,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: borderColor, width: isWaitlisted ? 1.5 : 1),
                   ),
-                );
-              },
-            )
+                  alignment: Alignment.center,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        time.substring(0, 5), // "09:30"
+                        style: TextStyle(
+                          fontWeight: fontWeight,
+                          color: textColor,
+                          decoration: lineThrough ? TextDecoration.lineThrough : null,
+                          decorationColor: Colors.grey.shade400,
+                        ),
+                      ),
+                      if (showBell) ...[
+                        const SizedBox(width: 4),
+                        const Icon(
+                          Icons.notifications_active,
+                          size: 13,
+                          color: AppColors.primary,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              );
+            },
+          )
       ],
     );
   }
 }
+
+// ────────────────────────────────────────────────
+// SUB-WIDGET: BottomSheet mời tham gia Waitlist
+// ────────────────────────────────────────────────
+class _WaitlistJoinSheet extends StatefulWidget {
+  final String time;
+  final VoidCallback onJoin;
+  final VoidCallback onPickOther;
+
+  const _WaitlistJoinSheet({
+    required this.time,
+    required this.onJoin,
+    required this.onPickOther,
+  });
+
+  @override
+  State<_WaitlistJoinSheet> createState() => _WaitlistJoinSheetState();
+}
+
+class _WaitlistJoinSheetState extends State<_WaitlistJoinSheet> {
+  bool _isSuccess = false;
+
+  void _handleJoin() {
+    widget.onJoin(); // Cập nhật UI (hiện chuông) ở trang booking phía dưới
+    setState(() {
+      _isSuccess = true; // Chuyển sang màn hình success
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle bar
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 24),
+          
+          if (_isSuccess) _buildSuccessView() else _buildJoinView(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildJoinView() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Biểu tượng
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.notification_add_outlined,
+            color: AppColors.primary,
+            size: 36,
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Tiêu đề
+        Text(
+          'Khung giờ ${widget.time} đã kín chỗ!',
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 10),
+
+        // Mô tả
+        Text(
+          'Bạn có muốn tham gia danh sách chờ không?\nHệ thống sẽ báo ngay cho bạn nếu lịch này trống.',
+          style: TextStyle(
+            color: Colors.grey.shade600,
+            height: 1.55,
+            fontSize: 14,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 28),
+
+        // Nút chính: Tham gia hàng chờ
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _handleJoin,
+            icon: const Icon(Icons.notifications_active_outlined, size: 18),
+            label: const Text(
+              'Tham gia hàng chờ',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+
+        // Nút phụ: Chọn giờ khác
+        SizedBox(
+          width: double.infinity,
+          child: TextButton(
+            onPressed: widget.onPickOther,
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.grey.shade600,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+            child: const Text(
+              'Chọn giờ khác',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSuccessView() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Biểu tượng thành công
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.green.shade50,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.check_circle_outline,
+            color: Colors.green.shade600,
+            size: 36,
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Tiêu đề
+        Text(
+          'Đã thêm khung giờ ${widget.time} vào hàng chờ thành công!',
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 10),
+
+        // Mô tả
+        Text(
+          'Bạn sẽ nhận được thông báo ngay khi có chỗ trống.',
+          style: TextStyle(
+            color: Colors.grey.shade600,
+            height: 1.55,
+            fontSize: 14,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 28),
+
+        // Nút 1: Đặt lịch tiếp
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: widget.onPickOther, // Đóng BottomSheet và ở lại
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
+            child: const Text(
+              'Đặt khung giờ khác',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+
+        // Nút 2: Trở về
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton(
+            onPressed: () {
+              Navigator.pop(context); // Đóng BottomSheet
+              context.go('/'); // Về màn hình chính
+            },
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.grey.shade700,
+              side: BorderSide(color: Colors.grey.shade300),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text(
+              'Quay về màn hình chính',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}

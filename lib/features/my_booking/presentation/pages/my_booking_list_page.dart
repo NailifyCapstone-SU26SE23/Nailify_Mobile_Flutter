@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../data/datasources/my_booking_api_service.dart';
 import '../utils/booking_status_utils.dart';
+import '../widgets/waitlist_tab.dart';
 
 class MyBookingListPage extends StatefulWidget {
   const MyBookingListPage({super.key});
@@ -12,8 +13,11 @@ class MyBookingListPage extends StatefulWidget {
   State<MyBookingListPage> createState() => _MyBookingListPageState();
 }
 
-class _MyBookingListPageState extends State<MyBookingListPage> {
+class _MyBookingListPageState extends State<MyBookingListPage>
+    with SingleTickerProviderStateMixin {
   final MyBookingApiService _apiService = MyBookingApiService();
+
+  late TabController _tabController;
 
   // Dữ liệu lịch hẹn
   List<Map<String, dynamic>> _allBookings = [];
@@ -42,7 +46,14 @@ class _MyBookingListPageState extends State<MyBookingListPage> {
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _fetchBookings();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchBookings() async {
@@ -50,25 +61,22 @@ class _MyBookingListPageState extends State<MyBookingListPage> {
       final data = await _apiService.getMyBookings();
 
       final List<Map<String, dynamic>> validBookings = [];
-        for (var item in data) {
-          if (item is Map) {
-            final safeMap = <String, dynamic>{};
-            item.forEach((key, value) {
-              safeMap[key.toString()] = value;
-            });
-            validBookings.add(safeMap);
-          }
+      for (var item in data) {
+        if (item is Map) {
+          final safeMap = <String, dynamic>{};
+          item.forEach((key, value) {
+            safeMap[key.toString()] = value;
+          });
+          validBookings.add(safeMap);
         }
+      }
 
-
-      // SẮP XẾP: Ưu tiên ngày mới nhất (Tương lai -> Hiện tại -> Quá khứ)
+      // SẮP XẾP: Ưu tiên ngày mới nhất
       validBookings.sort((a, b) {
         final dateAStr = a['bookingDate']?.toString() ?? '';
         final dateBStr = b['bookingDate']?.toString() ?? '';
-
         final dateA = DateTime.tryParse(dateAStr) ?? DateTime.fromMillisecondsSinceEpoch(0);
         final dateB = DateTime.tryParse(dateBStr) ?? DateTime.fromMillisecondsSinceEpoch(0);
-
         return dateB.compareTo(dateA);
       });
 
@@ -87,80 +95,110 @@ class _MyBookingListPageState extends State<MyBookingListPage> {
     }
   }
 
-  // Tự động phân tích các "Năm" có trong Data để tạo Dropdown
   List<int> get _availableYears {
     final years = _allBookings.map((b) {
       final dateStr = b['bookingDate']?.toString() ?? '';
       return (DateTime.tryParse(dateStr) ?? DateTime.now()).year;
     }).toSet().toList();
-
     if (years.isEmpty) years.add(DateTime.now().year);
-    years.sort((a, b) => b.compareTo(a)); // Năm mới nhất lên trước
+    years.sort((a, b) => b.compareTo(a));
     return years;
   }
 
-  // Thuật toán Lọc Danh sách (Filter Logic)
   List<Map<String, dynamic>> get _filteredBookings {
     return _allBookings.where((booking) {
       final dateStr = booking['bookingDate']?.toString() ?? '';
       final date = DateTime.tryParse(dateStr) ?? DateTime.fromMillisecondsSinceEpoch(0);
-
-      // Lọc theo Tháng
       if (_selectedMonth != null && date.month != _selectedMonth) return false;
-
-      // Lọc theo Năm
       if (_selectedYear != null && date.year != _selectedYear) return false;
-
-      // Lọc theo Trạng thái
-      if (_selectedStatus != 'Tất cả' && booking['status']?.toString() != _selectedStatus) return false;
-
+      if (_selectedStatus != 'Tất cả' &&
+          booking['status']?.toString() != _selectedStatus) return false;
       return true;
     }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final displayedBookings = _filteredBookings;
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Lịch hẹn của tôi', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+        title: const Text(
+          'Lịch hẹn của tôi',
+          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+        ),
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
         automaticallyImplyLeading: false,
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-        children: [
-          _buildFilters(), // Khu vực hiển thị bộ lọc
-          Expanded(
-            child: displayedBookings.isEmpty
-                ? _buildEmptyState(hasDataButFilteredOut: _allBookings.isNotEmpty)
-                : ListView.builder(
-              padding: const EdgeInsets.all(20),
-              physics: const BouncingScrollPhysics(),
-              itemCount: displayedBookings.length,
-              itemBuilder: (context, index) {
-                return _buildBookingCard(displayedBookings[index]);
-              },
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: AppColors.primary,
+          unselectedLabelColor: Colors.grey,
+          indicatorColor: AppColors.primary,
+          indicatorWeight: 2.5,
+          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal, fontSize: 14),
+          tabs: const [
+            Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.calendar_month_outlined, size: 16),
+                  SizedBox(width: 6),
+                  Text('Lịch đặt'),
+                ],
+              ),
             ),
-          ),
+            Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.notifications_outlined, size: 16),
+                  SizedBox(width: 6),
+                  Text('Lịch chờ'),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          // ─── TAB 1: Lịch đặt ───
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Column(
+                  children: [
+                    _buildFilters(),
+                    Expanded(
+                      child: _filteredBookings.isEmpty
+                          ? _buildEmptyState(
+                              hasDataButFilteredOut: _allBookings.isNotEmpty)
+                          : ListView.builder(
+                              padding: const EdgeInsets.all(20),
+                              physics: const BouncingScrollPhysics(),
+                              itemCount: _filteredBookings.length,
+                              itemBuilder: (context, index) =>
+                                  _buildBookingCard(_filteredBookings[index]),
+                            ),
+                    ),
+                  ],
+                ),
+
+          // ─── TAB 2: Lịch chờ ───
+          const WaitlistTab(),
         ],
       ),
     );
   }
 
-  // ================= UI: BỘ LỌC ================= //
   Widget _buildFilters() {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.only(top: 12, bottom: 16),
       child: Column(
         children: [
-          // 1. Lọc theo Tháng & Năm
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
@@ -188,8 +226,6 @@ class _MyBookingListPageState extends State<MyBookingListPage> {
             ),
           ),
           const SizedBox(height: 16),
-
-          // 2. Lọc theo Trạng Thái (Kéo Ngang)
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -214,9 +250,7 @@ class _MyBookingListPageState extends State<MyBookingListPage> {
                       color: isSelected ? AppColors.primary : Colors.grey.shade300,
                     ),
                     onSelected: (selected) {
-                      if (selected) {
-                        setState(() => _selectedStatus = status['key']!);
-                      }
+                      if (selected) setState(() => _selectedStatus = status['key']!);
                     },
                   ),
                 );
@@ -248,12 +282,14 @@ class _MyBookingListPageState extends State<MyBookingListPage> {
           value: value,
           isExpanded: true,
           icon: const Icon(Icons.keyboard_arrow_down, size: 20, color: Colors.grey),
-          items: items.map((item) {
-            return DropdownMenuItem<T?>(
-              value: item,
-              child: Text(itemLabel(item), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-            );
-          }).toList(),
+          items: items
+              .map((item) => DropdownMenuItem<T?>(
+                    value: item,
+                    child: Text(itemLabel(item),
+                        style: const TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w500)),
+                  ))
+              .toList(),
           onChanged: onChanged,
         ),
       ),
@@ -269,7 +305,8 @@ class _MyBookingListPageState extends State<MyBookingListPage> {
           const SizedBox(height: 16),
           Text(
             hasDataButFilteredOut ? 'Không có kết quả' : 'Bạn chưa có lịch hẹn nào',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+            style: const TextStyle(
+                fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
           ),
           const SizedBox(height: 8),
           Text(
@@ -282,7 +319,8 @@ class _MyBookingListPageState extends State<MyBookingListPage> {
           if (!hasDataButFilteredOut)
             ElevatedButton(
               onPressed: () => context.go('/'),
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary, foregroundColor: Colors.white),
               child: const Text('Khám phá dịch vụ'),
             ),
         ],
@@ -293,7 +331,6 @@ class _MyBookingListPageState extends State<MyBookingListPage> {
   Widget _buildBookingCard(Map<String, dynamic> booking) {
     final dateStr = booking['bookingDate']?.toString() ?? '';
     final bookingDate = DateTime.tryParse(dateStr) ?? DateTime.now();
-
     final status = bookingStatusView(booking['status']?.toString());
     final rawStatus = booking['status']?.toString();
     final items = booking['bookingItems'] as List<dynamic>? ?? [];
@@ -304,7 +341,6 @@ class _MyBookingListPageState extends State<MyBookingListPage> {
       final variantName = firstItem['nailVariantName']?.toString().trim() ?? '';
       final customNailName = firstItem['customerNailName']?.toString().trim() ?? '';
       final serviceName = firstItem['serviceName']?.toString().trim() ?? '';
-
       if (variantName.isNotEmpty) {
         nailName = variantName;
       } else if (customNailName.isNotEmpty) {
@@ -315,9 +351,7 @@ class _MyBookingListPageState extends State<MyBookingListPage> {
     }
 
     String timeStr = booking['startTime']?.toString() ?? '';
-    if (timeStr.length >= 5) {
-      timeStr = timeStr.substring(0, 5);
-    }
+    if (timeStr.length >= 5) timeStr = timeStr.substring(0, 5);
 
     final artistName = booking['artistName']?.toString() ?? 'Bất kỳ';
     final bookingIdStr = booking['bookingId']?.toString() ?? '';
@@ -328,7 +362,8 @@ class _MyBookingListPageState extends State<MyBookingListPage> {
         if (bookingIdStr.isNotEmpty) {
           context.push('/my-bookings/detail', extra: bookingIdStr);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lỗi: Lịch hẹn này bị khuyết ID từ hệ thống.')));
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Lỗi: Lịch hẹn này bị khuyết ID từ hệ thống.')));
         }
       },
       child: Container(
@@ -338,7 +373,12 @@ class _MyBookingListPageState extends State<MyBookingListPage> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.borderLight),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4))
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -348,14 +388,29 @@ class _MyBookingListPageState extends State<MyBookingListPage> {
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(color: status.backgroundColor, borderRadius: BorderRadius.circular(8)),
-                  child: Text(status.label, style: TextStyle(color: status.textColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                  decoration: BoxDecoration(
+                      color: status.backgroundColor,
+                      borderRadius: BorderRadius.circular(8)),
+                  child: Text(status.label,
+                      style: TextStyle(
+                          color: status.textColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold)),
                 ),
-                Text('${bookingDate.day}/${bookingDate.month}/${bookingDate.year}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                Text('${bookingDate.day}/${bookingDate.month}/${bookingDate.year}',
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
               ],
             ),
-            const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Divider(height: 1, color: AppColors.borderLight)),
-            Text(nailName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
+            const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Divider(height: 1, color: AppColors.borderLight)),
+            Text(nailName,
+                style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -365,7 +420,10 @@ class _MyBookingListPageState extends State<MyBookingListPage> {
                 const SizedBox(width: 16),
                 const Icon(Icons.face_2, size: 16, color: Colors.grey),
                 const SizedBox(width: 4),
-                Expanded(child: Text(artistName, style: const TextStyle(color: Colors.grey, fontSize: 13), overflow: TextOverflow.ellipsis)),
+                Expanded(
+                    child: Text(artistName,
+                        style: const TextStyle(color: Colors.grey, fontSize: 13),
+                        overflow: TextOverflow.ellipsis)),
               ],
             ),
             if (canRate && bookingIdStr.isNotEmpty) ...[
@@ -373,18 +431,15 @@ class _MyBookingListPageState extends State<MyBookingListPage> {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: () => context.push(
-                    '/my-bookings/rate',
-                    extra: bookingIdStr,
-                  ),
+                  onPressed: () =>
+                      context.push('/my-bookings/rate', extra: bookingIdStr),
                   icon: const Icon(Icons.star_border, size: 18),
                   label: const Text('Rate'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
                     side: const BorderSide(color: AppColors.primary),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                        borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
               ),
@@ -394,5 +449,4 @@ class _MyBookingListPageState extends State<MyBookingListPage> {
       ),
     );
   }
-
 }

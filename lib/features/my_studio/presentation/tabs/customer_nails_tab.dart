@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/utils/paginated_response.dart';
+import '../../../../core/constants/app_colors.dart';
 import '../../../nails/data/models/customer_nail_models.dart';
 import '../../../nails/data/repositories/customer_nail_repository.dart';
 import '../../../try-on/presentation/try_on_setup_screen.dart';
@@ -23,35 +23,79 @@ class CustomerNailsTab extends StatefulWidget {
 
 class _CustomerNailsTabState extends State<CustomerNailsTab> {
   final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
+  
+  List<CustomerNailModel> _items = [];
   int _page = 1;
+  bool _isLoading = false;
+  bool _hasMore = true;
+  String? _error;
+  
   bool? _isPublicFilter;
-  late Future<PaginatedResponse<CustomerNailModel>> _future;
 
   @override
   void initState() {
     super.initState();
-    _load();
+    _loadData(reset: true);
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
-  void _load() {
-    setState(() {
-      _future = widget.repository.getCustomerNails(
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      _loadData();
+    }
+  }
+
+  Future<void> _loadData({bool reset = false}) async {
+    if (_isLoading) return;
+    if (reset) {
+      setState(() {
+        _page = 1;
+        _items.clear();
+        _hasMore = true;
+        _error = null;
+      });
+    }
+
+    if (!_hasMore) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final response = await widget.repository.getCustomerNails(
         page: _page,
         pageSize: 10,
         name: _searchController.text.isNotEmpty ? _searchController.text : null,
         isPublic: _isPublicFilter,
       );
-    });
+      
+      if (mounted) {
+        setState(() {
+          _items.addAll(response.items);
+          _hasMore = response.hasNext;
+          if (_hasMore) _page++;
+          _error = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _error = e.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   void _reload() {
-    _load();
+    _loadData(reset: true);
     widget.onDataChanged();
   }
 
@@ -75,16 +119,20 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Xóa mẫu móng'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Xóa mẫu móng', style: TextStyle(fontWeight: FontWeight.bold)),
         content: Text('Bạn có chắc muốn xóa "${nail.name}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Hủy'),
+            child: const Text('Hủy', style: TextStyle(color: AppColors.textSecondary)),
           ),
-          TextButton(
+          FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
+            ),
             child: const Text('Xóa'),
           ),
         ],
@@ -127,169 +175,150 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Search and filter bar
-        Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      decoration: InputDecoration(
-                        hintText: 'Tìm theo tên...',
-                        prefixIcon: const Icon(Icons.search),
-                        suffixIcon: IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            _searchController.clear();
-                            _page = 1;
-                            _load();
-                          },
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        isDense: true,
+    return Scaffold(
+      backgroundColor: Colors.white,
+      floatingActionButton: FloatingActionButton(
+        onPressed: _create,
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        elevation: 4,
+        child: const Icon(Icons.add),
+      ),
+      body: Column(
+        children: [
+          // Thanh tìm kiếm và bộ lọc cải tiến
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Tìm theo tên...',
+                      prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
+                      suffixIcon: _searchController.text.isNotEmpty ? IconButton(
+                        icon: const Icon(Icons.clear, color: AppColors.textSecondary),
+                        onPressed: () {
+                          _searchController.clear();
+                          _loadData(reset: true);
+                        },
+                      ) : null,
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
                       ),
-                      onSubmitted: (_) {
-                        _page = 1;
-                        _load();
-                      },
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                    ),
+                    onSubmitted: (_) => _loadData(reset: true),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 3,
+                  child: Container(
+                    height: 48,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<bool?>(
+                        value: _isPublicFilter,
+                        hint: const Text('Tất cả', overflow: TextOverflow.ellipsis),
+                        icon: const Icon(Icons.filter_list, size: 20),
+                        isExpanded: true,
+                        items: const [
+                          DropdownMenuItem(value: null, child: Text('Tất cả')),
+                          DropdownMenuItem(value: true, child: Text('Công khai')),
+                          DropdownMenuItem(value: false, child: Text('Riêng tư')),
+                        ],
+                        onChanged: (value) {
+                          setState(() => _isPublicFilter = value);
+                          _loadData(reset: true);
+                        },
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  FloatingActionButton.small(
-                    onPressed: _create,
-                    child: const Icon(Icons.add),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: [
-                  FilterChip(
-                    label: const Text('Công khai'),
-                    selected: _isPublicFilter == true,
-                    onSelected: (selected) {
-                      setState(() {
-                        _isPublicFilter = selected ? true : null;
-                        _page = 1;
-                      });
-                      _load();
-                    },
-                  ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
-        ),
 
-        // List
+        // Danh sách với Infinite Scroll
         Expanded(
-          child: FutureBuilder<PaginatedResponse<CustomerNailModel>>(
-            future: _future,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              if (snapshot.hasError) {
-                return Center(
+          child: _error != null && _items.isEmpty
+              ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                      const SizedBox(height: 8),
-                      Text('Lỗi: ${snapshot.error}'),
-                      const SizedBox(height: 8),
-                      ElevatedButton(
-                        onPressed: _load,
-                        child: const Text('Thử lại'),
-                      ),
-                    ],
-                  ),
-                );
-              }
-
-              final response = snapshot.data!;
-              if (response.items.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.spa_outlined, size: 64, color: Colors.grey),
                       const SizedBox(height: 16),
-                      const Text('Chưa có mẫu móng nào'),
-                      const SizedBox(height: 8),
-                      ElevatedButton.icon(
-                        onPressed: _create,
-                        icon: const Icon(Icons.add),
-                        label: const Text('Tạo mẫu móng mới'),
+                      Text('Lỗi: $_error', style: const TextStyle(color: Colors.red)),
+                      const SizedBox(height: 16),
+                      FilledButton.icon(
+                        onPressed: () => _loadData(reset: true),
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Thử lại'),
                       ),
                     ],
                   ),
-                );
-              }
-
-              return ListView.builder(
-                padding: const EdgeInsets.all(8),
-                itemCount: response.items.length,
-                itemBuilder: (context, index) {
-                  final nail = response.items[index];
-                  return CustomerNailCard(
-                    nail: nail,
-                    onEdit: () => _edit(nail),
-                    onDelete: () => _delete(nail),
-                    onToggleFavorite: () => _toggleFavorite(nail),
-                    onTogglePublic: () => _togglePublic(nail),
-                    onSetupTryOn: () => _setupTryOn(nail),
-                  );
-                },
-              );
-            },
-          ),
+                )
+              : _items.isEmpty && !_isLoading
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.spa_outlined, size: 64, color: Colors.grey.shade300),
+                          const SizedBox(height: 16),
+                          Text('Chưa có mẫu móng nào', style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
+                          const SizedBox(height: 16),
+                          FilledButton.icon(
+                            style: FilledButton.styleFrom(
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: _create,
+                            icon: const Icon(Icons.add),
+                            label: const Text('Tạo mẫu móng mới'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: () async => _loadData(reset: true),
+                      child: ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        itemCount: _items.length + (_hasMore ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (index == _items.length) {
+                            return const Padding(
+                              padding: EdgeInsets.all(16.0),
+                              child: Center(child: CircularProgressIndicator()),
+                            );
+                          }
+                          final nail = _items[index];
+                          return CustomerNailCard(
+                            nail: nail,
+                            onEdit: () => _edit(nail),
+                            onDelete: () => _delete(nail),
+                            onToggleFavorite: () => _toggleFavorite(nail),
+                            onTogglePublic: () => _togglePublic(nail),
+                            onSetupTryOn: () => _setupTryOn(nail),
+                          );
+                        },
+                      ),
+                    ),
         ),
-
-        Padding(
-          padding: const EdgeInsets.all(12),
-          child: FutureBuilder<PaginatedResponse<CustomerNailModel>>(
-            future: _future,
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) return const SizedBox.shrink();
-              final response = snapshot.data!;
-              return Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    onPressed: response.hasPrevious
-                        ? () {
-                      setState(() => _page--);
-                      _load();
-                    }
-                        : null,
-                    icon: const Icon(Icons.chevron_left),
-                  ),
-                  Text('Trang ${response.currentPage} / ${response.totalPages}'),
-                  IconButton(
-                    onPressed: response.hasNext
-                        ? () {
-                      setState(() => _page++);
-                      _load();
-                    }
-                        : null,
-                    icon: const Icon(Icons.chevron_right),
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

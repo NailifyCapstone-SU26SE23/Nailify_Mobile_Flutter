@@ -6,6 +6,7 @@ import '../../../nails/data/repositories/customer_nail_repository.dart';
 import '../tabs/customer_components_tab.dart';
 import '../tabs/customer_nail_requests_tab.dart';
 import '../tabs/customer_nails_tab.dart';
+import '../../../../core/constants/app_colors.dart';
 
 /// Trang studio với 3 tab: My Nails, My Components, Requests.
 /// Được điều hướng từ footer "My Studio".
@@ -42,13 +43,31 @@ class _MyStudioTabPageState extends State<MyStudioTabPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Studio'),
+        title: const Text(
+          'My Studio',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: AppColors.background,
         bottom: TabBar(
           controller: _tabController,
+          labelColor: AppColors.primary,
+          unselectedLabelColor: AppColors.textSecondary,
+          dividerColor: AppColors.textSecondary,
+          indicatorColor: AppColors.primary,
+          labelStyle: TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+          unselectedLabelStyle: TextStyle(
+            fontWeight: FontWeight.normal,
+          ),
           tabs: const [
-            Tab(icon: Icon(Icons.spa), text: 'My nails'),
-            Tab(icon: Icon(Icons.star), text: 'My components'),
-            Tab(icon: Icon(Icons.assignment), text: 'Requests'),
+            Tab(text: 'My nails'),
+            Tab(text: 'My components'),
+            Tab(text: 'Requests'),
           ],
         ),
       ),

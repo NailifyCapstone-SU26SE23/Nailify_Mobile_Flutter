@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-
+import '../../../../core/constants/app_colors.dart';
 import '../../../nails/data/models/customer_nail_models.dart';
-import '../../../try-on/presentation/try_on_setup_screen.dart';
 
 class CustomerNailCard extends StatelessWidget {
   final CustomerNailModel nail;
@@ -24,75 +23,137 @@ class CustomerNailCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: SizedBox(
-                width: 70,
-                height: 70,
-                child: nail.imageUrl.isEmpty
-                    ? Container(color: Colors.pink[50], child: const Icon(Icons.spa, size: 30, color: Colors.pink))
-                    : Image.network(
-                  nail.imageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) =>
-                      Container(color: Colors.grey[200], child: const Icon(Icons.broken_image)),
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.grey.shade200, width: 1.5),
+      ),
+      color: Colors.white,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () {}, // Ripple effect
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox(
+                  width: 64,
+                  height: 64,
+                  child: nail.imageUrl.isEmpty
+                      ? Container(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          child: const Icon(Icons.spa_outlined,
+                              size: 28, color: AppColors.primary),
+                        )
+                      : Image.network(
+                          nail.imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: Colors.grey.shade100,
+                            child: const Icon(Icons.broken_image),
+                          ),
+                        ),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    nail.name,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  if (nail.isPublic)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(color: Colors.purple[100], borderRadius: BorderRadius.circular(4)),
-                      child: const Text('Công khai', style: TextStyle(fontSize: 10)),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 2),
+                    Text(
+                      nail.name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                ],
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: nail.isPublic ? AppColors.primary.withValues(alpha: 0.1) : Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        nail.isPublic ? 'Công khai' : 'Riêng tư',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: nail.isPublic ? AppColors.primary : Colors.grey.shade600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            Column(
-              children: [
-                IconButton(icon: const Icon(Icons.edit_outlined, size: 20), onPressed: onEdit, tooltip: 'Sửa'),
-                IconButton(icon: const Icon(Icons.delete_outline, size: 20), onPressed: onDelete, tooltip: 'Xóa', color: Colors.red),
-                IconButton(
-                  icon: Icon(nail.isPublic ? Icons.public : Icons.public_off, size: 20),
-                  onPressed: onTogglePublic,
-                  tooltip: nail.isPublic ? 'Chuyển thành riêng tư' : 'Chuyển thành công khai',
-                  color: nail.isPublic ? Colors.blue : Colors.grey,
-                ),
-                const SizedBox(height: 4),
-                ElevatedButton.icon(
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => TryOnSetupScreen(customerNail: nail)),
+              SizedBox(
+                width: 48,
+                height: 48,
+                child: PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, color: AppColors.textSecondary),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  icon: const Icon(Icons.visibility, size: 16),
-                  label: const Text('Set Up Try On'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
+                  onSelected: (value) {
+                    if (value == 'edit') onEdit();
+                    if (value == 'delete') onDelete();
+                    if (value == 'toggle_public') onTogglePublic();
+                    if (value == 'try_on') onSetupTryOn();
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'try_on',
+                      child: Row(
+                        children: [
+                          Icon(Icons.visibility_outlined, size: 20, color: AppColors.primary),
+                          SizedBox(width: 8),
+                          Text('Thiết lập Try-On', style: TextStyle(color: AppColors.primary)),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit_outlined, size: 20),
+                          SizedBox(width: 8),
+                          Text('Sửa'),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'toggle_public',
+                      child: Row(
+                        children: [
+                          Icon(nail.isPublic ? Icons.public_off : Icons.public, size: 20),
+                          const SizedBox(width: 8),
+                          Text(nail.isPublic ? 'Chuyển riêng tư' : 'Chuyển công khai'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('Xóa', style: TextStyle(color: Colors.red)),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );

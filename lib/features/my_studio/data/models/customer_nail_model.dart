@@ -105,8 +105,9 @@ class CustomerNailModel {
 
   /// Tên thợ đã duyệt (lấy từ field artistFullName hoặc nested approvedArtist)
   String get stylistName {
-    if (artistFullName != null && artistFullName!.isNotEmpty)
+    if (artistFullName != null && artistFullName!.isNotEmpty) {
       return artistFullName!;
+    }
     if (approvedArtistData != null) {
       final first = approvedArtistData!['firstName']?.toString() ?? '';
       final last = approvedArtistData!['lastName']?.toString() ?? '';

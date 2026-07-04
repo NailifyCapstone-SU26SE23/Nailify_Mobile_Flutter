@@ -101,11 +101,12 @@ class _ServiceDetailPageState extends State<ServiceDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading)
+    if (_isLoading) {
       return const Scaffold(
         backgroundColor: Colors.white,
         body: Center(child: CircularProgressIndicator()),
       );
+    }
     if (_serviceData == null || _serviceData!.isEmpty) {
       return Scaffold(
         appBar: AppBar(

@@ -49,11 +49,12 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   Future<void> _fetchServices() async {
     try {
       final services = await _apiService.getServices();
-      if (mounted)
+      if (mounted) {
         setState(() {
           _services = services;
           _isLoadingServices = false;
         });
+      }
     } catch (e) {
       if (mounted) setState(() => _isLoadingServices = false);
     }
@@ -73,18 +74,20 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
       final artistId =
           widget.nail.nailArtistId ?? ''; // Lấy nailArtistId từ approved artist
 
-      if (artistId.isEmpty)
+      if (artistId.isEmpty) {
         throw Exception('Không tìm thấy thông tin Thợ được chỉ định');
+      }
 
       final times = await _apiService.getArtistAvailableSlots(
         artistId,
         dateStr,
       );
-      if (mounted)
+      if (mounted) {
         setState(() {
           _timeSlots = times;
           _isLoadingTimes = false;
         });
+      }
     } catch (e) {
       if (mounted) {
         setState(() => _isLoadingTimes = false);

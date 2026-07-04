@@ -469,14 +469,16 @@ class _CustomNailStepperPageState extends State<CustomNailStepperPage> {
   Widget _buildFooter() {
     String summaryText =
         '${_nailDesign.selectedShape} - ${_nailDesign.lengthText}';
-    if (_currentStep >= 1)
+    if (_currentStep >= 1) {
       summaryText += _nailDesign.isApplyAll
           ? ' - ${_nailDesign.globalConfig.color}'
           : ' - (Nhiều màu)';
-    if (_currentStep >= 2)
+    }
+    if (_currentStep >= 2) {
       summaryText += _nailDesign.isApplyAll
           ? ' - ${_nailDesign.globalConfig.pattern}'
           : ' - (Nhiều họa tiết)';
+    }
 
     return Container(
       padding: const EdgeInsets.all(20),

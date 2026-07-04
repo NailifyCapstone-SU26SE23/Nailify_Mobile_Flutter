@@ -22,6 +22,7 @@ class MyBookingDetailPage extends StatefulWidget {
 class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
   final MyBookingApiService _apiService = MyBookingApiService();
   bool _isLoading = true;
+  bool _isCancelling = false;
   Map<String, dynamic>? _booking;
   Map<String, dynamic>? _rating;
 
@@ -54,6 +55,42 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Lỗi tải chi tiết: $e')));
+    }
+  }
+
+  bool _readBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    final normalized = value?.toString().toLowerCase().trim();
+    return normalized == 'true' || normalized == '1' || normalized == 'yes';
+  }
+
+  Future<void> _cancelBooking(String reason) async {
+    if (_isCancelling) return;
+    setState(() => _isCancelling = true);
+    try {
+      final success = await _apiService.cancelBooking(
+        widget.bookingId,
+        reason: reason,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success ? 'Hủy lịch hẹn thành công' : 'Hủy lịch hẹn thất bại',
+          ),
+        ),
+      );
+      if (success) {
+        await _fetchBookingDetail();
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Lá»—i: $e')));
+    } finally {
+      if (mounted) setState(() => _isCancelling = false);
     }
   }
 
@@ -197,6 +234,9 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
         rawStatus == 'Approved' ||
         rawStatus == 'Assigned';
     final canRate = rawStatus == 'Completed' && !isRated;
+    final isPaid = _readBool(booking['isPaid']);
+    final isRefunded = _readBool(booking['isRefunded']);
+    final canRequestRefund = isPaid && !isRefunded && rawStatus == 'Cancelled';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -432,7 +472,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
               const SizedBox(height: 24),
             ],
 
-            if (!isRated && rawQrString != null && rawQrString.isNotEmpty) ...[
+            if (rawStatus == 'Approved' && rawQrString != null && rawQrString.isNotEmpty) ...[
               const Text(
                 'Mã Check-in',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -479,52 +519,50 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                 ),
               ),
             ],
+            if (canRequestRefund) ...[
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => context.push(
+                    '/refund-bank-info',
+                    extra: widget.bookingId,
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  icon: const Icon(
+                    Icons.payments_outlined,
+                    color: Colors.white,
+                  ),
+                  label: const Text(
+                    'Yeu cau hoan tien',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
             if (canCancel) ...[
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => CancelBookingDialog(
-                        bookingId: widget.bookingId,
-                        onConfirm: (reason) async {
-                          /* TODO: Bỏ chú thích khi API hoàn thiện
-                          try {
-                            final success = await _apiService.cancelBooking(
-                              widget.bookingId, 
-                              reason: reason,
-                            );
-                            if (success && mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Hủy lịch thành công')),
-                              );
-                              _fetchBookingDetail(); // Load lại trang
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Hủy lịch thất bại')),
-                              );
-                            }
-                          } catch (e) {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Lỗi: $e')),
-                              );
-                            }
-                          }
-                          */
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('API chưa hoàn thiện'),
-                              ),
-                            );
-                          }
+                  onPressed: _isCancelling
+                      ? null
+                      : () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => CancelBookingDialog(
+                              bookingId: widget.bookingId,
+                              onConfirm: _cancelBooking,
+                            ),
+                          );
                         },
-                      ),
-                    );
-                  },
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.red,
                     side: const BorderSide(color: Colors.red),
@@ -533,9 +571,12 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
-                    'Hủy đặt lịch',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  child: Text(
+                    _isCancelling ? 'Đang hủy...' : 'Hủy đặt lịch',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),

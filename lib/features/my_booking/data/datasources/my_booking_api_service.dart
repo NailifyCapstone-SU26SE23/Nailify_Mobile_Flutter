@@ -42,9 +42,14 @@ class MyBookingApiService {
     required String reason,
     String holdToken = "",
   }) async {
+    final payload = <String, dynamic>{'reason': reason};
+    if (holdToken.isNotEmpty) {
+      payload['holdToken'] = holdToken;
+    }
+
     final response = await _apiClient.post(
       '/Bookings/$bookingId/cancel',
-      data: {"reason": reason, "holdToken": holdToken},
+      data: payload,
     );
     return response.statusCode == 200 || response.statusCode == 204;
   }

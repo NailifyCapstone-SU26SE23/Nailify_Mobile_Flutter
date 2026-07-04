@@ -348,8 +348,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
   Future<void> _reviewPrice() async {
     if (_selectedBranch == null ||
         _selectedDate == null ||
-        _selectedTime == null)
+        _selectedTime == null) {
       return;
+    }
     setState(() => _isReviewingPrice = true);
     try {
       final formattedTime = _selectedTime!.length == 5

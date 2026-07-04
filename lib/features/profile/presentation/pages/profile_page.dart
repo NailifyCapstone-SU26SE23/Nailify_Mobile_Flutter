@@ -555,8 +555,9 @@ class _ProfilePageState extends State<ProfilePage> {
                           );
 
                           if (success) {
-                            if (dialogContext.mounted)
+                            if (dialogContext.mounted) {
                               Navigator.pop(dialogContext);
+                            }
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
@@ -567,8 +568,9 @@ class _ProfilePageState extends State<ProfilePage> {
                               _fetchProfile(); // reload Data
                             }
                           } else {
-                            if (dialogContext.mounted)
+                            if (dialogContext.mounted) {
                               setStateDialog(() => isSubmitting = false);
+                            }
                           }
                         },
                   style: ElevatedButton.styleFrom(

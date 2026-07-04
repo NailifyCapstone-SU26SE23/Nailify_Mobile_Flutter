@@ -107,8 +107,9 @@ class NailCatalogCubit extends Cubit<NailCatalogState> {
   Future<void> loadMore() async {
     if (!state.hasNextPage ||
         state.status == NailCatalogStatus.loadingMore ||
-        state.status == NailCatalogStatus.loading)
+        state.status == NailCatalogStatus.loading) {
       return;
+    }
     emit(
       state.copyWith(status: NailCatalogStatus.loadingMore, clearError: true),
     );

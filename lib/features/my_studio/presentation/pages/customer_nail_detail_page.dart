@@ -36,10 +36,12 @@ class CustomerNailDetailPage extends StatelessWidget {
         ),
         body: BlocBuilder<StudioDetailCubit, StudioDetailState>(
           builder: (context, state) {
-            if (state is StudioDetailLoading)
+            if (state is StudioDetailLoading) {
               return const Center(child: CircularProgressIndicator());
-            if (state is StudioDetailError)
+            }
+            if (state is StudioDetailError) {
               return Center(child: Text('Lỗi: ${state.message}'));
+            }
             if (state is StudioDetailLoaded) {
               final nail = state.nail;
               return SingleChildScrollView(
@@ -203,9 +205,10 @@ class CustomerNailDetailPage extends StatelessWidget {
         ),
         bottomNavigationBar: BlocBuilder<StudioDetailCubit, StudioDetailState>(
           builder: (context, state) {
-            if (state is StudioDetailLoaded)
+            if (state is StudioDetailLoaded) {
               return _buildFooterAction(context, state.nail) ??
                   const SizedBox.shrink();
+            }
             return const SizedBox.shrink();
           },
         ),

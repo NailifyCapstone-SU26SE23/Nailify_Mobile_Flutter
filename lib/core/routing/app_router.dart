@@ -20,7 +20,9 @@ import '../../features/nail_booking/presentation/pages/custom_nail_booking_page.
 import '../../features/nail_booking/presentation/pages/nail_booking_page.dart';
 import '../../features/nail_booking/presentation/pages/payment_qr_page.dart';
 import '../../features/nail_booking/presentation/pages/payment_result_page.dart';
+import '../../features/nail_booking/presentation/pages/refund_bank_info_page.dart';
 import '../../features/nail_booking/presentation/pages/service_booking_page.dart';
+import '../../features/nail_booking/presentation/pages/transaction_detail_page.dart';
 import '../../features/my_studio/presentation/pages/my_studio_tab_page.dart';
 import '../../features/nails/presentation/pages/nail_detail_screen.dart';
 import '../../features/nails/presentation/pages/nail_list_screen.dart';
@@ -90,6 +92,20 @@ class AppRouter {
         builder: (context, state) {
           final paymentData = state.extra as Map<String, dynamic>? ?? {};
           return PaymentCancelledPage(paymentData: paymentData);
+        },
+      ),
+      GoRoute(
+        path: '/refund-bank-info',
+        builder: (context, state) {
+          final bookingId = state.extra?.toString() ?? '';
+          return RefundBankInfoPage(bookingId: bookingId);
+        },
+      ),
+      GoRoute(
+        path: '/transaction-detail',
+        builder: (context, state) {
+          final transaction = state.extra as Map<String, dynamic>? ?? {};
+          return TransactionDetailPage(transaction: transaction);
         },
       ),
       ShellRoute(

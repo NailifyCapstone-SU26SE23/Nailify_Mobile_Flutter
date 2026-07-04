@@ -22,6 +22,7 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
   Timer? _statusTimer;
   bool _isChecking = false;
   bool _isCancelling = false;
+  bool _hasNavigated = false;
 
   int get _orderCode {
     final raw = widget.paymentData['orderCode'];
@@ -34,6 +35,9 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkPaymentStatus(showError: false);
+    });
     _statusTimer = Timer.periodic(
       const Duration(seconds: 5),
       (_) => _checkPaymentStatus(showError: false),
@@ -47,18 +51,20 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
   }
 
   Future<void> _checkPaymentStatus({bool showError = true}) async {
-    if (_isChecking || _orderCode <= 0) return;
+    if (_isChecking || _hasNavigated || _orderCode <= 0) return;
     setState(() => _isChecking = true);
     try {
       final status = await _paymentApiService.getPaymentStatus(_orderCode);
       if (!mounted) return;
       final normalized = status.toUpperCase();
-      if (normalized == 'PAID') {
-        context.go('/payment-success', extra: widget.paymentData);
+      if (normalized == 'PAID' ||
+          normalized == 'SUCCESS' ||
+          normalized == 'COMPLETED') {
+        _navigateOnce('/payment-success');
       } else if (normalized == 'CANCELLED' ||
           normalized == 'CANCELED' ||
           normalized == 'EXPIRED') {
-        context.go('/payment-cancelled', extra: widget.paymentData);
+        _navigateOnce('/payment-cancelled');
       } else if (showError) {
         _showSnackBar('Thanh toán vẫn đang chờ xử lý.');
       }
@@ -67,21 +73,28 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
         _showSnackBar('Không thể kiểm tra thanh toán: $e');
       }
     } finally {
-      if (mounted) setState(() => _isChecking = false);
+      if (mounted && !_hasNavigated) setState(() => _isChecking = false);
     }
   }
 
+  void _navigateOnce(String location) {
+    if (_hasNavigated || !mounted) return;
+    _hasNavigated = true;
+    _statusTimer?.cancel();
+    context.go(location, extra: widget.paymentData);
+  }
+
   Future<void> _cancelPayment() async {
-    if (_isCancelling || _orderCode <= 0) return;
+    if (_isCancelling || _hasNavigated || _orderCode <= 0) return;
     setState(() => _isCancelling = true);
     try {
       await _paymentApiService.cancelPayment(_orderCode);
       if (!mounted) return;
-      context.go('/payment-cancelled', extra: widget.paymentData);
+      _navigateOnce('/payment-cancelled');
     } catch (e) {
       if (mounted) _showSnackBar('Không thể hủy thanh toán: $e');
     } finally {
-      if (mounted) setState(() => _isCancelling = false);
+      if (mounted && !_hasNavigated) setState(() => _isCancelling = false);
     }
   }
 

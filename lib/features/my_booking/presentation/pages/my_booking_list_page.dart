@@ -120,8 +120,9 @@ class _MyBookingListPageState extends State<MyBookingListPage> {
 
       // Lọc theo Trạng thái
       if (_selectedStatus != 'Tất cả' &&
-          booking['status']?.toString() != _selectedStatus)
+          booking['status']?.toString() != _selectedStatus) {
         return false;
+      }
 
       return true;
     }).toList();

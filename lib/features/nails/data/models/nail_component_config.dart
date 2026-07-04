@@ -27,19 +27,23 @@ class NailComponentConfig {
 
   factory NailComponentConfig.fromJsonValue(dynamic value) {
     if (value == null) return const NailComponentConfig();
-    if (value is Map<String, dynamic>)
+    if (value is Map<String, dynamic>) {
       return NailComponentConfig.fromMap(value);
-    if (value is Map)
+    }
+    if (value is Map) {
       return NailComponentConfig.fromMap(Map<String, dynamic>.from(value));
+    }
 
     final jsonString = value.toString();
     if (jsonString.trim().isEmpty) return const NailComponentConfig();
     try {
       final decoded = jsonDecode(jsonString);
-      if (decoded is Map<String, dynamic>)
+      if (decoded is Map<String, dynamic>) {
         return NailComponentConfig.fromMap(decoded);
-      if (decoded is Map)
+      }
+      if (decoded is Map) {
         return NailComponentConfig.fromMap(Map<String, dynamic>.from(decoded));
+      }
     } catch (_) {
       return const NailComponentConfig();
     }

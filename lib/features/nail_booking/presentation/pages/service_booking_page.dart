@@ -115,11 +115,12 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
         _selectedStylist!['nailArtistId'],
         dateStr,
       );
-      if (mounted)
+      if (mounted) {
         setState(() {
           _timeSlots = times;
           _isLoadingTimes = false;
         });
+      }
     } catch (e) {
       if (mounted) setState(() => _isLoadingTimes = false);
     }

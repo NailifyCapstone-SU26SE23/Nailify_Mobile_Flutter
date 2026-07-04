@@ -310,10 +310,11 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
     try {
       final service = getIt<ArTryOnService>();
       final available = await service.isAvailable();
-      if (!available)
+      if (!available) {
         throw UnsupportedError(
           'Virtual try-on is not available on this build.',
         );
+      }
       if (photo) {
         await service.launchCustomerPhoto(preview);
       } else {

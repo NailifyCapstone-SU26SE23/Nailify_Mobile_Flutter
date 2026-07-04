@@ -100,8 +100,9 @@ class _NailFilterSheetState extends State<NailFilterSheet> {
                                     category.status.toLowerCase() != 'inactive',
                               )
                               .toList();
-                          if (activeCategories.isEmpty)
+                          if (activeCategories.isEmpty) {
                             return const SizedBox.shrink();
+                          }
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [

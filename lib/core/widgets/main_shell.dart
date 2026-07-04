@@ -29,18 +29,6 @@ class _MainShellState extends State<MainShell> {
     return token != null && token.isNotEmpty;
   }
 
-  // Hàm xử lý Đăng xuất
-  Future<void> _logout() async {
-    await getIt<SharedPreferences>().remove(AppConstants.authTokenKey);
-    if (mounted) {
-      setState(() {}); // Làm mới UI để thanh AppBar vẽ lại nút
-      context.go('/'); // Đưa người dùng về trang chủ
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã đăng xuất thành công!')),
-      );
-    }
-  }
-
   int _calculateCurrentIndex(BuildContext context) {
     final String location = GoRouterState.of(context).matchedLocation;
     if (location.startsWith('/my-bookings')) return 1;
@@ -62,7 +50,7 @@ class _MainShellState extends State<MainShell> {
         AuthGuard.check(context, () => context.go('/my-studio'));
         break;
       case 3:
-        context.go('/profile');
+        AuthGuard.check(context, () => context.go('/profile'));
         break;
     }
   }
@@ -120,20 +108,7 @@ class _MainShellState extends State<MainShell> {
           ),
         ),
         actions: _isLoggedIn
-            ? [
-          // HIỂN THỊ NÚT ĐĂNG XUẤT KHI ĐÃ CÓ TOKEN
-          OutlinedButton.icon(
-            onPressed: _logout,
-            icon: const Icon(Icons.logout, size: 18, color: AppColors.primary),
-            label: const Text('Đăng xuất', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w500, fontSize: 14)),
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: AppColors.primary, width: 1.2),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-            ),
-          ),
-          const SizedBox(width: 16),
-        ]
+            ? []
             : [
           // HIỂN THỊ NÚT ĐĂNG NHẬP/ĐĂNG KÝ KHI CHƯA CÓ TOKEN
           OutlinedButton(

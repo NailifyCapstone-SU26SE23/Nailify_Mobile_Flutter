@@ -7,10 +7,10 @@
         android:required="false" />
 
     <application
-        android:label="nailify_mobile"
+        android:label="Nailify"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:usesCleartextTraffic="true">
         <activity

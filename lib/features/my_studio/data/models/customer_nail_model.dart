@@ -20,6 +20,7 @@ class CustomerNailModel {
   final String? imageUrl;
   final int? nailShapeId;
   final int? nailSurfaceId;
+  final int customerNailPrice;
   final String? customColor;
   final Map<String, dynamic>? nailShape;
   final Map<String, dynamic>? nailSurface;
@@ -49,6 +50,7 @@ class CustomerNailModel {
     this.imageUrl,
     this.nailShapeId,
     this.nailSurfaceId,
+    required this.customerNailPrice,
     this.customColor,
     this.nailShape,
     this.nailSurface,
@@ -86,6 +88,7 @@ class CustomerNailModel {
       imageUrl: customerNail['imageUrl']?.toString(),
       nailShapeId: (customerNail['nailShapeId'] as num?)?.toInt(),
       nailSurfaceId: (customerNail['nailSurfaceId'] as num?)?.toInt(),
+      customerNailPrice: (customerNail['price'] as num?)?.toInt() ?? 0,
       customColor: customerNail['customColor']?.toString(),
       nailShape: customerNail['nailShape'] as Map<String, dynamic>?,
       nailSurface: customerNail['nailSurface'] as Map<String, dynamic>?,

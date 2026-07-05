@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/utils/auth_guard.dart';
 import '../../../../core/utils/price_formatter.dart';
+import '../../../nails/data/models/nail_variant_model.dart';
+import '../../../nails/data/repositories/nail_variant_repository.dart';
 
 import '../../data/datasources/booking_api_service.dart';
 import '../../data/datasources/promotion_api_service.dart';
@@ -44,6 +47,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
   bool _isPromotionExpanded = false;
   bool _isReviewingPrice = false;
   Map<String, dynamic>? _priceReview;
+  NailVariantModel? _nailVariantDetail;
 
   // User State
   Map<String, dynamic>? _selectedBranch;
@@ -60,10 +64,25 @@ class _NailBookingPageState extends State<NailBookingPage> {
     _fetchSalons();
     _fetchServices();
     _fetchPromotions();
+    _fetchNailVariantDetail();
   }
 
   int get _nailVariantId {
     return int.tryParse(widget.nailData?['id']?.toString() ?? '0') ?? 0;
+  }
+
+  Future<void> _fetchNailVariantDetail() async {
+    final id = _nailVariantId;
+    if (id <= 0) return;
+    try {
+      final variant = await getIt<NailVariantRepository>().getNailVariantById(
+        id,
+      );
+      if (!mounted) return;
+      setState(() => _nailVariantDetail = variant);
+    } catch (e) {
+      debugPrint('Failed to load nail variant detail: $e');
+    }
   }
 
   String _formatBookingDate(DateTime date) {
@@ -334,6 +353,8 @@ class _NailBookingPageState extends State<NailBookingPage> {
 
   int get _estimatedTotalPrice =>
       _nailVariantPrice + _selectedExtraServicesTotal;
+
+  bool get _showLegacyNailDataRow => false;
 
   List<Map<String, dynamic>> get _discountBreakdown {
     final raw =
@@ -611,6 +632,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
                                 child: LinearProgressIndicator(minHeight: 2),
                               ),
                             if (widget.nailData != null)
+                              _buildNailVariantPaymentItem(),
+                            if (_showLegacyNailDataRow &&
+                                widget.nailData != null)
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 8.0),
                                 child: Row(
@@ -740,6 +764,99 @@ class _NailBookingPageState extends State<NailBookingPage> {
         ],
       ),
     );
+  }
+
+  Widget _buildNailVariantPaymentItem() {
+    final variant = _nailVariantDetail;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  'Biến thể Nail: ${widget.nailData!['name']}',
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ),
+              Text(
+                PriceFormatter.format(widget.nailData?['price']),
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          if (variant != null) ...[
+            const SizedBox(height: 6),
+            if (variant.nailSurface != null)
+              _buildVariantDetailLine(
+                'Bề mặt: ${variant.nailSurface!.name}',
+                variant.nailSurface!.price,
+              ),
+            if (variant.nailShape != null)
+              _buildVariantDetailLine(
+                'Phom móng: ${variant.nailShape!.name}',
+                variant.nailShape!.price,
+              ),
+            ..._componentPaymentLines(variant).map(
+              (line) => _buildVariantDetailLine(
+                '${line.quantity}x ${line.name}',
+                line.price * line.quantity,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVariantDetailLine(String label, num price) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, left: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Text(
+                label,
+                style: const TextStyle(fontSize: 13, color: Colors.grey),
+              ),
+            ),
+          ),
+          Text(
+            PriceFormatter.format(price),
+            style: const TextStyle(
+              fontSize: 13,
+              color: Colors.grey,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<_ComponentPaymentLine> _componentPaymentLines(NailVariantModel variant) {
+    final grouped = <String, _ComponentPaymentLine>{};
+    for (final item in variant.nailComponents) {
+      final component = item.component;
+      final componentName = component?.name.trim();
+      final name = componentName != null && componentName.isNotEmpty
+          ? componentName
+          : 'Component ${item.componentId}';
+      final price = component?.price ?? 0;
+      final key = '$name|$price';
+      final current = grouped[key];
+      grouped[key] = current == null
+          ? _ComponentPaymentLine(name: name, quantity: 1, price: price)
+          : current.copyWith(quantity: current.quantity + 1);
+    }
+    return grouped.values.toList();
   }
 
   Widget _buildPromotionSelector() {
@@ -977,6 +1094,26 @@ class _NailBookingPageState extends State<NailBookingPage> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ComponentPaymentLine {
+  final String name;
+  final int quantity;
+  final double price;
+
+  const _ComponentPaymentLine({
+    required this.name,
+    required this.quantity,
+    required this.price,
+  });
+
+  _ComponentPaymentLine copyWith({int? quantity}) {
+    return _ComponentPaymentLine(
+      name: name,
+      quantity: quantity ?? this.quantity,
+      price: price,
     );
   }
 }

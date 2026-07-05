@@ -29,14 +29,14 @@ class BookingApiService {
         {
           'nailVariantId': nailVariantId,
           'serviceId': null,
-          'customerNailId': null,
+          'customerNailRequestId': null,
           'quantity': 1,
         },
       ...serviceIds.map(
         (serviceId) => {
           'nailVariantId': null,
           'serviceId': serviceId,
-          'customerNailId': null,
+          'customerNailRequestId': null,
           'quantity': 1,
         },
       ),
@@ -191,14 +191,14 @@ class BookingApiService {
     String bookingDate,
     String startTime,
     String artistId,
-    int customerNailId,
+    String customerNailRequestId,
     Map<String, int> groupedExtraServices,
   ) async {
     final bookingItems = <Map<String, dynamic>>[
       {
         'nailVariantId': null,
         'serviceId': null,
-        'customerNailId': customerNailId,
+        'customerNailRequestId': customerNailRequestId,
         'quantity': 1,
       },
     ];
@@ -207,7 +207,7 @@ class BookingApiService {
       bookingItems.add({
         'nailVariantId': null,
         'serviceId': serviceId,
-        'customerNailId': null,
+        'customerNailRequestId': null,
         'quantity': quantity,
       });
     });

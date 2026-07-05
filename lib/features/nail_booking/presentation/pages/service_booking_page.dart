@@ -179,7 +179,7 @@ class _ServiceBookingPageState extends State<ServiceBookingPage> {
         return {
           "nailVariantId": null,
           "serviceId": entry.key,
-          "customerNailId": null,
+          "customerNailRequestId": null,
           "quantity": entry.value,
         };
       }).toList();

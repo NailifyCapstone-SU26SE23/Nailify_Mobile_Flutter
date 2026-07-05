@@ -137,6 +137,8 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
     return total;
   }
 
+  bool get _showLegacyCustomerNailPaymentRow => false;
+
   // SUBMIT API ĐẶT LỊCH
   Future<void> _executeBooking() async {
     if (_isSubmitting) return;
@@ -145,10 +147,10 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
     try {
       final salonId = widget.nail.salonId;
       final artistId = widget.nail.nailArtistId ?? '';
-      final nailId = widget.nail.customerNailId;
+      final nailRequestId = widget.nail.customerNailRequestId;
 
-      if (nailId <= 0) {
-        throw Exception('ID Móng không hợp lệ.');
+      if (nailRequestId.isEmpty) {
+        throw Exception('ID yêu cầu móng không hợp lệ.');
       }
 
       if (salonId.isEmpty || artistId.isEmpty) {
@@ -168,7 +170,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
         formattedDate,
         formattedTime,
         artistId,
-        nailId,
+        nailRequestId,
         _groupedServicesMap,
       );
 
@@ -421,31 +423,40 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                                     ),
                                   ),
                                   const SizedBox(height: 12),
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: 8.0),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            'Thiết kế Móng: ${widget.nail.name}',
-                                            style: const TextStyle(
-                                              fontSize: 14,
+                                  _buildCustomerNailPaymentItem(),
+                                  if (widget.nail.price > 0)
+                                    _buildPaymentLine(
+                                      'Extra component',
+                                      widget.nail.price,
+                                    ),
+                                  if (_showLegacyCustomerNailPaymentRow)
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: 8.0,
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              'Thiết kế Móng: ${widget.nail.name}',
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                        Text(
-                                          PriceFormatter.format(
-                                            widget.nail.price,
+                                          Text(
+                                            PriceFormatter.format(
+                                              widget.nail.price,
+                                            ),
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
-                                  ),
 
                                   // DUYỆT QUA MAP ĐỂ IN RA SỐ LƯỢNG x2, x3
                                   ..._groupedServicesMap.entries.map((entry) {
@@ -501,7 +512,8 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                                       ),
                                       Text(
                                         PriceFormatter.format(
-                                          widget.nail.price +
+                                          widget.nail.customerNailPrice +
+                                              widget.nail.price +
                                               _selectedExtraServicesTotal,
                                         ),
                                         style: const TextStyle(
@@ -553,6 +565,140 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
         ],
       ),
     );
+  }
+
+  Widget _buildCustomerNailPaymentItem() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  'Thiết kế Móng: ${widget.nail.name}',
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ),
+              Text(
+                PriceFormatter.format(widget.nail.customerNailPrice),
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ..._customerNailDetailPaymentLines(widget.nail),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _customerNailDetailPaymentLines(CustomerNailModel nail) {
+    return [
+      if (nail.nailSurface != null)
+        _buildNestedPaymentLine(
+          'Bề mặt: ${nail.nailSurface!['name'] ?? nail.nailSurface!['Name'] ?? ''}',
+          nail.nailSurface!['price'] ?? nail.nailSurface!['Price'] ?? 0,
+        ),
+      if (nail.nailShape != null)
+        _buildNestedPaymentLine(
+          'Phom móng: ${nail.nailShape!['name'] ?? nail.nailShape!['Name'] ?? ''}',
+          nail.nailShape!['price'] ?? nail.nailShape!['Price'] ?? 0,
+        ),
+      ..._customerNailComponentLines(nail).map(
+        (line) => _buildNestedPaymentLine(
+          '${line.quantity}x ${line.name}',
+          line.price * line.quantity,
+        ),
+      ),
+    ];
+  }
+
+  Widget _buildPaymentLine(String label, num price) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Text(label, style: const TextStyle(fontSize: 14)),
+            ),
+          ),
+          Text(
+            PriceFormatter.format(price),
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<_ComponentPaymentLine> _customerNailComponentLines(
+    CustomerNailModel nail,
+  ) {
+    final grouped = <String, _ComponentPaymentLine>{};
+    for (final raw in nail.customerNailComponents) {
+      if (raw is! Map) continue;
+      final component = raw['component'] ?? raw['Component'];
+      final customerComponent =
+          raw['customerComponent'] ?? raw['CustomerComponent'];
+      final source = component is Map
+          ? component
+          : customerComponent is Map
+          ? customerComponent
+          : null;
+      final name = source?['name']?.toString().trim().isNotEmpty == true
+          ? source!['name'].toString().trim()
+          : source?['Name']?.toString().trim().isNotEmpty == true
+          ? source!['Name'].toString().trim()
+          : 'Component';
+      final price = _asDouble(source?['price'] ?? source?['Price']);
+      final key = '$name|$price';
+      final current = grouped[key];
+      grouped[key] = current == null
+          ? _ComponentPaymentLine(name: name, quantity: 1, price: price)
+          : current.copyWith(quantity: current.quantity + 1);
+    }
+    return grouped.values.toList();
+  }
+
+  Widget _buildNestedPaymentLine(String label, num price) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 12, bottom: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Text(
+                label,
+                style: const TextStyle(fontSize: 13, color: Colors.grey),
+              ),
+            ),
+          ),
+          Text(
+            PriceFormatter.format(price),
+            style: const TextStyle(
+              fontSize: 13,
+              color: Colors.grey,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  double _asDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '') ?? 0;
   }
 
   Widget _buildStepIndicator() {
@@ -656,6 +802,26 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ComponentPaymentLine {
+  final String name;
+  final int quantity;
+  final double price;
+
+  const _ComponentPaymentLine({
+    required this.name,
+    required this.quantity,
+    required this.price,
+  });
+
+  _ComponentPaymentLine copyWith({int? quantity}) {
+    return _ComponentPaymentLine(
+      name: name,
+      quantity: quantity ?? this.quantity,
+      price: price,
     );
   }
 }

@@ -12,11 +12,14 @@ class BookingStylistSelection extends StatefulWidget {
   /// true = "Không chọn thợ" đang được kích hoạt
   final bool noArtistSelected;
 
+  /// Khi false → ẩn toàn bộ widget và hiển thị placeholder "chọn ngày trước".
+  final bool isDateSelected;
+
   /// Callback trả về Map khi chọn thợ
   final StylistSelectedCallback onStylistSelected;
 
   /// Callback khi user chuyển qua lại giữa 2 tab
-  final Function(bool isNoArtist) onModeChanged;
+  final void Function(bool isNoArtist) onModeChanged;
 
   const BookingStylistSelection({
     super.key,
@@ -26,10 +29,12 @@ class BookingStylistSelection extends StatefulWidget {
     required this.onStylistSelected,
     required this.onModeChanged,
     this.noArtistSelected = false,
+    this.isDateSelected = false,
   });
 
   @override
-  State<BookingStylistSelection> createState() => _BookingStylistSelectionState();
+  State<BookingStylistSelection> createState() =>
+      _BookingStylistSelectionState();
 }
 
 class _BookingStylistSelectionState extends State<BookingStylistSelection>
@@ -63,7 +68,8 @@ class _BookingStylistSelectionState extends State<BookingStylistSelection>
 
   String _getArtistName(dynamic artist) {
     if (artist == null) return 'Thợ';
-    if (artist['fullName'] != null && artist['fullName'].toString().isNotEmpty) {
+    if (artist['fullName'] != null &&
+        artist['fullName'].toString().isNotEmpty) {
       return artist['fullName'];
     }
     final firstName = artist['firstName']?.toString() ?? '';
@@ -72,13 +78,19 @@ class _BookingStylistSelectionState extends State<BookingStylistSelection>
     return combined.isNotEmpty ? combined : 'Thợ';
   }
 
-  void _showArtistPicker(BuildContext context) {
+  /// FIX: Truyền snapshot list trực tiếp vào hàm để tránh closure
+  /// bắt list cũ (khi đang loading).
+  void _showArtistPicker(
+    BuildContext context,
+    List<dynamic> artists,
+    String? selectedStylistId,
+  ) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) {
+      builder: (sheetContext) {
         return Container(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -86,15 +98,13 @@ class _BookingStylistSelectionState extends State<BookingStylistSelection>
             children: [
               const Text(
                 'Chọn thợ làm móng',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary),
               ),
               const SizedBox(height: 16),
-              if (widget.isLoading)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: CircularProgressIndicator(),
-                )
-              else if (widget.artists.isEmpty)
+              if (artists.isEmpty)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 24),
                   child: Text('Không có thợ nào khả dụng cho ngày này.'),
@@ -103,8 +113,9 @@ class _BookingStylistSelectionState extends State<BookingStylistSelection>
                 Flexible(
                   child: SingleChildScrollView(
                     child: Column(
-                      children: widget.artists.map((artist) {
-                        final bool isSelected = artist['nailArtistId'] == widget.selectedStylistId;
+                      children: artists.map((artist) {
+                        final bool isSelected =
+                            artist['nailArtistId'] == selectedStylistId;
                         final String displayName = _getArtistName(artist);
                         return ListTile(
                           leading: CircleAvatar(
@@ -116,17 +127,25 @@ class _BookingStylistSelectionState extends State<BookingStylistSelection>
                                 ? const Icon(Icons.person, color: Colors.grey)
                                 : null,
                           ),
-                          title: Text(displayName,
-                              style: TextStyle(
-                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                          title: Text(
+                            displayName,
+                            style: TextStyle(
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                          ),
                           trailing: isSelected
-                              ? const Icon(Icons.check_circle, color: AppColors.primary)
+                              ? const Icon(Icons.check_circle,
+                                  color: AppColors.primary)
                               : null,
                           onTap: () {
-                            artist['fullName'] = displayName;
-                            final safeArtist = Map<String, dynamic>.from(artist as Map);
+                            // Ghi displayName vào map trước khi trả về
+                            final safeArtist =
+                                Map<String, dynamic>.from(artist as Map);
+                            safeArtist['fullName'] = displayName;
                             widget.onStylistSelected(safeArtist);
-                            Navigator.pop(context);
+                            Navigator.pop(sheetContext);
                           },
                         );
                       }).toList(),
@@ -142,10 +161,50 @@ class _BookingStylistSelectionState extends State<BookingStylistSelection>
 
   @override
   Widget build(BuildContext context) {
-    final matches = widget.artists.where((a) => a['nailArtistId'] == widget.selectedStylistId);
+    // ── Chưa chọn ngày → hiện placeholder ─────────────────────────────────
+    if (!widget.isDateSelected) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Thợ thực hiện',
+            style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.calendar_today_outlined,
+                    color: Colors.grey.shade400, size: 20),
+                const SizedBox(width: 12),
+                Text(
+                  'Vui lòng chọn ngày hẹn trước',
+                  style: TextStyle(
+                      color: Colors.grey.shade500,
+                      fontSize: 14,
+                      fontStyle: FontStyle.italic),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    // ── Đã chọn ngày → hiện tab Chọn thợ / Không chọn thợ ─────────────────
+    final matches =
+        widget.artists.where((a) => a['nailArtistId'] == widget.selectedStylistId);
     final currentArtist = matches.isNotEmpty ? matches.first : null;
 
-    // Dùng AnimatedBuilder để listen tab changes mà không cần TabBarView
     return AnimatedBuilder(
       animation: _tabController,
       builder: (context, _) {
@@ -155,11 +214,14 @@ class _BookingStylistSelectionState extends State<BookingStylistSelection>
           children: [
             const Text(
               'Thợ thực hiện',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary),
             ),
             const SizedBox(height: 10),
 
-            // Tab selector: Chọn thợ | Không chọn thợ
+            // Tab selector
             Container(
               decoration: BoxDecoration(
                 color: Colors.grey.shade100,
@@ -174,7 +236,8 @@ class _BookingStylistSelectionState extends State<BookingStylistSelection>
                 indicatorSize: TabBarIndicatorSize.tab,
                 labelColor: Colors.white,
                 unselectedLabelColor: Colors.grey.shade600,
-                labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                labelStyle: const TextStyle(
+                    fontWeight: FontWeight.bold, fontSize: 13),
                 dividerColor: Colors.transparent,
                 onTap: (index) {
                   if (index == 1) {
@@ -193,90 +256,141 @@ class _BookingStylistSelectionState extends State<BookingStylistSelection>
             ),
             const SizedBox(height: 12),
 
-            // Nội dung theo tab — dùng IndexedStack thay TabBarView để tránh lỗi unbounded height
+            // Nội dung tab — IndexedStack để tránh lỗi unbounded height
             IndexedStack(
               index: selectedIndex,
               children: [
                 // Tab 0: Chọn thợ
-                InkWell(
-                  onTap: () => _showArtistPicker(context),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.borderLight),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.face_retouching_natural, color: AppColors.primary, size: 22),
-                            const SizedBox(width: 12),
-                            Text(
-                              currentArtist != null
-                                  ? _getArtistName(currentArtist)
-                                  : 'Bấm để chọn thợ thực hiện',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: currentArtist != null ? FontWeight.bold : FontWeight.normal,
-                                color: currentArtist != null ? AppColors.textPrimary : Colors.grey,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
-                      ],
-                    ),
-                  ),
-                ),
+                _buildSelectArtistTab(currentArtist),
 
                 // Tab 1: Không chọn thợ
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.shuffle, color: AppColors.primary, size: 20),
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Để hệ thống tự phân công',
-                              style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 14),
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              'Giờ hiển thị theo lịch salon, thợ sẽ được phân công tự động',
-                              style: TextStyle(fontSize: 11, color: Colors.grey),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.check_circle, color: AppColors.primary, size: 20),
-                    ],
-                  ),
-                ),
+                _buildNoArtistTab(),
               ],
             ),
           ],
         );
       },
+    );
+  }
+
+  Widget _buildSelectArtistTab(dynamic currentArtist) {
+    // FIX: Khi đang loading → disable tap và hiện indicator trong ô
+    if (widget.isLoading) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.borderLight),
+        ),
+        child: Row(
+          children: [
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Đang tải danh sách thợ...',
+              style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade500,
+                  fontStyle: FontStyle.italic),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return InkWell(
+      onTap: () => _showArtistPicker(
+        context,
+        widget.artists, // snapshot tường minh — không dùng closure
+        widget.selectedStylistId,
+      ),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.borderLight),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.face_retouching_natural,
+                    color: AppColors.primary, size: 22),
+                const SizedBox(width: 12),
+                Text(
+                  currentArtist != null
+                      ? _getArtistName(currentArtist)
+                      : 'Bấm để chọn thợ thực hiện',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: currentArtist != null
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                    color: currentArtist != null
+                        ? AppColors.textPrimary
+                        : Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+            const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoArtistTab() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.shuffle,
+                color: AppColors.primary, size: 20),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Để hệ thống tự phân công',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                      fontSize: 14),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Giờ hiển thị theo lịch salon, thợ sẽ được phân công tự động',
+                  style: TextStyle(fontSize: 11, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.check_circle,
+              color: AppColors.primary, size: 20),
+        ],
+      ),
     );
   }
 }

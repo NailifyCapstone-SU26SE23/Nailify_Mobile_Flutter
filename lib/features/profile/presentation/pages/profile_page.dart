@@ -2,8 +2,11 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/network/api_client.dart';
 
@@ -52,6 +55,21 @@ class _ProfilePageState extends State<ProfilePage> {
       controller.dispose();
     }
     super.dispose();
+  }
+
+  Future<void> _logout() async {
+    await getIt<SharedPreferences>().remove(AppConstants.authTokenKey);
+    if (mounted) {
+      setState(() {
+        _profileData = null;
+        _loyaltyData = null;
+        _isLoading = true;
+      });
+      context.go('/'); // Đưa người dùng về trang chủ
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Đã đăng xuất thành công!')),
+      );
+    }
   }
 
     // gọi tạm api trong này
@@ -133,6 +151,20 @@ class _ProfilePageState extends State<ProfilePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildProfileCard(),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _logout,
+                icon: const Icon(Icons.logout, size: 20, color: Colors.redAccent),
+                label: const Text('Đăng xuất', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 16)),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.redAccent, width: 1.5),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+            ),
             const SizedBox(height: 24),
 
              PersonalityStyleSection(

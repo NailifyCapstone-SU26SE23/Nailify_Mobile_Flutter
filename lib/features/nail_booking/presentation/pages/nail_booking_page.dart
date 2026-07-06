@@ -83,11 +83,12 @@ class _NailBookingViewState extends State<_NailBookingView> {
       _showSnackBar('Vui lòng chọn một chi nhánh salon!');
       return;
     }
-    if (_currentStep == 1 && state.selectedSeatId == null) {
-      _showSnackBar('Vui lòng chọn ghế ngồi!');
-      return;
-    }
-    if (_currentStep == 2) {
+    // Tạm ẩn bước chọn ghế
+    // if (_currentStep == 1 && state.selectedSeatId == null) {
+    //   _showSnackBar('Vui lòng chọn ghế ngồi!');
+    //   return;
+    // }
+    if (_currentStep == 1) {
       if (state.selectedExtraServices.contains(null)) {
         _showSnackBar(
             'Có ô dịch vụ đang bị bỏ trống. Vui lòng chọn hoặc xóa nó đi!');
@@ -100,7 +101,7 @@ class _NailBookingViewState extends State<_NailBookingView> {
         return;
       }
     }
-    if (_currentStep == 3) {
+    if (_currentStep == 2) {
       if (state.selectedDate == null) {
         _showSnackBar('Vui lòng chọn ngày hẹn!');
         return;
@@ -115,7 +116,7 @@ class _NailBookingViewState extends State<_NailBookingView> {
       }
     }
 
-    if (_currentStep < 4) {
+    if (_currentStep < 3) {
       _pageController.nextPage(
           duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
     } else {
@@ -210,7 +211,8 @@ class _NailBookingViewState extends State<_NailBookingView> {
                       ),
                     ),
 
-                    // ── BƯỚC 2: CHỌN GHẾ ────────────────────────────────
+                    // ── BƯỚC 2: CHỌN GHẾ (Đã ẩn) ────────────────────────────────
+                    /*
                     SingleChildScrollView(
                       padding: const EdgeInsets.all(20),
                       child: BookingSeatSelection(
@@ -220,6 +222,7 @@ class _NailBookingViewState extends State<_NailBookingView> {
                         },
                       ),
                     ),
+                    */
 
                     // ── BƯỚC 3: CHỌN DỊCH VỤ ───────────────────────────
                     SingleChildScrollView(
@@ -333,10 +336,10 @@ class _NailBookingViewState extends State<_NailBookingView> {
             children: [
               _buildSummaryRow(Icons.storefront, 'Chi nhánh',
                   state.selectedBranch?['name'] ?? ''),
-              _buildSummaryRow(Icons.chair, 'Ghế',
-                  state.selectedSeatId != null
-                      ? 'Ghế ${state.selectedSeatId!.split('_').last}'
-                      : ''),
+              // _buildSummaryRow(Icons.chair, 'Ghế',
+              //     state.selectedSeatId != null
+              //         ? 'Ghế ${state.selectedSeatId!.split('_').last}'
+              //         : ''),
               _buildSummaryRow(
                   Icons.calendar_month,
                   'Ngày hẹn',
@@ -559,7 +562,7 @@ class _NailBookingViewState extends State<_NailBookingView> {
       color: Colors.white,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(5, (index) {
+        children: List.generate(4, (index) {
           final isCompleted = index <= _currentStep;
           return Row(
             children: [
@@ -570,7 +573,7 @@ class _NailBookingViewState extends State<_NailBookingView> {
                 child: Text('${index + 1}',
                     style: const TextStyle(color: Colors.white, fontSize: 11)),
               ),
-              if (index < 4)
+              if (index < 3)
                 Container(
                     width: 30,
                     height: 2,
@@ -634,7 +637,7 @@ class _NailBookingViewState extends State<_NailBookingView> {
                     child: CircularProgressIndicator(
                         color: Colors.white, strokeWidth: 2))
                 : Text(
-                    _currentStep == 4 ? 'Xác nhận Đặt lịch' : 'Tiếp tục',
+                    _currentStep == 3 ? 'Xác nhận Đặt lịch' : 'Tiếp tục',
                     style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],

@@ -62,7 +62,19 @@ class AppRouter {
       GoRoute(
         path: '/custom-nail-booking',
         builder: (context, state) {
-          final nail = state.extra as CustomerNailModel;
+          final extra = state.extra;
+          if (extra is Map<String, dynamic>) {
+            return CustomNailBookingPage(
+              nail: extra['nail'] as CustomerNailModel,
+              shapeMethodConfigId: (extra['shapeMethodConfigId'] as num?)
+                  ?.toInt(),
+              shapeMethodName: extra['shapeMethodName']?.toString(),
+              shapeMethodPrice: extra['shapeMethodPrice'] as num?,
+              shapeMethodDuration: (extra['shapeMethodDuration'] as num?)
+                  ?.toInt(),
+            );
+          }
+          final nail = extra as CustomerNailModel;
           return CustomNailBookingPage(nail: nail);
         },
       ),

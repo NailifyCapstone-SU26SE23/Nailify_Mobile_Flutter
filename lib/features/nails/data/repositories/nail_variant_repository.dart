@@ -5,6 +5,7 @@ import '../models/nail_filters.dart';
 import '../models/nail_shape_model.dart';
 import '../models/nail_surface_model.dart';
 import '../models/nail_variant_model.dart';
+import '../models/shape_method_config_model.dart';
 
 class NailVariantRepository {
   final ApiClient _apiClient;
@@ -49,5 +50,21 @@ class NailVariantRepository {
     final response = await _apiClient.get<dynamic>('/NailSurfaces');
     final list = ApiResponseParser.unwrapList(response.data);
     return list.map(NailSurfaceModel.fromJson).toList();
+  }
+
+  Future<List<ShapeMethodConfigModel>> getShapeMethodConfigsByNailShape(
+    int nailShapeId,
+  ) async {
+    final response = await _apiClient.get<dynamic>(
+      '/ShapeMethodConfigs/nail-shape/$nailShapeId',
+    );
+    final list = ApiResponseParser.unwrapList(response.data);
+    return list.map(ShapeMethodConfigModel.fromJson).toList();
+  }
+
+  Future<ShapeMethodConfigModel> getShapeMethodConfigById(int id) async {
+    final response = await _apiClient.get<dynamic>('/ShapeMethodConfigs/$id');
+    final data = ApiResponseParser.unwrapMap(response.data);
+    return ShapeMethodConfigModel.fromJson(data);
   }
 }

@@ -10,6 +10,7 @@ import '../../../../core/utils/price_formatter.dart';
 import '../../../my_studio/data/datasources/studio_api_service.dart';
 import '../../../my_studio/data/models/customer_nail_model.dart';
 import '../../../nails/data/models/nail_variant_model.dart';
+import '../../../nails/data/models/shape_method_config_model.dart';
 import '../../../nails/data/repositories/nail_variant_repository.dart';
 import '../../data/datasources/my_booking_api_service.dart';
 import '../utils/booking_status_utils.dart';
@@ -32,6 +33,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
   Map<String, dynamic>? _rating;
   Map<int, NailVariantModel> _nailVariantDetails = {};
   Map<String, CustomerNailModel> _customerNailRequestDetails = {};
+  Map<int, ShapeMethodConfigModel> _shapeMethodConfigs = {};
 
   @override
   void initState() {
@@ -46,6 +48,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
       final customerNailRequestDetails = await _fetchCustomerNailRequestDetails(
         data,
       );
+      final shapeMethodConfigs = await _fetchShapeMethodConfigs(data);
       Map<String, dynamic>? rating;
       if (bookingIsRated(data)) {
         try {
@@ -60,6 +63,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
         _rating = rating;
         _nailVariantDetails = nailVariantDetails;
         _customerNailRequestDetails = customerNailRequestDetails;
+        _shapeMethodConfigs = shapeMethodConfigs;
         _isLoading = false;
       });
     } catch (e) {
@@ -125,6 +129,40 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
           return MapEntry(id, await apiService.getNailRequestDetail(id));
         } catch (e) {
           debugPrint('Failed to load customer nail request $id: $e');
+          return null;
+        }
+      }),
+    );
+
+    return {
+      for (final entry in entries)
+        if (entry != null) entry.key: entry.value,
+    };
+  }
+
+  Future<Map<int, ShapeMethodConfigModel>> _fetchShapeMethodConfigs(
+    Map<String, dynamic> booking,
+  ) async {
+    final rawItems = booking['bookingItems'];
+    if (rawItems is! List) return {};
+    final ids = rawItems
+        .whereType<Map>()
+        .map(
+          (item) => _asInt(
+            item['shapeMethodConfigId'] ?? item['ShapeMethodConfigId'],
+          ),
+        )
+        .where((id) => id > 0)
+        .toSet();
+    if (ids.isEmpty) return {};
+
+    final repository = getIt<NailVariantRepository>();
+    final entries = await Future.wait(
+      ids.map((id) async {
+        try {
+          return MapEntry(id, await repository.getShapeMethodConfigById(id));
+        } catch (e) {
+          debugPrint('Failed to load shape method config $id: $e');
           return null;
         }
       }),
@@ -717,6 +755,16 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
       item['serviceName']?.toString().trim() ?? '',
     ].where((name) => name.isNotEmpty).toList();
     final name = names.isEmpty ? 'Dịch vụ' : names.join(' & ');
+    final shapeMethodConfigId = _asInt(
+      item['shapeMethodConfigId'] ?? item['ShapeMethodConfigId'],
+    );
+    final shapeMethodConfig =
+        _shapeMethodConfigFromItem(item) ??
+        _shapeMethodConfigs[shapeMethodConfigId];
+    final shapeMethodName =
+        _shapeMethodNameFromItem(item) ?? shapeMethodConfig?.name;
+    final shapeMethodPrice =
+        shapeMethodConfig?.price ?? _shapeMethodPriceFromItem(item);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -775,8 +823,8 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
               ),
             if (variant.nailShape != null)
               _buildVariantDetailLine(
-                'Phom móng: ${variant.nailShape!.name}',
-                variant.nailShape!.price,
+                shapeMethodName ?? 'Phom móng',
+                shapeMethodPrice
               ),
             ..._componentPaymentLines(variant).map(
               (line) => _buildVariantDetailLine(
@@ -787,7 +835,11 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
           ],
           if (customerNailRequest != null) ...[
             const SizedBox(height: 6),
-            ..._customerNailDetailPaymentLines(customerNailRequest),
+            ..._customerNailDetailPaymentLines(
+              customerNailRequest,
+              shapeMethodName: shapeMethodName,
+              shapeMethodPrice: shapeMethodPrice,
+            ),
             if (customerNailRequest.price > 0)
               _buildStandaloneDetailLine(
                 'Extra component',
@@ -855,17 +907,21 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     return grouped.values.toList();
   }
 
-  List<Widget> _customerNailDetailPaymentLines(CustomerNailModel nail) {
+  List<Widget> _customerNailDetailPaymentLines(
+    CustomerNailModel nail, {
+    String? shapeMethodName,
+    num shapeMethodPrice = 0,
+  }) {
     return [
       if (nail.nailSurface != null)
         _buildVariantDetailLine(
-          'Bề mặt: ${nail.nailSurface!['name'] ?? nail.nailSurface!['Name'] ?? ''}',
+          'Bề mặt ${nail.nailSurface!['name'] ?? nail.nailSurface!['Name'] ?? ''}',
           nail.nailSurface!['price'] ?? nail.nailSurface!['Price'] ?? 0,
         ),
       if (nail.nailShape != null)
         _buildVariantDetailLine(
-          'Phom móng: ${nail.nailShape!['name'] ?? nail.nailShape!['Name'] ?? ''}',
-          nail.nailShape!['price'] ?? nail.nailShape!['Price'] ?? 0,
+          shapeMethodName ?? 'Phom móng',
+          shapeMethodPrice,
         ),
       ..._customerNailComponentLines(nail).map(
         (line) => _buildVariantDetailLine(
@@ -942,6 +998,55 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     final raw = item['nailVariant'] ?? item['NailVariant'];
     if (raw is! Map) return null;
     return NailVariantModel.fromJson(Map<String, dynamic>.from(raw));
+  }
+
+  ShapeMethodConfigModel? _shapeMethodConfigFromItem(
+    Map<String, dynamic> item,
+  ) {
+    final raw =
+        item['shapeMethodConfig'] ??
+        item['ShapeMethodConfig'] ??
+        item['shapeMethod'] ??
+        item['ShapeMethod'];
+    if (raw is! Map) return null;
+    return ShapeMethodConfigModel.fromJson(Map<String, dynamic>.from(raw));
+  }
+
+  String? _shapeMethodNameFromItem(Map<String, dynamic> item) {
+    final raw =
+        item['shapeMethodConfig'] ??
+        item['ShapeMethodConfig'] ??
+        item['shapeMethod'] ??
+        item['ShapeMethod'];
+    if (raw is Map) {
+      final value = raw['name'] ?? raw['Name'];
+      final text = value?.toString().trim();
+      return text == null || text.isEmpty ? null : text;
+    }
+    final value =
+        item['shapeMethodConfigName'] ??
+        item['ShapeMethodConfigName'] ??
+        item['shapeMethodName'] ??
+        item['ShapeMethodName'];
+    final text = value?.toString().trim();
+    return text == null || text.isEmpty ? null : text;
+  }
+
+  num _shapeMethodPriceFromItem(Map<String, dynamic> item) {
+    final raw =
+        item['shapeMethodConfig'] ??
+        item['ShapeMethodConfig'] ??
+        item['shapeMethod'] ??
+        item['ShapeMethod'];
+    if (raw is Map) {
+      return _asDouble(raw['price'] ?? raw['Price']);
+    }
+    return _asDouble(
+      item['shapeMethodConfigPrice'] ??
+          item['ShapeMethodConfigPrice'] ??
+          item['shapeMethodPrice'] ??
+          item['ShapeMethodPrice'],
+    );
   }
 
   int _asInt(dynamic value, {int fallback = 0}) {

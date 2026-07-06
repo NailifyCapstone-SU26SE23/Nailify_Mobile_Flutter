@@ -8,6 +8,7 @@ import '../../../../core/di/injection.dart';
 import '../../data/models/nail_component_model.dart';
 import '../../data/models/nail_surface_model.dart';
 import '../../data/models/nail_variant_model.dart';
+import '../../data/models/shape_method_config_model.dart';
 import '../../data/repositories/nail_variant_repository.dart';
 import '../../services/ar_try_on_service.dart';
 
@@ -124,7 +125,7 @@ class _NailVariantDetailScreenState extends State<NailVariantDetailScreen> {
   }
 }
 
-class _DetailContent extends StatelessWidget {
+class _DetailContent extends StatefulWidget {
   final NailVariantModel variant;
   final bool launching;
   final void Function(
@@ -140,10 +141,25 @@ class _DetailContent extends StatelessWidget {
   });
 
   @override
+  State<_DetailContent> createState() => _DetailContentState();
+}
+
+class _DetailContentState extends State<_DetailContent> {
+  late final Future<List<ShapeMethodConfigModel>> _shapeMethodsFuture;
+  ShapeMethodConfigModel? _selectedShapeMethod;
+
+  @override
+  void initState() {
+    super.initState();
+    _shapeMethodsFuture = getIt<NailVariantRepository>()
+        .getShapeMethodConfigsByNailShape(widget.variant.nailShapeId);
+  }
+
+  @override
   Widget build(BuildContext context) {
     // Nhóm các component theo từng ngón tay
     final grouped = <int, List<NailComponentModel>>{};
-    for (final component in variant.nailComponents) {
+    for (final component in widget.variant.nailComponents) {
       grouped.putIfAbsent(component.fingerIndex, () => []).add(component);
     }
 
@@ -160,7 +176,7 @@ class _DetailContent extends StatelessWidget {
                 child: SizedBox(
                   width: double.infinity,
                   height: 300,
-                  child: variant.imageUrl.isEmpty
+                  child: widget.variant.imageUrl.isEmpty
                       ? Container(
                           color: AppColors.primary.withOpacity(0.1),
                           child: const Icon(
@@ -169,14 +185,17 @@ class _DetailContent extends StatelessWidget {
                             color: AppColors.primary,
                           ),
                         )
-                      : Image.network(variant.imageUrl, fit: BoxFit.cover),
+                      : Image.network(
+                          widget.variant.imageUrl,
+                          fit: BoxFit.cover,
+                        ),
                 ),
               ),
               const SizedBox(height: 24),
 
               // 2. Tên & Giá tiền
               Text(
-                variant.name,
+                widget.variant.name,
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -185,7 +204,7 @@ class _DetailContent extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                PriceFormatter.format(variant.price),
+                PriceFormatter.format(widget.variant.price),
                 style: const TextStyle(
                   fontSize: 20,
                   color: AppColors.primary,
@@ -201,14 +220,16 @@ class _DetailContent extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  if (variant.nailShape != null)
-                    _DetailChip(label: variant.nailShape!.name),
-                  if (variant.nailSurface != null)
-                    _DetailChip(label: variant.nailSurface!.name),
-                  if (variant.duration != null)
-                    _DetailChip(label: '${variant.duration} phút'),
+                  if (widget.variant.nailShape != null)
+                    _DetailChip(label: widget.variant.nailShape!.name),
+                  if (widget.variant.nailSurface != null)
+                    _DetailChip(label: widget.variant.nailSurface!.name),
+                  if (widget.variant.duration != null)
+                    _DetailChip(label: '${widget.variant.duration} phút'),
                 ],
               ),
+              const SizedBox(height: 32),
+              _buildShapeMethodSelector(),
               const SizedBox(height: 32),
 
               // 4. Các thành phần chi tiết (Components)
@@ -259,16 +280,16 @@ class _DetailContent extends StatelessWidget {
                     height: 50,
                     child: OutlinedButton(
                       // BỎ async và await đi
-                      onPressed: launching
+                      onPressed: widget.launching
                           ? null
                           : () {
                               final service = getIt<ArTryOnService>();
-                              onTryOn(
+                              widget.onTryOn(
                                 (nailVariant, surface) => service.launch(
                                   nailVariant,
                                   surface: surface,
                                 ),
-                                surface: variant.nailSurface,
+                                surface: widget.variant.nailSurface,
                               );
                             },
                       style: OutlinedButton.styleFrom(
@@ -281,7 +302,7 @@ class _DetailContent extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: launching
+                      child: widget.launching
                           ? const SizedBox(
                               width: 18,
                               height: 18,
@@ -306,10 +327,16 @@ class _DetailContent extends StatelessWidget {
                         // Đóng gói dữ liệu mẫu variant để truyền sang trang booking
                         AuthGuard.check(context, () {
                           final Map<String, dynamic> bookingData = {
-                            'id': variant.nailVariantId.toString(),
-                            'name': variant.name,
-                            'image': variant.imageUrl,
-                            'price': variant.price,
+                            'id': widget.variant.nailVariantId.toString(),
+                            'name': widget.variant.name,
+                            'image': widget.variant.imageUrl,
+                            'price': widget.variant.price,
+                            'shapeMethodConfigId':
+                                _selectedShapeMethod?.shapeMethodConfigId,
+                            'shapeMethodName': _selectedShapeMethod?.name,
+                            'shapeMethodPrice': _selectedShapeMethod?.price,
+                            'shapeMethodDuration':
+                                _selectedShapeMethod?.duration,
                           };
                           context.push('/nail-booking', extra: bookingData);
                         });
@@ -337,6 +364,51 @@ class _DetailContent extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildShapeMethodSelector() {
+    return FutureBuilder<List<ShapeMethodConfigModel>>(
+      future: _shapeMethodsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final methods = (snapshot.data ?? const <ShapeMethodConfigModel>[])
+            .where((method) => method.status.toLowerCase() == 'active')
+            .toList();
+        if (methods.isEmpty) return const SizedBox.shrink();
+        _selectedShapeMethod ??= methods.first;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Phương thức làm móng',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...methods.map(
+              (method) => RadioListTile<int>(
+                value: method.shapeMethodConfigId,
+                groupValue: _selectedShapeMethod?.shapeMethodConfigId,
+                onChanged: (_) => setState(() => _selectedShapeMethod = method),
+                title: Text(method.name),
+                subtitle: Text('${method.duration} phút'),
+                secondary: Text(
+                  PriceFormatter.format(method.price),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

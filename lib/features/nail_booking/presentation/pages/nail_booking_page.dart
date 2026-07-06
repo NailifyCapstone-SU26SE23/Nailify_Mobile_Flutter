@@ -71,6 +71,24 @@ class _NailBookingPageState extends State<NailBookingPage> {
     return int.tryParse(widget.nailData?['id']?.toString() ?? '0') ?? 0;
   }
 
+  int? get _shapeMethodConfigId {
+    final value = widget.nailData?['shapeMethodConfigId'];
+    if (value == null) return null;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString());
+  }
+
+  String? get _shapeMethodName {
+    final value = widget.nailData?['shapeMethodName']?.toString().trim();
+    return value == null || value.isEmpty ? null : value;
+  }
+
+  num get _shapeMethodPrice {
+    final value = widget.nailData?['shapeMethodPrice'];
+    if (value is num) return value;
+    return num.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
   Future<void> _fetchNailVariantDetail() async {
     final id = _nailVariantId;
     if (id <= 0) return;
@@ -122,6 +140,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
         _selectedExtraServices
             .whereType<String>()
             .toList(), // Lọc bỏ null trước khi gọi API
+        _shapeMethodConfigId,
       );
       setState(() {
         _artists = data;
@@ -197,6 +216,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
           artistId,
           _nailVariantId,
           _selectedExtraServices.whereType<String>().toList(),
+          shapeMethodConfigId: _shapeMethodConfigId,
           selectedPromotionIds: _selectedPromotionIds,
         );
 
@@ -352,7 +372,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   int get _estimatedTotalPrice =>
-      _nailVariantPrice + _selectedExtraServicesTotal;
+      _nailVariantPrice + _shapeMethodPrice.round() + _selectedExtraServicesTotal;
 
   bool get _showLegacyNailDataRow => false;
 
@@ -387,6 +407,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
         artistId: artistId,
         nailVariantId: _nailVariantId,
         serviceIds: _selectedExtraServices.whereType<String>().toList(),
+        shapeMethodConfigId: _shapeMethodConfigId,
         selectedPromotionIds: _selectedPromotionIds,
       );
       if (!mounted) return;
@@ -778,12 +799,14 @@ class _NailBookingPageState extends State<NailBookingPage> {
             children: [
               Expanded(
                 child: Text(
-                  'Biến thể Nail: ${widget.nailData!['name']}',
+                  widget.nailData!['name'],
                   style: const TextStyle(fontSize: 14),
                 ),
               ),
               Text(
-                PriceFormatter.format(widget.nailData?['price']),
+                PriceFormatter.format(
+                  _nailVariantPrice + _shapeMethodPrice.round(),
+                ),
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ],
@@ -792,13 +815,13 @@ class _NailBookingPageState extends State<NailBookingPage> {
             const SizedBox(height: 6),
             if (variant.nailSurface != null)
               _buildVariantDetailLine(
-                'Bề mặt: ${variant.nailSurface!.name}',
+                'Bề mặt ${variant.nailSurface!.name}',
                 variant.nailSurface!.price,
               ),
             if (variant.nailShape != null)
               _buildVariantDetailLine(
-                'Phom móng: ${variant.nailShape!.name}',
-                variant.nailShape!.price,
+                _shapeMethodName ?? 'Phom móng',
+                _shapeMethodPrice,
               ),
             ..._componentPaymentLines(variant).map(
               (line) => _buildVariantDetailLine(

@@ -23,12 +23,14 @@ class BookingApiService {
   List<Map<String, dynamic>> _buildBookingItems(
     int nailVariantId,
     List<String> serviceIds,
+    int? shapeMethodConfigId,
   ) {
     return [
       if (nailVariantId > 0)
         {
           'nailVariantId': nailVariantId,
           'serviceId': null,
+          'shapeMethodConfigId': shapeMethodConfigId,
           'customerNailRequestId': null,
           'quantity': 1,
         },
@@ -36,6 +38,7 @@ class BookingApiService {
         (serviceId) => {
           'nailVariantId': null,
           'serviceId': serviceId,
+          'shapeMethodConfigId': null,
           'customerNailRequestId': null,
           'quantity': 1,
         },
@@ -48,13 +51,18 @@ class BookingApiService {
     String bookingDate,
     int nailVariantId,
     List<String> serviceIds,
+    int? shapeMethodConfigId,
   ) async {
     final response = await _apiClient.post(
       '/Bookings/suggested-artists',
       data: {
         'salonId': salonId,
         'bookingDate': bookingDate,
-        'bookingItems': _buildBookingItems(nailVariantId, serviceIds),
+        'bookingItems': _buildBookingItems(
+          nailVariantId,
+          serviceIds,
+          shapeMethodConfigId,
+        ),
       },
     );
     return response.data['data'] ?? [];
@@ -120,6 +128,7 @@ class BookingApiService {
     String? artistId,
     int nailVariantId,
     List<String> serviceIds, {
+    int? shapeMethodConfigId,
     List<int>? selectedPromotionIds,
   }) async {
     final response = await _apiClient.post(
@@ -130,7 +139,11 @@ class BookingApiService {
         'startTime': startTime,
         'nailArtistId': artistId?.isEmpty == true ? null : artistId,
         'holdToken': null,
-        'bookingItems': _buildBookingItems(nailVariantId, serviceIds),
+        'bookingItems': _buildBookingItems(
+          nailVariantId,
+          serviceIds,
+          shapeMethodConfigId,
+        ),
         'selectedPromotionIds': selectedPromotionIds,
       },
     );
@@ -144,6 +157,7 @@ class BookingApiService {
     required String? artistId,
     required int nailVariantId,
     required List<String> serviceIds,
+    int? shapeMethodConfigId,
     List<int>? selectedPromotionIds,
   }) async {
     final response = await _apiClient.post(
@@ -154,7 +168,11 @@ class BookingApiService {
         'startTime': startTime,
         'nailArtistId': artistId?.isEmpty == true ? null : artistId,
         'holdToken': null,
-        'bookingItems': _buildBookingItems(nailVariantId, serviceIds),
+        'bookingItems': _buildBookingItems(
+          nailVariantId,
+          serviceIds,
+          shapeMethodConfigId,
+        ),
         'selectedPromotionIds': selectedPromotionIds,
       },
     );
@@ -193,11 +211,13 @@ class BookingApiService {
     String artistId,
     String customerNailRequestId,
     Map<String, int> groupedExtraServices,
+    int? shapeMethodConfigId,
   ) async {
     final bookingItems = <Map<String, dynamic>>[
       {
         'nailVariantId': null,
         'serviceId': null,
+        'shapeMethodConfigId': shapeMethodConfigId,
         'customerNailRequestId': customerNailRequestId,
         'quantity': 1,
       },
@@ -207,6 +227,7 @@ class BookingApiService {
       bookingItems.add({
         'nailVariantId': null,
         'serviceId': serviceId,
+        'shapeMethodConfigId': null,
         'customerNailRequestId': null,
         'quantity': quantity,
       });

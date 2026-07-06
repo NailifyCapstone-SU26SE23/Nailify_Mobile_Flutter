@@ -2,20 +2,45 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/utils/price_formatter.dart';
+import '../../../nails/data/models/shape_method_config_model.dart';
+import '../../../nails/data/repositories/nail_variant_repository.dart';
 import '../cubit/studio_cubit.dart';
 import '../../data/models/customer_nail_model.dart';
 import '../../../../core/utils/duration_formatter.dart';
 
-class CustomerNailDetailPage extends StatelessWidget {
+class CustomerNailDetailPage extends StatefulWidget {
   final String id; // customerNailRequestId
 
   const CustomerNailDetailPage({super.key, required this.id});
 
   @override
+  State<CustomerNailDetailPage> createState() => _CustomerNailDetailPageState();
+}
+
+class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
+  Future<List<ShapeMethodConfigModel>>? _shapeMethodsFuture;
+  int? _shapeMethodsShapeId;
+  ShapeMethodConfigModel? _selectedShapeMethod;
+
+  Future<List<ShapeMethodConfigModel>> _shapeMethodsFor(
+    CustomerNailModel nail,
+  ) {
+    final shapeId = nail.nailShapeId ?? 0;
+    if (_shapeMethodsFuture == null || _shapeMethodsShapeId != shapeId) {
+      _shapeMethodsShapeId = shapeId;
+      _selectedShapeMethod = null;
+      _shapeMethodsFuture = getIt<NailVariantRepository>()
+          .getShapeMethodConfigsByNailShape(shapeId);
+    }
+    return _shapeMethodsFuture!;
+  }
+
+  @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => StudioDetailCubit()..fetchDetail(id),
+      create: (context) => StudioDetailCubit()..fetchDetail(widget.id),
       child: Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
@@ -196,6 +221,11 @@ class CustomerNailDetailPage extends StatelessWidget {
                         ],
                       ),
                     ),
+                    if (nail.status == 'Approved' ||
+                        nail.status == 'Quoted') ...[
+                      const SizedBox(height: 20),
+                      _buildShapeMethodSelector(nail),
+                    ],
                   ],
                 ),
               );
@@ -298,6 +328,56 @@ class CustomerNailDetailPage extends StatelessWidget {
     );
   }
 
+  Widget _buildShapeMethodSelector(CustomerNailModel nail) {
+    return FutureBuilder<List<ShapeMethodConfigModel>>(
+      future: _shapeMethodsFor(nail),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final methods = (snapshot.data ?? const <ShapeMethodConfigModel>[])
+            .where((method) => method.status.toLowerCase() == 'active')
+            .toList();
+        if (methods.isEmpty) return const SizedBox.shrink();
+        _selectedShapeMethod ??= methods.first;
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.borderLight),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Phương thức làm móng',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              ...methods.map(
+                (method) => RadioListTile<int>(
+                  value: method.shapeMethodConfigId,
+                  groupValue: _selectedShapeMethod?.shapeMethodConfigId,
+                  onChanged: (_) =>
+                      setState(() => _selectedShapeMethod = method),
+                  title: Text(method.name),
+                  subtitle: Text('${method.duration} phút'),
+                  secondary: Text(
+                    PriceFormatter.format(method.price),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   /// Footer action button:
   /// - Approved => "Đặt lịch ngay" -> forward data sang CustomNailBookingPage
   Widget? _buildFooterAction(BuildContext context, CustomerNailModel nail) {
@@ -317,7 +397,17 @@ class CustomerNailDetailPage extends StatelessWidget {
         child: ElevatedButton.icon(
           onPressed: () {
             // Forward data cần thiết sang trang đặt lịch custom nail
-            context.push('/custom-nail-booking', extra: nail);
+            context.push(
+              '/custom-nail-booking',
+              extra: {
+                'nail': nail,
+                'shapeMethodConfigId':
+                    _selectedShapeMethod?.shapeMethodConfigId,
+                'shapeMethodName': _selectedShapeMethod?.name,
+                'shapeMethodPrice': _selectedShapeMethod?.price,
+                'shapeMethodDuration': _selectedShapeMethod?.duration,
+              },
+            );
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,

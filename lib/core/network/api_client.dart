@@ -50,6 +50,11 @@ class ApiClient {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onError: (error, handler) {
+          // Khi server trả về 401 (Unauthorized) -> token đã hết hạn hoặc không hợp lệ
+          // Tự động xóa token để lần truy cập tiếp theo sẽ yêu cầu đăng nhập lại
+          if (error.response?.statusCode == 401) {
+            removeAuthToken();
+          }
           final exception = _handleDioError(error);
           handler.reject(DioException(
             requestOptions: error.requestOptions,

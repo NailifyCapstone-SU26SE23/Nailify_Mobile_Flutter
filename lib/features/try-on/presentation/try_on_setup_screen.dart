@@ -33,7 +33,7 @@ class TryOnSetupScreen extends StatefulWidget {
   State<TryOnSetupScreen> createState() => _TryOnSetupScreenState();
 }
 
-class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
+class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerProviderStateMixin {
   late final TryOnSetupService _setupService;
   late final NailComponentRepository _componentRepository;
   late final CustomerNailRepository _customerNailRepository;
@@ -73,14 +73,28 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
   int? _selectedPlacementId;
   final List<PlacedComponentDraft> _placements = [];
   final Set<int> _deletedPlacementIds = {};
+  late final TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 4, vsync: this);
+    _tabController.addListener(_handleTabChange);
     _setupService = getIt<TryOnSetupService>();
     _componentRepository = getIt<NailComponentRepository>();
     _customerNailRepository = getIt<CustomerNailRepository>();
     _fetchData();
+  }
+
+  void _handleTabChange() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _tabController.removeListener(_handleTabChange);
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchData() async {
@@ -417,8 +431,10 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       appBar: AppBar(
-        title: Text(_customerNail == null ? 'Set up try-on' : _customerNail!.name),
+        title: Text(_customerNail == null ? 'Thiết kế móng' : _customerNail!.name),
+        backgroundColor: Colors.transparent,
       ),
       body: Stack(
         children: [
@@ -433,12 +449,8 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
         ],
       ),
       bottomNavigationBar: TryOnActionBar(
-        selectedNailShape: _selectedNailShape,
-        selectedComponent: _selectedComponent,
         canSave: _customerNail != null && _selectedNailShape != null,
         isSaving: _isSaving,
-        onLiveTryOn: () => _launchTryOn(photo: false),
-        onPhotoTryOn: () => _launchTryOn(photo: true),
         onSave: _save,
       ),
     );
@@ -450,145 +462,249 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
     final data = _tryOnData;
     if (data == null) return const Center(child: Text('No data available'));
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+    return Column(
       children: [
-        TryOnPreviewBoard(
-          nail: _customerNail,
-          selectedShape: _selectedNailShape,
-          selectedSurface: _selectedNailSurface,
-          selectedColor: _activeFingerColor,
-          gradientStops: _activeFingerGradient,
-          fingerColors: _fingerColors,
-          fingerGradients: _fingerGradients,
-          selectedFingerIndex: _selectedFingerIndex,
-          detailFingerIndex: _previewDetailFingerIndex,
-          placements: _placements,
-          selectedPlacementId: _selectedPlacementId,
-          onSelectPlacement: (id) => setState(() => _selectedPlacementId = id),
-          onToggleDetailFinger: _togglePreviewDetailFinger,
-        ),
-        const SizedBox(height: 16),
-        _CollapsibleTryOnSection(
-          title: 'Placement',
-          expanded: _showPlacementSection,
-          onToggle: () => setState(() => _showPlacementSection = !_showPlacementSection),
-          trailing: FilledButton.icon(
-            onPressed: _selectedComponent == null ? null : _addSelectedComponent,
-            icon: const Icon(Icons.add),
-            label: const Text('Add'),
-          ),
-          child: TryOnPlacementControls(
-            selectedPlacement: _selectedPlacement,
-            onMoveLeft: () => _nudge(dx: -0.04),
-            onMoveRight: () => _nudge(dx: 0.04),
-            onMoveUp: () => _nudge(dy: -0.04),
-            onMoveDown: () => _nudge(dy: 0.04),
-            onScaleDown: () => _nudge(scale: -0.05),
-            onScaleUp: () => _nudge(scale: 0.05),
-            onRotateLeft: () => _nudge(rotation: -10),
-            onRotateRight: () => _nudge(rotation: 10),
-            onRemove: _removeSelectedPlacement,
+        // Phần trên: Bảng Preview cố định
+        SizedBox(
+          height: MediaQuery.of(context).size.height * 0.35,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 16.0, left: 16.0, right: 16.0, bottom: 8.0),
+            child: TryOnPreviewBoard(
+              nail: _customerNail,
+              selectedShape: _selectedNailShape,
+              selectedSurface: _selectedNailSurface,
+              selectedColor: _activeFingerColor,
+              gradientStops: _activeFingerGradient,
+              fingerColors: _fingerColors,
+              fingerGradients: _fingerGradients,
+              selectedFingerIndex: _selectedFingerIndex,
+              detailFingerIndex: _previewDetailFingerIndex,
+              placements: _placements,
+              selectedPlacementId: _selectedPlacementId,
+              onSelectPlacement: (id) => setState(() => _selectedPlacementId = id),
+              onToggleDetailFinger: _togglePreviewDetailFinger,
+            ),
           ),
         ),
-        _CollapsibleTryOnSection(
-          title: 'Placement',
-          expanded: _showPlacementSection,
-          onToggle: () => setState(() => _showPlacementSection = !_showPlacementSection),
-          trailing: FilledButton.icon(
-            onPressed: _selectedComponent == null ? null : _addSelectedComponent,
-            icon: const Icon(Icons.add),
-            label: const Text('Add'),
-          ),
-          child: TryOnPlacementControls(
-            selectedPlacement: _selectedPlacement,
-            onMoveLeft: () => _nudge(dx: -0.04),
-            onMoveRight: () => _nudge(dx: 0.04),
-            onMoveUp: () => _nudge(dy: -0.04),
-            onMoveDown: () => _nudge(dy: 0.04),
-            onScaleDown: () => _nudge(scale: -0.05),
-            onScaleUp: () => _nudge(scale: 0.05),
-            onRotateLeft: () => _nudge(rotation: -10),
-            onRotateRight: () => _nudge(rotation: 10),
-            onRemove: _removeSelectedPlacement,
-          ),
-        ),
-        const SizedBox(height: 16),
-        _CollapsibleTryOnSection(
-          title: 'Shape',
-          expanded: _showShapeSection,
-          onToggle: () => setState(() => _showShapeSection = !_showShapeSection),
-          child: NailShapeSelector(
-            shapes: data.nailShapes,
-            selectedShape: _selectedNailShape,
-            showTitle: false,
-            onSelected: (shape) => setState(() => _selectedNailShape = shape),
-          ),
-        ),
-        _CollapsibleTryOnSection(
-          title: 'Surface',
-          expanded: _showSurfaceSection,
-          onToggle: () => setState(() => _showSurfaceSection = !_showSurfaceSection),
-          child: NailSurfaceSelector(
-            surfaces: data.nailSurfaces,
-            selectedSurface: _selectedNailSurface,
-            onSelected: (surface) => setState(() => _selectedNailSurface = surface),
-          ),
-        ),
-        _CollapsibleTryOnSection(
-          title: 'Color',
-          expanded: _showColorSection,
-          onToggle: () => setState(() => _showColorSection = !_showColorSection),
-          child: TryOnColorSelector(
-            selectedColor: _activeFingerColor,
-            gradientStops: _activeFingerGradient,
-            showTitle: false,
-            onColorSelected: (color) => setState(() {
-              if (_selectedFingerIndex == -1) {
-                for (var i = 1; i <= 5; i++) {
-                  _fingerColors[i] = color;
-                }
-              } else {
-                _fingerColors[_selectedFingerIndex] = color;
-              }
-            }),
-            onGradientChanged: (gradient) => setState(() {
-              if (_selectedFingerIndex == -1) {
-                for (var i = 1; i <= 5; i++) {
-                  _fingerGradients[i] =
-                      gradient == null ? null : [...gradient];
-                }
-              } else {
-                _fingerGradients[_selectedFingerIndex] =
-                    gradient == null ? null : [...gradient];
-              }
-            }),
-          ),
-        ),
-
-        _CollapsibleTryOnSection(
-          title: 'Components',
-          expanded: _showSystemComponents,
-          onToggle: () => setState(() => _showSystemComponents = !_showSystemComponents),
-          child: ComponentGrid(
-            title: 'System components',
-            components: data.combinedComponents.where((item) => !item.isCustomerComponent).toList(),
-            selectedComponent: _selectedComponent,
-            onSelected: (component) => setState(() => _selectedComponent = component),
-          ),
-        ),
-        _CollapsibleTryOnSection(
-          title: 'Customer components',
-          expanded: _showCustomerComponents,
-          onToggle: () => setState(() => _showCustomerComponents = !_showCustomerComponents),
-          child: ComponentGrid(
-            title: 'My components',
-            components: data.combinedComponents.where((item) => item.isCustomerComponent).toList(),
-            selectedComponent: _selectedComponent,
-            onSelected: (component) => setState(() => _selectedComponent = component),
+        
+        // Phần dưới: Điều khiển công cụ (Scrollable)
+        Expanded(
+          child: Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, -5),
+                )
+              ],
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // 1. TabBar
+                  TabBar(
+                    controller: _tabController,
+                    labelColor: Colors.pink,
+                    unselectedLabelColor: Colors.grey,
+                    indicatorColor: Colors.pink,
+                    isScrollable: true,
+                    tabAlignment: TabAlignment.start,
+                    labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+                    tabs: const [
+                      Tab(text: "Dáng móng"),
+                      Tab(text: "Bề mặt"),
+                      Tab(text: "Màu sắc"),
+                      Tab(text: "Phụ kiện"),
+                    ],
+                  ),
+                  
+                  // 2. Nội dung Tab (thay đổi theo index)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: _buildActiveTabContent(data),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildActiveTabContent(TryOnData data) {
+    switch (_tabController.index) {
+      case 0:
+        return _buildShapeTool(data);
+      case 1:
+        return _buildSurfaceTool(data);
+      case 2:
+        return _buildColorTool();
+      case 3:
+        return _buildComponentsTab(data);
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  Widget _buildComponentsTab(TryOnData data) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Nửa trên: Danh sách phụ kiện
+        _buildComponentsTool(data),
+        const SizedBox(height: 16),
+        const Divider(height: 1),
+        const SizedBox(height: 16),
+        // Nửa dưới: Remote D-Pad
+        _buildPlacementTool(),
+      ],
+    );
+  }
+
+  Widget _buildPlacementTool() {
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    _selectedPlacement?.name ?? 'Chưa chọn phụ kiện trên móng',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                FilledButton.icon(
+                  onPressed: _selectedComponent == null ? null : _addSelectedComponent,
+                  icon: const Icon(Icons.add, size: 16),
+                  label: const Text('Thêm vào móng'),
+                  style: FilledButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    backgroundColor: Colors.pink,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TryOnPlacementControls(
+            selectedPlacement: _selectedPlacement,
+            onMoveLeft: () => _nudge(dx: -0.04),
+            onMoveRight: () => _nudge(dx: 0.04),
+            onMoveUp: () => _nudge(dy: -0.04),
+            onMoveDown: () => _nudge(dy: 0.04),
+            onScaleDown: () => _nudge(scale: -0.05),
+            onScaleUp: () => _nudge(scale: 0.05),
+            onRotateLeft: () => _nudge(rotation: -10),
+            onRotateRight: () => _nudge(rotation: 10),
+            onRemove: _removeSelectedPlacement,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShapeTool(TryOnData data) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: NailShapeSelector(
+        shapes: data.nailShapes,
+        selectedShape: _selectedNailShape,
+        showTitle: false,
+        onSelected: (shape) => setState(() => _selectedNailShape = shape),
+      ),
+    );
+  }
+
+  Widget _buildSurfaceTool(TryOnData data) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: NailSurfaceSelector(
+        surfaces: data.nailSurfaces,
+        selectedSurface: _selectedNailSurface,
+        onSelected: (surface) => setState(() => _selectedNailSurface = surface),
+      ),
+    );
+  }
+
+  Widget _buildColorTool() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: TryOnColorSelector(
+        selectedColor: _activeFingerColor,
+        gradientStops: _activeFingerGradient,
+        showTitle: false,
+        onColorSelected: (color) => setState(() {
+          if (_selectedFingerIndex == -1) {
+            for (var i = 1; i <= 5; i++) {
+              _fingerColors[i] = color;
+            }
+          } else {
+            _fingerColors[_selectedFingerIndex] = color;
+          }
+        }),
+        onGradientChanged: (gradient) => setState(() {
+          if (_selectedFingerIndex == -1) {
+            for (var i = 1; i <= 5; i++) {
+              _fingerGradients[i] = gradient == null ? null : [...gradient];
+            }
+          } else {
+            _fingerGradients[_selectedFingerIndex] = gradient == null ? null : [...gradient];
+          }
+        }),
+      ),
+    );
+  }
+
+  Widget _buildComponentsTool(TryOnData data) {
+    return DefaultTabController(
+      length: 2,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            color: Theme.of(context).colorScheme.surface,
+            child: const TabBar(
+              tabs: [
+                Tab(text: 'System'),
+                Tab(text: 'My Components'),
+              ],
+              indicatorSize: TabBarIndicatorSize.tab,
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 170, // Đủ chỗ cho Grid 160px
+            child: TabBarView(
+              children: [
+                ComponentGrid(
+                  title: '',
+                  components: data.combinedComponents.where((item) => !item.isCustomerComponent).toList(),
+                  selectedComponent: _selectedComponent,
+                  onSelected: (component) => setState(() => _selectedComponent = component),
+                ),
+                ComponentGrid(
+                  title: '',
+                  components: data.combinedComponents.where((item) => item.isCustomerComponent).toList(),
+                  selectedComponent: _selectedComponent,
+                  onSelected: (component) => setState(() => _selectedComponent = component),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -625,55 +741,3 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
   }
 }
 
-class _CollapsibleTryOnSection extends StatelessWidget {
-  final String title;
-  final bool expanded;
-  final VoidCallback onToggle;
-  final Widget child;
-  final Widget? trailing;
-
-  const _CollapsibleTryOnSection({
-    required this.title,
-    required this.expanded,
-    required this.onToggle,
-    required this.child,
-    this.trailing,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                ),
-              ),
-              if (trailing != null) ...[
-                trailing!,
-                const SizedBox(width: 6),
-              ],
-              IconButton(
-                tooltip: expanded ? 'Hide' : 'Show',
-                onPressed: onToggle,
-                icon: Icon(expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down),
-              ),
-            ],
-          ),
-          if (expanded) ...[
-            const SizedBox(height: 8),
-            child,
-          ],
-        ],
-      ),
-    );
-  }
-}

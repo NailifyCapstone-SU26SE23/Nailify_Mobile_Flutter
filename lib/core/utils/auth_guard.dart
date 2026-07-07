@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../constants/app_constants.dart';
 import '../di/injection.dart';
+import 'token_utils.dart';
 
 class AuthGuard {
   /// Kiểm tra đăng nhập trước khi thực thi một hành động.
-  /// [onProceed] là hàm sẽ chạy nếu người dùng ĐÃ có Token.
+  /// [onProceed] là hàm sẽ chạy nếu người dùng ĐÃ có Token hợp lệ (chưa hết hạn).
   static void check(BuildContext context, VoidCallback onProceed) {
     final prefs = getIt<SharedPreferences>();
-    final token = prefs.getString(AppConstants.authTokenKey);
+    final isValid = TokenUtils.validateAndCleanToken(prefs);
 
-    if (token != null && token.isNotEmpty) {
+    if (isValid) {
       onProceed();
     } else {
-      // Chưa đăng nhập -> Biến
+      // Chưa đăng nhập hoặc token đã hết hạn
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Vui lòng đăng nhập để đặt lịch hoặc sử dụng tính năng này!'),
+          content: Text('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!'),
           backgroundColor: Colors.red,
           duration: Duration(seconds: 3),
         ),
@@ -25,4 +25,4 @@ class AuthGuard {
       context.push('/login');
     }
   }
-}
+}

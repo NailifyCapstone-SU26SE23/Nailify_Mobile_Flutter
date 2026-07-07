@@ -28,34 +28,36 @@ class _ComponentGridState extends State<ComponentGrid> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          widget.title,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: Colors.grey.shade800,
-              ),
-        ),
-        const SizedBox(height: 8),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: widget.components.length,
-          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: 150,
-            mainAxisExtent: 190,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
+        if (widget.title.isNotEmpty) ...[
+          Text(
+            widget.title,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: Colors.grey.shade800,
+                ),
           ),
-          itemBuilder: (context, index) {
-            final component = widget.components[index];
-            return _ComponentCard(
-              component: component,
-              isSelected: widget.selectedComponent?.id == component.id &&
-                  widget.selectedComponent?.isCustomerComponent ==
-                      component.isCustomerComponent,
-              onTap: () => widget.onSelected(component),
-            );
-          },
+          const SizedBox(height: 8),
+        ],
+        SizedBox(
+          height: 160,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: widget.components.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 12),
+            itemBuilder: (context, index) {
+              final component = widget.components[index];
+              return SizedBox(
+                width: 110,
+                child: _ComponentCard(
+                  component: component,
+                  isSelected: widget.selectedComponent?.id == component.id &&
+                      widget.selectedComponent?.isCustomerComponent ==
+                          component.isCustomerComponent,
+                  onTap: () => widget.onSelected(component),
+                ),
+              );
+            },
+          ),
         ),
       ],
     );
@@ -78,7 +80,7 @@ class _ComponentCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AspectRatio(
-        aspectRatio: 0.72,
+        aspectRatio: 110 / 160,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
@@ -136,8 +138,8 @@ class _ComponentCard extends StatelessWidget {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            _TypeBadge(type: component.type),
-                            const Spacer(),
+                            Expanded(child: _TypeBadge(type: component.type)),
+                            const SizedBox(width: 4),
                             if (component.price != null)
                               Text(
                                 '\$${component.price!.toStringAsFixed(2)}',
@@ -204,6 +206,8 @@ class _TypeBadge extends StatelessWidget {
       child: Text(
         type.name.toUpperCase(),
         style: TextStyle(fontSize: 8, color: badgeColor, fontWeight: FontWeight.w800),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }

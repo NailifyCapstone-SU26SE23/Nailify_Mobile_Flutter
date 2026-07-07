@@ -10,6 +10,7 @@ import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/localization/app_localizations.dart';
 import 'core/localization/locale_service.dart';
+import 'core/utils/token_utils.dart';
 
 void main() async {
   // Đảm bảo Flutter framework được nạp xong trước khi cấu hình hệ thống ngoài
@@ -31,8 +32,12 @@ void main() async {
     print('Lỗi cấu hình Dependency Injection: $e');
   }
 
+  // Kiểm tra token khi mở app: nếu hết hạn thì tự động xóa
+  final prefs = await SharedPreferences.getInstance();
+  TokenUtils.validateAndCleanToken(prefs);
+
   // Khởi tạo dịch vụ ngôn ngữ dựa trên SharedPreferences
-  final localeService = LocaleService(await SharedPreferences.getInstance());
+  final localeService = LocaleService(prefs);
 
   runApp(
     ChangeNotifierProvider.value(

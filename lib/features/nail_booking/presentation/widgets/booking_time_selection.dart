@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../my_booking/data/datasources/waitlist_api_service.dart';
 
 class BookingTimeSelection extends StatefulWidget {
   final List<dynamic> timeSlots;
   final bool isLoading;
   final String? selectedTime;
   final bool canSelect;
-  final DateTime? selectedDate; // Nhận vào ngày đang chọn từ trang tổng
+  final DateTime? selectedDate;
+  final String? salonId;       // Dùng cho Waitlist join API
+  final String? artistId;      // Dùng cho Waitlist join API (nullable = bất kỳ)
   final Function(String) onTimeChanged;
 
   const BookingTimeSelection({
@@ -18,6 +21,8 @@ class BookingTimeSelection extends StatefulWidget {
     required this.canSelect,
     required this.selectedDate,
     required this.onTimeChanged,
+    this.salonId,
+    this.artistId,
   });
 
   @override
@@ -26,18 +31,53 @@ class BookingTimeSelection extends StatefulWidget {
 
 class _BookingTimeSelectionState extends State<BookingTimeSelection> {
   final Set<String> _waitlistedTimes = {};
+  final WaitlistApiService _waitlistApi = WaitlistApiService();
+  bool _isJoining = false;
 
-  void _showWaitlistBottomSheet(String time) {
+  Future<void> _showWaitlistBottomSheet(String time) async {
+    if (widget.salonId == null) {
+      // Nếu không có salonId thì show UI cũ (no-op API)
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => _WaitlistJoinSheet(
+          time: time.substring(0, 5),
+          onJoin: () {
+            setState(() => _waitlistedTimes.add(time));
+          },
+          onPickOther: () => Navigator.pop(context),
+        ),
+      );
+      return;
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _WaitlistJoinSheet(
         time: time.substring(0, 5),
-        onJoin: () {
-          setState(() {
-            _waitlistedTimes.add(time);
-          });
+        onJoin: () async {
+          if (_isJoining) return;
+          _isJoining = true;
+          try {
+            await _waitlistApi.joinWaitlist(
+              salonId: widget.salonId!,
+              preferredNailArtistId: widget.artistId,
+              requestedDate: widget.selectedDate ?? DateTime.now(),
+              requestedStartTime: time,
+            );
+            if (mounted) setState(() => _waitlistedTimes.add(time));
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Lỗi tham gia hàng chờ: $e')),
+              );
+            }
+          } finally {
+            _isJoining = false;
+          }
         },
         onPickOther: () => Navigator.pop(context),
       ),

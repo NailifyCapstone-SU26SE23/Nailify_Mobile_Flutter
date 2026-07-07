@@ -1,8 +1,88 @@
 // ====================================================================
 // FILE: lib/features/my_booking/data/models/waitlist_model.dart
-// Mô tả: Model & Mock Data cho tính năng Slot Waitlist
+// Mô tả: Model cho tính năng Slot Waitlist (API thật + Mock data fallback)
 // ====================================================================
 
+// ─────────────────────────────────────────────────────────────
+// MODEL DÙNG VỚI API THẬT (/api/Waitlists/me, join, confirm, cancel)
+// ─────────────────────────────────────────────────────────────
+class WaitlistApiModel {
+  final String waitlistId;
+  final String? customerId;
+  final String? customerName;
+  final String? salonId;
+  final String? salonName;
+  final String? preferredNailArtistId;
+  final String? preferredNailArtistName;
+  final DateTime? requestedDate;
+  final String? requestedStartTime;
+  final int? estimatedDuration;
+  final int? position;
+  final String status; // "Pending", "Opened", "Confirmed", "Cancelled"
+  final DateTime? createdAt;
+  final DateTime? notifiedAt;
+  final DateTime? expiresAt;
+  final String? convertedBookingId;
+
+  const WaitlistApiModel({
+    required this.waitlistId,
+    this.customerId,
+    this.customerName,
+    this.salonId,
+    this.salonName,
+    this.preferredNailArtistId,
+    this.preferredNailArtistName,
+    this.requestedDate,
+    this.requestedStartTime,
+    this.estimatedDuration,
+    this.position,
+    required this.status,
+    this.createdAt,
+    this.notifiedAt,
+    this.expiresAt,
+    this.convertedBookingId,
+  });
+
+  bool get isOpened => status.toLowerCase() == 'opened' || status.toLowerCase() == 'notified';
+  bool get isPending => status.toLowerCase() == 'pending' || status.toLowerCase() == 'waiting';
+
+  factory WaitlistApiModel.fromJson(Map<String, dynamic> json) {
+    return WaitlistApiModel(
+      waitlistId: json['wailistId']?.toString() ?? json['waitlistId']?.toString() ?? '',
+      customerId: json['customerId']?.toString(),
+      customerName: json['customerName']?.toString(),
+      salonId: json['salonId']?.toString(),
+      salonName: json['salonName']?.toString(),
+      preferredNailArtistId: json['preferredNailArtistId']?.toString(),
+      preferredNailArtistName: json['preferredNailArtistName']?.toString(),
+      requestedDate: json['requestedDate'] != null
+          ? DateTime.tryParse(json['requestedDate'].toString())
+          : null,
+      requestedStartTime: json['requestedStartTime']?.toString(),
+      estimatedDuration: json['estimatedDuration'] is int
+          ? json['estimatedDuration'] as int
+          : int.tryParse(json['estimatedDuration']?.toString() ?? ''),
+      position: json['position'] is int
+          ? json['position'] as int
+          : int.tryParse(json['position']?.toString() ?? ''),
+      status: json['status']?.toString() ?? 'Pending',
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'].toString())
+          : null,
+      notifiedAt: json['notifiedAt'] != null
+          ? DateTime.tryParse(json['notifiedAt'].toString())
+          : null,
+      expiresAt: json['expiresAt'] != null
+          ? DateTime.tryParse(json['expiresAt'].toString())
+          : null,
+      convertedBookingId: json['convertedBookingId']?.toString(),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// MODEL CŨ - Giữ lại để WaitlistCard vẫn tương thích (sẽ loại bỏ dần)
+// ─────────────────────────────────────────────────────────────
 enum WaitlistStatus { pending, opened }
 
 class WaitlistModel {
@@ -29,6 +109,24 @@ class WaitlistModel {
     required this.holdUntil,
     required this.registeredAt,
   });
+
+  /// Tạo WaitlistModel từ WaitlistApiModel (để tương thích WaitlistCard)
+  factory WaitlistModel.fromApi(WaitlistApiModel api) {
+    final timeRaw = api.requestedStartTime ?? '00:00';
+    final timeFormatted = timeRaw.length >= 5 ? timeRaw.substring(0, 5) : timeRaw;
+    return WaitlistModel(
+      id: api.waitlistId,
+      salonName: api.salonName ?? 'Salon',
+      address: '',
+      time: timeFormatted,
+      date: api.requestedDate ?? DateTime.now(),
+      staffName: api.preferredNailArtistName ?? 'Bất kỳ',
+      services: [],
+      status: api.isOpened ? WaitlistStatus.opened : WaitlistStatus.pending,
+      holdUntil: api.expiresAt ?? DateTime.now().add(const Duration(minutes: 30)),
+      registeredAt: api.createdAt ?? DateTime.now(),
+    );
+  }
 
   WaitlistModel copyWith({
     String? id,
@@ -57,46 +155,3 @@ class WaitlistModel {
   }
 }
 
-// ====================================================================
-// MOCK DATA - Dữ liệu giả lập cục bộ
-// ====================================================================
-class WaitlistMockData {
-  static List<WaitlistModel> get initialList => [
-        WaitlistModel(
-          id: 'wl-001',
-          salonName: 'Nailify - Chi nhánh Quận 1',
-          address: '12 Nguyễn Huệ, Bến Nghé, Quận 1, TP.HCM',
-          time: '09:00',
-          date: DateTime.now().add(const Duration(days: 2)),
-          staffName: 'Trung Hiếu',
-          services: ['Làm móng gel', 'Vẽ nghệ thuật', 'Dưỡng móng'],
-          status: WaitlistStatus.opened, // Trạng thái: CÓ CHỖ TRỐNG
-          holdUntil: DateTime.now().add(const Duration(minutes: 5)),
-          registeredAt: DateTime.now().subtract(const Duration(hours: 3)),
-        ),
-        WaitlistModel(
-          id: 'wl-002',
-          salonName: 'Nailify - Chi nhánh Quận 3',
-          address: '45 Võ Văn Tần, Phường 6, Quận 3, TP.HCM',
-          time: '14:00',
-          date: DateTime.now().add(const Duration(days: 1)),
-          staffName: 'Thanh Lan',
-          services: ['Sơn thường', 'Cắt tỉa'],
-          status: WaitlistStatus.pending, // Trạng thái: ĐANG XẾP HÀNG
-          holdUntil: DateTime.now().add(const Duration(hours: 2)),
-          registeredAt: DateTime.now().subtract(const Duration(hours: 2)),
-        ),
-        WaitlistModel(
-          id: 'wl-003',
-          salonName: 'Nailify - Chi nhánh Bình Thạnh',
-          address: '87 Đinh Tiên Hoàng, Phường 3, Bình Thạnh, TP.HCM',
-          time: '11:30',
-          date: DateTime.now().add(const Duration(days: 4)),
-          staffName: 'Minh Châu',
-          services: ['Làm móng gel', 'Spa tay chân'],
-          status: WaitlistStatus.pending,
-          holdUntil: DateTime.now().add(const Duration(hours: 1)),
-          registeredAt: DateTime.now().subtract(const Duration(minutes: 30)),
-        ),
-      ];
-}

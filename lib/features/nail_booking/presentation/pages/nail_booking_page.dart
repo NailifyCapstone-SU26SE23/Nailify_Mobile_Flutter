@@ -277,13 +277,15 @@ class _NailBookingViewState extends State<_NailBookingView> {
                           AnimatedSwitcher(
                             duration: const Duration(milliseconds: 250),
                             child: state.canSelectTime
-                                ? BookingTimeSelection(
+                                  ? BookingTimeSelection(
                                     key: const ValueKey('time-visible'),
                                     timeSlots: state.timeSlots,
                                     isLoading: state.isLoadingTimes,
                                     selectedTime: state.selectedTime,
                                     canSelect: true,
                                     selectedDate: state.selectedDate,
+                                    salonId: state.selectedBranch?['salonId']?.toString(),
+                                    artistId: state.noArtistSelected ? null : state.selectedStylist?['nailArtistId']?.toString(),
                                     onTimeChanged: cubit.selectTime,
                                   )
                                 : const SizedBox(key: ValueKey('time-hidden')),

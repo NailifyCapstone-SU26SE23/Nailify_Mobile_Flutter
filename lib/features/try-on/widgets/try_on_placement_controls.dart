@@ -43,7 +43,7 @@ class TryOnPlacementControls extends StatelessWidget {
             color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
-          )
+          ),
         ],
       ),
       child: Row(
@@ -53,12 +53,18 @@ class TryOnPlacementControls extends StatelessWidget {
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _RemoteBtn(icon: Icons.add, onPressed: enabled ? onScaleUp : null),
+              _RemoteBtn(
+                icon: Icons.add,
+                onPressed: enabled ? onScaleUp : null,
+              ),
               const SizedBox(height: 16),
-              _RemoteBtn(icon: Icons.remove, onPressed: enabled ? onScaleDown : null),
+              _RemoteBtn(
+                icon: Icons.remove,
+                onPressed: enabled ? onScaleDown : null,
+              ),
             ],
           ),
-          
+
           // Ở giữa: D-Pad
           SizedBox(
             width: 140,
@@ -66,10 +72,34 @@ class TryOnPlacementControls extends StatelessWidget {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                Positioned(top: 0, child: _RemoteBtn(icon: Icons.keyboard_arrow_up, onPressed: enabled ? onMoveUp : null)),
-                Positioned(bottom: 0, child: _RemoteBtn(icon: Icons.keyboard_arrow_down, onPressed: enabled ? onMoveDown : null)),
-                Positioned(left: 0, child: _RemoteBtn(icon: Icons.keyboard_arrow_left, onPressed: enabled ? onMoveLeft : null)),
-                Positioned(right: 0, child: _RemoteBtn(icon: Icons.keyboard_arrow_right, onPressed: enabled ? onMoveRight : null)),
+                Positioned(
+                  top: 0,
+                  child: _RemoteBtn(
+                    icon: Icons.keyboard_arrow_up,
+                    onPressed: enabled ? onMoveUp : null,
+                  ),
+                ),
+                Positioned(
+                  bottom: 0,
+                  child: _RemoteBtn(
+                    icon: Icons.keyboard_arrow_down,
+                    onPressed: enabled ? onMoveDown : null,
+                  ),
+                ),
+                Positioned(
+                  left: 0,
+                  child: _RemoteBtn(
+                    icon: Icons.keyboard_arrow_left,
+                    onPressed: enabled ? onMoveLeft : null,
+                  ),
+                ),
+                Positioned(
+                  right: 0,
+                  child: _RemoteBtn(
+                    icon: Icons.keyboard_arrow_right,
+                    onPressed: enabled ? onMoveRight : null,
+                  ),
+                ),
                 _RemoteBtn(
                   icon: Icons.delete_outline,
                   color: Colors.red.shade50,
@@ -84,9 +114,15 @@ class TryOnPlacementControls extends StatelessWidget {
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _RemoteBtn(icon: Icons.rotate_right, onPressed: enabled ? onRotateRight : null),
+              _RemoteBtn(
+                icon: Icons.rotate_right,
+                onPressed: enabled ? onRotateRight : null,
+              ),
               const SizedBox(height: 16),
-              _RemoteBtn(icon: Icons.rotate_left, onPressed: enabled ? onRotateLeft : null),
+              _RemoteBtn(
+                icon: Icons.rotate_left,
+                onPressed: enabled ? onRotateLeft : null,
+              ),
             ],
           ),
         ],
@@ -117,9 +153,12 @@ class _RemoteBtn extends StatelessWidget {
         onPressed: onPressed,
         style: FilledButton.styleFrom(
           padding: EdgeInsets.zero,
-          backgroundColor: color ?? Theme.of(context).colorScheme.primaryContainer,
+          backgroundColor:
+              color ?? Theme.of(context).colorScheme.primaryContainer,
           foregroundColor: iconColor ?? Theme.of(context).colorScheme.primary,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
         child: Icon(icon, size: 24),
       ),

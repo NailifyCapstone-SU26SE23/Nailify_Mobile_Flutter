@@ -224,7 +224,6 @@ class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
                     if (nail.status == 'Approved' ||
                         nail.status == 'Quoted') ...[
                       const SizedBox(height: 20),
-                      _buildShapeMethodSelector(nail),
                     ],
                   ],
                 ),
@@ -325,56 +324,6 @@ class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildShapeMethodSelector(CustomerNailModel nail) {
-    return FutureBuilder<List<ShapeMethodConfigModel>>(
-      future: _shapeMethodsFor(nail),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final methods = (snapshot.data ?? const <ShapeMethodConfigModel>[])
-            .where((method) => method.status.toLowerCase() == 'active')
-            .toList();
-        if (methods.isEmpty) return const SizedBox.shrink();
-        _selectedShapeMethod ??= methods.first;
-
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.borderLight),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Phương thức làm móng',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              ...methods.map(
-                (method) => RadioListTile<int>(
-                  value: method.shapeMethodConfigId,
-                  groupValue: _selectedShapeMethod?.shapeMethodConfigId,
-                  onChanged: (_) =>
-                      setState(() => _selectedShapeMethod = method),
-                  title: Text(method.name),
-                  subtitle: Text('${method.duration} phút'),
-                  secondary: Text(
-                    PriceFormatter.format(method.price),
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 

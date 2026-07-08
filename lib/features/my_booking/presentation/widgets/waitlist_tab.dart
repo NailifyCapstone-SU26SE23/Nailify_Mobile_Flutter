@@ -40,8 +40,14 @@ class _WaitlistTabState extends State<WaitlistTab> {
       // Map API models sang WaitlistModel và sort: opened trước
       final models = apiItems.map((e) => WaitlistModel.fromApi(e)).toList();
       models.sort((a, b) {
-        if (a.status == WaitlistStatus.opened && b.status != WaitlistStatus.opened) return -1;
-        if (a.status != WaitlistStatus.opened && b.status == WaitlistStatus.opened) return 1;
+        if (a.status == WaitlistStatus.opened &&
+            b.status != WaitlistStatus.opened) {
+          return -1;
+        }
+        if (a.status != WaitlistStatus.opened &&
+            b.status == WaitlistStatus.opened) {
+          return 1;
+        }
         return 0;
       });
       if (mounted) setState(() => _waitlist = models);
@@ -64,15 +70,17 @@ class _WaitlistTabState extends State<WaitlistTab> {
             content: const Text('Đã hủy chờ thành công.'),
             backgroundColor: Colors.grey.shade800,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi hủy chờ: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Lỗi hủy chờ: $e')));
     }
   }
 
@@ -93,15 +101,17 @@ class _WaitlistTabState extends State<WaitlistTab> {
             ),
             backgroundColor: AppColors.primary,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi xác nhận: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Lỗi xác nhận: $e')));
     }
   }
 
@@ -118,7 +128,10 @@ class _WaitlistTabState extends State<WaitlistTab> {
           children: [
             Icon(Icons.error_outline, size: 52, color: Colors.red.shade300),
             const SizedBox(height: 12),
-            Text('Không thể tải lịch chờ', style: TextStyle(color: Colors.grey.shade700)),
+            Text(
+              'Không thể tải lịch chờ',
+              style: TextStyle(color: Colors.grey.shade700),
+            ),
             const SizedBox(height: 12),
             TextButton.icon(
               onPressed: _fetchWaitlists,
@@ -181,10 +194,7 @@ class _WaitlistTabState extends State<WaitlistTab> {
           const SizedBox(height: 8),
           Text(
             'Khi khung giờ bạn chờ có chỗ trống,\nbạn sẽ nhận được thông báo tại đây.',
-            style: TextStyle(
-              color: Colors.grey.shade500,
-              height: 1.5,
-            ),
+            style: TextStyle(color: Colors.grey.shade500, height: 1.5),
             textAlign: TextAlign.center,
           ),
         ],

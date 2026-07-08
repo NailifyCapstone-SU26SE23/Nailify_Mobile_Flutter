@@ -24,16 +24,14 @@ import '../widgets/try_on_preview_board.dart';
 class TryOnSetupScreen extends StatefulWidget {
   final CustomerNailModel? customerNail;
 
-  const TryOnSetupScreen({
-    super.key,
-    this.customerNail,
-  });
+  const TryOnSetupScreen({super.key, this.customerNail});
 
   @override
   State<TryOnSetupScreen> createState() => _TryOnSetupScreenState();
 }
 
-class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerProviderStateMixin {
+class _TryOnSetupScreenState extends State<TryOnSetupScreen>
+    with SingleTickerProviderStateMixin {
   late final TryOnSetupService _setupService;
   late final NailComponentRepository _componentRepository;
   late final CustomerNailRepository _customerNailRepository;
@@ -41,12 +39,12 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
   bool _isLoading = true;
   bool _isSaving = false;
   bool _launching = false;
-  bool _showShapeSection = true;
-  bool _showSurfaceSection = true;
-  bool _showColorSection = true;
-  bool _showPlacementSection = true;
-  bool _showSystemComponents = true;
-  bool _showCustomerComponents = true;
+  final bool _showShapeSection = true;
+  final bool _showSurfaceSection = true;
+  final bool _showColorSection = true;
+  final bool _showPlacementSection = true;
+  final bool _showSystemComponents = true;
+  final bool _showCustomerComponents = true;
   String? _error;
   TryOnData? _tryOnData;
   CustomerNailModel? _customerNail;
@@ -107,14 +105,16 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
       final results = await Future.wait([
         _setupService.fetchTryOnData(),
         if (widget.customerNail != null)
-          _customerNailRepository.getCustomerNailById(widget.customerNail!.customerNailId),
+          _customerNailRepository.getCustomerNailById(
+            widget.customerNail!.customerNailId,
+          ),
       ]);
       final data = results.first as TryOnData;
       final customerNail = widget.customerNail == null
           ? null
           : results.length > 1
-              ? results[1] as CustomerNailModel
-              : widget.customerNail;
+          ? results[1] as CustomerNailModel
+          : widget.customerNail;
 
       final customColorJson = customerNail?.customColor;
       final Map<int, String> initialColors = {
@@ -138,17 +138,24 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
           if (fingers is List) {
             for (final finger in fingers) {
               if (finger is Map) {
-                final fIdx = asTryOnInt(finger['fingerIndex'] ?? finger['FingerIndex']);
+                final fIdx = asTryOnInt(
+                  finger['fingerIndex'] ?? finger['FingerIndex'],
+                );
                 final color = finger['color'] ?? finger['Color'];
                 if (fIdx >= 1 && fIdx <= 5 && color is String) {
                   initialColors[fIdx] = color;
                 }
                 final gradient = finger['gradient'] ?? finger['Gradient'];
-                if (fIdx >= 1 && fIdx <= 5 && gradient is Map && gradient['enabled'] == true) {
+                if (fIdx >= 1 &&
+                    fIdx <= 5 &&
+                    gradient is Map &&
+                    gradient['enabled'] == true) {
                   final stops = gradient['stops'];
                   if (stops is List) {
-                    initialGradients[fIdx] =
-                        stops.map((item) => item.toString()).take(3).toList();
+                    initialGradients[fIdx] = stops
+                        .map((item) => item.toString())
+                        .take(3)
+                        .toList();
                   }
                 }
               }
@@ -175,7 +182,9 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
         _placements
           ..clear()
           ..addAll(_buildDrafts(customerNail, data.combinedComponents));
-        _selectedPlacementId = _placements.isEmpty ? null : _placements.first.localId;
+        _selectedPlacementId = _placements.isEmpty
+            ? null
+            : _placements.first.localId;
         _isLoading = false;
       });
     } catch (error) {
@@ -186,16 +195,26 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
     }
   }
 
-  NailShapeModel? _resolveShape(List<NailShapeModel> shapes, CustomerNailModel? nail) {
+  NailShapeModel? _resolveShape(
+    List<NailShapeModel> shapes,
+    CustomerNailModel? nail,
+  ) {
     if (nail == null) return shapes.isEmpty ? null : shapes.first;
-    return shapes.where((shape) => shape.nailShapeId == nail.nailShapeId).firstOrNull ??
+    return shapes
+            .where((shape) => shape.nailShapeId == nail.nailShapeId)
+            .firstOrNull ??
         nail.nailShape ??
         (shapes.isEmpty ? null : shapes.first);
   }
 
-  NailSurfaceModel? _resolveSurface(List<NailSurfaceModel> surfaces, CustomerNailModel? nail) {
+  NailSurfaceModel? _resolveSurface(
+    List<NailSurfaceModel> surfaces,
+    CustomerNailModel? nail,
+  ) {
     if (nail == null) return surfaces.isEmpty ? null : surfaces.first;
-    return surfaces.where((surface) => surface.nailSurfaceId == nail.nailSurfaceId).firstOrNull ??
+    return surfaces
+            .where((surface) => surface.nailSurfaceId == nail.nailSurfaceId)
+            .firstOrNull ??
         nail.nailSurface ??
         (surfaces.isEmpty ? null : surfaces.first);
   }
@@ -206,28 +225,30 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
   ) {
     if (nail == null) return const [];
     return nail.customerNailComponents.map((item) {
-      final component = components.firstWhereOrNull(
-        (component) {
-          if (item.customerComponentId != null) {
-            return component.isCustomerComponent &&
-                component.customerComponentId == item.customerComponentId;
-          }
-          if (item.componentId != null) {
-            return !component.isCustomerComponent &&
-                component.componentId == item.componentId;
-          }
-          return false;
-        },
+      final component = components.firstWhereOrNull((component) {
+        if (item.customerComponentId != null) {
+          return component.isCustomerComponent &&
+              component.customerComponentId == item.customerComponentId;
+        }
+        if (item.componentId != null) {
+          return !component.isCustomerComponent &&
+              component.componentId == item.componentId;
+        }
+        return false;
+      });
+      return PlacedComponentDraft.fromCustomerNailComponent(
+        item,
+        component: component,
       );
-      return PlacedComponentDraft.fromCustomerNailComponent(item, component: component);
     }).toList();
   }
 
   void _addSelectedComponent() {
     final component = _selectedComponent;
     if (component == null) return;
-    final targetFingers =
-        _selectedFingerIndex == -1 ? [1, 2, 3, 4, 5] : [_selectedFingerIndex];
+    final targetFingers = _selectedFingerIndex == -1
+        ? [1, 2, 3, 4, 5]
+        : [_selectedFingerIndex];
     final createdAt = DateTime.now().microsecondsSinceEpoch;
     final drafts = [
       for (var index = 0; index < targetFingers.length; index++)
@@ -259,11 +280,18 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
         _deletedPlacementIds.add(selected.customerNailComponentId!);
       }
       _placements.removeWhere((item) => item.localId == selected.localId);
-      _selectedPlacementId = _placements.isEmpty ? null : _placements.last.localId;
+      _selectedPlacementId = _placements.isEmpty
+          ? null
+          : _placements.last.localId;
     });
   }
 
-  void _nudge({double dx = 0, double dy = 0, double scale = 0, double rotation = 0}) {
+  void _nudge({
+    double dx = 0,
+    double dy = 0,
+    double scale = 0,
+    double rotation = 0,
+  }) {
     final index = _selectedPlacementIndex;
     if (index == -1) return;
     final current = _placements[index];
@@ -279,8 +307,9 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
 
   void _togglePreviewDetailFinger(int fingerIndex) {
     setState(() {
-      _previewDetailFingerIndex =
-          _previewDetailFingerIndex == fingerIndex ? null : fingerIndex;
+      _previewDetailFingerIndex = _previewDetailFingerIndex == fingerIndex
+          ? null
+          : fingerIndex;
       _selectedFingerIndex = _previewDetailFingerIndex ?? -1;
     });
   }
@@ -296,7 +325,11 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
     try {
       final service = getIt<ArTryOnService>();
       final available = await service.isAvailable();
-      if (!available) throw UnsupportedError('Virtual try-on is not available on this build.');
+      if (!available) {
+        throw UnsupportedError(
+          'Virtual try-on is not available on this build.',
+        );
+      }
       if (photo) {
         await service.launchCustomerPhoto(preview);
       } else {
@@ -327,7 +360,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
                     'stops': _fingerGradients[i],
                     'stopCount': _fingerGradients[i]!.length,
                   },
-          }
+          },
       ],
     });
   }
@@ -382,7 +415,9 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
       }
 
       _deletedPlacementIds.clear();
-      final fresh = await _customerNailRepository.getCustomerNailById(nail.customerNailId);
+      final fresh = await _customerNailRepository.getCustomerNailById(
+        nail.customerNailId,
+      );
       setState(() => _customerNail = fresh);
       _showMessage('Đã lưu thiết lập thử móng.');
       await _fetchData();
@@ -411,7 +446,10 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
       nailShape: shape,
       nailSurface: _selectedNailSurface ?? nail?.nailSurface,
       customerNailComponents: _placements
-          .map((placement) => placement.toCustomerNailComponent(nail?.customerNailId ?? 0))
+          .map(
+            (placement) =>
+                placement.toCustomerNailComponent(nail?.customerNailId ?? 0),
+          )
           .toList(),
     );
   }
@@ -431,9 +469,13 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+      backgroundColor: Theme.of(
+        context,
+      ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       appBar: AppBar(
-        title: Text(_customerNail == null ? 'Thiết kế móng' : _customerNail!.name),
+        title: Text(
+          _customerNail == null ? 'Thiết kế móng' : _customerNail!.name,
+        ),
         backgroundColor: Colors.transparent,
       ),
       body: Stack(
@@ -451,7 +493,10 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
       bottomNavigationBar: TryOnActionBar(
         canSave: _customerNail != null && _selectedNailShape != null,
         isSaving: _isSaving,
+        isLaunching: _launching,
         onSave: _save,
+        onLiveTryOn: () => _launchTryOn(photo: false),
+        onPhotoTryOn: () => _launchTryOn(photo: true),
       ),
     );
   }
@@ -468,7 +513,12 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
         SizedBox(
           height: MediaQuery.of(context).size.height * 0.35,
           child: Padding(
-            padding: const EdgeInsets.only(top: 16.0, left: 16.0, right: 16.0, bottom: 8.0),
+            padding: const EdgeInsets.only(
+              top: 16.0,
+              left: 16.0,
+              right: 16.0,
+              bottom: 8.0,
+            ),
             child: TryOnPreviewBoard(
               nail: _customerNail,
               selectedShape: _selectedNailShape,
@@ -481,12 +531,13 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
               detailFingerIndex: _previewDetailFingerIndex,
               placements: _placements,
               selectedPlacementId: _selectedPlacementId,
-              onSelectPlacement: (id) => setState(() => _selectedPlacementId = id),
+              onSelectPlacement: (id) =>
+                  setState(() => _selectedPlacementId = id),
               onToggleDetailFinger: _togglePreviewDetailFinger,
             ),
           ),
         ),
-        
+
         // Phần dưới: Điều khiển công cụ (Scrollable)
         Expanded(
           child: Container(
@@ -498,9 +549,11 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
                   color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, -5),
-                )
+                ),
               ],
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
             ),
             child: SingleChildScrollView(
               child: Column(
@@ -522,7 +575,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
                       Tab(text: "Phụ kiện"),
                     ],
                   ),
-                  
+
                   // 2. Nội dung Tab (thay đổi theo index)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
@@ -573,25 +626,35 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
         mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 8.0,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
                   child: Text(
                     _selectedPlacement?.name ?? 'Chưa chọn phụ kiện trên móng',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 FilledButton.icon(
-                  onPressed: _selectedComponent == null ? null : _addSelectedComponent,
+                  onPressed: _selectedComponent == null
+                      ? null
+                      : _addSelectedComponent,
                   icon: const Icon(Icons.add, size: 16),
                   label: const Text('Thêm vào móng'),
                   style: FilledButton.styleFrom(
                     visualDensity: VisualDensity.compact,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     backgroundColor: Colors.pink,
                   ),
                 ),
@@ -660,7 +723,9 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
               _fingerGradients[i] = gradient == null ? null : [...gradient];
             }
           } else {
-            _fingerGradients[_selectedFingerIndex] = gradient == null ? null : [...gradient];
+            _fingerGradients[_selectedFingerIndex] = gradient == null
+                ? null
+                : [...gradient];
           }
         }),
       ),
@@ -690,15 +755,21 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
               children: [
                 ComponentGrid(
                   title: '',
-                  components: data.combinedComponents.where((item) => !item.isCustomerComponent).toList(),
+                  components: data.combinedComponents
+                      .where((item) => !item.isCustomerComponent)
+                      .toList(),
                   selectedComponent: _selectedComponent,
-                  onSelected: (component) => setState(() => _selectedComponent = component),
+                  onSelected: (component) =>
+                      setState(() => _selectedComponent = component),
                 ),
                 ComponentGrid(
                   title: '',
-                  components: data.combinedComponents.where((item) => item.isCustomerComponent).toList(),
+                  components: data.combinedComponents
+                      .where((item) => item.isCustomerComponent)
+                      .toList(),
                   selectedComponent: _selectedComponent,
-                  onSelected: (component) => setState(() => _selectedComponent = component),
+                  onSelected: (component) =>
+                      setState(() => _selectedComponent = component),
                 ),
               ],
             ),
@@ -717,17 +788,16 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
           const SizedBox(height: 16),
           Text(_error ?? '', textAlign: TextAlign.center),
           const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _fetchData,
-            child: const Text('Retry'),
-          ),
+          ElevatedButton(onPressed: _fetchData, child: const Text('Retry')),
         ],
       ),
     );
   }
 
   int get _selectedPlacementIndex {
-    return _placements.indexWhere((item) => item.localId == _selectedPlacementId);
+    return _placements.indexWhere(
+      (item) => item.localId == _selectedPlacementId,
+    );
   }
 
   PlacedComponentDraft? get _selectedPlacement {
@@ -737,7 +807,8 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
 
   void _showMessage(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
-

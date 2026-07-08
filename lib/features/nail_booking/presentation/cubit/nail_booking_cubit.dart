@@ -12,8 +12,8 @@ class NailBookingCubit extends Cubit<NailBookingState> {
   final NailBookingRepository _repository;
 
   NailBookingCubit({NailBookingRepository? repository})
-      : _repository = repository ?? NailBookingRepositoryImpl(),
-        super(const NailBookingState());
+    : _repository = repository ?? NailBookingRepositoryImpl(),
+      super(const NailBookingState());
 
   // ══════════════════════════════════════════════════════════════
   // LOAD INITIAL DATA
@@ -23,15 +23,19 @@ class NailBookingCubit extends Cubit<NailBookingState> {
     emit(state.copyWith(salonsStatus: NailBookingLoadStatus.loading));
     try {
       final salons = await _repository.getSalons();
-      emit(state.copyWith(
-        salons: salons,
-        salonsStatus: NailBookingLoadStatus.loaded,
-      ));
+      emit(
+        state.copyWith(
+          salons: salons,
+          salonsStatus: NailBookingLoadStatus.loaded,
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        salonsStatus: NailBookingLoadStatus.error,
-        errorMessage: 'Lỗi tải danh sách Salon: $e',
-      ));
+      emit(
+        state.copyWith(
+          salonsStatus: NailBookingLoadStatus.error,
+          errorMessage: 'Lỗi tải danh sách Salon: $e',
+        ),
+      );
     }
   }
 
@@ -53,16 +57,18 @@ class NailBookingCubit extends Cubit<NailBookingState> {
   // ══════════════════════════════════════════════════════════════
 
   void selectBranch(Map<String, dynamic> branch) {
-    emit(state.copyWith(
-      selectedBranch: branch,
-      clearSeat: true,
-      clearStylist: true,
-      clearTime: true,
-      artists: [],
-      timeSlots: [],
-      artistsStatus: NailBookingLoadStatus.initial,
-      timeSlotsStatus: NailBookingLoadStatus.initial,
-    ));
+    emit(
+      state.copyWith(
+        selectedBranch: branch,
+        clearSeat: true,
+        clearStylist: true,
+        clearTime: true,
+        artists: [],
+        timeSlots: [],
+        artistsStatus: NailBookingLoadStatus.initial,
+        timeSlotsStatus: NailBookingLoadStatus.initial,
+      ),
+    );
   }
 
   void selectSeat(String seatId) {
@@ -70,41 +76,49 @@ class NailBookingCubit extends Cubit<NailBookingState> {
   }
 
   void updateExtraServices(List<String?> services) {
-    emit(state.copyWith(
-      selectedExtraServices: services,
-      clearStylist: true,
-      clearTime: true,
-      artists: [],
-      timeSlots: [],
-    ));
+    emit(
+      state.copyWith(
+        selectedExtraServices: services,
+        clearStylist: true,
+        clearTime: true,
+        artists: [],
+        timeSlots: [],
+      ),
+    );
   }
 
   /// Gọi khi user chọn ngày — reset thợ/giờ rồi fetch thợ.
   Future<void> selectDate({
     required DateTime date,
     required int nailVariantId,
+    int? shapeMethodConfigId,
+
     /// Dùng getSuggestedArtists (NailBooking) hay getNailArtistsBySalon (ServiceBooking)
     bool useSuggestedArtists = true,
   }) async {
-    emit(state.copyWith(
-      selectedDate: date,
-      clearStylist: true,
-      clearTime: true,
-      noArtistSelected: false,
-      artists: [],
-      timeSlots: [],
-      artistsStatus: NailBookingLoadStatus.loading,
-      timeSlotsStatus: NailBookingLoadStatus.initial,
-    ));
+    emit(
+      state.copyWith(
+        selectedDate: date,
+        clearStylist: true,
+        clearTime: true,
+        noArtistSelected: false,
+        artists: [],
+        timeSlots: [],
+        artistsStatus: NailBookingLoadStatus.loading,
+        timeSlotsStatus: NailBookingLoadStatus.initial,
+      ),
+    );
 
     await _fetchArtists(
       nailVariantId: nailVariantId,
+      shapeMethodConfigId: shapeMethodConfigId,
       useSuggestedArtists: useSuggestedArtists,
     );
   }
 
   Future<void> _fetchArtists({
     required int nailVariantId,
+    int? shapeMethodConfigId,
     required bool useSuggestedArtists,
   }) async {
     final branch = state.selectedBranch;
@@ -121,6 +135,7 @@ class NailBookingCubit extends Cubit<NailBookingState> {
           bookingDate: dateStr,
           nailVariantId: nailVariantId,
           serviceIds: state.selectedExtraServices.whereType<String>().toList(),
+          shapeMethodConfigId: shapeMethodConfigId,
         );
       } else {
         artists = await _repository.getArtistsBySalon(branch['salonId']);
@@ -128,59 +143,71 @@ class NailBookingCubit extends Cubit<NailBookingState> {
 
       if (artists.isEmpty) {
         // Không có thợ → tự động chọn chế độ "không chọn thợ"
-        emit(state.copyWith(
-          artists: artists,
-          artistsStatus: NailBookingLoadStatus.loaded,
-          noArtistSelected: true,
-        ));
+        emit(
+          state.copyWith(
+            artists: artists,
+            artistsStatus: NailBookingLoadStatus.loaded,
+            noArtistSelected: true,
+          ),
+        );
         await _loadSalonSlots();
       } else {
-        emit(state.copyWith(
-          artists: artists,
-          artistsStatus: NailBookingLoadStatus.loaded,
-        ));
+        emit(
+          state.copyWith(
+            artists: artists,
+            artistsStatus: NailBookingLoadStatus.loaded,
+          ),
+        );
       }
     } catch (e) {
-      emit(state.copyWith(
-        artistsStatus: NailBookingLoadStatus.error,
-        errorMessage: 'Lỗi tải danh sách thợ: $e',
-      ));
+      emit(
+        state.copyWith(
+          artistsStatus: NailBookingLoadStatus.error,
+          errorMessage: 'Lỗi tải danh sách thợ: $e',
+        ),
+      );
     }
   }
 
   /// Gọi khi user chọn thợ cụ thể.
   Future<void> selectStylist(Map<String, dynamic> artist) async {
-    emit(state.copyWith(
-      selectedStylist: artist,
-      noArtistSelected: false,
-      clearTime: true,
-      timeSlots: [],
-      timeSlotsStatus: NailBookingLoadStatus.loading,
-    ));
+    emit(
+      state.copyWith(
+        selectedStylist: artist,
+        noArtistSelected: false,
+        clearTime: true,
+        timeSlots: [],
+        timeSlotsStatus: NailBookingLoadStatus.loading,
+      ),
+    );
     await _fetchTimeSlots();
   }
 
   /// Gọi khi user chuyển sang tab "Không chọn thợ".
   Future<void> setNoArtistMode() async {
-    emit(state.copyWith(
-      noArtistSelected: true,
-      clearStylist: true,
-      clearTime: true,
-      timeSlots: [],
-      timeSlotsStatus: NailBookingLoadStatus.loading,
-    ));
+    emit(
+      state.copyWith(
+        noArtistSelected: true,
+        clearStylist: true,
+        clearTime: true,
+        timeSlots: [],
+        timeSlotsStatus: NailBookingLoadStatus.loading,
+      ),
+    );
     await _loadSalonSlots();
   }
 
   /// Gọi khi user quay lại tab "Chọn thợ".
   void setSelectArtistMode() {
-    emit(state.copyWith(
-      noArtistSelected: false,
-      clearStylist: true,
-      clearTime: true,
-      timeSlots: [],
-      timeSlotsStatus: NailBookingLoadStatus.initial,
-    ));
+    emit(
+      state.copyWith(
+        noArtistSelected: false,
+        clearStylist: true,
+        clearTime: true,
+        timeSlots: [],
+        timeSlotsStatus: NailBookingLoadStatus.initial,
+      ),
+    );
   }
 
   Future<void> _fetchTimeSlots() async {
@@ -193,15 +220,19 @@ class NailBookingCubit extends Cubit<NailBookingState> {
         artistId: stylist['nailArtistId'],
         bookingDate: _formatDate(date),
       );
-      emit(state.copyWith(
-        timeSlots: slots,
-        timeSlotsStatus: NailBookingLoadStatus.loaded,
-      ));
+      emit(
+        state.copyWith(
+          timeSlots: slots,
+          timeSlotsStatus: NailBookingLoadStatus.loaded,
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        timeSlotsStatus: NailBookingLoadStatus.error,
-        errorMessage: 'Lỗi tải khung giờ: $e',
-      ));
+      emit(
+        state.copyWith(
+          timeSlotsStatus: NailBookingLoadStatus.error,
+          errorMessage: 'Lỗi tải khung giờ: $e',
+        ),
+      );
     }
   }
 
@@ -211,11 +242,13 @@ class NailBookingCubit extends Cubit<NailBookingState> {
     if (branch == null || date == null) return;
 
     final slots = _repository.getSalonOperatingSlots(salon: branch, date: date);
-    emit(state.copyWith(
-      timeSlots: slots,
-      timeSlotsStatus: NailBookingLoadStatus.loaded,
-      clearTime: true,
-    ));
+    emit(
+      state.copyWith(
+        timeSlots: slots,
+        timeSlotsStatus: NailBookingLoadStatus.loaded,
+        clearTime: true,
+      ),
+    );
   }
 
   void selectTime(String time) {
@@ -237,8 +270,8 @@ class NailBookingCubit extends Cubit<NailBookingState> {
   List<Map<String, dynamic>> get availableServices {
     final source = state.services.isEmpty
         ? BookingMockData.extraServices
-            .map((e) => Map<String, dynamic>.from(e))
-            .toList()
+              .map((e) => Map<String, dynamic>.from(e))
+              .toList()
         : state.services;
     return source;
   }
@@ -300,6 +333,7 @@ class NailBookingCubit extends Cubit<NailBookingState> {
     required int nailVariantId,
     required List<String> serviceIds,
     List<int>? selectedPromotionIds,
+    int? shapeMethodConfigId,
   }) async {
     emit(state.copyWith(isSubmitting: true));
     try {
@@ -311,15 +345,20 @@ class NailBookingCubit extends Cubit<NailBookingState> {
         salonId: s.selectedBranch!['salonId'],
         bookingDate: _formatDate(s.selectedDate!),
         startTime: formattedTime,
-        artistId: s.noArtistSelected ? null : s.selectedStylist?['nailArtistId'],
+        artistId: s.noArtistSelected
+            ? null
+            : s.selectedStylist?['nailArtistId'],
         nailVariantId: nailVariantId,
         serviceIds: serviceIds,
         selectedPromotionIds: selectedPromotionIds,
+        shapeMethodConfigId: shapeMethodConfigId,
       );
       emit(state.copyWith(isSubmitting: false));
       return result;
     } catch (e) {
-      emit(state.copyWith(isSubmitting: false, errorMessage: 'Lỗi đặt lịch: $e'));
+      emit(
+        state.copyWith(isSubmitting: false, errorMessage: 'Lỗi đặt lịch: $e'),
+      );
       rethrow;
     }
   }
@@ -338,7 +377,9 @@ class NailBookingCubit extends Cubit<NailBookingState> {
       emit(state.copyWith(isSubmitting: false));
       return result;
     } catch (e) {
-      emit(state.copyWith(isSubmitting: false, errorMessage: 'Lỗi đặt lịch: $e'));
+      emit(
+        state.copyWith(isSubmitting: false, errorMessage: 'Lỗi đặt lịch: $e'),
+      );
       rethrow;
     }
   }
@@ -351,9 +392,8 @@ class NailBookingCubit extends Cubit<NailBookingState> {
     final y = date.year.toString().padLeft(4, '0');
     final m = date.month.toString().padLeft(2, '0');
     final d = date.day.toString().padLeft(2, '0');
-    return '${y}-${m}-${d}T00:00:00';
+    return '$y-$m-${d}T00:00:00';
   }
 
   String formatBookingDate(DateTime date) => _formatDate(date);
 }
-

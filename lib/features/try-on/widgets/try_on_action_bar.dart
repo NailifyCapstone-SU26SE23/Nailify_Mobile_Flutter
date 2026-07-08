@@ -1,28 +1,35 @@
 import 'package:flutter/material.dart';
 
-import '../../nails/data/models/nail_shape_model.dart';
-import '../models/try_on_data.dart';
-
 class TryOnActionBar extends StatelessWidget {
   final bool canSave;
   final bool isSaving;
+  final bool isLaunching;
   final VoidCallback onSave;
+  final VoidCallback onLiveTryOn;
+  final VoidCallback onPhotoTryOn;
 
   const TryOnActionBar({
     super.key,
     required this.canSave,
     required this.isSaving,
+    required this.isLaunching,
     required this.onSave,
+    required this.onLiveTryOn,
+    required this.onPhotoTryOn,
   });
 
   @override
   Widget build(BuildContext context) {
+    final enabled = canSave && !isSaving && !isLaunching;
+
     return Container(
       padding: EdgeInsets.only(
         left: 24,
         right: 24,
         top: 16,
-        bottom: MediaQuery.of(context).padding.bottom > 0 ? MediaQuery.of(context).padding.bottom : 16,
+        bottom: MediaQuery.of(context).padding.bottom > 0
+            ? MediaQuery.of(context).padding.bottom
+            : 16,
       ),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
@@ -36,26 +43,71 @@ class TryOnActionBar extends StatelessWidget {
       ),
       child: SafeArea(
         top: false,
-        child: SizedBox(
-          width: double.infinity,
-          child: FilledButton(
-            onPressed: canSave && !isSaving ? onSave : null,
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              backgroundColor: Colors.pink,
-            ),
-            child: isSaving
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
-                  )
-                : const Text(
-                    'Lưu mẫu thiết kế',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: enabled ? onLiveTryOn : null,
+                    icon: const Icon(Icons.view_in_ar_outlined, size: 20),
+                    label: const Text('Live try on'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
                   ),
-          ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: enabled ? onPhotoTryOn : null,
+                    icon: const Icon(Icons.photo_camera_outlined, size: 20),
+                    label: const Text('Photo try on'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: enabled ? onSave : null,
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  backgroundColor: Colors.pink,
+                ),
+                child: isSaving
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        'Luu thiet lap mong',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+              ),
+            ),
+          ],
         ),
       ),
     );

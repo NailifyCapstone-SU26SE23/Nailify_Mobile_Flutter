@@ -31,10 +31,7 @@ class BookingSeatSelection extends StatelessWidget {
       children: [
         const Text(
           'Chọn ghế tại chi nhánh',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         const Text(
@@ -152,7 +149,10 @@ class BookingSeatSelection extends StatelessWidget {
                         top: 4,
                         right: 6,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 1,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.amber.shade700,
                             borderRadius: BorderRadius.circular(4),
@@ -167,12 +167,14 @@ class BookingSeatSelection extends StatelessWidget {
                           ),
                         ),
                       ),
-                    
+
                     Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          isVip && !isOccupied && !isSelected ? Icons.chair_alt : Icons.chair,
+                          isVip && !isOccupied && !isSelected
+                              ? Icons.chair_alt
+                              : Icons.chair,
                           color: iconColor,
                           size: 26,
                         ),
@@ -206,10 +208,34 @@ class BookingSeatSelection extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildLegendItem(Colors.white, AppColors.borderLight, Icons.chair, Colors.grey.shade600, 'Thường'),
-              _buildLegendItem(Colors.amber.shade50, Colors.amber.shade600, Icons.chair_alt, Colors.amber.shade800, 'VIP'),
-              _buildLegendItem(AppColors.primary, AppColors.primary, Icons.chair, Colors.white, 'Đang chọn'),
-              _buildLegendItem(Colors.grey.shade200, Colors.grey.shade300, Icons.chair, Colors.grey.shade400, 'Đã đặt'),
+              _buildLegendItem(
+                Colors.white,
+                AppColors.borderLight,
+                Icons.chair,
+                Colors.grey.shade600,
+                'Thường',
+              ),
+              _buildLegendItem(
+                Colors.amber.shade50,
+                Colors.amber.shade600,
+                Icons.chair_alt,
+                Colors.amber.shade800,
+                'VIP',
+              ),
+              _buildLegendItem(
+                AppColors.primary,
+                AppColors.primary,
+                Icons.chair,
+                Colors.white,
+                'Đang chọn',
+              ),
+              _buildLegendItem(
+                Colors.grey.shade200,
+                Colors.grey.shade300,
+                Icons.chair,
+                Colors.grey.shade400,
+                'Đã đặt',
+              ),
             ],
           ),
         ),
@@ -217,7 +243,13 @@ class BookingSeatSelection extends StatelessWidget {
     );
   }
 
-  Widget _buildLegendItem(Color color, Color borderColor, IconData icon, Color iconColor, String label) {
+  Widget _buildLegendItem(
+    Color color,
+    Color borderColor,
+    IconData icon,
+    Color iconColor,
+    String label,
+  ) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -229,9 +261,7 @@ class BookingSeatSelection extends StatelessWidget {
             border: Border.all(color: borderColor, width: 1.5),
             borderRadius: BorderRadius.circular(6),
           ),
-          child: Center(
-            child: Icon(icon, color: iconColor, size: 14),
-          ),
+          child: Center(child: Icon(icon, color: iconColor, size: 14)),
         ),
         const SizedBox(width: 6),
         Text(

@@ -14,7 +14,8 @@ class CustomerNailRequestsTab extends StatefulWidget {
   const CustomerNailRequestsTab({super.key});
 
   @override
-  State<CustomerNailRequestsTab> createState() => _CustomerNailRequestsTabState();
+  State<CustomerNailRequestsTab> createState() =>
+      _CustomerNailRequestsTabState();
 }
 
 class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
@@ -81,8 +82,9 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
               final salonOptions = salons
                   .whereType<Map>()
                   .map((salon) => Map<String, dynamic>.from(salon))
-                  .where((salon) =>
-                      (salon['salonId']?.toString() ?? '').isNotEmpty)
+                  .where(
+                    (salon) => (salon['salonId']?.toString() ?? '').isNotEmpty,
+                  )
                   .toList();
 
               Future<void> submit() async {
@@ -151,7 +153,7 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                         onChanged: isSubmitting
                             ? null
                             : (value) =>
-                                setDialogState(() => selectedNail = value),
+                                  setDialogState(() => selectedNail = value),
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
@@ -182,15 +184,14 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                         onChanged: isSubmitting
                             ? null
                             : (value) => setDialogState(() {
-                                  selectedSalon = null;
-                                  for (final salon in salonOptions) {
-                                    if (salon['salonId']?.toString() ==
-                                        value) {
-                                      selectedSalon = salon;
-                                      break;
-                                    }
+                                selectedSalon = null;
+                                for (final salon in salonOptions) {
+                                  if (salon['salonId']?.toString() == value) {
+                                    selectedSalon = salon;
+                                    break;
                                   }
-                                }),
+                                }
+                              }),
                       ),
                       const SizedBox(height: 32),
                       Row(
@@ -198,7 +199,9 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                           Expanded(
                             child: OutlinedButton(
                               style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -207,7 +210,12 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                               onPressed: isSubmitting
                                   ? null
                                   : () => Navigator.of(context).pop(false),
-                              child: const Text('Hủy', style: TextStyle(color: AppColors.textSecondary)),
+                              child: const Text(
+                                'Hủy',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -215,12 +223,15 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                             child: FilledButton(
                               style: FilledButton.styleFrom(
                                 backgroundColor: AppColors.primary,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
-                              onPressed: isSubmitting ||
+                              onPressed:
+                                  isSubmitting ||
                                       selectedNail == null ||
                                       selectedSalon == null
                                   ? null
@@ -229,9 +240,17 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                                   ? const SizedBox(
                                       width: 20,
                                       height: 20,
-                                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
                                     )
-                                  : const Text('Gửi', style: TextStyle(fontWeight: FontWeight.bold)),
+                                  : const Text(
+                                      'Gửi',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                             ),
                           ),
                         ],
@@ -255,9 +274,9 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Không thể tải form: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Không thể tải form: $e')));
       }
     }
   }
@@ -292,8 +311,15 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String?>(
                         value: _statusFilter,
-                        hint: const Text('Tất cả trạng thái', overflow: TextOverflow.ellipsis),
-                        icon: const Icon(Icons.filter_list, size: 20, color: AppColors.textSecondary),
+                        hint: const Text(
+                          'Tất cả trạng thái',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        icon: const Icon(
+                          Icons.filter_list,
+                          size: 20,
+                          color: AppColors.textSecondary,
+                        ),
                         isExpanded: true,
                         items: [
                           const DropdownMenuItem<String?>(
@@ -307,7 +333,8 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                             ),
                           ),
                         ],
-                        onChanged: (value) => setState(() => _statusFilter = value),
+                        onChanged: (value) =>
+                            setState(() => _statusFilter = value),
                       ),
                     ),
                   ),
@@ -315,78 +342,87 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
               ],
             ),
           ),
-        Expanded(
-          child: FutureBuilder<List<request_models.CustomerNailModel>>(
-            future: _future,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
+          Expanded(
+            child: FutureBuilder<List<request_models.CustomerNailModel>>(
+              future: _future,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-              if (snapshot.hasError) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        size: 48,
-                        color: Colors.red,
-                      ),
-                      const SizedBox(height: 16),
-                      Text('Lỗi: ${snapshot.error}', style: const TextStyle(color: Colors.red)),
-                      const SizedBox(height: 16),
-                      FilledButton.icon(
-                        onPressed: _load,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Thử lại'),
-                      ),
-                    ],
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          size: 48,
+                          color: Colors.red,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Lỗi: ${snapshot.error}',
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                        const SizedBox(height: 16),
+                        FilledButton.icon(
+                          onPressed: _load,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Thử lại'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                final requests = _filterRequests(snapshot.data ?? []);
+                if (requests.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.assignment_outlined,
+                          size: 64,
+                          color: Colors.grey.shade300,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Chưa có yêu cầu nào.',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return RefreshIndicator(
+                  onRefresh: () async => _load(),
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    itemCount: requests.length,
+                    itemBuilder: (context, index) {
+                      final request = requests[index];
+                      return StudioNailCard(
+                        nail: request,
+                        onTap: () => context.push(
+                          '/my-studio/${request.customerNailRequestId}',
+                        ),
+                      );
+                    },
                   ),
                 );
-              }
-
-              final requests = _filterRequests(snapshot.data ?? []);
-              if (requests.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.assignment_outlined,
-                        size: 64,
-                        color: Colors.grey.shade300,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Chưa có yêu cầu nào.',
-                        style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
-                      ),
-                    ],
-                  ),
-                );
-              }
-
-              return RefreshIndicator(
-                onRefresh: () async => _load(),
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  itemCount: requests.length,
-                  itemBuilder: (context, index) {
-                    final request = requests[index];
-                    return StudioNailCard(
-                      nail: request,
-                      onTap: () => context.push(
-                        '/my-studio/${request.customerNailRequestId}',
-                      )
-                    );
-                  },
-                ),
-              );
-            },
+              },
+            ),
           ),
-        ),
         ],
       ),
     );

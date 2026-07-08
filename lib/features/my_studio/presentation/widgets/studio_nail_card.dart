@@ -84,7 +84,7 @@ class StudioNailCard extends StatelessWidget {
                             width: 64,
                             height: 64,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => _fallbackImage(),
+                            errorBuilder: (_, _, _) => _fallbackImage(),
                           )
                         : _fallbackImage(),
                   ),
@@ -104,7 +104,8 @@ class StudioNailCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        if (nail.salonName != null && nail.salonName!.isNotEmpty) ...[
+                        if (nail.salonName != null &&
+                            nail.salonName!.isNotEmpty) ...[
                           const SizedBox(height: 4),
                           Text(
                             nail.salonName!,
@@ -118,9 +119,14 @@ class StudioNailCard extends StatelessWidget {
                         ],
                         const SizedBox(height: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
-                            color: _getStatusColor(nail.status).withValues(alpha: 0.1),
+                            color: _getStatusColor(
+                              nail.status,
+                            ).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
@@ -140,7 +146,7 @@ class StudioNailCard extends StatelessWidget {
               if (action != null) ...[
                 const SizedBox(height: 16),
                 SizedBox(width: double.infinity, child: action),
-              ]
+              ],
             ],
           ),
         ),

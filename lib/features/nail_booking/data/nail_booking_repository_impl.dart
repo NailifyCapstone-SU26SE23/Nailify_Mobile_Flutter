@@ -12,19 +12,25 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
   NailBookingRepositoryImpl({
     BookingApiService? bookingApi,
     PromotionApiService? promotionApi,
-  })  : _bookingApi = bookingApi ?? BookingApiService(),
-        _promotionApi = promotionApi ?? PromotionApiService();
+  }) : _bookingApi = bookingApi ?? BookingApiService(),
+       _promotionApi = promotionApi ?? PromotionApiService();
 
   @override
   Future<List<Map<String, dynamic>>> getSalons() async {
     final list = await _bookingApi.getSalons();
-    return list.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    return list
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
   }
 
   @override
   Future<List<Map<String, dynamic>>> getServices() async {
     final list = await _bookingApi.getServices();
-    return list.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    return list
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
   }
 
   @override
@@ -33,20 +39,28 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
     required String bookingDate,
     required int nailVariantId,
     required List<String> serviceIds,
+    int? shapeMethodConfigId,
   }) async {
     final list = await _bookingApi.getSuggestedArtists(
       salonId,
       bookingDate,
       nailVariantId,
       serviceIds,
+      shapeMethodConfigId,
     );
-    return list.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    return list
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
   }
 
   @override
   Future<List<Map<String, dynamic>>> getArtistsBySalon(String salonId) async {
     final list = await _bookingApi.getNailArtistsBySalon(salonId);
-    return list.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    return list
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
   }
 
   @override
@@ -54,8 +68,14 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
     required String artistId,
     required String bookingDate,
   }) async {
-    final list = await _bookingApi.getArtistAvailableSlots(artistId, bookingDate);
-    return list.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    final list = await _bookingApi.getArtistAvailableSlots(
+      artistId,
+      bookingDate,
+    );
+    return list
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
   }
 
   @override
@@ -64,7 +84,10 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
     required DateTime date,
   }) {
     final list = _bookingApi.getSalonOperatingSlots(salon, date);
-    return list.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    return list
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
   }
 
   @override
@@ -76,6 +99,7 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
     required int nailVariantId,
     required List<String> serviceIds,
     List<int>? selectedPromotionIds,
+    int? shapeMethodConfigId,
   }) {
     return _bookingApi.createBooking(
       salonId,
@@ -85,6 +109,7 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
       nailVariantId,
       serviceIds,
       selectedPromotionIds: selectedPromotionIds,
+      shapeMethodConfigId: shapeMethodConfigId,
     );
   }
 
@@ -107,6 +132,7 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
     required String artistId,
     required int customerNailId,
     required Map<String, int> groupedExtraServices,
+    int? shapeMethodConfigId,
     List<int>? selectedPromotionIds,
   }) {
     return _bookingApi.createCustomNailBooking(
@@ -114,8 +140,9 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
       bookingDate,
       startTime,
       artistId,
-      customerNailId,
+      customerNailId.toString(),
       groupedExtraServices,
+      shapeMethodConfigId: shapeMethodConfigId,
       selectedPromotionIds: selectedPromotionIds,
     );
   }

@@ -1,22 +1,34 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/utils/price_formatter.dart';
 
-import '../widgets/booking_service_selection.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/di/injection.dart';
+import '../../../../core/utils/price_formatter.dart';
+import '../../../my_studio/data/models/customer_nail_model.dart';
+import '../../../nails/data/models/shape_method_config_model.dart';
+import '../../../nails/data/repositories/nail_variant_repository.dart';
+import '../../data/datasources/booking_api_service.dart';
+import '../../data/datasources/promotion_api_service.dart';
+import '../../data/models/promotion_model.dart';
 import '../widgets/booking_date_selection.dart';
+import '../widgets/booking_service_selection.dart';
 import '../widgets/booking_time_selection.dart';
 
-// Import API & Model
-import '../../data/datasources/booking_api_service.dart';
-import '../../data/models/promotion_model.dart';
-import '../../../my_studio/data/models/customer_nail_model.dart'; // Đảm bảo import Model chính xác
-import '../../../my_studio/data/models/customer_nail_model.dart';
-
 class CustomNailBookingPage extends StatefulWidget {
-  final CustomerNailModel nail; // Nhận vào móng đã được duyệt
+  final CustomerNailModel nail;
+  final int? shapeMethodConfigId;
+  final String? shapeMethodName;
+  final num? shapeMethodPrice;
+  final int? shapeMethodDuration;
 
-  const CustomNailBookingPage({super.key, required this.nail});
+  const CustomNailBookingPage({
+    super.key,
+    required this.nail,
+    this.shapeMethodConfigId,
+    this.shapeMethodName,
+    this.shapeMethodPrice,
+    this.shapeMethodDuration,
+  });
 
   @override
   State<CustomNailBookingPage> createState() => _CustomNailBookingPageState();
@@ -25,18 +37,21 @@ class CustomNailBookingPage extends StatefulWidget {
 class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   final PageController _pageController = PageController();
   final BookingApiService _apiService = BookingApiService();
+  final PromotionApiService _promotionApiService = PromotionApiService();
 
-  int _currentStep = 0; // 0: Dịch vụ thêm, 1: Ngày/Giờ, 2: Xác nhận
+  int _currentStep = 0;
   bool _isSubmitting = false;
-
-  // Data
-  List<dynamic> _services = [];
-  List<dynamic> _timeSlots = [];
-
   bool _isLoadingServices = true;
   bool _isLoadingTimes = false;
+  bool _isLoadingPromotions = false;
+  bool _isPromotionExpanded = false;
 
-  // Selections
+  Future<List<ShapeMethodConfigModel>>? _shapeMethodsFuture;
+  ShapeMethodConfigModel? _selectedShapeMethod;
+  List<dynamic> _services = [];
+  List<dynamic> _timeSlots = [];
+  List<PromotionModel> _promotions = [];
+  List<PromotionModel> _selectedPromotions = [];
   List<String?> _selectedExtraServices = [];
   DateTime? _selectedDate;
   String? _selectedTime;
@@ -44,41 +59,251 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   @override
   void initState() {
     super.initState();
+    _selectedShapeMethod = _initialShapeMethod;
+    _shapeMethodsFuture = _loadShapeMethods();
     _fetchServices();
+    _fetchPromotions();
   }
 
-  // --- API LẤY DANH SÁCH DỊCH VỤ ---
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  ShapeMethodConfigModel? get _initialShapeMethod {
+    final id = widget.shapeMethodConfigId;
+    if (id == null) return null;
+    return ShapeMethodConfigModel(
+      shapeMethodConfigId: id,
+      nailShapeId: widget.nail.nailShapeId ?? 0,
+      nailShapeName: widget.nail.shapeName,
+      name: widget.shapeMethodName ?? 'Phuong phap tao form',
+      price: (widget.shapeMethodPrice ?? 0).toDouble(),
+      duration: widget.shapeMethodDuration ?? 0,
+      status: 'Active',
+    );
+  }
+
+  int? get _selectedShapeMethodConfigId =>
+      _selectedShapeMethod?.shapeMethodConfigId;
+
+  int get _shapeMethodPrice => (_selectedShapeMethod?.price ?? 0).round();
+
+  String get _shapeMethodName =>
+      _selectedShapeMethod?.name ?? 'Phuong phap tao form';
+
+  int get _estimatedTotalPrice {
+    return widget.nail.customerNailPrice +
+        widget.nail.price +
+        _shapeMethodPrice +
+        _selectedExtraServicesTotal;
+  }
+
+  int get _selectedExtraServicesTotal {
+    return _groupedServicesMap.entries.fold<int>(
+      0,
+      (total, entry) => total + _servicePriceById(entry.key) * entry.value,
+    );
+  }
+
+  Map<String, int> get _groupedServicesMap {
+    final map = <String, int>{};
+    for (final id in _selectedExtraServices.whereType<String>()) {
+      map[id] = (map[id] ?? 0) + 1;
+    }
+    return map;
+  }
+
+  List<int>? get _selectedPromotionIds {
+    if (_selectedPromotions.isEmpty) return null;
+    return _selectedPromotions
+        .map((promotion) => promotion.promotionId)
+        .toList();
+  }
+
+  Future<List<ShapeMethodConfigModel>> _loadShapeMethods() async {
+    final shapeId = widget.nail.nailShapeId;
+    if (shapeId == null || shapeId <= 0) return const [];
+    final methods = await getIt<NailVariantRepository>()
+        .getShapeMethodConfigsByNailShape(shapeId);
+    final activeMethods = methods
+        .where((method) => method.status.toLowerCase() != 'inactive')
+        .toList();
+
+    if (mounted &&
+        activeMethods.isNotEmpty &&
+        (_selectedShapeMethod == null ||
+            !activeMethods.any(
+              (method) =>
+                  method.shapeMethodConfigId == _selectedShapeMethodConfigId,
+            ))) {
+      setState(() => _selectedShapeMethod = activeMethods.first);
+    }
+
+    return activeMethods;
+  }
+
   Future<void> _fetchServices() async {
     try {
       final services = await _apiService.getServices();
-      if (mounted) setState(() { _services = services; _isLoadingServices = false; });
+      if (!mounted) return;
+      setState(() {
+        _services = services;
+        _isLoadingServices = false;
+      });
     } catch (e) {
-      if (mounted) setState(() => _isLoadingServices = false);
+      if (!mounted) return;
+      setState(() => _isLoadingServices = false);
+      _showSnackBar('Loi tai dich vu: $e');
     }
   }
 
-  // --- API LẤY GIỜ RẢNH CỦA THỢ ĐÃ ĐƯỢC CHỈ ĐỊNH ---
+  Future<void> _fetchPromotions() async {
+    setState(() => _isLoadingPromotions = true);
+    try {
+      final promotions = await _promotionApiService.getVouchers();
+      if (!mounted) return;
+      setState(() {
+        _promotions = promotions
+            .where((promotion) => promotion.isSelectable)
+            .toList();
+        _isLoadingPromotions = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoadingPromotions = false);
+      _showSnackBar('Loi tai khuyen mai: $e');
+    }
+  }
+
   Future<void> _fetchTimeSlots() async {
     if (_selectedDate == null) return;
-    setState(() { _isLoadingTimes = true; _timeSlots = []; _selectedTime = null; });
+
+    final artistId = widget.nail.nailArtistId ?? '';
+    if (artistId.isEmpty) {
+      _showSnackBar('Khong tim thay tho da duyet.');
+      return;
+    }
+
+    setState(() {
+      _isLoadingTimes = true;
+      _timeSlots = [];
+      _selectedTime = null;
+    });
 
     try {
-      final dateStr = _selectedDate!.toIso8601String().split('T')[0];
-      final artistId = widget.nail.nailArtistId ?? ''; // Lấy nailArtistId từ approved artist
-
-      if (artistId.isEmpty) throw Exception('Không tìm thấy thông tin Thợ được chỉ định');
-
-      final times = await _apiService.getArtistAvailableSlots(artistId, dateStr);
-      if (mounted) setState(() { _timeSlots = times; _isLoadingTimes = false; });
+      final times = await _apiService.getArtistAvailableSlots(
+        artistId,
+        _formatBookingDate(_selectedDate!),
+      );
+      if (!mounted) return;
+      setState(() {
+        _timeSlots = times;
+        _isLoadingTimes = false;
+      });
     } catch (e) {
-      if (mounted) {
-        setState(() => _isLoadingTimes = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi tải giờ rảnh: $e')));
-      }
+      if (!mounted) return;
+      setState(() => _isLoadingTimes = false);
+      _showSnackBar('Loi tai gio ranh: $e');
     }
   }
 
-  // XỬ LÝ LOGIC GIÁ & SỐ LƯỢNG DỊCH VỤ THÊM
+  Future<void> _executeBooking() async {
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
+
+    try {
+      final salonId = widget.nail.salonId;
+      final artistId = widget.nail.nailArtistId ?? '';
+      final customerNailRequestId = widget.nail.customerNailRequestId;
+
+      if (customerNailRequestId.isEmpty) {
+        throw Exception('ID yeu cau mong custom khong hop le.');
+      }
+      if (salonId.isEmpty || artistId.isEmpty) {
+        throw Exception('Thieu thong tin chi nhanh hoac tho.');
+      }
+
+      final response = await _apiService.createCustomNailBooking(
+        salonId,
+        _formatBookingDate(_selectedDate!),
+        _normalizedSelectedTime,
+        artistId,
+        customerNailRequestId,
+        _groupedServicesMap,
+        shapeMethodConfigId: _selectedShapeMethodConfigId,
+        selectedPromotionIds: _selectedPromotionIds,
+      );
+
+      if (!mounted) return;
+      context.go(
+        '/booking-success',
+        extra: {
+          'bookingId': response['bookingId']?.toString() ?? '',
+          'serviceName': 'Custom: ${widget.nail.name}',
+          'date': _selectedDate,
+          'time': _normalizedSelectedTime,
+          'price': response['price'],
+          'discount': response['discount'],
+          'totalPrice': response['totalPrice'],
+          'discounts': response['discounts'] ?? response['discountBreakdown'],
+          'stylistName': widget.nail.stylistName,
+        },
+      );
+    } catch (e) {
+      if (mounted) {
+        _showSnackBar(e.toString().replaceAll('Exception: ', 'Loi: '));
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  String get _normalizedSelectedTime {
+    final time = _selectedTime ?? '';
+    return time.length == 5 ? '$time:00' : time;
+  }
+
+  String _formatBookingDate(DateTime date) {
+    final y = date.year.toString().padLeft(4, '0');
+    final m = date.month.toString().padLeft(2, '0');
+    final d = date.day.toString().padLeft(2, '0');
+    return '$y-$m-${d}T00:00:00';
+  }
+
+  String _serviceId(Map<String, dynamic> service) {
+    return service['serviceId']?.toString() ?? service['id']?.toString() ?? '';
+  }
+
+  String _serviceName(Map<String, dynamic> service) {
+    return service['serviceName']?.toString() ??
+        service['name']?.toString() ??
+        '';
+  }
+
+  String _serviceNameById(String? serviceId) {
+    if (serviceId == null) return '';
+    final matches = _services.whereType<Map>().where((service) {
+      return _serviceId(Map<String, dynamic>.from(service)) == serviceId;
+    });
+    if (matches.isEmpty) return serviceId;
+    final name = _serviceName(Map<String, dynamic>.from(matches.first));
+    return name.isEmpty ? serviceId : name;
+  }
+
+  int _servicePriceById(String? serviceId) {
+    if (serviceId == null) return 0;
+    final matches = _services.whereType<Map>().where((service) {
+      return _serviceId(Map<String, dynamic>.from(service)) == serviceId;
+    });
+    if (matches.isEmpty) return 0;
+    final service = Map<String, dynamic>.from(matches.first);
+    final price = service['price'] ?? service['basePrice'];
+    if (price is num) return price.round();
+    return int.tryParse(price?.toString() ?? '') ?? 0;
+  }
+
   void _handleServiceChanged(List<String?> services) {
     setState(() {
       _selectedExtraServices = services;
@@ -88,102 +313,12 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
     if (_selectedDate != null) _fetchTimeSlots();
   }
 
-  // Nhóm dịch vụ (x2, x3)
-  Map<String, int> get _groupedServicesMap {
-    final map = <String, int>{};
-    for (var id in _selectedExtraServices.whereType<String>()) {
-      map[id] = (map[id] ?? 0) + 1;
-    }
-    return map;
-  }
-
-  String _serviceNameById(String? serviceId) {
-    if (serviceId == null) return '';
-    final matches = _services.where((s) => s['serviceId'] == serviceId);
-    return matches.isNotEmpty ? matches.first['name'] : serviceId;
-  }
-
-  int _servicePriceById(String? serviceId) {
-    if (serviceId == null) return 0;
-    final matches = _services.where((s) => s['serviceId'] == serviceId);
-    return matches.isNotEmpty ? (matches.first['price'] as num).toInt() : 0;
-  }
-
-  int get _selectedExtraServicesTotal {
-    int total = 0;
-    _groupedServicesMap.forEach((id, qty) {
-      total += _servicePriceById(id) * qty;
-    });
-    return total;
-  }
-
-  int get _shapeMethodPrice => (widget.shapeMethodPrice ?? 0).round();
-
-  int get _estimatedTotalPrice =>
-      widget.nail.customerNailPrice +
-      widget.nail.price +
-      _shapeMethodPrice +
-      _selectedExtraServicesTotal;
-
-  bool get _showLegacyCustomerNailPaymentRow => false;
-
-  Future<void> _executeBooking() async {
-    if (_isSubmitting) return;
-    setState(() => _isSubmitting = true);
-
-    try {
-      final salonId = widget.nail.salonId;
-      final artistId = widget.nail.nailArtistId ?? '';
-      final nailId = widget.nail.customerNailId;
-
-      if (nailId <= 0) {
-        throw Exception('ID Móng không hợp lệ.');
-      }
-
-      if (salonId == null || salonId.isEmpty || artistId.isEmpty) {
-        throw Exception('Dữ liệu Móng Custom bị thiếu thông tin Chi nhánh hoặc Thợ');
-      }
-
-      final formattedDate = "${_selectedDate!.year.toString().padLeft(4, '0')}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}T00:00:00";
-      final formattedTime = _selectedTime!.length == 5 ? "$_selectedTime:00" : _selectedTime!;
-
-      final response = await _apiService.createCustomNailBooking(
-        salonId,
-        formattedDate,
-        formattedTime,
-        artistId,
-        nailId,
-        _groupedServicesMap,
-        widget.shapeMethodConfigId,
-        selectedPromotionIds: _selectedPromotions.isEmpty
-            ? null
-            : _selectedPromotions.map((p) => p.promotionId).toList(),
-      );
-
-      if (mounted) {
-        final bookingDetails = {
-          'bookingId': response['bookingId']?.toString() ?? '',
-          'serviceName': 'Custom: ${widget.nail.name}',
-          'date': _selectedDate,
-          'time': formattedTime,
-          'stylistName': widget.nail.stylistName,
-        };
-        context.go('/booking-success', extra: bookingDetails);
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceAll('Exception: ', 'Lỗi: '))),
-        );
-      }
-    }
-  }
-
-  // --- ĐIỀU HƯỚNG BƯỚC ---
   void _handleBackAction() {
     if (_currentStep > 0) {
-      _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     } else {
       context.pop();
     }
@@ -191,324 +326,69 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
 
   void _handleNextAction() {
     if (_currentStep == 0 && _selectedExtraServices.contains(null)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Có ô dịch vụ đang bị bỏ trống!')));
+      _showSnackBar('Vui long chon hoac xoa dich vu dang bo trong.');
       return;
     }
     if (_currentStep == 1 && (_selectedDate == null || _selectedTime == null)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng chọn đầy đủ ngày và khung giờ!')));
+      _showSnackBar('Vui long chon ngay va khung gio.');
       return;
     }
 
     if (_currentStep < 2) {
-      _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     } else {
       _executeBooking();
     }
   }
 
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Tạo Map ảo truyền vào Widget ServiceSelection
     final customNailMappedData = {
       'name': widget.nail.name,
-      'price': widget.nail.price,
+      'price': widget.nail.customerNailPrice + widget.nail.price,
     };
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        leading: IconButton(icon: const Icon(Icons.arrow_back_ios, size: 20), onPressed: _handleBackAction),
-        title: const Text('Đặt Lịch Custom Nail', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-        backgroundColor: Colors.white, elevation: 0, centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, size: 20),
+          onPressed: _handleBackAction,
+        ),
+        title: const Text(
+          'Dat lich custom nail',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
       ),
       body: _isLoadingServices
           ? const Center(child: CircularProgressIndicator())
           : Column(
-        children: [
-          _buildStepIndicator(),
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              physics: const NeverScrollableScrollPhysics(),
-              onPageChanged: (idx) => setState(() => _currentStep = idx),
               children: [
-                // BƯỚC 0: CHỌN GHẾ (Đã ẩn)
-                /*
-                SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: BookingSeatSelection(
-                    selectedSeatId: _selectedSeat,
-                    onSeatSelected: (seatId) => setState(() => _selectedSeat = seatId),
-                  ),
-                ),
-                */
-
-                // BƯỚC 1: CHỌN DỊCH VỤ THÊM
-                SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: BookingServiceSelection(
-                    nailData: customNailMappedData,
-                    services: _services,
-                    selectedExtraServices: _selectedExtraServices,
-                    onChanged: _handleServiceChanged,
-                  ),
-                ),
-
-                // CHỌN NGÀY -> GIỜ
-                SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                _buildStepIndicator(),
+                Expanded(
+                  child: PageView(
+                    controller: _pageController,
+                    physics: const NeverScrollableScrollPhysics(),
+                    onPageChanged: (idx) => setState(() => _currentStep = idx),
                     children: [
-                      //Thợ đã duyệt
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        margin: const EdgeInsets.only(bottom: 24),
-                        decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.blue.shade200)),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.face_retouching_natural, color: Colors.blue, size: 28),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text('Chuyên viên thực hiện:', style: TextStyle(color: Colors.blue, fontSize: 12)),
-                                  Text(widget.nail.stylistName, style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 16)),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      BookingDateSelection(
-                        selectedDate: _selectedDate,
-                        onDateChanged: (date) {
-                          setState(() => _selectedDate = date);
-                          _fetchTimeSlots(); // Forward tới gọi hàm lấy giờ rảnh của thợ
-                        },
-                      ),
-                      const SizedBox(height: 24),
-
-                      BookingTimeSelection(
-                        timeSlots: _timeSlots,
-                        isLoading: _isLoadingTimes,
-                        selectedTime: _selectedTime,
-                        canSelect: _selectedDate != null, // Chỉ cần chọn ngày là lấy giờ
-                        selectedDate: _selectedDate,
-                        onTimeChanged: (time) => setState(() => _selectedTime = time),
-                      ),
-                    ],
-                  ),
-                ),
-
-                      // BÆ¯á»šC 2: SUMMARY
-                      SingleChildScrollView(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Xác nhận thông tin',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: AppColors.borderLight,
-                                ),
-                              ),
-                              child: Column(
-                                children: [
-                                  _buildSummaryRow(
-                                    Icons.calendar_month,
-                                    'Ngày hẹn',
-                                    _selectedDate != null
-                                        ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
-                                        : '',
-                                  ),
-                                  _buildSummaryRow(
-                                    Icons.access_time,
-                                    'Thời gian',
-                                    _selectedTime ?? '',
-                                  ),
-                                  _buildSummaryRow(
-                                    Icons.face,
-                                    'Thợ nail',
-                                    widget.nail.stylistName,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: AppColors.borderLight,
-                                ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Chi tiết thanh toán',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  _buildCustomerNailPaymentItem(),
-                                  if (widget.nail.price > 0)
-                                    _buildPaymentLine(
-                                      'Extra component',
-                                      widget.nail.price,
-                                    ),
-                                  if (_showLegacyCustomerNailPaymentRow)
-                                    Padding(
-                                      padding: const EdgeInsets.only(
-                                        bottom: 8.0,
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              widget.nail.name,
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                          ),
-                                          Text(
-                                            PriceFormatter.format(
-                                              widget.nail.price,
-                                            ),
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                // BƯỚC 2: SUMMARY
-                SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Xác nhận thông tin', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.borderLight)),
-                        child: Column(
-                          children: [
-                            // Ko hiện tên Salon ở đây vì trong Móng Custom làm méo gì có tên Salon, hiện Thợ là đủ uy tín (uy tin như nha cai den tu chauau)
-                            // _buildSummaryRow(Icons.chair, 'Ghế', _selectedSeat != null ? 'Ghế ${_selectedSeat!.split('_').last}' : ''),
-                            _buildSummaryRow(Icons.calendar_month, 'Ngày hẹn', _selectedDate != null ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}' : ''),
-                            _buildSummaryRow(Icons.access_time, 'Thời gian', _selectedTime ?? ''),
-                            _buildSummaryRow(Icons.face, 'Thợ thực hiện', widget.nail.stylistName),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      // Khối chọn khuyến mãi
-                      _buildPromotionSelector(),
-                      const SizedBox(height: 24),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.borderLight)),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('Chi tiết thanh toán', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                            const SizedBox(height: 12),
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 8.0),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(child: Text('Thiết kế Móng: ${widget.nail.name}', style: const TextStyle(fontSize: 14))),
-                                  Text(
-                                    PriceFormatter.format(widget.nail.price),
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            // DUYỆT QUA MAP ĐỂ IN RA SỐ LƯỢNG x2, x3
-                            ..._groupedServicesMap.entries.map((entry) {
-                              final serviceId = entry.key;
-                              final qty = entry.value;
-                              final price = _servicePriceById(serviceId);
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 8.0),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // BỌC EXPANDED Ở ĐÂY
-                                    Expanded(
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(right: 12.0), // Cách phần giá một khoảng an toàn
-                                        child: Text(
-                                          '${qty}x ${_serviceNameById(serviceId)}',
-                                          style: const TextStyle(fontSize: 14, color: Colors.grey),
-                                        ),
-                                      ),
-                                    ),
-                                    Text(
-                                      PriceFormatter.format(price * qty),
-                                      style: const TextStyle(fontWeight: FontWeight.bold),
-                                    )
-                                  ],
-                                ),
-                              );
-                            }),
-
-                                  const Divider(height: 24),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      const Text(
-                                        'Tổng tạm tính:',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      Text(
-                                        PriceFormatter.format(
-                                          _estimatedTotalPrice,
-                                        ),
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColors.primary,
-                                          fontSize: 18,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      _buildServiceStep(customNailMappedData),
+                      _buildScheduleStep(),
+                      _buildSummaryStep(),
                     ],
                   ),
                 ),
@@ -518,20 +398,471 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
     );
   }
 
+  Widget _buildServiceStep(Map<String, dynamic> customNailMappedData) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          BookingServiceSelection(
+            nailData: customNailMappedData,
+            services: _services,
+            selectedExtraServices: _selectedExtraServices,
+            onChanged: _handleServiceChanged,
+          ),
+          const SizedBox(height: 24),
+          _buildShapeMethodSelector(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShapeMethodSelector() {
+    final future = _shapeMethodsFuture;
+    if (future == null) return const SizedBox.shrink();
+
+    return FutureBuilder<List<ShapeMethodConfigModel>>(
+      future: future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const SizedBox(
+            height: 40,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          );
+        }
+
+        final methods = snapshot.data ?? const <ShapeMethodConfigModel>[];
+        if (methods.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Phuong phap tao form',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...methods.map((method) {
+              final selected =
+                  _selectedShapeMethodConfigId == method.shapeMethodConfigId;
+              return Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? AppColors.primary.withOpacity(0.06)
+                      : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: selected ? AppColors.primary : AppColors.borderLight,
+                  ),
+                ),
+                child: RadioListTile<int>(
+                  value: method.shapeMethodConfigId,
+                  groupValue: _selectedShapeMethodConfigId,
+                  onChanged: (_) {
+                    setState(() => _selectedShapeMethod = method);
+                  },
+                  title: Text(
+                    method.name,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text('${method.duration} phut'),
+                  secondary: Text(
+                    PriceFormatter.format(method.price),
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  activeColor: AppColors.primary,
+                ),
+              );
+            }),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildScheduleStep() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildAssignedArtistCard(),
+          BookingDateSelection(
+            selectedDate: _selectedDate,
+            onDateChanged: (date) {
+              setState(() => _selectedDate = date);
+              _fetchTimeSlots();
+            },
+          ),
+          const SizedBox(height: 24),
+          BookingTimeSelection(
+            timeSlots: _timeSlots,
+            isLoading: _isLoadingTimes,
+            selectedTime: _selectedTime,
+            canSelect: _selectedDate != null,
+            selectedDate: _selectedDate,
+            salonId: widget.nail.salonId,
+            artistId: widget.nail.nailArtistId,
+            onTimeChanged: (time) => setState(() => _selectedTime = time),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryStep() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Xac nhan thong tin',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          _buildSummaryCard(),
+          const SizedBox(height: 24),
+          _buildPromotionSelector(),
+          const SizedBox(height: 24),
+          _buildPaymentDetails(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAssignedArtistCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 24),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue.shade200),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.face_retouching_natural, color: Colors.blue),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Tho da duyet',
+                  style: TextStyle(color: Colors.blue, fontSize: 12),
+                ),
+                Text(
+                  widget.nail.stylistName,
+                  style: const TextStyle(
+                    color: Colors.blue,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        children: [
+          _buildSummaryRow(
+            Icons.calendar_month,
+            'Ngay hen',
+            _selectedDate == null
+                ? ''
+                : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+          ),
+          _buildSummaryRow(
+            Icons.access_time,
+            'Thoi gian',
+            _selectedTime == null ? '' : _selectedTime!.substring(0, 5),
+          ),
+          _buildSummaryRow(
+            Icons.face,
+            'Tho thuc hien',
+            widget.nail.stylistName,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentDetails() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Chi tiet thanh toan',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          const SizedBox(height: 12),
+          _buildCustomerNailPaymentItem(),
+          if (widget.nail.price > 0)
+            _buildPaymentLine('Phi xu ly custom', widget.nail.price),
+          if (_shapeMethodPrice > 0)
+            _buildPaymentLine(_shapeMethodName, _shapeMethodPrice),
+          ..._groupedServicesMap.entries.map((entry) {
+            return _buildPaymentLine(
+              '${entry.value}x ${_serviceNameById(entry.key)}',
+              _servicePriceById(entry.key) * entry.value,
+              muted: true,
+            );
+          }),
+          const Divider(height: 24),
+          _buildPaymentLine(
+            'Tong tam tinh',
+            _estimatedTotalPrice,
+            strong: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCustomerNailPaymentItem() {
+    return Column(
+      children: [
+        _buildPaymentLine(
+          'Thiet ke mong: ${widget.nail.name}',
+          widget.nail.customerNailPrice,
+        ),
+        if (widget.nail.shapeName.isNotEmpty)
+          _buildPaymentLine(
+            'Dang mong: ${widget.nail.shapeName}',
+            0,
+            muted: true,
+          ),
+        if (widget.nail.surfaceName.isNotEmpty)
+          _buildPaymentLine(
+            'Be mat: ${widget.nail.surfaceName}',
+            0,
+            muted: true,
+          ),
+        ...widget.nail.customerNailComponents
+            .whereType<Map>()
+            .map((component) => Map<String, dynamic>.from(component))
+            .map(
+              (component) => _buildPaymentLine(
+                _customerComponentName(component),
+                _customerComponentPrice(component),
+                muted: true,
+              ),
+            ),
+      ],
+    );
+  }
+
+  String _customerComponentName(Map<String, dynamic> component) {
+    final nested = component['component'] ?? component['customerComponent'];
+    if (nested is Map) {
+      final name = nested['name']?.toString().trim();
+      if (name != null && name.isNotEmpty) return name;
+    }
+    final name = component['name']?.toString().trim();
+    return name == null || name.isEmpty ? 'Thanh phan custom' : name;
+  }
+
+  num _customerComponentPrice(Map<String, dynamic> component) {
+    final nested = component['component'] ?? component['customerComponent'];
+    if (nested is Map) {
+      final price = nested['price'] ?? nested['Price'];
+      if (price is num) return price;
+      final parsed = num.tryParse(price?.toString() ?? '');
+      if (parsed != null) return parsed;
+    }
+    final price = component['price'] ?? component['Price'];
+    if (price is num) return price;
+    return num.tryParse(price?.toString() ?? '') ?? 0;
+  }
+
+  Widget _buildPaymentLine(
+    String label,
+    num price, {
+    bool strong = false,
+    bool muted = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: muted ? Colors.grey : AppColors.textPrimary,
+                  fontWeight: strong ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            ),
+          ),
+          Text(
+            price > 0 ? PriceFormatter.format(price) : '',
+            style: TextStyle(
+              fontWeight: strong ? FontWeight.bold : FontWeight.w600,
+              color: strong ? AppColors.primary : AppColors.textPrimary,
+              fontSize: strong ? 18 : 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPromotionSelector() {
+    final label = _selectedPromotions.isEmpty
+        ? 'Khong ap dung khuyen mai'
+        : 'Da chon ${_selectedPromotions.length} khuyen mai';
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.local_offer_outlined, color: AppColors.primary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              if (_isLoadingPromotions)
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                IconButton(
+                  onPressed: () => setState(
+                    () => _isPromotionExpanded = !_isPromotionExpanded,
+                  ),
+                  icon: Icon(
+                    _isPromotionExpanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                  ),
+                ),
+            ],
+          ),
+          if (_isPromotionExpanded) ...[
+            const SizedBox(height: 8),
+            if (_promotions.isEmpty)
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Khong co khuyen mai kha dung.',
+                  style: TextStyle(color: Colors.grey, fontSize: 13),
+                ),
+              ),
+            ..._promotions.map((promotion) {
+              final selected = _selectedPromotions.any(
+                (item) => item.promotionId == promotion.promotionId,
+              );
+              return CheckboxListTile(
+                value: selected,
+                onChanged: (checked) {
+                  setState(() {
+                    if (checked == true) {
+                      _selectedPromotions = [..._selectedPromotions, promotion];
+                    } else {
+                      _selectedPromotions = _selectedPromotions
+                          .where(
+                            (item) => item.promotionId != promotion.promotionId,
+                          )
+                          .toList();
+                    }
+                  });
+                },
+                title: Text(promotion.name),
+                subtitle: Text(
+                  promotion.description.isNotEmpty
+                      ? '${promotion.discountLabel} - ${promotion.description}'
+                      : promotion.discountLabel,
+                ),
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                activeColor: AppColors.primary,
+              );
+            }),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildSummaryRow(IconData icon, String title, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, size: 20, color: AppColors.primary),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-              Text(value, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-            ],
-          )
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -539,15 +870,32 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
 
   Widget _buildStepIndicator() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16), color: Colors.white,
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      color: Colors.white,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(3, (index) {
-          bool isCompleted = index <= _currentStep;
+          final isCompleted = index <= _currentStep;
           return Row(
             children: [
-              CircleAvatar(radius: 12, backgroundColor: isCompleted ? AppColors.primary : Colors.grey.shade300, child: Text('${index + 1}', style: const TextStyle(color: Colors.white, fontSize: 11))),
-              if (index < 2) Container(width: 40, height: 2, color: index < _currentStep ? AppColors.primary : Colors.grey.shade300),
+              CircleAvatar(
+                radius: 12,
+                backgroundColor: isCompleted
+                    ? AppColors.primary
+                    : Colors.grey.shade300,
+                child: Text(
+                  '${index + 1}',
+                  style: const TextStyle(color: Colors.white, fontSize: 11),
+                ),
+              ),
+              if (index < 2)
+                Container(
+                  width: 40,
+                  height: 2,
+                  color: index < _currentStep
+                      ? AppColors.primary
+                      : Colors.grey.shade300,
+                ),
             ],
           );
         }),
@@ -558,25 +906,66 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   Widget _buildFooter() {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           if (_currentStep > 0)
             Padding(
-              padding: const EdgeInsets.only(right: 12.0),
+              padding: const EdgeInsets.only(right: 12),
               child: OutlinedButton(
                 onPressed: _isSubmitting ? null : _handleBackAction,
-                style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15), side: const BorderSide(color: AppColors.primary), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                child: const Text('Quay lại', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 15,
+                  ),
+                  side: const BorderSide(color: AppColors.primary),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Quay lai',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
           ElevatedButton(
             onPressed: _isSubmitting ? null : _handleNextAction,
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 15),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
             child: _isSubmitting
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                : Text(_currentStep == 2 ? 'Xác nhận Đặt lịch' : 'Tiếp tục', style: const TextStyle(fontWeight: FontWeight.bold)),
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : Text(
+                    _currentStep == 2 ? 'Xac nhan dat lich' : 'Tiep tuc',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
           ),
         ],
       ),

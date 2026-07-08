@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/constants/app_colors.dart';
 import '../../../nails/data/models/customer_nail_models.dart';
 import '../../../../core/utils/price_formatter.dart';
 
@@ -16,128 +17,159 @@ class CustomerComponentCard extends StatelessWidget {
 
   String _getComponentTypeName(int type) {
     switch (type) {
-      case 0:
-        return 'Gem';
-      case 1:
-        return 'Sticker';
-      case 2:
-        return 'Charm';
-      case 3:
-        return 'Art';
-      default:
-        return 'Unknown';
+      case 0: return 'Gem';
+      case 1: return 'Sticker';
+      case 2: return 'Charm';
+      case 3: return 'Art';
+      default: return 'Unknown';
+    }
+  }
+
+  Color _getComponentTypeColor(int type) {
+    switch (type) {
+      case 0: return Colors.blue;
+      case 1: return Colors.orange;
+      case 2: return Colors.pink;
+      case 3: return Colors.purple;
+      default: return Colors.grey;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final typeInt = int.tryParse(component.componentType) ?? 0;
+    final typeColor = _getComponentTypeColor(typeInt);
+
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: SizedBox(
-                width: 60,
-                height: 60,
-                child: component.imageUrl.isEmpty
-                    ? Container(
-                        color: Colors.grey[200],
-                        child: Icon(
-                          Icons.image_outlined,
-                          size: 30,
-                          color: Colors.grey[400],
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.grey.shade200, width: 1.5),
+      ),
+      color: Colors.white,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () {}, // Tạo hiệu ứng Ripple
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox(
+                  width: 64,
+                  height: 64,
+                  child: component.imageUrl.isEmpty
+                      ? Container(
+                          color: Colors.grey.shade100,
+                          child: Icon(Icons.image_outlined,
+                              size: 28, color: Colors.grey.shade400),
+                        )
+                      : Image.network(
+                          component.imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: Colors.grey.shade100,
+                            child: const Icon(Icons.broken_image),
+                          ),
                         ),
-                      )
-                    : Image.network(
-                        component.imageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          color: Colors.grey[200],
-                          child: const Icon(Icons.broken_image),
-                        ),
-                      ),
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    component.name,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 2),
+                    Text(
+                      component.name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.blue[100],
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          _getComponentTypeName(
-                            int.tryParse(component.componentType) ?? 0,
-                          ),
-                          style: const TextStyle(fontSize: 11),
-                        ),
-                      ),
-                      if (component.price > 0)
-                        Text(
-                          PriceFormatter.format(component.price),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.green,
-                          ),
-                        ),
-                      if (component.isPublic)
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Colors.purple[100],
-                            borderRadius: BorderRadius.circular(4),
+                            color: typeColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(6),
                           ),
-                          child: const Text(
-                            'Công khai',
-                            style: TextStyle(fontSize: 11),
+                          child: Text(
+                            _getComponentTypeName(typeInt),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: typeColor,
+                            ),
                           ),
                         ),
-                    ],
-                  ),
-                ],
+                        if (component.price > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.success.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              PriceFormatter.format(component.price),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.success,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-            Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined),
-                  onPressed: onEdit,
-                  tooltip: 'Sửa',
+              SizedBox(
+                width: 48,
+                height: 48,
+                child: PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, color: AppColors.textSecondary),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  onSelected: (value) {
+                    if (value == 'edit') onEdit();
+                    if (value == 'delete') onDelete();
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit_outlined, size: 20),
+                          SizedBox(width: 8),
+                          Text('Sửa'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('Xóa', style: TextStyle(color: Colors.red)),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: onDelete,
-                  tooltip: 'Xóa',
-                  color: Colors.red,
-                ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );

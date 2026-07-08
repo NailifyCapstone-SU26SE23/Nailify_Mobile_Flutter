@@ -20,17 +20,36 @@ class NailSurfaceSelector extends StatelessWidget {
       return const Text('No nail surfaces available');
     }
 
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        for (final surface in surfaces)
-          ChoiceChip(
-            label: Text(surface.name),
-            selected: selectedSurface?.nailSurfaceId == surface.nailSurfaceId,
-            onSelected: (_) => onSelected(surface),
-          ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < surfaces.length; i++)
+            Padding(
+              padding: EdgeInsets.only(bottom: i == surfaces.length - 1 ? 0 : 16.0),
+              child: SizedBox(
+                height: 64,
+                child: FilledButton.tonal(
+                  onPressed: () => onSelected(surfaces[i]),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: selectedSurface?.nailSurfaceId == surfaces[i].nailSurfaceId
+                        ? Colors.pink
+                        : Colors.pink.shade50,
+                    foregroundColor: selectedSurface?.nailSurfaceId == surfaces[i].nailSurfaceId
+                        ? Colors.white
+                        : Colors.pink.shade900,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: Text(
+                    surfaces[i].name,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

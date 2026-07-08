@@ -5,19 +5,36 @@ import '../models/promotion_model.dart';
 class PromotionApiService {
   final ApiClient _apiClient = getIt<ApiClient>();
 
-  Future<List<PromotionModel>> getVouchers({
+  /// Lấy danh sách khuyến mãi từ API /Promotions
+  Future<List<PromotionModel>> getPromotions({
     int pageNumber = 1,
-    int pageSize = 10,
+    int pageSize = 20,
+    String? type,
+    String? scope,
+    String? discountType,
   }) async {
-    final response = await _apiClient.get(
-      '/Promotions/today',
-      queryParameters: {'pageNumber': pageNumber, 'pageSize': pageSize},
-    );
+    final queryParams = <String, dynamic>{
+      'pageNumber': pageNumber,
+      'pageSize': pageSize,
+    };
+    if (type != null) queryParams['type'] = type;
+    if (scope != null) queryParams['scope'] = scope;
+    if (discountType != null) queryParams['discountType'] = discountType;
+
+    final response = await _apiClient.get('/Promotions', queryParameters: queryParams);
 
     final items = response.data['data']?['items'] as List<dynamic>? ?? [];
     return items
         .whereType<Map>()
         .map((json) => PromotionModel.fromJson(Map<String, dynamic>.from(json)))
         .toList();
+  }
+
+  /// Giữ lại hàm cũ để tương thích ngược với các file đang dùng
+  Future<List<PromotionModel>> getVouchers({
+    int pageNumber = 1,
+    int pageSize = 10,
+  }) async {
+    return getPromotions(pageNumber: pageNumber, pageSize: pageSize);
   }
 }

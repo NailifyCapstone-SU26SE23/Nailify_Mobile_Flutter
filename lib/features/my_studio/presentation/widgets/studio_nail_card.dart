@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../../../../core/constants/app_colors.dart';
 import '../../data/models/customer_nail_model.dart';
 
@@ -38,19 +37,19 @@ class StudioNailCard extends StatelessWidget {
     switch (status) {
       case 'Pending':
       case 'PendingReview':
-        return 'Cho duyet';
+        return 'Chờ duyệt';
       case 'Review':
-        return 'Dang tham dinh';
+        return 'Đang thẩm định';
       case 'Assigned':
-        return 'Da gan tho';
+        return 'Đã gán thợ';
       case 'Reviewed':
-        return 'Tho da danh gia';
+        return 'Thợ đã đánh giá';
       case 'Quoted':
-        return 'Da bao gia';
+        return 'Đã báo giá';
       case 'Approved':
-        return 'San sang dat lich';
+        return 'Sẵn sàng đặt lịch';
       case 'Rejected':
-        return 'Bi tu choi';
+        return 'Bị từ chối';
       default:
         return status;
     }
@@ -58,46 +57,43 @@ class StudioNailCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.borderLight),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.horizontal(
-                    left: Radius.circular(16),
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.grey.shade200, width: 1.5),
+      ),
+      color: Colors.white,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: nail.imageUrl != null && nail.imageUrl!.isNotEmpty
+                        ? Image.network(
+                            nail.imageUrl!,
+                            width: 64,
+                            height: 64,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _fallbackImage(),
+                          )
+                        : _fallbackImage(),
                   ),
-                  child: nail.imageUrl != null && nail.imageUrl!.isNotEmpty
-                      ? Image.network(
-                          nail.imageUrl!,
-                          width: 100,
-                          height: 100,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => _fallbackImage(),
-                        )
-                      : _fallbackImage(),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
+                  const SizedBox(width: 16),
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        const SizedBox(height: 2),
                         Text(
                           nail.name,
                           style: const TextStyle(
@@ -108,8 +104,7 @@ class StudioNailCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        if (nail.salonName != null &&
-                            nail.salonName!.isNotEmpty) ...[
+                        if (nail.salonName != null && nail.salonName!.isNotEmpty) ...[
                           const SizedBox(height: 4),
                           Text(
                             nail.salonName!,
@@ -123,15 +118,10 @@ class StudioNailCard extends StatelessWidget {
                         ],
                         const SizedBox(height: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: _getStatusColor(
-                              nail.status,
-                            ).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
+                            color: _getStatusColor(nail.status).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             _getStatusText(nail.status),
@@ -145,15 +135,14 @@ class StudioNailCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                ),
-              ],
-            ),
-            if (action != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                child: SizedBox(width: double.infinity, child: action),
+                ],
               ),
-          ],
+              if (action != null) ...[
+                const SizedBox(height: 16),
+                SizedBox(width: double.infinity, child: action),
+              ]
+            ],
+          ),
         ),
       ),
     );
@@ -161,10 +150,10 @@ class StudioNailCard extends StatelessWidget {
 
   Widget _fallbackImage() {
     return Container(
-      width: 100,
-      height: 100,
-      color: Colors.pink.shade50,
-      child: const Icon(Icons.image, color: Colors.grey),
+      width: 64,
+      height: 64,
+      color: AppColors.primary.withValues(alpha: 0.1),
+      child: const Icon(Icons.spa_outlined, color: AppColors.primary, size: 28),
     );
   }
 }

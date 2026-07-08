@@ -5,41 +5,38 @@ class BookingApiService {
   final ApiClient _apiClient = getIt<ApiClient>();
 
   Future<List<dynamic>> getSalons() async {
-    final response = await _apiClient.get(
-      '/Salons',
-      queryParameters: {'PageIndex': 1, 'PageSize': 10},
-    );
+    final response = await _apiClient.get('/Salons', queryParameters: {
+      'PageIndex': 1,
+      'PageSize': 10,
+    });
     return response.data['data']['items'] ?? [];
   }
 
   Future<List<dynamic>> getServices() async {
-    final response = await _apiClient.get(
-      '/Services',
-      queryParameters: {'PageIndex': 1, 'PageSize': 100},
-    );
+    final response = await _apiClient.get('/Services', queryParameters: {
+      'PageIndex': 1,
+      'PageSize': 100,
+    });
     return response.data['data']['items'] ?? response.data['data'] ?? [];
   }
 
   List<Map<String, dynamic>> _buildBookingItems(
     int nailVariantId,
     List<String> serviceIds,
-    int? shapeMethodConfigId,
   ) {
     return [
       if (nailVariantId > 0)
         {
           'nailVariantId': nailVariantId,
           'serviceId': null,
-          'shapeMethodConfigId': shapeMethodConfigId,
-          'customerNailRequestId': null,
+          'customerNailId': null,
           'quantity': 1,
         },
       ...serviceIds.map(
         (serviceId) => {
           'nailVariantId': null,
           'serviceId': serviceId,
-          'shapeMethodConfigId': null,
-          'customerNailRequestId': null,
+          'customerNailId': null,
           'quantity': 1,
         },
       ),
@@ -51,20 +48,12 @@ class BookingApiService {
     String bookingDate,
     int nailVariantId,
     List<String> serviceIds,
-    int? shapeMethodConfigId,
   ) async {
-    final response = await _apiClient.post(
-      '/Bookings/suggested-artists',
-      data: {
-        'salonId': salonId,
-        'bookingDate': bookingDate,
-        'bookingItems': _buildBookingItems(
-          nailVariantId,
-          serviceIds,
-          shapeMethodConfigId,
-        ),
-      },
-    );
+    final response = await _apiClient.post('/Bookings/suggested-artists', data: {
+      'salonId': salonId,
+      'bookingDate': bookingDate,
+      'bookingItems': _buildBookingItems(nailVariantId, serviceIds),
+    });
     return response.data['data'] ?? [];
   }
 
@@ -74,7 +63,10 @@ class BookingApiService {
   ) async {
     final response = await _apiClient.get(
       '/Bookings/artist-available-slots',
-      queryParameters: {'NailArtistId': artistId, 'BookingDate': bookingDate},
+      queryParameters: {
+        'NailArtistId': artistId,
+        'BookingDate': bookingDate,
+      },
     );
     return response.data['data']['timeSlots'] ?? [];
   }
@@ -86,11 +78,11 @@ class BookingApiService {
     DateTime date,
   ) {
     final List<dynamic> hours = salon['operatingHours'] ?? [];
-    final int dayOfWeek =
-        date.weekday % 7; // Dart: Mon=1..Sun=7 → 0=Sun,1=Mon,...6=Sat
-    final Map<String, dynamic>? todayHours = hours
-        .cast<Map<String, dynamic>?>()
-        .firstWhere((h) => h?['dayOfWeek'] == dayOfWeek, orElse: () => null);
+    final int dayOfWeek = date.weekday % 7; // Dart: Mon=1..Sun=7 → 0=Sun,1=Mon,...6=Sat
+    final Map<String, dynamic>? todayHours = hours.cast<Map<String, dynamic>?>().firstWhere(
+      (h) => h?['dayOfWeek'] == dayOfWeek,
+      orElse: () => null,
+    );
     if (todayHours == null || todayHours['isClosed'] == true) return [];
 
     final String openStr = todayHours['openTime'] ?? '08:00:00';
@@ -128,25 +120,17 @@ class BookingApiService {
     String? artistId,
     int nailVariantId,
     List<String> serviceIds, {
-    int? shapeMethodConfigId,
-    List<int>? selectedPromotionIds,
-  }) async {
-    final response = await _apiClient.post(
-      '/Bookings',
-      data: {
-        'salonId': salonId,
-        'bookingDate': bookingDate,
-        'startTime': startTime,
-        'nailArtistId': artistId?.isEmpty == true ? null : artistId,
-        'holdToken': null,
-        'bookingItems': _buildBookingItems(
-          nailVariantId,
-          serviceIds,
-          shapeMethodConfigId,
-        ),
-        'selectedPromotionIds': selectedPromotionIds,
-      },
-    );
+      List<int>? selectedPromotionIds,
+    }) async {
+    final response = await _apiClient.post('/Bookings', data: {
+      'salonId': salonId,
+      'bookingDate': bookingDate,
+      'startTime': startTime,
+      'nailArtistId': artistId?.isEmpty == true ? null : artistId,
+      'holdToken': null,
+      'bookingItems': _buildBookingItems(nailVariantId, serviceIds),
+      'selectedPromotionIds': selectedPromotionIds,
+    });
     return response.data['data'] ?? {};
   }
 
@@ -157,7 +141,6 @@ class BookingApiService {
     required String? artistId,
     required int nailVariantId,
     required List<String> serviceIds,
-    int? shapeMethodConfigId,
     List<int>? selectedPromotionIds,
   }) async {
     final response = await _apiClient.post(
@@ -185,15 +168,19 @@ class BookingApiService {
   // CÁC HÀM BỔ SUNG CHO LUỒNG ĐẶT DỊCH VỤ ĐỘC LẬP
   // =================================================================
   Future<List<dynamic>> getNailArtistsBySalon(String salonId) async {
-    final response = await _apiClient.get(
-      '/NailArtists',
-      queryParameters: {'PageNumber': 1, 'PageSize': 50, 'salonId': salonId},
-    );
+    final response = await _apiClient.get('/NailArtists', queryParameters: {
+      'PageNumber': 1,
+      'PageSize': 50,
+      'salonId': salonId,
+    });
     final items = response.data['data']['items'] as List<dynamic>? ?? [];
     return items.map((artist) {
       final firstName = artist['firstName']?.toString() ?? '';
       final lastName = artist['lastName']?.toString() ?? '';
-      return {...artist, 'fullName': '$firstName $lastName'.trim()};
+      return {
+        ...artist,
+        'fullName': '$firstName $lastName'.trim(),
+      };
     }).toList();
   }
 
@@ -212,13 +199,13 @@ class BookingApiService {
     String customerNailRequestId,
     Map<String, int> groupedExtraServices,
     int? shapeMethodConfigId,
-  ) async {
+      List<int>? selectedPromotionIds,
+      ) async {
     final bookingItems = <Map<String, dynamic>>[
       {
         'nailVariantId': null,
         'serviceId': null,
-        'shapeMethodConfigId': shapeMethodConfigId,
-        'customerNailRequestId': customerNailRequestId,
+        'customerNailId': customerNailId,
         'quantity': 1,
       },
     ];
@@ -227,23 +214,21 @@ class BookingApiService {
       bookingItems.add({
         'nailVariantId': null,
         'serviceId': serviceId,
-        'shapeMethodConfigId': null,
-        'customerNailRequestId': null,
+        'customerNailId': null,
         'quantity': quantity,
       });
     });
 
-    final response = await _apiClient.post(
-      '/Bookings',
-      data: {
-        'salonId': salonId,
-        'bookingDate': bookingDate,
-        'startTime': startTime,
-        'nailArtistId': artistId,
-        'holdToken': '',
-        'bookingItems': bookingItems,
-      },
-    );
+    final response = await _apiClient.post('/Bookings', data: {
+      'salonId': salonId,
+      'bookingDate': bookingDate,
+      'startTime': startTime,
+      'nailArtistId': artistId,
+      'holdToken': '',
+      'bookingItems': bookingItems,
+      if (selectedPromotionIds != null && selectedPromotionIds.isNotEmpty)
+        'selectedPromotionIds': selectedPromotionIds,
+    });
 
     return response.data['data'] ?? {};
   }

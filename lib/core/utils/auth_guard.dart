@@ -17,9 +17,7 @@ class AuthGuard {
       // Chưa đăng nhập -> Biến
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Vui lòng đăng nhập để đặt lịch hoặc sử dụng tính năng này!',
-          ),
+          content: Text('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!'),
           backgroundColor: Colors.red,
           duration: Duration(seconds: 3),
         ),

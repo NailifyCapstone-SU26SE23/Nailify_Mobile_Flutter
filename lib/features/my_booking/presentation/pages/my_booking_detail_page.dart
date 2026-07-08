@@ -4,14 +4,8 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/di/injection.dart';
 import '../../../../core/utils/base64_image_converter.dart';
 import '../../../../core/utils/price_formatter.dart';
-import '../../../my_studio/data/datasources/studio_api_service.dart';
-import '../../../my_studio/data/models/customer_nail_model.dart';
-import '../../../nails/data/models/nail_variant_model.dart';
-import '../../../nails/data/models/shape_method_config_model.dart';
-import '../../../nails/data/repositories/nail_variant_repository.dart';
 import '../../data/datasources/my_booking_api_service.dart';
 import '../utils/booking_status_utils.dart';
 import '../widgets/cancel_booking_dialog.dart';
@@ -28,12 +22,8 @@ class MyBookingDetailPage extends StatefulWidget {
 class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
   final MyBookingApiService _apiService = MyBookingApiService();
   bool _isLoading = true;
-  bool _isCancelling = false;
   Map<String, dynamic>? _booking;
   Map<String, dynamic>? _rating;
-  Map<int, NailVariantModel> _nailVariantDetails = {};
-  Map<String, CustomerNailModel> _customerNailRequestDetails = {};
-  Map<int, ShapeMethodConfigModel> _shapeMethodConfigs = {};
 
   @override
   void initState() {
@@ -44,11 +34,6 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
   Future<void> _fetchBookingDetail() async {
     try {
       final data = await _apiService.getBookingDetails(widget.bookingId);
-      final nailVariantDetails = await _fetchNailVariantDetails(data);
-      final customerNailRequestDetails = await _fetchCustomerNailRequestDetails(
-        data,
-      );
-      final shapeMethodConfigs = await _fetchShapeMethodConfigs(data);
       Map<String, dynamic>? rating;
       if (bookingIsRated(data)) {
         try {
@@ -61,164 +46,18 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
       setState(() {
         _booking = data;
         _rating = rating;
-        _nailVariantDetails = nailVariantDetails;
-        _customerNailRequestDetails = customerNailRequestDetails;
-        _shapeMethodConfigs = shapeMethodConfigs;
         _isLoading = false;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Lỗi tải chi tiết: $e')));
-    }
-  }
-
-  Future<Map<int, NailVariantModel>> _fetchNailVariantDetails(
-    Map<String, dynamic> booking,
-  ) async {
-    final rawItems = booking['bookingItems'];
-    if (rawItems is! List) return {};
-    final ids = rawItems
-        .whereType<Map>()
-        .map((item) => _asInt(item['nailVariantId'] ?? item['NailVariantId']))
-        .where((id) => id > 0)
-        .toSet();
-    if (ids.isEmpty) return {};
-
-    final repository = getIt<NailVariantRepository>();
-    final entries = await Future.wait(
-      ids.map((id) async {
-        try {
-          return MapEntry(id, await repository.getNailVariantById(id));
-        } catch (e) {
-          debugPrint('Failed to load nail variant $id: $e');
-          return null;
-        }
-      }),
-    );
-
-    return {
-      for (final entry in entries)
-        if (entry != null) entry.key: entry.value,
-    };
-  }
-
-  Future<Map<String, CustomerNailModel>> _fetchCustomerNailRequestDetails(
-    Map<String, dynamic> booking,
-  ) async {
-    final rawItems = booking['bookingItems'];
-    if (rawItems is! List) return {};
-    final ids = rawItems
-        .whereType<Map>()
-        .map(
-          (item) =>
-              (item['customerNailRequestId'] ?? item['CustomerNailRequestId'])
-                  ?.toString() ??
-              '',
-        )
-        .where((id) => id.isNotEmpty)
-        .toSet();
-    if (ids.isEmpty) return {};
-
-    final apiService = StudioApiService();
-    final entries = await Future.wait(
-      ids.map((id) async {
-        try {
-          return MapEntry(id, await apiService.getNailRequestDetail(id));
-        } catch (e) {
-          debugPrint('Failed to load customer nail request $id: $e');
-          return null;
-        }
-      }),
-    );
-
-    return {
-      for (final entry in entries)
-        if (entry != null) entry.key: entry.value,
-    };
-  }
-
-  Future<Map<int, ShapeMethodConfigModel>> _fetchShapeMethodConfigs(
-    Map<String, dynamic> booking,
-  ) async {
-    final rawItems = booking['bookingItems'];
-    if (rawItems is! List) return {};
-    final ids = rawItems
-        .whereType<Map>()
-        .map(
-          (item) => _asInt(
-            item['shapeMethodConfigId'] ?? item['ShapeMethodConfigId'],
-          ),
-        )
-        .where((id) => id > 0)
-        .toSet();
-    if (ids.isEmpty) return {};
-
-    final repository = getIt<NailVariantRepository>();
-    final entries = await Future.wait(
-      ids.map((id) async {
-        try {
-          return MapEntry(id, await repository.getShapeMethodConfigById(id));
-        } catch (e) {
-          debugPrint('Failed to load shape method config $id: $e');
-          return null;
-        }
-      }),
-    );
-
-    return {
-      for (final entry in entries)
-        if (entry != null) entry.key: entry.value,
-    };
-  }
-
-  bool _readBool(dynamic value) {
-    if (value is bool) return value;
-    if (value is num) return value != 0;
-    final normalized = value?.toString().toLowerCase().trim();
-    return normalized == 'true' || normalized == '1' || normalized == 'yes';
-  }
-
-  Future<void> _cancelBooking(String reason) async {
-    if (_isCancelling) return;
-    setState(() => _isCancelling = true);
-    try {
-      final success = await _apiService.cancelBooking(
-        widget.bookingId,
-        reason: reason,
-      );
-      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            success
-                ? 'Hủy lịch hẹn thành công'
-                : 'Hủy lịch hẹn thất bại',
-          ),
-        ),
+        SnackBar(content: Text('Lỗi tải chi tiết: $e')),
       );
-      if (success) {
-        await _fetchBookingDetail();
-      }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Lá»—i: $e')));
-    } finally {
-      if (mounted) setState(() => _isCancelling = false);
     }
   }
 
-  void _showMapPopup(
-    BuildContext context,
-    String salonName,
-    String? address,
-    double? latitude,
-    double? longitude,
-  ) {
+  void _showMapPopup(BuildContext context, String salonName, String? address, double? latitude, double? longitude) {
     // Tọa độ
     final double lat = latitude ?? 10.993592755518687;
     final double lng = longitude ?? 106.65636465428618;
@@ -241,27 +80,17 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
             children: [
               // Thanh kéo & Thông tin
               Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 12,
-                  horizontal: 20,
-                ),
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                 child: Column(
                   children: [
                     Container(
-                      width: 40,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+                        width: 40, height: 5,
+                        decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10))
                     ),
                     const SizedBox(height: 12),
                     Text(
                       'Vị trí: $salonName',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 4),
@@ -278,9 +107,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
               // Bản đồ
               Expanded(
                 child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    bottom: Radius.circular(20),
-                  ),
+                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
                   child: FlutterMap(
                     options: MapOptions(
                       initialCenter: targetPosition,
@@ -289,8 +116,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                     children: [
                       TileLayer(
                         // Dùng CartoDB
-                        urlTemplate:
-                            'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                        urlTemplate: 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
                         userAgentPackageName: 'com.nailify.app',
                       ),
                       MarkerLayer(
@@ -362,7 +188,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, size: 20),
           onPressed: () => context.go('/my-bookings'),
-          // context.pop(),
+              // context.pop(),
         ),
         title: const Text(
           'Chi tiết lịch hẹn',
@@ -384,10 +210,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
             // Header Trạng thái
             Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: status.backgroundColor,
                   borderRadius: BorderRadius.circular(20),
@@ -419,46 +242,33 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   //_buildRow('Chi nhánh', booking['salonName']?.toString()),
                   //map xịn
                   Material(
-                    color: Colors
-                        .transparent, // Đảm bảo hiệu ứng chạm hiển thị đúng
+                    color: Colors.transparent, // Đảm bảo hiệu ứng chạm hiển thị đúng
                     child: InkWell(
                       onTap: () {
-                        final salonName =
-                            _booking?['salonName']?.toString() ??
-                            'Chi nhánh Nailify';
+                        final salonName = _booking?['salonName']?.toString() ?? 'Chi nhánh Nailify';
                         final address = _booking?['salonAddress']?.toString();
                         final latitude = _booking?['latitude'] as double?;
                         final longitude = _booking?['longitude'] as double?;
-                        _showMapPopup(
-                          context,
-                          salonName,
-                          address,
-                          latitude,
-                          longitude,
-                        );
+                        _showMapPopup(context, salonName, address, latitude, longitude);
                       },
                       borderRadius: BorderRadius.circular(8),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8.0),
                         child: Row(
                           children: [
+
                             Expanded(
                               child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text(
                                     'Chi nhánh',
-                                    style: TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 15,
-                                    ),
+                                    style: TextStyle(color: Colors.grey, fontSize: 15),
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      _booking?['salonName']?.toString() ??
-                                          'Đang tải...',
+                                      _booking?['salonName']?.toString() ?? 'Đang tải...',
                                       textAlign: TextAlign.right,
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
@@ -534,23 +344,22 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                     ...discounts.map(_buildDiscountRow)
                   else
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Khuyến mãi:',
-                          style: TextStyle(color: Colors.grey, fontSize: 14),
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Khuyến mãi:',
+                        style: TextStyle(color: Colors.grey, fontSize: 14),
+                      ),
+                      Text(
+                        PriceFormatter.format(booking['discount'] ?? 0),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Colors.green, // Dùng màu xanh lá để nhấn mạnh số tiền được giảm
                         ),
-                        Text(
-                          PriceFormatter.format(booking['discount'] ?? 0),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            color: Colors
-                                .green, // Dùng màu xanh lá để nhấn mạnh số tiền được giảm
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
+                  ),
                   const Divider(height: 24),
 
                   // 3. Tổng thanh toán
@@ -559,10 +368,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                     children: [
                       const Text(
                         'Tổng thanh toán:',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                       Text(
                         PriceFormatter.format(booking['totalPrice'] ?? 0),
@@ -590,9 +396,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
               const SizedBox(height: 24),
             ],
 
-            if (rawStatus == 'Approved' &&
-                rawQrString != null &&
-                rawQrString.isNotEmpty) ...[
+            if (!isRated && rawQrString != null && rawQrString.isNotEmpty) ...[
               const Text(
                 'Mã Check-in',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -605,13 +409,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: AppColors.borderLight),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.02),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
                 ),
                 child: Column(
                   children: [
@@ -639,50 +437,50 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                 ),
               ),
             ],
-            if (canRequestRefund) ...[
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => context.push(
-                    '/refund-bank-info',
-                    extra: widget.bookingId,
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  icon: const Icon(
-                    Icons.payments_outlined,
-                    color: Colors.white,
-                  ),
-                  label: const Text(
-                    'Yeu cau hoan tien',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-            ],
             if (canCancel) ...[
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
-                  onPressed: _isCancelling
-                      ? null
-                      : () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => CancelBookingDialog(
-                              bookingId: widget.bookingId,
-                              onConfirm: _cancelBooking,
-                            ),
-                          );
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => CancelBookingDialog(
+                        bookingId: widget.bookingId,
+                        onConfirm: (reason) async {
+                          /* TODO: Bỏ chú thích khi API hoàn thiện
+                          try {
+                            final success = await _apiService.cancelBooking(
+                              widget.bookingId, 
+                              reason: reason,
+                            );
+                            if (success && mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Hủy lịch thành công')),
+                              );
+                              _fetchBookingDetail(); // Load lại trang
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Hủy lịch thất bại')),
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Lỗi: $e')),
+                              );
+                            }
+                          }
+                          */
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('API chưa hoàn thiện')),
+                            );
+                          }
                         },
+                      ),
+                    );
+                  },
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.red,
                     side: const BorderSide(color: Colors.red),
@@ -691,9 +489,9 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Text(
-                    _isCancelling ? 'Đang hủy...' : 'Hủy đặt lịch',
-                    style: const TextStyle(
+                  child: const Text(
+                    'Hủy đặt lịch',
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
@@ -735,36 +533,12 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
 
   Widget _buildBookingItem(dynamic rawItem) {
     final item = rawItem as Map<String, dynamic>;
-    final quantity = _asInt(item['quantity'], fallback: 1);
-    final price = _asDouble(item['price']);
-    final nailVariantId = _asInt(
-      item['nailVariantId'] ?? item['NailVariantId'],
-    );
-    final variant =
-        _nailVariantFromItem(item) ?? _nailVariantDetails[nailVariantId];
-    final customerNailRequestId =
-        (item['customerNailRequestId'] ?? item['CustomerNailRequestId'])
-            ?.toString() ??
-        '';
-    final customerNailRequest =
-        _customerNailRequestFromItem(item) ??
-        _customerNailRequestDetails[customerNailRequestId];
     final names = [
       item['nailVariantName']?.toString().trim() ?? '',
       item['customerNailName']?.toString().trim() ?? '',
       item['serviceName']?.toString().trim() ?? '',
     ].where((name) => name.isNotEmpty).toList();
     final name = names.isEmpty ? 'Dịch vụ' : names.join(' & ');
-    final shapeMethodConfigId = _asInt(
-      item['shapeMethodConfigId'] ?? item['ShapeMethodConfigId'],
-    );
-    final shapeMethodConfig =
-        _shapeMethodConfigFromItem(item) ??
-        _shapeMethodConfigs[shapeMethodConfigId];
-    final shapeMethodName =
-        _shapeMethodNameFromItem(item) ?? shapeMethodConfig?.name;
-    final shapeMethodPrice =
-        shapeMethodConfig?.price ?? _shapeMethodPriceFromItem(item);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -774,78 +548,38 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.borderLight),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                flex: 5,
-                child: Text(
-                  name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Expanded(
-                flex: 2,
-                child: Text(
-                  'SL: $quantity',
-                  style: const TextStyle(color: Colors.grey, fontSize: 13),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              Expanded(
-                flex: 4,
-                child: Text(
-                  PriceFormatter.format(price * quantity),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                    fontSize: 14,
-                  ),
-                  textAlign: TextAlign.right,
-                ),
-              ),
-            ],
+          Expanded(
+            flex: 5,
+            child: Text(
+              name,
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-          if (variant != null) ...[
-            const SizedBox(height: 6),
-            if (variant.nailSurface != null)
-              _buildVariantDetailLine(
-                'Bề mặt: ${variant.nailSurface!.name}',
-                variant.nailSurface!.price,
-              ),
-            if (variant.nailShape != null)
-              _buildVariantDetailLine(
-                shapeMethodName ?? 'Phom móng',
-                shapeMethodPrice
-              ),
-            ..._componentPaymentLines(variant).map(
-              (line) => _buildVariantDetailLine(
-                '${line.quantity}x ${line.name}',
-                line.price * line.quantity,
-              ),
+          Expanded(
+            flex: 2,
+            child: Text(
+              'SL: ${item['quantity'] ?? 1}',
+              style: const TextStyle(color: Colors.grey, fontSize: 13),
+              textAlign: TextAlign.center,
             ),
-          ],
-          if (customerNailRequest != null) ...[
-            const SizedBox(height: 6),
-            ..._customerNailDetailPaymentLines(
-              customerNailRequest,
-              shapeMethodName: shapeMethodName,
-              shapeMethodPrice: shapeMethodPrice,
-            ),
-            if (customerNailRequest.price > 0)
-              _buildStandaloneDetailLine(
-                'Extra component',
-                customerNailRequest.price,
+          ),
+          Expanded(
+            flex: 4,
+            child: Text(
+              PriceFormatter.format(item['price'] * item['quantity']),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+                fontSize: 14,
               ),
-          ],
+              textAlign: TextAlign.right,
+            ),
+          ),
         ],
       ),
     );
@@ -858,206 +592,6 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
         .whereType<Map>()
         .map((discount) => Map<String, dynamic>.from(discount))
         .toList();
-  }
-
-  Widget _buildVariantDetailLine(String label, num price) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 4, left: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: Text(
-                label,
-                style: const TextStyle(fontSize: 13, color: Colors.grey),
-              ),
-            ),
-          ),
-          Text(
-            PriceFormatter.format(price),
-            style: const TextStyle(
-              fontSize: 13,
-              color: Colors.grey,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  List<_ComponentPaymentLine> _componentPaymentLines(NailVariantModel variant) {
-    final grouped = <String, _ComponentPaymentLine>{};
-    for (final item in variant.nailComponents) {
-      final component = item.component;
-      final componentName = component?.name.trim();
-      final name = componentName != null && componentName.isNotEmpty
-          ? componentName
-          : 'Component ${item.componentId}';
-      final price = component?.price ?? 0;
-      final key = '$name|$price';
-      final current = grouped[key];
-      grouped[key] = current == null
-          ? _ComponentPaymentLine(name: name, quantity: 1, price: price)
-          : current.copyWith(quantity: current.quantity + 1);
-    }
-    return grouped.values.toList();
-  }
-
-  List<Widget> _customerNailDetailPaymentLines(
-    CustomerNailModel nail, {
-    String? shapeMethodName,
-    num shapeMethodPrice = 0,
-  }) {
-    return [
-      if (nail.nailSurface != null)
-        _buildVariantDetailLine(
-          'Bề mặt ${nail.nailSurface!['name'] ?? nail.nailSurface!['Name'] ?? ''}',
-          nail.nailSurface!['price'] ?? nail.nailSurface!['Price'] ?? 0,
-        ),
-      if (nail.nailShape != null)
-        _buildVariantDetailLine(
-          shapeMethodName ?? 'Phom móng',
-          shapeMethodPrice,
-        ),
-      ..._customerNailComponentLines(nail).map(
-        (line) => _buildVariantDetailLine(
-          '${line.quantity}x ${line.name}',
-          line.price * line.quantity,
-        ),
-      ),
-    ];
-  }
-
-  Widget _buildStandaloneDetailLine(String label, num price) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: Text(label, style: const TextStyle(fontSize: 14)),
-            ),
-          ),
-          Text(
-            PriceFormatter.format(price),
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              color: AppColors.primary,
-              fontSize: 14,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  List<_ComponentPaymentLine> _customerNailComponentLines(
-    CustomerNailModel nail,
-  ) {
-    final grouped = <String, _ComponentPaymentLine>{};
-    for (final raw in nail.customerNailComponents) {
-      if (raw is! Map) continue;
-      final component = raw['component'] ?? raw['Component'];
-      final customerComponent =
-          raw['customerComponent'] ?? raw['CustomerComponent'];
-      final source = component is Map
-          ? component
-          : customerComponent is Map
-          ? customerComponent
-          : null;
-      final name = (source?['name'] ?? source?['Name'] ?? 'Component')
-          .toString()
-          .trim();
-      final price = _asDouble(source?['price'] ?? source?['Price']);
-      final label = name.isEmpty ? 'Component' : name;
-      final key = '$label|$price';
-      final current = grouped[key];
-      grouped[key] = current == null
-          ? _ComponentPaymentLine(name: label, quantity: 1, price: price)
-          : current.copyWith(quantity: current.quantity + 1);
-    }
-    return grouped.values.toList();
-  }
-
-  CustomerNailModel? _customerNailRequestFromItem(Map<String, dynamic> item) {
-    final raw = item['customerNailRequest'] ?? item['CustomerNailRequest'];
-    if (raw is Map) {
-      return CustomerNailModel.fromJson(Map<String, dynamic>.from(raw));
-    }
-    return null;
-  }
-
-  NailVariantModel? _nailVariantFromItem(Map<String, dynamic> item) {
-    final raw = item['nailVariant'] ?? item['NailVariant'];
-    if (raw is! Map) return null;
-    return NailVariantModel.fromJson(Map<String, dynamic>.from(raw));
-  }
-
-  ShapeMethodConfigModel? _shapeMethodConfigFromItem(
-    Map<String, dynamic> item,
-  ) {
-    final raw =
-        item['shapeMethodConfig'] ??
-        item['ShapeMethodConfig'] ??
-        item['shapeMethod'] ??
-        item['ShapeMethod'];
-    if (raw is! Map) return null;
-    return ShapeMethodConfigModel.fromJson(Map<String, dynamic>.from(raw));
-  }
-
-  String? _shapeMethodNameFromItem(Map<String, dynamic> item) {
-    final raw =
-        item['shapeMethodConfig'] ??
-        item['ShapeMethodConfig'] ??
-        item['shapeMethod'] ??
-        item['ShapeMethod'];
-    if (raw is Map) {
-      final value = raw['name'] ?? raw['Name'];
-      final text = value?.toString().trim();
-      return text == null || text.isEmpty ? null : text;
-    }
-    final value =
-        item['shapeMethodConfigName'] ??
-        item['ShapeMethodConfigName'] ??
-        item['shapeMethodName'] ??
-        item['ShapeMethodName'];
-    final text = value?.toString().trim();
-    return text == null || text.isEmpty ? null : text;
-  }
-
-  num _shapeMethodPriceFromItem(Map<String, dynamic> item) {
-    final raw =
-        item['shapeMethodConfig'] ??
-        item['ShapeMethodConfig'] ??
-        item['shapeMethod'] ??
-        item['ShapeMethod'];
-    if (raw is Map) {
-      return _asDouble(raw['price'] ?? raw['Price']);
-    }
-    return _asDouble(
-      item['shapeMethodConfigPrice'] ??
-          item['ShapeMethodConfigPrice'] ??
-          item['shapeMethodPrice'] ??
-          item['ShapeMethodPrice'],
-    );
-  }
-
-  int _asInt(dynamic value, {int fallback = 0}) {
-    if (value is int) return value;
-    if (value is num) return value.toInt();
-    return int.tryParse(value?.toString() ?? '') ?? fallback;
-  }
-
-  double _asDouble(dynamic value) {
-    if (value is num) return value.toDouble();
-    return double.tryParse(value?.toString() ?? '') ?? 0;
   }
 
   Widget _buildDiscountRow(Map<String, dynamic> discount) {
@@ -1142,8 +676,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Add image if URL exists
-          if (rating['imageUrl'] != null &&
-              rating['imageUrl'].toString().isNotEmpty) ...[
+          if (rating['imageUrl'] != null && rating['imageUrl'].toString().isNotEmpty) ...[
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Image.network(
@@ -1159,7 +692,9 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                       color: Colors.grey[200],
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Center(child: CircularProgressIndicator()),
+                    child: const Center(
+                      child: CircularProgressIndicator(),
+                    ),
                   );
                 },
                 errorBuilder: (context, error, stackTrace) {
@@ -1225,6 +760,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
       ),
     );
   }
+
 }
 
 class _QrErrorPlaceholder extends StatelessWidget {
@@ -1251,26 +787,6 @@ class _QrErrorPlaceholder extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _ComponentPaymentLine {
-  final String name;
-  final int quantity;
-  final double price;
-
-  const _ComponentPaymentLine({
-    required this.name,
-    required this.quantity,
-    required this.price,
-  });
-
-  _ComponentPaymentLine copyWith({int? quantity}) {
-    return _ComponentPaymentLine(
-      name: name,
-      quantity: quantity ?? this.quantity,
-      price: price,
     );
   }
 }

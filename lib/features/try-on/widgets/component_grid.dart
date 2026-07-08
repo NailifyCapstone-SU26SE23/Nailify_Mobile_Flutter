@@ -28,35 +28,36 @@ class _ComponentGridState extends State<ComponentGrid> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          widget.title,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: Colors.grey.shade800,
+        if (widget.title.isNotEmpty) ...[
+          Text(
+            widget.title,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: Colors.grey.shade800,
+                ),
           ),
-        ),
-        const SizedBox(height: 8),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: widget.components.length,
-          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: 150,
-            mainAxisExtent: 190,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
+          const SizedBox(height: 8),
+        ],
+        SizedBox(
+          height: 160,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: widget.components.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 12),
+            itemBuilder: (context, index) {
+              final component = widget.components[index];
+              return SizedBox(
+                width: 110,
+                child: _ComponentCard(
+                  component: component,
+                  isSelected: widget.selectedComponent?.id == component.id &&
+                      widget.selectedComponent?.isCustomerComponent ==
+                          component.isCustomerComponent,
+                  onTap: () => widget.onSelected(component),
+                ),
+              );
+            },
           ),
-          itemBuilder: (context, index) {
-            final component = widget.components[index];
-            return _ComponentCard(
-              component: component,
-              isSelected:
-                  widget.selectedComponent?.id == component.id &&
-                  widget.selectedComponent?.isCustomerComponent ==
-                      component.isCustomerComponent,
-              onTap: () => widget.onSelected(component),
-            );
-          },
         ),
       ],
     );
@@ -107,16 +108,13 @@ class _ComponentCard extends StatelessWidget {
                   // Image
                   Expanded(
                     child: ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(7),
-                      ),
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(7)),
                       child: component.imageUrl.isNotEmpty
                           ? Image.network(
                               component.imageUrl,
                               fit: BoxFit.contain,
                               width: double.infinity,
-                              errorBuilder: (_, _, _) =>
-                                  const _FallbackGridIcon(),
+                              errorBuilder: (_, _, _) => const _FallbackGridIcon(),
                             )
                           : const _FallbackGridIcon(),
                     ),
@@ -166,11 +164,7 @@ class _ComponentCard extends StatelessWidget {
                   child: CircleAvatar(
                     radius: 10,
                     backgroundColor: Colors.purple,
-                    child: const Icon(
-                      Icons.check,
-                      size: 12,
-                      color: Colors.white,
-                    ),
+                    child: const Icon(Icons.check, size: 12, color: Colors.white),
                   ),
                 ),
             ],
@@ -211,11 +205,9 @@ class _TypeBadge extends StatelessWidget {
       ),
       child: Text(
         type.name.toUpperCase(),
-        style: TextStyle(
-          fontSize: 8,
-          color: badgeColor,
-          fontWeight: FontWeight.w800,
-        ),
+        style: TextStyle(fontSize: 8, color: badgeColor, fontWeight: FontWeight.w800),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }

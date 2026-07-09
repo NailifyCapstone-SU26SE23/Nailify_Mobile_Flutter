@@ -1,0 +1,66 @@
+// ====================================================================
+// FILE: lib/core/network/signalr_events.dart
+// Mô tả: Models cho các sự kiện real-time từ SignalR Hub
+// ====================================================================
+
+/// Sự kiện: Hàng chờ được đôn lên — có slot trống, user có 15 phút để xác nhận
+class WaitlistPromotedEvent {
+  final String waitlistId;
+  final DateTime? expiresAt; // Thời hạn xác nhận (15 phút)
+  final String message;
+
+  const WaitlistPromotedEvent({
+    required this.waitlistId,
+    this.expiresAt,
+    required this.message,
+  });
+
+  factory WaitlistPromotedEvent.fromJson(Map<String, dynamic> json) {
+    return WaitlistPromotedEvent(
+      waitlistId: json['waitlistId']?.toString() ?? '',
+      expiresAt: json['expiresAt'] != null
+          ? DateTime.tryParse(json['expiresAt'].toString())
+          : null,
+      message: json['message']?.toString() ??
+          'Đã có slot trống! Bạn có 15 phút để xác nhận.',
+    );
+  }
+}
+
+/// Sự kiện: Hàng chờ hết hạn — quá 15 phút chưa xác nhận
+class WaitlistExpiredEvent {
+  final String? waitlistId;
+  final String message;
+
+  const WaitlistExpiredEvent({
+    this.waitlistId,
+    required this.message,
+  });
+
+  factory WaitlistExpiredEvent.fromJson(Map<String, dynamic> json) {
+    return WaitlistExpiredEvent(
+      waitlistId: json['waitlistId']?.toString(),
+      message: json['message']?.toString() ??
+          'Thời gian xác nhận lịch hẹn từ hàng chờ (15 phút) đã hết hạn.',
+    );
+  }
+}
+
+/// Sự kiện: Lịch hẹn bị hủy tự động — trễ quá 15 phút
+class BookingCancelledEvent {
+  final String bookingId;
+  final String message;
+
+  const BookingCancelledEvent({
+    required this.bookingId,
+    required this.message,
+  });
+
+  factory BookingCancelledEvent.fromJson(Map<String, dynamic> json) {
+    return BookingCancelledEvent(
+      bookingId: json['bookingId']?.toString() ?? '',
+      message: json['message']?.toString() ??
+          'Lịch hẹn của bạn đã tự động hủy do trễ quá 15 phút.',
+    );
+  }
+}

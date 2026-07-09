@@ -1,12 +1,15 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/network/signalr_service.dart';
 import '../../../../core/utils/api_response_parser.dart';
 import '../models/user_profile.dart';
 
 class AuthRepository {
   final ApiClient _apiClient;
+  final SignalRService _signalR;
 
-  AuthRepository(this._apiClient);
+  AuthRepository(this._apiClient, this._signalR);
 
   Future<void> login({
     required String email,
@@ -33,6 +36,12 @@ class AuthRepository {
 
     // Set token in ApiClient for future requests
     _apiClient.setAuthToken(token);
+
+    // Kết nối SignalR Hub ngay sau khi đăng nhập thành công
+    _signalR.connect(token).catchError((e) {
+      // Không crash app nếu SignalR lỗi, chỉ log
+      debugPrint('[Auth] Không thể kết nối SignalR: $e');
+    });
   }
 
   Future<UserProfile> register({
@@ -115,7 +124,11 @@ class AuthRepository {
     );
   }
 
-  void logout() => _apiClient.removeAuthToken();
+  void logout() {
+    // Ngắt kết nối SignalR trước khi xóa token
+    _signalR.disconnect();
+    _apiClient.removeAuthToken();
+  }
 
   // Private helper methods (or use ApiResponseParser)
   Map<String, dynamic> _unwrapData(dynamic json) {

@@ -1,7 +1,10 @@
 // lib/core/widgets/main_shell.dart
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../network/signalr_events.dart';
+import '../network/signalr_service.dart';
 import '../utils/auth_guard.dart';
 
 import '../constants/app_colors.dart';
@@ -23,6 +26,105 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
+  StreamSubscription<WaitlistPromotedEvent>? _promotedSub;
+  StreamSubscription<WaitlistExpiredEvent>? _expiredSub;
+  StreamSubscription<BookingCancelledEvent>? _cancelledSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _subscribeToSignalR();
+  }
+
+  void _subscribeToSignalR() {
+    final signalR = getIt<SignalRService>();
+
+    _promotedSub = signalR.onWaitlistPromoted.listen((event) {
+      if (!mounted) return;
+      _showWaitlistBanner(event);
+    });
+
+    _expiredSub = signalR.onWaitlistExpired.listen((event) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(event.message),
+          backgroundColor: Colors.orange.shade700,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 5),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    });
+
+    _cancelledSub = signalR.onBookingCancelled.listen((event) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.cancel_outlined, color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Expanded(child: Text(event.message)),
+            ],
+          ),
+          backgroundColor: Colors.red.shade700,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 6),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          action: SnackBarAction(
+            label: 'Xem lịch',
+            textColor: Colors.white,
+            onPressed: () => context.go('/my-bookings'),
+          ),
+        ),
+      );
+    });
+  }
+
+  void _showWaitlistBanner(WaitlistPromotedEvent event) {
+    ScaffoldMessenger.of(context).clearMaterialBanners();
+    ScaffoldMessenger.of(context).showMaterialBanner(
+      MaterialBanner(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        backgroundColor: AppColors.primary.withValues(alpha: 0.95),
+        leading: const Icon(Icons.notifications_active, color: Colors.white),
+        content: Text(
+          event.message,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              ScaffoldMessenger.of(context).clearMaterialBanners();
+              context.go('/my-bookings');
+            },
+            child: const Text(
+              'Xác nhận ngay',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ),
+          TextButton(
+            onPressed: () =>
+                ScaffoldMessenger.of(context).clearMaterialBanners(),
+            child: Text(
+              'Đóng',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _promotedSub?.cancel();
+    _expiredSub?.cancel();
+    _cancelledSub?.cancel();
+    super.dispose();
+  }
+
   // Biến kiểm tra trạng thái đăng nhập
   bool get _isLoggedIn {
     final token = getIt<SharedPreferences>().getString(AppConstants.authTokenKey);

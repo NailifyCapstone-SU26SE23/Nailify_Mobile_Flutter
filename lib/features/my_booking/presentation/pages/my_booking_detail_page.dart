@@ -256,7 +256,8 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
         rawStatus == 'Approved' ||
         rawStatus == 'Assigned';
     final canRate = rawStatus == 'Completed' && !isRated;
-    final isPaid = _readBool(booking['isPaid']);
+    final amountPaid = booking['amountPaid'];
+    final isPaid = amountPaid != null && amountPaid is num && amountPaid > 0;
     final isRefunded = _readBool(booking['isRefunded']);
     final canRequestRefund = isPaid && !isRefunded && rawStatus == 'Cancelled';
 

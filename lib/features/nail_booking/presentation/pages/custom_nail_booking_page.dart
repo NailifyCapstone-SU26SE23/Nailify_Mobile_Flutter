@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -44,10 +45,27 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   String? _selectedTime;
   List<PromotionModel> _selectedPromotions = [];
 
+  // Hold slot state
+  String? _holdToken;
+  DateTime? _holdExpiresAt;
+  int _holdRemainingSeconds = 0;
+  bool _isHolding = false;
+  Timer? _holdTimer;
+
   @override
   void initState() {
     super.initState();
     _fetchServices();
+  }
+
+  @override
+  void dispose() {
+    // Huỷ giữ chỗ khi user thoát khỏi quá trình đặt lịch
+    if (_holdToken != null) {
+      _apiService.cancelHoldSlot(_holdToken!);
+    }
+    _holdTimer?.cancel();
+    super.dispose();
   }
 
   // --- API LẤY DANH SÁCH DỊCH VỤ ---
@@ -81,13 +99,15 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
     }
   }
 
-  // XỬ LÝ LOGIC GIÁ & SỐ LƯỢNG DỊCH VỤ THÊM
+  // XUỶ LÝ LOGIC GIÁ & SỐ LƯỢNG DỊCH VỤ THÊM
   void _handleServiceChanged(List<String?> services) {
     setState(() {
       _selectedExtraServices = services;
       _selectedTime = null;
       _timeSlots = [];
     });
+    // Huỷ giữ chỗ cũ khi đổi dịch vụ
+    if (_holdToken != null) _cancelCurrentHold();
     if (_selectedDate != null) _fetchTimeSlots();
   }
 
@@ -174,6 +194,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
         selectedPromotionIds: _selectedPromotions.isEmpty
             ? null
             : _selectedPromotions.map((p) => p.promotionId).toList(),
+        holdToken: _holdToken,
       );
 
       if (mounted) {
@@ -206,11 +227,6 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   }
 
   void _handleNextAction() {
-    // Tạm ẩn bước chọn ghế
-    // if (_currentStep == 0 && _selectedSeat == null) {
-    //   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng chọn ghế ngồi!')));
-    //   return;
-    // }
     if (_currentStep == 0 && _selectedExtraServices.contains(null)) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Có ô dịch vụ đang bị bỏ trống!')));
       return;
@@ -225,6 +241,107 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
     } else {
       _executeBooking();
     }
+  }
+
+  // ── HOLD SLOT LOGIC ─────────────────────────────────────────────────────────
+
+  /// Giữ chỗ slot khi user chọn giờ.
+  Future<void> _holdSlot(String time) async {
+    final artistId = widget.nail.nailArtistId ?? '';
+    final salonId = widget.nail.salonId ?? '';
+    if (artistId.isEmpty || salonId.isEmpty || _selectedDate == null) return;
+
+    final bookingDate = "${_selectedDate!.year.toString().padLeft(4, '0')}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}T00:00:00";
+    final formattedTime = time.length == 5 ? '$time:00' : time;
+
+    // Build bookingItems: customerNail + extra services
+    final bookingItems = <Map<String, dynamic>>[
+      {'customerNailId': widget.nail.customerNailId, 'quantity': 1},
+      ..._groupedServicesMap.entries.map((e) => {'serviceId': e.key, 'quantity': e.value}),
+    ];
+
+    try {
+      final data = await _apiService.holdSlot(
+        salonId: salonId,
+        nailArtistId: artistId,
+        bookingDate: bookingDate,
+        startTime: formattedTime,
+        bookingItems: bookingItems,
+      );
+
+      if (!mounted) return;
+
+      final token = data['holdToken']?.toString();
+      final expiresAtStr = data['expiresAt']?.toString();
+      if (token == null || token.isEmpty) return;
+
+      // Đồng bộ đồng hồ: dùng expiresAt UTC từ server
+      DateTime? expiresAt;
+      if (expiresAtStr != null) {
+        try { expiresAt = DateTime.parse(expiresAtStr).toUtc(); } catch (_) {}
+      }
+      final remaining = expiresAt != null
+          ? expiresAt.difference(DateTime.now().toUtc()).inSeconds.clamp(0, 600)
+          : (data['remainingSeconds'] as num?)?.toInt() ?? 300;
+
+      setState(() {
+        _holdToken = token;
+        _holdExpiresAt = expiresAt;
+        _holdRemainingSeconds = remaining;
+        _isHolding = true;
+      });
+      _startHoldTimer(token, expiresAt);
+    } catch (_) {
+      // Không throw — không chặn user chọn giờ
+    }
+  }
+
+  void _startHoldTimer(String token, DateTime? expiresAt) {
+    _holdTimer?.cancel();
+    _holdTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) { _holdTimer?.cancel(); return; }
+
+      final remaining = expiresAt != null
+          ? expiresAt.difference(DateTime.now().toUtc()).inSeconds.clamp(0, 600)
+          : (_holdRemainingSeconds - 1).clamp(0, 600);
+
+      if (_holdToken != token) { _holdTimer?.cancel(); return; }
+
+      if (remaining <= 0) {
+        _holdTimer?.cancel();
+        setState(() {
+          _holdToken = null;
+          _holdExpiresAt = null;
+          _holdRemainingSeconds = 0;
+          _isHolding = false;
+          _selectedTime = null;
+        });
+        if (_currentStep == 2) {
+          _pageController.animateToPage(1,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut);
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Thời gian giữ chỗ đã hết! Vui lòng chọn lại khung giờ.')),
+        );
+      } else {
+        setState(() => _holdRemainingSeconds = remaining);
+      }
+    });
+  }
+
+  void _cancelCurrentHold() {
+    if (_holdToken != null) {
+      _apiService.cancelHoldSlot(_holdToken!); // fire-and-forget
+    }
+    _holdTimer?.cancel();
+    _holdTimer = null;
+    setState(() {
+      _holdToken = null;
+      _holdExpiresAt = null;
+      _holdRemainingSeconds = 0;
+      _isHolding = false;
+    });
   }
 
   @override
@@ -247,6 +364,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
           : Column(
         children: [
           _buildStepIndicator(),
+          _buildHoldCountdownBanner(),
           Expanded(
             child: PageView(
               controller: _pageController,
@@ -318,7 +436,12 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                         selectedTime: _selectedTime,
                         canSelect: _selectedDate != null, // Chỉ cần chọn ngày là lấy giờ
                         selectedDate: _selectedDate,
-                        onTimeChanged: (time) => setState(() => _selectedTime = time),
+                        onTimeChanged: (time) {
+                          // Huỷ hold cũ nếu user đổi giờ
+                          if (_holdToken != null) _cancelCurrentHold();
+                          setState(() => _selectedTime = time);
+                          _holdSlot(time);
+                        },
                       ),
                     ],
                   ),
@@ -557,6 +680,35 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
             child: _isSubmitting
                 ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                 : Text(_currentStep == 2 ? 'Xác nhận Đặt lịch' : 'Tiếp tục', style: const TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHoldCountdownBanner() {
+    if (!_isHolding) return const SizedBox.shrink();
+    final secs = _holdRemainingSeconds;
+    final min = (secs ~/ 60).toString().padLeft(2, '0');
+    final sec = (secs % 60).toString().padLeft(2, '0');
+    final isUrgent = secs <= 60;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      color: isUrgent ? Colors.red.shade600 : Colors.orange.shade700,
+      child: Row(
+        children: [
+          const Icon(Icons.lock_clock, color: Colors.white, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              isUrgent
+                  ? 'Chỗ có thể bị giải phóng sau $min:$sec giây!'
+                  : 'Slot đang được giữ chỗ cho bạn – còn $min:$sec để hoàn tất',
+              style: const TextStyle(
+                  color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),

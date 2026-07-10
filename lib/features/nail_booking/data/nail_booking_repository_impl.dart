@@ -68,6 +68,33 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
   }
 
   @override
+  Future<Map<String, dynamic>> holdSlot({
+    required String salonId,
+    required String nailArtistId,
+    required String bookingDate,
+    required String startTime,
+    required List<Map<String, dynamic>> bookingItems,
+  }) {
+    return _bookingApi.holdSlot(
+      salonId: salonId,
+      nailArtistId: nailArtistId,
+      bookingDate: bookingDate,
+      startTime: startTime,
+      bookingItems: bookingItems,
+    );
+  }
+
+  @override
+  Future<void> cancelHoldSlot(String holdToken) {
+    return _bookingApi.cancelHoldSlot(holdToken);
+  }
+
+  @override
+  Future<Map<String, dynamic>> checkHoldStatus(String holdToken) {
+    return _bookingApi.checkHoldStatus(holdToken);
+  }
+
+  @override
   Future<Map<String, dynamic>> createBooking({
     required String salonId,
     required String bookingDate,
@@ -76,6 +103,7 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
     required int nailVariantId,
     required List<String> serviceIds,
     List<int>? selectedPromotionIds,
+    String? holdToken,
   }) {
     return _bookingApi.createBooking(
       salonId,
@@ -85,6 +113,7 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
       nailVariantId,
       serviceIds,
       selectedPromotionIds: selectedPromotionIds,
+      holdToken: holdToken,
     );
   }
 
@@ -92,10 +121,12 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
   Future<Map<String, dynamic>> createServiceBooking(
     Map<String, dynamic> bookingData, {
     List<int>? selectedPromotionIds,
+    String? holdToken,
   }) {
     return _bookingApi.createServiceBooking(
       bookingData,
       selectedPromotionIds: selectedPromotionIds,
+      holdToken: holdToken,
     );
   }
 
@@ -108,6 +139,7 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
     required int customerNailId,
     required Map<String, int> groupedExtraServices,
     List<int>? selectedPromotionIds,
+    String? holdToken,
   }) {
     return _bookingApi.createCustomNailBooking(
       salonId,
@@ -117,6 +149,7 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
       customerNailId,
       groupedExtraServices,
       selectedPromotionIds: selectedPromotionIds,
+      holdToken: holdToken,
     );
   }
 

@@ -216,6 +216,11 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
             curr.errorMessage != null && prev.errorMessage != curr.errorMessage,
         listener: (context, state) {
           _showSnackBar(state.errorMessage!);
+          if (state.errorMessage!.contains('hết') && _currentStep == 3) {
+            _pageController.animateToPage(2,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut);
+          }
           context.read<NailBookingCubit>().clearError();
         },
         builder: (context, state) {
@@ -223,6 +228,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
           return Column(
             children: [
               _buildStepIndicator(),
+              _buildHoldCountdownBanner(state),
               Expanded(
                 child: PageView(
                   controller: _pageController,
@@ -593,6 +599,35 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                   fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
         ]),
       ]),
+    );
+  }
+
+  Widget _buildHoldCountdownBanner(NailBookingState state) {
+    if (!state.isHolding) return const SizedBox.shrink();
+    final secs = state.holdRemainingSeconds;
+    final min = (secs ~/ 60).toString().padLeft(2, '0');
+    final sec = (secs % 60).toString().padLeft(2, '0');
+    final isUrgent = secs <= 60;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      color: isUrgent ? Colors.red.shade600 : Colors.orange.shade700,
+      child: Row(
+        children: [
+          const Icon(Icons.lock_clock, color: Colors.white, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              isUrgent
+                  ? 'Chỗ có thể bị giải phóng sau $min:$sec giây!'
+                  : 'Slot đang được giữ chỗ cho bạn – còn $min:$sec để hoàn tất',
+              style: const TextStyle(
+                  color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

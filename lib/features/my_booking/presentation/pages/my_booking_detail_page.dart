@@ -442,7 +442,6 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                       builder: (context) => CancelBookingDialog(
                         bookingId: widget.bookingId,
                         onConfirm: (reason) async {
-                          /* TODO: Bỏ chú thích khi API hoàn thiện
                           try {
                             final success = await _apiService.cancelBooking(
                               widget.bookingId, 
@@ -464,12 +463,6 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                                 SnackBar(content: Text('Lỗi: $e')),
                               );
                             }
-                          }
-                          */
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('API chưa hoàn thiện')),
-                            );
                           }
                         },
                       ),

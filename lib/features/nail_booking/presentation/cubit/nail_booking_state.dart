@@ -29,6 +29,16 @@ class NailBookingState extends Equatable {
   final bool isSubmitting;
   final String? errorMessage;
 
+  // ── Giữ chỗ (Hold Slot) ──────────────────────────────────────────
+  /// Token xác nhận việc giữ chỗ, dùng để truyền vào API tạo booking.
+  final String? holdToken;
+  /// Thời điểm hết hạn theo UTC của server (để đồng bộ đồng hồ).
+  final DateTime? holdExpiresAt;
+  /// Số giây còn lại (được cập nhật mỗi giây bởi Timer).
+  final int holdRemainingSeconds;
+  /// Đang trong trạng thái giữ chỗ (hiện countdown bar).
+  final bool isHolding;
+
   const NailBookingState({
     this.salonsStatus = NailBookingLoadStatus.initial,
     this.artistsStatus = NailBookingLoadStatus.initial,
@@ -47,6 +57,10 @@ class NailBookingState extends Equatable {
     this.selectedPromotions = const [],
     this.isSubmitting = false,
     this.errorMessage,
+    this.holdToken,
+    this.holdExpiresAt,
+    this.holdRemainingSeconds = 0,
+    this.isHolding = false,
   });
 
   // ── Computed helpers ──────────────────────────────────────────────────────
@@ -86,6 +100,12 @@ class NailBookingState extends Equatable {
     bool? isSubmitting,
     String? errorMessage,
     bool clearError = false,
+    // Hold slot fields
+    String? holdToken,
+    bool clearHoldToken = false,
+    DateTime? holdExpiresAt,
+    int? holdRemainingSeconds,
+    bool? isHolding,
   }) {
     return NailBookingState(
       salonsStatus: salonsStatus ?? this.salonsStatus,
@@ -105,6 +125,10 @@ class NailBookingState extends Equatable {
       selectedPromotions: selectedPromotions ?? this.selectedPromotions,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      holdToken: clearHoldToken ? null : (holdToken ?? this.holdToken),
+      holdExpiresAt: clearHoldToken ? null : (holdExpiresAt ?? this.holdExpiresAt),
+      holdRemainingSeconds: holdRemainingSeconds ?? this.holdRemainingSeconds,
+      isHolding: isHolding ?? this.isHolding,
     );
   }
 
@@ -127,5 +151,9 @@ class NailBookingState extends Equatable {
         selectedPromotions,
         isSubmitting,
         errorMessage,
+        holdToken,
+        holdExpiresAt,
+        holdRemainingSeconds,
+        isHolding,
       ];
 }

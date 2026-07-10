@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -10,6 +11,7 @@ part 'nail_booking_state.dart';
 
 class NailBookingCubit extends Cubit<NailBookingState> {
   final NailBookingRepository _repository;
+  Timer? _holdTimer;
 
   NailBookingCubit({NailBookingRepository? repository})
       : _repository = repository ?? NailBookingRepositoryImpl(),
@@ -219,7 +221,114 @@ class NailBookingCubit extends Cubit<NailBookingState> {
   }
 
   void selectTime(String time) {
-    emit(state.copyWith(selectedTime: time));
+    // Người dùng đang đổi sang giờ khác → huỷ giữ chỗ cũ (nếu có) trước
+    if (state.holdToken != null) {
+      _cancelCurrentHold(state.holdToken!);
+    }
+    emit(state.copyWith(selectedTime: time, clearHoldToken: true, isHolding: false, holdRemainingSeconds: 0));
+    _holdSlot(time);
+  }
+
+  /// Gọi API giữ chỗ và khởi động bộ đếm thời gian.
+  Future<void> _holdSlot(String time) async {
+    final branch = state.selectedBranch;
+    final date = state.selectedDate;
+    if (branch == null || date == null) return;
+
+    final salonId = branch['salonId']?.toString() ?? '';
+    final artistId = state.noArtistSelected
+        ? ''
+        : (state.selectedStylist?['nailArtistId']?.toString() ?? '');
+
+    if (salonId.isEmpty || artistId.isEmpty) return;
+
+    final bookingDate = _formatDate(date);
+    final formattedTime = time.length == 5 ? '$time:00' : time;
+
+    try {
+      final data = await _repository.holdSlot(
+        salonId: salonId,
+        nailArtistId: artistId,
+        bookingDate: bookingDate,
+        startTime: formattedTime,
+        bookingItems: state.selectedExtraServices
+            .whereType<String>()
+            .map((id) => {'serviceId': id, 'quantity': 1})
+            .toList(),
+      );
+
+      if (isClosed) return;
+
+      final token = data['holdToken']?.toString();
+      final expiresAtStr = data['expiresAt']?.toString();
+
+      if (token == null || token.isEmpty) return;
+
+      // Đồng bộ đồng hồ: parse expiresAt (UTC) từ server,
+      // tính remaining dựa vào expiresAt − DateTime.now().toUtc().
+      DateTime? expiresAt;
+      if (expiresAtStr != null) {
+        try { expiresAt = DateTime.parse(expiresAtStr).toUtc(); } catch (_) {}
+      }
+
+      final remaining = expiresAt != null
+          ? expiresAt.difference(DateTime.now().toUtc()).inSeconds.clamp(0, 600)
+          : (data['remainingSeconds'] as num?)?.toInt() ?? 300;
+
+      emit(state.copyWith(
+        holdToken: token,
+        holdExpiresAt: expiresAt,
+        holdRemainingSeconds: remaining,
+        isHolding: true,
+      ));
+
+      _startHoldTimer(token, expiresAt);
+    } catch (_) {
+      // Không throw — việc giữ chỗ lỗi không nên chặn user chọn giờ
+    }
+  }
+
+  /// Bộ đếm ngược từ máy client, đồng bộ với expiresAt của server.
+  void _startHoldTimer(String token, DateTime? expiresAt) {
+    _holdTimer?.cancel();
+    _holdTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (isClosed) {
+        _holdTimer?.cancel();
+        return;
+      }
+      // Làm sao tính được thời gian còn lại chính xác:
+      // Dùng expiresAt (UTC từ server) trừ DateTime.now().toUtc()
+      // thay vì đơn giản giảm 1 mỗi giây — tránh sai lệch tích lũy.
+      final remaining = expiresAt != null
+          ? expiresAt.difference(DateTime.now().toUtc()).inSeconds.clamp(0, 600)
+          : (state.holdRemainingSeconds - 1).clamp(0, 600);
+
+      if (state.holdToken != token) {
+        // Token đã thay đổi (user đổi giờ), huỷ timer
+        _holdTimer?.cancel();
+        return;
+      }
+
+      if (remaining <= 0) {
+        _holdTimer?.cancel();
+        emit(state.copyWith(
+          clearHoldToken: true,
+          isHolding: false,
+          holdRemainingSeconds: 0,
+          clearTime: true,
+          errorMessage: 'Thời gian giữ chỗ đã hết! Vui lòng chọn lại khung giờ.',
+        ));
+      } else {
+        emit(state.copyWith(holdRemainingSeconds: remaining));
+      }
+    });
+  }
+
+  /// Huỷ token cũ (khi đổi giờ, đổi thợ, hoặc đóng trang).
+  void _cancelCurrentHold(String token) {
+    _holdTimer?.cancel();
+    _holdTimer = null;
+    _repository.cancelHoldSlot(token); // fire-and-forget
   }
 
   void selectPromotions(List<dynamic> promos) {
@@ -315,8 +424,10 @@ class NailBookingCubit extends Cubit<NailBookingState> {
         nailVariantId: nailVariantId,
         serviceIds: serviceIds,
         selectedPromotionIds: selectedPromotionIds,
+        holdToken: s.holdToken,
       );
-      emit(state.copyWith(isSubmitting: false));
+      _holdTimer?.cancel();
+      emit(state.copyWith(isSubmitting: false, clearHoldToken: true, isHolding: false));
       return result;
     } catch (e) {
       emit(state.copyWith(isSubmitting: false, errorMessage: 'Lỗi đặt lịch: $e'));
@@ -334,8 +445,10 @@ class NailBookingCubit extends Cubit<NailBookingState> {
       final result = await _repository.createServiceBooking(
         payload,
         selectedPromotionIds: selectedPromotionIds,
+        holdToken: state.holdToken,
       );
-      emit(state.copyWith(isSubmitting: false));
+      _holdTimer?.cancel();
+      emit(state.copyWith(isSubmitting: false, clearHoldToken: true, isHolding: false));
       return result;
     } catch (e) {
       emit(state.copyWith(isSubmitting: false, errorMessage: 'Lỗi đặt lịch: $e'));
@@ -355,5 +468,15 @@ class NailBookingCubit extends Cubit<NailBookingState> {
   }
 
   String formatBookingDate(DateTime date) => _formatDate(date);
+
+  /// Huỷ giữ chỗ khi user thoát khỏi quá trình đặt lịch.
+  @override
+  Future<void> close() {
+    if (state.holdToken != null) {
+      _repository.cancelHoldSlot(state.holdToken!); // fire-and-forget
+    }
+    _holdTimer?.cancel();
+    return super.close();
+  }
 }
 

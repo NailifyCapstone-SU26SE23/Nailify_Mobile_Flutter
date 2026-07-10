@@ -37,12 +37,11 @@ class MyBookingApiService {
     return response.data['data'] ?? {};
   }
 
-  Future<bool> cancelBooking(String bookingId, {required String reason, String holdToken = ""}) async {
+  Future<bool> cancelBooking(String bookingId, {required String reason}) async {
     final response = await _apiClient.post(
       '/Bookings/$bookingId/cancel',
       data: {
         "reason": reason,
-        "holdToken": holdToken,
       },
     );
     return response.statusCode == 200 || response.statusCode == 204;

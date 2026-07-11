@@ -127,11 +127,12 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
               // ==========================================
               if (widget.selectedDate != null) {
                 final now = DateTime.now();
-                final bool isToday = widget.selectedDate!.year == now.year &&
-                    widget.selectedDate!.month == now.month &&
-                    widget.selectedDate!.day == now.day;
+                final DateTime todayStart = DateTime(now.year, now.month, now.day);
+                final DateTime selectedDateStart = DateTime(widget.selectedDate!.year, widget.selectedDate!.month, widget.selectedDate!.day);
 
-                if (isToday) {
+                if (selectedDateStart.isBefore(todayStart)) {
+                  isPast = true;
+                } else if (selectedDateStart.isAtSameMomentAs(todayStart)) {
                   final List<String> timeParts = time.split(':');
                   final int slotHour = int.tryParse(timeParts[0]) ?? 0;
                   final int slotMinute = int.tryParse(timeParts[1]) ?? 0;
@@ -190,6 +191,38 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
 
               return GestureDetector(
                 onTap: () {
+                  // Kiểm tra lại tại thời điểm tap (người dùng gửi request)
+                  bool isCurrentlyPast = false;
+                  if (widget.selectedDate != null) {
+                    final currentNow = DateTime.now();
+                    final currentTodayStart = DateTime(currentNow.year, currentNow.month, currentNow.day);
+                    final selDateStart = DateTime(widget.selectedDate!.year, widget.selectedDate!.month, widget.selectedDate!.day);
+
+                    if (selDateStart.isBefore(currentTodayStart)) {
+                      isCurrentlyPast = true;
+                    } else if (selDateStart.isAtSameMomentAs(currentTodayStart)) {
+                      final List<String> timeParts = time.split(':');
+                      final int slotHour = int.tryParse(timeParts[0]) ?? 0;
+                      final int slotMinute = int.tryParse(timeParts[1]) ?? 0;
+
+                      if (slotHour < currentNow.hour ||
+                          (slotHour == currentNow.hour && slotMinute <= currentNow.minute)) {
+                        isCurrentlyPast = true;
+                      }
+                    }
+                  }
+
+                  if (isCurrentlyPast) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Khung giờ này đã qua, vui lòng chọn giờ khác.'),
+                        backgroundColor: Colors.redAccent,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                    return; // Chặn không cho chọn
+                  }
+
                   if (isAvail) {
                     // isHeld: false, isAvailable: true → tạo holdToken bình thường
                     widget.onTimeChanged(time);

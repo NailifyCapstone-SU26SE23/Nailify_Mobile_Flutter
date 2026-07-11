@@ -32,9 +32,9 @@ class _ComponentGridState extends State<ComponentGrid> {
           Text(
             widget.title,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: Colors.grey.shade800,
-            ),
+                  fontWeight: FontWeight.w700,
+                  color: Colors.grey.shade800,
+                ),
           ),
           const SizedBox(height: 8),
         ],
@@ -50,8 +50,7 @@ class _ComponentGridState extends State<ComponentGrid> {
                 width: 110,
                 child: _ComponentCard(
                   component: component,
-                  isSelected:
-                      widget.selectedComponent?.id == component.id &&
+                  isSelected: widget.selectedComponent?.id == component.id &&
                       widget.selectedComponent?.isCustomerComponent ==
                           component.isCustomerComponent,
                   onTap: () => widget.onSelected(component),
@@ -81,7 +80,7 @@ class _ComponentCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AspectRatio(
-        aspectRatio: 0.72,
+        aspectRatio: 110 / 160,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
@@ -142,8 +141,8 @@ class _ComponentCard extends StatelessWidget {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            _TypeBadge(type: component.type),
-                            const Spacer(),
+                            Expanded(child: _TypeBadge(type: component.type)),
+                            const SizedBox(width: 4),
                             if (component.price != null)
                               Text(
                                 '\$${component.price!.toStringAsFixed(2)}',
@@ -213,11 +212,7 @@ class _TypeBadge extends StatelessWidget {
       ),
       child: Text(
         type.name.toUpperCase(),
-        style: TextStyle(
-          fontSize: 8,
-          color: badgeColor,
-          fontWeight: FontWeight.w800,
-        ),
+        style: TextStyle(fontSize: 8, color: badgeColor, fontWeight: FontWeight.w800),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),

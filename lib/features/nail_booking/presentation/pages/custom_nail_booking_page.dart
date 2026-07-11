@@ -236,11 +236,12 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng chọn đầy đủ ngày và khung giờ!')));
         return;
       }
-      // Giữ chỗ trước khi sang trang xác nhận
-      await _holdSlot(_selectedTime!);
-      if (!mounted) return;
-      // Nếu holdToken bị null (hold thất bại), _holdSlot đã hiện SnackBar và reset state rồi
-      if (_holdToken == null) return;
+      // Chỉ tạo hold mới nếu chưa có token (tránh reset timer khi back/forward)
+      if (_holdToken == null || !_isHolding) {
+        await _holdSlot(_selectedTime!);
+        if (!mounted) return;
+        if (_holdToken == null) return;
+      }
     }
 
     if (_currentStep < 2) {

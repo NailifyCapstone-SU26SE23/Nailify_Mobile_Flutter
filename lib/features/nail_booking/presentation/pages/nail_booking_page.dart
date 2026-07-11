@@ -109,9 +109,11 @@ class _NailBookingViewState extends State<_NailBookingView> {
         _showSnackBar('Vui lòng chọn khung giờ!');
         return;
       }
-      // Giữ chỗ trước khi sang trang xác nhận
-      final held = await cubit.holdSelectedSlot(nailVariantId: _nailVariantId);
-      if (!held || !mounted) return; // errorMessage đã được emit và hiện qua BlocConsumer
+      // Chỉ tạo hold mới nếu chưa có token (tránh reset timer khi back/forward)
+      if (state.holdToken == null || !state.isHolding) {
+        final held = await cubit.holdSelectedSlot(nailVariantId: _nailVariantId);
+        if (!held || !mounted) return;
+      }
     }
 
     if (_currentStep < 3) {

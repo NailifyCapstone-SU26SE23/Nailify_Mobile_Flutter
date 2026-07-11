@@ -52,8 +52,9 @@ class TimeSlotMockData {
 class BookingTimeSlotWaitlist extends StatefulWidget {
   /// Callback khi user chọn được 1 giờ hợp lệ
   final ValueChanged<String>? onTimeSelected;
+  final DateTime? selectedDate; // Ngày được chọn để check quá khứ
 
-  const BookingTimeSlotWaitlist({super.key, this.onTimeSelected});
+  const BookingTimeSlotWaitlist({super.key, this.onTimeSelected, this.selectedDate});
 
   @override
   State<BookingTimeSlotWaitlist> createState() =>
@@ -67,10 +68,85 @@ class _BookingTimeSlotWaitlistState extends State<BookingTimeSlotWaitlist> {
   @override
   void initState() {
     super.initState();
-    _slots = TimeSlotMockData.slots;
+    _slots = TimeSlotMockData.slots.map((s) => TimeSlotItem(time: s.time, state: s.state)).toList();
+    _applyPastTimeLogic();
+  }
+
+  @override
+  void didUpdateWidget(covariant BookingTimeSlotWaitlist oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selectedDate != oldWidget.selectedDate) {
+      _applyPastTimeLogic();
+    }
+  }
+
+  void _applyPastTimeLogic() {
+    if (widget.selectedDate == null) return;
+    
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final selectedDateStart = DateTime(widget.selectedDate!.year, widget.selectedDate!.month, widget.selectedDate!.day);
+
+    final isPastDate = selectedDateStart.isBefore(todayStart);
+    final isToday = selectedDateStart.isAtSameMomentAs(todayStart);
+
+    setState(() {
+      for (var slot in _slots) {
+        bool isPast = false;
+        if (isPastDate) {
+          isPast = true;
+        } else if (isToday) {
+          final parts = slot.time.split(':');
+          final hour = int.tryParse(parts[0]) ?? 0;
+          final minute = int.tryParse(parts[1]) ?? 0;
+          
+          if (hour < now.hour || (hour == now.hour && minute <= now.minute)) {
+            isPast = true;
+          }
+        }
+        
+        if (isPast) {
+          slot.state = TimeSlotState.past;
+        }
+      }
+    });
   }
 
   void _handleSlotTap(TimeSlotItem slot) {
+    // Kiểm tra lại tại thời điểm tap (người dùng gửi request)
+    if (widget.selectedDate != null) {
+      final currentNow = DateTime.now();
+      final currentTodayStart = DateTime(currentNow.year, currentNow.month, currentNow.day);
+      final selDateStart = DateTime(widget.selectedDate!.year, widget.selectedDate!.month, widget.selectedDate!.day);
+
+      bool isCurrentlyPast = false;
+      if (selDateStart.isBefore(currentTodayStart)) {
+        isCurrentlyPast = true;
+      } else if (selDateStart.isAtSameMomentAs(currentTodayStart)) {
+        final parts = slot.time.split(':');
+        final hour = int.tryParse(parts[0]) ?? 0;
+        final minute = int.tryParse(parts[1]) ?? 0;
+        
+        if (hour < currentNow.hour || (hour == currentNow.hour && minute <= currentNow.minute)) {
+          isCurrentlyPast = true;
+        }
+      }
+
+      if (isCurrentlyPast) {
+        setState(() {
+          slot.state = TimeSlotState.past;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Khung giờ này đã qua, vui lòng chọn giờ khác.'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+    }
+
     switch (slot.state) {
       case TimeSlotState.available:
         setState(() {

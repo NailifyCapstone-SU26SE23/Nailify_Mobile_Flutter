@@ -9,16 +9,18 @@ class ApiClient {
   final SharedPreferences? _preferences;
 
   ApiClient({String? baseUrl, SharedPreferences? preferences})
-      : _preferences = preferences {
-    _dio = Dio(BaseOptions(
-      baseUrl: baseUrl ?? AppConstants.baseUrl + AppConstants.apiVersion,
-      connectTimeout: AppConstants.connectTimeout,
-      receiveTimeout: AppConstants.receiveTimeout,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-    ));
+    : _preferences = preferences {
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: baseUrl ?? AppConstants.baseUrl + AppConstants.apiVersion,
+        connectTimeout: AppConstants.connectTimeout,
+        receiveTimeout: AppConstants.receiveTimeout,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ),
+    );
     _setupInterceptors();
   }
 
@@ -56,11 +58,13 @@ class ApiClient {
             removeAuthToken();
           }
           final exception = _handleDioError(error);
-          handler.reject(DioException(
-            requestOptions: error.requestOptions,
-            error: exception,
-            type: error.type,
-          ));
+          handler.reject(
+            DioException(
+              requestOptions: error.requestOptions,
+              error: exception,
+              type: error.type,
+            ),
+          );
         },
       ),
     );
@@ -76,29 +80,92 @@ class ApiClient {
     _preferences?.remove(AppConstants.authTokenKey);
   }
 
-  Future<Response<T>> get<T>(String path, {Map<String, dynamic>? queryParameters, Options? options}) async {
-    try { return await _dio.get<T>(path, queryParameters: queryParameters, options: options); }
-    on DioException catch (e) { throw _handleDioError(e); }
+  Future<Response<T>> get<T>(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    try {
+      return await _dio.get<T>(
+        path,
+        queryParameters: queryParameters,
+        options: options,
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
   }
 
-  Future<Response<T>> post<T>(String path, {dynamic data, Map<String, dynamic>? queryParameters, Options? options}) async {
-    try { return await _dio.post<T>(path, data: data, queryParameters: queryParameters, options: options); }
-    on DioException catch (e) { throw _handleDioError(e); }
+  Future<Response<T>> post<T>(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    try {
+      return await _dio.post<T>(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        options: options,
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
   }
 
-  Future<Response<T>> put<T>(String path, {dynamic data, Map<String, dynamic>? queryParameters, Options? options}) async {
-    try { return await _dio.put<T>(path, data: data, queryParameters: queryParameters, options: options); }
-    on DioException catch (e) { throw _handleDioError(e); }
+  Future<Response<T>> put<T>(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    try {
+      return await _dio.put<T>(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        options: options,
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
   }
 
-  Future<Response<T>> patch<T>(String path, {dynamic data, Map<String, dynamic>? queryParameters, Options? options}) async {
-    try { return await _dio.patch<T>(path, data: data, queryParameters: queryParameters, options: options); }
-    on DioException catch (e) { throw _handleDioError(e); }
+  Future<Response<T>> patch<T>(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    try {
+      return await _dio.patch<T>(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        options: options,
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
   }
 
-  Future<Response<T>> delete<T>(String path, {dynamic data, Map<String, dynamic>? queryParameters, Options? options}) async {
-    try { return await _dio.delete<T>(path, data: data, queryParameters: queryParameters, options: options); }
-    on DioException catch (e) { throw _handleDioError(e); }
+  Future<Response<T>> delete<T>(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    try {
+      return await _dio.delete<T>(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        options: options,
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
   }
 
   AppException _handleDioError(DioException error) {
@@ -111,13 +178,25 @@ class ApiClient {
         return const NetworkException();
       case DioExceptionType.badResponse:
         final statusCode = error.response?.statusCode;
-        final message = error.response?.data?['message'] ?? error.response?.data?['error'];
+        final message =
+            error.response?.data?['message'] ?? error.response?.data?['error'];
         if (statusCode != null) {
-          return ExceptionFactory.fromHttpStatusCode(statusCode, message: message, data: error.response?.data);
+          return ExceptionFactory.fromHttpStatusCode(
+            statusCode,
+            message: message,
+            data: error.response?.data,
+          );
         }
-        return ServerException(message: message ?? 'Lỗi từ Server', data: error.response?.data);
+        return ServerException(
+          message: message ?? 'Lỗi từ Server',
+          data: error.response?.data,
+        );
       default:
-        return AppException(message: error.message ?? 'Lỗi không xác định', code: 'UNKNOWN_ERROR', data: error);
+        return AppException(
+          message: error.message ?? 'Lỗi không xác định',
+          code: 'UNKNOWN_ERROR',
+          data: error,
+        );
     }
   }
 

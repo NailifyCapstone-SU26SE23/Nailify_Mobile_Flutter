@@ -9,7 +9,8 @@ class AdvancedFilterBottomSheet extends StatefulWidget {
   const AdvancedFilterBottomSheet({super.key, required this.initialFilters});
 
   @override
-  State<AdvancedFilterBottomSheet> createState() => _AdvancedFilterBottomSheetState();
+  State<AdvancedFilterBottomSheet> createState() =>
+      _AdvancedFilterBottomSheetState();
 }
 
 class _AdvancedFilterBottomSheetState extends State<AdvancedFilterBottomSheet> {
@@ -28,7 +29,9 @@ class _AdvancedFilterBottomSheetState extends State<AdvancedFilterBottomSheet> {
     _selectedThemes = Set.from(widget.initialFilters['themes'] ?? {});
     _selectedDesigns = Set.from(widget.initialFilters['designs'] ?? {});
     _selectedVariants = Set.from(widget.initialFilters['variants'] ?? {});
-    _selectedDetailElements = Set.from(widget.initialFilters['detailElements'] ?? {});
+    _selectedDetailElements = Set.from(
+      widget.initialFilters['detailElements'] ?? {},
+    );
   }
 
   void _clearFilters() {
@@ -41,11 +44,18 @@ class _AdvancedFilterBottomSheetState extends State<AdvancedFilterBottomSheet> {
     });
   }
 
-  Widget _buildFilterSection(String title, List<String> options, Set<String> selectedSet) {
+  Widget _buildFilterSection(
+    String title,
+    List<String> options,
+    Set<String> selectedSet,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        Text(
+          title,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 12),
         Wrap(
           spacing: 8,
@@ -66,7 +76,9 @@ class _AdvancedFilterBottomSheetState extends State<AdvancedFilterBottomSheet> {
               ),
               onSelected: (selected) {
                 setState(() {
-                  selected ? selectedSet.add(option) : selectedSet.remove(option);
+                  selected
+                      ? selectedSet.add(option)
+                      : selectedSet.remove(option);
                 });
               },
             );
@@ -92,7 +104,10 @@ class _AdvancedFilterBottomSheetState extends State<AdvancedFilterBottomSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Advanced Filter', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const Text(
+                'Advanced Filter',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
               IconButton(
                 icon: const Icon(Icons.close),
                 onPressed: () => Navigator.pop(context),
@@ -107,11 +122,31 @@ class _AdvancedFilterBottomSheetState extends State<AdvancedFilterBottomSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildFilterSection('Style', CatalogMockData.styles, _selectedStyles),
-                  _buildFilterSection('Theme', CatalogMockData.themes, _selectedThemes),
-                  _buildFilterSection('Design', CatalogMockData.designs, _selectedDesigns),
-                  _buildFilterSection('Variants', CatalogMockData.variants, _selectedVariants),
-                  _buildFilterSection('Detail Elements', CatalogMockData.detailElement, _selectedDetailElements),
+                  _buildFilterSection(
+                    'Style',
+                    CatalogMockData.styles,
+                    _selectedStyles,
+                  ),
+                  _buildFilterSection(
+                    'Theme',
+                    CatalogMockData.themes,
+                    _selectedThemes,
+                  ),
+                  _buildFilterSection(
+                    'Design',
+                    CatalogMockData.designs,
+                    _selectedDesigns,
+                  ),
+                  _buildFilterSection(
+                    'Variants',
+                    CatalogMockData.variants,
+                    _selectedVariants,
+                  ),
+                  _buildFilterSection(
+                    'Detail Elements',
+                    CatalogMockData.detailElement,
+                    _selectedDetailElements,
+                  ),
                 ],
               ),
             ),
@@ -121,7 +156,13 @@ class _AdvancedFilterBottomSheetState extends State<AdvancedFilterBottomSheet> {
             children: [
               TextButton(
                 onPressed: _clearFilters,
-                child: const Text('Clear filter', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'Clear filter',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -139,10 +180,15 @@ class _AdvancedFilterBottomSheetState extends State<AdvancedFilterBottomSheet> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: AppColors.surface,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  child: const Text('Apply Filters', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  child: const Text(
+                    'Apply Filters',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
                 ),
               ),
             ],

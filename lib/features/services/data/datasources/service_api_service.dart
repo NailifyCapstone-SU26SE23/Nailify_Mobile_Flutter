@@ -4,11 +4,14 @@ import '../../../../core/network/api_client.dart';
 class ServiceApiService {
   final ApiClient _apiClient = getIt<ApiClient>();
 
-  Future<List<dynamic>> getServices({int pageNumber = 1, int pageSize = 10}) async {
-    final response = await _apiClient.get('/Services', queryParameters: {
-      'PageNumber': pageNumber,
-      'PageSize': pageSize,
-    });
+  Future<List<dynamic>> getServices({
+    int pageNumber = 1,
+    int pageSize = 10,
+  }) async {
+    final response = await _apiClient.get(
+      '/Services',
+      queryParameters: {'PageNumber': pageNumber, 'PageSize': pageSize},
+    );
     return response.data['data']['items'] ?? [];
   }
 

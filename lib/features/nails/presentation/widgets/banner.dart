@@ -25,7 +25,11 @@ class QuizBanner extends StatelessWidget {
           const Text(
             "If you haven't found a nail design that suits you yet, Bloom can help.",
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.surface, fontSize: 14, fontWeight: FontWeight.w500),
+            style: TextStyle(
+              color: AppColors.surface,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(height: 16),
           ElevatedButton(
@@ -34,10 +38,15 @@ class QuizBanner extends StatelessWidget {
               backgroundColor: AppColors.surface,
               foregroundColor: AppColors.primary,
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
-            child: const Text('Take personality test', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Take personality test',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
           const SizedBox(height: 10),
           ElevatedButton(
@@ -51,10 +60,15 @@ class QuizBanner extends StatelessWidget {
               backgroundColor: AppColors.surface,
               foregroundColor: AppColors.primary,
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
-            child: const Text('Customize your Nail', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Customize your Nail',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),

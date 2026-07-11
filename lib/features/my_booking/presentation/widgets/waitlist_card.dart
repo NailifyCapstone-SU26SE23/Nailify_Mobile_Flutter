@@ -120,12 +120,17 @@ class _WaitlistPendingCard extends StatelessWidget {
           'Bạn có chắc muốn rời khỏi danh sách chờ lúc ${item.time}?\nBạn sẽ mất vị trí trong hàng chờ này.',
           style: TextStyle(color: Colors.grey.shade600, height: 1.5),
         ),
-        actionsPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        actionsPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Giữ lại', style: TextStyle(color: Colors.grey.shade600)),
+            child: Text(
+              'Giữ lại',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -136,7 +141,8 @@ class _WaitlistPendingCard extends StatelessWidget {
               backgroundColor: Colors.red.shade400,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             child: const Text('Hủy chờ'),
           ),
@@ -295,7 +301,8 @@ class _WaitlistOpenedCardState extends State<_WaitlistOpenedCard> {
                   foregroundColor: Colors.grey.shade600,
                   side: BorderSide(color: Colors.grey.shade300),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 11),
                 ),
                 child: const Text('Từ chối'),
@@ -311,7 +318,8 @@ class _WaitlistOpenedCardState extends State<_WaitlistOpenedCard> {
                   foregroundColor: Colors.white,
                   disabledBackgroundColor: Colors.grey.shade200,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 11),
                   elevation: 0,
                 ),
@@ -400,8 +408,11 @@ class _CardShell extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.storefront_outlined,
-                    size: 16, color: Colors.grey.shade500),
+                Icon(
+                  Icons.storefront_outlined,
+                  size: 16,
+                  color: Colors.grey.shade500,
+                ),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Column(
@@ -435,8 +446,11 @@ class _CardShell extends StatelessWidget {
             // Khung giờ (in đậm)
             Row(
               children: [
-                Icon(Icons.access_time_filled,
-                    size: 15, color: AppColors.primary),
+                Icon(
+                  Icons.access_time_filled,
+                  size: 15,
+                  color: AppColors.primary,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   item.time,
@@ -449,10 +463,7 @@ class _CardShell extends StatelessWidget {
                 const SizedBox(width: 4),
                 Text(
                   '• ${_formatDate(item.date)}',
-                  style: TextStyle(
-                    color: Colors.grey.shade500,
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
                 ),
               ],
             ),
@@ -461,15 +472,15 @@ class _CardShell extends StatelessWidget {
             // Kỹ thuật viên
             Row(
               children: [
-                Icon(Icons.person_outline,
-                    size: 15, color: Colors.grey.shade500),
+                Icon(
+                  Icons.person_outline,
+                  size: 15,
+                  color: Colors.grey.shade500,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   item.staffName,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade700,
-                  ),
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
                 ),
               ],
             ),
@@ -482,10 +493,7 @@ class _CardShell extends StatelessWidget {
               children: item.services
                   .map(
                     (svc) => Chip(
-                      label: Text(
-                        svc,
-                        style: const TextStyle(fontSize: 11),
-                      ),
+                      label: Text(svc, style: const TextStyle(fontSize: 11)),
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       visualDensity: VisualDensity.compact,
                       backgroundColor: Colors.grey.shade100,
@@ -497,10 +505,10 @@ class _CardShell extends StatelessWidget {
             ),
 
             // Extra body (thời gian đăng ký / countdown)
-            if (extraBody != null) extraBody!,
+            ?extraBody,
 
             // Action buttons
-            if (actions != null) actions!,
+            ?actions,
           ],
         ),
       ),
@@ -542,9 +550,10 @@ class _StatusBadgeState extends State<_StatusBadge>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     );
-    _anim = Tween<double>(begin: 1.0, end: 1.12).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _anim = Tween<double>(
+      begin: 1.0,
+      end: 1.12,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
     if (widget.pulse) {
       _controller.repeat(reverse: true);
     }

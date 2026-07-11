@@ -34,7 +34,9 @@ class OccasionsSection extends StatelessWidget {
                 color: isSelected ? null : Colors.white,
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: isSelected ? Colors.transparent : AppColors.borderLight,
+                  color: isSelected
+                      ? Colors.transparent
+                      : AppColors.borderLight,
                 ),
               ),
               child: Text(

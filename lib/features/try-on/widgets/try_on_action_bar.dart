@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../nails/data/models/nail_shape_model.dart';
-import '../models/try_on_data.dart';
-
 class TryOnActionBar extends StatelessWidget {
   final bool canSave;
   final bool isSaving;
@@ -12,11 +9,16 @@ class TryOnActionBar extends StatelessWidget {
     super.key,
     required this.canSave,
     required this.isSaving,
+    required this.isLaunching,
     required this.onSave,
+    required this.onLiveTryOn,
+    required this.onPhotoTryOn,
   });
 
   @override
   Widget build(BuildContext context) {
+    final enabled = canSave && !isSaving && !isLaunching;
+
     return Container(
       padding: EdgeInsets.only(
         left: 24,

@@ -36,7 +36,9 @@ class _ServiceListPageState extends State<ServiceListPage> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi tải dịch vụ: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi tải dịch vụ: $e')));
       }
     }
   }
@@ -47,7 +49,13 @@ class _ServiceListPageState extends State<ServiceListPage> {
       backgroundColor: AppColors.background,
 
       appBar: AppBar(
-        title: const Text('Dịch vụ', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+        title: const Text(
+          'Dịch vụ',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
@@ -61,14 +69,14 @@ class _ServiceListPageState extends State<ServiceListPage> {
           : _services.isEmpty
           ? const Center(child: Text('Không có dịch vụ nào khả dụng.'))
           : ListView.builder(
-        padding: const EdgeInsets.all(20),
-        physics: const BouncingScrollPhysics(),
-        itemCount: _services.length,
-        itemBuilder: (context, index) {
-          final service = _services[index];
-          return _buildServiceCard(service);
-        },
-      ),
+              padding: const EdgeInsets.all(20),
+              physics: const BouncingScrollPhysics(),
+              itemCount: _services.length,
+              itemBuilder: (context, index) {
+                final service = _services[index];
+                return _buildServiceCard(service);
+              },
+            ),
     );
   }
 
@@ -91,14 +99,23 @@ class _ServiceListPageState extends State<ServiceListPage> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.borderLight),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           children: [
             Container(
               width: 50,
               height: 50,
-              decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
               child: const Icon(Icons.spa_outlined, color: AppColors.primary),
             ),
             const SizedBox(width: 16),
@@ -106,13 +123,30 @@ class _ServiceListPageState extends State<ServiceListPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary)),
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.access_time, size: 14, color: Colors.grey),
+                      const Icon(
+                        Icons.access_time,
+                        size: 14,
+                        color: Colors.grey,
+                      ),
                       const SizedBox(width: 4),
-                      Text(DurationFormatter.format(duration), style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                      Text(
+                        DurationFormatter.format(duration),
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 13,
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -121,9 +155,16 @@ class _ServiceListPageState extends State<ServiceListPage> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(PriceFormatter.format(price), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 15)),
+                Text(
+                  PriceFormatter.format(price),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                    fontSize: 15,
+                  ),
+                ),
               ],
-            )
+            ),
           ],
         ),
       ),

@@ -69,7 +69,9 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
   void _togglePromotion(PromotionModel promotion) {
     setState(() {
       if (_tempSelected.any((p) => p.promotionId == promotion.promotionId)) {
-        _tempSelected.removeWhere((p) => p.promotionId == promotion.promotionId);
+        _tempSelected.removeWhere(
+          (p) => p.promotionId == promotion.promotionId,
+        );
       } else {
         _tempSelected.add(promotion);
       }
@@ -90,9 +92,9 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
     } else {
       // FixedAmount
       final value = p.discountValue.round().toString().replaceAllMapped(
-            RegExp(r'\B(?=(\d{3})+(?!\d))'),
-            (_) => ',',
-          );
+        RegExp(r'\B(?=(\d{3})+(?!\d))'),
+        (_) => ',',
+      );
       return 'Giảm $value đ';
     }
   }
@@ -120,13 +122,19 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
                     const Expanded(
                       child: Text(
                         'Chọn khuyến mãi',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     if (_tempSelected.isNotEmpty)
                       TextButton(
                         onPressed: () => setState(() => _tempSelected.clear()),
-                        child: const Text('Bỏ chọn tất cả', style: TextStyle(color: Colors.grey)),
+                        child: const Text(
+                          'Bỏ chọn tất cả',
+                          style: TextStyle(color: Colors.grey),
+                        ),
                       ),
                     IconButton(
                       icon: const Icon(Icons.close),
@@ -152,7 +160,10 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
                   indicatorSize: TabBarIndicatorSize.tab,
                   labelColor: Colors.white,
                   unselectedLabelColor: Colors.grey.shade700,
-                  labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  labelStyle: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
                   tabs: const [
                     Tab(text: 'Discount'),
                     Tab(text: 'Voucher'),
@@ -165,31 +176,41 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : _errorMessage != null
-                        ? Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.error_outline, color: Colors.grey.shade400, size: 48),
-                                const SizedBox(height: 12),
-                                Text(_errorMessage!, style: const TextStyle(color: Colors.grey)),
-                                const SizedBox(height: 12),
-                                FilledButton(
-                                  onPressed: () {
-                                    setState(() { _isLoading = true; _errorMessage = null; });
-                                    _fetchPromotions();
-                                  },
-                                  child: const Text('Thử lại'),
-                                ),
-                              ],
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              color: Colors.grey.shade400,
+                              size: 48,
                             ),
-                          )
-                        : TabBarView(
-                            controller: _tabController,
-                            children: [
-                              _buildList(_discounts, scrollController),
-                              _buildList(_vouchers, scrollController),
-                            ],
-                          ),
+                            const SizedBox(height: 12),
+                            Text(
+                              _errorMessage!,
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                            const SizedBox(height: 12),
+                            FilledButton(
+                              onPressed: () {
+                                setState(() {
+                                  _isLoading = true;
+                                  _errorMessage = null;
+                                });
+                                _fetchPromotions();
+                              },
+                              child: const Text('Thử lại'),
+                            ),
+                          ],
+                        ),
+                      )
+                    : TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _buildList(_discounts, scrollController),
+                          _buildList(_vouchers, scrollController),
+                        ],
+                      ),
               ),
 
               // ──── FOOTER ────
@@ -212,7 +233,10 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
                         _tempSelected.isEmpty
                             ? 'Không áp dụng khuyến mãi'
                             : 'Áp dụng (${_tempSelected.length})',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                   ),
@@ -225,15 +249,25 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
     );
   }
 
-  Widget _buildList(List<PromotionModel> list, ScrollController scrollController) {
+  Widget _buildList(
+    List<PromotionModel> list,
+    ScrollController scrollController,
+  ) {
     if (list.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.local_offer_outlined, size: 56, color: Colors.grey.shade300),
+            Icon(
+              Icons.local_offer_outlined,
+              size: 56,
+              color: Colors.grey.shade300,
+            ),
             const SizedBox(height: 12),
-            Text('Không có khuyến mãi nào', style: TextStyle(color: Colors.grey.shade500)),
+            Text(
+              'Không có khuyến mãi nào',
+              style: TextStyle(color: Colors.grey.shade500),
+            ),
           ],
         ),
       );
@@ -243,10 +277,12 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
       controller: scrollController,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       itemCount: list.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final promo = list[index];
-        final isSelected = _tempSelected.any((p) => p.promotionId == promo.promotionId);
+        final isSelected = _tempSelected.any(
+          (p) => p.promotionId == promo.promotionId,
+        );
         final discountLabel = _discountLabel(promo);
 
         return GestureDetector(
@@ -255,7 +291,9 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isSelected ? AppColors.primary.withOpacity(0.05) : Colors.white,
+              color: isSelected
+                  ? AppColors.primary.withOpacity(0.05)
+                  : Colors.white,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: isSelected ? AppColors.primary : Colors.grey.shade200,
@@ -274,9 +312,14 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
               children: [
                 // Badge giảm giá
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: isSelected ? AppColors.primary : Colors.orange.shade50,
+                    color: isSelected
+                        ? AppColors.primary
+                        : Colors.orange.shade50,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(
@@ -285,16 +328,22 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
                         promo.discountType == 'Percentage'
                             ? Icons.percent
                             : Icons.discount_outlined,
-                        color: isSelected ? Colors.white : Colors.orange.shade700,
+                        color: isSelected
+                            ? Colors.white
+                            : Colors.orange.shade700,
                         size: 20,
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        discountLabel.split(' ').last, // e.g. "10%" or "50,000 đ"
+                        discountLabel
+                            .split(' ')
+                            .last, // e.g. "10%" or "50,000 đ"
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color: isSelected ? Colors.white : Colors.orange.shade700,
+                          color: isSelected
+                              ? Colors.white
+                              : Colors.orange.shade700,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -311,7 +360,10 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
                     children: [
                       Text(
                         promo.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -319,13 +371,19 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
                       if (promo.description.isNotEmpty)
                         Text(
                           promo.description,
-                          style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 13,
+                          ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                       const SizedBox(height: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.green.shade50,
                           borderRadius: BorderRadius.circular(6),
@@ -350,7 +408,9 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
                   value: isSelected,
                   onChanged: (_) => _togglePromotion(promo),
                   activeColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                 ),
               ],
             ),

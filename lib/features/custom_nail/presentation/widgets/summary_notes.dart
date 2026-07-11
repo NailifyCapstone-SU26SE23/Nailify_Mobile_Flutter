@@ -13,7 +13,11 @@ class SummaryNotes extends StatelessWidget {
       children: [
         const Text(
           'Ghi chú thêm',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
         ),
         const SizedBox(height: 8),
         TextField(
@@ -21,8 +25,12 @@ class SummaryNotes extends StatelessWidget {
           maxLines: 3,
           maxLength: 200,
           decoration: InputDecoration(
-            hintText: 'Nhập yêu cầu đặc biệt cho thợ nail (ví dụ: form móng mỏng, đổi charm xà cừ...)',
-            hintStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            hintText:
+                'Nhập yêu cầu đặc biệt cho thợ nail (ví dụ: form móng mỏng, đổi charm xà cừ...)',
+            hintStyle: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+            ),
             fillColor: Colors.grey.shade50,
             filled: true,
             border: OutlineInputBorder(
@@ -31,7 +39,10 @@ class SummaryNotes extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+              borderSide: const BorderSide(
+                color: AppColors.primary,
+                width: 1.5,
+              ),
             ),
             counterText: '', // Ẩn bộ đếm số mặc định của hệ thống
           ),

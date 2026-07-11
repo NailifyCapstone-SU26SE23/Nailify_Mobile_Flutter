@@ -19,11 +19,16 @@ class HomeBanner extends StatelessWidget {
             Text('Thông báo'),
           ],
         ),
-        content: const Text('Tính năng "Book Now" đang được phát triển. Vui lòng quay lại sau!'),
+        content: const Text(
+          'Tính năng "Book Now" đang được phát triển. Vui lòng quay lại sau!',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Đóng', style: TextStyle(color: AppColors.textPrimary)),
+            child: const Text(
+              'Đóng',
+              style: TextStyle(color: AppColors.textPrimary),
+            ),
           ),
         ],
       ),
@@ -41,7 +46,7 @@ class HomeBanner extends StatelessWidget {
           // Mã màu Gradient
           gradient: const LinearGradient(
             colors: [
-              AppColors.secondary , // Hồng
+              AppColors.secondary, // Hồng
               AppColors.background,
             ],
             // Với bố cục dọc
@@ -62,7 +67,7 @@ class HomeBanner extends StatelessWidget {
           mainAxisSize: MainAxisSize.min, // Tự động kéo dài theo nội dung
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-          //ảnh
+            //ảnh
             ClipRRect(
               borderRadius: BorderRadius.circular(20), // Bo góc cho ảnh
               child: Image.asset(
@@ -74,13 +79,16 @@ class HomeBanner extends StatelessWidget {
                   width: 140,
                   height: 140,
                   color: AppColors.background,
-                  child: const Icon(Icons.image_not_supported, color: AppColors.background, size: 40),
+                  child: const Icon(
+                    Icons.image_not_supported,
+                    color: AppColors.background,
+                    size: 40,
+                  ),
                 ),
               ),
             ),
 
             const SizedBox(height: 24), // Khoảng cách giữa hình và chữ
-
             // 2. MẢNG DƯỚI: Chữ
             const Text(
               'Beauty on\nyour\nfingerlips',
@@ -136,7 +144,6 @@ class HomeBanner extends StatelessWidget {
               ),
             ),
           ],
-
         ),
       ),
     );

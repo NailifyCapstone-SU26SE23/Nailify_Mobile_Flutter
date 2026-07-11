@@ -10,7 +10,9 @@ class HomeServices extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Thông báo'),
-        content: Text('Chuyển hướng đến chi tiết dịch vụ: "$serviceName".\nTính năng này đang phát triển.'),
+        content: Text(
+          'Chuyển hướng đến chi tiết dịch vụ: "$serviceName".\nTính năng này đang phát triển.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -46,7 +48,6 @@ class HomeServices extends StatelessWidget {
                   color: AppColors.textPrimary,
                 ),
               ),
-
             ],
           ),
           const SizedBox(height: 8),
@@ -59,12 +60,17 @@ class HomeServices extends StatelessWidget {
               crossAxisCount: 2, // Chia 2 cột
               crossAxisSpacing: 16, // Khoảng cách giữa 2 cột
               mainAxisSpacing: 16, // Khoảng cách giữa các hàng
-              childAspectRatio: 0.9, // Tỉ lệ chiều cao nhỉnh hơn chiều rộng một chút
+              childAspectRatio:
+                  0.9, // Tỉ lệ chiều cao nhỉnh hơn chiều rộng một chút
             ),
             itemCount: services.length,
             itemBuilder: (context, index) {
               final service = services[index];
-              return _buildServiceCard(context, service['title']!, service['image']!);
+              return _buildServiceCard(
+                context,
+                service['title']!,
+                service['image']!,
+              );
             },
           ),
           const SizedBox(height: 32),
@@ -100,7 +106,11 @@ class HomeServices extends StatelessWidget {
   }
 
   //dựng Layout xếp chồng cho từng ô (Card)
-  Widget _buildServiceCard(BuildContext context, String title, String imagePath) {
+  Widget _buildServiceCard(
+    BuildContext context,
+    String title,
+    String imagePath,
+  ) {
     return GestureDetector(
       onTap: () => _showPopup(context, title),
       child: ClipRRect(
@@ -125,10 +135,7 @@ class HomeServices extends StatelessWidget {
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    Colors.transparent,
-                    AppColors.primary,
-                  ],
+                  colors: [Colors.transparent, AppColors.primary],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   stops: const [0.2, 1.0], // Bắt đầu đổ mờ
@@ -152,11 +159,8 @@ class HomeServices extends StatelessWidget {
               ),
             ),
           ],
-
         ),
       ),
-
     );
-
   }
 }

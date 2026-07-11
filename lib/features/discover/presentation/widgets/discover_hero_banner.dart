@@ -18,7 +18,11 @@ class DiscoverHeroBanner extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.auto_awesome, size: 14, color: Colors.white.withOpacity(0.9)),
+              Icon(
+                Icons.auto_awesome,
+                size: 14,
+                color: Colors.white.withOpacity(0.9),
+              ),
               const SizedBox(width: 6),
               Text(
                 'NAIL PERSONALITY MATCH',

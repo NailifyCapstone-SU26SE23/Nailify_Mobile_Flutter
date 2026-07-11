@@ -34,22 +34,38 @@ class CustomerNailModel {
   factory CustomerNailModel.fromJson(Map<String, dynamic> json) {
     final shapeJson = json['nailShape'] ?? json['NailShape'];
     final surfaceJson = json['nailSurface'] ?? json['NailSurface'];
-    final componentsJson = json['customerNailComponents'] ?? json['CustomerNailComponents'] ?? [];
+    final componentsJson =
+        json['customerNailComponents'] ?? json['CustomerNailComponents'] ?? [];
 
     return CustomerNailModel(
       customerNailId: _asInt(json['customerNailId'] ?? json['CustomerNailId']),
       name: _asString(json['name'] ?? json['Name']),
       imageUrl: _asString(json['imageUrl'] ?? json['ImageUrl']),
       nailShapeId: _asNullableInt(json['nailShapeId'] ?? json['NailShapeId']),
-      nailSurfaceId: _asNullableInt(json['nailSurfaceId'] ?? json['NailSurfaceId']),
-      price: _asNullableDouble(json['price'] ?? json['Price']),  // Fixed: use nullable double
+      nailSurfaceId: _asNullableInt(
+        json['nailSurfaceId'] ?? json['NailSurfaceId'],
+      ),
+      price: _asNullableDouble(
+        json['price'] ?? json['Price'],
+      ), // Fixed: use nullable double
       customColor: _asString(json['customColor'] ?? json['CustomColor']),
       duration: _asNullableInt(json['duration'] ?? json['Duration']),
       isPublic: _asBool(json['isPublic'] ?? json['IsPublic']),
-      nailShape: shapeJson is Map ? NailShapeModel.fromJson(Map<String, dynamic>.from(shapeJson)) : null,
-      nailSurface: surfaceJson is Map ? NailSurfaceModel.fromJson(Map<String, dynamic>.from(surfaceJson)) : null,
+      nailShape: shapeJson is Map
+          ? NailShapeModel.fromJson(Map<String, dynamic>.from(shapeJson))
+          : null,
+      nailSurface: surfaceJson is Map
+          ? NailSurfaceModel.fromJson(Map<String, dynamic>.from(surfaceJson))
+          : null,
       customerNailComponents: componentsJson is List
-          ? componentsJson.whereType<Map>().map((item) => CustomerNailComponentModel.fromJson(Map<String, dynamic>.from(item))).toList()
+          ? componentsJson
+                .whereType<Map>()
+                .map(
+                  (item) => CustomerNailComponentModel.fromJson(
+                    Map<String, dynamic>.from(item),
+                  ),
+                )
+                .toList()
           : const [],
     );
   }
@@ -82,21 +98,30 @@ class CustomerNailComponentModel {
 
   factory CustomerNailComponentModel.fromJson(Map<String, dynamic> json) {
     final componentJson = json['component'] ?? json['Component'];
-    final customerComponentJson = json['customerComponent'] ?? json['CustomerComponent'];
+    final customerComponentJson =
+        json['customerComponent'] ?? json['CustomerComponent'];
     return CustomerNailComponentModel(
-      customerNailComponentId: _asInt(json['customerNailComponentId'] ?? json['CustomerNailComponentId']),
+      customerNailComponentId: _asInt(
+        json['customerNailComponentId'] ?? json['CustomerNailComponentId'],
+      ),
       customerNailId: _asInt(json['customerNailId'] ?? json['CustomerNailId']),
       componentId: _asNullableInt(json['componentId'] ?? json['ComponentId']),
-      customerComponentId: _asNullableInt(json['customerComponentId'] ?? json['CustomerComponentId']),
+      customerComponentId: _asNullableInt(
+        json['customerComponentId'] ?? json['CustomerComponentId'],
+      ),
       posX: _asDouble(json['posX'] ?? json['PosX']),
       posY: _asDouble(json['posY'] ?? json['PosY']),
       fingerIndex: _normalizeFingerIndexFromApi(
         _asInt(json['fingerIndex'] ?? json['FingerIndex'], fallback: -1),
       ),
       configJson: (json['configJson'] ?? json['ConfigJson'] ?? '').toString(),
-      component: componentJson is Map ? ComponentModel.fromJson(Map<String, dynamic>.from(componentJson)) : null,
+      component: componentJson is Map
+          ? ComponentModel.fromJson(Map<String, dynamic>.from(componentJson))
+          : null,
       customerComponent: customerComponentJson is Map
-          ? CustomerComponentModel.fromJson(Map<String, dynamic>.from(customerComponentJson))
+          ? CustomerComponentModel.fromJson(
+              Map<String, dynamic>.from(customerComponentJson),
+            )
           : null,
     );
   }
@@ -123,12 +148,16 @@ class CustomerComponentModel {
 
   factory CustomerComponentModel.fromJson(Map<String, dynamic> json) {
     return CustomerComponentModel(
-      customerComponentId: _asInt(json['customerComponentId'] ?? json['CustomerComponentId']),
+      customerComponentId: _asInt(
+        json['customerComponentId'] ?? json['CustomerComponentId'],
+      ),
       name: (json['name'] ?? json['Name'] ?? '').toString(),
       imageUrl: (json['imageUrl'] ?? json['ImageUrl'] ?? '').toString(),
-      componentType: (json['componentType'] ?? json['ComponentType'] ?? '').toString(),
+      componentType: (json['componentType'] ?? json['ComponentType'] ?? '')
+          .toString(),
       price: _asDouble(json['price'] ?? json['Price']),
-      customDataJson: (json['customDataJson'] ?? json['CustomDataJson'] ?? '').toString(),
+      customDataJson: (json['customDataJson'] ?? json['CustomDataJson'] ?? '')
+          .toString(),
       isPublic: _asBool(json['isPublic'] ?? json['IsPublic']),
     );
   }
@@ -162,7 +191,6 @@ bool _asBool(dynamic value) {
   if (value is bool) return value;
   return value?.toString().toLowerCase() == 'true';
 }
-
 
 String _asString(dynamic value, {String fallback = ''}) {
   if (value == null) return fallback;

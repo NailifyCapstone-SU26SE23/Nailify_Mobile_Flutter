@@ -24,10 +24,7 @@ import '../widgets/try_on_preview_board.dart';
 class TryOnSetupScreen extends StatefulWidget {
   final CustomerNailModel? customerNail;
 
-  const TryOnSetupScreen({
-    super.key,
-    this.customerNail,
-  });
+  const TryOnSetupScreen({super.key, this.customerNail});
 
   @override
   State<TryOnSetupScreen> createState() => _TryOnSetupScreenState();
@@ -41,12 +38,12 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
   bool _isLoading = true;
   bool _isSaving = false;
   bool _launching = false;
-  bool _showShapeSection = true;
-  bool _showSurfaceSection = true;
-  bool _showColorSection = true;
-  bool _showPlacementSection = true;
-  bool _showSystemComponents = true;
-  bool _showCustomerComponents = true;
+  final bool _showShapeSection = true;
+  final bool _showSurfaceSection = true;
+  final bool _showColorSection = true;
+  final bool _showPlacementSection = true;
+  final bool _showSystemComponents = true;
+  final bool _showCustomerComponents = true;
   String? _error;
   TryOnData? _tryOnData;
   CustomerNailModel? _customerNail;
@@ -107,14 +104,16 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
       final results = await Future.wait([
         _setupService.fetchTryOnData(),
         if (widget.customerNail != null)
-          _customerNailRepository.getCustomerNailById(widget.customerNail!.customerNailId),
+          _customerNailRepository.getCustomerNailById(
+            widget.customerNail!.customerNailId,
+          ),
       ]);
       final data = results.first as TryOnData;
       final customerNail = widget.customerNail == null
           ? null
           : results.length > 1
-              ? results[1] as CustomerNailModel
-              : widget.customerNail;
+          ? results[1] as CustomerNailModel
+          : widget.customerNail;
 
       final customColorJson = customerNail?.customColor;
       final Map<int, String> initialColors = {
@@ -138,17 +137,24 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
           if (fingers is List) {
             for (final finger in fingers) {
               if (finger is Map) {
-                final fIdx = asTryOnInt(finger['fingerIndex'] ?? finger['FingerIndex']);
+                final fIdx = asTryOnInt(
+                  finger['fingerIndex'] ?? finger['FingerIndex'],
+                );
                 final color = finger['color'] ?? finger['Color'];
                 if (fIdx >= 1 && fIdx <= 5 && color is String) {
                   initialColors[fIdx] = color;
                 }
                 final gradient = finger['gradient'] ?? finger['Gradient'];
-                if (fIdx >= 1 && fIdx <= 5 && gradient is Map && gradient['enabled'] == true) {
+                if (fIdx >= 1 &&
+                    fIdx <= 5 &&
+                    gradient is Map &&
+                    gradient['enabled'] == true) {
                   final stops = gradient['stops'];
                   if (stops is List) {
-                    initialGradients[fIdx] =
-                        stops.map((item) => item.toString()).take(3).toList();
+                    initialGradients[fIdx] = stops
+                        .map((item) => item.toString())
+                        .take(3)
+                        .toList();
                   }
                 }
               }
@@ -175,7 +181,9 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
         _placements
           ..clear()
           ..addAll(_buildDrafts(customerNail, data.combinedComponents));
-        _selectedPlacementId = _placements.isEmpty ? null : _placements.first.localId;
+        _selectedPlacementId = _placements.isEmpty
+            ? null
+            : _placements.first.localId;
         _isLoading = false;
       });
     } catch (error) {
@@ -186,16 +194,26 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
     }
   }
 
-  NailShapeModel? _resolveShape(List<NailShapeModel> shapes, CustomerNailModel? nail) {
+  NailShapeModel? _resolveShape(
+    List<NailShapeModel> shapes,
+    CustomerNailModel? nail,
+  ) {
     if (nail == null) return shapes.isEmpty ? null : shapes.first;
-    return shapes.where((shape) => shape.nailShapeId == nail.nailShapeId).firstOrNull ??
+    return shapes
+            .where((shape) => shape.nailShapeId == nail.nailShapeId)
+            .firstOrNull ??
         nail.nailShape ??
         (shapes.isEmpty ? null : shapes.first);
   }
 
-  NailSurfaceModel? _resolveSurface(List<NailSurfaceModel> surfaces, CustomerNailModel? nail) {
+  NailSurfaceModel? _resolveSurface(
+    List<NailSurfaceModel> surfaces,
+    CustomerNailModel? nail,
+  ) {
     if (nail == null) return surfaces.isEmpty ? null : surfaces.first;
-    return surfaces.where((surface) => surface.nailSurfaceId == nail.nailSurfaceId).firstOrNull ??
+    return surfaces
+            .where((surface) => surface.nailSurfaceId == nail.nailSurfaceId)
+            .firstOrNull ??
         nail.nailSurface ??
         (surfaces.isEmpty ? null : surfaces.first);
   }
@@ -206,28 +224,30 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
   ) {
     if (nail == null) return const [];
     return nail.customerNailComponents.map((item) {
-      final component = components.firstWhereOrNull(
-        (component) {
-          if (item.customerComponentId != null) {
-            return component.isCustomerComponent &&
-                component.customerComponentId == item.customerComponentId;
-          }
-          if (item.componentId != null) {
-            return !component.isCustomerComponent &&
-                component.componentId == item.componentId;
-          }
-          return false;
-        },
+      final component = components.firstWhereOrNull((component) {
+        if (item.customerComponentId != null) {
+          return component.isCustomerComponent &&
+              component.customerComponentId == item.customerComponentId;
+        }
+        if (item.componentId != null) {
+          return !component.isCustomerComponent &&
+              component.componentId == item.componentId;
+        }
+        return false;
+      });
+      return PlacedComponentDraft.fromCustomerNailComponent(
+        item,
+        component: component,
       );
-      return PlacedComponentDraft.fromCustomerNailComponent(item, component: component);
     }).toList();
   }
 
   void _addSelectedComponent() {
     final component = _selectedComponent;
     if (component == null) return;
-    final targetFingers =
-        _selectedFingerIndex == -1 ? [1, 2, 3, 4, 5] : [_selectedFingerIndex];
+    final targetFingers = _selectedFingerIndex == -1
+        ? [1, 2, 3, 4, 5]
+        : [_selectedFingerIndex];
     final createdAt = DateTime.now().microsecondsSinceEpoch;
     final drafts = [
       for (var index = 0; index < targetFingers.length; index++)
@@ -259,11 +279,18 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
         _deletedPlacementIds.add(selected.customerNailComponentId!);
       }
       _placements.removeWhere((item) => item.localId == selected.localId);
-      _selectedPlacementId = _placements.isEmpty ? null : _placements.last.localId;
+      _selectedPlacementId = _placements.isEmpty
+          ? null
+          : _placements.last.localId;
     });
   }
 
-  void _nudge({double dx = 0, double dy = 0, double scale = 0, double rotation = 0}) {
+  void _nudge({
+    double dx = 0,
+    double dy = 0,
+    double scale = 0,
+    double rotation = 0,
+  }) {
     final index = _selectedPlacementIndex;
     if (index == -1) return;
     final current = _placements[index];
@@ -279,8 +306,9 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
 
   void _togglePreviewDetailFinger(int fingerIndex) {
     setState(() {
-      _previewDetailFingerIndex =
-          _previewDetailFingerIndex == fingerIndex ? null : fingerIndex;
+      _previewDetailFingerIndex = _previewDetailFingerIndex == fingerIndex
+          ? null
+          : fingerIndex;
       _selectedFingerIndex = _previewDetailFingerIndex ?? -1;
     });
   }
@@ -296,7 +324,11 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
     try {
       final service = getIt<ArTryOnService>();
       final available = await service.isAvailable();
-      if (!available) throw UnsupportedError('Virtual try-on is not available on this build.');
+      if (!available) {
+        throw UnsupportedError(
+          'Virtual try-on is not available on this build.',
+        );
+      }
       if (photo) {
         await service.launchCustomerPhoto(preview);
       } else {
@@ -327,7 +359,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
                     'stops': _fingerGradients[i],
                     'stopCount': _fingerGradients[i]!.length,
                   },
-          }
+          },
       ],
     });
   }
@@ -382,7 +414,9 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
       }
 
       _deletedPlacementIds.clear();
-      final fresh = await _customerNailRepository.getCustomerNailById(nail.customerNailId);
+      final fresh = await _customerNailRepository.getCustomerNailById(
+        nail.customerNailId,
+      );
       setState(() => _customerNail = fresh);
       _showMessage('Đã lưu thiết lập thử móng.');
       await _fetchData();
@@ -411,7 +445,10 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
       nailShape: shape,
       nailSurface: _selectedNailSurface ?? nail?.nailSurface,
       customerNailComponents: _placements
-          .map((placement) => placement.toCustomerNailComponent(nail?.customerNailId ?? 0))
+          .map(
+            (placement) =>
+                placement.toCustomerNailComponent(nail?.customerNailId ?? 0),
+          )
           .toList(),
     );
   }
@@ -717,17 +754,16 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
           const SizedBox(height: 16),
           Text(_error ?? '', textAlign: TextAlign.center),
           const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _fetchData,
-            child: const Text('Retry'),
-          ),
+          ElevatedButton(onPressed: _fetchData, child: const Text('Retry')),
         ],
       ),
     );
   }
 
   int get _selectedPlacementIndex {
-    return _placements.indexWhere((item) => item.localId == _selectedPlacementId);
+    return _placements.indexWhere(
+      (item) => item.localId == _selectedPlacementId,
+    );
   }
 
   PlacedComponentDraft? get _selectedPlacement {

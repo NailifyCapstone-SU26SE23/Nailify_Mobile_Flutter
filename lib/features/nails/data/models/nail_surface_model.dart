@@ -23,9 +23,14 @@ class NailSurfaceModel {
     return NailSurfaceModel(
       nailSurfaceId: _asInt(json['nailSurfaceId'] ?? json['NailSurfaceId']),
       name: (json['name'] ?? json['Name'] ?? '').toString(),
-      shaderParam: (json['shaderParam'] ?? json['ShaderParam'] ?? '').toString(),
-      lightnessOffset: _asDouble(json['lightnessOffset'] ?? json['LightnessOffset']),
-      saturationOffset: _asDouble(json['saturationOffset'] ?? json['SaturationOffset']),
+      shaderParam: (json['shaderParam'] ?? json['ShaderParam'] ?? '')
+          .toString(),
+      lightnessOffset: _asDouble(
+        json['lightnessOffset'] ?? json['LightnessOffset'],
+      ),
+      saturationOffset: _asDouble(
+        json['saturationOffset'] ?? json['SaturationOffset'],
+      ),
       hueOffset: _asDouble(json['hueOffset'] ?? json['HueOffset']),
       price: _asDouble(json['price'] ?? json['Price']),
       duration: _asNullableInt(json['duration'] ?? json['Duration']),

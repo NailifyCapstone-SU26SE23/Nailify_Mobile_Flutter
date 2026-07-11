@@ -29,14 +29,18 @@ class DesignGridCard extends StatelessWidget {
           children: [
             Expanded(
               child: ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(14)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(14),
+                ),
                 child: Image.asset(
                   design.image,
                   fit: BoxFit.cover,
                   errorBuilder: (_, _, _) => Container(
                     color: AppColors.surfaceLight,
-                    child: const Icon(Icons.image, color: AppColors.textSecondary),
+                    child: const Icon(
+                      Icons.image,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ),
               ),

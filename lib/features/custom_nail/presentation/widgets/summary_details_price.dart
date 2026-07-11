@@ -10,13 +10,15 @@ class SummaryDetailsPrice extends StatelessWidget {
 
   int _calculateTotalPrice() {
     int total = 150000; // Giá phom móng nền cơ bản (cho 2 bàn tay)
-    if (nailDesign.lengthText == 'Long' || nailDesign.lengthText == 'Very Long') {
+    if (nailDesign.lengthText == 'Long' ||
+        nailDesign.lengthText == 'Very Long') {
       total += 40000;
     }
 
     if (nailDesign.isApplyAll) {
       // Tính giá đồng bộ: 1 họa tiết * 10 ngón tay, 1 phụ kiện * 10 ngón tay
-      if (nailDesign.globalConfig.pattern != 'Solid Color' && nailDesign.globalConfig.pattern.isNotEmpty) {
+      if (nailDesign.globalConfig.pattern != 'Solid Color' &&
+          nailDesign.globalConfig.pattern.isNotEmpty) {
         total += 60000;
       }
       total += nailDesign.globalConfig.accessories.length * 25000 * 10;
@@ -40,17 +42,40 @@ class SummaryDetailsPrice extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), shape: BoxShape.circle),
-            child: Text(step, style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              step,
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(value.isEmpty ? 'Không chọn' : value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                Text(
+                  value.isEmpty ? 'Không chọn' : value,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
               ],
             ),
           ),
@@ -66,16 +91,33 @@ class SummaryDetailsPrice extends StatelessWidget {
       children: nailDesign.fingerConfigs.entries.map((entry) {
         final finger = entry.key;
         final config = entry.value;
-        final accessoriesTxt = config.accessories.isEmpty ? 'Không Phụ kiện' : '${config.accessories.length} Phụ kiện';
+        final accessoriesTxt = config.accessories.isEmpty
+            ? 'Không Phụ kiện'
+            : '${config.accessories.length} Phụ kiện';
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 8.0),
           child: Row(
             children: [
-              SizedBox(width: 80, child: Text(finger, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+              SizedBox(
+                width: 80,
+                child: Text(
+                  finger,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
               Expanded(
-                child: Text('${config.color}, ${config.pattern}, $accessoriesTxt', style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-              )
+                child: Text(
+                  '${config.color}, ${config.pattern}, $accessoriesTxt',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
             ],
           ),
         );
@@ -91,41 +133,90 @@ class SummaryDetailsPrice extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.borderLight),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Chi tiết thiết kế của bạn', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+          const Text(
+            'Chi tiết thiết kế của bạn',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
           const SizedBox(height: 20),
 
-          _buildSummaryItem('1', 'Phom & Độ dài (Shape & Length)', '${nailDesign.selectedShape} - ${nailDesign.lengthText}'),
+          _buildSummaryItem(
+            '1',
+            'Phom & Độ dài (Shape & Length)',
+            '${nailDesign.selectedShape} - ${nailDesign.lengthText}',
+          ),
 
           if (nailDesign.isApplyAll) ...[
-            _buildSummaryItem('2', 'Màu nền (Color)', nailDesign.globalConfig.color),
-            _buildSummaryItem('3', 'Hoa văn (Pattern & Design)', nailDesign.globalConfig.pattern),
-            _buildSummaryItem('4', 'Phụ kiện đính kèm (Accessories)', nailDesign.globalConfig.accessories.isEmpty ? 'Không có phụ kiện' : nailDesign.globalConfig.accessories.join(', ')),
+            _buildSummaryItem(
+              '2',
+              'Màu nền (Color)',
+              nailDesign.globalConfig.color,
+            ),
+            _buildSummaryItem(
+              '3',
+              'Hoa văn (Pattern & Design)',
+              nailDesign.globalConfig.pattern,
+            ),
+            _buildSummaryItem(
+              '4',
+              'Phụ kiện đính kèm (Accessories)',
+              nailDesign.globalConfig.accessories.isEmpty
+                  ? 'Không có phụ kiện'
+                  : nailDesign.globalConfig.accessories.join(', '),
+            ),
           ] else ...[
             // Nếu chọn tùy chỉnh, hiển thị dạng danh sách chi tiết
             _buildSummaryItem('2-4', 'Cấu hình chi tiết từng ngón', ''),
             Container(
               margin: const EdgeInsets.only(left: 36, bottom: 16),
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.borderLight)),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.borderLight),
+              ),
               child: _buildFingerBreakdown(),
             ),
           ],
 
-          const Padding(padding: EdgeInsets.symmetric(vertical: 8.0), child: Divider(height: 1, color: AppColors.borderLight)),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8.0),
+            child: Divider(height: 1, color: AppColors.borderLight),
+          ),
 
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              const Text('Tổng chi phí ước tính:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+              const Text(
+                'Tổng chi phí ước tính:',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
               Text(
                 '${_calculateTotalPrice().toString().replaceAllMapped(RegExp(r'(\d{3})(?=\d)'), (Match m) => '${m[1]}.')} Đ',
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.primary),
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
               ),
             ],
           ),

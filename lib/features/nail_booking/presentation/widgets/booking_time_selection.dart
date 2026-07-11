@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../my_booking/data/datasources/waitlist_api_service.dart';
 
 class BookingTimeSelection extends StatefulWidget {
   final List<dynamic> timeSlots;
   final bool isLoading;
   final String? selectedTime;
   final bool canSelect;
-  final DateTime? selectedDate; // Nhận vào ngày đang chọn từ trang tổng
+  final DateTime? selectedDate;
+  final String? salonId; // Dùng cho Waitlist join API
+  final String? artistId; // Dùng cho Waitlist join API (nullable = bất kỳ)
   final Function(String) onTimeChanged;
 
   const BookingTimeSelection({
@@ -18,6 +21,8 @@ class BookingTimeSelection extends StatefulWidget {
     required this.canSelect,
     required this.selectedDate,
     required this.onTimeChanged,
+    this.salonId,
+    this.artistId,
   });
 
   @override
@@ -26,18 +31,53 @@ class BookingTimeSelection extends StatefulWidget {
 
 class _BookingTimeSelectionState extends State<BookingTimeSelection> {
   final Set<String> _waitlistedTimes = {};
+  final WaitlistApiService _waitlistApi = WaitlistApiService();
+  bool _isJoining = false;
 
-  void _showWaitlistBottomSheet(String time) {
+  Future<void> _showWaitlistBottomSheet(String time) async {
+    if (widget.salonId == null) {
+      // Nếu không có salonId thì show UI cũ (no-op API)
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => _WaitlistJoinSheet(
+          time: time.substring(0, 5),
+          onJoin: () {
+            setState(() => _waitlistedTimes.add(time));
+          },
+          onPickOther: () => Navigator.pop(context),
+        ),
+      );
+      return;
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _WaitlistJoinSheet(
         time: time.substring(0, 5),
-        onJoin: () {
-          setState(() {
-            _waitlistedTimes.add(time);
-          });
+        onJoin: () async {
+          if (_isJoining) return;
+          _isJoining = true;
+          try {
+            await _waitlistApi.joinWaitlist(
+              salonId: widget.salonId!,
+              preferredNailArtistId: widget.artistId,
+              requestedDate: widget.selectedDate ?? DateTime.now(),
+              requestedStartTime: time,
+            );
+            if (mounted) setState(() => _waitlistedTimes.add(time));
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Lỗi tham gia hàng chờ: $e')),
+              );
+            }
+          } finally {
+            _isJoining = false;
+          }
         },
         onPickOther: () => Navigator.pop(context),
       ),
@@ -49,12 +89,16 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Khung giờ rảnh',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        const Text(
+          'Khung giờ rảnh',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 12),
         if (!widget.canSelect)
-          const Text('Vui lòng chọn Thợ (hoặc "Không chọn thợ") để xem giờ rảnh.',
-              style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic))
+          const Text(
+            'Vui lòng chọn Thợ (hoặc "Không chọn thợ") để xem giờ rảnh.',
+            style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+          )
         else if (widget.isLoading)
           const CircularProgressIndicator()
         else if (widget.timeSlots.isEmpty)
@@ -64,10 +108,11 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                childAspectRatio: 2.5,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10),
+              crossAxisCount: 3,
+              childAspectRatio: 2.5,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+            ),
             itemCount: widget.timeSlots.length,
             itemBuilder: (context, index) {
               final slot = widget.timeSlots[index];
@@ -83,7 +128,8 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
               // ==========================================
               if (widget.selectedDate != null) {
                 final now = DateTime.now();
-                final bool isToday = widget.selectedDate!.year == now.year &&
+                final bool isToday =
+                    widget.selectedDate!.year == now.year &&
                     widget.selectedDate!.month == now.month &&
                     widget.selectedDate!.day == now.day;
 
@@ -148,16 +194,22 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
                       SnackBar(
                         content: Row(
                           children: [
-                            const Icon(Icons.notifications_active,
-                                color: Colors.white, size: 16),
+                            const Icon(
+                              Icons.notifications_active,
+                              color: Colors.white,
+                              size: 16,
+                            ),
                             const SizedBox(width: 8),
-                            Text('Bạn đã đăng ký chờ cho giờ ${time.substring(0, 5)}'),
+                            Text(
+                              'Bạn đã đăng ký chờ cho giờ ${time.substring(0, 5)}',
+                            ),
                           ],
                         ),
                         backgroundColor: AppColors.primary,
                         behavior: SnackBarBehavior.floating,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     );
                   } else if (isFull) {
@@ -170,7 +222,10 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
                   decoration: BoxDecoration(
                     color: bgColor,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: borderColor, width: isWaitlisted ? 1.5 : 1),
+                    border: Border.all(
+                      color: borderColor,
+                      width: isWaitlisted ? 1.5 : 1,
+                    ),
                   ),
                   alignment: Alignment.center,
                   child: Row(
@@ -181,7 +236,9 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
                         style: TextStyle(
                           fontWeight: fontWeight,
                           color: textColor,
-                          decoration: lineThrough ? TextDecoration.lineThrough : null,
+                          decoration: lineThrough
+                              ? TextDecoration.lineThrough
+                              : null,
                           decorationColor: Colors.grey.shade400,
                         ),
                       ),
@@ -198,7 +255,7 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
                 ),
               );
             },
-          )
+          ),
       ],
     );
   }
@@ -253,7 +310,7 @@ class _WaitlistJoinSheetState extends State<_WaitlistJoinSheet> {
             ),
           ),
           const SizedBox(height: 24),
-          
+
           if (_isSuccess) _buildSuccessView() else _buildJoinView(),
         ],
       ),
@@ -318,7 +375,8 @@ class _WaitlistJoinSheetState extends State<_WaitlistJoinSheet> {
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
               elevation: 0,
             ),
           ),
@@ -397,7 +455,8 @@ class _WaitlistJoinSheetState extends State<_WaitlistJoinSheet> {
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
               elevation: 0,
             ),
             child: const Text(
@@ -421,7 +480,8 @@ class _WaitlistJoinSheetState extends State<_WaitlistJoinSheet> {
               side: BorderSide(color: Colors.grey.shade300),
               padding: const EdgeInsets.symmetric(vertical: 12),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: const Text(
               'Quay về màn hình chính',
@@ -432,4 +492,4 @@ class _WaitlistJoinSheetState extends State<_WaitlistJoinSheet> {
       ],
     );
   }
-}
+}

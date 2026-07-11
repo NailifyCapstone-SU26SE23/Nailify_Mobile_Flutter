@@ -17,21 +17,31 @@ class CustomerComponentCard extends StatelessWidget {
 
   String _getComponentTypeName(int type) {
     switch (type) {
-      case 0: return 'Gem';
-      case 1: return 'Sticker';
-      case 2: return 'Charm';
-      case 3: return 'Art';
-      default: return 'Unknown';
+      case 0:
+        return 'Gem';
+      case 1:
+        return 'Sticker';
+      case 2:
+        return 'Charm';
+      case 3:
+        return 'Art';
+      default:
+        return 'Unknown';
     }
   }
 
   Color _getComponentTypeColor(int type) {
     switch (type) {
-      case 0: return Colors.blue;
-      case 1: return Colors.orange;
-      case 2: return Colors.pink;
-      case 3: return Colors.purple;
-      default: return Colors.grey;
+      case 0:
+        return Colors.blue;
+      case 1:
+        return Colors.orange;
+      case 2:
+        return Colors.pink;
+      case 3:
+        return Colors.purple;
+      default:
+        return Colors.grey;
     }
   }
 
@@ -64,13 +74,16 @@ class CustomerComponentCard extends StatelessWidget {
                   child: component.imageUrl.isEmpty
                       ? Container(
                           color: Colors.grey.shade100,
-                          child: Icon(Icons.image_outlined,
-                              size: 28, color: Colors.grey.shade400),
+                          child: Icon(
+                            Icons.image_outlined,
+                            size: 28,
+                            color: Colors.grey.shade400,
+                          ),
                         )
                       : Image.network(
                           component.imageUrl,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
+                          errorBuilder: (_, _, _) => Container(
                             color: Colors.grey.shade100,
                             child: const Icon(Icons.broken_image),
                           ),
@@ -97,7 +110,10 @@ class CustomerComponentCard extends StatelessWidget {
                       runSpacing: 8,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: typeColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
@@ -113,7 +129,10 @@ class CustomerComponentCard extends StatelessWidget {
                         ),
                         if (component.price > 0)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.success.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(6),
@@ -136,7 +155,10 @@ class CustomerComponentCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 child: PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert, color: AppColors.textSecondary),
+                  icon: const Icon(
+                    Icons.more_vert,
+                    color: AppColors.textSecondary,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -159,7 +181,11 @@ class CustomerComponentCard extends StatelessWidget {
                       value: 'delete',
                       child: Row(
                         children: [
-                          Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                          Icon(
+                            Icons.delete_outline,
+                            size: 20,
+                            color: Colors.red,
+                          ),
                           SizedBox(width: 8),
                           Text('Xóa', style: TextStyle(color: Colors.red)),
                         ],

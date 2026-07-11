@@ -90,7 +90,9 @@ class _CustomerComponentsTabState extends State<CustomerComponentsTab> {
       ),
     );
     if (confirmed == true) {
-      await widget.repository.deleteCustomerComponent(component.customerComponentId);
+      await widget.repository.deleteCustomerComponent(
+        component.customerComponentId,
+      );
       _reload();
     }
   }
@@ -171,7 +173,11 @@ class _CustomerComponentsTabState extends State<CustomerComponentsTab> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                      const Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: Colors.red,
+                      ),
                       const SizedBox(height: 8),
                       Text('Lỗi: ${snapshot.error}'),
                       const SizedBox(height: 8),
@@ -190,7 +196,11 @@ class _CustomerComponentsTabState extends State<CustomerComponentsTab> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey),
+                      const Icon(
+                        Icons.inventory_2_outlined,
+                        size: 64,
+                        color: Colors.grey,
+                      ),
                       const SizedBox(height: 16),
                       const Text('Chưa có thành phần nào'),
                       const SizedBox(height: 8),
@@ -231,21 +241,27 @@ class _CustomerComponentsTabState extends State<CustomerComponentsTab> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   IconButton(
-                    onPressed: response.hasPrevious  // Direct property
+                    onPressed:
+                        response
+                            .hasPrevious // Direct property
                         ? () {
-                      setState(() => _page--);
-                      _load();
-                    }
+                            setState(() => _page--);
+                            _load();
+                          }
                         : null,
                     icon: const Icon(Icons.chevron_left),
                   ),
-                  Text('Trang ${response.currentPage} / ${response.totalPages}'),  // Direct properties
+                  Text(
+                    'Trang ${response.currentPage} / ${response.totalPages}',
+                  ), // Direct properties
                   IconButton(
-                    onPressed: response.hasNext  // Direct property
+                    onPressed:
+                        response
+                            .hasNext // Direct property
                         ? () {
-                      setState(() => _page++);
-                      _load();
-                    }
+                            setState(() => _page++);
+                            _load();
+                          }
                         : null,
                     icon: const Icon(Icons.chevron_right),
                   ),

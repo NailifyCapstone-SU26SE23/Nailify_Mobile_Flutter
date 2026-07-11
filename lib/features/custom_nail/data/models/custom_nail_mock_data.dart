@@ -2,7 +2,14 @@ import 'package:flutter/material.dart';
 
 class CustomNailMockData {
   // 1. Dữ liệu cho Bước 1: Shape (Hình dạng móng)
-  static const List<String> shapes = ['Oval', 'Almond', 'Square', 'Coffin', 'Stiletto', 'Round'];
+  static const List<String> shapes = [
+    'Oval',
+    'Almond',
+    'Square',
+    'Coffin',
+    'Stiletto',
+    'Round',
+  ];
 
   // 2. Dữ liệu cho Bước 2: Bảng màu sắc (Color Palettes)
   static const Map<String, List<Map<String, dynamic>>> colorPalettes = {

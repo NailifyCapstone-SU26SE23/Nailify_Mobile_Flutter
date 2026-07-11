@@ -27,14 +27,19 @@ class MainStyleSection extends StatelessWidget {
             child: GestureDetector(
               onTap: () => onSelected(option.id),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? AppColors.primary.withOpacity(0.08)
                       : Colors.white,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: isSelected ? AppColors.primary : AppColors.borderLight,
+                    color: isSelected
+                        ? AppColors.primary
+                        : AppColors.borderLight,
                   ),
                 ),
                 child: Row(

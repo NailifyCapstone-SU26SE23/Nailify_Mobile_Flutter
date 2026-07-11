@@ -35,8 +35,15 @@ class _RegisterPageState extends State<RegisterPage> {
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
 
-    if (email.isEmpty || firstName.isEmpty || lastName.isEmpty || phone.isEmpty || password.isEmpty) {
-      _showSnackBar('Vui long dien day du cac thong tin bat buoc', Colors.redAccent);
+    if (email.isEmpty ||
+        firstName.isEmpty ||
+        lastName.isEmpty ||
+        phone.isEmpty ||
+        password.isEmpty) {
+      _showSnackBar(
+        'Vui long dien day du cac thong tin bat buoc',
+        Colors.redAccent,
+      );
       return;
     }
 
@@ -46,7 +53,10 @@ class _RegisterPageState extends State<RegisterPage> {
     }
 
     if (!_agreeToTerms) {
-      _showSnackBar('Ban can dong y voi dieu khoan dich vu de tiep tuc', Colors.amber.shade900);
+      _showSnackBar(
+        'Ban can dong y voi dieu khoan dich vu de tiep tuc',
+        Colors.amber.shade900,
+      );
       return;
     }
 
@@ -74,9 +84,9 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   void _showSnackBar(String message, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: color),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
   }
 
   @override
@@ -110,15 +120,27 @@ class _RegisterPageState extends State<RegisterPage> {
           child: SafeArea(
             child: Center(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24.0,
+                  vertical: 20.0,
+                ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.spa, size: 64, color: AppColors.background),
+                    const Icon(
+                      Icons.spa,
+                      size: 64,
+                      color: AppColors.background,
+                    ),
                     const SizedBox(height: 8),
                     const Text(
                       'Nailify',
-                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.background, letterSpacing: 1.5),
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.background,
+                        letterSpacing: 1.5,
+                      ),
                     ),
                     const SizedBox(height: 24),
 
@@ -142,7 +164,11 @@ class _RegisterPageState extends State<RegisterPage> {
                           const Text(
                             'Tạo tài khoản mới',
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
                           ),
                           const SizedBox(height: 24),
 
@@ -152,8 +178,13 @@ class _RegisterPageState extends State<RegisterPage> {
                             keyboardType: TextInputType.emailAddress,
                             decoration: InputDecoration(
                               labelText: 'Email',
-                              prefixIcon: const Icon(Icons.email_outlined, color: AppColors.textSecondary),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              prefixIcon: const Icon(
+                                Icons.email_outlined,
+                                color: AppColors.textSecondary,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -167,7 +198,9 @@ class _RegisterPageState extends State<RegisterPage> {
                                   textCapitalization: TextCapitalization.words,
                                   decoration: InputDecoration(
                                     labelText: 'Họ (First Name)',
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -178,7 +211,9 @@ class _RegisterPageState extends State<RegisterPage> {
                                   textCapitalization: TextCapitalization.words,
                                   decoration: InputDecoration(
                                     labelText: 'Tên (Last Name)',
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -192,8 +227,13 @@ class _RegisterPageState extends State<RegisterPage> {
                             keyboardType: TextInputType.phone,
                             decoration: InputDecoration(
                               labelText: 'Số điện thoại',
-                              prefixIcon: const Icon(Icons.phone_android_outlined, color: AppColors.textSecondary),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              prefixIcon: const Icon(
+                                Icons.phone_android_outlined,
+                                color: AppColors.textSecondary,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -204,12 +244,24 @@ class _RegisterPageState extends State<RegisterPage> {
                             obscureText: _obscurePassword,
                             decoration: InputDecoration(
                               labelText: 'Mật khẩu',
-                              prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textSecondary),
-                              suffixIcon: IconButton(
-                                icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: AppColors.textSecondary),
-                                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                              prefixIcon: const Icon(
+                                Icons.lock_outline,
+                                color: AppColors.textSecondary,
                               ),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
+                                  color: AppColors.textSecondary,
+                                ),
+                                onPressed: () => setState(
+                                  () => _obscurePassword = !_obscurePassword,
+                                ),
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -220,12 +272,25 @@ class _RegisterPageState extends State<RegisterPage> {
                             obscureText: _obscureConfirmPassword,
                             decoration: InputDecoration(
                               labelText: 'Xác nhận mật khẩu',
-                              prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textSecondary),
-                              suffixIcon: IconButton(
-                                icon: Icon(_obscureConfirmPassword ? Icons.visibility_off : Icons.visibility, color: AppColors.textSecondary),
-                                onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                              prefixIcon: const Icon(
+                                Icons.lock_outline,
+                                color: AppColors.textSecondary,
                               ),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscureConfirmPassword
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
+                                  color: AppColors.textSecondary,
+                                ),
+                                onPressed: () => setState(
+                                  () => _obscureConfirmPassword =
+                                      !_obscureConfirmPassword,
+                                ),
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -250,7 +315,10 @@ class _RegisterPageState extends State<RegisterPage> {
                               const Expanded(
                                 child: Text(
                                   'Tôi đong tinh với các điều khoản dịch vụ',
-                                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 13,
+                                  ),
                                 ),
                               ),
                             ],
@@ -265,16 +333,26 @@ class _RegisterPageState extends State<RegisterPage> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
                                 foregroundColor: AppColors.background,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                                 elevation: 0,
                               ),
                               child: _isSubmitting
                                   ? const SizedBox(
                                       width: 20,
                                       height: 20,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
                                     )
-                                  : const Text('DANG KY NGAY', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                                  : const Text(
+                                      'DANG KY NGAY',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                             ),
                           ),
                           const SizedBox(height: 20),
@@ -283,9 +361,16 @@ class _RegisterPageState extends State<RegisterPage> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Text('Bạn đã có tài khoản? ', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                              const Text(
+                                'Bạn đã có tài khoản? ',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 13,
+                                ),
+                              ),
                               GestureDetector(
-                                onTap: () => context.pop(), // Quay về trang Login nằm trước đó trong ngăn xếp
+                                onTap: () => context
+                                    .pop(), // Quay về trang Login nằm trước đó trong ngăn xếp
                                 child: const Text(
                                   'Đăng nhập',
                                   style: TextStyle(

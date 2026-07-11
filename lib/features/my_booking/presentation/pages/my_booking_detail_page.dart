@@ -4,11 +4,13 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/utils/base64_image_converter.dart';
 import '../../../../core/utils/price_formatter.dart';
+import '../../../nails/data/models/nail_variant_model.dart';
+import '../../../nails/data/models/shape_method_config_model.dart';
+import '../../../nails/data/repositories/nail_variant_repository.dart';
 import '../../data/datasources/my_booking_api_service.dart';
-//import 'package:flutter_map/flutter_map.dart';
-import '../../../../core/utils/duration_formatter.dart';
 import '../utils/booking_status_utils.dart';
 import '../widgets/cancel_booking_dialog.dart';
 
@@ -23,9 +25,13 @@ class MyBookingDetailPage extends StatefulWidget {
 
 class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
   final MyBookingApiService _apiService = MyBookingApiService();
+  final NailVariantRepository _nailVariantRepository =
+      getIt<NailVariantRepository>();
   bool _isLoading = true;
   Map<String, dynamic>? _booking;
   Map<String, dynamic>? _rating;
+  final Map<int, NailVariantModel> _nailVariantsById = {};
+  final Map<int, ShapeMethodConfigModel> _shapeMethodsById = {};
 
   @override
   void initState() {
@@ -36,6 +42,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
   Future<void> _fetchBookingDetail() async {
     try {
       final data = await _apiService.getBookingDetails(widget.bookingId);
+      await _fetchNailVariants(data);
       Map<String, dynamic>? rating;
       if (bookingIsRated(data)) {
         try {
@@ -53,13 +60,62 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi tải chi tiết: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Lỗi tải chi tiết: $e')));
     }
   }
 
-  void _showMapPopup(BuildContext context, String salonName, String? address, double? latitude, double? longitude) {
+  Future<void> _fetchNailVariants(Map<String, dynamic> booking) async {
+    final items = booking['bookingItems'] as List<dynamic>? ?? [];
+    final ids = items
+        .whereType<Map>()
+        .map(
+          (item) =>
+              _readNullableInt(item['nailVariantId'] ?? item['NailVariantId']),
+        )
+        .whereType<int>()
+        .where((id) => id > 0 && !_nailVariantsById.containsKey(id))
+        .toSet();
+
+    for (final id in ids) {
+      try {
+        _nailVariantsById[id] = await _nailVariantRepository.getNailVariantById(
+          id,
+        );
+      } catch (e) {
+        debugPrint('==== Loi tai nail variant $id: $e ====');
+      }
+    }
+
+    final shapeMethodIds = items
+        .whereType<Map>()
+        .map(
+          (item) => _readNullableInt(
+            item['shapeMethodConfigId'] ?? item['ShapeMethodConfigId'],
+          ),
+        )
+        .whereType<int>()
+        .where((id) => id > 0 && !_shapeMethodsById.containsKey(id))
+        .toSet();
+
+    for (final id in shapeMethodIds) {
+      try {
+        _shapeMethodsById[id] = await _nailVariantRepository
+            .getShapeMethodConfigById(id);
+      } catch (e) {
+        debugPrint('==== Loi tai shape method config $id: $e ====');
+      }
+    }
+  }
+
+  void _showMapPopup(
+    BuildContext context,
+    String salonName,
+    String? address,
+    double? latitude,
+    double? longitude,
+  ) {
     // Tọa độ
     final double lat = latitude ?? 10.993592755518687;
     final double lng = longitude ?? 106.65636465428618;
@@ -82,17 +138,27 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
             children: [
               // Thanh kéo & Thông tin
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 20,
+                ),
                 child: Column(
                   children: [
                     Container(
-                        width: 40, height: 5,
-                        decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10))
+                      width: 40,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       'Vị trí: $salonName',
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 4),
@@ -109,7 +175,9 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
               // Bản đồ
               Expanded(
                 child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                  borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(20),
+                  ),
                   child: FlutterMap(
                     options: MapOptions(
                       initialCenter: targetPosition,
@@ -118,7 +186,8 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                     children: [
                       TileLayer(
                         // Dùng CartoDB
-                        urlTemplate: 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                        urlTemplate:
+                            'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
                         userAgentPackageName: 'com.nailify.app',
                       ),
                       MarkerLayer(
@@ -146,6 +215,13 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     );
   }
 
+  bool _readBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    final text = value?.toString().toLowerCase().trim();
+    return text == 'true' || text == '1' || text == 'yes';
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -171,10 +247,18 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     final items = booking['bookingItems'] as List<dynamic>? ?? [];
     final rawStatus = booking['status']?.toString();
     final status = bookingStatusView(rawStatus);
+    final discounts = _discounts;
+    final isRated = bookingIsRated(booking);
     final rawQrString = booking['qrCode']?.toString();
     final Uint8List? qrImageBytes = Base64ImageConverter.decode(rawQrString);
-    final canCancel = rawStatus == 'Pending' || rawStatus == 'Approved' || rawStatus == 'Assigned';
-    final isRated = bookingIsRated(booking);
+    final canCancel =
+        rawStatus == 'Pending' ||
+        rawStatus == 'Approved' ||
+        rawStatus == 'Assigned';
+    final canRate = rawStatus == 'Completed' && !isRated;
+    final isPaid = _readBool(booking['isPaid']);
+    final isRefunded = _readBool(booking['isRefunded']);
+    final canRequestRefund = isPaid && !isRefunded && rawStatus == 'Cancelled';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -182,7 +266,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, size: 20),
           onPressed: () => context.go('/my-bookings'),
-              // context.pop(),
+          // context.pop(),
         ),
         title: const Text(
           'Chi tiết lịch hẹn',
@@ -204,7 +288,10 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
             // Header Trạng thái
             Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: status.backgroundColor,
                   borderRadius: BorderRadius.circular(20),
@@ -236,33 +323,46 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   //_buildRow('Chi nhánh', booking['salonName']?.toString()),
                   //map xịn
                   Material(
-                    color: Colors.transparent, // Đảm bảo hiệu ứng chạm hiển thị đúng
+                    color: Colors
+                        .transparent, // Đảm bảo hiệu ứng chạm hiển thị đúng
                     child: InkWell(
                       onTap: () {
-                        final salonName = _booking?['salonName']?.toString() ?? 'Chi nhánh Nailify';
+                        final salonName =
+                            _booking?['salonName']?.toString() ??
+                            'Chi nhánh Nailify';
                         final address = _booking?['salonAddress']?.toString();
                         final latitude = _booking?['latitude'] as double?;
                         final longitude = _booking?['longitude'] as double?;
-                        _showMapPopup(context, salonName, address, latitude, longitude);
+                        _showMapPopup(
+                          context,
+                          salonName,
+                          address,
+                          latitude,
+                          longitude,
+                        );
                       },
                       borderRadius: BorderRadius.circular(8),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8.0),
                         child: Row(
                           children: [
-
                             Expanded(
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text(
                                     'Chi nhánh',
-                                    style: TextStyle(color: Colors.grey, fontSize: 15),
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 15,
+                                    ),
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      _booking?['salonName']?.toString() ?? 'Đang tải...',
+                                      _booking?['salonName']?.toString() ??
+                                          'Đang tải...',
                                       textAlign: TextAlign.right,
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
@@ -291,7 +391,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                     'Giờ bắt đầu',
                     booking['startTime']?.toString().substring(0, 5),
                   ),
-                  _buildRow('Thời lượng', '${DurationFormatter.format(booking['totalDuration'])} '),
+                  _buildRow('Thời lượng', '${booking['totalDuration']} phút'),
                 ],
               ),
             ),
@@ -334,26 +434,27 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   const SizedBox(height: 8),
 
                   // 2. Khuyến mãi (Giảm giá)
-                  if (_discounts.isNotEmpty)
-                    ..._discounts.map(_buildDiscountRow)
+                  if (discounts.isNotEmpty)
+                    ...discounts.map(_buildDiscountRow)
                   else
                     Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Khuyến mãi:',
-                        style: TextStyle(color: Colors.grey, fontSize: 14),
-                      ),
-                      Text(
-                        PriceFormatter.format(booking['discount'] ?? 0),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: Colors.green, // Dùng màu xanh lá để nhấn mạnh số tiền được giảm
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Khuyến mãi:',
+                          style: TextStyle(color: Colors.grey, fontSize: 14),
                         ),
-                      ),
-                    ],
-                  ),
+                        Text(
+                          PriceFormatter.format(booking['discount'] ?? 0),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: Colors
+                                .green, // Dùng màu xanh lá để nhấn mạnh số tiền được giảm
+                          ),
+                        ),
+                      ],
+                    ),
                   const Divider(height: 24),
 
                   // 3. Tổng thanh toán
@@ -362,7 +463,10 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                     children: [
                       const Text(
                         'Tổng thanh toán:',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                       Text(
                         PriceFormatter.format(booking['totalPrice'] ?? 0),
@@ -403,7 +507,13 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: AppColors.borderLight),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.02),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Column(
                   children: [
@@ -468,7 +578,9 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                           */
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('API chưa hoàn thiện')),
+                              const SnackBar(
+                                content: Text('API chưa hoàn thiện'),
+                              ),
                             );
                           }
                         },
@@ -485,10 +597,32 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   ),
                   child: const Text(
                     'Hủy đặt lịch',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+            if (canRate) ...[
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => context.push(
+                    '/my-bookings/rate',
+                    extra: widget.bookingId,
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
+                  ),
+                  icon: const Icon(Icons.star, color: Colors.white),
+                  label: const Text(
+                    'Rate',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -507,6 +641,9 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
       item['customerNailName']?.toString().trim() ?? '',
       item['serviceName']?.toString().trim() ?? '',
     ].where((name) => name.isNotEmpty).toList();
+    final components = _bookingItemComponents(item);
+    final variantDetails = _bookingItemVariantDetails(item);
+    final detailLines = variantDetails.isNotEmpty ? variantDetails : components;
     final name = names.isEmpty ? 'Dịch vụ' : names.join(' & ');
 
     return Container(
@@ -517,41 +654,332 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.borderLight),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            flex: 5,
-            child: Text(
-              name,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              'SL: ${item['quantity'] ?? 1}',
-              style: const TextStyle(color: Colors.grey, fontSize: 13),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          Expanded(
-            flex: 4,
-            child: Text(
-              PriceFormatter.format(item['price'] * item['quantity']),
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-                fontSize: 14,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                flex: 5,
+                child: Text(
+                  name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              textAlign: TextAlign.right,
-            ),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  'SL: ${_readInt(item['quantity'], fallback: 1)}',
+                  style: const TextStyle(color: Colors.grey, fontSize: 13),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              Expanded(
+                flex: 4,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      PriceFormatter.format(
+                        _bookingItemUnitPrice(item) *
+                            _readInt(item['quantity'], fallback: 1) *
+                            _getItemCount(item),
+                      ),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                        fontSize: 14,
+                      ),
+                      textAlign: TextAlign.right,
+                    ),
+                    // Show unit price and finger count as subtitle
+                    if (_getItemCount(item) > 1) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        '${PriceFormatter.format(_bookingItemUnitPrice(item))} × ${_getItemCount(item)} fingers',
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 11,
+                        ),
+                        textAlign: TextAlign.right,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           ),
+          if (detailLines.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            const Divider(height: 1),
+            const SizedBox(height: 8),
+            ...detailLines.map(_buildBookingComponentLine),
+          ],
         ],
       ),
     );
+  }
+
+  Widget _buildBookingComponentLine(Map<String, dynamic> component) {
+    // Get the actual component data (nested inside 'component' key)
+    final componentData = component['component'] as Map? ?? component;
+    final price = componentData['price'] as num? ?? 0;
+
+    // Get fingerIndex from the component (not from the nested 'component' object)
+    final fingerIndex = _readNullableInt(
+      component['fingerIndex'] ?? component['FingerIndex'],
+    );
+    final count = _getItemCountFromFingerIndex(fingerIndex);
+
+    final name = componentData['name']?.toString() ?? _componentName(component);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, left: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 7),
+            child: Icon(Icons.circle, size: 5, color: Colors.grey),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              name,
+              style: const TextStyle(color: Colors.grey, fontSize: 13),
+            ),
+          ),
+          if (price > 0)
+            Text(
+              PriceFormatter.format(price * count),
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  int _getItemCountFromFingerIndex(int? fingerIndex) {
+    if (fingerIndex == null) return 1;
+    if (fingerIndex == -1) return 5;
+    if (fingerIndex >= 0 && fingerIndex <= 4) return 1;
+    return 1;
+  }
+
+  List<Map<String, dynamic>> _bookingItemVariantDetails(
+    Map<String, dynamic> item,
+  ) {
+    final variantId = _readNullableInt(
+      item['nailVariantId'] ?? item['NailVariantId'],
+    );
+    final variant = variantId == null ? null : _nailVariantsById[variantId];
+
+    final details = <Map<String, dynamic>>[];
+    if (variant?.nailSurface != null) {
+      details.add({
+        'name': 'Be mat ${variant!.nailSurface!.name}',
+        'price': variant.nailSurface!.price,
+      });
+    }
+
+    final shapeMethodName = _shapeMethodName(item);
+    if (shapeMethodName != null && shapeMethodName.trim().isNotEmpty) {
+      details.add({'name': shapeMethodName, 'price': _shapeMethodPrice(item)});
+    }
+
+    if (variant != null) {
+      details.addAll(
+        variant.nailComponents.map((component) {
+          final detail = component.component;
+          return {
+            'name': detail?.name ?? 'Thanh phan nail',
+            'price': detail?.price ?? 0,
+            'fingerIndex': component.fingerIndex,
+          };
+        }),
+      );
+    }
+
+    return details;
+  }
+
+  String? _shapeMethodName(Map<String, dynamic> item) {
+    final id = _readNullableInt(
+      item['shapeMethodConfigId'] ?? item['ShapeMethodConfigId'],
+    );
+    final cached = id == null ? null : _shapeMethodsById[id];
+    if (cached != null && cached.name.trim().isNotEmpty) return cached.name;
+
+    for (final key in const [
+      'shapeMethodName',
+      'ShapeMethodName',
+      'shapeMethodConfigName',
+      'ShapeMethodConfigName',
+    ]) {
+      final value = item[key]?.toString().trim();
+      if (value != null && value.isNotEmpty) return value;
+    }
+
+    final shapeMethod = item['shapeMethodConfig'] ?? item['ShapeMethodConfig'];
+    if (shapeMethod is Map) {
+      final value = shapeMethod['name']?.toString().trim();
+      if (value != null && value.isNotEmpty) return value;
+    }
+
+    return null;
+  }
+
+  num _shapeMethodPrice(Map<String, dynamic> item) {
+    final id = _readNullableInt(
+      item['shapeMethodConfigId'] ?? item['ShapeMethodConfigId'],
+    );
+    final cached = id == null ? null : _shapeMethodsById[id];
+    if (cached != null) return cached.price;
+
+    final direct = item['shapeMethodPrice'] ?? item['ShapeMethodPrice'];
+    if (direct is num) return direct;
+    final parsedDirect = num.tryParse(direct?.toString() ?? '');
+    if (parsedDirect != null) return parsedDirect;
+
+    final shapeMethod = item['shapeMethodConfig'] ?? item['ShapeMethodConfig'];
+    if (shapeMethod is Map) {
+      final price = shapeMethod['price'] ?? shapeMethod['Price'];
+      if (price is num) return price;
+      final parsed = num.tryParse(price?.toString() ?? '');
+      if (parsed != null) return parsed;
+    }
+
+    return 0;
+  }
+
+  List<Map<String, dynamic>> _bookingItemComponents(Map<String, dynamic> item) {
+    final components = <Map<String, dynamic>>[];
+
+    void addFrom(dynamic value) {
+      if (value is List) {
+        components.addAll(
+          value.whereType<Map>().map(
+            (component) => Map<String, dynamic>.from(component),
+          ),
+        );
+      }
+    }
+
+    addFrom(item['nailComponents'] ?? item['NailComponents']);
+    addFrom(item['customerNailComponents'] ?? item['CustomerNailComponents']);
+
+    for (final key in const ['nailVariant', 'customerNail']) {
+      final nested = item[key];
+      if (nested is Map) {
+        addFrom(nested['nailComponents'] ?? nested['NailComponents']);
+        addFrom(
+          nested['customerNailComponents'] ?? nested['CustomerNailComponents'],
+        );
+      }
+    }
+
+    return components;
+  }
+
+  String _componentName(Map<String, dynamic> component) {
+    for (final key in const [
+      'component',
+      'customerComponent',
+      'nailComponent',
+      'customerNailComponent',
+    ]) {
+      final nested = component[key];
+      if (nested is Map) {
+        final name = nested['name']?.toString().trim();
+        if (name != null && name.isNotEmpty) return name;
+      }
+    }
+
+    final name = (component['name'] ?? component['componentName'])
+        ?.toString()
+        .trim();
+    if (name != null && name.isNotEmpty) return name;
+    return 'Thanh phan nail';
+  }
+
+  num _componentPrice(Map<String, dynamic> component) {
+    for (final key in const [
+      'component',
+      'customerComponent',
+      'nailComponent',
+      'customerNailComponent',
+    ]) {
+      final nested = component[key];
+      if (nested is Map) {
+        final price = nested['price'] ?? nested['Price'];
+        if (price is num) return price;
+        final parsed = num.tryParse(price?.toString() ?? '');
+        if (parsed != null) return parsed;
+      }
+    }
+
+    final price = component['price'] ?? component['Price'];
+    if (price is num) return price;
+    return num.tryParse(price?.toString() ?? '') ?? 0;
+  }
+
+  int? _readNullableInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString());
+  }
+
+  int _readInt(dynamic value, {int fallback = 0}) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? fallback;
+  }
+
+  num _bookingItemUnitPrice(Map<String, dynamic> item) {
+    final direct = item['price'] ?? item['unitPrice'] ?? item['basePrice'];
+    if (direct is num) return direct;
+    final parsedDirect = num.tryParse(direct?.toString() ?? '');
+    if (parsedDirect != null) return parsedDirect;
+
+    for (final key in const [
+      'component',
+      'customerComponent',
+      'nailComponent',
+      'customerNailComponent',
+      'service',
+      'nailVariant',
+      'customerNail',
+    ]) {
+      final nested = item[key];
+      if (nested is Map) {
+        final price = nested['price'];
+        if (price is num) return price;
+        final parsed = num.tryParse(price?.toString() ?? '');
+        if (parsed != null) return parsed;
+      }
+    }
+    return 0;
+  }
+
+  int _getItemCount(Map<String, dynamic> item) {
+    final fingerIndex = item['fingerIndex'];
+
+    if (fingerIndex == -1) return 5;
+
+    if (fingerIndex is int && fingerIndex >= 0 && fingerIndex <= 4) return 1;
+
+    return 1;
   }
 
   List<Map<String, dynamic>> get _discounts {
@@ -645,7 +1073,8 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Add image if URL exists
-          if (rating['imageUrl'] != null && rating['imageUrl'].toString().isNotEmpty) ...[
+          if (rating['imageUrl'] != null &&
+              rating['imageUrl'].toString().isNotEmpty) ...[
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Image.network(
@@ -661,9 +1090,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                       color: Colors.grey[200],
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Center(
-                      child: CircularProgressIndicator(),
-                    ),
+                    child: const Center(child: CircularProgressIndicator()),
                   );
                 },
                 errorBuilder: (context, error, stackTrace) {
@@ -729,7 +1156,6 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
       ),
     );
   }
-
 }
 
 class _QrErrorPlaceholder extends StatelessWidget {

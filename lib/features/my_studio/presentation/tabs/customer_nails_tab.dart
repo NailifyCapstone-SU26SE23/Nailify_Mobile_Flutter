@@ -24,13 +24,13 @@ class CustomerNailsTab extends StatefulWidget {
 class _CustomerNailsTabState extends State<CustomerNailsTab> {
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
-  
-  List<CustomerNailModel> _items = [];
+
+  final List<CustomerNailModel> _items = [];
   int _page = 1;
   bool _isLoading = false;
   bool _hasMore = true;
   String? _error;
-  
+
   bool? _isPublicFilter;
 
   @override
@@ -48,7 +48,8 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
       _loadData();
     }
   }
@@ -74,7 +75,7 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
         name: _searchController.text.isNotEmpty ? _searchController.text : null,
         isPublic: _isPublicFilter,
       );
-      
+
       if (mounted) {
         setState(() {
           _items.addAll(response.items);
@@ -120,18 +121,26 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Xóa mẫu móng', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Xóa mẫu móng',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         content: Text('Bạn có chắc muốn xóa "${nail.name}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Hủy', style: TextStyle(color: AppColors.textSecondary)),
+            child: const Text(
+              'Hủy',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: FilledButton.styleFrom(
               backgroundColor: Colors.red,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: const Text('Xóa'),
           ),
@@ -197,21 +206,32 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
                     controller: _searchController,
                     decoration: InputDecoration(
                       hintText: 'Tìm theo tên...',
-                      prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
-                      suffixIcon: _searchController.text.isNotEmpty ? IconButton(
-                        icon: const Icon(Icons.clear, color: AppColors.textSecondary),
-                        onPressed: () {
-                          _searchController.clear();
-                          _loadData(reset: true);
-                        },
-                      ) : null,
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        color: AppColors.textSecondary,
+                      ),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(
+                                Icons.clear,
+                                color: AppColors.textSecondary,
+                              ),
+                              onPressed: () {
+                                _searchController.clear();
+                                _loadData(reset: true);
+                              },
+                            )
+                          : null,
                       filled: true,
                       fillColor: Colors.grey.shade50,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 0,
+                        horizontal: 16,
+                      ),
                     ),
                     onSubmitted: (_) => _loadData(reset: true),
                     onChanged: (_) => setState(() {}),
@@ -231,13 +251,22 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<bool?>(
                         value: _isPublicFilter,
-                        hint: const Text('Tất cả', overflow: TextOverflow.ellipsis),
+                        hint: const Text(
+                          'Tất cả',
+                          overflow: TextOverflow.ellipsis,
+                        ),
                         icon: const Icon(Icons.filter_list, size: 20),
                         isExpanded: true,
                         items: const [
                           DropdownMenuItem(value: null, child: Text('Tất cả')),
-                          DropdownMenuItem(value: true, child: Text('Công khai')),
-                          DropdownMenuItem(value: false, child: Text('Riêng tư')),
+                          DropdownMenuItem(
+                            value: true,
+                            child: Text('Công khai'),
+                          ),
+                          DropdownMenuItem(
+                            value: false,
+                            child: Text('Riêng tư'),
+                          ),
                         ],
                         onChanged: (value) {
                           setState(() => _isPublicFilter = value);
@@ -251,72 +280,94 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
             ),
           ),
 
-        // Danh sách với Infinite Scroll
-        Expanded(
-          child: _error != null && _items.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                      const SizedBox(height: 16),
-                      Text('Lỗi: $_error', style: const TextStyle(color: Colors.red)),
-                      const SizedBox(height: 16),
-                      FilledButton.icon(
-                        onPressed: () => _loadData(reset: true),
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Thử lại'),
-                      ),
-                    ],
-                  ),
-                )
-              : _items.isEmpty && !_isLoading
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.spa_outlined, size: 64, color: Colors.grey.shade300),
-                          const SizedBox(height: 16),
-                          Text('Chưa có mẫu móng nào', style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
-                          const SizedBox(height: 16),
-                          FilledButton.icon(
-                            style: FilledButton.styleFrom(
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                            onPressed: _create,
-                            icon: const Icon(Icons.add),
-                            label: const Text('Tạo mẫu móng mới'),
-                          ),
-                        ],
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: () async => _loadData(reset: true),
-                      child: ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        itemCount: _items.length + (_hasMore ? 1 : 0),
-                        itemBuilder: (context, index) {
-                          if (index == _items.length) {
-                            return const Padding(
-                              padding: EdgeInsets.all(16.0),
-                              child: Center(child: CircularProgressIndicator()),
-                            );
-                          }
-                          final nail = _items[index];
-                          return CustomerNailCard(
-                            nail: nail,
-                            onEdit: () => _edit(nail),
-                            onDelete: () => _delete(nail),
-                            onToggleFavorite: () => _toggleFavorite(nail),
-                            onTogglePublic: () => _togglePublic(nail),
-                            onSetupTryOn: () => _setupTryOn(nail),
-                          );
-                        },
-                      ),
+          // Danh sách với Infinite Scroll
+          Expanded(
+            child: _error != null && _items.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          size: 48,
+                          color: Colors.red,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Lỗi: $_error',
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                        const SizedBox(height: 16),
+                        FilledButton.icon(
+                          onPressed: () => _loadData(reset: true),
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Thử lại'),
+                        ),
+                      ],
                     ),
-        ),
+                  )
+                : _items.isEmpty && !_isLoading
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.spa_outlined,
+                          size: 64,
+                          color: Colors.grey.shade300,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Chưa có mẫu móng nào',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        FilledButton.icon(
+                          style: FilledButton.styleFrom(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: _create,
+                          icon: const Icon(Icons.add),
+                          label: const Text('Tạo mẫu móng mới'),
+                        ),
+                      ],
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: () async => _loadData(reset: true),
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      itemCount: _items.length + (_hasMore ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index == _items.length) {
+                          return const Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        }
+                        final nail = _items[index];
+                        return CustomerNailCard(
+                          nail: nail,
+                          onEdit: () => _edit(nail),
+                          onDelete: () => _delete(nail),
+                          onToggleFavorite: () => _toggleFavorite(nail),
+                          onTogglePublic: () => _togglePublic(nail),
+                          onSetupTryOn: () => _setupTryOn(nail),
+                        );
+                      },
+                    ),
+                  ),
+          ),
         ],
       ),
     );

@@ -14,11 +14,11 @@ class NailDesignItem {
   });
 
   Map<String, dynamic> toNailData() => {
-        'id': id,
-        'name': name,
-        'image': image,
-        'tags': [style],
-      };
+    'id': id,
+    'name': name,
+    'image': image,
+    'tags': [style],
+  };
 }
 
 class AnotherDesignMockData {
@@ -31,11 +31,7 @@ class AnotherDesignMockData {
     'Abstract',
   ];
 
-  static const List<String> sortOptions = [
-    'Newest',
-    'Oldest',
-    'A-Z',
-  ];
+  static const List<String> sortOptions = ['Newest', 'Oldest', 'A-Z'];
 
   static const List<NailDesignItem> designs = [
     NailDesignItem(

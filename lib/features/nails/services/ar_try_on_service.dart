@@ -17,23 +17,38 @@ class ArTryOnService {
     return await _channel.invokeMethod<bool>('isAvailable') ?? false;
   }
 
-  Future<void> launchLive(NailVariantModel nailVariant, {NailSurfaceModel? surface}) {
+  Future<void> launchLive(
+    NailVariantModel nailVariant, {
+    NailSurfaceModel? surface,
+  }) {
     return _launch(nailVariant, mode: 'live', surface: surface);
   }
 
-  Future<void> launchPhoto(NailVariantModel nailVariant, {NailSurfaceModel? surface}) {
+  Future<void> launchPhoto(
+    NailVariantModel nailVariant, {
+    NailSurfaceModel? surface,
+  }) {
     return _launch(nailVariant, mode: 'photo', surface: surface);
   }
 
   Future<void> launchCustomerLive(CustomerNailModel customerNail) {
-    return _launchConfig(_convertCustomerToArFormat(customerNail), mode: 'live');
+    return _launchConfig(
+      _convertCustomerToArFormat(customerNail),
+      mode: 'live',
+    );
   }
 
   Future<void> launchCustomerPhoto(CustomerNailModel customerNail) {
-    return _launchConfig(_convertCustomerToArFormat(customerNail), mode: 'photo');
+    return _launchConfig(
+      _convertCustomerToArFormat(customerNail),
+      mode: 'photo',
+    );
   }
 
-  Future<void> launch(NailVariantModel nailVariant, {NailSurfaceModel? surface}) {
+  Future<void> launch(
+    NailVariantModel nailVariant, {
+    NailSurfaceModel? surface,
+  }) {
     return launchLive(nailVariant, surface: surface);
   }
 
@@ -45,10 +60,16 @@ class ArTryOnService {
     if (!Platform.isAndroid) {
       throw UnsupportedError('Virtual try-on is only available on Android.');
     }
-    await _launchConfig(_convertToArFormat(nailVariant, surface: surface), mode: mode);
+    await _launchConfig(
+      _convertToArFormat(nailVariant, surface: surface),
+      mode: mode,
+    );
   }
 
-  Future<void> _launchConfig(Map<String, dynamic> config, {required String mode}) async {
+  Future<void> _launchConfig(
+    Map<String, dynamic> config, {
+    required String mode,
+  }) async {
     if (!Platform.isAndroid) {
       throw UnsupportedError('Virtual try-on is only available on Android.');
     }
@@ -58,7 +79,10 @@ class ArTryOnService {
     });
   }
 
-  Map<String, dynamic> _convertToArFormat(NailVariantModel nail, {NailSurfaceModel? surface}) {
+  Map<String, dynamic> _convertToArFormat(
+    NailVariantModel nail, {
+    NailSurfaceModel? surface,
+  }) {
     final nailSurface = surface ?? nail.nailSurface;
     return {
       'shape': _normalizeShape(nail.nailShape?.name),
@@ -116,7 +140,9 @@ class ArTryOnService {
         'color': appearance?.color ?? '#FF4081',
         'customShapeSrc': null,
         'gradient': appearance?.gradient,
-        'decorations': fingerComponents.map(_customerComponentToDecoration).toList(),
+        'decorations': fingerComponents
+            .map(_customerComponentToDecoration)
+            .toList(),
       };
     });
   }
@@ -129,13 +155,24 @@ class ArTryOnService {
     return item.fingerIndex == zeroBasedFingerIndex + 1;
   }
 
-  Map<String, dynamic> _customerComponentToDecoration(CustomerNailComponentModel item) {
+  Map<String, dynamic> _customerComponentToDecoration(
+    CustomerNailComponentModel item,
+  ) {
     final config = NailComponentConfig.fromJsonString(item.configJson);
-    final imageUrl = config.imageSrc ?? item.component?.imageUrl ?? item.customerComponent?.imageUrl;
-    final componentId = (item.componentId ?? item.customerComponentId ?? item.customerNailComponentId).toString();
+    final imageUrl =
+        config.imageSrc ??
+        item.component?.imageUrl ??
+        item.customerComponent?.imageUrl;
+    final componentId =
+        (item.componentId ??
+                item.customerComponentId ??
+                item.customerNailComponentId)
+            .toString();
     final decoration = config.toArJson(
       fallbackImage: imageUrl,
-      fallbackType: _normalizeComponentType(item.component?.componentType ?? item.customerComponent?.componentType),
+      fallbackType: _normalizeComponentType(
+        item.component?.componentType ?? item.customerComponent?.componentType,
+      ),
       componentId: componentId,
     );
     decoration['x'] = config.x ?? item.posX;
@@ -240,8 +277,8 @@ class ArTryOnService {
       final map = decoded is Map<String, dynamic>
           ? decoded
           : decoded is Map
-              ? Map<String, dynamic>.from(decoded)
-              : null;
+          ? Map<String, dynamic>.from(decoded)
+          : null;
       if (map == null) return const <int, _FingerAppearance>{};
 
       if (map['mode'] == 'perFinger') {
@@ -249,8 +286,9 @@ class ArTryOnService {
         if (fingers is! List) return const <int, _FingerAppearance>{};
         return {
           for (final finger in fingers.whereType<Map>())
-            _asInt(finger['fingerIndex'] ?? finger['FingerIndex']):
-                _FingerAppearance(
+            _asInt(
+              finger['fingerIndex'] ?? finger['FingerIndex'],
+            ): _FingerAppearance(
               color: _asString(finger['color'] ?? finger['Color']),
               gradient: _asMap(finger['gradient'] ?? finger['Gradient']),
             ),

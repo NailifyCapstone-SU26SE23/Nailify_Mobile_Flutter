@@ -19,11 +19,11 @@ class NailFilters extends Equatable {
 
   bool get isEmpty =>
       (name == null || name!.trim().isEmpty) &&
-          categoryIds.isEmpty &&
-          shapeId == null &&
-          surfaceId == null &&
-          minPrice == null &&
-          maxPrice == null;
+      categoryIds.isEmpty &&
+      shapeId == null &&
+      surfaceId == null &&
+      minPrice == null &&
+      maxPrice == null;
 
   bool get isNotEmpty => !isEmpty;
 
@@ -34,6 +34,6 @@ class NailFilters extends Equatable {
     shapeId,
     surfaceId,
     minPrice,
-    maxPrice
+    maxPrice,
   ];
 }

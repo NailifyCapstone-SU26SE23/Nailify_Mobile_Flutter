@@ -26,9 +26,10 @@ class UserProfile {
   });
 
   String get fullName {
-    final name = [firstName, lastName]
-        .where((part) => part != null && part.trim().isNotEmpty)
-        .join(' ');
+    final name = [
+      firstName,
+      lastName,
+    ].where((part) => part != null && part.trim().isNotEmpty).join(' ');
     return name.isEmpty ? email : name;
   }
 
@@ -43,7 +44,8 @@ class UserProfile {
       status: (json['status'] ?? json['Status'])?.toString(),
       skinTone: (json['skinTone'] ?? json['SkinTone'])?.toString(),
       occupation: (json['occupation'] ?? json['Occupation'])?.toString(),
-      nailCondition: (json['nailCondition'] ?? json['NailCondition'])?.toString(),
+      nailCondition: (json['nailCondition'] ?? json['NailCondition'])
+          ?.toString(),
       personaId: (json['personaId'] ?? json['PersonaId'])?.toString(),
     );
   }

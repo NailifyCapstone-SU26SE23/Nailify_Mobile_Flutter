@@ -34,8 +34,7 @@ class PerfectMatchMockData {
 
   static const NailRecommendation mainResult = NailRecommendation(
     title: 'Soft Lady',
-    description:
-        'A delicate blend of minimalist elegance and feminine charm.',
+    description: 'A delicate blend of minimalist elegance and feminine charm.',
     image: 'assets/images/Rectangle 1.png',
     tags: [],
   );

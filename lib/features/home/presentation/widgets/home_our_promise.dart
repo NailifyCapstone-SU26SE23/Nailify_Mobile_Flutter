@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 
 class OurPromisePage extends StatelessWidget {
-  const OurPromisePage({super.key}); // hoặc const OurPromiseSection({Key? key}) : super(key: key);
+  const OurPromisePage({
+    super.key,
+  }); // hoặc const OurPromiseSection({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -13,7 +15,8 @@ class OurPromisePage extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 48.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min, // chỉ cho Column này chiếm chiều cao vừa đủ chứa nội dung bên trong
+        mainAxisSize: MainAxisSize
+            .min, // chỉ cho Column này chiếm chiều cao vừa đủ chứa nội dung bên trong
         children: [
           const Text(
             'OUR PROMISE',
@@ -48,25 +51,29 @@ class OurPromisePage extends StatelessWidget {
           _buildPromiseCard(
             icon: Icons.access_time,
             title: 'Years of Experience',
-            description: 'We bring a wealth of experience to the world of nail art.',
+            description:
+                'We bring a wealth of experience to the world of nail art.',
           ),
           const SizedBox(height: 16),
           _buildPromiseCard(
             icon: Icons.people_outline,
             title: 'Experienced Staff',
-            description: 'Our experienced staff members have honed skills for nail care.',
+            description:
+                'Our experienced staff members have honed skills for nail care.',
           ),
           const SizedBox(height: 16),
           _buildPromiseCard(
             icon: Icons.star_border,
             title: 'Best Quality',
-            description: 'You\'ll notice our unwavering commitment to quality service.',
+            description:
+                'You\'ll notice our unwavering commitment to quality service.',
           ),
           const SizedBox(height: 16),
           _buildPromiseCard(
             icon: Icons.trending_up,
             title: 'Trend Awareness',
-            description: 'We stay up-to-date with the latest nail art trends and techniques.',
+            description:
+                'We stay up-to-date with the latest nail art trends and techniques.',
           ),
         ],
       ),
@@ -116,11 +123,7 @@ class OurPromisePage extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: Icon(
-                    icon,
-                    color: AppColors.primary,
-                    size: 28,
-                  ),
+                  child: Icon(icon, color: AppColors.primary, size: 28),
                 ),
                 const SizedBox(width: 16),
                 Expanded(

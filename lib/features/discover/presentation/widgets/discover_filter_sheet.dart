@@ -176,7 +176,10 @@ class _DiscoverFilterSheetState extends State<DiscoverFilterSheet> {
                                     )
                                   : null,
                               border: selected
-                                  ? Border.all(color: AppColors.primary, width: 3)
+                                  ? Border.all(
+                                      color: AppColors.primary,
+                                      width: 3,
+                                    )
                                   : null,
                             ),
                           ),
@@ -251,7 +254,9 @@ class _DiscoverFilterSheetState extends State<DiscoverFilterSheet> {
                       },
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size(double.infinity, 48),
-                        side: BorderSide(color: AppColors.primary.withOpacity(0.4)),
+                        side: BorderSide(
+                          color: AppColors.primary.withOpacity(0.4),
+                        ),
                         backgroundColor: AppColors.primary.withOpacity(0.06),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(24),
@@ -353,14 +358,18 @@ class _FilterListTile extends StatelessWidget {
                   : Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: selected ? AppColors.primary.withOpacity(0.3) : AppColors.borderLight,
+                color: selected
+                    ? AppColors.primary.withOpacity(0.3)
+                    : AppColors.borderLight,
               ),
             ),
             child: Row(
               children: [
                 if (showRadio)
                   Icon(
-                    selected ? Icons.radio_button_checked : Icons.radio_button_off,
+                    selected
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_off,
                     size: 18,
                     color: selected ? AppColors.primary : AppColors.border,
                   ),
@@ -371,7 +380,9 @@ class _FilterListTile extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: selected ? AppColors.primary : AppColors.textPrimary,
+                      color: selected
+                          ? AppColors.primary
+                          : AppColors.textPrimary,
                     ),
                   ),
                 ),
@@ -380,7 +391,9 @@ class _FilterListTile extends StatelessWidget {
                     trailing!,
                     style: TextStyle(
                       fontSize: 13,
-                      color: selected ? AppColors.primary : AppColors.textSecondary,
+                      color: selected
+                          ? AppColors.primary
+                          : AppColors.textSecondary,
                     ),
                   ),
               ],

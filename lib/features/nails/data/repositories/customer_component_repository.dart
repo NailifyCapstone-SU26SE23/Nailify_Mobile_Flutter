@@ -25,7 +25,7 @@ class CustomerComponentRepository {
     );
     return PaginatedResponse.fromJson(
       response.data,
-          (json) => CustomerComponentModel.fromJson(json as Map<String, dynamic>),
+      (json) => CustomerComponentModel.fromJson(json as Map<String, dynamic>),
     );
   }
 
@@ -45,7 +45,9 @@ class CustomerComponentRepository {
       'CustomDataJson': ?customDataJson,
     });
     if (imagePath != null && imagePath.isNotEmpty) {
-      formData.files.add(MapEntry('image', await MultipartFile.fromFile(imagePath)));
+      formData.files.add(
+        MapEntry('image', await MultipartFile.fromFile(imagePath)),
+      );
     }
     await _apiClient.post<dynamic>(
       '/CustomerComponents',
@@ -71,7 +73,9 @@ class CustomerComponentRepository {
       'Price': ?price,
     });
     if (imagePath != null && imagePath.isNotEmpty) {
-      formData.files.add(MapEntry('image', await MultipartFile.fromFile(imagePath)));
+      formData.files.add(
+        MapEntry('image', await MultipartFile.fromFile(imagePath)),
+      );
     }
     await _apiClient.put<dynamic>(
       '/CustomerComponents/$customerComponentId',

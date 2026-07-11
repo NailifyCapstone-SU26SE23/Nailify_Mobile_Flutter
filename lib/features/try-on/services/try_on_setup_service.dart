@@ -19,13 +19,13 @@ class TryOnSetupService {
     required ComponentCatalogRepository componentRepo,
     required CustomerComponentRepository customerComponentRepo,
   }) : _nailVariantRepo = nailVariantRepo,
-        _componentRepo = componentRepo,
-        _customerComponentRepo = customerComponentRepo;
+       _componentRepo = componentRepo,
+       _customerComponentRepo = customerComponentRepo;
 
   Future<TryOnData> fetchTryOnData() async {
     // Fetch all data in parallel for performance
     final results = await Future.wait([
-      _nailVariantRepo.getNailShapes(),  // Now using NailVariantRepository
+      _nailVariantRepo.getNailShapes(), // Now using NailVariantRepository
       _nailVariantRepo.getNailSurfaces(),
       _componentRepo.getComponents(),
       _customerComponentRepo.getCustomerComponents(
@@ -38,7 +38,8 @@ class TryOnSetupService {
       nailShapes: results[0] as List<NailShapeModel>,
       nailSurfaces: results[1] as List<NailSurfaceModel>,
       components: results[2] as List<ComponentModel>,
-      customerComponents: (results[3] as PaginatedResponse<CustomerComponentModel>).items,
+      customerComponents:
+          (results[3] as PaginatedResponse<CustomerComponentModel>).items,
     );
   }
 }

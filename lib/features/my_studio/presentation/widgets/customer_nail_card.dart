@@ -46,13 +46,16 @@ class CustomerNailCard extends StatelessWidget {
                   child: nail.imageUrl.isEmpty
                       ? Container(
                           color: AppColors.primary.withValues(alpha: 0.1),
-                          child: const Icon(Icons.spa_outlined,
-                              size: 28, color: AppColors.primary),
+                          child: const Icon(
+                            Icons.spa_outlined,
+                            size: 28,
+                            color: AppColors.primary,
+                          ),
                         )
                       : Image.network(
                           nail.imageUrl,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
+                          errorBuilder: (_, _, _) => Container(
                             color: Colors.grey.shade100,
                             child: const Icon(Icons.broken_image),
                           ),
@@ -77,9 +80,14 @@ class CustomerNailCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: nail.isPublic ? AppColors.primary.withValues(alpha: 0.1) : Colors.grey.shade100,
+                        color: nail.isPublic
+                            ? AppColors.primary.withValues(alpha: 0.1)
+                            : Colors.grey.shade100,
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -87,7 +95,9 @@ class CustomerNailCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          color: nail.isPublic ? AppColors.primary : Colors.grey.shade600,
+                          color: nail.isPublic
+                              ? AppColors.primary
+                              : Colors.grey.shade600,
                         ),
                       ),
                     ),
@@ -98,7 +108,10 @@ class CustomerNailCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 child: PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert, color: AppColors.textSecondary),
+                  icon: const Icon(
+                    Icons.more_vert,
+                    color: AppColors.textSecondary,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -113,9 +126,16 @@ class CustomerNailCard extends StatelessWidget {
                       value: 'try_on',
                       child: Row(
                         children: [
-                          Icon(Icons.visibility_outlined, size: 20, color: AppColors.primary),
+                          Icon(
+                            Icons.visibility_outlined,
+                            size: 20,
+                            color: AppColors.primary,
+                          ),
                           SizedBox(width: 8),
-                          Text('Thiết lập Try-On', style: TextStyle(color: AppColors.primary)),
+                          Text(
+                            'Thiết lập Try-On',
+                            style: TextStyle(color: AppColors.primary),
+                          ),
                         ],
                       ),
                     ),
@@ -133,9 +153,16 @@ class CustomerNailCard extends StatelessWidget {
                       value: 'toggle_public',
                       child: Row(
                         children: [
-                          Icon(nail.isPublic ? Icons.public_off : Icons.public, size: 20),
+                          Icon(
+                            nail.isPublic ? Icons.public_off : Icons.public,
+                            size: 20,
+                          ),
                           const SizedBox(width: 8),
-                          Text(nail.isPublic ? 'Chuyển riêng tư' : 'Chuyển công khai'),
+                          Text(
+                            nail.isPublic
+                                ? 'Chuyển riêng tư'
+                                : 'Chuyển công khai',
+                          ),
                         ],
                       ),
                     ),
@@ -143,7 +170,11 @@ class CustomerNailCard extends StatelessWidget {
                       value: 'delete',
                       child: Row(
                         children: [
-                          Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                          Icon(
+                            Icons.delete_outline,
+                            size: 20,
+                            color: Colors.red,
+                          ),
                           SizedBox(width: 8),
                           Text('Xóa', style: TextStyle(color: Colors.red)),
                         ],

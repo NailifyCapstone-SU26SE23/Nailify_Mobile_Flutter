@@ -21,10 +21,7 @@ class DesignGridToolbar extends StatelessWidget {
       children: [
         Text(
           'Showing $designCount designs',
-          style: const TextStyle(
-            fontSize: 12,
-            color: AppColors.textSecondary,
-          ),
+          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
         ),
         const Spacer(),
         Container(
@@ -45,10 +42,8 @@ class DesignGridToolbar extends StatelessWidget {
               ),
               items: sortOptions
                   .map(
-                    (option) => DropdownMenuItem(
-                      value: option,
-                      child: Text(option),
-                    ),
+                    (option) =>
+                        DropdownMenuItem(value: option, child: Text(option)),
                   )
                   .toList(),
               onChanged: onSortChanged,

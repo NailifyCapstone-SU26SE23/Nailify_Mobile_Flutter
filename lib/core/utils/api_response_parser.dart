@@ -12,11 +12,15 @@ class ApiResponseParser {
 
   static List<Map<String, dynamic>> unwrapList(dynamic json) {
     if (json is Map) {
-      final data = json['data'] ?? json['Data'] ?? json['items'] ?? json['Items'];
+      final data =
+          json['data'] ?? json['Data'] ?? json['items'] ?? json['Items'];
       if (data != null && data != json) return unwrapList(data);
     }
     if (json is List) {
-      return json.whereType<Map>().map((item) => Map<String, dynamic>.from(item)).toList();
+      return json
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList();
     }
     return [];
   }

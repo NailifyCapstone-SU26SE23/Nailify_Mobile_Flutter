@@ -58,12 +58,8 @@ class _MyStudioTabPageState extends State<MyStudioTabPage>
           unselectedLabelColor: AppColors.textSecondary,
           dividerColor: AppColors.textSecondary,
           indicatorColor: AppColors.primary,
-          labelStyle: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-          unselectedLabelStyle: TextStyle(
-            fontWeight: FontWeight.normal,
-          ),
+          labelStyle: TextStyle(fontWeight: FontWeight.bold),
+          unselectedLabelStyle: TextStyle(fontWeight: FontWeight.normal),
           tabs: const [
             Tab(text: 'My nails'),
             Tab(text: 'My components'),

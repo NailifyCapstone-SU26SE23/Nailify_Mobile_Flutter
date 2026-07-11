@@ -86,7 +86,9 @@ class BranchSelectionList extends StatelessWidget {
               // Bản đồ
               Expanded(
                 child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                  borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(20),
+                  ),
                   child: FlutterMap(
                     options: MapOptions(
                       initialCenter: targetPosition, // Tâm bản đồ
@@ -99,7 +101,8 @@ class BranchSelectionList extends StatelessWidget {
                       //   userAgentPackageName: 'com.nailify.app', // Khai báo package app để tránh bị chặn IP
                       // ),
                       TileLayer(
-                        urlTemplate: 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                        urlTemplate:
+                            'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
                         userAgentPackageName: 'com.nailify.app',
                       ),
                       // Lớp ghim vị trí (Marker)
@@ -111,7 +114,8 @@ class BranchSelectionList extends StatelessWidget {
                             height: 50,
                             child: const Icon(
                               Icons.location_on,
-                              color: AppColors.primary, // Đổi màu ghim cho hợp tone màu chủ đạo của App
+                              color: AppColors
+                                  .primary, // Đổi màu ghim cho hợp tone màu chủ đạo của App
                               size: 40,
                             ),
                           ),
@@ -145,7 +149,9 @@ class BranchSelectionList extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isSelected ? AppColors.primary.withOpacity(0.05) : Colors.white,
+              color: isSelected
+                  ? AppColors.primary.withOpacity(0.05)
+                  : Colors.white,
               border: Border.all(
                 color: isSelected ? AppColors.primary : Colors.grey.shade300,
               ),
@@ -153,7 +159,11 @@ class BranchSelectionList extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Icon(Icons.storefront, size: 30, color: AppColors.primary),
+                const Icon(
+                  Icons.storefront,
+                  size: 30,
+                  color: AppColors.primary,
+                ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -170,12 +180,16 @@ class BranchSelectionList extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         salon['address'],
-                        style: const TextStyle(fontSize: 13, color: Colors.grey),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                if (isSelected) const Icon(Icons.check_circle, color: AppColors.primary),
+                if (isSelected)
+                  const Icon(Icons.check_circle, color: AppColors.primary),
               ],
             ),
           ),

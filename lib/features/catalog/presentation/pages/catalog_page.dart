@@ -71,7 +71,9 @@ class _CatalogPageState extends State<CatalogPage> {
         for (var entry in _advancedFilters.entries) {
           Set<String> selectedOptions = entry.value;
           if (selectedOptions.isNotEmpty) {
-            bool hasMatchInThisCategory = selectedOptions.any((option) => tags.contains(option));
+            bool hasMatchInThisCategory = selectedOptions.any(
+              (option) => tags.contains(option),
+            );
             if (!hasMatchInThisCategory) {
               matchesAllActiveCategories = false;
               break;
@@ -94,7 +96,8 @@ class _CatalogPageState extends State<CatalogPage> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       // Truyền filter hiện tại vào để UI trong popup không bị reset
-      builder: (context) => AdvancedFilterBottomSheet(initialFilters: _advancedFilters),
+      builder: (context) =>
+          AdvancedFilterBottomSheet(initialFilters: _advancedFilters),
     );
 
     // Khi người dùng bấm "Apply Filters", nhận dữ liệu và chạy logic lọc
@@ -133,15 +136,22 @@ class _CatalogPageState extends State<CatalogPage> {
                           controller: _searchController,
                           decoration: InputDecoration(
                             hintText: 'Search for designs...',
-                            hintStyle: const TextStyle(color: AppColors.textSecondary),
-                            prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
+                            hintStyle: const TextStyle(
+                              color: AppColors.textSecondary,
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.search,
+                              color: AppColors.textSecondary,
+                            ),
                             filled: true,
                             fillColor: AppColors.surface,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
                             ),
-                            contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 0,
+                            ),
                           ),
                         ),
                       ),
@@ -152,7 +162,10 @@ class _CatalogPageState extends State<CatalogPage> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: IconButton(
-                          icon: const Icon(Icons.tune, color: AppColors.primary),
+                          icon: const Icon(
+                            Icons.tune,
+                            color: AppColors.primary,
+                          ),
                           onPressed: _openAdvancedFilter,
                         ),
                       ),
@@ -177,15 +190,30 @@ class _CatalogPageState extends State<CatalogPage> {
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
                             value: _selectedEvent,
-                            hint: const Text('Event', style: TextStyle(fontSize: 14, color: AppColors.textPrimary)),
-                            icon: const Icon(Icons.keyboard_arrow_down, size: 18, color: AppColors.textPrimary),
+                            hint: const Text(
+                              'Event',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            icon: const Icon(
+                              Icons.keyboard_arrow_down,
+                              size: 18,
+                              color: AppColors.textPrimary,
+                            ),
                             isDense: true,
-                            items: ['All Events', ...CatalogMockData.occasions].map((String value) {
-                              return DropdownMenuItem<String>(
-                                value: value,
-                                child: Text(value, style: const TextStyle(fontSize: 14)),
-                              );
-                            }).toList(),
+                            items: ['All Events', ...CatalogMockData.occasions]
+                                .map((String value) {
+                                  return DropdownMenuItem<String>(
+                                    value: value,
+                                    child: Text(
+                                      value,
+                                      style: const TextStyle(fontSize: 14),
+                                    ),
+                                  );
+                                })
+                                .toList(),
                             onChanged: (newValue) {
                               setState(() {
                                 _selectedEvent = newValue;
@@ -206,14 +234,20 @@ class _CatalogPageState extends State<CatalogPage> {
                             Icon(
                               Icons.filter_list,
                               size: 16,
-                              color: _advancedFilters.values.any((s) => s.isNotEmpty) ? AppColors.primary : AppColors.textPrimary,
-                            )
+                              color:
+                                  _advancedFilters.values.any(
+                                    (s) => s.isNotEmpty,
+                                  )
+                                  ? AppColors.primary
+                                  : AppColors.textPrimary,
+                            ),
                           ],
                         ),
                         onPressed: _openAdvancedFilter,
                         backgroundColor: AppColors.surface,
                         side: BorderSide(
-                          color: _advancedFilters.values.any((s) => s.isNotEmpty)
+                          color:
+                              _advancedFilters.values.any((s) => s.isNotEmpty)
                               ? AppColors.primary
                               : AppColors.border,
                         ),
@@ -229,33 +263,32 @@ class _CatalogPageState extends State<CatalogPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: _filteredNails.isEmpty
                       ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 40.0),
-                    child: Center(
-                      child: Text(
-                        'Không tìm thấy mẫu móng nào phù hợp với bộ lọc.',
-                        style: TextStyle(color: AppColors.textSecondary),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  )
+                          padding: EdgeInsets.symmetric(vertical: 40.0),
+                          child: Center(
+                            child: Text(
+                              'Không tìm thấy mẫu móng nào phù hợp với bộ lọc.',
+                              style: TextStyle(color: AppColors.textSecondary),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        )
                       : GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _filteredNails.length,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                      childAspectRatio: 0.75,
-                    ),
-                    itemBuilder: (context, index) {
-                      final nail = _filteredNails[index];
-                      // Truyền nguyên khối Map dữ liệu vào NailCard
-                      return NailCard(
-                        nailData: nail,
-                      );
-                    },
-                  ),
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _filteredNails.length,
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 16,
+                                mainAxisSpacing: 16,
+                                childAspectRatio: 0.75,
+                              ),
+                          itemBuilder: (context, index) {
+                            final nail = _filteredNails[index];
+                            // Truyền nguyên khối Map dữ liệu vào NailCard
+                            return NailCard(nailData: nail);
+                          },
+                        ),
                 ),
 
                 // Banner Quiz

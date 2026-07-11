@@ -37,19 +37,27 @@ class MyBookingApiService {
     return response.data['data'] ?? {};
   }
 
-  Future<bool> cancelBooking(String bookingId, {required String reason, String holdToken = ""}) async {
+  Future<bool> cancelBooking(
+    String bookingId, {
+    required String reason,
+    String holdToken = "",
+  }) async {
+    final payload = <String, dynamic>{'reason': reason};
+    if (holdToken.isNotEmpty) {
+      payload['holdToken'] = holdToken;
+    }
+
     final response = await _apiClient.post(
       '/Bookings/$bookingId/cancel',
-      data: {
-        "reason": reason,
-        "holdToken": holdToken,
-      },
+      data: payload,
     );
     return response.statusCode == 200 || response.statusCode == 204;
   }
 
   Future<Map<String, dynamic>?> getRatingByBooking(String bookingId) async {
-    final response = await _apiClient.get('/BookingRatings/by-booking/$bookingId');
+    final response = await _apiClient.get(
+      '/BookingRatings/by-booking/$bookingId',
+    );
     final data = response.data['data'];
     return data is Map<String, dynamic> ? data : null;
   }
@@ -78,5 +86,4 @@ class MyBookingApiService {
     final data = response.data['data'];
     return data is Map<String, dynamic> ? data : {};
   }
-
 }

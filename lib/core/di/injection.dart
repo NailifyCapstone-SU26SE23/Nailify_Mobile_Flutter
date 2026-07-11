@@ -23,50 +23,50 @@ Future<void> configureDependencies() async {
 
   // 2. Core Sub-systems
   getIt.registerLazySingleton<NetworkInfo>(
-        () => NetworkInfoImpl(getIt<Connectivity>()),
+    () => NetworkInfoImpl(getIt<Connectivity>()),
   );
 
   // 3. API Client (the only network layer!)
   getIt.registerLazySingleton<ApiClient>(
-        () => ApiClient(preferences: getIt<SharedPreferences>()),
+    () => ApiClient(preferences: getIt<SharedPreferences>()),
   );
 
   // 4. Repositories (directly using ApiClient)
   // Auth
   getIt.registerLazySingleton<AuthRepository>(
-        () => AuthRepository(getIt<ApiClient>()),
+    () => AuthRepository(getIt<ApiClient>()),
   );
 
   // Nail repositories
   getIt.registerLazySingleton<NailDesignRepository>(
-        () => NailDesignRepository(getIt<ApiClient>()),
+    () => NailDesignRepository(getIt<ApiClient>()),
   );
 
   getIt.registerLazySingleton<NailVariantRepository>(
-        () => NailVariantRepository(getIt<ApiClient>()),
+    () => NailVariantRepository(getIt<ApiClient>()),
   );
 
   getIt.registerLazySingleton<CustomerNailRepository>(
-        () => CustomerNailRepository(getIt<ApiClient>()),
+    () => CustomerNailRepository(getIt<ApiClient>()),
   );
 
   getIt.registerLazySingleton<CustomerComponentRepository>(
-        () => CustomerComponentRepository(getIt<ApiClient>()),
+    () => CustomerComponentRepository(getIt<ApiClient>()),
   );
 
   getIt.registerLazySingleton<NailComponentRepository>(
-        () => NailComponentRepository(getIt<ApiClient>()),
+    () => NailComponentRepository(getIt<ApiClient>()),
   );
 
   getIt.registerLazySingleton<ComponentCatalogRepository>(
-        () => ComponentCatalogRepository(getIt<ApiClient>()),
+    () => ComponentCatalogRepository(getIt<ApiClient>()),
   );
 
   // 5. Services
   getIt.registerLazySingleton<ArTryOnService>(ArTryOnService.new);
 
   getIt.registerLazySingleton<TryOnSetupService>(
-        () => TryOnSetupService(
+    () => TryOnSetupService(
       nailVariantRepo: getIt<NailVariantRepository>(),
       componentRepo: getIt<ComponentCatalogRepository>(),
       customerComponentRepo: getIt<CustomerComponentRepository>(),

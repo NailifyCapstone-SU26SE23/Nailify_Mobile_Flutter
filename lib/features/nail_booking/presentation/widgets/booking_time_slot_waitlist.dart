@@ -12,11 +12,11 @@ import '../../../../core/constants/app_colors.dart';
 // MODEL: Trạng thái của một khung giờ
 // ────────────────────────────────────────────────
 enum TimeSlotState {
-  available,  // Còn chỗ, có thể chọn
-  full,       // Hết chỗ (chưa đăng ký chờ)
-  waiting,    // Hết chỗ, đã đăng ký danh sách chờ
-  past,       // Giờ đã qua
-  selected,   // Đang được chọn
+  available, // Còn chỗ, có thể chọn
+  full, // Hết chỗ (chưa đăng ký chờ)
+  waiting, // Hết chỗ, đã đăng ký danh sách chờ
+  past, // Giờ đã qua
+  selected, // Đang được chọn
 }
 
 class TimeSlotItem {
@@ -31,19 +31,22 @@ class TimeSlotItem {
 // ────────────────────────────────────────────────
 class TimeSlotMockData {
   static List<TimeSlotItem> get slots => [
-        TimeSlotItem(time: '08:00', state: TimeSlotState.past),
-        TimeSlotItem(time: '08:30', state: TimeSlotState.past),
-        TimeSlotItem(time: '09:00', state: TimeSlotState.full),     // Slot bị đầy — demo waitlist
-        TimeSlotItem(time: '09:30', state: TimeSlotState.available),
-        TimeSlotItem(time: '10:00', state: TimeSlotState.available),
-        TimeSlotItem(time: '10:30', state: TimeSlotState.available),
-        TimeSlotItem(time: '11:00', state: TimeSlotState.available),
-        TimeSlotItem(time: '11:30', state: TimeSlotState.full),
-        TimeSlotItem(time: '12:00', state: TimeSlotState.available),
-        TimeSlotItem(time: '13:00', state: TimeSlotState.available),
-        TimeSlotItem(time: '13:30', state: TimeSlotState.available),
-        TimeSlotItem(time: '14:00', state: TimeSlotState.available),
-      ];
+    TimeSlotItem(time: '08:00', state: TimeSlotState.past),
+    TimeSlotItem(time: '08:30', state: TimeSlotState.past),
+    TimeSlotItem(
+      time: '09:00',
+      state: TimeSlotState.full,
+    ), // Slot bị đầy — demo waitlist
+    TimeSlotItem(time: '09:30', state: TimeSlotState.available),
+    TimeSlotItem(time: '10:00', state: TimeSlotState.available),
+    TimeSlotItem(time: '10:30', state: TimeSlotState.available),
+    TimeSlotItem(time: '11:00', state: TimeSlotState.available),
+    TimeSlotItem(time: '11:30', state: TimeSlotState.full),
+    TimeSlotItem(time: '12:00', state: TimeSlotState.available),
+    TimeSlotItem(time: '13:00', state: TimeSlotState.available),
+    TimeSlotItem(time: '13:30', state: TimeSlotState.available),
+    TimeSlotItem(time: '14:00', state: TimeSlotState.available),
+  ];
 }
 
 // ────────────────────────────────────────────────
@@ -105,16 +108,20 @@ class _BookingTimeSlotWaitlistState extends State<BookingTimeSlotWaitlist> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.notifications_active,
-                    color: Colors.white, size: 16),
+                const Icon(
+                  Icons.notifications_active,
+                  color: Colors.white,
+                  size: 16,
+                ),
                 const SizedBox(width: 8),
                 Text('Bạn đã đăng ký chờ cho giờ ${slot.time}'),
               ],
             ),
             backgroundColor: AppColors.primary,
             behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
         break;
@@ -141,8 +148,11 @@ class _BookingTimeSlotWaitlistState extends State<BookingTimeSlotWaitlist> {
             SnackBar(
               content: Row(
                 children: [
-                  const Icon(Icons.notifications_active,
-                      color: Colors.white, size: 16),
+                  const Icon(
+                    Icons.notifications_active,
+                    color: Colors.white,
+                    size: 16,
+                  ),
                   const SizedBox(width: 8),
                   Text('Đã tham gia hàng chờ lúc ${slot.time}!'),
                 ],
@@ -150,7 +160,8 @@ class _BookingTimeSlotWaitlistState extends State<BookingTimeSlotWaitlist> {
               backgroundColor: AppColors.primary,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
           );
         },
@@ -209,9 +220,10 @@ class _BookingTimeSlotWaitlistState extends State<BookingTimeSlotWaitlist> {
         _LegendDot(color: AppColors.primary, label: 'Đang chọn'),
         _LegendDot(color: Colors.grey.shade300, label: 'Hết chỗ'),
         _LegendDot(
-            color: AppColors.primary.withOpacity(0.15),
-            label: 'Đang chờ',
-            borderColor: AppColors.primary),
+          color: AppColors.primary.withOpacity(0.15),
+          label: 'Đang chờ',
+          borderColor: AppColors.primary,
+        ),
         _LegendDot(color: Colors.grey.shade100, label: 'Đã qua'),
       ],
     );
@@ -239,10 +251,7 @@ class _SlotTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: cfg.bgColor,
           borderRadius: BorderRadius.circular(9),
-          border: Border.all(
-            color: cfg.borderColor,
-            width: cfg.borderWidth,
-          ),
+          border: Border.all(color: cfg.borderColor, width: cfg.borderWidth),
         ),
         alignment: Alignment.center,
         child: Row(
@@ -426,7 +435,8 @@ class _WaitlistJoinSheet extends StatelessWidget {
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 elevation: 0,
               ),
             ),
@@ -462,7 +472,11 @@ class _LegendDot extends StatelessWidget {
   final String label;
   final Color? borderColor;
 
-  const _LegendDot({required this.color, required this.label, this.borderColor});
+  const _LegendDot({
+    required this.color,
+    required this.label,
+    this.borderColor,
+  });
 
   @override
   Widget build(BuildContext context) {

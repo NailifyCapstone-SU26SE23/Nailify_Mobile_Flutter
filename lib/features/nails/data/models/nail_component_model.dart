@@ -24,19 +24,27 @@ class NailComponentModel {
     this.component,
   });
 
-  NailComponentConfig get config => NailComponentConfig.fromJsonValue(configJson);
+  NailComponentConfig get config =>
+      NailComponentConfig.fromJsonValue(configJson);
 
   factory NailComponentModel.fromJson(Map<String, dynamic> json) {
     final componentJson = json['component'] ?? json['Component'];
     return NailComponentModel(
-      nailComponentId: _asInt(json['nailComponentId'] ?? json['NailComponentId']),
+      nailComponentId: _asInt(
+        json['nailComponentId'] ?? json['NailComponentId'],
+      ),
       componentId: _asInt(json['componentId'] ?? json['ComponentId']),
       nailVariantId: _asInt(json['nailVariantId'] ?? json['NailVariantId']),
       posX: _asDouble(json['posX'] ?? json['PosX']),
       posY: _asDouble(json['posY'] ?? json['PosY']),
-      fingerIndex: _asInt(json['fingerIndex'] ?? json['FingerIndex'], fallback: -1),
+      fingerIndex: _asInt(
+        json['fingerIndex'] ?? json['FingerIndex'],
+        fallback: -1,
+      ),
       configJson: _asConfigJson(json['configJson'] ?? json['ConfigJson']),
-      component: componentJson is Map ? ComponentModel.fromJson(Map<String, dynamic>.from(componentJson)) : null,
+      component: componentJson is Map
+          ? ComponentModel.fromJson(Map<String, dynamic>.from(componentJson))
+          : null,
     );
   }
 

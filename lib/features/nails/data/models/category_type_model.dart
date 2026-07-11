@@ -20,7 +20,13 @@ class CategoryTypeModel {
       name: (json['name'] ?? json['Name'] ?? '').toString(),
       status: (json['status'] ?? json['Status'] ?? '').toString(),
       categories: categoriesJson is List
-          ? categoriesJson.whereType<Map>().map((item) => CategoryModel.fromJson(Map<String, dynamic>.from(item))).toList()
+          ? categoriesJson
+                .whereType<Map>()
+                .map(
+                  (item) =>
+                      CategoryModel.fromJson(Map<String, dynamic>.from(item)),
+                )
+                .toList()
           : const [],
     );
   }

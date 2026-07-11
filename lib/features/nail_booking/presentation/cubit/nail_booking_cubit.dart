@@ -220,17 +220,41 @@ class NailBookingCubit extends Cubit<NailBookingState> {
     ));
   }
 
+  /// Reload danh sách khung giờ từ bên ngoài (VD: từ widget khi detect isHeld).
+  Future<void> refreshTimeSlots() async {
+    emit(state.copyWith(timeSlotsStatus: NailBookingLoadStatus.loading));
+    if (state.noArtistSelected) {
+      await _loadSalonSlots();
+    } else {
+      await _fetchTimeSlots();
+    }
+  }
+
   void selectTime(String time) {
-    // Người dùng đang đổi sang giờ khác → huỷ giữ chỗ cũ (nếu có) trước
+    // Người dùng đổi giờ → huỷ giữ chỗ cũ (nếu có) nhưng KHÔNG gọi holdSlot mới.
+    // HoldSlot sẽ chỉ được gọi khi user bấm "Tiếp theo" sang trang Xác nhận.
     if (state.holdToken != null) {
       _cancelCurrentHold(state.holdToken!);
     }
-    emit(state.copyWith(selectedTime: time, clearHoldToken: true, isHolding: false, holdRemainingSeconds: 0));
-    _holdSlot(time);
+    emit(state.copyWith(
+      selectedTime: time,
+      clearHoldToken: true,
+      isHolding: false,
+      holdRemainingSeconds: 0,
+    ));
+  }
+
+  /// Giữ chỗ trước khi bước sang trang Xác nhận.
+  /// Trả về true nếu giữ chỗ thành công, false nếu thất bại (đã emit errorMessage).
+  Future<bool> holdSelectedSlot({int? nailVariantId}) async {
+    final time = state.selectedTime;
+    if (time == null) return false;
+    await _holdSlot(time, nailVariantId: nailVariantId);
+    return state.holdToken != null;
   }
 
   /// Gọi API giữ chỗ và khởi động bộ đếm thời gian.
-  Future<void> _holdSlot(String time) async {
+  Future<void> _holdSlot(String time, {int? nailVariantId}) async {
     final branch = state.selectedBranch;
     final date = state.selectedDate;
     if (branch == null || date == null) return;
@@ -245,16 +269,22 @@ class NailBookingCubit extends Cubit<NailBookingState> {
     final bookingDate = _formatDate(date);
     final formattedTime = time.length == 5 ? '$time:00' : time;
 
+    final bookingItems = state.selectedExtraServices
+        .whereType<String>()
+        .map((id) => {'serviceId': id, 'quantity': 1})
+        .toList();
+
+    if (nailVariantId != null && nailVariantId > 0) {
+      bookingItems.insert(0, {'nailVariantId': nailVariantId, 'quantity': 1});
+    }
+
     try {
       final data = await _repository.holdSlot(
         salonId: salonId,
         nailArtistId: artistId,
         bookingDate: bookingDate,
         startTime: formattedTime,
-        bookingItems: state.selectedExtraServices
-            .whereType<String>()
-            .map((id) => {'serviceId': id, 'quantity': 1})
-            .toList(),
+        bookingItems: bookingItems,
       );
 
       if (isClosed) return;
@@ -264,16 +294,14 @@ class NailBookingCubit extends Cubit<NailBookingState> {
 
       if (token == null || token.isEmpty) return;
 
-      // Đồng bộ đồng hồ: parse expiresAt (UTC) từ server,
-      // tính remaining dựa vào expiresAt − DateTime.now().toUtc().
+      // Bỏ qua việc tính difference từ expiresAt vì đồng hồ device có thể lệch với server.
+      // Ưu tiên dùng remainingSeconds từ server trả về, nếu không có mặc định 300s (5 phút).
       DateTime? expiresAt;
       if (expiresAtStr != null) {
         try { expiresAt = DateTime.parse(expiresAtStr).toUtc(); } catch (_) {}
       }
 
-      final remaining = expiresAt != null
-          ? expiresAt.difference(DateTime.now().toUtc()).inSeconds.clamp(0, 600)
-          : (data['remainingSeconds'] as num?)?.toInt() ?? 300;
+      final remaining = (data['remainingSeconds'] as num?)?.toInt() ?? 300;
 
       emit(state.copyWith(
         holdToken: token,
@@ -283,25 +311,36 @@ class NailBookingCubit extends Cubit<NailBookingState> {
       ));
 
       _startHoldTimer(token, expiresAt);
-    } catch (_) {
-      // Không throw — việc giữ chỗ lỗi không nên chặn user chọn giờ
+    } catch (e) {
+      // Bắt lỗi khi giờ bị người khác đặt trước (Race Condition)
+      emit(state.copyWith(
+        clearHoldToken: true,
+        isHolding: false,
+        holdRemainingSeconds: 0,
+        clearTime: true, // Xoá giờ đang chọn
+        errorMessage: 'Khung giờ này vừa mới có người chọn. Vui lòng chọn giờ khác.',
+      ));
+      
+      // Tải lại danh sách giờ để cập nhật trạng thái isHeld mới nhất
+      if (state.noArtistSelected) {
+        _loadSalonSlots();
+      } else {
+        _fetchTimeSlots();
+      }
     }
   }
 
-  /// Bộ đếm ngược từ máy client, đồng bộ với expiresAt của server.
+  /// Bộ đếm ngược từ máy client, không phụ thuộc vào đồng hồ hệ thống.
   void _startHoldTimer(String token, DateTime? expiresAt) {
     _holdTimer?.cancel();
+    // Bỏ qua sự sai lệch đồng hồ thiết bị và server, luôn đếm ngược từ remaining ban đầu
     _holdTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (isClosed) {
         _holdTimer?.cancel();
         return;
       }
-      // Làm sao tính được thời gian còn lại chính xác:
-      // Dùng expiresAt (UTC từ server) trừ DateTime.now().toUtc()
-      // thay vì đơn giản giảm 1 mỗi giây — tránh sai lệch tích lũy.
-      final remaining = expiresAt != null
-          ? expiresAt.difference(DateTime.now().toUtc()).inSeconds.clamp(0, 600)
-          : (state.holdRemainingSeconds - 1).clamp(0, 600);
+      
+      final remaining = (state.holdRemainingSeconds - 1).clamp(0, 600);
 
       if (state.holdToken != token) {
         // Token đã thay đổi (user đổi giờ), huỷ timer
@@ -314,9 +353,10 @@ class NailBookingCubit extends Cubit<NailBookingState> {
         emit(state.copyWith(
           clearHoldToken: true,
           isHolding: false,
-          holdRemainingSeconds: 0,
           clearTime: true,
-          errorMessage: 'Thời gian giữ chỗ đã hết! Vui lòng chọn lại khung giờ.',
+          clearStylist: true,
+          noArtistSelected: false,
+          errorMessage: 'Thời gian giữ chỗ đã hết! Vui lòng chọn lại thợ và khung giờ.',
         ));
       } else {
         emit(state.copyWith(holdRemainingSeconds: remaining));
@@ -479,4 +519,5 @@ class NailBookingCubit extends Cubit<NailBookingState> {
     return super.close();
   }
 }
+
 

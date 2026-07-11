@@ -76,18 +76,13 @@ class _NailBookingViewState extends State<_NailBookingView> {
     }
   }
 
-  void _handleNextAction(NailBookingState state) {
+  Future<void> _handleNextAction(NailBookingState state) async {
     final cubit = context.read<NailBookingCubit>();
 
     if (_currentStep == 0 && state.selectedBranch == null) {
       _showSnackBar('Vui lòng chọn một chi nhánh salon!');
       return;
     }
-    // Tạm ẩn bước chọn ghế
-    // if (_currentStep == 1 && state.selectedSeatId == null) {
-    //   _showSnackBar('Vui lòng chọn ghế ngồi!');
-    //   return;
-    // }
     if (_currentStep == 1) {
       if (state.selectedExtraServices.contains(null)) {
         _showSnackBar(
@@ -114,6 +109,9 @@ class _NailBookingViewState extends State<_NailBookingView> {
         _showSnackBar('Vui lòng chọn khung giờ!');
         return;
       }
+      // Giữ chỗ trước khi sang trang xác nhận
+      final held = await cubit.holdSelectedSlot(nailVariantId: _nailVariantId);
+      if (!held || !mounted) return; // errorMessage đã được emit và hiện qua BlocConsumer
     }
 
     if (_currentStep < 3) {
@@ -123,6 +121,7 @@ class _NailBookingViewState extends State<_NailBookingView> {
       _executeBooking(state, cubit);
     }
   }
+
 
   Future<void> _executeBooking(
       NailBookingState state, NailBookingCubit cubit) async {
@@ -162,8 +161,15 @@ class _NailBookingViewState extends State<_NailBookingView> {
   }
 
 
-  void _showSnackBar(String msg) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  void _showSnackBar(String msg) {
+    final isError = msg.contains('chọn') || msg.contains('Lỗi') || msg.contains('hết');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? Colors.red : null,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -185,8 +191,8 @@ class _NailBookingViewState extends State<_NailBookingView> {
             curr.errorMessage != null && prev.errorMessage != curr.errorMessage,
         listener: (context, state) {
           _showSnackBar(state.errorMessage!);
-          if (state.errorMessage!.contains('hết') && _currentStep == 4) {
-            _pageController.animateToPage(3,
+          if (state.errorMessage!.contains('hết') && _currentStep > 1) {
+            _pageController.animateToPage(2,
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut);
           }
@@ -293,6 +299,7 @@ class _NailBookingViewState extends State<_NailBookingView> {
                                     salonId: state.selectedBranch?['salonId']?.toString(),
                                     artistId: state.noArtistSelected ? null : state.selectedStylist?['nailArtistId']?.toString(),
                                     onTimeChanged: cubit.selectTime,
+                                    onRefreshSlots: cubit.refreshTimeSlots,
                                   )
                                 : const SizedBox(key: ValueKey('time-hidden')),
                           ),
@@ -582,7 +589,7 @@ class _NailBookingViewState extends State<_NailBookingView> {
           Expanded(
             child: Text(
               isUrgent
-                  ? 'Chỗ có thể bị giải phóng sau $min:$sec giây!'
+                  ? 'Chỗ có thể bị hủy sau $min:$sec giây!'
                   : 'Slot đang được giữ chỗ cho bạn – còn $min:$sec để hoàn tất',
               style: const TextStyle(
                   color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),

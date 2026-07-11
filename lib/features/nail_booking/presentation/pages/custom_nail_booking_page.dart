@@ -226,14 +226,21 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
     }
   }
 
-  void _handleNextAction() {
+  Future<void> _handleNextAction() async {
     if (_currentStep == 0 && _selectedExtraServices.contains(null)) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Có ô dịch vụ đang bị bỏ trống!')));
       return;
     }
-    if (_currentStep == 1 && (_selectedDate == null || _selectedTime == null)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng chọn đầy đủ ngày và khung giờ!')));
-      return;
+    if (_currentStep == 1) {
+      if (_selectedDate == null || _selectedTime == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng chọn đầy đủ ngày và khung giờ!')));
+        return;
+      }
+      // Giữ chỗ trước khi sang trang xác nhận
+      await _holdSlot(_selectedTime!);
+      if (!mounted) return;
+      // Nếu holdToken bị null (hold thất bại), _holdSlot đã hiện SnackBar và reset state rồi
+      if (_holdToken == null) return;
     }
 
     if (_currentStep < 2) {
@@ -242,6 +249,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
       _executeBooking();
     }
   }
+
 
   // ── HOLD SLOT LOGIC ─────────────────────────────────────────────────────────
 
@@ -275,14 +283,13 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
       final expiresAtStr = data['expiresAt']?.toString();
       if (token == null || token.isEmpty) return;
 
-      // Đồng bộ đồng hồ: dùng expiresAt UTC từ server
+      // Bỏ qua việc tính difference từ expiresAt vì đồng hồ device có thể lệch với server.
+      // Ưu tiên dùng remainingSeconds từ server trả về, nếu không có mặc định 300s (5 phút).
       DateTime? expiresAt;
       if (expiresAtStr != null) {
         try { expiresAt = DateTime.parse(expiresAtStr).toUtc(); } catch (_) {}
       }
-      final remaining = expiresAt != null
-          ? expiresAt.difference(DateTime.now().toUtc()).inSeconds.clamp(0, 600)
-          : (data['remainingSeconds'] as num?)?.toInt() ?? 300;
+      final remaining = (data['remainingSeconds'] as num?)?.toInt() ?? 300;
 
       setState(() {
         _holdToken = token;
@@ -291,8 +298,22 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
         _isHolding = true;
       });
       _startHoldTimer(token, expiresAt);
-    } catch (_) {
-      // Không throw — không chặn user chọn giờ
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Khung giờ này vừa mới có người chọn. Vui lòng chọn giờ khác.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        setState(() {
+          _holdToken = null;
+          _isHolding = false;
+          _holdRemainingSeconds = 0;
+          _selectedTime = null; // Xoá lựa chọn giờ hiện tại
+        });
+        _fetchTimeSlots(); // Tải lại để ô bị lấy chuyển sang màu xám
+      }
     }
   }
 
@@ -301,9 +322,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
     _holdTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) { _holdTimer?.cancel(); return; }
 
-      final remaining = expiresAt != null
-          ? expiresAt.difference(DateTime.now().toUtc()).inSeconds.clamp(0, 600)
-          : (_holdRemainingSeconds - 1).clamp(0, 600);
+      final remaining = (_holdRemainingSeconds - 1).clamp(0, 600);
 
       if (_holdToken != token) { _holdTimer?.cancel(); return; }
 
@@ -436,12 +455,20 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                         selectedTime: _selectedTime,
                         canSelect: _selectedDate != null, // Chỉ cần chọn ngày là lấy giờ
                         selectedDate: _selectedDate,
+                        salonId: widget.nail.salonId,
+                        artistId: widget.nail.nailArtistId,
                         onTimeChanged: (time) {
-                          // Huỷ hold cũ nếu user đổi giờ
+                          // Chỉ lưu giờ đã chọn, KHÔNG gọi holdSlot.
+                          // holdSlot sẽ được gọi khi user bấm "Tiếp theo" sang bước Xác nhận.
                           if (_holdToken != null) _cancelCurrentHold();
-                          setState(() => _selectedTime = time);
-                          _holdSlot(time);
+                          setState(() {
+                            _selectedTime = time;
+                            _holdToken = null;
+                            _isHolding = false;
+                            _holdRemainingSeconds = 0;
+                          });
                         },
+                        onRefreshSlots: _fetchTimeSlots,
                       ),
                     ],
                   ),
@@ -704,7 +731,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
           Expanded(
             child: Text(
               isUrgent
-                  ? 'Chỗ có thể bị giải phóng sau $min:$sec giây!'
+                  ? 'Chỗ có thể bị hủy sau $min:$sec giây!'
                   : 'Slot đang được giữ chỗ cho bạn – còn $min:$sec để hoàn tất',
               style: const TextStyle(
                   color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),

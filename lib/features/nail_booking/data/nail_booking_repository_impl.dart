@@ -138,6 +138,7 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
       serviceIds,
       selectedPromotionIds: selectedPromotionIds,
       holdToken: holdToken,
+      shapeMethodConfigId: shapeMethodConfigId,
     );
   }
 

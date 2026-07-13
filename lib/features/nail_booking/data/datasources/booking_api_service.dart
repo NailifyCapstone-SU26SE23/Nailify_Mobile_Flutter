@@ -31,7 +31,7 @@ class BookingApiService {
           'nailVariantId': nailVariantId,
           'serviceId': null,
           'customerNailId': null,
-          'shapeMethodConfigId': ?shapeMethodConfigId,
+          if (shapeMethodConfigId != null) 'shapeMethodConfigId': shapeMethodConfigId,
           'quantity': 1,
         },
       ...serviceIds.map(
@@ -170,6 +170,7 @@ class BookingApiService {
     List<String> serviceIds, {
       List<int>? selectedPromotionIds,
       String? holdToken,
+      int? shapeMethodConfigId,
     }) async {
     final response = await _apiClient.post('/Bookings', data: {
       'salonId': salonId,
@@ -177,7 +178,7 @@ class BookingApiService {
       'startTime': startTime,
       'nailArtistId': artistId?.isEmpty == true ? null : artistId,
       'holdToken': holdToken,
-      'bookingItems': _buildBookingItems(nailVariantId, serviceIds),
+      'bookingItems': _buildBookingItems(nailVariantId, serviceIds, shapeMethodConfigId),
       'selectedPromotionIds': selectedPromotionIds,
     });
     return response.data['data'] ?? {};
@@ -261,7 +262,7 @@ class BookingApiService {
         'nailVariantId': null,
         'serviceId': null,
         'customerNailRequestId': customerNailRequestId,
-        'shapeMethodConfigId': ?shapeMethodConfigId,
+        if (shapeMethodConfigId != null) 'shapeMethodConfigId': shapeMethodConfigId,
         'quantity': 1,
       },
     ];

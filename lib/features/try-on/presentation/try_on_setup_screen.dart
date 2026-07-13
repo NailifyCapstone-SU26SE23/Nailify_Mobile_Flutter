@@ -30,8 +30,7 @@ class TryOnSetupScreen extends StatefulWidget {
   State<TryOnSetupScreen> createState() => _TryOnSetupScreenState();
 }
 
-class _TryOnSetupScreenState extends State<TryOnSetupScreen>
-    with SingleTickerProviderStateMixin {
+class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerProviderStateMixin {
   late final TryOnSetupService _setupService;
   late final NailComponentRepository _componentRepository;
   late final CustomerNailRepository _customerNailRepository;
@@ -469,13 +468,9 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(
-        context,
-      ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       appBar: AppBar(
-        title: Text(
-          _customerNail == null ? 'Thiết kế móng' : _customerNail!.name,
-        ),
+        title: Text(_customerNail == null ? 'Thiết kế móng' : _customerNail!.name),
         backgroundColor: Colors.transparent,
       ),
       body: Stack(
@@ -493,10 +488,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
       bottomNavigationBar: TryOnActionBar(
         canSave: _customerNail != null && _selectedNailShape != null,
         isSaving: _isSaving,
-        isLaunching: _launching,
         onSave: _save,
-        onLiveTryOn: () => _launchTryOn(photo: false),
-        onPhotoTryOn: () => _launchTryOn(photo: true),
       ),
     );
   }
@@ -513,12 +505,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
         SizedBox(
           height: MediaQuery.of(context).size.height * 0.35,
           child: Padding(
-            padding: const EdgeInsets.only(
-              top: 16.0,
-              left: 16.0,
-              right: 16.0,
-              bottom: 8.0,
-            ),
+            padding: const EdgeInsets.only(top: 16.0, left: 16.0, right: 16.0, bottom: 8.0),
             child: TryOnPreviewBoard(
               nail: _customerNail,
               selectedShape: _selectedNailShape,
@@ -531,13 +518,12 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
               detailFingerIndex: _previewDetailFingerIndex,
               placements: _placements,
               selectedPlacementId: _selectedPlacementId,
-              onSelectPlacement: (id) =>
-                  setState(() => _selectedPlacementId = id),
+              onSelectPlacement: (id) => setState(() => _selectedPlacementId = id),
               onToggleDetailFinger: _togglePreviewDetailFinger,
             ),
           ),
         ),
-
+        
         // Phần dưới: Điều khiển công cụ (Scrollable)
         Expanded(
           child: Container(
@@ -549,11 +535,9 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
                   color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, -5),
-                ),
+                )
               ],
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: SingleChildScrollView(
               child: Column(
@@ -575,7 +559,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
                       Tab(text: "Phụ kiện"),
                     ],
                   ),
-
+                  
                   // 2. Nội dung Tab (thay đổi theo index)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
@@ -626,35 +610,25 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
         mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 8.0,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
                   child: Text(
                     _selectedPlacement?.name ?? 'Chưa chọn phụ kiện trên móng',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 FilledButton.icon(
-                  onPressed: _selectedComponent == null
-                      ? null
-                      : _addSelectedComponent,
+                  onPressed: _selectedComponent == null ? null : _addSelectedComponent,
                   icon: const Icon(Icons.add, size: 16),
                   label: const Text('Thêm vào móng'),
                   style: FilledButton.styleFrom(
                     visualDensity: VisualDensity.compact,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     backgroundColor: Colors.pink,
                   ),
                 ),
@@ -723,9 +697,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
               _fingerGradients[i] = gradient == null ? null : [...gradient];
             }
           } else {
-            _fingerGradients[_selectedFingerIndex] = gradient == null
-                ? null
-                : [...gradient];
+            _fingerGradients[_selectedFingerIndex] = gradient == null ? null : [...gradient];
           }
         }),
       ),
@@ -755,21 +727,15 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
               children: [
                 ComponentGrid(
                   title: '',
-                  components: data.combinedComponents
-                      .where((item) => !item.isCustomerComponent)
-                      .toList(),
+                  components: data.combinedComponents.where((item) => !item.isCustomerComponent).toList(),
                   selectedComponent: _selectedComponent,
-                  onSelected: (component) =>
-                      setState(() => _selectedComponent = component),
+                  onSelected: (component) => setState(() => _selectedComponent = component),
                 ),
                 ComponentGrid(
                   title: '',
-                  components: data.combinedComponents
-                      .where((item) => item.isCustomerComponent)
-                      .toList(),
+                  components: data.combinedComponents.where((item) => item.isCustomerComponent).toList(),
                   selectedComponent: _selectedComponent,
-                  onSelected: (component) =>
-                      setState(() => _selectedComponent = component),
+                  onSelected: (component) => setState(() => _selectedComponent = component),
                 ),
               ],
             ),
@@ -807,8 +773,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
 
   void _showMessage(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 }
+

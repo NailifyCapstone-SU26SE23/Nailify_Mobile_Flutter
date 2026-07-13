@@ -32,9 +32,9 @@ class _ComponentGridState extends State<ComponentGrid> {
           Text(
             widget.title,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: Colors.grey.shade800,
-                ),
+              fontWeight: FontWeight.w700,
+              color: Colors.grey.shade800,
+            ),
           ),
           const SizedBox(height: 8),
         ],
@@ -50,7 +50,8 @@ class _ComponentGridState extends State<ComponentGrid> {
                 width: 110,
                 child: _ComponentCard(
                   component: component,
-                  isSelected: widget.selectedComponent?.id == component.id &&
+                  isSelected:
+                      widget.selectedComponent?.id == component.id &&
                       widget.selectedComponent?.isCustomerComponent ==
                           component.isCustomerComponent,
                   onTap: () => widget.onSelected(component),
@@ -212,7 +213,11 @@ class _TypeBadge extends StatelessWidget {
       ),
       child: Text(
         type.name.toUpperCase(),
-        style: TextStyle(fontSize: 8, color: badgeColor, fontWeight: FontWeight.w800),
+        style: TextStyle(
+          fontSize: 8,
+          color: badgeColor,
+          fontWeight: FontWeight.w800,
+        ),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),

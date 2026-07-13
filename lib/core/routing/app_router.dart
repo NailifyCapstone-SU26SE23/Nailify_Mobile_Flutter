@@ -147,9 +147,13 @@ class AppRouter {
             path: '/nail-variants/:id',
             pageBuilder: (context, state) {
               final id = int.tryParse(state.pathParameters['id'] ?? '');
+              final extra = state.extra as Map<String, dynamic>?;
               return CustomTransitionPage<void>(
                 key: state.pageKey,
-                child: NailVariantDetailScreen(nailVariantId: id ?? 0),
+                child: NailVariantDetailScreen(
+                  nailVariantId: id ?? 0,
+                  designName: extra?['designName'] as String?,
+                ),
                 transitionsBuilder:
                     (context, animation, secondaryAnimation, child) {
                       final offset = Tween<Offset>(

@@ -14,8 +14,13 @@ import '../../services/ar_try_on_service.dart';
 
 class NailVariantDetailScreen extends StatefulWidget {
   final int nailVariantId;
+  final String? designName;
 
-  const NailVariantDetailScreen({super.key, required this.nailVariantId});
+  const NailVariantDetailScreen({
+    super.key,
+    required this.nailVariantId,
+    this.designName,
+  });
 
   @override
   State<NailVariantDetailScreen> createState() =>
@@ -116,6 +121,7 @@ class _NailVariantDetailScreenState extends State<NailVariantDetailScreen> {
           }
           return _DetailContent(
             variant: snapshot.data!,
+            designName: widget.designName,
             launching: _launching,
             onTryOn: _openTryOn,
           );
@@ -127,6 +133,7 @@ class _NailVariantDetailScreenState extends State<NailVariantDetailScreen> {
 
 class _DetailContent extends StatefulWidget {
   final NailVariantModel variant;
+  final String? designName;
   final bool launching;
   final void Function(
     Future<void> Function(NailVariantModel, NailSurfaceModel?) launcher, {
@@ -136,6 +143,7 @@ class _DetailContent extends StatefulWidget {
 
   const _DetailContent({
     required this.variant,
+    this.designName,
     required this.launching,
     required this.onTryOn,
   });
@@ -202,6 +210,16 @@ class _DetailContentState extends State<_DetailContent> {
                   color: AppColors.textPrimary,
                 ),
               ),
+              if (widget.designName != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Thuộc bộ sưu tập: ${widget.designName}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
               const SizedBox(height: 8),
               Text(
                 PriceFormatter.format(widget.variant.price),
@@ -212,21 +230,32 @@ class _DetailContentState extends State<_DetailContent> {
                 ),
               ),
 
-              const SizedBox(height: 16),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
-              // 3. Các đặc điểm nổi bật (Chips)
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  if (widget.variant.nailShape != null)
-                    _DetailChip(label: widget.variant.nailShape!.name),
-                  if (widget.variant.nailSurface != null)
-                    _DetailChip(label: widget.variant.nailSurface!.name),
-                  if (widget.variant.duration != null)
-                    _DetailChip(label: '${widget.variant.duration} phút'),
-                ],
+              // 3. Thông số kỹ thuật (Specs Table)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Column(
+                  children: [
+                    if (widget.variant.nailShape != null)
+                      _buildSpecRow('Form móng', widget.variant.nailShape!.name),
+                    if (widget.variant.nailSurface != null) ...[
+                      if (widget.variant.nailShape != null)
+                        const Divider(height: 24, color: Colors.black12),
+                      _buildSpecRow('Bề mặt', widget.variant.nailSurface!.name),
+                    ],
+                    if (widget.variant.duration != null) ...[
+                      if (widget.variant.nailShape != null || widget.variant.nailSurface != null)
+                        const Divider(height: 24, color: Colors.black12),
+                      _buildSpecRow('Thời gian', '${widget.variant.duration} phút'),
+                    ],
+                  ],
+                ),
               ),
               const SizedBox(height: 24),
               _buildShapeMethodSelection(),
@@ -361,6 +390,26 @@ class _DetailContentState extends State<_DetailContent> {
                 ),
               ],
             ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSpecRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+            fontSize: 14,
           ),
         ),
       ],
@@ -569,27 +618,3 @@ class _ComponentChip extends StatelessWidget {
   }
 }
 
-class _DetailChip extends StatelessWidget {
-  final String label;
-
-  const _DetailChip({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: AppColors.primary,
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-}

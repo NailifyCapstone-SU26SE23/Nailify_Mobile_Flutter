@@ -104,7 +104,8 @@ class _DesignDetailContent extends StatelessWidget {
           '${PriceFormatter.format(design.minPrice).replaceAll(' VNĐ', '')} - ${PriceFormatter.format(design.maxPrice)}',
           style: const TextStyle(
             color: Color(0xFFFF66C4),
-            fontWeight: FontWeight.w800,
+            fontSize: 22,
+            fontWeight: FontWeight.w900,
           ),
         ),
         if (design.description.isNotEmpty) ...[
@@ -134,7 +135,7 @@ class _DesignDetailContent extends StatelessWidget {
           )
         else
           for (final variant in design.nailVariants)
-            _VariantSection(variant: variant),
+            _VariantSection(variant: variant, designName: design.name),
       ],
     );
   }
@@ -191,229 +192,83 @@ class _ImageGallery extends StatelessWidget {
 
 class _VariantSection extends StatelessWidget {
   final NailVariantModel variant;
+  final String designName;
 
-  const _VariantSection({required this.variant});
+  const _VariantSection({required this.variant, required this.designName});
 
   @override
   Widget build(BuildContext context) {
-    final grouped = <int, List<NailComponentModel>>{};
-    for (final component in variant.nailComponents) {
-      grouped.putIfAbsent(component.fingerIndex, () => []).add(component);
-    }
-
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: SizedBox(
-                  width: 82,
-                  height: 82,
-                  child: variant.imageUrl.isEmpty
-                      ? Container(
-                          color: const Color(0xFFF7E8F1),
-                          child: const Icon(Icons.spa_outlined),
-                        )
-                      : Image.network(variant.imageUrl, fit: BoxFit.cover),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      variant.name,
-                      style: const TextStyle(fontWeight: FontWeight.w800),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      PriceFormatter.format(variant.price),
-                      style: const TextStyle(
-                        color: Color(0xFFFF66C4),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        _SmallChip(label: variant.nailShape?.name ?? 'Shape'),
-                        _SmallChip(
-                          label: variant.nailSurface?.name ?? 'Surface',
-                        ),
-                        if (variant.duration != null)
-                          _SmallChip(label: '${variant.duration} min'),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => context.push(
+            '/nail-variants/${variant.nailVariantId}',
+            extra: {'designName': designName},
           ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () =>
-                      context.push('/nail-variants/${variant.nailVariantId}'),
-                  icon: const Icon(Icons.keyboard_arrow_up),
-                  label: const Text('Variant detail'),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          const Text(
-            'Components',
-            style: TextStyle(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 8),
-          for (var finger = 0; finger < 5; finger++)
-            _FingerComponents(
-              fingerIndex: finger,
-              components: grouped[finger] ?? const [],
-            ),
-          if (grouped[-1]?.isNotEmpty == true)
-            _FingerComponents(
-              fingerIndex: -1,
-              components: grouped[-1]!,
-              title: 'Shared',
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FingerComponents extends StatelessWidget {
-  final int fingerIndex;
-  final List<NailComponentModel> components;
-  final String? title;
-
-  const _FingerComponents({
-    required this.fingerIndex,
-    required this.components,
-    this.title,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (components.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 58,
-            child: Text(
-              title ?? _fingerName(fingerIndex),
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ),
-          Expanded(
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: components
-                  .map((component) => _ComponentChip(component: component))
-                  .toList(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _fingerName(int index) {
-    const names = ['Thumb', 'Index', 'Middle', 'Ring', 'Pinky'];
-    return index >= 0 && index < names.length ? names[index] : 'Finger $index';
-  }
-}
-
-class _ComponentChip extends StatelessWidget {
-  final NailComponentModel component;
-
-  const _ComponentChip({required this.component});
-
-  @override
-  Widget build(BuildContext context) {
-    final config = component.config;
-    final subtitle =
-        'x ${component.posX.toStringAsFixed(2)}, y ${component.posY.toStringAsFixed(2)}, scale ${config.scale.toStringAsFixed(2)}';
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 230),
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF7FB),
-        border: Border.all(color: Colors.black12),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 34,
-            height: 34,
-            child: component.component?.imageUrl.isNotEmpty == true
-                ? Image.network(
-                    component.component!.imageUrl,
-                    fit: BoxFit.contain,
-                  )
-                : const Icon(Icons.auto_awesome, color: Color(0xFFFF66C4)),
-          ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text(
-                  component.component?.name ??
-                      'Component ${component.componentId}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: SizedBox(
+                    width: 72,
+                    height: 72,
+                    child: variant.imageUrl.isEmpty
+                        ? Container(
+                            color: const Color(0xFFF7E8F1),
+                            child: const Icon(Icons.spa_outlined),
+                          )
+                        : Image.network(variant.imageUrl, fit: BoxFit.cover),
+                  ),
                 ),
-                Text(
-                  subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall,
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        variant.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        PriceFormatter.format(variant.price),
+                        style: const TextStyle(
+                          color: Color(0xFFFF66C4),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.only(left: 8),
+                  child: Icon(Icons.chevron_right, color: Colors.grey),
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class _SmallChip extends StatelessWidget {
-  final String label;
 
-  const _SmallChip({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Chip(
-      label: Text(label),
-      visualDensity: VisualDensity.compact,
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-    );
-  }
-}

@@ -282,6 +282,10 @@ class NailBookingCubit extends Cubit<NailBookingState> {
   Future<bool> holdSelectedSlot({int? nailVariantId}) async {
     final time = state.selectedTime;
     if (time == null) return false;
+    
+    // Nếu chọn luồng "Không chọn thợ", bỏ qua việc lấy holdToken
+    if (state.noArtistSelected) return true;
+    
     await _holdSlot(time, nailVariantId: nailVariantId);
     return state.holdToken != null;
   }

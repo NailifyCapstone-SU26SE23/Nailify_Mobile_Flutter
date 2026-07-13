@@ -250,7 +250,7 @@ class BookingApiService {
     String salonId,
     String bookingDate,
     String startTime,
-    String artistId,
+    String? artistId,
     String customerNailRequestId,
     Map<String, int> groupedExtraServices, {
     int? shapeMethodConfigId,
@@ -280,8 +280,8 @@ class BookingApiService {
       'salonId': salonId,
       'bookingDate': bookingDate,
       'startTime': startTime,
-      'nailArtistId': artistId,
-      'holdToken': holdToken,
+      if (artistId != null && artistId.isNotEmpty) 'nailArtistId': artistId,
+      if (holdToken != null && holdToken.isNotEmpty) 'holdToken': holdToken,
       'bookingItems': bookingItems,
       if (selectedPromotionIds != null && selectedPromotionIds.isNotEmpty)
         'selectedPromotionIds': selectedPromotionIds,

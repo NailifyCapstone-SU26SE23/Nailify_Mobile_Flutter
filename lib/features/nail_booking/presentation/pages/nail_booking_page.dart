@@ -168,9 +168,11 @@ class _NailBookingPageState extends State<NailBookingPage> {
         return;
       }
       // Chỉ tạo hold mới nếu chưa có token (tránh reset timer khi back/forward)
-      if (state.holdToken == null || !state.isHolding) {
-        final held = await _cubit.holdSelectedSlot(nailVariantId: _nailVariantId);
-        if (!held || !mounted) return;
+      if (!state.noArtistSelected) {
+        if (state.holdToken == null || !state.isHolding) {
+          final held = await _cubit.holdSelectedSlot(nailVariantId: _nailVariantId);
+          if (!held || !mounted) return;
+        }
       }
     }
 

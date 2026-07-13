@@ -101,9 +101,11 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
         return;
       }
       // Chỉ tạo hold mới nếu chưa có token (tránh reset timer khi back/forward)
-      if (state.holdToken == null || !state.isHolding) {
-        final held = await cubit.holdSelectedSlot();
-        if (!held || !mounted) return;
+      if (!state.noArtistSelected) {
+        if (state.holdToken == null || !state.isHolding) {
+          final held = await cubit.holdSelectedSlot();
+          if (!held || !mounted) return;
+        }
       }
     }
 

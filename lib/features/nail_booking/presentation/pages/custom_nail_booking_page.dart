@@ -365,20 +365,22 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
       if (customerNailRequestId.isEmpty) {
         throw Exception('ID yeu cau mong custom khong hop le.');
       }
-      if (salonId.isEmpty || artistId.isEmpty) {
-        throw Exception('Thieu thong tin chi nhanh hoac tho.');
+      if (salonId.isEmpty) {
+        throw Exception('Thieu thong tin chi nhanh.');
       }
+      
+      final isNoArtist = artistId.isEmpty;
 
       final response = await _apiService.createCustomNailBooking(
         salonId,
         _formatBookingDate(_selectedDate!),
         _normalizedSelectedTime,
-        artistId,
+        isNoArtist ? null : artistId,
         customerNailRequestId,
         _groupedServicesMap,
         shapeMethodConfigId: _selectedShapeMethodConfigId,
         selectedPromotionIds: _selectedPromotionIds,
-        holdToken: _holdToken,
+        holdToken: isNoArtist ? null : _holdToken,
       );
 
       if (!mounted) return;
@@ -483,10 +485,13 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
         return;
       }
       // Chỉ tạo hold mới nếu chưa có token (tránh reset timer khi back/forward)
-      if (_holdToken == null || !_isHolding) {
-        await _holdSlot(_selectedTime!);
-        if (!mounted) return;
-        if (_holdToken == null) return;
+      final bool isNoArtist = widget.nail.nailArtistId == null || widget.nail.nailArtistId!.isEmpty;
+      if (!isNoArtist) {
+        if (_holdToken == null || !_isHolding) {
+          await _holdSlot(_selectedTime!);
+          if (!mounted) return;
+          if (_holdToken == null) return;
+        }
       }
     }
 

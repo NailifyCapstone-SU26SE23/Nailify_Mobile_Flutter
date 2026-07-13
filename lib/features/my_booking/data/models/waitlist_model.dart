@@ -94,7 +94,8 @@ class WaitlistModel {
   final String staffName;
   final List<String> services;
   final WaitlistStatus status;
-  final DateTime holdUntil; // Thời hạn giữ chỗ (chỉ có ý nghĩa khi status == opened)
+  final DateTime
+  holdUntil; // Thời hạn giữ chỗ (chỉ có ý nghĩa khi status == opened)
   final DateTime registeredAt; // Thời điểm đăng ký
 
   const WaitlistModel({

@@ -22,10 +22,7 @@ class PersonalityResultCard extends StatelessWidget {
         children: [
           const Text(
             "We've unlocked your personality!",
-            style: TextStyle(
-              fontSize: 15,
-              color: AppColors.textPrimary,
-            ),
+            style: TextStyle(fontSize: 15, color: AppColors.textPrimary),
           ),
           const SizedBox(height: 12),
           RichText(

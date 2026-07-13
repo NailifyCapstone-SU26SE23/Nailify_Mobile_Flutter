@@ -6,7 +6,11 @@ class ColorSelectionGrid extends StatefulWidget {
   final String selectedColor;
   final Function(String) onChanged;
 
-  const ColorSelectionGrid({super.key, required this.selectedColor, required this.onChanged});
+  const ColorSelectionGrid({
+    super.key,
+    required this.selectedColor,
+    required this.onChanged,
+  });
 
   @override
   State<ColorSelectionGrid> createState() => _ColorSelectionGridState();
@@ -38,11 +42,17 @@ class _ColorSelectionGridState extends State<ColorSelectionGrid> {
                   selectedColor: AppColors.primary.withOpacity(0.15),
                   backgroundColor: Colors.white,
                   labelStyle: TextStyle(
-                    color: isSelected ? AppColors.primary : Colors.grey.shade600,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    color: isSelected
+                        ? AppColors.primary
+                        : Colors.grey.shade600,
+                    fontWeight: isSelected
+                        ? FontWeight.bold
+                        : FontWeight.normal,
                   ),
                   side: BorderSide(
-                    color: isSelected ? AppColors.primary : Colors.grey.shade300,
+                    color: isSelected
+                        ? AppColors.primary
+                        : Colors.grey.shade300,
                   ),
                   onSelected: (selected) {
                     if (selected) {
@@ -84,16 +94,28 @@ class _ColorSelectionGridState extends State<ColorSelectionGrid> {
                       color: colorValue,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: isSelected ? AppColors.primary : Colors.grey.shade300,
+                        color: isSelected
+                            ? AppColors.primary
+                            : Colors.grey.shade300,
                         width: isSelected ? 3 : 1,
                       ),
                       boxShadow: [
                         if (isSelected)
-                          BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))
+                          BoxShadow(
+                            color: AppColors.primary.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
                       ],
                     ),
                     child: isSelected
-                        ? Icon(Icons.check, color: colorValue.computeLuminance() > 0.5 ? Colors.black87 : Colors.white, size: 24)
+                        ? Icon(
+                            Icons.check,
+                            color: colorValue.computeLuminance() > 0.5
+                                ? Colors.black87
+                                : Colors.white,
+                            size: 24,
+                          )
                         : null,
                   ),
                   const SizedBox(height: 8),
@@ -104,8 +126,12 @@ class _ColorSelectionGridState extends State<ColorSelectionGrid> {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 11,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      color: isSelected ? AppColors.textPrimary : Colors.grey.shade600,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      color: isSelected
+                          ? AppColors.textPrimary
+                          : Colors.grey.shade600,
                     ),
                   ),
                 ],

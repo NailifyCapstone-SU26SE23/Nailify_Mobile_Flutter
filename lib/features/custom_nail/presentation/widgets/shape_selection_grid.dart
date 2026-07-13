@@ -6,7 +6,11 @@ class ShapeSelectionGrid extends StatelessWidget {
   final String selectedShape;
   final Function(String) onChanged;
 
-  const ShapeSelectionGrid({super.key, required this.selectedShape, required this.onChanged});
+  const ShapeSelectionGrid({
+    super.key,
+    required this.selectedShape,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -29,16 +33,31 @@ class ShapeSelectionGrid extends StatelessWidget {
           onTap: () => onChanged(shapes[index]),
           child: Container(
             decoration: BoxDecoration(
-              color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.white,
+              color: isSelected
+                  ? AppColors.primary.withOpacity(0.1)
+                  : Colors.white,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: isSelected ? AppColors.primary : AppColors.borderLight, width: 2),
+              border: Border.all(
+                color: isSelected ? AppColors.primary : AppColors.borderLight,
+                width: 2,
+              ),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.whatshot_outlined, color: isSelected ? AppColors.primary : Colors.grey),
+                Icon(
+                  Icons.whatshot_outlined,
+                  color: isSelected ? AppColors.primary : Colors.grey,
+                ),
                 const SizedBox(height: 8),
-                Text(shapes[index], style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                Text(
+                  shapes[index],
+                  style: TextStyle(
+                    fontWeight: isSelected
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                  ),
+                ),
               ],
             ),
           ),

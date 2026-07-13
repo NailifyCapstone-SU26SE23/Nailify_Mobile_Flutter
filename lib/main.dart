@@ -50,10 +50,7 @@ void main() async {
   final localeService = LocaleService(prefs);
 
   runApp(
-    ChangeNotifierProvider.value(
-      value: localeService,
-      child: const CoreApp(),
-    ),
+    ChangeNotifierProvider.value(value: localeService, child: const CoreApp()),
   );
 }
 

@@ -20,6 +20,7 @@ class CustomerNailModel {
   final String? imageUrl;
   final int? nailShapeId;
   final int? nailSurfaceId;
+  final int customerNailPrice;
   final String? customColor;
   final Map<String, dynamic>? nailShape;
   final Map<String, dynamic>? nailSurface;
@@ -49,6 +50,7 @@ class CustomerNailModel {
     this.imageUrl,
     this.nailShapeId,
     this.nailSurfaceId,
+    required this.customerNailPrice,
     this.customColor,
     this.nailShape,
     this.nailSurface,
@@ -72,8 +74,12 @@ class CustomerNailModel {
       approvedArtistId: json['approvedArtistId']?.toString(),
       price: (json['price'] as num?)?.toInt() ?? 0,
       duration: (json['duration'] as num?)?.toInt() ?? 0,
-      createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt']) : null,
-      updatedAt: json['updatedAt'] != null ? DateTime.tryParse(json['updatedAt']) : null,
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'])
+          : null,
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.tryParse(json['updatedAt'])
+          : null,
       artistFullName: json['artistFullName']?.toString(),
       salonName: json['salonName']?.toString(),
 
@@ -82,10 +88,12 @@ class CustomerNailModel {
       imageUrl: customerNail['imageUrl']?.toString(),
       nailShapeId: (customerNail['nailShapeId'] as num?)?.toInt(),
       nailSurfaceId: (customerNail['nailSurfaceId'] as num?)?.toInt(),
+      customerNailPrice: (customerNail['price'] as num?)?.toInt() ?? 0,
       customColor: customerNail['customColor']?.toString(),
       nailShape: customerNail['nailShape'] as Map<String, dynamic>?,
       nailSurface: customerNail['nailSurface'] as Map<String, dynamic>?,
-      customerNailComponents: customerNail['customerNailComponents'] as List<dynamic>? ?? [],
+      customerNailComponents:
+          customerNail['customerNailComponents'] as List<dynamic>? ?? [],
       customerNailStatus: customerNail['status']?.toString(),
 
       // Nested salon & artist data (giữ nguyên để dùng khi cần)
@@ -100,7 +108,9 @@ class CustomerNailModel {
 
   /// Tên thợ đã duyệt (lấy từ field artistFullName hoặc nested approvedArtist)
   String get stylistName {
-    if (artistFullName != null && artistFullName!.isNotEmpty) return artistFullName!;
+    if (artistFullName != null && artistFullName!.isNotEmpty) {
+      return artistFullName!;
+    }
     if (approvedArtistData != null) {
       final first = approvedArtistData!['firstName']?.toString() ?? '';
       final last = approvedArtistData!['lastName']?.toString() ?? '';

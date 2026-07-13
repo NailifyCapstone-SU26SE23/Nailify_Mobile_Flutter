@@ -11,7 +11,6 @@ import '../cubit/nail_booking_cubit.dart';
 import '../widgets/branch_selection_list.dart';
 import '../widgets/booking_service_selection.dart';
 import '../widgets/booking_date_selection.dart';
-import '../widgets/booking_seat_selection.dart';
 import '../widgets/booking_promotion_sheet.dart';
 import '../widgets/booking_stylist_selection.dart';
 import '../widgets/booking_time_selection.dart';
@@ -110,7 +109,9 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
 
     if (_currentStep < 3) {
       _pageController.nextPage(
-          duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     } else {
       _executeBooking(state, cubit);
     }
@@ -118,11 +119,13 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
 
 
   Future<void> _executeBooking(
-      NailBookingState state, NailBookingCubit cubit) async {
-    final promos =
-        state.selectedPromotions.whereType<PromotionModel>().toList();
-    final grouped =
-        _groupedServicesMap(state.selectedExtraServices);
+    NailBookingState state,
+    NailBookingCubit cubit,
+  ) async {
+    final promos = state.selectedPromotions
+        .whereType<PromotionModel>()
+        .toList();
+    final grouped = _groupedServicesMap(state.selectedExtraServices);
     final formattedDate = cubit.formatBookingDate(state.selectedDate!);
     final formattedTime = state.selectedTime!.length == 5
         ? '${state.selectedTime}:00'
@@ -132,15 +135,20 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
       'salonId': state.selectedBranch!['salonId'],
       'bookingDate': formattedDate,
       'startTime': formattedTime,
-      'nailArtistId':
-          state.noArtistSelected ? null : state.selectedStylist!['nailArtistId'],
+      'nailArtistId': state.noArtistSelected
+          ? null
+          : state.selectedStylist!['nailArtistId'],
       'holdToken': null,
-      'bookingItems': grouped.entries.map((e) => {
-            'nailVariantId': null,
-            'serviceId': e.key,
-            'customerNailId': null,
-            'quantity': e.value,
-          }).toList(),
+      'bookingItems': grouped.entries
+          .map(
+            (e) => {
+              'nailVariantId': null,
+              'serviceId': e.key,
+              'customerNailId': null,
+              'quantity': e.value,
+            },
+          )
+          .toList(),
     };
 
     try {
@@ -151,15 +159,18 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
             : promos.map((p) => p.promotionId).toList(),
       );
       if (!mounted) return;
-      context.go('/booking-success', extra: {
-        'bookingId': response['bookingId']?.toString() ?? '',
-        'serviceName': _baseServiceName,
-        'date': state.selectedDate,
-        'time': formattedTime,
-        'stylistName': state.noArtistSelected
-            ? 'Tự động phân công'
-            : state.selectedStylist!['fullName'],
-      });
+      context.go(
+        '/booking-success',
+        extra: {
+          'bookingId': response['bookingId']?.toString() ?? '',
+          'serviceName': _baseServiceName,
+          'date': state.selectedDate,
+          'time': formattedTime,
+          'stylistName': state.noArtistSelected
+              ? 'Tự động phân công'
+              : state.selectedStylist!['fullName'],
+        },
+      );
     } catch (_) {
       // Error đã được emit vào state.errorMessage và xử lý bởi BlocConsumer
     }
@@ -189,11 +200,11 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
     return total;
   }
 
-  Map<String, dynamic>? _getServiceDetail(
-      String id, NailBookingCubit cubit) {
+  Map<String, dynamic>? _getServiceDetail(String id, NailBookingCubit cubit) {
     if (id == _baseServiceId) return widget.baseService;
-    final matches = cubit.availableServices
-        .where((s) => cubit.serviceIdOf(s) == id);
+    final matches = cubit.availableServices.where(
+      (s) => cubit.serviceIdOf(s) == id,
+    );
     return matches.isNotEmpty ? matches.first : null;
   }
 
@@ -209,12 +220,17 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
           onPressed: () => _currentStep > 0
               ? _pageController.previousPage(
                   duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut)
+                  curve: Curves.easeInOut,
+                )
               : context.pop(),
         ),
-        title: const Text('Đặt Lịch Dịch Vụ',
-            style: TextStyle(
-                fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+        title: const Text(
+          'Đặt Lịch Dịch Vụ',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
@@ -241,8 +257,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                 child: PageView(
                   controller: _pageController,
                   physics: const NeverScrollableScrollPhysics(),
-                  onPageChanged: (idx) =>
-                      setState(() => _currentStep = idx),
+                  onPageChanged: (idx) => setState(() => _currentStep = idx),
                   children: [
                     // ── STEP 0: SALON ──────────────────────────────────
                     SingleChildScrollView(
@@ -253,7 +268,8 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                         selectedBranchId: state.selectedBranch?['salonId'],
                         onBranchSelected: (dynamic branch) =>
                             cubit.selectBranch(
-                                Map<String, dynamic>.from(branch as Map)),
+                              Map<String, dynamic>.from(branch as Map),
+                            ),
                       ),
                     ),
 
@@ -276,9 +292,13 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Dịch vụ đã chọn',
-                              style: TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.bold)),
+                          const Text(
+                            'Dịch vụ đã chọn',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           const SizedBox(height: 12),
                           _buildBaseServiceCard(),
                           const SizedBox(height: 24),
@@ -371,69 +391,92 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
 
   // ── SUMMARY ────────────────────────────────────────────────────────────────
   Widget _buildSummaryStep(
-      BuildContext context, NailBookingState state, NailBookingCubit cubit) {
-    final promos =
-        state.selectedPromotions.whereType<PromotionModel>().toList();
+    BuildContext context,
+    NailBookingState state,
+    NailBookingCubit cubit,
+  ) {
+    final promos = state.selectedPromotions
+        .whereType<PromotionModel>()
+        .toList();
     final subtotal = _totalPrice(state, cubit);
-    final discount =
-        cubit.discountAmount(subtotal: subtotal, promotions: promos);
+    final discount = cubit.discountAmount(
+      subtotal: subtotal,
+      promotions: promos,
+    );
     final finalPrice = (subtotal - discount).clamp(0, double.maxFinite).toInt();
     final grouped = _groupedServicesMap(state.selectedExtraServices);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Xác nhận thông tin',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const Text(
+          'Xác nhận thông tin',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.borderLight)),
-          child: Column(children: [
-            _buildSummaryRow(Icons.storefront, 'Chi nhánh',
-                state.selectedBranch?['name'] ?? ''),
-            // _buildSummaryRow(
-            //     Icons.chair,
-            //     'Ghế',
-            //     state.selectedSeatId != null
-            //         ? 'Ghế ${state.selectedSeatId!.split('_').last}'
-            //         : ''),
-            _buildSummaryRow(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.borderLight),
+          ),
+          child: Column(
+            children: [
+              _buildSummaryRow(
+                Icons.storefront,
+                'Chi nhánh',
+                state.selectedBranch?['name'] ?? '',
+              ),
+              // _buildSummaryRow(
+              //     Icons.chair,
+              //     'Ghế',
+              //     state.selectedSeatId != null
+              //         ? 'Ghế ${state.selectedSeatId!.split('_').last}'
+              //         : ''),
+              _buildSummaryRow(
                 Icons.calendar_month,
                 'Ngày hẹn',
                 state.selectedDate != null
                     ? '${state.selectedDate!.day}/${state.selectedDate!.month}/${state.selectedDate!.year}'
-                    : ''),
-            _buildSummaryRow(Icons.access_time, 'Thời gian',
-                state.selectedTime ?? ''),
-            _buildSummaryRow(
+                    : '',
+              ),
+              _buildSummaryRow(
+                Icons.access_time,
+                'Thời gian',
+                state.selectedTime ?? '',
+              ),
+              _buildSummaryRow(
                 Icons.face,
                 'Thợ thực hiện',
                 state.noArtistSelected
                     ? 'Tự động phân công'
-                    : (state.selectedStylist?['fullName'] ?? '')),
-          ]),
+                    : (state.selectedStylist?['fullName'] ?? ''),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 24),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.borderLight)),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.borderLight),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Chi tiết thanh toán',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const Text(
+                'Chi tiết thanh toán',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
               const SizedBox(height: 16),
               ...grouped.entries.map((entry) {
                 final svc = _getServiceDetail(entry.key, cubit);
                 final name = svc?['name'] ?? cubit.serviceNameById(entry.key);
-                final price = (svc?['price'] as num?)?.toInt() ??
+                final price =
+                    (svc?['price'] as num?)?.toInt() ??
                     cubit.servicePriceById(entry.key);
                 final qty = entry.value;
                 return Padding(
@@ -445,12 +488,16 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                       Expanded(
                         child: Padding(
                           padding: const EdgeInsets.only(right: 12.0),
-                          child: Text('${qty}x $name',
-                              style: const TextStyle(fontSize: 14)),
+                          child: Text(
+                            '${qty}x $name',
+                            style: const TextStyle(fontSize: 14),
+                          ),
                         ),
                       ),
-                      Text(PriceFormatter.format(price * qty),
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text(
+                        PriceFormatter.format(price * qty),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ],
                   ),
                 );
@@ -461,11 +508,17 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Tạm tính:',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text(PriceFormatter.format(subtotal),
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 16)),
+                  const Text(
+                    'Tạm tính:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    PriceFormatter.format(subtotal),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
                 ],
               ),
               if (discount > 0)
@@ -474,15 +527,21 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Giảm giá:',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green)),
-                      Text('-${PriceFormatter.format(discount)}',
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green,
-                              fontSize: 16)),
+                      const Text(
+                        'Giảm giá:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
+                        ),
+                      ),
+                      Text(
+                        '-${PriceFormatter.format(discount)}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
+                          fontSize: 16,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -490,13 +549,18 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Tổng cộng:',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text(PriceFormatter.format(finalPrice),
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
-                          fontSize: 18)),
+                  const Text(
+                    'Tổng cộng:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    PriceFormatter.format(finalPrice),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                      fontSize: 18,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -507,9 +571,13 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
   }
 
   Widget _buildPromotionSelector(
-      BuildContext context, NailBookingState state, NailBookingCubit cubit) {
-    final promos =
-        state.selectedPromotions.whereType<PromotionModel>().toList();
+    BuildContext context,
+    NailBookingState state,
+    NailBookingCubit cubit,
+  ) {
+    final promos = state.selectedPromotions
+        .whereType<PromotionModel>()
+        .toList();
     final hasPromos = promos.isNotEmpty;
     return GestureDetector(
       onTap: () => showModalBottomSheet(
@@ -529,31 +597,37 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
               : Colors.grey.shade50,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-              color: hasPromos
-                  ? AppColors.primary.withOpacity(0.5)
-                  : Colors.grey.shade300),
-        ),
-        child: Row(children: [
-          Icon(Icons.local_offer_outlined,
-              size: 18,
-              color: hasPromos ? AppColors.primary : Colors.grey.shade500),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              hasPromos
-                  ? 'Đã chọn ${promos.length} khuyến mãi'
-                  : 'Chọn voucher / khuyến mãi',
-              style: TextStyle(
-                  color:
-                      hasPromos ? AppColors.primary : Colors.grey.shade600,
-                  fontWeight:
-                      hasPromos ? FontWeight.w600 : FontWeight.normal,
-                  fontSize: 14),
-            ),
+            color: hasPromos
+                ? AppColors.primary.withOpacity(0.5)
+                : Colors.grey.shade300,
           ),
-          Icon(Icons.chevron_right,
-              color: hasPromos ? AppColors.primary : Colors.grey.shade400),
-        ]),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.local_offer_outlined,
+              size: 18,
+              color: hasPromos ? AppColors.primary : Colors.grey.shade500,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                hasPromos
+                    ? 'Đã chọn ${promos.length} khuyến mãi'
+                    : 'Chọn voucher / khuyến mãi',
+                style: TextStyle(
+                  color: hasPromos ? AppColors.primary : Colors.grey.shade600,
+                  fontWeight: hasPromos ? FontWeight.w600 : FontWeight.normal,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: hasPromos ? AppColors.primary : Colors.grey.shade400,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -566,50 +640,78 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.primary.withOpacity(0.3)),
       ),
-      child: Row(children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration:
-              const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-          child:
-              const Icon(Icons.spa_outlined, color: AppColors.primary, size: 20),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(_baseServiceName,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                      color: AppColors.textPrimary)),
-              const SizedBox(height: 4),
-              Text(DurationFormatter.format(_baseServiceDuration),
-                  style: const TextStyle(color: Colors.grey, fontSize: 12)),
-            ],
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.spa_outlined,
+              color: AppColors.primary,
+              size: 20,
+            ),
           ),
-        ),
-        Text(PriceFormatter.format(_baseServicePrice),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _baseServiceName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  DurationFormatter.format(_baseServiceDuration),
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            PriceFormatter.format(_baseServicePrice),
             style: const TextStyle(
-                fontWeight: FontWeight.bold, color: AppColors.primary)),
-      ]),
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildSummaryRow(IconData icon, String title, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
-      child: Row(children: [
-        Icon(icon, size: 20, color: AppColors.primary),
-        const SizedBox(width: 12),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-          Text(value,
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-        ]),
-      ]),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: AppColors.primary),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -650,23 +752,28 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(4, (index) {
           final isCompleted = index <= _currentStep;
-          return Row(children: [
-            CircleAvatar(
-              radius: 12,
-              backgroundColor:
-                  isCompleted ? AppColors.primary : Colors.grey.shade300,
-              child: Text('${index + 1}',
-                  style:
-                      const TextStyle(color: Colors.white, fontSize: 11)),
-            ),
-            if (index < 3)
-              Container(
+          return Row(
+            children: [
+              CircleAvatar(
+                radius: 12,
+                backgroundColor: isCompleted
+                    ? AppColors.primary
+                    : Colors.grey.shade300,
+                child: Text(
+                  '${index + 1}',
+                  style: const TextStyle(color: Colors.white, fontSize: 11),
+                ),
+              ),
+              if (index < 3)
+                Container(
                   width: 30,
                   height: 2,
                   color: index < _currentStep
                       ? AppColors.primary
-                      : Colors.grey.shade300),
-          ]);
+                      : Colors.grey.shade300,
+                ),
+            ],
+          );
         }),
       ),
     );
@@ -679,9 +786,10 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -5))
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
         ],
       ),
       child: Row(
@@ -696,16 +804,22 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 15),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: state.isSubmitting
                 ? const SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
-                        color: Colors.white, strokeWidth: 2))
-                : Text(_currentStep == 3 ? 'Xác nhận Đặt lịch' : 'Tiếp tục',
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : Text(
+                    _currentStep == 3 ? 'Xác nhận Đặt lịch' : 'Tiếp tục',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
           ),
         ],
       ),

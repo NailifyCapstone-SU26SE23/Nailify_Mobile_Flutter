@@ -115,11 +115,18 @@ class NailBookingState extends Equatable {
       services: services ?? this.services,
       artists: artists ?? this.artists,
       timeSlots: timeSlots ?? this.timeSlots,
-      selectedBranch: clearBranch ? null : (selectedBranch ?? this.selectedBranch),
-      selectedSeatId: clearSeat ? null : (selectedSeatId ?? this.selectedSeatId),
-      selectedExtraServices: selectedExtraServices ?? this.selectedExtraServices,
+      selectedBranch: clearBranch
+          ? null
+          : (selectedBranch ?? this.selectedBranch),
+      selectedSeatId: clearSeat
+          ? null
+          : (selectedSeatId ?? this.selectedSeatId),
+      selectedExtraServices:
+          selectedExtraServices ?? this.selectedExtraServices,
       selectedDate: clearDate ? null : (selectedDate ?? this.selectedDate),
-      selectedStylist: clearStylist ? null : (selectedStylist ?? this.selectedStylist),
+      selectedStylist: clearStylist
+          ? null
+          : (selectedStylist ?? this.selectedStylist),
       noArtistSelected: noArtistSelected ?? this.noArtistSelected,
       selectedTime: clearTime ? null : (selectedTime ?? this.selectedTime),
       selectedPromotions: selectedPromotions ?? this.selectedPromotions,

@@ -45,23 +45,23 @@ class CustomerComponentCard extends StatelessWidget {
                 height: 60,
                 child: component.imageUrl.isEmpty
                     ? Container(
-                  color: Colors.grey[200],
-                  child: Icon(
-                    Icons.image_outlined,
-                    size: 30,
-                    color: Colors.grey[400],
-                  ),
-                )
+                        color: Colors.grey[200],
+                        child: Icon(
+                          Icons.image_outlined,
+                          size: 30,
+                          color: Colors.grey[400],
+                        ),
+                      )
                     : Image.network(
-                  component.imageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: Colors.grey[200],
-                      child: const Icon(Icons.broken_image),
-                    );
-                  },
-                ),
+                        component.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey[200],
+                            child: const Icon(Icons.broken_image),
+                          );
+                        },
+                      ),
               ),
             ),
             const SizedBox(width: 12),

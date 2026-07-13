@@ -103,12 +103,16 @@ class _ProfilePageState extends State<ProfilePage> {
                     : null,
                 onBackgroundImageError: avatarUrl != null
                     ? (_, _) {
-                  // Log error silently or show debug message only in development
-                  debugPrint('Failed to load avatar: $avatarUrl');
-                }
+                        // Log error silently or show debug message only in development
+                        debugPrint('Failed to load avatar: $avatarUrl');
+                      }
                     : null,
                 child: avatarUrl == null
-                    ? const Icon(Icons.person, size: 60, color: AppColors.primary)
+                    ? const Icon(
+                        Icons.person,
+                        size: 60,
+                        color: AppColors.primary,
+                      )
                     : null,
               ),
             ),
@@ -170,11 +174,7 @@ class ProfileInfoTile extends StatelessWidget {
   final String label;
   final String value;
 
-  const ProfileInfoTile({
-    super.key,
-    required this.label,
-    required this.value,
-  });
+  const ProfileInfoTile({super.key, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {

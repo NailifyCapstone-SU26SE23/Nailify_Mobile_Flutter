@@ -46,7 +46,9 @@ class PerfectMatchPage extends StatelessWidget {
                   result: PerfectMatchMockData.mainResult,
                   onBookPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Booking feature coming soon.')),
+                      const SnackBar(
+                        content: Text('Booking feature coming soon.'),
+                      ),
                     );
                   },
                   onTryAnotherAnalysis: () => context.go('/quiz'),

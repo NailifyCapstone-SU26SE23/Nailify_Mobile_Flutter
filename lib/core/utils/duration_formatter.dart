@@ -1,5 +1,5 @@
 class DurationFormatter {
-    static String format(dynamic minutesRaw) {
+  static String format(dynamic minutesRaw) {
     if (minutesRaw == null) return '0 phút';
 
     int minutes = 0;

@@ -19,7 +19,13 @@ class CustomerStudioPage extends StatelessWidget {
         child: Scaffold(
           backgroundColor: AppColors.background,
           appBar: AppBar(
-            title: const Text('My Studio', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+            title: const Text(
+              'My Studio',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
             centerTitle: true,
             backgroundColor: Colors.white,
             elevation: 0,
@@ -32,7 +38,9 @@ class CustomerStudioPage extends StatelessWidget {
               tabAlignment: TabAlignment.start,
               tabs: [
                 Tab(text: 'Tất cả'),
-                Tab(text: 'Đang xử lý'), // Pending, Review, Assigned, Reviewed, Quoted
+                Tab(
+                  text: 'Đang xử lý',
+                ), // Pending, Review, Assigned, Reviewed, Quoted
                 Tab(text: 'Đã duyệt'),
                 Tab(text: 'Từ chối'),
               ],
@@ -51,7 +59,14 @@ class CustomerStudioPage extends StatelessWidget {
                 return TabBarView(
                   children: [
                     _buildList(context, state.nails, null), // Tất cả
-                    _buildList(context, state.nails, ['Pending', 'PendingReview', 'Review', 'Assigned', 'Reviewed', 'Quoted']),
+                    _buildList(context, state.nails, [
+                      'Pending',
+                      'PendingReview',
+                      'Review',
+                      'Assigned',
+                      'Reviewed',
+                      'Quoted',
+                    ]),
                     _buildList(context, state.nails, ['Approved']),
                     _buildList(context, state.nails, ['Rejected']),
                   ],
@@ -64,7 +79,13 @@ class CustomerStudioPage extends StatelessWidget {
             onPressed: () => context.push('/custom-nail'),
             backgroundColor: AppColors.primary,
             icon: const Icon(Icons.add, color: Colors.white),
-            label: const Text('Tạo mẫu mới', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            label: const Text(
+              'Tạo mẫu mới',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ),
       ),
@@ -72,7 +93,11 @@ class CustomerStudioPage extends StatelessWidget {
   }
 
   /// [statuses] == null => hiển thị tất cả
-  Widget _buildList(BuildContext context, List<CustomerNailModel> allNails, List<String>? statuses) {
+  Widget _buildList(
+    BuildContext context,
+    List<CustomerNailModel> allNails,
+    List<String>? statuses,
+  ) {
     final items = statuses == null
         ? allNails
         : allNails.where((n) => statuses.contains(n.status)).toList();
@@ -82,9 +107,16 @@ class CustomerStudioPage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.design_services_outlined, size: 64, color: Colors.grey.shade300),
+            Icon(
+              Icons.design_services_outlined,
+              size: 64,
+              color: Colors.grey.shade300,
+            ),
             const SizedBox(height: 16),
-            const Text('Chưa có yêu cầu duyệt nào.', style: TextStyle(color: Colors.grey, fontSize: 16)),
+            const Text(
+              'Chưa có yêu cầu duyệt nào.',
+              style: TextStyle(color: Colors.grey, fontSize: 16),
+            ),
           ],
         ),
       );
@@ -99,7 +131,9 @@ class CustomerStudioPage extends StatelessWidget {
           return StudioNailCard(
             nail: items[index],
             // Navigate bằng customerNailRequestId
-            onTap: () => context.push('/my-studio/${items[index].customerNailRequestId}'),
+            onTap: () => context.push(
+              '/my-studio/${items[index].customerNailRequestId}',
+            ),
           );
         },
       ),

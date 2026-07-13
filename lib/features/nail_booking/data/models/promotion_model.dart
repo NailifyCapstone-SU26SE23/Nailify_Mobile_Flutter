@@ -28,6 +28,9 @@ class PromotionModel {
   });
 
   factory PromotionModel.fromJson(Map<String, dynamic> json) {
+    final status = json['status']?.toString() ?? '';
+    final explicitSelectable = json['isSelectable'];
+
     return PromotionModel(
       promotionId: (json['promotionId'] as num?)?.toInt() ?? 0,
       name: json['name']?.toString() ?? '',
@@ -38,8 +41,10 @@ class PromotionModel {
       discountValue: json['discountValue'] as num? ?? 0,
       startDate: DateTime.tryParse(json['startDate']?.toString() ?? ''),
       endDate: DateTime.tryParse(json['endDate']?.toString() ?? ''),
-      status: json['status']?.toString() ?? '',
-      isSelectable: json['isSelectable'] == true,
+      status: status,
+      isSelectable: explicitSelectable is bool
+          ? explicitSelectable
+          : status.toLowerCase() == 'active',
       imageUrl: json['imageUrl']?.toString(),
     );
   }
@@ -52,9 +57,9 @@ class PromotionModel {
       return '$value% off';
     }
     final value = discountValue.round().toString().replaceAllMapped(
-          RegExp(r'\B(?=(\d{3})+(?!\d))'),
-          (_) => ',',
-        );
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (_) => ',',
+    );
     return '$value VND off';
   }
 }

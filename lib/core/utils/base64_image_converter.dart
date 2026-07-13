@@ -27,7 +27,6 @@ class Base64ImageConverter {
       }
 
       return base64Decode(cleanBase64);
-
     } catch (e) {
       return null;
     }

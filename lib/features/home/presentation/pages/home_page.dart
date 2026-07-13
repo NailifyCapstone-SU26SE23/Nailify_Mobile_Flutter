@@ -76,7 +76,10 @@ Widget _buildCallToAction() {
           ),
 
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 56.0, horizontal: 24.0),
+            padding: const EdgeInsets.symmetric(
+              vertical: 56.0,
+              horizontal: 24.0,
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.max,
               children: [
@@ -125,7 +128,10 @@ Widget _buildCallToAction() {
                     backgroundColor: AppColors.textPrimary,
                     foregroundColor: AppColors.surface,
                     elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 28,
+                      vertical: 16,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),

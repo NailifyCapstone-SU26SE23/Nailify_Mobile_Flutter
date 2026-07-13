@@ -36,7 +36,8 @@ class NailVariantModel {
   factory NailVariantModel.fromJson(Map<String, dynamic> json) {
     final shapeJson = json['nailShape'] ?? json['NailShape'];
     final surfaceJson = json['nailSurface'] ?? json['NailSurface'];
-    final componentsJson = json['nailComponents'] ?? json['NailComponents'] ?? [];
+    final componentsJson =
+        json['nailComponents'] ?? json['NailComponents'] ?? [];
     return NailVariantModel(
       nailVariantId: _asInt(json['nailVariantId'] ?? json['NailVariantId']),
       name: (json['name'] ?? json['Name'] ?? '').toString(),
@@ -47,10 +48,21 @@ class NailVariantModel {
       duration: _asNullableInt(json['duration'] ?? json['Duration']),
       imageUrl: (json['imageUrl'] ?? json['ImageUrl'] ?? '').toString(),
       colorJson: _asNullableJsonString(json['colorJson'] ?? json['ColorJson']),
-      nailShape: shapeJson is Map ? NailShapeModel.fromJson(Map<String, dynamic>.from(shapeJson)) : null,
-      nailSurface: surfaceJson is Map ? NailSurfaceModel.fromJson(Map<String, dynamic>.from(surfaceJson)) : null,
+      nailShape: shapeJson is Map
+          ? NailShapeModel.fromJson(Map<String, dynamic>.from(shapeJson))
+          : null,
+      nailSurface: surfaceJson is Map
+          ? NailSurfaceModel.fromJson(Map<String, dynamic>.from(surfaceJson))
+          : null,
       nailComponents: componentsJson is List
-          ? componentsJson.whereType<Map>().map((item) => NailComponentModel.fromJson(Map<String, dynamic>.from(item))).toList()
+          ? componentsJson
+                .whereType<Map>()
+                .map(
+                  (item) => NailComponentModel.fromJson(
+                    Map<String, dynamic>.from(item),
+                  ),
+                )
+                .toList()
           : const [],
     );
   }

@@ -87,9 +87,9 @@ class _BookingRatingPageState extends State<BookingRatingPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Submit rating failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Submit rating failed: $e')));
     }
   }
 
@@ -154,9 +154,7 @@ class _BookingRatingPageState extends State<BookingRatingPage> {
             hintText: 'Share your experience',
             filled: true,
             fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
         const SizedBox(height: 16),
@@ -212,7 +210,9 @@ class _BookingRatingPageState extends State<BookingRatingPage> {
                 ),
               ),
               TextButton(
-                onPressed: _isSubmitting ? null : () => setState(() => _image = null),
+                onPressed: _isSubmitting
+                    ? null
+                    : () => setState(() => _image = null),
                 child: const Text('Remove'),
               ),
             ],
@@ -279,11 +279,7 @@ class _BookingRatingPageState extends State<BookingRatingPage> {
     );
   }
 
-  Widget _buildScoreCard(
-    String label,
-    int value,
-    ValueChanged<int> onChanged,
-  ) {
+  Widget _buildScoreCard(String label, int value, ValueChanged<int> onChanged) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -328,10 +324,7 @@ class _BookingRatingPageState extends State<BookingRatingPage> {
       child: Row(
         children: [
           Expanded(child: Text(label)),
-          Text(
-            '$score/5',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+          Text('$score/5', style: const TextStyle(fontWeight: FontWeight.bold)),
         ],
       ),
     );

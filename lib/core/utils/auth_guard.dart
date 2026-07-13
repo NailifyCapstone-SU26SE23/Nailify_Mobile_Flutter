@@ -25,4 +25,4 @@ class AuthGuard {
       context.push('/login');
     }
   }
-}
+}

@@ -21,7 +21,10 @@ class PromotionApiService {
     if (scope != null) queryParams['scope'] = scope;
     if (discountType != null) queryParams['discountType'] = discountType;
 
-    final response = await _apiClient.get('/Promotions', queryParameters: queryParams);
+    final response = await _apiClient.get(
+      '/Promotions',
+      queryParameters: queryParams,
+    );
 
     final items = response.data['data']?['items'] as List<dynamic>? ?? [];
     return items

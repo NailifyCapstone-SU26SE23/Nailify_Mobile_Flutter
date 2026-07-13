@@ -181,10 +181,7 @@ class _WaitlistTabState extends State<WaitlistTab> {
           const SizedBox(height: 8),
           Text(
             'Khi khung giờ bạn chờ có chỗ trống,\nbạn sẽ nhận được thông báo tại đây.',
-            style: TextStyle(
-              color: Colors.grey.shade500,
-              height: 1.5,
-            ),
+            style: TextStyle(color: Colors.grey.shade500, height: 1.5),
             textAlign: TextAlign.center,
           ),
         ],

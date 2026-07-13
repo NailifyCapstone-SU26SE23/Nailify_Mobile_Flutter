@@ -15,6 +15,7 @@ abstract class NailBookingRepository {
     required String bookingDate,
     required int nailVariantId,
     required List<String> serviceIds,
+    int? shapeMethodConfigId,
   });
 
   /// Lấy danh sách thợ theo salon (dùng cho ServiceBooking).
@@ -57,6 +58,7 @@ abstract class NailBookingRepository {
     required List<String> serviceIds,
     List<int>? selectedPromotionIds,
     String? holdToken,
+    int? shapeMethodConfigId,
   });
 
   /// Tạo booking từ luồng Service độc lập.
@@ -74,6 +76,7 @@ abstract class NailBookingRepository {
     required String artistId,
     required int customerNailId,
     required Map<String, int> groupedExtraServices,
+    int? shapeMethodConfigId,
     List<int>? selectedPromotionIds,
     String? holdToken,
   });

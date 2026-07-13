@@ -26,10 +26,7 @@ class StyleAttributeTags extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          fontSize: 13,
-          color: AppColors.textPrimary,
-        ),
+        style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
       ),
     );
   }

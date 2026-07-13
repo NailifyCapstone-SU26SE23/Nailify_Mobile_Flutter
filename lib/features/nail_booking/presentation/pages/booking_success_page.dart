@@ -3,17 +3,46 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/price_formatter.dart';
+import '../../data/datasources/payment_api_service.dart';
 
-class BookingSuccessPage extends StatelessWidget {
+class BookingSuccessPage extends StatefulWidget {
   final Map<String, dynamic> bookingDetails;
 
   const BookingSuccessPage({super.key, required this.bookingDetails});
 
   @override
+  State<BookingSuccessPage> createState() => _BookingSuccessPageState();
+}
+
+class _BookingSuccessPageState extends State<BookingSuccessPage> {
+  final PaymentApiService _paymentApiService = PaymentApiService();
+  bool _isCreatingPayment = false;
+
+  Map<String, dynamic> get bookingDetails => widget.bookingDetails;
+
+  Future<void> _createPayment(String bookingId) async {
+    if (_isCreatingPayment) return;
+    setState(() => _isCreatingPayment = true);
+    try {
+      final paymentData = await _paymentApiService.createPayment(bookingId);
+      if (!mounted) return;
+      context.go('/payment-qr', extra: paymentData);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Không thể tạo thanh toán: $e')));
+    } finally {
+      if (mounted) setState(() => _isCreatingPayment = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final date = bookingDetails['date'] as DateTime?;
-    final dateString =
-        date != null ? '${date.day}/${date.month}/${date.year}' : '';
+    final dateString = date != null
+        ? '${date.day}/${date.month}/${date.year}'
+        : '';
     final bookingId = bookingDetails['bookingId']?.toString();
     final discounts = _discounts;
     final hasPrice = bookingDetails['totalPrice'] != null;
@@ -23,8 +52,9 @@ class BookingSuccessPage extends StatelessWidget {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final minHeight =
-                constraints.maxHeight > 48 ? constraints.maxHeight - 48 : 0.0;
+            final minHeight = constraints.maxHeight > 48
+                ? constraints.maxHeight - 48
+                : 0.0;
 
             return SingleChildScrollView(
               padding: const EdgeInsets.all(24),
@@ -34,113 +64,187 @@ class BookingSuccessPage extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-              const Icon(Icons.check_circle, color: Colors.green, size: 100),
-              const SizedBox(height: 24),
-              const Text(
-                'Đặt lịch thành công!',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Cảm ơn bạn đã tin tưởng Nailify. Dưới đây là thông tin chi tiết lịch hẹn của bạn.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey, fontSize: 14, height: 1.5),
-              ),
-              const SizedBox(height: 32),
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.borderLight),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+                    const Icon(
+                      Icons.check_circle,
+                      color: Colors.green,
+                      size: 100,
                     ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    _buildInfoRow(
-                      Icons.spa,
-                      'Dịch vụ',
-                      bookingDetails['serviceName']?.toString() ?? '',
-                    ),
-                    const Divider(height: 24, color: AppColors.borderLight),
-                    _buildInfoRow(Icons.calendar_month, 'Ngày hẹn', dateString),
-                    const Divider(height: 24, color: AppColors.borderLight),
-                    _buildInfoRow(
-                      Icons.access_time,
-                      'Thời gian',
-                      bookingDetails['time']?.toString().substring(0, 5) ?? '',
-                    ),
-                    const Divider(height: 24, color: AppColors.borderLight),
-                    _buildInfoRow(
-                      Icons.face_2,
-                      'Nhân viên',
-                      bookingDetails['stylistName']?.toString() ?? '',
-                    ),
-                    if (discounts.isNotEmpty || hasPrice) ...[
-                      const Divider(height: 24, color: AppColors.borderLight),
-                      if (bookingDetails['price'] != null)
-                        _buildAmountRow('Giá gốc', bookingDetails['price']),
-                      ...discounts.map(_buildDiscountRow),
-                      _buildAmountRow(
-                        'Tổng thanh toán',
-                        bookingDetails['totalPrice'],
-                        isTotal: true,
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Đặt lịch thành công!',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
                       ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: 40),
-              ElevatedButton(
-                onPressed: bookingId == null || bookingId.isEmpty
-                    ? null
-                    : () => context.go('/my-bookings/detail', extra: bookingId),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'View Booking',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-              ),
-              const SizedBox(height: 16),
-              OutlinedButton(
-                onPressed: () => context.go('/'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary),
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Back to Home',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-              ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Cảm ơn bạn đã tin tưởng Nailify. Dưới đây là thông tin chi tiết lịch hẹn của bạn.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 14,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.borderLight),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          _buildInfoRow(
+                            Icons.spa,
+                            'Dịch vụ',
+                            bookingDetails['serviceName']?.toString() ?? '',
+                          ),
+                          const Divider(
+                            height: 24,
+                            color: AppColors.borderLight,
+                          ),
+                          _buildInfoRow(
+                            Icons.calendar_month,
+                            'Ngày hẹn',
+                            dateString,
+                          ),
+                          const Divider(
+                            height: 24,
+                            color: AppColors.borderLight,
+                          ),
+                          _buildInfoRow(
+                            Icons.access_time,
+                            'Thời gian',
+                            bookingDetails['time']?.toString().substring(
+                                  0,
+                                  5,
+                                ) ??
+                                '',
+                          ),
+                          const Divider(
+                            height: 24,
+                            color: AppColors.borderLight,
+                          ),
+                          _buildInfoRow(
+                            Icons.face_2,
+                            'Nhân viên',
+                            bookingDetails['stylistName']?.toString() ?? '',
+                          ),
+                          if (discounts.isNotEmpty || hasPrice) ...[
+                            const Divider(
+                              height: 24,
+                              color: AppColors.borderLight,
+                            ),
+                            if (bookingDetails['price'] != null)
+                              _buildAmountRow(
+                                'Giá gốc',
+                                bookingDetails['price'],
+                              ),
+                            ...discounts.map(_buildDiscountRow),
+                            _buildAmountRow(
+                              'Tổng thanh toán',
+                              bookingDetails['totalPrice'],
+                              isTotal: true,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                    ElevatedButton(
+                      onPressed:
+                          bookingId == null ||
+                              bookingId.isEmpty ||
+                              _isCreatingPayment
+                          ? null
+                          : () => _createPayment(bookingId),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        minimumSize: const Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: _isCreatingPayment
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text(
+                              'Thanh Toán',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: bookingId == null || bookingId.isEmpty
+                          ? null
+                          : () => context.go(
+                              '/my-bookings/detail',
+                              extra: bookingId,
+                            ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        minimumSize: const Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'View Booking',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    OutlinedButton(
+                      onPressed: () => context.go('/'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        side: const BorderSide(color: AppColors.primary),
+                        minimumSize: const Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Back to Home',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
             );
           },
-          ),
+        ),
       ),
     );
   }
@@ -174,7 +278,8 @@ class BookingSuccessPage extends StatelessWidget {
   }
 
   List<Map<String, dynamic>> get _discounts {
-    final raw = bookingDetails['discounts'] ?? bookingDetails['discountBreakdown'];
+    final raw =
+        bookingDetails['discounts'] ?? bookingDetails['discountBreakdown'];
     if (raw is! List) return [];
     return raw
         .whereType<Map>()
@@ -225,7 +330,10 @@ class BookingSuccessPage extends StatelessWidget {
             amountDisplay?.isNotEmpty == true
                 ? amountDisplay!
                 : PriceFormatter.format(-(discount['amount'] ?? 0)),
-            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.green,
+            ),
           ),
         ],
       ),

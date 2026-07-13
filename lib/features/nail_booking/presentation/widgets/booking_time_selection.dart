@@ -531,4 +531,4 @@ class _WaitlistJoinSheetState extends State<_WaitlistJoinSheet> {
       ],
     );
   }
-}
+}

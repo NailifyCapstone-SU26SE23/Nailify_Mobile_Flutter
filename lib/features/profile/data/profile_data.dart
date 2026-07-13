@@ -33,11 +33,7 @@ class ColorSwatchOption {
   final Color? color;
   final List<Color>? gradientColors;
 
-  const ColorSwatchOption({
-    required this.id,
-    this.color,
-    this.gradientColors,
-  });
+  const ColorSwatchOption({required this.id, this.color, this.gradientColors});
 }
 
 class MainStyleOption {

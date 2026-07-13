@@ -18,7 +18,11 @@ import '../../features/my_studio/presentation/pages/customer_nail_detail_page.da
 import '../../features/nail_booking/presentation/pages/booking_success_page.dart';
 import '../../features/nail_booking/presentation/pages/custom_nail_booking_page.dart';
 import '../../features/nail_booking/presentation/pages/nail_booking_page.dart';
+import '../../features/nail_booking/presentation/pages/payment_qr_page.dart';
+import '../../features/nail_booking/presentation/pages/payment_result_page.dart';
+import '../../features/nail_booking/presentation/pages/refund_bank_info_page.dart';
 import '../../features/nail_booking/presentation/pages/service_booking_page.dart';
+import '../../features/nail_booking/presentation/pages/transaction_detail_page.dart';
 import '../../features/my_studio/presentation/pages/my_studio_tab_page.dart';
 import '../../features/nails/presentation/pages/nail_detail_screen.dart';
 import '../../features/nails/presentation/pages/nail_list_screen.dart';
@@ -36,10 +40,7 @@ class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: '/',
     routes: [
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginPage(),
-      ),
+      GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterPage(),
@@ -61,7 +62,19 @@ class AppRouter {
       GoRoute(
         path: '/custom-nail-booking',
         builder: (context, state) {
-          final nail = state.extra as CustomerNailModel;
+          final extra = state.extra;
+          if (extra is Map<String, dynamic>) {
+            return CustomNailBookingPage(
+              nail: extra['nail'] as CustomerNailModel,
+              shapeMethodConfigId: (extra['shapeMethodConfigId'] as num?)
+                  ?.toInt(),
+              shapeMethodName: extra['shapeMethodName']?.toString(),
+              shapeMethodPrice: extra['shapeMethodPrice'] as num?,
+              shapeMethodDuration: (extra['shapeMethodDuration'] as num?)
+                  ?.toInt(),
+            );
+          }
+          final nail = extra as CustomerNailModel;
           return CustomNailBookingPage(nail: nail);
         },
       ),
@@ -72,13 +85,45 @@ class AppRouter {
           return BookingSuccessPage(bookingDetails: details);
         },
       ),
+      GoRoute(
+        path: '/payment-qr',
+        builder: (context, state) {
+          final paymentData = state.extra as Map<String, dynamic>? ?? {};
+          return PaymentQrPage(paymentData: paymentData);
+        },
+      ),
+      GoRoute(
+        path: '/payment-success',
+        builder: (context, state) {
+          final paymentData = state.extra as Map<String, dynamic>? ?? {};
+          return PaymentSuccessPage(paymentData: paymentData);
+        },
+      ),
+      GoRoute(
+        path: '/payment-cancelled',
+        builder: (context, state) {
+          final paymentData = state.extra as Map<String, dynamic>? ?? {};
+          return PaymentCancelledPage(paymentData: paymentData);
+        },
+      ),
+      GoRoute(
+        path: '/refund-bank-info',
+        builder: (context, state) {
+          final bookingId = state.extra?.toString() ?? '';
+          return RefundBankInfoPage(bookingId: bookingId);
+        },
+      ),
+      GoRoute(
+        path: '/transaction-detail',
+        builder: (context, state) {
+          final transaction = state.extra as Map<String, dynamic>? ?? {};
+          return TransactionDetailPage(transaction: transaction);
+        },
+      ),
       ShellRoute(
         builder: (context, state, child) => MainShell(child: child),
         routes: [
-          GoRoute(
-            path: '/',
-            builder: (context, state) => const HomePage(),
-          ),
+          GoRoute(path: '/', builder: (context, state) => const HomePage()),
           GoRoute(
             path: '/discover',
             builder: (context, state) => const DiscoverPage(),
@@ -105,21 +150,17 @@ class AppRouter {
               return CustomTransitionPage<void>(
                 key: state.pageKey,
                 child: NailVariantDetailScreen(nailVariantId: id ?? 0),
-                transitionsBuilder: (
-                  context,
-                  animation,
-                  secondaryAnimation,
-                  child,
-                ) {
-                  final offset = Tween<Offset>(
-                    begin: const Offset(0, 1),
-                    end: Offset.zero,
-                  ).chain(CurveTween(curve: Curves.easeOutCubic));
-                  return SlideTransition(
-                    position: animation.drive(offset),
-                    child: child,
-                  );
-                },
+                transitionsBuilder:
+                    (context, animation, secondaryAnimation, child) {
+                      final offset = Tween<Offset>(
+                        begin: const Offset(0, 1),
+                        end: Offset.zero,
+                      ).chain(CurveTween(curve: Curves.easeOutCubic));
+                      return SlideTransition(
+                        position: animation.drive(offset),
+                        child: child,
+                      );
+                    },
               );
             },
           ),
@@ -174,10 +215,7 @@ class AppRouter {
               return CustomerNailDetailPage(id: id);
             },
           ),
-          GoRoute(
-            path: '/quiz',
-            builder: (context, state) => const QuizPage(),
-          ),
+          GoRoute(path: '/quiz', builder: (context, state) => const QuizPage()),
           GoRoute(
             path: '/quiz/analyze',
             builder: (context, state) {

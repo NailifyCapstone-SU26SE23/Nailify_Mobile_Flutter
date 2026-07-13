@@ -35,7 +35,9 @@ class _CustomerComponentFormDialogState
     final component = widget.component;
     if (component != null) {
       _nameController.text = component.name;
-      _priceController.text = component.price > 0 ? component.price.toString() : '';
+      _priceController.text = component.price > 0
+          ? component.price.toString()
+          : '';
       _customDataController.text = component.customDataJson;
       _componentType = int.tryParse(component.componentType) ?? 0;
       _isPublic = component.isPublic;
@@ -90,9 +92,9 @@ class _CustomerComponentFormDialogState
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -102,7 +104,9 @@ class _CustomerComponentFormDialogState
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.component == null ? 'Tạo thành phần mới' : 'Sửa thành phần'),
+      title: Text(
+        widget.component == null ? 'Tạo thành phần mới' : 'Sửa thành phần',
+      ),
       content: SizedBox(
         width: MediaQuery.of(context).size.width * 0.8,
         child: Form(
@@ -118,8 +122,9 @@ class _CustomerComponentFormDialogState
                     labelText: 'Tên thành phần *',
                     border: OutlineInputBorder(),
                   ),
-                  validator: (value) =>
-                  value?.trim().isEmpty == true ? 'Vui lòng nhập tên' : null,
+                  validator: (value) => value?.trim().isEmpty == true
+                      ? 'Vui lòng nhập tên'
+                      : null,
                 ),
                 const SizedBox(height: 12),
 
@@ -136,7 +141,8 @@ class _CustomerComponentFormDialogState
                     DropdownMenuItem(value: 2, child: Text('🔗 Charm')),
                     DropdownMenuItem(value: 3, child: Text('🎨 Art')),
                   ],
-                  onChanged: (value) => setState(() => _componentType = value ?? 0),
+                  onChanged: (value) =>
+                      setState(() => _componentType = value ?? 0),
                 ),
                 const SizedBox(height: 12),
 
@@ -174,9 +180,13 @@ class _CustomerComponentFormDialogState
                       const SizedBox(height: 4),
                       Text(
                         'Ảnh mới',
-                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade600,
+                        ),
                       ),
-                    ] else if (widget.component?.imageUrl != null && widget.component!.imageUrl.isNotEmpty) ...[
+                    ] else if (widget.component?.imageUrl != null &&
+                        widget.component!.imageUrl.isNotEmpty) ...[
                       Container(
                         height: 180,
                         width: double.infinity,
@@ -196,9 +206,10 @@ class _CustomerComponentFormDialogState
                               if (loadingProgress == null) return child;
                               return Center(
                                 child: CircularProgressIndicator(
-                                  value: loadingProgress.expectedTotalBytes != null
+                                  value:
+                                      loadingProgress.expectedTotalBytes != null
                                       ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
+                                            loadingProgress.expectedTotalBytes!
                                       : null,
                                 ),
                               );
@@ -210,11 +221,18 @@ class _CustomerComponentFormDialogState
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                                      Icon(
+                                        Icons.broken_image,
+                                        size: 50,
+                                        color: Colors.grey,
+                                      ),
                                       SizedBox(height: 8),
                                       Text(
                                         'Không thể tải ảnh',
-                                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -227,7 +245,10 @@ class _CustomerComponentFormDialogState
                       const SizedBox(height: 4),
                       Text(
                         'Ảnh hiện tại',
-                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade600,
+                        ),
                       ),
                     ],
                   ],
@@ -237,7 +258,9 @@ class _CustomerComponentFormDialogState
                 // Public switch
                 SwitchListTile(
                   title: const Text('Công khai'),
-                  subtitle: const Text('Mọi người có thể sử dụng thành phần này'),
+                  subtitle: const Text(
+                    'Mọi người có thể sử dụng thành phần này',
+                  ),
                   value: _isPublic,
                   onChanged: (value) => setState(() => _isPublic = value),
                   contentPadding: EdgeInsets.zero,
@@ -256,10 +279,10 @@ class _CustomerComponentFormDialogState
           onPressed: _isLoading ? null : _save,
           child: _isLoading
               ? const SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          )
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : const Text('Lưu'),
         ),
       ],

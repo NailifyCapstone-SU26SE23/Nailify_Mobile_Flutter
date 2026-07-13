@@ -18,7 +18,9 @@ class CategoryModel {
       categoryId: _asInt(json['categoryId'] ?? json['CategoryId']),
       name: (json['name'] ?? json['Name'] ?? '').toString(),
       categoryTypeId: _asInt(json['categoryTypeId'] ?? json['CategoryTypeId']),
-      categoryTypeName: (json['categoryTypeName'] ?? json['CategoryTypeName'] ?? '').toString(),
+      categoryTypeName:
+          (json['categoryTypeName'] ?? json['CategoryTypeName'] ?? '')
+              .toString(),
       status: (json['status'] ?? json['Status'] ?? '').toString(),
     );
   }

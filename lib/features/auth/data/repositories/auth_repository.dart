@@ -11,16 +11,10 @@ class AuthRepository {
 
   AuthRepository(this._apiClient, this._signalR);
 
-  Future<void> login({
-    required String email,
-    required String password,
-  }) async {
+  Future<void> login({required String email, required String password}) async {
     final response = await _apiClient.post<dynamic>(
       '/Auth/login',
-      data: {
-        'email': email,
-        'password': password,
-      },
+      data: {'email': email, 'password': password},
     );
 
     final data = ApiResponseParser.unwrapMap(response.data);
@@ -92,10 +86,7 @@ class AuthRepository {
 
     if (imagePath != null && imagePath.isNotEmpty) {
       formData.files.add(
-        MapEntry(
-          'image',
-          await MultipartFile.fromFile(imagePath),
-        ),
+        MapEntry('image', await MultipartFile.fromFile(imagePath)),
       );
     }
 

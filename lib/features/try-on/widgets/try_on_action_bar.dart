@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../nails/data/models/nail_shape_model.dart';
-import '../models/try_on_data.dart';
-
 class TryOnActionBar extends StatelessWidget {
   final bool canSave;
   final bool isSaving;

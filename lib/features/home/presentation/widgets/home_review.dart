@@ -12,22 +12,34 @@ class CustomerReviews extends StatelessWidget {
         'initials': 'LM',
         'name': 'Linh Mai',
         'type': 'Regular client',
-        'review': '"Absolutely love my nails! The team here is so talented and the designs are stunning. Will definitely be back!"',
-        'gradientColors': [const Color(0xFFFF66C4), const Color(0xFFFFB347)], // Hồng sang Cam
+        'review':
+            '"Absolutely love my nails! The team here is so talented and the designs are stunning. Will definitely be back!"',
+        'gradientColors': [
+          const Color(0xFFFF66C4),
+          const Color(0xFFFFB347),
+        ], // Hồng sang Cam
       },
       {
         'initials': 'TN',
         'name': 'Thu Nga',
         'type': 'New client',
-        'review': '"The chrome finish is breathtaking and the staff is so welcoming."',
-        'gradientColors': [const Color(0xFFB39DDB), const Color(0xFF7E57C2)], // Tím nhạt sang Tím đậm
+        'review':
+            '"The chrome finish is breathtaking and the staff is so welcoming."',
+        'gradientColors': [
+          const Color(0xFFB39DDB),
+          const Color(0xFF7E57C2),
+        ], // Tím nhạt sang Tím đậm
       },
       {
         'initials': 'HA',
         'name': 'Hoang Anh',
         'type': 'VIP client',
-        'review': '"Best nail salon in town. The attention to detail is unmatched, and my nails last for weeks without chipping!"',
-        'gradientColors': [const Color(0xFF81D4FA), const Color(0xFF29B6F6)], // Xanh dương
+        'review':
+            '"Best nail salon in town. The attention to detail is unmatched, and my nails last for weeks without chipping!"',
+        'gradientColors': [
+          const Color(0xFF81D4FA),
+          const Color(0xFF29B6F6),
+        ], // Xanh dương
       },
     ];
 
@@ -70,7 +82,8 @@ class CustomerReviews extends StatelessWidget {
             height: 260, // chiều cao  danh sách ngang
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(), // Hiệu ứng nảy mượt mà khi cuộn
+              physics:
+                  const BouncingScrollPhysics(), // Hiệu ứng nảy mượt mà khi cuộn
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               itemCount: reviews.length,
               itemBuilder: (context, index) {
@@ -116,11 +129,8 @@ class CustomerReviews extends StatelessWidget {
           Row(
             children: List.generate(
               5,
-                  (index) => const Icon(
-                Icons.star,
-                color: Color(0xFFFFD54F),
-                size: 20,
-              ),
+              (index) =>
+                  const Icon(Icons.star, color: Color(0xFFFFD54F), size: 20),
             ),
           ),
           const SizedBox(height: 16),

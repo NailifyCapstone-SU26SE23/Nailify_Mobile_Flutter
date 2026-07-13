@@ -5,11 +5,7 @@ class BookingStatusView {
   final Color backgroundColor;
   final Color textColor;
 
-  const BookingStatusView(
-    this.label,
-    this.backgroundColor,
-    this.textColor,
-  );
+  const BookingStatusView(this.label, this.backgroundColor, this.textColor);
 }
 
 BookingStatusView bookingStatusView(String? status) {

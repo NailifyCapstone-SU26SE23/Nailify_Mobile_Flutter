@@ -22,7 +22,10 @@ class DiscoverToolbar extends StatelessWidget {
         Expanded(
           child: RichText(
             text: TextSpan(
-              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
               children: [
                 const TextSpan(text: 'Showing '),
                 TextSpan(
@@ -80,13 +83,17 @@ class _ToolbarIconButton extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             gradient: isActive && !outlined ? AppColors.bannerGradient : null,
-            color: outlined ? Colors.white : (isActive ? null : AppColors.surfaceLight),
+            color: outlined
+                ? Colors.white
+                : (isActive ? null : AppColors.surfaceLight),
             border: outlined ? Border.all(color: AppColors.borderLight) : null,
           ),
           child: Icon(
             icon,
             size: 20,
-            color: isActive && !outlined ? Colors.white : AppColors.textSecondary,
+            color: isActive && !outlined
+                ? Colors.white
+                : AppColors.textSecondary,
           ),
         ),
       ),

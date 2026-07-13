@@ -26,7 +26,7 @@ class CustomerNailRepository {
     );
     return PaginatedResponse.fromJson(
       response.data,
-          (json) => CustomerNailModel.fromJson(json as Map<String, dynamic>),
+      (json) => CustomerNailModel.fromJson(json as Map<String, dynamic>),
     );
   }
 
@@ -43,10 +43,12 @@ class CustomerNailRepository {
   }) async {
     final formData = FormData.fromMap({
       'Name': name,
-      'IsPublic': isPublic.toString()
+      'IsPublic': isPublic.toString(),
     });
     if (imagePath != null && imagePath.isNotEmpty) {
-      formData.files.add(MapEntry('image', await MultipartFile.fromFile(imagePath)));
+      formData.files.add(
+        MapEntry('image', await MultipartFile.fromFile(imagePath)),
+      );
     }
 
     final response = await _apiClient.post<dynamic>(
@@ -55,7 +57,9 @@ class CustomerNailRepository {
       options: Options(contentType: 'multipart/form-data'),
     );
     final data = ApiResponseParser.unwrapMap(response.data);
-    return ApiResponseParser.asInt(data['customerNailId'] ?? data['CustomerNailId']);
+    return ApiResponseParser.asInt(
+      data['customerNailId'] ?? data['CustomerNailId'],
+    );
   }
 
   Future<CustomerNailModel> updateCustomerNail({
@@ -78,7 +82,9 @@ class CustomerNailRepository {
     });
 
     if (imagePath != null && imagePath.isNotEmpty) {
-      formData.files.add(MapEntry('image', await MultipartFile.fromFile(imagePath)));
+      formData.files.add(
+        MapEntry('image', await MultipartFile.fromFile(imagePath)),
+      );
     }
 
     final response = await _apiClient.put<dynamic>(

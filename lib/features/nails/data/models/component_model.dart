@@ -18,7 +18,8 @@ class ComponentModel {
       componentId: _asInt(json['componentId'] ?? json['ComponentId']),
       name: (json['name'] ?? json['Name'] ?? '').toString(),
       imageUrl: (json['imageUrl'] ?? json['ImageUrl'] ?? '').toString(),
-      componentType: (json['componentType'] ?? json['ComponentType'] ?? '').toString(),
+      componentType: (json['componentType'] ?? json['ComponentType'] ?? '')
+          .toString(),
       price: _asDouble(json['price'] ?? json['Price']),
     );
   }

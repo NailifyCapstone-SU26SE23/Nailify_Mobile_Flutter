@@ -48,7 +48,9 @@ class MyBookingApiService {
   }
 
   Future<Map<String, dynamic>?> getRatingByBooking(String bookingId) async {
-    final response = await _apiClient.get('/BookingRatings/by-booking/$bookingId');
+    final response = await _apiClient.get(
+      '/BookingRatings/by-booking/$bookingId',
+    );
     final data = response.data['data'];
     return data is Map<String, dynamic> ? data : null;
   }
@@ -77,5 +79,4 @@ class MyBookingApiService {
     final data = response.data['data'];
     return data is Map<String, dynamic> ? data : {};
   }
-
 }

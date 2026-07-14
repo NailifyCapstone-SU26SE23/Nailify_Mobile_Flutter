@@ -21,6 +21,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.Navigation
+import android.util.Size
 import com.google.mediapipe.examples.handlandmarker.HandLandmarkerHelper
 import com.google.mediapipe.examples.handlandmarker.MainViewModel
 import com.google.mediapipe.examples.handlandmarker.R
@@ -114,6 +115,11 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
 
         // Initialize our background executor
         backgroundExecutor = Executors.newSingleThreadExecutor()
+
+        // Force TextureView mode to prevent green-screen on emulators.
+        // SurfaceView (PERFORMANCE mode) does not render correctly on virtual cameras.
+        fragmentCameraBinding.viewFinder.implementationMode =
+            androidx.camera.view.PreviewView.ImplementationMode.COMPATIBLE
 
         // Wait for the views to be properly laid out
         fragmentCameraBinding.viewFinder.post {
@@ -337,19 +343,30 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
         val cameraSelector =
             CameraSelector.Builder().requireLensFacing(cameraFacing).build()
 
-        // Preview. Only using the 4:3 ratio because this is the closest to our models
-        preview = Preview.Builder().setTargetAspectRatio(AspectRatio.RATIO_4_3)
+        // Use a fixed 640x480 resolution. On emulators, aspect-ratio-based
+        // selection often triggers high-res modes that the virtual camera HAL
+        // cannot deliver reliably, causing QemuClient queryFrame errors,
+        // green frames and tearing.
+        val targetResolution = Size(640, 480)
+
+        // Preview
+        preview = Preview.Builder()
+            .setTargetResolution(targetResolution)
             .setTargetRotation(fragmentCameraBinding.viewFinder.display.rotation)
             .build()
 
+        // Attach the surface provider early so the preview surface is ready
+        // before bindToLifecycle starts pushing frames — this eliminates tearing.
+        preview?.setSurfaceProvider(fragmentCameraBinding.viewFinder.surfaceProvider)
+
         // ImageAnalysis. Using RGBA 8888 to match how our models work
         imageAnalyzer =
-            ImageAnalysis.Builder().setTargetAspectRatio(AspectRatio.RATIO_4_3)
+            ImageAnalysis.Builder()
+                .setTargetResolution(targetResolution)
                 .setTargetRotation(fragmentCameraBinding.viewFinder.display.rotation)
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
                 .build()
-                // The analyzer can then be assigned to the instance
                 .also {
                     it.setAnalyzer(backgroundExecutor) { image ->
                         detectHand(image)
@@ -360,14 +377,9 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
         cameraProvider.unbindAll()
 
         try {
-            // A variable number of use-cases can be passed here -
-            // camera provides access to CameraControl & CameraInfo
             camera = cameraProvider.bindToLifecycle(
                 this, cameraSelector, preview, imageAnalyzer
             )
-
-            // Attach the viewfinder's surface provider to preview use case
-            preview?.setSurfaceProvider(fragmentCameraBinding.viewFinder.surfaceProvider)
         } catch (exc: Exception) {
             Log.e(TAG, "Use case binding failed", exc)
         }

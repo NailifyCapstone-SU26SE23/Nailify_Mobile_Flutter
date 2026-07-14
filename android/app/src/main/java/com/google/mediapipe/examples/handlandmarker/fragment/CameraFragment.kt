@@ -146,147 +146,77 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
             requireActivity().finish()
         }
 
-        initBottomSheetControls()
+        fragmentCameraBinding.btnZoomIn.setOnClickListener {
+            camera?.let {
+                val zoomState = it.cameraInfo.zoomState.value
+                if (zoomState != null) {
+                    val currentRatio = zoomState.zoomRatio
+                    val maxRatio = zoomState.maxZoomRatio
+                    it.cameraControl.setZoomRatio((currentRatio + 0.5f).coerceAtMost(maxRatio))
+                }
+            }
+        }
+
+        fragmentCameraBinding.btnZoomOut.setOnClickListener {
+            camera?.let {
+                val zoomState = it.cameraInfo.zoomState.value
+                if (zoomState != null) {
+                    val currentRatio = zoomState.zoomRatio
+                    val minRatio = zoomState.minZoomRatio
+                    it.cameraControl.setZoomRatio((currentRatio - 0.5f).coerceAtLeast(minRatio))
+                }
+            }
+        }
+
+        fragmentCameraBinding.btnCapture.setOnClickListener {
+            captureAndSaveImage()
+        }
     }
 
-    private fun initBottomSheetControls() {
-        // init bottom sheet settings
-        fragmentCameraBinding.bottomSheetLayout.maxHandsValue.text =
-            viewModel.currentMaxHands.toString()
-        fragmentCameraBinding.bottomSheetLayout.detectionThresholdValue.text =
-            String.format(
-                Locale.US, "%.2f", viewModel.currentMinHandDetectionConfidence
-            )
-        fragmentCameraBinding.bottomSheetLayout.trackingThresholdValue.text =
-            String.format(
-                Locale.US, "%.2f", viewModel.currentMinHandTrackingConfidence
-            )
-        fragmentCameraBinding.bottomSheetLayout.presenceThresholdValue.text =
-            String.format(
-                Locale.US, "%.2f", viewModel.currentMinHandPresenceConfidence
-            )
-
-        // When clicked, lower hand detection score threshold floor
-        fragmentCameraBinding.bottomSheetLayout.detectionThresholdMinus.setOnClickListener {
-            if (handLandmarkerHelper.minHandDetectionConfidence >= 0.2) {
-                handLandmarkerHelper.minHandDetectionConfidence -= 0.1f
-                updateControlsUi()
-            }
+    private fun captureAndSaveImage() {
+        val previewBitmap = fragmentCameraBinding.viewFinder.bitmap
+        if (previewBitmap == null) {
+            Toast.makeText(requireContext(), "Camera chưa sẵn sàng", Toast.LENGTH_SHORT).show()
+            return
         }
 
-        // When clicked, raise hand detection score threshold floor
-        fragmentCameraBinding.bottomSheetLayout.detectionThresholdPlus.setOnClickListener {
-            if (handLandmarkerHelper.minHandDetectionConfidence <= 0.8) {
-                handLandmarkerHelper.minHandDetectionConfidence += 0.1f
-                updateControlsUi()
-            }
-        }
-
-        // When clicked, lower hand tracking score threshold floor
-        fragmentCameraBinding.bottomSheetLayout.trackingThresholdMinus.setOnClickListener {
-            if (handLandmarkerHelper.minHandTrackingConfidence >= 0.2) {
-                handLandmarkerHelper.minHandTrackingConfidence -= 0.1f
-                updateControlsUi()
-            }
-        }
-
-        // When clicked, raise hand tracking score threshold floor
-        fragmentCameraBinding.bottomSheetLayout.trackingThresholdPlus.setOnClickListener {
-            if (handLandmarkerHelper.minHandTrackingConfidence <= 0.8) {
-                handLandmarkerHelper.minHandTrackingConfidence += 0.1f
-                updateControlsUi()
-            }
-        }
-
-        // When clicked, lower hand presence score threshold floor
-        fragmentCameraBinding.bottomSheetLayout.presenceThresholdMinus.setOnClickListener {
-            if (handLandmarkerHelper.minHandPresenceConfidence >= 0.2) {
-                handLandmarkerHelper.minHandPresenceConfidence -= 0.1f
-                updateControlsUi()
-            }
-        }
-
-        // When clicked, raise hand presence score threshold floor
-        fragmentCameraBinding.bottomSheetLayout.presenceThresholdPlus.setOnClickListener {
-            if (handLandmarkerHelper.minHandPresenceConfidence <= 0.8) {
-                handLandmarkerHelper.minHandPresenceConfidence += 0.1f
-                updateControlsUi()
-            }
-        }
-
-        // When clicked, reduce the number of hands that can be detected at a
-        // time
-        fragmentCameraBinding.bottomSheetLayout.maxHandsMinus.setOnClickListener {
-            if (handLandmarkerHelper.maxNumHands > 1) {
-                handLandmarkerHelper.maxNumHands--
-                updateControlsUi()
-            }
-        }
-
-        // When clicked, increase the number of hands that can be detected
-        // at a time
-        fragmentCameraBinding.bottomSheetLayout.maxHandsPlus.setOnClickListener {
-            if (handLandmarkerHelper.maxNumHands < 2) {
-                handLandmarkerHelper.maxNumHands++
-                updateControlsUi()
-            }
-        }
-
-        // When clicked, change the underlying hardware used for inference.
-        // Current options are CPU and GPU
-        fragmentCameraBinding.bottomSheetLayout.spinnerDelegate.setSelection(
-            viewModel.currentDelegate, false
+        val resultBitmap = android.graphics.Bitmap.createBitmap(
+            previewBitmap.width,
+            previewBitmap.height,
+            android.graphics.Bitmap.Config.ARGB_8888
         )
-        fragmentCameraBinding.bottomSheetLayout.spinnerDelegate.onItemSelectedListener =
-            object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(
-                    p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long
-                ) {
-                    try {
-                        handLandmarkerHelper.currentDelegate = p2
-                        updateControlsUi()
-                    } catch(e: UninitializedPropertyAccessException) {
-                        Log.e(TAG, "HandLandmarkerHelper has not been initialized yet.")
-                    }
-                }
+        val canvas = android.graphics.Canvas(resultBitmap)
 
-                override fun onNothingSelected(p0: AdapterView<*>?) {
-                    /* no op */
-                }
-            }
-    }
+        // Draw camera frame
+        canvas.drawBitmap(previewBitmap, 0f, 0f, null)
 
-    // Update the values displayed in the bottom sheet. Reset Handlandmarker
-    // helper.
-    private fun updateControlsUi() {
-        fragmentCameraBinding.bottomSheetLayout.maxHandsValue.text =
-            handLandmarkerHelper.maxNumHands.toString()
-        fragmentCameraBinding.bottomSheetLayout.detectionThresholdValue.text =
-            String.format(
-                Locale.US,
-                "%.2f",
-                handLandmarkerHelper.minHandDetectionConfidence
-            )
-        fragmentCameraBinding.bottomSheetLayout.trackingThresholdValue.text =
-            String.format(
-                Locale.US,
-                "%.2f",
-                handLandmarkerHelper.minHandTrackingConfidence
-            )
-        fragmentCameraBinding.bottomSheetLayout.presenceThresholdValue.text =
-            String.format(
-                Locale.US,
-                "%.2f",
-                handLandmarkerHelper.minHandPresenceConfidence
-            )
+        // Draw overlay (virtual nails)
+        fragmentCameraBinding.overlay.draw(canvas)
 
-        // Needs to be cleared instead of reinitialized because the GPU
-        // delegate needs to be initialized on the thread using it when applicable
-        backgroundExecutor.execute {
-            handLandmarkerHelper.clearHandLandmarker()
-            handLandmarkerHelper.setupHandLandmarker()
+        // Save to gallery
+        val filename = "Nailify_${System.currentTimeMillis()}.png"
+        val values = android.content.ContentValues().apply {
+            put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, filename)
+            put(android.provider.MediaStore.Images.Media.MIME_TYPE, "image/png")
+            put(android.provider.MediaStore.Images.Media.RELATIVE_PATH, android.os.Environment.DIRECTORY_PICTURES + "/Nailify")
         }
-        fragmentCameraBinding.overlay.clear()
+
+        val resolver = requireContext().contentResolver
+        val uri = resolver.insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+
+        if (uri != null) {
+            try {
+                resolver.openOutputStream(uri)?.use { out ->
+                    resultBitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
+                }
+                Toast.makeText(requireContext(), "Đã lưu ảnh vào thư viện!", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Log.e(TAG, "Lỗi khi lưu ảnh", e)
+                Toast.makeText(requireContext(), "Lỗi khi lưu ảnh", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            Toast.makeText(requireContext(), "Không thể tạo file ảnh", Toast.LENGTH_SHORT).show()
+        }
     }
 
     // Initialize CameraX, and prepare to bind the camera use cases
@@ -410,9 +340,6 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
     ) {
         activity?.runOnUiThread {
             if (_fragmentCameraBinding != null) {
-                fragmentCameraBinding.bottomSheetLayout.inferenceTimeVal.text =
-                    String.format("%d ms", resultBundle.inferenceTime)
-
                 // Pass necessary information to OverlayView for drawing on the canvas
                 fragmentCameraBinding.overlay.setFullDesign(viewModel.nailSetConfig.value)
 
@@ -432,11 +359,6 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
     override fun onError(error: String, errorCode: Int) {
         activity?.runOnUiThread {
             Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show()
-            if (errorCode == HandLandmarkerHelper.GPU_ERROR) {
-                fragmentCameraBinding.bottomSheetLayout.spinnerDelegate.setSelection(
-                    HandLandmarkerHelper.DELEGATE_CPU, false
-                )
-            }
         }
     }
 }

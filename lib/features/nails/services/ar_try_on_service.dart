@@ -76,6 +76,10 @@ class ArTryOnService {
     await _channel.invokeMethod<void>('launch', {
       'config': config,
       'mode': mode,
+      'manualOffsetX': 0.0,
+      'manualOffsetY': 0.0,
+      'manualScale': 1.0,
+      'manualRotation': 0.0,
     });
   }
 

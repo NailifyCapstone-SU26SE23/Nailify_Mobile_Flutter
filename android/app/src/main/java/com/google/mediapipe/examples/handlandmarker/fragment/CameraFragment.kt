@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.Toast
+import java.util.concurrent.ExecutionException
 import androidx.camera.core.Preview
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
@@ -288,11 +289,28 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
             ProcessCameraProvider.getInstance(requireContext())
         cameraProviderFuture.addListener(
             {
-                // CameraProvider
-                cameraProvider = cameraProviderFuture.get()
-
-                // Build and bind the camera use cases
-                bindCameraUseCases()
+                try {
+                    // CameraProvider
+                    cameraProvider = cameraProviderFuture.get()
+                    // Build and bind the camera use cases
+                    bindCameraUseCases()
+                } catch (e: ExecutionException) {
+                    // Camera unavailable (e.g. emulator without virtual camera, or
+                    // hardware error). Log and show a user-friendly message instead
+                    // of letting the exception propagate and crash the app.
+                    Log.e(TAG, "Camera provider initialization failed.", e)
+                    activity?.runOnUiThread {
+                        Toast.makeText(
+                            requireContext(),
+                            "Camera không khả dụng trên thiết bị này. Vui lòng kiểm tra quyền truy cập camera hoặc chạy trên thiết bị thật.",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        requireActivity().finish()
+                    }
+                } catch (e: InterruptedException) {
+                    Log.e(TAG, "Camera provider future was interrupted.", e)
+                    Thread.currentThread().interrupt()
+                }
             }, ContextCompat.getMainExecutor(requireContext())
         )
     }
@@ -303,7 +321,18 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
 
         // CameraProvider
         val cameraProvider = cameraProvider
-            ?: throw IllegalStateException("Camera initialization failed.")
+        if (cameraProvider == null) {
+            Log.e(TAG, "Camera initialization failed: cameraProvider is null.")
+            activity?.runOnUiThread {
+                Toast.makeText(
+                    requireContext(),
+                    "Không thể khởi tạo camera. Vui lòng thử lại.",
+                    Toast.LENGTH_SHORT
+                ).show()
+                requireActivity().finish()
+            }
+            return
+        }
 
         val cameraSelector =
             CameraSelector.Builder().requireLensFacing(cameraFacing).build()

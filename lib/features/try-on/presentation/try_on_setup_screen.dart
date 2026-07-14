@@ -16,7 +16,6 @@ import '../utils/try_on_setup_helpers.dart';
 import '../widgets/component_grid.dart';
 import '../widgets/nail_shape_selector.dart';
 import '../widgets/nail_surface_selector.dart';
-import '../widgets/try_on_action_bar.dart';
 import '../widgets/try_on_color_selector.dart';
 import '../widgets/try_on_placement_controls.dart';
 import '../widgets/try_on_preview_board.dart';
@@ -30,7 +29,7 @@ class TryOnSetupScreen extends StatefulWidget {
   State<TryOnSetupScreen> createState() => _TryOnSetupScreenState();
 }
 
-class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerProviderStateMixin {
+class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
   late final TryOnSetupService _setupService;
   late final NailComponentRepository _componentRepository;
   late final CustomerNailRepository _customerNailRepository;
@@ -70,28 +69,14 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
   int? _selectedPlacementId;
   final List<PlacedComponentDraft> _placements = [];
   final Set<int> _deletedPlacementIds = {};
-  late final TabController _tabController;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
-    _tabController.addListener(_handleTabChange);
     _setupService = getIt<TryOnSetupService>();
     _componentRepository = getIt<NailComponentRepository>();
     _customerNailRepository = getIt<CustomerNailRepository>();
     _fetchData();
-  }
-
-  void _handleTabChange() {
-    if (mounted) setState(() {});
-  }
-
-  @override
-  void dispose() {
-    _tabController.removeListener(_handleTabChange);
-    _tabController.dispose();
-    super.dispose();
   }
 
   Future<void> _fetchData() async {
@@ -485,10 +470,47 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
             ),
         ],
       ),
-      bottomNavigationBar: TryOnActionBar(
-        canSave: _customerNail != null && _selectedNailShape != null,
-        isSaving: _isSaving,
-        onSave: _save,
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, -5),
+              )
+            ],
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _launching ? null : () => _launchTryOn(photo: false),
+                  icon: const Icon(Icons.camera_alt_outlined),
+                  label: const Text('Thử móng AR'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: (_customerNail != null && _selectedNailShape != null && !_isSaving) ? _save : null,
+                  icon: _isSaving 
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) 
+                      : const Icon(Icons.save),
+                  label: const Text('Lưu thiết kế'),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -499,60 +521,60 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
     final data = _tryOnData;
     if (data == null) return const Center(child: Text('No data available'));
 
-    return Column(
-      children: [
-        // Phần trên: Bảng Preview cố định
-        SizedBox(
-          height: MediaQuery.of(context).size.height * 0.35,
-          child: Padding(
-            padding: const EdgeInsets.only(top: 16.0, left: 16.0, right: 16.0, bottom: 8.0),
-            child: TryOnPreviewBoard(
-              nail: _customerNail,
-              selectedShape: _selectedNailShape,
-              selectedSurface: _selectedNailSurface,
-              selectedColor: _activeFingerColor,
-              gradientStops: _activeFingerGradient,
-              fingerColors: _fingerColors,
-              fingerGradients: _fingerGradients,
-              selectedFingerIndex: _selectedFingerIndex,
-              detailFingerIndex: _previewDetailFingerIndex,
-              placements: _placements,
-              selectedPlacementId: _selectedPlacementId,
-              onSelectPlacement: (id) => setState(() => _selectedPlacementId = id),
-              onToggleDetailFinger: _togglePreviewDetailFinger,
+    return DefaultTabController(
+      length: 4,
+      child: Column(
+        children: [
+          // Phần trên: Bảng Preview cố định
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.35,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 16.0, left: 16.0, right: 16.0, bottom: 8.0),
+              child: TryOnPreviewBoard(
+                nail: _customerNail,
+                selectedShape: _selectedNailShape,
+                selectedSurface: _selectedNailSurface,
+                selectedColor: _activeFingerColor,
+                gradientStops: _activeFingerGradient,
+                fingerColors: _fingerColors,
+                fingerGradients: _fingerGradients,
+                selectedFingerIndex: _selectedFingerIndex,
+                detailFingerIndex: _previewDetailFingerIndex,
+                placements: _placements,
+                selectedPlacementId: _selectedPlacementId,
+                onSelectPlacement: (id) => setState(() => _selectedPlacementId = id),
+                onToggleDetailFinger: _togglePreviewDetailFinger,
+              ),
             ),
           ),
-        ),
-        
-        // Phần dưới: Điều khiển công cụ (Scrollable)
-        Expanded(
-          child: Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -5),
-                )
-              ],
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            child: SingleChildScrollView(
+          
+          // Phần dưới: Điều khiển công cụ (Scrollable)
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -5),
+                  )
+                ],
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // 1. TabBar
-                  TabBar(
-                    controller: _tabController,
+                  const TabBar(
                     labelColor: Colors.pink,
                     unselectedLabelColor: Colors.grey,
                     indicatorColor: Colors.pink,
                     isScrollable: true,
                     tabAlignment: TabAlignment.start,
-                    labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-                    tabs: const [
+                    labelStyle: TextStyle(fontWeight: FontWeight.bold),
+                    tabs: [
                       Tab(text: "Dáng móng"),
                       Tab(text: "Bề mặt"),
                       Tab(text: "Màu sắc"),
@@ -560,33 +582,36 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
                     ],
                   ),
                   
-                  // 2. Nội dung Tab (thay đổi theo index)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: _buildActiveTabContent(data),
+                  // 2. Nội dung Tab
+                  Expanded(
+                    child: TabBarView(
+                      children: [
+                        SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: _buildShapeTool(data),
+                        ),
+                        SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: _buildSurfaceTool(data),
+                        ),
+                        SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: _buildColorTool(),
+                        ),
+                        SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: _buildComponentsTab(data),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
-  }
-
-  Widget _buildActiveTabContent(TryOnData data) {
-    switch (_tabController.index) {
-      case 0:
-        return _buildShapeTool(data);
-      case 1:
-        return _buildSurfaceTool(data);
-      case 2:
-        return _buildColorTool();
-      case 3:
-        return _buildComponentsTab(data);
-      default:
-        return const SizedBox.shrink();
-    }
   }
 
   Widget _buildComponentsTab(TryOnData data) {
@@ -605,50 +630,48 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> with SingleTickerPr
   }
 
   Widget _buildPlacementTool() {
-    return SingleChildScrollView(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    _selectedPlacement?.name ?? 'Chưa chọn phụ kiện trên móng',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  _selectedPlacement?.name ?? 'Chưa chọn phụ kiện trên móng',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                FilledButton.icon(
-                  onPressed: _selectedComponent == null ? null : _addSelectedComponent,
-                  icon: const Icon(Icons.add, size: 16),
-                  label: const Text('Thêm vào móng'),
-                  style: FilledButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    backgroundColor: Colors.pink,
-                  ),
+              ),
+              FilledButton.icon(
+                onPressed: _selectedComponent == null ? null : _addSelectedComponent,
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('Thêm vào móng'),
+                style: FilledButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  backgroundColor: Colors.pink,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          TryOnPlacementControls(
-            selectedPlacement: _selectedPlacement,
-            onMoveLeft: () => _nudge(dx: -0.04),
-            onMoveRight: () => _nudge(dx: 0.04),
-            onMoveUp: () => _nudge(dy: -0.04),
-            onMoveDown: () => _nudge(dy: 0.04),
-            onScaleDown: () => _nudge(scale: -0.05),
-            onScaleUp: () => _nudge(scale: 0.05),
-            onRotateLeft: () => _nudge(rotation: -10),
-            onRotateRight: () => _nudge(rotation: 10),
-            onRemove: _removeSelectedPlacement,
-          ),
-        ],
-      ),
+        ),
+        TryOnPlacementControls(
+          selectedPlacement: _selectedPlacement,
+          onMoveLeft: () => _nudge(dx: -0.04),
+          onMoveRight: () => _nudge(dx: 0.04),
+          onMoveUp: () => _nudge(dy: -0.04),
+          onMoveDown: () => _nudge(dy: 0.04),
+          onScaleDown: () => _nudge(scale: -0.05),
+          onScaleUp: () => _nudge(scale: 0.05),
+          onRotateLeft: () => _nudge(rotation: -10),
+          onRotateRight: () => _nudge(rotation: 10),
+          onRemove: _removeSelectedPlacement,
+        ),
+      ],
     );
   }
 

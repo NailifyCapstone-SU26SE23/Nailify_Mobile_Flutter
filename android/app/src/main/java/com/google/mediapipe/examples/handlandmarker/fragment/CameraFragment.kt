@@ -31,6 +31,10 @@ import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.launch
 
 class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
 
@@ -139,6 +143,22 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
                 currentDelegate = viewModel.currentDelegate,
                 handLandmarkerHelperListener = this
             )
+        }
+
+        // Observe manual offsets từ ViewModel và forward vào OverlayView.
+        // Dùng repeatOnLifecycle(STARTED) để tự huỷ khi fragment đi vào background,
+        // tránh memory leak từ coroutine còn sống sau khi view bị destroy.
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.manualOffset.collect { offset ->
+                    fragmentCameraBinding.overlay.updateManualOffsets(
+                        offsetX  = offset.offsetX,
+                        offsetY  = offset.offsetY,
+                        scale    = offset.scale,
+                        rotation = offset.rotation
+                    )
+                }
+            }
         }
 
         // Attach listeners to UI control widgets

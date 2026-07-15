@@ -9,6 +9,7 @@ import android.view.View
 import androidx.core.content.ContextCompat
 import com.google.mediapipe.examples.handlandmarker.model.NailDecoration
 import com.google.mediapipe.examples.handlandmarker.model.NailSetConfig
+import com.google.mediapipe.examples.handlandmarker.utils.OneEuroFilter
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
 import kotlin.math.max
@@ -37,7 +38,7 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
     private var ballerinaBitmap: Bitmap? = null
     private var squovalBitmap: Bitmap? = null
     private var stilettoBitmap: Bitmap? = null
-    
+
     private var nailSetConfig: NailSetConfig = NailSetConfig.default()
     private val bitmapCache = mutableMapOf<String, Bitmap?>()
     private val loadingBitmaps = mutableSetOf<String>()
@@ -45,6 +46,50 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
     private var scaleFactor: Float = 1f
     private var imageWidth: Int = 1
     private var imageHeight: Int = 1
+
+    // ---------------------------------------------------------------------------
+    // Manual offsets — giá trị bù trừ thủ công do người dùng điều chỉnh từ Flutter.
+    // Được cộng vào sau khi bộ lọc 1€ đã làm mượt tọa độ Landmark.
+    // ---------------------------------------------------------------------------
+    @Volatile private var manualOffsetX: Float = 0f
+    @Volatile private var manualOffsetY: Float = 0f
+    @Volatile private var manualScale: Float = 1f
+    @Volatile private var manualRotation: Float = 0f
+
+    /**
+     * Cập nhật các giá trị bù trừ thủ công gửi từ Flutter qua MethodChannel.
+     * Hàm này an toàn khi được gọi từ bất kỳ thread nào nhờ @Volatile.
+     */
+    fun updateManualOffsets(
+        offsetX: Float = 0f,
+        offsetY: Float = 0f,
+        scale: Float = 1f,
+        rotation: Float = 0f
+    ) {
+        manualOffsetX = offsetX
+        manualOffsetY = offsetY
+        manualScale = scale
+        manualRotation = rotation
+        // Không cần invalidate() ở đây — onDraw() sẽ đọc giá trị mới ở frame tiếp theo.
+    }
+
+    // ---------------------------------------------------------------------------
+    // One Euro Filters — mỗi ngón tay có 1 filter riêng cho X và Y.
+    //
+    // Tham số được chọn dựa trên đặc điểm chuyển động tay khi làm móng:
+    //   minCutoff = 0.5  → đủ mượt khi tay đứng yên, loại bỏ jitter nhỏ (~2-4px).
+    //   beta      = 0.05 → phản ứng đủ nhanh khi tay di chuyển, tránh "bóng ma".
+    //   dCutoff   = 1.0  → cố định cho filter đạo hàm (không cần thay đổi).
+    //   freq      = 30f  → ước tính 30FPS; filter tự điều chỉnh theo dt thực tế.
+    //
+    // Tham số chống lag:
+    //   minCutoff = 1.5  → tăng lên để filter phản ứng nhanh hơn khi đứng yên.
+    //   beta      = 0.8  → tăng mạnh để giảm lag khi ngón tay di chuyển nhanh.
+    //                       Với beta cao, cutoff tăng tỉ lệ thuận với vận tốc → gần như
+    //                       không lọc khi di chuyển nhanh, nhưng vẫn mượt khi đứng yên.
+    // ---------------------------------------------------------------------------
+    private val filtersX = Array(5) { OneEuroFilter(freq = 30f, minCutoff = 1.5f, beta = 0.8f) }
+    private val filtersY = Array(5) { OneEuroFilter(freq = 30f, minCutoff = 1.5f, beta = 0.8f) }
 
     init {
         initPaints()
@@ -57,6 +102,9 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         results = null
         linePaint.reset()
         pointPaint.reset()
+        // Reset bộ lọc để tránh ghost value khi tracking bị mất và phục hồi
+        filtersX.forEach { it.reset() }
+        filtersY.forEach { it.reset() }
         invalidate()
         initPaints()
     }
@@ -76,28 +124,63 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         super.draw(canvas)
         results?.let { handLandmarkerResult ->
             for (landmark in handLandmarkerResult.landmarks()) {
-                val fingerTips = listOf(4, 8, 12, 16, 20) 
+                val fingerTips = listOf(4, 8, 12, 16, 20)
+                // Lấy timestamp một lần cho cả frame để tất cả filter dùng cùng mốc thời gian
+                val now = System.currentTimeMillis()
 
                 for ((fingerIndex, tipIndex) in fingerTips.withIndex()) {
-                    val tip = landmark[tipIndex]
-                    val joint =
-                        landmark[tipIndex - 1] // The joint right below the tip (7, 11, 15, 19, 3)
+                    val tip   = landmark[tipIndex]
+                    val joint = landmark[tipIndex - 1]
+
+                    // ----------------------------------------------------------------
+                    // FIX GHOST NAIL: Kiểm tra visibility của landmark đầu ngón tay.
+                    // Khi ngón gập vào lòng bàn tay, MediaPipe vẫn trả về tọa độ nhưng
+                    // visibility() sẽ < ngưỡng. Ta bỏ qua render và reset bộ lọc để
+                    // tránh "ghost nail" di chuyển theo tọa độ ảo.
+                    // ----------------------------------------------------------------
+                    val tipVisibility = tip.visibility().orElse(1f)
+                    if (tipVisibility < VISIBILITY_THRESHOLD) {
+                        // Reset filter để lần kế tiếp ngón xuất hiện không bị giật
+                        filtersX[fingerIndex].reset()
+                        filtersY[fingerIndex].reset()
+                        continue  // Bỏ qua render móng cho ngón này
+                    }
+
                     val design = nailSetConfig.nails.getOrNull(fingerIndex)
                         ?: nailSetConfig.nails.firstOrNull()
                         ?: continue
 
-                    val px = tip.x() * imageWidth * scaleFactor
-                    val py = tip.y() * imageHeight * scaleFactor
-                    
-                    val jx = joint.x() * imageWidth * scaleFactor
-                    val jy = joint.y() * imageHeight * scaleFactor
+                    // --- Bước 1: Tọa độ thô (Raw) từ Landmark ---
+                    val rawPx = tip.x() * imageWidth * scaleFactor
+                    val rawPy = tip.y() * imageHeight * scaleFactor
+                    val rawJx = joint.x() * imageWidth * scaleFactor
+                    val rawJy = joint.y() * imageHeight * scaleFactor
 
-                    val angle = Math.toDegrees(atan2((py - jy).toDouble(), (px - jx).toDouble())).toFloat()
+                    // --- Bước 2: Làm mượt X, Y của đầu ngón tay bằng 1€ Filter ---
+                    val smoothPx = filtersX[fingerIndex].filter(rawPx, now)
+                    val smoothPy = filtersY[fingerIndex].filter(rawPy, now)
 
-                    val fingerLength = hypot((px - jx).toDouble(), (py - jy).toDouble()).toFloat()
+                    // Joint (khớp) không cần lọc riêng — chỉ dùng để tính góc quay,
+                    // nên ta dùng raw value để tránh mismatch timing giữa tip và joint.
+                    val jx = rawJx
+                    val jy = rawJy
 
-                    canvas.withTranslation(px, py) {
-                        rotate(angle + 90f) // Rotate to match finger direction
+                    // --- Bước 3: Tính góc & kích thước từ tọa độ mượt ---
+                    val rawAngle = Math.toDegrees(
+                        atan2((smoothPy - jy).toDouble(), (smoothPx - jx).toDouble())
+                    ).toFloat()
+                    val fingerLength = hypot(
+                        (smoothPx - jx).toDouble(),
+                        (smoothPy - jy).toDouble()
+                    ).toFloat()
+
+                    // --- Bước 4: Áp dụng manual offset ---
+                    val finalPx = smoothPx + manualOffsetX
+                    val finalPy = smoothPy + manualOffsetY
+                    val finalAngle = rawAngle + manualRotation
+
+                    canvas.withTranslation(finalPx, finalPy) {
+                        rotate(finalAngle + 90f)
 
                         val customShapeBitmap = loadBitmapFromUri(design.customShapeSrc)
                         val shapeImageBitmap = loadBitmapFromUri(nailSetConfig.shapeImageSrc)
@@ -106,25 +189,24 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                             ?: getShapeBitmap(nailSetConfig.shape)
 
                         nailBitmap?.let { bitmap ->
-                            val nailWidth = fingerLength * 2f
-                            val nailHeight = fingerLength * 1.2f * nailSetConfig.length
+                            val baseNailWidth  = fingerLength * 2f
+                            val baseNailHeight = fingerLength * 1.2f * nailSetConfig.length
+                            val nailBottom  = fingerLength * 0.75f
+                            val totalHeight = baseNailHeight * 1.5f
 
-                            val nailBottom = fingerLength * 0.75f // Fixed base position relative to tip
-                            val totalHeight = nailHeight * 1.5f    // Total height expands with multiplier
+                            val nailWidth  = baseNailWidth  * manualScale
+                            val nailHeight = totalHeight    * manualScale
 
                             val destRect = RectF(
-                                -nailWidth / 2, 
-                                nailBottom - totalHeight, // Tip grows upwards
-                                nailWidth / 2, 
-                                nailBottom                // Base stays fixed
+                                -nailWidth / 2,
+                                nailBottom - nailHeight,
+                                nailWidth / 2,
+                                nailBottom
                             )
 
-                            // Layer 1: Base + Color (Skip color filter only for per-finger custom shapes)
                             if (customShapeBitmap == null) {
                                 drawNailBase(
-                                    this,
-                                    bitmap,
-                                    destRect,
+                                    this, bitmap, destRect,
                                     createNailPaint(
                                         design.color,
                                         design.gradient ?: nailSetConfig.gradient,
@@ -141,7 +223,6 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                                 drawDecoration(this, decoration, destRect)
                             }
                         }
-
                     }
                 }
             }
@@ -555,5 +636,14 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
     companion object {
         private const val LANDMARK_STROKE_WIDTH = 8F
         private const val FingerColorFallback = "#FF4081"
+
+        /**
+         * Ngưỡng visibility để quyết định có render móng hay không.
+         * MediaPipe trả về visibility trong [0.0, 1.0]:
+         *   > 0.5 → ngón tay nhìn thấy được → render móng.
+         *   ≤ 0.5 → ngón gập hoặc khuất     → bỏ qua + reset filter.
+         * Giảm giá trị nếu muốn móng ẩn sớm hơn, tăng nếu muốn móng ở lại lâu hơn.
+         */
+        private const val VISIBILITY_THRESHOLD = 0.5f
     }
 }

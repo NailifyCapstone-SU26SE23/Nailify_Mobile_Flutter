@@ -48,6 +48,16 @@ class MainActivity : AppCompatActivity() {
         try {
             val config = gson.fromJson(configJson, NailSetConfig::class.java)
             viewModel.applyNailSetConfig(config)
+
+            // Parse manual offsets ngoài NailSetConfig (Flutter gửi kèm trong cùng payload).
+            // Dùng JSONObject để tránh phụ thuộc vào data class chính.
+            val json = org.json.JSONObject(configJson)
+            viewModel.updateManualOffsets(
+                offsetX  = json.optDouble("manualOffsetX",  0.0).toFloat(),
+                offsetY  = json.optDouble("manualOffsetY",  0.0).toFloat(),
+                scale    = json.optDouble("manualScale",    1.0).toFloat(),
+                rotation = json.optDouble("manualRotation", 0.0).toFloat()
+            )
         } catch (_: JsonSyntaxException) {
             viewModel.applyNailSetConfig(NailSetConfig.default())
         }

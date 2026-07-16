@@ -120,113 +120,171 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         pointPaint.style = Paint.Style.FILL
     }
 
-        override fun draw(canvas: Canvas) {
+    override fun draw(canvas: Canvas) {
         super.draw(canvas)
-        results?.let { handLandmarkerResult ->
-            for (landmark in handLandmarkerResult.landmarks()) {
-                val fingerTips = listOf(4, 8, 12, 16, 20)
-                // Lấy timestamp một lần cho cả frame để tất cả filter dùng cùng mốc thời gian
-                val now = System.currentTimeMillis()
+        // Live mode: scaleFactor đã được tính sẵn bởi setResults()
+        drawNails(canvas, scaleFactor, applyFilters = true)
+    }
 
-                for ((fingerIndex, tipIndex) in fingerTips.withIndex()) {
-                    val tip   = landmark[tipIndex]
-                    val joint = landmark[tipIndex - 1]
+    /**
+     * Vẽ móng lên bất kỳ Canvas nào với scaleFactor tuỳ chỉnh.
+     *
+     * Được gọi bởi:
+     *   - draw()          → Live mode  (scaleFactor từ View size, có 1€ Filter)
+     *   - renderOnBitmap() → Snapshot mode (scaleFactor từ bitmap size, không filter)
+     *
+     * @param canvas        Canvas đích để vẽ
+     * @param sf            scaleFactor tương ứng với không gian tọa độ của canvas
+     * @param applyFilters  true = dùng 1€ Filter (Live), false = dùng raw coords (Snapshot)
+     */
+    private fun drawNails(canvas: Canvas, sf: Float, applyFilters: Boolean) {
+        val result = results ?: return
+        val now = System.currentTimeMillis()
 
-                    // ----------------------------------------------------------------
-                    // FIX GHOST NAIL: Kiểm tra visibility của landmark đầu ngón tay.
-                    // Khi ngón gập vào lòng bàn tay, MediaPipe vẫn trả về tọa độ nhưng
-                    // visibility() sẽ < ngưỡng. Ta bỏ qua render và reset bộ lọc để
-                    // tránh "ghost nail" di chuyển theo tọa độ ảo.
-                    // ----------------------------------------------------------------
+        for (landmark in result.landmarks()) {
+            val fingerTips = listOf(4, 8, 12, 16, 20)
+
+            for ((fingerIndex, tipIndex) in fingerTips.withIndex()) {
+                val tip   = landmark[tipIndex]
+                val joint = landmark[tipIndex - 1]
+
+                // Visibility guard — chỉ áp dụng cho Live mode để tránh ghost nail
+                if (applyFilters) {
                     val tipVisibility = tip.visibility().orElse(1f)
                     if (tipVisibility < VISIBILITY_THRESHOLD) {
-                        // Reset filter để lần kế tiếp ngón xuất hiện không bị giật
                         filtersX[fingerIndex].reset()
                         filtersY[fingerIndex].reset()
-                        continue  // Bỏ qua render móng cho ngón này
+                        continue
                     }
+                }
 
-                    val design = nailSetConfig.nails.getOrNull(fingerIndex)
-                        ?: nailSetConfig.nails.firstOrNull()
-                        ?: continue
+                val design = nailSetConfig.nails.getOrNull(fingerIndex)
+                    ?: nailSetConfig.nails.firstOrNull()
+                    ?: continue
 
-                    // --- Bước 1: Tọa độ thô (Raw) từ Landmark ---
-                    val rawPx = tip.x() * imageWidth * scaleFactor
-                    val rawPy = tip.y() * imageHeight * scaleFactor
-                    val rawJx = joint.x() * imageWidth * scaleFactor
-                    val rawJy = joint.y() * imageHeight * scaleFactor
+                // Tọa độ pixel trên canvas
+                val rawPx = tip.x()   * imageWidth  * sf
+                val rawPy = tip.y()   * imageHeight * sf
+                val rawJx = joint.x() * imageWidth  * sf
+                val rawJy = joint.y() * imageHeight * sf
 
-                    // --- Bước 2: Làm mượt X, Y của đầu ngón tay bằng 1€ Filter ---
-                    val smoothPx = filtersX[fingerIndex].filter(rawPx, now)
-                    val smoothPy = filtersY[fingerIndex].filter(rawPy, now)
+                // 1€ Filter — chỉ áp dụng cho Live mode
+                val finalPx: Float
+                val finalPy: Float
+                if (applyFilters) {
+                    finalPx = filtersX[fingerIndex].filter(rawPx, now) + manualOffsetX
+                    finalPy = filtersY[fingerIndex].filter(rawPy, now) + manualOffsetY
+                } else {
+                    finalPx = rawPx
+                    finalPy = rawPy
+                }
 
-                    // Joint (khớp) không cần lọc riêng — chỉ dùng để tính góc quay,
-                    // nên ta dùng raw value để tránh mismatch timing giữa tip và joint.
-                    val jx = rawJx
-                    val jy = rawJy
+                val angle = Math.toDegrees(
+                    atan2((finalPy - rawJy).toDouble(), (finalPx - rawJx).toDouble())
+                ).toFloat()
 
-                    // --- Bước 3: Tính góc & kích thước từ tọa độ mượt ---
-                    val rawAngle = Math.toDegrees(
-                        atan2((smoothPy - jy).toDouble(), (smoothPx - jx).toDouble())
-                    ).toFloat()
-                    val fingerLength = hypot(
-                        (smoothPx - jx).toDouble(),
-                        (smoothPy - jy).toDouble()
-                    ).toFloat()
+                val fingerLength = hypot(
+                    (finalPx - rawJx).toDouble(),
+                    (finalPy - rawJy).toDouble()
+                ).toFloat()
 
-                    // --- Bước 4: Áp dụng manual offset ---
-                    val finalPx = smoothPx + manualOffsetX
-                    val finalPy = smoothPy + manualOffsetY
-                    val finalAngle = rawAngle + manualRotation
+                val finalAngle = angle + if (applyFilters) manualRotation else 0f
 
-                    canvas.withTranslation(finalPx, finalPy) {
-                        rotate(finalAngle + 90f)
+                canvas.withTranslation(finalPx, finalPy) {
+                    rotate(finalAngle + 90f)
 
-                        val customShapeBitmap = loadBitmapFromUri(design.customShapeSrc)
-                        val shapeImageBitmap = loadBitmapFromUri(nailSetConfig.shapeImageSrc)
-                        val nailBitmap = customShapeBitmap
-                            ?: shapeImageBitmap
-                            ?: getShapeBitmap(nailSetConfig.shape)
+                    val customShapeBitmap = loadBitmapFromUri(design.customShapeSrc)
+                    val shapeImageBitmap  = loadBitmapFromUri(nailSetConfig.shapeImageSrc)
+                    val nailBitmap = customShapeBitmap
+                        ?: shapeImageBitmap
+                        ?: getShapeBitmap(nailSetConfig.shape)
 
-                        nailBitmap?.let { bitmap ->
-                            val baseNailWidth  = fingerLength * 2f
-                            val baseNailHeight = fingerLength * 1.2f * nailSetConfig.length
-                            val nailBottom  = fingerLength * 0.75f
-                            val totalHeight = baseNailHeight * 1.5f
+                    nailBitmap?.let { bitmap ->
+                        val scaleMultiplier = if (applyFilters) manualScale else 1f
 
-                            val nailWidth  = baseNailWidth  * manualScale
-                            val nailHeight = totalHeight    * manualScale
+                        val baseNailWidth  = fingerLength * 2f
+                        val baseNailHeight = fingerLength * 1.2f * nailSetConfig.length
+                        val nailBottom  = fingerLength * 0.75f
+                        val totalHeight = baseNailHeight * 1.5f
 
-                            val destRect = RectF(
-                                -nailWidth / 2,
-                                nailBottom - nailHeight,
-                                nailWidth / 2,
-                                nailBottom
-                            )
+                        val nailWidth  = baseNailWidth  * scaleMultiplier
+                        val nailHeight = totalHeight    * scaleMultiplier
 
-                            if (customShapeBitmap == null) {
-                                drawNailBase(
-                                    this, bitmap, destRect,
-                                    createNailPaint(
-                                        design.color,
-                                        design.gradient ?: nailSetConfig.gradient,
-                                        destRect
-                                    )
+                        val destRect = RectF(
+                            -nailWidth / 2,
+                            nailBottom - nailHeight,
+                            nailWidth / 2,
+                            nailBottom
+                        )
+
+                        if (customShapeBitmap == null) {
+                            drawNailBase(
+                                this, bitmap, destRect,
+                                createNailPaint(
+                                    design.color,
+                                    design.gradient ?: nailSetConfig.gradient,
+                                    destRect
                                 )
-                            } else {
-                                drawBitmap(bitmap, null, destRect, null)
-                            }
+                            )
+                        } else {
+                            drawBitmap(bitmap, null, destRect, null)
+                        }
 
-                            drawNailSurface(this, bitmap, destRect)
+                        drawNailSurface(this, bitmap, destRect)
 
-                            design.decorations.forEach { decoration ->
-                                drawDecoration(this, decoration, destRect)
-                            }
+                        design.decorations.forEach { decoration ->
+                            drawDecoration(this, decoration, destRect)
                         }
                     }
                 }
             }
         }
+    }
+
+    /**
+     * Snapshot mode: vẽ toàn bộ móng AR lên bitmap tuỳ chỉnh.
+     *
+     * Dùng chung 100% thuật toán render với Live mode (qua drawNails()),
+     * nhưng tính scaleFactor từ kích thước bitmap thay vì kích thước View.
+     *
+     * PHẢI được gọi trên main thread.
+     *
+     * @param targetBitmap  Bitmap mutable để vẽ lên (ảnh chụp từ camera)
+     * @param result        Kết quả MediaPipe IMAGE mode
+     * @param imgW          Chiều rộng ảnh gốc mà MediaPipe đã phân tích
+     * @param imgH          Chiều cao ảnh gốc mà MediaPipe đã phân tích
+     */
+    fun renderOnBitmap(
+        targetBitmap: Bitmap,
+        result: com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult,
+        imgW: Int,
+        imgH: Int
+    ) {
+        // Snapshot dùng BoxFit.contain → scaleFactor = min(bitmapW/imgW, bitmapH/imgH)
+        val sf = min(
+            targetBitmap.width.toFloat()  / imgW.toFloat(),
+            targetBitmap.height.toFloat() / imgH.toFloat()
+        )
+
+        // Lưu trạng thái cũ để không ảnh hưởng Live mode
+        val prevResults     = results
+        val prevImageWidth  = imageWidth
+        val prevImageHeight = imageHeight
+        val prevScaleFactor = scaleFactor
+
+        results     = result
+        imageWidth  = imgW
+        imageHeight = imgH
+        scaleFactor = sf
+
+        val canvas = android.graphics.Canvas(targetBitmap)
+        drawNails(canvas, sf, applyFilters = false)
+
+        // Restore để Live mode không bị ảnh hưởng
+        results     = prevResults
+        imageWidth  = prevImageWidth
+        imageHeight = prevImageHeight
+        scaleFactor = prevScaleFactor
     }
 
     fun setResults(

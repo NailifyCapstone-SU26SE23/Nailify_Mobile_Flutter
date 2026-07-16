@@ -17,6 +17,22 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!--
+        Khung viền hướng dẫn đặt bàn tay.
+        Chỉ visible khi ở chế độ Snapshot (set từ CameraFragment).
+        Dùng vector drawable riêng nếu có; tạm dùng src placeholder.
+    -->
+    <ImageView
+        android:id="@+id/img_hand_guide"
+        android:layout_width="260dp"
+        android:layout_height="300dp"
+        android:layout_gravity="center"
+        android:alpha="0.5"
+        android:scaleType="fitCenter"
+        android:visibility="gone"
+        android:contentDescription="Đặt bàn tay vào khung này" />
+
+    <!-- Nút Back -->
     <androidx.cardview.widget.CardView
         android:layout_width="48dp"
         android:layout_height="48dp"
@@ -35,6 +51,7 @@
             app:tint="@android:color/white" />
     </androidx.cardview.widget.CardView>
 
+    <!-- Nhóm Zoom In / Out (cạnh phải) -->
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -84,7 +101,9 @@
         </androidx.cardview.widget.CardView>
     </LinearLayout>
 
+    <!-- Nút chụp Live (lưu thư viện) — chỉ hiện ở Live mode -->
     <androidx.cardview.widget.CardView
+        android:id="@+id/card_capture"
         android:layout_width="72dp"
         android:layout_height="72dp"
         android:layout_gravity="bottom|center_horizontal"
@@ -100,6 +119,31 @@
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:src="@android:drawable/ic_menu_camera"
             app:tint="#000000" />
+    </androidx.cardview.widget.CardView>
+
+    <!--
+        Nút chụp Snapshot — chỉ hiện ở Snapshot mode.
+        Màu hồng (pink) để phân biệt với nút Live.
+        Khi bấm: Native chụp ảnh → MediaPipe IMAGE → trả JSON + path về Flutter.
+    -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/card_take_photo"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="32dp"
+        android:visibility="gone"
+        app:cardCornerRadius="40dp"
+        app:cardBackgroundColor="#FFFF69B4"
+        app:cardElevation="6dp">
+
+        <ImageButton
+            android:id="@+id/btn_take_photo"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_camera"
+            app:tint="@android:color/white" />
     </androidx.cardview.widget.CardView>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

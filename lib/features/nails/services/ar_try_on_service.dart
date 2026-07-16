@@ -45,6 +45,28 @@ class ArTryOnService {
     );
   }
 
+  /// Mở camera ở chế độ Snapshot:
+  /// Native chụp ảnh → chạy MediaPipe IMAGE → trả về [SnapshotResult]
+  /// chứa đường dẫn ảnh và danh sách tọa độ từng ngón tay.
+  Future<SnapshotResult> launchCustomerSnapshot(CustomerNailModel customerNail) async {
+    if (!Platform.isAndroid) {
+      throw UnsupportedError('Snapshot try-on chỉ hỗ trợ Android.');
+    }
+    
+    final config = _convertCustomerToArFormat(customerNail);
+
+    final result = await _channel.invokeMethod<Map<dynamic, dynamic>>(
+      'launchSnapshot',
+      {'config': config},
+    );
+    if (result == null) {
+      throw Exception('Native không trả về kết quả Snapshot.');
+    }
+    final imagePath = result['imagePath'] as String? ?? '';
+    final jsonStr   = result['landmarksJson'] as String? ?? '[]';
+    return SnapshotResult.fromJson(imagePath, jsonStr);
+  }
+
   Future<void> launch(
     NailVariantModel nailVariant, {
     NailSurfaceModel? surface,
@@ -341,4 +363,79 @@ class _FingerAppearance {
   final Map<String, dynamic>? gradient;
 
   const _FingerAppearance({this.color, this.gradient});
+}
+
+// =============================================================================
+// Snapshot Result Models
+// =============================================================================
+
+/// Kết quả trả về từ Native sau khi chụp Snapshot và phân tích MediaPipe.
+class SnapshotResult {
+  /// Đường dẫn tuyệt đối đến file ảnh trong cache của Native.
+  final String imagePath;
+
+  /// Danh sách tọa độ đã tính sẵn cho từng ngón tay (thumb → pinky).
+  final List<FingerLandmark> landmarks;
+
+  const SnapshotResult({required this.imagePath, required this.landmarks});
+
+  factory SnapshotResult.fromJson(String imagePath, String jsonStr) {
+    final list = jsonDecode(jsonStr) as List<dynamic>;
+    return SnapshotResult(
+      imagePath: imagePath,
+      landmarks: list.map((item) => FingerLandmark.fromMap(item as Map<dynamic, dynamic>)).toList(),
+    );
+  }
+
+  bool get hasHand => landmarks.isNotEmpty;
+}
+
+/// Tọa độ và góc xoay của một ngón tay đã được Native tính sẵn.
+///
+/// Công thức render trong Flutter:
+///   finalX = baseX + manualOffsetX
+///   finalY = baseY + manualOffsetY
+///   finalRotation = baseRotation + manualRotation
+///   finalScale = baseScale * manualScale  (tuỳ chỉnh kích thước từ D-Pad)
+class FingerLandmark {
+  final String finger;      // "thumb", "index", "middle", "ring", "pinky"
+  final int fingerIndex;    // 0..4
+
+  /// Tọa độ pixel của đầu ngón tay trên ảnh gốc từ Native.
+  final double baseX;
+  final double baseY;
+
+  /// Góc hướng ngón tay (radian). atan2(tip - joint).
+  final double baseRotation;
+
+  /// Khoảng cách tip ↔ joint (pixel) — làm cơ sở kích thước móng.
+  final double baseScale;
+
+  /// Kích thước ảnh Native (để Flutter tự tính tỉ lệ scale sang màn hình).
+  final int imageWidth;
+  final int imageHeight;
+
+  const FingerLandmark({
+    required this.finger,
+    required this.fingerIndex,
+    required this.baseX,
+    required this.baseY,
+    required this.baseRotation,
+    required this.baseScale,
+    required this.imageWidth,
+    required this.imageHeight,
+  });
+
+  factory FingerLandmark.fromMap(Map<dynamic, dynamic> map) {
+    return FingerLandmark(
+      finger:       map['finger']       as String? ?? '',
+      fingerIndex:  (map['fingerIndex'] as num?)?.toInt() ?? 0,
+      baseX:        (map['baseX']       as num?)?.toDouble() ?? 0,
+      baseY:        (map['baseY']       as num?)?.toDouble() ?? 0,
+      baseRotation: (map['baseRotation'] as num?)?.toDouble() ?? 0,
+      baseScale:    (map['baseScale']   as num?)?.toDouble() ?? 1,
+      imageWidth:   (map['imageWidth']  as num?)?.toInt() ?? 1,
+      imageHeight:  (map['imageHeight'] as num?)?.toInt() ?? 1,
+    );
+  }
 }

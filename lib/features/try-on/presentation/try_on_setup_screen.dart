@@ -19,6 +19,7 @@ import '../widgets/nail_surface_selector.dart';
 import '../widgets/try_on_color_selector.dart';
 import '../widgets/try_on_placement_controls.dart';
 import '../widgets/try_on_preview_board.dart';
+import 'try_on_method_selection_screen.dart';
 
 class TryOnSetupScreen extends StatefulWidget {
   final CustomerNailModel? customerNail;
@@ -298,32 +299,17 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
     });
   }
 
-  Future<void> _launchTryOn({required bool photo}) async {
+  void _navigateToMethodSelection() {
     final preview = _buildPreviewNail();
     if (preview == null) {
       _showMessage('Vui lòng chọn dáng móng.');
       return;
     }
-
-    setState(() => _launching = true);
-    try {
-      final service = getIt<ArTryOnService>();
-      final available = await service.isAvailable();
-      if (!available) {
-        throw UnsupportedError(
-          'Virtual try-on is not available on this build.',
-        );
-      }
-      if (photo) {
-        await service.launchCustomerPhoto(preview);
-      } else {
-        await service.launchCustomerLive(preview);
-      }
-    } catch (error) {
-      _showMessage(error.toString());
-    } finally {
-      if (mounted) setState(() => _launching = false);
-    }
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => TryOnMethodSelectionScreen(previewNail: preview),
+      ),
+    );
   }
 
   String _buildColorJson() {
@@ -485,14 +471,13 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
           ),
           child: Row(
             children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _launching ? null : () => _launchTryOn(photo: false),
-                  icon: const Icon(Icons.camera_alt_outlined),
-                  label: const Text('Thử móng AR'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
+              IconButton.filledTonal(
+                onPressed: _launching ? null : _navigateToMethodSelection,
+                icon: const Icon(Icons.camera_alt, size: 28),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.pink.shade50,
+                  foregroundColor: Colors.pink,
+                  padding: const EdgeInsets.all(16),
                 ),
               ),
               const SizedBox(width: 16),

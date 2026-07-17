@@ -9,6 +9,7 @@ import android.view.View
 import androidx.core.content.ContextCompat
 import com.google.mediapipe.examples.handlandmarker.model.NailDecoration
 import com.google.mediapipe.examples.handlandmarker.model.NailSetConfig
+import com.google.mediapipe.examples.handlandmarker.utils.OneEuroFilter
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
 import kotlin.math.max
@@ -36,7 +37,7 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
     private var ballerinaBitmap: Bitmap? = null
     private var squovalBitmap: Bitmap? = null
     private var stilettoBitmap: Bitmap? = null
-    
+
     private var nailSetConfig: NailSetConfig = NailSetConfig.default()
     private val bitmapCache = mutableMapOf<String, Bitmap?>()
     private val loadingBitmaps = mutableSetOf<String>()
@@ -44,6 +45,50 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
     private var scaleFactor: Float = 1f
     private var imageWidth: Int = 1
     private var imageHeight: Int = 1
+
+    // ---------------------------------------------------------------------------
+    // Manual offsets — giá trị bù trừ thủ công do người dùng điều chỉnh từ Flutter.
+    // Được cộng vào sau khi bộ lọc 1€ đã làm mượt tọa độ Landmark.
+    // ---------------------------------------------------------------------------
+    @Volatile private var manualOffsetX: Float = 0f
+    @Volatile private var manualOffsetY: Float = 0f
+    @Volatile private var manualScale: Float = 1f
+    @Volatile private var manualRotation: Float = 0f
+
+    /**
+     * Cập nhật các giá trị bù trừ thủ công gửi từ Flutter qua MethodChannel.
+     * Hàm này an toàn khi được gọi từ bất kỳ thread nào nhờ @Volatile.
+     */
+    fun updateManualOffsets(
+        offsetX: Float = 0f,
+        offsetY: Float = 0f,
+        scale: Float = 1f,
+        rotation: Float = 0f
+    ) {
+        manualOffsetX = offsetX
+        manualOffsetY = offsetY
+        manualScale = scale
+        manualRotation = rotation
+        // Không cần invalidate() ở đây — onDraw() sẽ đọc giá trị mới ở frame tiếp theo.
+    }
+
+    // ---------------------------------------------------------------------------
+    // One Euro Filters — mỗi ngón tay có 1 filter riêng cho X và Y.
+    //
+    // Tham số được chọn dựa trên đặc điểm chuyển động tay khi làm móng:
+    //   minCutoff = 0.5  → đủ mượt khi tay đứng yên, loại bỏ jitter nhỏ (~2-4px).
+    //   beta      = 0.05 → phản ứng đủ nhanh khi tay di chuyển, tránh "bóng ma".
+    //   dCutoff   = 1.0  → cố định cho filter đạo hàm (không cần thay đổi).
+    //   freq      = 30f  → ước tính 30FPS; filter tự điều chỉnh theo dt thực tế.
+    //
+    // Tham số chống lag:
+    //   minCutoff = 1.5  → tăng lên để filter phản ứng nhanh hơn khi đứng yên.
+    //   beta      = 0.8  → tăng mạnh để giảm lag khi ngón tay di chuyển nhanh.
+    //                       Với beta cao, cutoff tăng tỉ lệ thuận với vận tốc → gần như
+    //                       không lọc khi di chuyển nhanh, nhưng vẫn mượt khi đứng yên.
+    // ---------------------------------------------------------------------------
+    private val filtersX = Array(5) { OneEuroFilter(freq = 30f, minCutoff = 1.5f, beta = 0.8f) }
+    private val filtersY = Array(5) { OneEuroFilter(freq = 30f, minCutoff = 1.5f, beta = 0.8f) }
 
     init {
         initPaints()
@@ -56,6 +101,9 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         results = null
         linePaint.reset()
         pointPaint.reset()
+        // Reset bộ lọc để tránh ghost value khi tracking bị mất và phục hồi
+        filtersX.forEach { it.reset() }
+        filtersY.forEach { it.reset() }
         invalidate()
         initPaints()
     }
@@ -84,7 +132,7 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         pointPaint.style = Paint.Style.FILL
     }
 
-        override fun draw(canvas: Canvas) {
+    override fun draw(canvas: Canvas) {
         super.draw(canvas)
         results?.let { handLandmarkerResult ->
             // FIX: Lấy vị trí cổ tay (wrist) và cổ tay trung tâm (middle finger MCP) để tính tọa độ tương đối
@@ -321,23 +369,58 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                                 nailBottom                // Base stays fixed
                             )
 
-                            // Layer 1: Base + Color (Skip color filter only for per-finger custom shapes)
-                            if (customShapeBitmap == null) {
-                                drawNailBase(
-                                    this,
-                                    bitmap,
-                                    destRect,
-                                    createNailPaint(
-                                        design.color,
-                                        design.gradient ?: nailSetConfig.gradient,
-                                        destRect
-                                    )
-                                )
-                            } else {
-                                drawBitmap(bitmap, null, destRect, null)
-                            }
+    /**
+     * Vẽ móng lên bất kỳ Canvas nào với scaleFactor tuỳ chỉnh.
+     *
+     * Được gọi bởi:
+     *   - draw()          → Live mode  (scaleFactor từ View size, có 1€ Filter)
+     *   - renderOnBitmap() → Snapshot mode (scaleFactor từ bitmap size, không filter)
+     *
+     * @param canvas        Canvas đích để vẽ
+     * @param sf            scaleFactor tương ứng với không gian tọa độ của canvas
+     * @param applyFilters  true = dùng 1€ Filter (Live), false = dùng raw coords (Snapshot)
+     */
+    private fun drawNails(canvas: Canvas, sf: Float, applyFilters: Boolean) {
+        val result = results ?: return
+        val now = System.currentTimeMillis()
 
-                            drawNailSurface(this, bitmap, destRect)
+        for (landmark in result.landmarks()) {
+            val fingerTips = listOf(4, 8, 12, 16, 20)
+
+            for ((fingerIndex, tipIndex) in fingerTips.withIndex()) {
+                val tip   = landmark[tipIndex]
+                val joint = landmark[tipIndex - 1]
+
+                // Visibility guard — chỉ áp dụng cho Live mode để tránh ghost nail
+                if (applyFilters) {
+                    val tipVisibility = tip.visibility().orElse(1f)
+                    if (tipVisibility < VISIBILITY_THRESHOLD) {
+                        filtersX[fingerIndex].reset()
+                        filtersY[fingerIndex].reset()
+                        continue
+                    }
+                }
+
+                val design = nailSetConfig.nails.getOrNull(fingerIndex)
+                    ?: nailSetConfig.nails.firstOrNull()
+                    ?: continue
+
+                // Tọa độ pixel trên canvas
+                val rawPx = tip.x()   * imageWidth  * sf
+                val rawPy = tip.y()   * imageHeight * sf
+                val rawJx = joint.x() * imageWidth  * sf
+                val rawJy = joint.y() * imageHeight * sf
+
+                // 1€ Filter — chỉ áp dụng cho Live mode
+                val finalPx: Float
+                val finalPy: Float
+                if (applyFilters) {
+                    finalPx = filtersX[fingerIndex].filter(rawPx, now) + manualOffsetX
+                    finalPy = filtersY[fingerIndex].filter(rawPy, now) + manualOffsetY
+                } else {
+                    finalPx = rawPx
+                    finalPy = rawPy
+                }
 
                             design.decorations.forEach { decoration ->
                                 drawDecoration(this, decoration, destRect)
@@ -358,6 +441,11 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                             )
                         }
 
+                        drawNailSurface(this, bitmap, destRect)
+
+                        design.decorations.forEach { decoration ->
+                            drawDecoration(this, decoration, destRect)
+                        }
                     }
                 }
 
@@ -373,6 +461,65 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                 )
             }
         }
+    }
+
+    /**
+     * Snapshot mode: vẽ toàn bộ móng AR lên bitmap tuỳ chỉnh.
+     *
+     * Dùng chung 100% thuật toán render với Live mode (qua drawNails()),
+     * nhưng tính scaleFactor từ kích thước bitmap thay vì kích thước View.
+     *
+     * PHẢI được gọi trên main thread.
+     *
+     * @param targetBitmap  Bitmap mutable để vẽ lên (ảnh chụp từ camera)
+     * @param result        Kết quả MediaPipe IMAGE mode
+     * @param imgW          Chiều rộng ảnh gốc mà MediaPipe đã phân tích
+     * @param imgH          Chiều cao ảnh gốc mà MediaPipe đã phân tích
+     */
+    /**
+     * Snapshot mode: vẽ toàn bộ móng AR lên bitmap tuỳ chỉnh.
+     *
+     * PHẢI được gọi từ background thread vì preloadAllBitmapsSync() thực hiện
+     * network call để tải decoration images một cách đồng bộ.
+     *
+     * @param targetBitmap  Bitmap mutable để vẽ lên (ảnh chụp từ camera)
+     * @param result        Kết quả MediaPipe IMAGE mode
+     * @param imgW          Chiều rộng ảnh gốc mà MediaPipe đã phân tích
+     * @param imgH          Chiều cao ảnh gốc mà MediaPipe đã phân tích
+     */
+    fun renderOnBitmap(
+        targetBitmap: Bitmap,
+        result: com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult,
+        imgW: Int,
+        imgH: Int
+    ) {
+        // Caller (CameraFragment) is responsible for calling preloadAllBitmapsForSnapshot()
+        // on a background thread BEFORE calling this method, so all bitmaps are
+        // guaranteed to be in bitmapCache when drawNails() runs.
+        val sf = min(
+            targetBitmap.width.toFloat()  / imgW.toFloat(),
+            targetBitmap.height.toFloat() / imgH.toFloat()
+        )
+
+        // Lưu trạng thái cũ để không ảnh hưởng Live mode
+        val prevResults     = results
+        val prevImageWidth  = imageWidth
+        val prevImageHeight = imageHeight
+        val prevScaleFactor = scaleFactor
+
+        results     = result
+        imageWidth  = imgW
+        imageHeight = imgH
+        scaleFactor = sf
+
+        val canvas = android.graphics.Canvas(targetBitmap)
+        drawNails(canvas, sf, applyFilters = false)
+
+        // Restore để Live mode không bị ảnh hưởng
+        results     = prevResults
+        imageWidth  = prevImageWidth
+        imageHeight = prevImageHeight
+        scaleFactor = prevScaleFactor
     }
 
     fun setResults(
@@ -406,24 +553,17 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         invalidate()
     }
 
+    /**
+     * Tải bitmap KHÔNG đồng bộ (async) — dùng cho Live mode.
+     * Lần gọi đầu trả null và kích hoạt tải nền; các frame tiếp theo trả cache.
+     */
     private fun loadBitmapFromUri(uriString: String?): Bitmap? {
         if (uriString == null) return null
         if (bitmapCache.containsKey(uriString)) return bitmapCache[uriString]
         if (!loadingBitmaps.add(uriString)) return null
 
         Thread {
-            val bitmap = try {
-                if (uriString.startsWith("http://") || uriString.startsWith("https://")) {
-                    URL(uriString).openStream().use { BitmapFactory.decodeStream(it) }
-                } else {
-                    val uri = android.net.Uri.parse(uriString)
-                    context.contentResolver.openInputStream(uri).use { inputStream ->
-                        BitmapFactory.decodeStream(inputStream)
-                    }
-                }
-            } catch (_: Exception) {
-                null
-            }
+            val bitmap = fetchBitmapBlocking(uriString)
             post {
                 bitmapCache[uriString] = bitmap
                 loadingBitmaps.remove(uriString)
@@ -432,6 +572,54 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
             }
         }.start()
         return null
+    }
+
+    /**
+     * Tải bitmap ĐỒNG BỘ (blocking) — dùng cho Snapshot mode.
+     * Trả về bitmap ngay lập tức; kết quả được lưu vào cache cho Live mode sau này.
+     * PHẢI được gọi từ background thread (không phải main thread).
+     */
+    private fun loadBitmapSync(uriString: String?): Bitmap? {
+        if (uriString == null) return null
+        // Kiểm tra cache trước
+        bitmapCache[uriString]?.let { return it }
+        val bitmap = fetchBitmapBlocking(uriString)
+        // Lưu vào cache để dùng lại
+        bitmapCache[uriString] = bitmap
+        loadingBitmaps.remove(uriString)
+        return bitmap
+    }
+
+    /** Thực sự tải bitmap từ URL/URI — dùng chung cho cả async và sync. */
+    private fun fetchBitmapBlocking(uriString: String): Bitmap? {
+        return try {
+            if (uriString.startsWith("http://") || uriString.startsWith("https://")) {
+                URL(uriString).openStream().use { BitmapFactory.decodeStream(it) }
+            } else {
+                val uri = android.net.Uri.parse(uriString)
+                context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                    BitmapFactory.decodeStream(inputStream)
+                }
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /**
+     * Preload tất cả bitmap cần thiết cho Snapshot mode một cách ĐỒNG BỘ.
+     *
+     * PHẢI được gọi từ background/worker thread (ví dụ: backgroundExecutor)
+     * BEFORE gọi renderOnBitmap(). Không gọi trên main thread — sẽ bị StrictMode.
+     */
+    fun preloadAllBitmapsForSnapshot(config: NailSetConfig) {
+        loadBitmapSync(config.shapeImageSrc)
+        config.nails.forEach { design ->
+            loadBitmapSync(design.customShapeSrc)
+            design.decorations.forEach { decoration ->
+                loadBitmapSync(decoration.imageSrc)
+            }
+        }
     }
 
     private fun preloadDesignBitmaps(config: NailSetConfig) {
@@ -785,5 +973,14 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
     companion object {
         private const val LANDMARK_STROKE_WIDTH = 8F
         private const val FingerColorFallback = "#FF4081"
+
+        /**
+         * Ngưỡng visibility để quyết định có render móng hay không.
+         * MediaPipe trả về visibility trong [0.0, 1.0]:
+         *   > 0.5 → ngón tay nhìn thấy được → render móng.
+         *   ≤ 0.5 → ngón gập hoặc khuất     → bỏ qua + reset filter.
+         * Giảm giá trị nếu muốn móng ẩn sớm hơn, tăng nếu muốn móng ở lại lâu hơn.
+         */
+        private const val VISIBILITY_THRESHOLD = 0.5f
     }
 }

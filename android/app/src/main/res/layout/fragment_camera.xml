@@ -9,15 +9,66 @@
         android:id="@+id/view_finder"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        app:implementationMode="compatible"
         app:scaleType="fillStart" />
+
+    <!-- Freeze frame: hiển thị khi bấm chụp để user thấy ảnh đã bắt xong, có thể thả tay -->
+    <ImageView
+        android:id="@+id/img_freeze_frame"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitStart"
+        android:visibility="gone" />
+
+    <!-- Flash overlay: nhấp nháy trắng giả lập shutter khi bấm chụp -->
+    <View
+        android:id="@+id/view_shutter_flash"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#FFFFFFFF"
+        android:visibility="gone" />
 
     <com.google.mediapipe.examples.handlandmarker.OverlayView
         android:id="@+id/overlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <Button
-        android:id="@+id/btnBack"
+    <!--
+        Khung viền hướng dẫn đặt bàn tay.
+        Chỉ visible khi ở chế độ Snapshot (set từ CameraFragment).
+        Dùng vector drawable riêng nếu có; tạm dùng src placeholder.
+    -->
+    <ImageView
+        android:id="@+id/img_hand_guide"
+        android:layout_width="260dp"
+        android:layout_height="300dp"
+        android:layout_gravity="center"
+        android:alpha="0.5"
+        android:scaleType="fitCenter"
+        android:visibility="gone"
+        android:contentDescription="Đặt bàn tay vào khung này" />
+
+    <!-- Nút Back -->
+    <androidx.cardview.widget.CardView
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="top|start"
+        android:layout_margin="16dp"
+        app:cardCornerRadius="24dp"
+        app:cardBackgroundColor="#80000000"
+        app:cardElevation="0dp">
+
+        <ImageButton
+            android:id="@+id/btn_back"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="?android:attr/selectableItemBackground"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            app:tint="@android:color/white" />
+    </androidx.cardview.widget.CardView>
+
+    <!-- Nhóm Zoom In / Out (cạnh phải) -->
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Back"
@@ -48,7 +99,4 @@
         android:indeterminate="true"
         android:visibility="gone" />
 
-    <include
-        android:id="@+id/bottom_sheet_layout"
-        layout="@layout/info_bottom_sheet" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

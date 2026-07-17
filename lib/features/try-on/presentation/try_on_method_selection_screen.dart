@@ -41,24 +41,29 @@ class _TryOnMethodSelectionScreenState extends State<TryOnMethodSelectionScreen>
       if (!await service.isAvailable()) {
         throw UnsupportedError('Virtual try-on is not available on this build.');
       }
-      // Gọi Native → camera mở → người dùng chụp → trả SnapshotResult
-      final result = await service.launchCustomerSnapshot(widget.previewNail);
 
-      if (!mounted) return;
+      // Vòng lặp: mở camera → nếu user bấm "Chụp lại" thì mở camera lại
+      // mà KHÔNG đưa user về trang chọn phương thức.
+      while (true) {
+        final result = await service.launchCustomerSnapshot(widget.previewNail);
+        if (!mounted) return;
 
-
-
-      // Chuyển sang màn hình xem trước móng trên ảnh tĩnh
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => SnapshotPreviewScreen(
-            snapshot: result,
-            nail:     widget.previewNail,
+        // Push màn hình Preview và chờ kết quả
+        final action = await Navigator.of(context).push<String>(
+          MaterialPageRoute(
+            builder: (_) => SnapshotPreviewScreen(
+              snapshot: result,
+              nail:     widget.previewNail,
+            ),
           ),
-        ),
-      );
+        );
+
+        // 'retake' → quay lại camera chụp tiếp (vòng lặp tiếp tục)
+        // null/khác  → người dùng bấm Back → thoát
+        if (action != 'retake') break;
+      }
     } catch (error) {
-      _showError(error.toString());
+      if (mounted) _showError(error.toString());
     } finally {
       if (mounted) setState(() => _launching = false);
     }

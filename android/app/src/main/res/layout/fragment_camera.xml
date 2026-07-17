@@ -12,6 +12,22 @@
         app:implementationMode="compatible"
         app:scaleType="fillStart" />
 
+    <!-- Freeze frame: hiển thị khi bấm chụp để user thấy ảnh đã bắt xong, có thể thả tay -->
+    <ImageView
+        android:id="@+id/img_freeze_frame"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitStart"
+        android:visibility="gone" />
+
+    <!-- Flash overlay: nhấp nháy trắng giả lập shutter khi bấm chụp -->
+    <View
+        android:id="@+id/view_shutter_flash"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#FFFFFFFF"
+        android:visibility="gone" />
+
     <com.google.mediapipe.examples.handlandmarker.OverlayView
         android:id="@+id/overlay"
         android:layout_width="match_parent"

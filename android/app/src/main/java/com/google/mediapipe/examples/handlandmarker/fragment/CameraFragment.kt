@@ -228,20 +228,40 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
     // -------------------------------------------------------------------------
 
     private fun takeSnapshotAndAnalyze() {
+        // ── BƯỚC 0: BẮT NGAY BITMAP NGAY KHI NÚT ĐƯỢC BẤM ──────────────────────
+        // viewFinder.bitmap lấy frame hiện tại (synchronous) — PHẢI gọi trên main thread.
         val bitmap = fragmentCameraBinding.viewFinder.bitmap
         if (bitmap == null) {
             Toast.makeText(requireContext(), "Camera chưa sẵn sàng", Toast.LENGTH_SHORT).show()
             return
         }
 
-        fragmentCameraBinding.btnTakePhoto.isEnabled = false
-        Toast.makeText(requireContext(), "Đang xử lý hình ảnh…", Toast.LENGTH_SHORT).show()
-
-        // Chuẩn bị bitmap mutable ARGB_8888 để vẽ lên
-        val mutableBitmap = if (bitmap.config == Bitmap.Config.ARGB_8888&& bitmap.isMutable) {
+        // Chuẩn bị bitmap mutable ARGB_8888 để vẽ lên (làm ngay trước khi hiệu ứng)
+        val mutableBitmap = if (bitmap.config == Bitmap.Config.ARGB_8888 && bitmap.isMutable) {
             bitmap
         } else {
             bitmap.copy(Bitmap.Config.ARGB_8888, true)
+        }
+
+        // ── BƯỚC 1: PHẢN HỒI TRỰC QUAN NGAY LẬP TỨC ────────────────────────────
+        // Người dùng thấy ảnh "đông cứng" → biết đã chụp xong → có thể thả tay.
+        fragmentCameraBinding.btnTakePhoto.isEnabled = false
+
+        // Hiện freeze frame đè lên camera preview
+        fragmentCameraBinding.imgFreezeFrame.apply {
+            setImageBitmap(mutableBitmap)
+            visibility = android.view.View.VISIBLE
+        }
+
+        // Flash shutter: hiện overlay trắng → fade out trong 150ms
+        fragmentCameraBinding.viewShutterFlash.apply {
+            visibility = android.view.View.VISIBLE
+            alpha = 1f
+            animate()
+                .alpha(0f)
+                .setDuration(150)
+                .withEndAction { visibility = android.view.View.GONE }
+                .start()
         }
 
         // Bước 1: Chạy MediaPipe ở background thread (không block main thread)
@@ -250,29 +270,58 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
                 val imageHelper = HandLandmarkerHelper(
                     context = requireContext(),
                     runningMode = RunningMode.IMAGE,
-                    minHandDetectionConfidence = 0.3f,
-                    minHandTrackingConfidence  = 0.3f,
-                    minHandPresenceConfidence  = 0.3f,
-                    maxNumHands = 1,
+                    minHandDetectionConfidence = 0.15f,
+                    minHandTrackingConfidence  = 0.15f,
+                    minHandPresenceConfidence  = 0.15f,
+                    maxNumHands = 2,
                     currentDelegate = HandLandmarkerHelper.DELEGATE_CPU
                 )
-                val resultBundle = imageHelper.detectImage(mutableBitmap)
+
+                // ── MULTI-ATTEMPT DETECTION ──────────────────────────────────────────
+                // Thử nhiều mức tăng cường ảnh khác nhau, dừng khi tìm thấy bàn tay.
+                // CHỈ dùng ảnh gốc (không xoay) — nếu xoay, toạ độ landmark sẽ bị lệch!
+                data class Attempt(val contrastScale: Float, val brightAdd: Float)
+                val attempts = listOf(
+                    Attempt(1.0f,  0f),   // Ảnh gốc
+                    Attempt(1.35f, 25f),  // Tăng nhẹ
+                    Attempt(1.7f,  50f),  // Tăng vừa
+                    Attempt(2.0f,  70f),  // Tăng mạnh
+                )
+
+                var resultBundle: HandLandmarkerHelper.ResultBundle? = null
+
+                for (attempt in attempts) {
+                    val candidate = enhanceBitmapWithParams(mutableBitmap, attempt.contrastScale, attempt.brightAdd)
+                    val bundle = imageHelper.detectImage(candidate)
+                    val found  = bundle != null &&
+                            bundle.results.isNotEmpty() &&
+                            bundle.results.first().landmarks().isNotEmpty()
+                    if (found) {
+                        resultBundle = bundle
+                        Log.d(TAG, "Hand detected: contrast=${attempt.contrastScale} bright=${attempt.brightAdd}")
+                        break
+                    }
+                }
                 imageHelper.clearHandLandmarker()
 
-                // Bước 2: Switch về main thread để render AR lên bitmap
-                // (renderOnBitmap() là Canvas operation — phải chạy trên main thread)
+                val hasHand = resultBundle != null
+
+
+                // Bước 2: Chuẩn bị config + preload bitmaps TRÊN BACKGROUND THREAD
+                // (network I/O không được phép chạy trên main thread)
+                val currentConfig = viewModel.nailSetConfig.value
+                if (hasHand) {
+                    fragmentCameraBinding.overlay.preloadAllBitmapsForSnapshot(currentConfig)
+                }
+
+                // Bước 3: Switch về main thread để render AR lên bitmap
+                // Lúc này TẤT CẢ bitmaps đã sẵn sàng trong cache → vẽ ngay không chờ
                 activity?.runOnUiThread {
                     try {
-                        val hasHand = resultBundle != null &&
-                                resultBundle.results.isNotEmpty() &&
-                                resultBundle.results.first().landmarks().isNotEmpty()
-
                         if (hasHand) {
-                            // Đảm bảo config móng đã được set đúng trên OverlayView
-                            val currentConfig = viewModel.nailSetConfig.value
                             fragmentCameraBinding.overlay.setFullDesign(currentConfig)
 
-                            // Gọi renderOnBitmap() — dùng chung thuật toán với Live mode
+                            // Render móng lên ảnh gốc (luôn dùng kích thước gốc — không xoay)
                             fragmentCameraBinding.overlay.renderOnBitmap(
                                 targetBitmap = mutableBitmap,
                                 result  = resultBundle!!.results.first(),
@@ -281,7 +330,7 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
                             )
                         }
 
-                        // Bước 3: Lưu ảnh (có hoặc không có móng) vào cache
+                        // Bước 4: Lưu ảnh (có hoặc không có móng) vào cache
                         backgroundExecutor.execute {
                             try {
                                 val cacheDir = requireContext().cacheDir
@@ -293,7 +342,7 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
                                     mutableBitmap.compress(Bitmap.CompressFormat.JPEG, 92, out)
                                 }
 
-                                // Bước 4: Trả kết quả về Flutter
+                                // Bước 5: Trả kết quả về Flutter (Activity finish → freeze frame tự dismiss)
                                 val landmarksJson = if (hasHand) "[{\"finger\":\"detected\"}]" else "[]"
 
                                 activity?.runOnUiThread {
@@ -307,6 +356,7 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
                             } catch (e: Exception) {
                                 Log.e(TAG, "Save snapshot failed", e)
                                 activity?.runOnUiThread {
+                                    hideFreezeFrame()
                                     fragmentCameraBinding.btnTakePhoto.isEnabled = true
                                     Toast.makeText(requireContext(), "Lỗi lưu ảnh: ${e.message}", Toast.LENGTH_SHORT).show()
                                 }
@@ -314,6 +364,7 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
                         }
                     } catch (e: Exception) {
                         Log.e(TAG, "Render snapshot failed", e)
+                        hideFreezeFrame()
                         fragmentCameraBinding.btnTakePhoto.isEnabled = true
                         Toast.makeText(requireContext(), "Lỗi vẽ móng: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
@@ -321,12 +372,60 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
             } catch (e: Exception) {
                 Log.e(TAG, "MediaPipe snapshot failed", e)
                 activity?.runOnUiThread {
+                    hideFreezeFrame()
                     fragmentCameraBinding.btnTakePhoto.isEnabled = true
                     Toast.makeText(requireContext(), "Lỗi phân tích bàn tay: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
         }
     }
+
+    /** Ẩn freeze frame và trả lại camera preview cho người dùng. */
+    private fun hideFreezeFrame() {
+        fragmentCameraBinding.imgFreezeFrame.apply {
+            visibility = android.view.View.GONE
+            setImageBitmap(null)
+        }
+    }
+
+    /**
+     * Tăng cường ảnh với các tham số tuỳ chỉnh (dùng cho multi-attempt detection).
+     *
+     * @param src            Bitmap gốc (không bị sửa)
+     * @param contrastScale  Hệ số contrast (1.0 = giữ nguyên, 1.5 = tăng 50%)
+     * @param brightAdd      Cộng sáng (0–255 scale, 0 = giữ nguyên, 30 = tăng nhẹ)
+     */
+    private fun enhanceBitmapWithParams(src: Bitmap, contrastScale: Float, brightAdd: Float): Bitmap {
+        if (contrastScale == 1.0f && brightAdd == 0f) return src  // Không cần xử lý, trả luôn
+        val enhanced = src.copy(Bitmap.Config.ARGB_8888, true)
+        val canvas   = android.graphics.Canvas(enhanced)
+        val paint    = android.graphics.Paint()
+        val translate = (-(contrastScale - 1) * 128 + brightAdd)
+        val cm = android.graphics.ColorMatrix(floatArrayOf(
+            contrastScale, 0f,            0f,            0f, translate,
+            0f,            contrastScale, 0f,            0f, translate,
+            0f,            0f,            contrastScale, 0f, translate,
+            0f,            0f,            0f,            1f, 0f
+        ))
+        paint.colorFilter = android.graphics.ColorMatrixColorFilter(cm)
+        canvas.drawBitmap(src, 0f, 0f, paint)
+        return enhanced
+    }
+
+    /**
+     * Xoay bitmap theo số độ (0, 90, 180, 270).
+     * Trả bitmap gốc nếu rotDeg == 0.
+     *
+     * LưU Ý: không dùng hàm này trong Snapshot detection — xoay sẽ làm lệch
+     * toạ độ landmark của MediaPipe so với ảnh gốc.
+     */
+    @Suppress("unused")
+    private fun rotateBitmap(src: Bitmap, rotDeg: Int): Bitmap {
+        if (rotDeg == 0) return src
+        val matrix = android.graphics.Matrix().apply { postRotate(rotDeg.toFloat()) }
+        return Bitmap.createBitmap(src, 0, 0, src.width, src.height, matrix, true)
+    }
+
 
     /**
      * Chuyển đổi ResultBundle từ MediaPipe IMAGE mode thành chuỗi JSON.

@@ -254,13 +254,26 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
      * @param imgW          Chiều rộng ảnh gốc mà MediaPipe đã phân tích
      * @param imgH          Chiều cao ảnh gốc mà MediaPipe đã phân tích
      */
+    /**
+     * Snapshot mode: vẽ toàn bộ móng AR lên bitmap tuỳ chỉnh.
+     *
+     * PHẢI được gọi từ background thread vì preloadAllBitmapsSync() thực hiện
+     * network call để tải decoration images một cách đồng bộ.
+     *
+     * @param targetBitmap  Bitmap mutable để vẽ lên (ảnh chụp từ camera)
+     * @param result        Kết quả MediaPipe IMAGE mode
+     * @param imgW          Chiều rộng ảnh gốc mà MediaPipe đã phân tích
+     * @param imgH          Chiều cao ảnh gốc mà MediaPipe đã phân tích
+     */
     fun renderOnBitmap(
         targetBitmap: Bitmap,
         result: com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult,
         imgW: Int,
         imgH: Int
     ) {
-        // Snapshot dùng BoxFit.contain → scaleFactor = min(bitmapW/imgW, bitmapH/imgH)
+        // Caller (CameraFragment) is responsible for calling preloadAllBitmapsForSnapshot()
+        // on a background thread BEFORE calling this method, so all bitmaps are
+        // guaranteed to be in bitmapCache when drawNails() runs.
         val sf = min(
             targetBitmap.width.toFloat()  / imgW.toFloat(),
             targetBitmap.height.toFloat() / imgH.toFloat()
@@ -318,23 +331,16 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         invalidate()
     }
 
+    /**
+     * Tải bitmap KHÔNG đồng bộ (async) — dùng cho Live mode.
+     * Lần gọi đầu trả null và kích hoạt tải nền; các frame tiếp theo trả cache.
+     */
     private fun loadBitmapFromUri(uriString: String?): Bitmap? {
         if (uriString == null) return null
         if (bitmapCache.containsKey(uriString)) return bitmapCache[uriString]
         if (!loadingBitmaps.add(uriString)) return null
         Thread {
-            val bitmap = try {
-                if (uriString.startsWith("http://") || uriString.startsWith("https://")) {
-                    URL(uriString).openStream().use { BitmapFactory.decodeStream(it) }
-                } else {
-                    val uri = android.net.Uri.parse(uriString)
-                    context.contentResolver.openInputStream(uri).use { inputStream ->
-                        BitmapFactory.decodeStream(inputStream)
-                    }
-                }
-            } catch (_: Exception) {
-                null
-            }
+            val bitmap = fetchBitmapBlocking(uriString)
             post {
                 bitmapCache[uriString] = bitmap
                 loadingBitmaps.remove(uriString)
@@ -342,6 +348,54 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
             }
         }.start()
         return null
+    }
+
+    /**
+     * Tải bitmap ĐỒNG BỘ (blocking) — dùng cho Snapshot mode.
+     * Trả về bitmap ngay lập tức; kết quả được lưu vào cache cho Live mode sau này.
+     * PHẢI được gọi từ background thread (không phải main thread).
+     */
+    private fun loadBitmapSync(uriString: String?): Bitmap? {
+        if (uriString == null) return null
+        // Kiểm tra cache trước
+        bitmapCache[uriString]?.let { return it }
+        val bitmap = fetchBitmapBlocking(uriString)
+        // Lưu vào cache để dùng lại
+        bitmapCache[uriString] = bitmap
+        loadingBitmaps.remove(uriString)
+        return bitmap
+    }
+
+    /** Thực sự tải bitmap từ URL/URI — dùng chung cho cả async và sync. */
+    private fun fetchBitmapBlocking(uriString: String): Bitmap? {
+        return try {
+            if (uriString.startsWith("http://") || uriString.startsWith("https://")) {
+                URL(uriString).openStream().use { BitmapFactory.decodeStream(it) }
+            } else {
+                val uri = android.net.Uri.parse(uriString)
+                context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                    BitmapFactory.decodeStream(inputStream)
+                }
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /**
+     * Preload tất cả bitmap cần thiết cho Snapshot mode một cách ĐỒNG BỘ.
+     *
+     * PHẢI được gọi từ background/worker thread (ví dụ: backgroundExecutor)
+     * BEFORE gọi renderOnBitmap(). Không gọi trên main thread — sẽ bị StrictMode.
+     */
+    fun preloadAllBitmapsForSnapshot(config: NailSetConfig) {
+        loadBitmapSync(config.shapeImageSrc)
+        config.nails.forEach { design ->
+            loadBitmapSync(design.customShapeSrc)
+            design.decorations.forEach { decoration ->
+                loadBitmapSync(decoration.imageSrc)
+            }
+        }
     }
 
     private fun preloadDesignBitmaps(config: NailSetConfig) {

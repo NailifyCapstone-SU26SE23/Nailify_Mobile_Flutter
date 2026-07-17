@@ -11,6 +11,7 @@ import '../../features/quiz/presentation/pages/analyze_page.dart';
 import '../../features/perfect_match/presentation/pages/perfect_match_page.dart';
 import '../../features/another_design/presentation/pages/another_design_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/profile/presentation/pages/update_profile.dart';
 import '../../features/discover/presentation/pages/discover_page.dart';
 
 class AppRouter {
@@ -80,6 +81,10 @@ class AppRouter {
           GoRoute(
             path: '/profile',
             builder: (context, state) => const ProfilePage(),
+          ),
+          GoRoute(
+            path: '/profile/edit',
+            builder: (context, state) => const UpdateProfilePage(),
           ),
         ],
       ),

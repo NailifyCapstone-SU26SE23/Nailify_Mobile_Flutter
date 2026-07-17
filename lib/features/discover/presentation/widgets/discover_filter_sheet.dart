@@ -3,18 +3,26 @@ import '../../../../core/constants/app_colors.dart';
 import '../../data/discover_data.dart';
 
 class DiscoverFilterSheet extends StatefulWidget {
-  final Set<String> selectedPersonalities;
-  final Set<String> selectedColors;
-  final String selectedShape;
+  final Set<String> selectedCategories;
+  final Set<String> selectedStyles;
+  final Set<String> selectedThemes;
+  final Set<String> selectedDesigns;
+  final Set<String> selectedVariants;
+  final Set<String> selectedDetails;
+  final Set<String> selectedElements;
   final Set<String> selectedOccasions;
   final ValueChanged<DiscoverFilterResult> onApply;
   final VoidCallback onClear;
 
   const DiscoverFilterSheet({
     super.key,
-    required this.selectedPersonalities,
-    required this.selectedColors,
-    required this.selectedShape,
+    required this.selectedCategories,
+    required this.selectedStyles,
+    required this.selectedThemes,
+    required this.selectedDesigns,
+    required this.selectedVariants,
+    required this.selectedDetails,
+    required this.selectedElements,
     required this.selectedOccasions,
     required this.onApply,
     required this.onClear,
@@ -22,9 +30,13 @@ class DiscoverFilterSheet extends StatefulWidget {
 
   static Future<void> show(
     BuildContext context, {
-    required Set<String> selectedPersonalities,
-    required Set<String> selectedColors,
-    required String selectedShape,
+    required Set<String> selectedCategories,
+    required Set<String> selectedStyles,
+    required Set<String> selectedThemes,
+    required Set<String> selectedDesigns,
+    required Set<String> selectedVariants,
+    required Set<String> selectedDetails,
+    required Set<String> selectedElements,
     required Set<String> selectedOccasions,
     required ValueChanged<DiscoverFilterResult> onApply,
     required VoidCallback onClear,
@@ -34,9 +46,13 @@ class DiscoverFilterSheet extends StatefulWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => DiscoverFilterSheet(
-        selectedPersonalities: Set.from(selectedPersonalities),
-        selectedColors: Set.from(selectedColors),
-        selectedShape: selectedShape,
+        selectedCategories: Set.from(selectedCategories),
+        selectedStyles: Set.from(selectedStyles),
+        selectedThemes: Set.from(selectedThemes),
+        selectedDesigns: Set.from(selectedDesigns),
+        selectedVariants: Set.from(selectedVariants),
+        selectedDetails: Set.from(selectedDetails),
+        selectedElements: Set.from(selectedElements),
         selectedOccasions: Set.from(selectedOccasions),
         onApply: onApply,
         onClear: onClear,
@@ -49,32 +65,58 @@ class DiscoverFilterSheet extends StatefulWidget {
 }
 
 class DiscoverFilterResult {
-  final Set<String> personalities;
-  final Set<String> colors;
-  final String shape;
+  final Set<String> categories;
+  final Set<String> styles;
+  final Set<String> themes;
+  final Set<String> designs;
+  final Set<String> variants;
+  final Set<String> details;
+  final Set<String> elements;
   final Set<String> occasions;
 
   const DiscoverFilterResult({
-    required this.personalities,
-    required this.colors,
-    required this.shape,
+    required this.categories,
+    required this.styles,
+    required this.themes,
+    required this.designs,
+    required this.variants,
+    required this.details,
+    required this.elements,
     required this.occasions,
   });
 }
 
 class _DiscoverFilterSheetState extends State<DiscoverFilterSheet> {
-  late Set<String> _personalities;
-  late Set<String> _colors;
-  late String _shape;
+  late Set<String> _categories;
+  late Set<String> _styles;
+  late Set<String> _themes;
+  late Set<String> _designs;
+  late Set<String> _variants;
+  late Set<String> _details;
+  late Set<String> _elements;
   late Set<String> _occasions;
 
   @override
   void initState() {
     super.initState();
-    _personalities = Set.from(widget.selectedPersonalities);
-    _colors = Set.from(widget.selectedColors);
-    _shape = widget.selectedShape;
+    _categories = Set.from(widget.selectedCategories);
+    _styles = Set.from(widget.selectedStyles);
+    _themes = Set.from(widget.selectedThemes);
+    _designs = Set.from(widget.selectedDesigns);
+    _variants = Set.from(widget.selectedVariants);
+    _details = Set.from(widget.selectedDetails);
+    _elements = Set.from(widget.selectedElements);
     _occasions = Set.from(widget.selectedOccasions);
+  }
+
+  void _toggle(Set<String> set, String id) {
+    setState(() {
+      if (set.contains(id)) {
+        set.remove(id);
+      } else {
+        set.add(id);
+      }
+    });
   }
 
   @override
@@ -125,125 +167,50 @@ class _DiscoverFilterSheetState extends State<DiscoverFilterSheet> {
                   controller: scrollController,
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
                   children: [
-                    _sectionTitle('YOUR PERSONALITY'),
-                    const SizedBox(height: 10),
-                    ...DiscoverMockData.personalityFilters.map((item) {
-                      final selected = _personalities.contains(item.id);
-                      return _FilterListTile(
-                        label: item.label,
-                        trailing: '${item.count}',
-                        selected: selected,
-                        onTap: () {
-                          setState(() {
-                            if (selected) {
-                              _personalities.remove(item.id);
-                            } else {
-                              _personalities.add(item.id);
-                            }
-                          });
-                        },
-                      );
-                    }),
-                    const SizedBox(height: 20),
-                    _sectionTitle('COLOR TONES'),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: DiscoverMockData.colorFilters.map((swatch) {
-                        final selected = _colors.contains(swatch.id);
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              if (selected) {
-                                _colors.remove(swatch.id);
-                              } else {
-                                _colors.add(swatch.id);
-                              }
-                            });
-                          },
-                          child: Container(
-                            width: 56,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              color: swatch.color,
-                              gradient: swatch.gradientColors != null
-                                  ? LinearGradient(
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                      colors: swatch.gradientColors!,
-                                    )
-                                  : null,
-                              border: selected
-                                  ? Border.all(color: AppColors.primary, width: 3)
-                                  : null,
-                            ),
-                          ),
-                        );
-                      }).toList(),
+                    _buildFilterSection(
+                      title: 'Category',
+                      options: DiscoverMockData.categoryFilters,
+                      selected: _categories,
+                      onToggle: (id) => _toggle(_categories, id),
                     ),
-                    const SizedBox(height: 20),
-                    _sectionTitle('NAIL SHAPE'),
-                    const SizedBox(height: 10),
-                    ...DiscoverMockData.shapeFilters.map((shape) {
-                      final selected = _shape == shape.id;
-                      return _FilterListTile(
-                        label: shape.label,
-                        selected: selected,
-                        showRadio: true,
-                        onTap: () => setState(() => _shape = shape.id),
-                      );
-                    }),
-                    const SizedBox(height: 20),
-                    _sectionTitle('OCCASION OF USE'),
-                    const SizedBox(height: 10),
-                    ...DiscoverMockData.occasionFilters.map((occasion) {
-                      final selected = _occasions.contains(occasion.id);
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              if (selected) {
-                                _occasions.remove(occasion.id);
-                              } else {
-                                _occasions.add(occasion.id);
-                              }
-                            });
-                          },
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              color: selected
-                                  ? AppColors.primary.withOpacity(0.1)
-                                  : Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: selected
-                                    ? AppColors.primary
-                                    : AppColors.borderLight,
-                              ),
-                            ),
-                            child: Text(
-                              occasion.label,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                                color: selected
-                                    ? AppColors.primary
-                                    : AppColors.textPrimary,
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                    const SizedBox(height: 24),
+                    _buildFilterSection(
+                      title: 'Style',
+                      options: DiscoverMockData.styleFilters,
+                      selected: _styles,
+                      onToggle: (id) => _toggle(_styles, id),
+                    ),
+                    _buildFilterSection(
+                      title: 'Theme',
+                      options: DiscoverMockData.themeFilters,
+                      selected: _themes,
+                      onToggle: (id) => _toggle(_themes, id),
+                    ),
+                    _buildFilterSection(
+                      title: 'Design',
+                      options: DiscoverMockData.designFilters,
+                      selected: _designs,
+                      onToggle: (id) => _toggle(_designs, id),
+                    ),
+                    _buildFilterSection(
+                      title: 'Variant',
+                      options: DiscoverMockData.variantFilters,
+                      selected: _variants,
+                      onToggle: (id) => _toggle(_variants, id),
+                    ),
+                    _buildFilterSection(
+                      title: 'Detail',
+                      options: DiscoverMockData.detailFilters,
+                      selected: _details,
+                      onToggle: (id) => _toggle(_details, id),
+                    ),
+                    _buildFilterSection(
+                      title: 'Elements',
+                      options: DiscoverMockData.elementFilters,
+                      selected: _elements,
+                      onToggle: (id) => _toggle(_elements, id),
+                    ),
+                    _buildOccasionSection(),
+                    const SizedBox(height: 8),
                     OutlinedButton(
                       onPressed: () {
                         widget.onClear();
@@ -275,9 +242,13 @@ class _DiscoverFilterSheetState extends State<DiscoverFilterSheet> {
                           onTap: () {
                             widget.onApply(
                               DiscoverFilterResult(
-                                personalities: _personalities,
-                                colors: _colors,
-                                shape: _shape,
+                                categories: _categories,
+                                styles: _styles,
+                                themes: _themes,
+                                designs: _designs,
+                                variants: _variants,
+                                details: _details,
+                                elements: _elements,
                                 occasions: _occasions,
                               ),
                             );
@@ -308,9 +279,35 @@ class _DiscoverFilterSheetState extends State<DiscoverFilterSheet> {
     );
   }
 
+  Widget _buildFilterSection({
+    required String title,
+    required List<DiscoverFilterOption> options,
+    required Set<String> selected,
+    required ValueChanged<String> onToggle,
+    bool isLast = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionTitle(title),
+        const SizedBox(height: 10),
+        ...options.map((item) {
+          final isSelected = selected.contains(item.id);
+          return _FilterListTile(
+            label: item.label,
+            trailing: item.count > 0 ? '${item.count}' : null,
+            selected: isSelected,
+            onTap: () => onToggle(item.id),
+          );
+        }),
+        SizedBox(height: isLast ? 16 : 20),
+      ],
+    );
+  }
+
   Widget _sectionTitle(String title) {
     return Text(
-      title,
+      title.toUpperCase(),
       style: const TextStyle(
         fontSize: 11,
         fontWeight: FontWeight.w600,
@@ -319,20 +316,66 @@ class _DiscoverFilterSheetState extends State<DiscoverFilterSheet> {
       ),
     );
   }
+
+  Widget _buildOccasionSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionTitle('Occasion of use'),
+        const SizedBox(height: 10),
+        ...DiscoverMockData.occasionFilters.map((occasion) {
+          final selected = _occasions.contains(occasion.id);
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: GestureDetector(
+              onTap: () => _toggle(_occasions, occasion.id),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? AppColors.primary.withOpacity(0.1)
+                      : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: selected
+                        ? AppColors.primary
+                        : AppColors.borderLight,
+                  ),
+                ),
+                child: Text(
+                  occasion.label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: selected
+                        ? AppColors.primary
+                        : AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
 }
 
 class _FilterListTile extends StatelessWidget {
   final String label;
   final String? trailing;
   final bool selected;
-  final bool showRadio;
   final VoidCallback onTap;
 
   const _FilterListTile({
     required this.label,
     this.trailing,
     required this.selected,
-    this.showRadio = false,
     required this.onTap,
   });
 
@@ -353,25 +396,27 @@ class _FilterListTile extends StatelessWidget {
                   : Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: selected ? AppColors.primary.withOpacity(0.3) : AppColors.borderLight,
+                color: selected
+                    ? AppColors.primary.withOpacity(0.3)
+                    : AppColors.borderLight,
               ),
             ),
             child: Row(
               children: [
-                if (showRadio)
-                  Icon(
-                    selected ? Icons.radio_button_checked : Icons.radio_button_off,
-                    size: 18,
-                    color: selected ? AppColors.primary : AppColors.border,
-                  ),
-                if (showRadio) const SizedBox(width: 8),
+                Icon(
+                  selected ? Icons.check_box : Icons.check_box_outline_blank,
+                  size: 18,
+                  color: selected ? AppColors.primary : AppColors.border,
+                ),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     label,
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: selected ? AppColors.primary : AppColors.textPrimary,
+                      color:
+                          selected ? AppColors.primary : AppColors.textPrimary,
                     ),
                   ),
                 ),
@@ -380,7 +425,9 @@ class _FilterListTile extends StatelessWidget {
                     trailing!,
                     style: TextStyle(
                       fontSize: 13,
-                      color: selected ? AppColors.primary : AppColors.textSecondary,
+                      color: selected
+                          ? AppColors.primary
+                          : AppColors.textSecondary,
                     ),
                   ),
               ],

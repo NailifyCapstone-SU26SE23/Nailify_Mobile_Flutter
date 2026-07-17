@@ -4,8 +4,13 @@ import '../../data/profile_data.dart';
 
 class ProfileHeaderCard extends StatelessWidget {
   final ProfileUser user;
+  final VoidCallback? onEdit;
 
-  const ProfileHeaderCard({super.key, required this.user});
+  const ProfileHeaderCard({
+    super.key,
+    required this.user,
+    this.onEdit,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -85,19 +90,23 @@ class ProfileHeaderCard extends StatelessWidget {
             ),
           ),
         ),
-        Positioned(
-          right: 0,
-          bottom: 0,
-          child: Container(
-            width: 28,
-            height: 28,
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
-              shape: BoxShape.circle,
+        if (onEdit != null)
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: GestureDetector(
+              onTap: onEdit,
+              child: Container(
+                width: 28,
+                height: 28,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.edit, size: 14, color: Colors.white),
+              ),
             ),
-            child: const Icon(Icons.edit, size: 14, color: Colors.white),
           ),
-        ),
       ],
     );
   }

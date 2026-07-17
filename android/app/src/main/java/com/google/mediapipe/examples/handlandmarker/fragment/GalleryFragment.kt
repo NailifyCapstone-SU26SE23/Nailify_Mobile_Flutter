@@ -33,6 +33,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.google.mediapipe.examples.handlandmarker.HandLandmarkerHelper
 import com.google.mediapipe.examples.handlandmarker.MainViewModel
+import com.google.mediapipe.examples.handlandmarker.NailLogger
 import com.google.mediapipe.examples.handlandmarker.R
 import com.google.mediapipe.examples.handlandmarker.databinding.FragmentGalleryBinding
 import com.google.mediapipe.tasks.vision.core.RunningMode
@@ -258,6 +259,7 @@ class GalleryFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
     // Load and display the image.
     private fun runDetectionOnImage(uri: Uri) {
         setUiEnabled(false)
+        fragmentGalleryBinding.progress.visibility = View.VISIBLE
         backgroundExecutor = Executors.newSingleThreadScheduledExecutor()
         updateDisplayView(MediaType.IMAGE)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -275,6 +277,19 @@ class GalleryFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
             .copy(Bitmap.Config.ARGB_8888, true)
             ?.let { bitmap ->
                 fragmentGalleryBinding.imageResult.setImageBitmap(bitmap)
+                fragmentGalleryBinding.imageResult.visibility = View.VISIBLE
+
+                // FIX: Set nail design BEFORE results - CRITICAL for proper rendering
+                fragmentGalleryBinding.overlay.clear()
+                fragmentGalleryBinding.overlay.setFullDesign(viewModel.nailSetConfig.value)
+
+                // Log the nail design being used
+                NailLogger.i(NailLogger.Component.GALLERY_FRAGMENT, NailLogger.Stage.NAIL_DESIGN_LOAD, mapOf(
+                    "nailDesignName" to (viewModel.nailSetConfig.value?.name ?: "null"),
+                    "numNails" to (viewModel.nailSetConfig.value?.nails?.size ?: 0),
+                    "shape" to (viewModel.nailSetConfig.value?.shape ?: "null"),
+                    "material" to (viewModel.nailSetConfig.value?.material ?: "null")
+                ))
 
                 // Run hand landmarker on the input image
                 backgroundExecutor.execute {
@@ -283,16 +298,32 @@ class GalleryFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
                         HandLandmarkerHelper(
                             context = requireContext(),
                             runningMode = RunningMode.IMAGE,
-                            minHandDetectionConfidence = viewModel.currentMinHandDetectionConfidence,
+                            // FIX: Lower threshold for static images (0.3 instead of 0.5)
+                            minHandDetectionConfidence = 0.3f,
                             minHandTrackingConfidence = viewModel.currentMinHandTrackingConfidence,
                             minHandPresenceConfidence = viewModel.currentMinHandPresenceConfidence,
                             maxNumHands = viewModel.currentMaxHands,
                             currentDelegate = viewModel.currentDelegate
                         )
 
+                    val detectStart = System.currentTimeMillis()
                     handLandmarkerHelper.detectImage(bitmap)?.let { result ->
+                        val inferenceTime = result.inferenceTime
+                        val numHands = result.results.size
+                        val numLandmarks = if (numHands > 0) result.results[0].landmarks().size else 0
+
+                        NailLogger.i(NailLogger.Component.GALLERY_FRAGMENT, NailLogger.Stage.LANDMARK_EXTRACT, mapOf(
+                            "mediaType" to "IMAGE",
+                            "bitmapWidth" to bitmap.width,
+                            "bitmapHeight" to bitmap.height,
+                            "numHands" to numHands,
+                            "numLandmarksPerHand" to numLandmarks,
+                            "inferenceTimeMs" to inferenceTime,
+                            "totalDetectionTimeMs" to (System.currentTimeMillis() - detectStart)
+                        ))
+
                         activity?.runOnUiThread {
-                            fragmentGalleryBinding.overlay.setFullDesign(viewModel.nailSetConfig.value)
+                            // FIX: Call setResults AFTER setFullDesign
                             fragmentGalleryBinding.overlay.setResults(
                                 result.results[0],
                                 bitmap.height,
@@ -300,11 +331,45 @@ class GalleryFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
                                 RunningMode.IMAGE
                             )
 
+                            fragmentGalleryBinding.progress.visibility = View.GONE
                             setUiEnabled(true)
+
+                            // FIX: Show warning if no hand detected instead of failing silently
+                            if (result.results.isEmpty() || result.results[0].landmarks().isEmpty()) {
+                                NailLogger.w(NailLogger.Component.GALLERY_FRAGMENT, "no_hand_detected", mapOf(
+                                    "reason" to "result.results.isEmpty() or landmarks().isEmpty()"
+                                ))
+                                Toast.makeText(
+                                    requireContext(),
+                                    "Không tìm thấy bàn tay trong ảnh. Vui lòng chọn ảnh rõ nét.",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            } else {
+                                NailLogger.i(NailLogger.Component.GALLERY_FRAGMENT, NailLogger.Stage.NAIL_RENDER, mapOf(
+                                    "renderTriggered" to true,
+                                    "numHands" to numHands
+                                ))
+                                // FIX: Use refresh() to wait for all decorations to load before redrawing
+                                // This handles async bitmap loading properly
+                                fragmentGalleryBinding.overlay.refresh()
+                            }
+
                             fragmentGalleryBinding.bottomSheetLayout.inferenceTimeVal.text =
-                                String.format(Locale.US, "%d ms", result.inferenceTime)
+                                String.format(Locale.US, "%d ms", inferenceTime)
                         }
-                    } ?: run { Log.e(TAG, "Error running hand landmarker.") }
+                    } ?: run {
+                        NailLogger.e(NailLogger.Component.GALLERY_FRAGMENT, NailLogger.Stage.LANDMARK_EXTRACT, "detectImage returned null", null)
+                        activity?.runOnUiThread {
+                            fragmentGalleryBinding.progress.visibility = View.GONE
+                            setUiEnabled(true)
+                            Toast.makeText(
+                                requireContext(),
+                                "Không tìm thấy bàn tay trong ảnh. Vui lòng chọn ảnh rõ nét.",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            Log.e(TAG, "Error running hand landmarker.")
+                        }
+                    }
 
                     handLandmarkerHelper.clearHandLandmarker()
                 }
@@ -372,6 +437,8 @@ class GalleryFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
                         // The video playback has finished so we stop drawing bounding boxes
                         backgroundExecutor.shutdown()
                     } else {
+                        // FIX: Set nail design BEFORE results to ensure nails are rendered
+                        fragmentGalleryBinding.overlay.clear()
                         fragmentGalleryBinding.overlay.setFullDesign(viewModel.nailSetConfig.value)
                         fragmentGalleryBinding.overlay.setResults(
                             result.results[resultIndex],

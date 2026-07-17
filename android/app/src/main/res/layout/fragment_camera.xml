@@ -23,8 +23,30 @@
         android:text="Back"
         android:layout_margin="16dp"
         android:backgroundTint="#80000000"
-        app:layout_anchor="@id/view_finder"
-        app:layout_anchorGravity="top|start" />
+        app:layout_Anchor="@id/view_finder"
+        app:layout_AnchorGravity="top|start" />
+
+    <!-- Nút chụp ảnh Snapshot -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabCapture"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="100dp"
+        android:backgroundTint="@color/mp_color_primary"
+        android:contentDescription="Chụp ảnh"
+        android:src="@drawable/ic_baseline_photo_camera_24"
+        app:fabSize="normal"
+        app:tint="@android:color/white" />
+
+    <!-- Progress indicator khi xử lý snapshot -->
+    <ProgressBar
+        android:id="@+id/progressCapture"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_gravity="center"
+        android:indeterminate="true"
+        android:visibility="gone" />
 
     <include
         android:id="@+id/bottom_sheet_layout"

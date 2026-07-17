@@ -22,7 +22,6 @@ import android.graphics.RadialGradient
 import android.graphics.RectF
 import android.graphics.Shader
 import androidx.core.graphics.withTranslation
-import org.json.JSONObject
 import java.net.URL
 import kotlin.math.atan2
 import kotlin.math.hypot
@@ -61,6 +60,19 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         initPaints()
     }
 
+    /**
+     * FIX: Force refresh the overlay to ensure all decorations are drawn.
+     * Call this after a delay to allow async bitmap loading to complete.
+     */
+    fun refresh() {
+        if (loadingBitmaps.isEmpty()) {
+            invalidate()
+        } else {
+            // Schedule refresh after loading completes
+            postDelayed({ refresh() }, 100)
+        }
+    }
+
     private fun initPaints() {
         linePaint.color =
             ContextCompat.getColor(context!!, R.color.mp_color_primary)
@@ -75,26 +87,216 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         override fun draw(canvas: Canvas) {
         super.draw(canvas)
         results?.let { handLandmarkerResult ->
+            // FIX: Lấy vị trí cổ tay (wrist) và cổ tay trung tâm (middle finger MCP) để tính tọa độ tương đối
             for (landmark in handLandmarkerResult.landmarks()) {
-                val fingerTips = listOf(4, 8, 12, 16, 20) 
+                val fingerTips = listOf(4, 8, 12, 16, 20)
+                val fingerPips = listOf(3, 6, 10, 14, 18) // PIP joints (đốt ngón tay thứ 2)
+                val fingerMcps = listOf(2, 5, 9, 13, 17) // MCP joints (gốc ngón tay)
+
+                // FIX: Lấy wrist (landmark 0) để tính khoảng cách reference
+                val wrist = landmark[0]
+                val wristX = wrist.x()
+                val wristY = wrist.y()
+                val wristZ = wrist.z()
+
+                // FIX: Tính "kích thước bàn tay" (hand size) = khoảng cách wrist -> middle MCP (landmark 9)
+                val middleMcp = landmark[9]
+                val handSize = hypot(
+                    (middleMcp.x() - wristX).toDouble(),
+                    (middleMcp.y() - wristY).toDouble()
+                ).toFloat()
+
+                // #region agent log
+                NailLogger.d(
+                    NailLogger.Component.OVERLAY_VIEW,
+                    NailLogger.Stage.LANDMARK_EXTRACT,
+                    mapOf(
+                        "numLandmarks" to landmark.size,
+                        "handSize" to handSize,
+                        "wrist" to mapOf("x" to wristX, "y" to wristY, "z" to wristZ),
+                        "timestamp" to System.currentTimeMillis()
+                    )
+                )
+
+                // Log per-finger validation details
+                val fingerValidationData = fingerTips.mapIndexed { fi, ti ->
+                    val tip = landmark[ti]
+                    val pip = landmark[fingerPips[fi]]
+                    val mcp = landmark[fingerMcps[fi]]
+                    val tipToMcp = hypot((tip.x()-mcp.x()).toDouble(), (tip.y()-mcp.y()).toDouble()).toFloat()
+                    val tipToPip = hypot((tip.x()-pip.x()).toDouble(), (tip.y()-pip.y()).toDouble()).toFloat()
+                    mapOf(
+                        "finger" to fi,
+                        "tipX" to tip.x(), "tipY" to tip.y(), "tipZ" to tip.z(),
+                        "mcpX" to mcp.x(), "mcpY" to mcp.y(), "mcpZ" to mcp.z(),
+                        "pipX" to pip.x(), "pipY" to pip.y(),
+                        "tipToMcp" to tipToMcp,
+                        "tipToPip" to tipToPip,
+                        "tipToMcpRatio" to (tipToMcp / handSize),
+                        "mcpToTipPx" to (tipToMcp * imageWidth * scaleFactor)
+                    )
+                }
+                NailLogger.d(
+                    NailLogger.Component.OVERLAY_VIEW,
+                    "finger_validation_data",
+                    mapOf("fingers" to fingerValidationData)
+                )
+                // #endregion
+
+                // Nếu handSize quá nhỏ, bàn tay không hợp lệ
+                if (handSize < 0.05f) {
+                    return@let
+                }
+
+                var renderedFingerCount = 0
 
                 for ((fingerIndex, tipIndex) in fingerTips.withIndex()) {
                     val tip = landmark[tipIndex]
-                    val joint =
-                        landmark[tipIndex - 1] // The joint right below the tip (7, 11, 15, 19, 3)
+                    val mcpLandmark =
+                        landmark[fingerMcps[fingerIndex]] // MCP joint (gốc ngón tay - knuckle)
+                    val pipLandmark =
+                        landmark[fingerPips[fingerIndex]] // PIP joint (đốt ngón tay thứ 2)
+
+                    // FIX: Kiểm tra landmark có hợp lệ không
+                    val tipX = tip.x()
+                    val tipY = tip.y()
+                    val tipZ = tip.z()
+                    val mcpX = mcpLandmark.x()
+                    val mcpY = mcpLandmark.y()
+                    val mcpZ = mcpLandmark.z()
+                    val pipX = pipLandmark.x()
+                    val pipY = pipLandmark.y()
+
+                    // Bỏ qua nếu landmark nằm ngoài viewport (MediaPipe trả về giá trị ngoài [0,1] khi không detect)
+                    if (tipX < 0f || tipX > 1f || tipY < 0f || tipY > 1f) {
+                        NailLogger.d(
+                            NailLogger.Component.OVERLAY_VIEW,
+                            NailLogger.Stage.FINGER_VALIDATE,
+                            mapOf(
+                                "finger" to fingerIndex,
+                                "tipX" to tipX, "tipY" to tipY,
+                                "reason" to "OUT_OF_VIEWPORT",
+                                "result" to "FILTERED"
+                            )
+                        )
+                        continue
+                    }
+                    if (mcpX < 0f || mcpX > 1f || mcpY < 0f || mcpY > 1f) {
+                        NailLogger.d(
+                            NailLogger.Component.OVERLAY_VIEW,
+                            NailLogger.Stage.FINGER_VALIDATE,
+                            mapOf("finger" to fingerIndex, "reason" to "MCP_OUT_OF_VIEWPORT", "result" to "FILTERED")
+                        )
+                        continue
+                    }
+                    if (pipX < 0f || pipX > 1f || pipY < 0f || pipY > 1f) {
+                        NailLogger.d(
+                            NailLogger.Component.OVERLAY_VIEW,
+                            NailLogger.Stage.FINGER_VALIDATE,
+                            mapOf("finger" to fingerIndex, "reason" to "PIP_OUT_OF_VIEWPORT", "result" to "FILTERED")
+                        )
+                        continue
+                    }
+                    // Bỏ qua nếu z = 0 (chưa nhận diện được ngón)
+                    if (tipZ == 0f) {
+                        NailLogger.d(
+                            NailLogger.Component.OVERLAY_VIEW,
+                            NailLogger.Stage.FINGER_VALIDATE,
+                            mapOf("finger" to fingerIndex, "tipZ" to tipZ, "reason" to "Z_IS_ZERO", "result" to "FILTERED")
+                        )
+                        continue
+                    }
+
                     val design = nailSetConfig.nails.getOrNull(fingerIndex)
                         ?: nailSetConfig.nails.firstOrNull()
                         ?: continue
 
-                    val px = tip.x() * imageWidth * scaleFactor
-                    val py = tip.y() * imageHeight * scaleFactor
-                    
-                    val jx = joint.x() * imageWidth * scaleFactor
-                    val jy = joint.y() * imageHeight * scaleFactor
+                    val px = tipX * imageWidth * scaleFactor
+                    val py = tipY * imageHeight * scaleFactor
 
-                    val angle = Math.toDegrees(atan2((py - jy).toDouble(), (px - jx).toDouble())).toFloat()
+                    val mxpix = mcpX * imageWidth * scaleFactor
+                    val mypix = mcpY * imageHeight * scaleFactor
+                    val pxpix = pipX * imageWidth * scaleFactor
+                    val pypix = pipY * imageHeight * scaleFactor
 
-                    val fingerLength = hypot((px - jx).toDouble(), (py - jy).toDouble()).toFloat()
+                    // FIX v2: Tính khoảng cách MCP -> TIP (chiều dài thật của ngón)
+                    // Khi nắm đấm, TIP rất gần MCP -> khoảng cách này rất nhỏ
+                    val mcpToTip = hypot((px - mxpix).toDouble(), (py - mypix).toDouble()).toFloat()
+                    if (mcpToTip < 10f) {
+                        NailLogger.d(
+                            NailLogger.Component.OVERLAY_VIEW,
+                            NailLogger.Stage.FINGER_VALIDATE,
+                            mapOf(
+                                "finger" to fingerIndex,
+                                "mcpToTipPx" to mcpToTip,
+                                "reason" to "MCP_TO_TIP_TOO_SHORT",
+                                "result" to "FILTERED"
+                            )
+                        )
+                        continue
+                    }
+
+                    val mcpToTipRatio = mcpToTip / handSize
+
+                    // FIX v2: Khi duỗi ngón, MCP->TIP phải dài khoảng 0.6-1.0 lần handSize
+                    // Khi nắm đấm, MCP->TIP rất ngắn (< 0.4 handSize)
+                    if (mcpToTipRatio < 0.45f) {
+                        NailLogger.d(
+                            NailLogger.Component.OVERLAY_VIEW,
+                            NailLogger.Stage.FINGER_VALIDATE,
+                            mapOf(
+                                "finger" to fingerIndex,
+                                "mcpToTipRatio" to mcpToTipRatio,
+                                "handSize" to handSize,
+                                "reason" to "FINGER_FOLDED_MCP_RATIO_LOW",
+                                "result" to "FILTERED"
+                            )
+                        )
+                        continue
+                    }
+
+                    // FIX v2: Kiểm tra depth (z) của tip so với MCP
+                    val depthDelta = kotlin.math.abs(tipZ - mcpZ)
+                    if (depthDelta > 0.15f) {
+                        NailLogger.d(
+                            NailLogger.Component.OVERLAY_VIEW,
+                            NailLogger.Stage.FINGER_VALIDATE,
+                            mapOf(
+                                "finger" to fingerIndex,
+                                "tipZ" to tipZ, "mcpZ" to mcpZ, "depthDelta" to depthDelta,
+                                "reason" to "DEPTH_DELTA_TOO_LARGE",
+                                "result" to "FILTERED"
+                            )
+                        )
+                        continue
+                    }
+
+                    // ✅ Ngón hợp lệ - tiến hành render
+                    val fingerLength = hypot((px - pxpix).toDouble(), (py - pypix).toDouble()).toFloat()
+
+                    NailLogger.d(
+                        NailLogger.Component.OVERLAY_VIEW,
+                        NailLogger.Stage.NAIL_RENDER,
+                        mapOf(
+                            "finger" to fingerIndex,
+                            "mcpToTipRatio" to mcpToTipRatio,
+                            "depthDelta" to depthDelta,
+                            "fingerLengthPx" to fingerLength,
+                            "destRect" to mapOf(
+                                "nailWidthPx" to (fingerLength * 2f),
+                                "nailHeightPx" to (fingerLength * 1.2f * nailSetConfig.length)
+                            ),
+                            "design" to mapOf(
+                                "color" to design.color,
+                                "shape" to nailSetConfig.shape,
+                                "material" to nailSetConfig.material,
+                                "numDecorations" to design.decorations.size
+                            ),
+                            "result" to "RENDERED"
+                        )
+                    )
+
+                    val angle = Math.toDegrees(atan2((py - pypix).toDouble(), (px - pxpix).toDouble())).toFloat()
 
                     canvas.withTranslation(px, py) {
                         rotate(angle + 90f) // Rotate to match finger direction
@@ -113,9 +315,9 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                             val totalHeight = nailHeight * 1.5f    // Total height expands with multiplier
 
                             val destRect = RectF(
-                                -nailWidth / 2, 
+                                -nailWidth / 2,
                                 nailBottom - totalHeight, // Tip grows upwards
-                                nailWidth / 2, 
+                                nailWidth / 2,
                                 nailBottom                // Base stays fixed
                             )
 
@@ -140,10 +342,35 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                             design.decorations.forEach { decoration ->
                                 drawDecoration(this, decoration, destRect)
                             }
+
+                            renderedFingerCount++
+                        } ?: run {
+                            // Bitmap null - decoration may still loading
+                            NailLogger.w(
+                                NailLogger.Component.OVERLAY_VIEW,
+                                NailLogger.Stage.DECORATION_LOAD,
+                                mapOf(
+                                    "finger" to fingerIndex,
+                                    "customShapeSrc" to design.customShapeSrc,
+                                    "shapeImageSrc" to nailSetConfig.shapeImageSrc,
+                                    "reason" to "NAIL_BITMAP_NOT_LOADED_YET"
+                                )
+                            )
                         }
 
                     }
                 }
+
+                // Log tổng kết frame này
+                NailLogger.d(
+                    NailLogger.Component.OVERLAY_VIEW,
+                    "frame_summary",
+                    mapOf(
+                        "renderedFingers" to renderedFingerCount,
+                        "totalFingers" to 5,
+                        "handSize" to handSize
+                    )
+                )
             }
         }
     }
@@ -183,6 +410,7 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         if (uriString == null) return null
         if (bitmapCache.containsKey(uriString)) return bitmapCache[uriString]
         if (!loadingBitmaps.add(uriString)) return null
+
         Thread {
             val bitmap = try {
                 if (uriString.startsWith("http://") || uriString.startsWith("https://")) {
@@ -199,6 +427,7 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
             post {
                 bitmapCache[uriString] = bitmap
                 loadingBitmaps.remove(uriString)
+                // Always invalidate when any bitmap is loaded
                 invalidate()
             }
         }.start()
@@ -206,6 +435,7 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
     }
 
     private fun preloadDesignBitmaps(config: NailSetConfig) {
+        // Preload all bitmaps for the design
         loadBitmapFromUri(config.shapeImageSrc)
         config.nails.forEach { design ->
             loadBitmapFromUri(design.customShapeSrc)

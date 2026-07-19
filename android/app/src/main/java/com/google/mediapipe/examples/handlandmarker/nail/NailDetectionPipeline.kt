@@ -116,13 +116,42 @@ class NailDetectionPipeline(
                 // ── Throttled: reuse last boundary, update center from landmark ──
                 val cached = lastResults[fingerIndex]
                 if (cached != null && cached.detected) {
-                    // Update nail center based on new TIP landmark (cheap)
-                    val updatedCenterX = tipLandmark.x() * imageWidth
-                    val updatedCenterY = tipLandmark.y() * imageHeight
-                    // Reuse width/length/rotation from cached result
+                    // Update nail center and rotation based on new landmarks (cheap)
+                    val tipX = tipLandmark.x() * imageWidth
+                    val tipY = tipLandmark.y() * imageHeight
+                    val pipX = pipLandmark.x() * imageWidth
+                    val pipY = pipLandmark.y() * imageHeight
+
+                    // Re-calculate finger axis angle using current landmarks
+                    val fingerAngleRad = atan2(
+                        (tipY - pipY).toDouble(),
+                        (tipX - pipX).toDouble()
+                    ).toFloat()
+                    val fingerAxisDeg = Math.toDegrees(fingerAngleRad.toDouble()).toFloat()
+
+                    // Rotate the local relative offset using the new finger angle
+                    val localRelX = cached.roiLocalRelX ?: 0f
+                    val localRelY = cached.roiLocalRelY ?: 0f
+
+                    val unrotateAngle = fingerAngleRad + Math.PI.toFloat() / 2f
+                    val cosA = cos(unrotateAngle)
+                    val sinA = sin(unrotateAngle)
+
+                    val imgRelX = localRelX * cosA - localRelY * sinA
+                    val imgRelY = localRelX * sinA + localRelY * cosA
+
+                    val updatedCenterX = tipX + imgRelX
+                    val updatedCenterY = tipY + imgRelY
+
+                    // Re-blend angle using cached boundaryPrincipalAngleDeg if available
+                    val boundaryDeg = cached.boundaryPrincipalAngleDeg ?: (fingerAxisDeg + 90f)
+                    val updatedRotationDeg = blendAngles(fingerAxisDeg + 90f, boundaryDeg, 0.7f)
+
+                    // Reuse width/length/confidence/boundaryPoints/nailArea from cached result
                     results.add(cached.copy(
                         nailCenterX = updatedCenterX,
-                        nailCenterY = updatedCenterY
+                        nailCenterY = updatedCenterY,
+                        rotationDeg = updatedRotationDeg
                     ))
                 } else {
                     // No cached result — fail
@@ -275,6 +304,9 @@ class NailDetectionPipeline(
             confidence = boundary.confidence,
             boundaryPoints = boundary.boundaryPoints,
             nailArea = boundary.area,
+            boundaryPrincipalAngleDeg = boundaryDeg,
+            roiLocalRelX = relX,
+            roiLocalRelY = relY
         )
     }
 

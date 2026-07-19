@@ -379,8 +379,14 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                 // Override geometric values with CV-detected values using confidence weighting.
                 // CV results are only available for the first hand (handIdx == 0).
                 val cvResult = if (handIdx == 0) cvResults?.getOrNull(fingerIndex) else null
-                val cvDetected = cvResult?.detected == true && (cvResult?.confidence ?: 0f) > 0f
-                val cvConf = if (cvDetected && cvResult != null) cvResult.confidence.coerceIn(0f, 1f) else 0f
+                val cvDetected = cvResult?.detected == true && (
+                    if (!applyFilters) true else (cvResult?.confidence ?: 0f) > 0f
+                )
+                val cvConf = if (cvDetected && cvResult != null) {
+                    if (!applyFilters) 1f else cvResult.confidence.coerceIn(0f, 1f)
+                } else {
+                    0f
+                }
 
                 // ── FILTERED COORDINATES ──────────────────────────────────────────
                 // Blend: confidence × detected + (1 - confidence) × geometric

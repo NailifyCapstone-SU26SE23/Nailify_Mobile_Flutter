@@ -34,6 +34,9 @@ data class NailDetectionResult(
     val confidence: Float,
     val boundaryPoints: List<PointF> = emptyList(),
     val nailArea: Int = 0,
+    val boundaryPrincipalAngleDeg: Float? = null,
+    val roiLocalRelX: Float? = null,
+    val roiLocalRelY: Float? = null,
 ) {
     companion object {
         /**

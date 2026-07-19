@@ -6,7 +6,7 @@ description: "Nail testing and appointment booking project via mobile."
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.11.1
+  sdk: ^3.10.4
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions

@@ -49,7 +49,10 @@ import kotlinx.coroutines.launch
 class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
 
     companion object {
-        private const val TAG = "Hand Landmarker"
+        private const val TAG = "NailifyCamera"
+
+        /** Log verbose khi debug pipeline. Đặt = false trong release. */
+        private const val DEBUG_LOG = true
 
         /** Key để Flutter nhận biết đây là yêu cầu Snapshot mode */
         const val EXTRA_MODE = "camera_mode"
@@ -228,32 +231,18 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
     // -------------------------------------------------------------------------
 
     private fun takeSnapshotAndAnalyze() {
-        // ── BƯỚC 0: BẮT NGAY BITMAP NGAY KHI NÚT ĐƯỢC BẤM ──────────────────────
-        // viewFinder.bitmap lấy frame hiện tại (synchronous) — PHẢI gọi trên main thread.
-        val bitmap = fragmentCameraBinding.viewFinder.bitmap
-        if (bitmap == null) {
+        if (DEBUG_LOG) Log.d(TAG, "takeSnapshotAndAnalyze: START — btnTakePhoto pressed")
+
+        // ── BƯỚC 0: Kiểm tra ImageCapture sẵn sàng ─────────────────────────────
+        val capture = imageCapture
+        if (capture == null) {
             Toast.makeText(requireContext(), "Camera chưa sẵn sàng", Toast.LENGTH_SHORT).show()
+            if (DEBUG_LOG) Log.e(TAG, "takeSnapshotAndAnalyze: imageCapture is NULL")
             return
         }
 
-        // Chuẩn bị bitmap mutable ARGB_8888 để vẽ lên (làm ngay trước khi hiệu ứng)
-        val mutableBitmap = if (bitmap.config == Bitmap.Config.ARGB_8888 && bitmap.isMutable) {
-            bitmap
-        } else {
-            bitmap.copy(Bitmap.Config.ARGB_8888, true)
-        }
-
-        // ── BƯỚC 1: PHẢN HỒI TRỰC QUAN NGAY LẬP TỨC ────────────────────────────
-        // Người dùng thấy ảnh "đông cứng" → biết đã chụp xong → có thể thả tay.
+        // Phản hồi trực quan ngay lập tức — người dùng thấy nút disable + flash
         fragmentCameraBinding.btnTakePhoto.isEnabled = false
-
-        // Hiện freeze frame đè lên camera preview
-        fragmentCameraBinding.imgFreezeFrame.apply {
-            setImageBitmap(mutableBitmap)
-            visibility = android.view.View.VISIBLE
-        }
-
-        // Flash shutter: hiện overlay trắng → fade out trong 150ms
         fragmentCameraBinding.viewShutterFlash.apply {
             visibility = android.view.View.VISIBLE
             alpha = 1f
@@ -264,120 +253,180 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
                 .start()
         }
 
-        // Bước 1: Chạy MediaPipe ở background thread (không block main thread)
-        backgroundExecutor.execute {
-            try {
-                val imageHelper = HandLandmarkerHelper(
-                    context = requireContext(),
-                    runningMode = RunningMode.IMAGE,
-                    minHandDetectionConfidence = 0.15f,
-                    minHandTrackingConfidence  = 0.15f,
-                    minHandPresenceConfidence  = 0.15f,
-                    maxNumHands = 2,
-                    currentDelegate = HandLandmarkerHelper.DELEGATE_CPU
-                )
+        // Chụp qua ImageCapture — KHÔNG dùng viewFinder.bitmap
+        // viewFinder.bitmap gọi SurfaceTexture.detachFromGLContext() → camera đóng lại
+        capture.takePicture(
+            ContextCompat.getMainExecutor(requireContext()),
+            object : ImageCapture.OnImageCapturedCallback() {
+                @SuppressLint("UnsafeOptInUsageError")
+                override fun onCaptureSuccess(imageProxy: ImageProxy) {
+                    if (DEBUG_LOG) Log.v(TAG, "takeSnapshotAndAnalyze: ImageProxy received ${imageProxy.width}x${imageProxy.height}")
 
-                // ── MULTI-ATTEMPT DETECTION ──────────────────────────────────────────
-                // Thử nhiều mức tăng cường ảnh khác nhau, dừng khi tìm thấy bàn tay.
-                // CHỈ dùng ảnh gốc (không xoay) — nếu xoay, toạ độ landmark sẽ bị lệch!
-                data class Attempt(val contrastScale: Float, val brightAdd: Float)
-                val attempts = listOf(
-                    Attempt(1.0f,  0f),   // Ảnh gốc
-                    Attempt(1.35f, 25f),  // Tăng nhẹ
-                    Attempt(1.7f,  50f),  // Tăng vừa
-                    Attempt(2.0f,  70f),  // Tăng mạnh
-                )
+                    backgroundExecutor.execute {
+                        try {
+                            val bitmap = imageProxyToBitmap(imageProxy)
+                            imageProxy.close()
 
-                var resultBundle: HandLandmarkerHelper.ResultBundle? = null
-
-                for (attempt in attempts) {
-                    val candidate = enhanceBitmapWithParams(mutableBitmap, attempt.contrastScale, attempt.brightAdd)
-                    val bundle = imageHelper.detectImage(candidate)
-                    val found  = bundle != null &&
-                            bundle.results.isNotEmpty() &&
-                            bundle.results.first().landmarks().isNotEmpty()
-                    if (found) {
-                        resultBundle = bundle
-                        Log.d(TAG, "Hand detected: contrast=${attempt.contrastScale} bright=${attempt.brightAdd}")
-                        break
-                    }
-                }
-                imageHelper.clearHandLandmarker()
-
-                val hasHand = resultBundle != null
-
-
-                // Bước 2: Chuẩn bị config + preload bitmaps TRÊN BACKGROUND THREAD
-                // (network I/O không được phép chạy trên main thread)
-                val currentConfig = viewModel.nailSetConfig.value
-                if (hasHand) {
-                    fragmentCameraBinding.overlay.preloadAllBitmapsForSnapshot(currentConfig)
-                }
-
-                // Bước 3: Switch về main thread để render AR lên bitmap
-                // Lúc này TẤT CẢ bitmaps đã sẵn sàng trong cache → vẽ ngay không chờ
-                activity?.runOnUiThread {
-                    try {
-                        if (hasHand) {
-                            fragmentCameraBinding.overlay.setFullDesign(currentConfig)
-
-                            // Render móng lên ảnh gốc (luôn dùng kích thước gốc — không xoay)
-                            fragmentCameraBinding.overlay.renderOnBitmap(
-                                targetBitmap = mutableBitmap,
-                                result  = resultBundle!!.results.first(),
-                                imgW    = mutableBitmap.width,
-                                imgH    = mutableBitmap.height
-                            )
-                        }
-
-                        // Bước 4: Lưu ảnh (có hoặc không có móng) vào cache
-                        backgroundExecutor.execute {
-                            try {
-                                val cacheDir = requireContext().cacheDir
-                                cacheDir.listFiles { _, name -> name.startsWith("hand_snapshot_") }
-                                    ?.forEach { it.delete() }
-
-                                val cacheFile = File(cacheDir, "hand_snapshot_${System.currentTimeMillis()}.jpg")
-                                FileOutputStream(cacheFile).use { out ->
-                                    mutableBitmap.compress(Bitmap.CompressFormat.JPEG, 92, out)
-                                }
-
-                                // Bước 5: Trả kết quả về Flutter (Activity finish → freeze frame tự dismiss)
-                                val landmarksJson = if (hasHand) "[{\"finger\":\"detected\"}]" else "[]"
-
+                            if (bitmap == null) {
+                                if (DEBUG_LOG) Log.e(TAG, "takeSnapshotAndAnalyze: ImageProxy→Bitmap failed")
                                 activity?.runOnUiThread {
-                                    val resultIntent = Intent().apply {
-                                        putExtra(RESULT_IMAGE_PATH, cacheFile.absolutePath)
-                                        putExtra(RESULT_LANDMARKS_JSON, landmarksJson)
-                                    }
-                                    requireActivity().setResult(Activity.RESULT_OK, resultIntent)
-                                    requireActivity().finish()
+                                    Toast.makeText(requireContext(), "Lỗi chụp ảnh", Toast.LENGTH_SHORT).show()
+                                    fragmentCameraBinding.btnTakePhoto.isEnabled = true
                                 }
+                                return@execute
+                            }
+
+                            if (DEBUG_LOG) Log.v(TAG, "takeSnapshotAndAnalyze: bitmap=${bitmap.width}x${bitmap.height}")
+
+                            // Chuẩn bị bitmap mutable ARGB_8888 để vẽ lên
+                            val mutableBitmap = if (bitmap.config == Bitmap.Config.ARGB_8888 && bitmap.isMutable) {
+                                bitmap
+                            } else {
+                                bitmap.copy(Bitmap.Config.ARGB_8888, true).also { bitmap.recycle() }
+                            }
+
+                            // Hiện freeze frame đè lên camera preview
+                            activity?.runOnUiThread {
+                                fragmentCameraBinding.imgFreezeFrame.apply {
+                                    setImageBitmap(mutableBitmap)
+                                    visibility = android.view.View.VISIBLE
+                                }
+                            }
+
+                            // Bước 1: Chạy MediaPipe ở background thread
+                            if (DEBUG_LOG) Log.d(TAG, "Snapshot pipeline: [1/5] MediaPipe IMAGE mode starting...")
+
+                            try {
+                                val imageHelper = HandLandmarkerHelper(
+                                    context = requireContext(),
+                                    runningMode = RunningMode.IMAGE,
+                                    minHandDetectionConfidence = 0.15f,
+                                    minHandTrackingConfidence  = 0.15f,
+                                    minHandPresenceConfidence  = 0.15f,
+                                    maxNumHands = 2,
+                                    currentDelegate = HandLandmarkerHelper.DELEGATE_CPU
+                                )
+
+                                if (DEBUG_LOG) Log.v(TAG, "Snapshot pipeline: HandLandmarkerHelper created (IMAGE mode, CPU)")
+
+                                // ── MULTI-ATTEMPT DETECTION ────────────────────────────────
+                                data class Attempt(val contrastScale: Float, val brightAdd: Float)
+                                val attempts = listOf(
+                                    Attempt(1.0f,  0f),
+                                    Attempt(1.35f, 25f),
+                                    Attempt(1.7f,  50f),
+                                    Attempt(2.0f,  70f),
+                                )
+
+                                var resultBundle: HandLandmarkerHelper.ResultBundle? = null
+                                var usedAttempt: Attempt? = null
+
+                                for (attempt in attempts) {
+                                    if (DEBUG_LOG) Log.v(TAG, "Snapshot pipeline: trying detection contrast=${attempt.contrastScale} bright=${attempt.brightAdd}")
+                                    val candidate = enhanceBitmapWithParams(mutableBitmap, attempt.contrastScale, attempt.brightAdd)
+                                    val bundle = imageHelper.detectImage(candidate)
+                                    val found = bundle != null && bundle.results.isNotEmpty() && bundle.results.first().landmarks().isNotEmpty()
+                                    if (found) {
+                                        resultBundle = bundle
+                                        usedAttempt = attempt
+                                        if (DEBUG_LOG) Log.i(TAG, "Snapshot pipeline: Hand DETECTED with contrast=${attempt.contrastScale} bright=${attempt.brightAdd}")
+                                        break
+                                    }
+                                }
+
+                                imageHelper.clearHandLandmarker()
+
+                                val hasHand = resultBundle != null
+                                if (DEBUG_LOG) Log.v(TAG, "Snapshot pipeline: [1/5] MediaPipe done: hasHand=$hasHand")
+
+                                // Bước 2: Preload bitmaps trên background thread
+                                if (hasHand) {
+                                    if (DEBUG_LOG) Log.d(TAG, "Snapshot pipeline: [2/5] Preloading bitmaps for config...")
+                                    fragmentCameraBinding.overlay.preloadAllBitmapsForSnapshot(viewModel.nailSetConfig.value)
+                                    if (DEBUG_LOG) Log.v(TAG, "Snapshot pipeline: [2/5] Bitmaps preloaded")
+                                } else {
+                                    if (DEBUG_LOG) Log.w(TAG, "Snapshot pipeline: [2/5] SKIPPED — no hand detected, no bitmap needed")
+                                }
+
+                                // Bước 3: Render AR lên bitmap trên main thread
+                                activity?.runOnUiThread {
+                                    try {
+                                        if (hasHand) {
+                                            if (DEBUG_LOG) Log.d(TAG, "Snapshot pipeline: [3/5] Rendering nails on bitmap...")
+
+                                            fragmentCameraBinding.overlay.setFullDesign(viewModel.nailSetConfig.value)
+                                            fragmentCameraBinding.overlay.renderOnBitmap(
+                                                targetBitmap = mutableBitmap,
+                                                result  = resultBundle!!.results.first(),
+                                                imgW    = mutableBitmap.width,
+                                                imgH    = mutableBitmap.height
+                                            )
+
+                                            if (DEBUG_LOG) Log.i(TAG, "Snapshot pipeline: [3/5] Nail rendering done")
+                                        } else {
+                                            if (DEBUG_LOG) Log.w(TAG, "Snapshot pipeline: [3/5] SKIPPED — no hand, bitmap unchanged")
+                                        }
+
+                                        // Bước 4: Lưu ảnh vào cache
+                                        if (DEBUG_LOG) Log.d(TAG, "Snapshot pipeline: [4/5] Saving bitmap to cache...")
+                                        val cacheDir = requireContext().cacheDir
+                                        cacheDir.listFiles { _, name -> name.startsWith("hand_snapshot_") }
+                                            ?.forEach { it.delete() }
+
+                                        val cacheFile = File(cacheDir, "hand_snapshot_${System.currentTimeMillis()}.jpg")
+                                        FileOutputStream(cacheFile).use { out ->
+                                            mutableBitmap.compress(Bitmap.CompressFormat.JPEG, 92, out)
+                                        }
+
+                                        // Bước 5: Trả kết quả về Flutter
+                                        val landmarksJson = if (hasHand) "[{\"finger\":\"detected\"}]" else "[]"
+                                        if (DEBUG_LOG) Log.i(TAG, "Snapshot pipeline: [5/5] Returning to Flutter — imagePath=$cacheFile")
+
+                                        val resultIntent = Intent().apply {
+                                            putExtra(RESULT_IMAGE_PATH, cacheFile.absolutePath)
+                                            putExtra(RESULT_LANDMARKS_JSON, landmarksJson)
+                                        }
+                                        requireActivity().setResult(Activity.RESULT_OK, resultIntent)
+                                        requireActivity().finish()
+
+                                    } catch (e: Exception) {
+                                        Log.e(TAG, "Render snapshot failed", e)
+                                        hideFreezeFrame()
+                                        fragmentCameraBinding.btnTakePhoto.isEnabled = true
+                                        Toast.makeText(requireContext(), "Lỗi vẽ móng: ${e.message}", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+
                             } catch (e: Exception) {
-                                Log.e(TAG, "Save snapshot failed", e)
+                                Log.e(TAG, "MediaPipe snapshot failed", e)
                                 activity?.runOnUiThread {
                                     hideFreezeFrame()
                                     fragmentCameraBinding.btnTakePhoto.isEnabled = true
-                                    Toast.makeText(requireContext(), "Lỗi lưu ảnh: ${e.message}", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(requireContext(), "Lỗi phân tích bàn tay: ${e.message}", Toast.LENGTH_SHORT).show()
                                 }
                             }
+
+                        } catch (e: Exception) {
+                            Log.e(TAG, "takeSnapshotAndAnalyze: processing failed", e)
+                            activity?.runOnUiThread {
+                                hideFreezeFrame()
+                                fragmentCameraBinding.btnTakePhoto.isEnabled = true
+                                Toast.makeText(requireContext(), "Lỗi xử lý ảnh: ${e.message}", Toast.LENGTH_SHORT).show()
+                            }
                         }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Render snapshot failed", e)
-                        hideFreezeFrame()
-                        fragmentCameraBinding.btnTakePhoto.isEnabled = true
-                        Toast.makeText(requireContext(), "Lỗi vẽ móng: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "MediaPipe snapshot failed", e)
-                activity?.runOnUiThread {
-                    hideFreezeFrame()
-                    fragmentCameraBinding.btnTakePhoto.isEnabled = true
-                    Toast.makeText(requireContext(), "Lỗi phân tích bàn tay: ${e.message}", Toast.LENGTH_SHORT).show()
+
+                override fun onError(exception: ImageCaptureException) {
+                    Log.e(TAG, "takeSnapshotAndAnalyze: ImageCapture failed", exception)
+                    activity?.runOnUiThread {
+                        hideFreezeFrame()
+                        fragmentCameraBinding.btnTakePhoto.isEnabled = true
+                        Toast.makeText(requireContext(), "Lỗi chụp ảnh: ${exception.message}", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
-        }
+        )
     }
 
     /** Ẩn freeze frame và trả lại camera preview cho người dùng. */
@@ -484,39 +533,135 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
     // LIVE MODE: Chụp ảnh ghép overlay rồi lưu thư viện
     // -------------------------------------------------------------------------
 
+    /**
+     * Chụp ảnh bằng ImageCapture API (CameraX) thay vì viewFinder.bitmap.
+     *
+     * ⚠️ KHÔNG dùng viewFinder.bitmap — nó gọi SurfaceTexture.detachFromGLContext()
+     * giải phóng SurfaceTexture ngay lập tức → TextureView mất Surface →
+     * Camera nhận Surface gone signal → CameraDevice.close() → crash.
+     *
+     * ImageCapture.takePicture dùng internal ImageReader, không ảnh hưởng TextureView.
+     */
     private fun captureAndSaveToGallery() {
-        val previewBitmap = fragmentCameraBinding.viewFinder.bitmap ?: run {
+        if (DEBUG_LOG) Log.d(TAG, "captureAndSaveToGallery: START")
+        val capture = imageCapture ?: run {
             Toast.makeText(requireContext(), "Camera chưa sẵn sàng", Toast.LENGTH_SHORT).show()
+            if (DEBUG_LOG) Log.e(TAG, "captureAndSaveToGallery: imageCapture is NULL")
             return
         }
 
-        val result = Bitmap.createBitmap(previewBitmap.width, previewBitmap.height, Bitmap.Config.ARGB_8888)
-        val canvas = android.graphics.Canvas(result)
-        canvas.drawBitmap(previewBitmap, 0f, 0f, null)
-        fragmentCameraBinding.overlay.draw(canvas)
+        if (DEBUG_LOG) Log.v(TAG, "captureAndSaveToGallery: taking picture via ImageCapture")
 
-        val filename = "Nailify_${System.currentTimeMillis()}.png"
-        val values = android.content.ContentValues().apply {
-            put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, filename)
-            put(android.provider.MediaStore.Images.Media.MIME_TYPE, "image/png")
-            put(android.provider.MediaStore.Images.Media.RELATIVE_PATH,
-                android.os.Environment.DIRECTORY_PICTURES + "/Nailify")
-        }
-        val resolver = requireContext().contentResolver
-        val uri = resolver.insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
-        if (uri != null) {
-            try {
-                resolver.openOutputStream(uri)?.use { out ->
-                    result.compress(Bitmap.CompressFormat.PNG, 100, out)
+        // Disable nút để tránh double-tap
+        fragmentCameraBinding.btnCapture.isEnabled = false
+
+        capture.takePicture(
+            ContextCompat.getMainExecutor(requireContext()),
+            object : ImageCapture.OnImageCapturedCallback() {
+                @SuppressLint("UnsafeOptInUsageError")
+                override fun onCaptureSuccess(imageProxy: ImageProxy) {
+                    if (DEBUG_LOG) Log.v(TAG, "captureAndSaveToGallery: ImageProxy received ${imageProxy.width}x${imageProxy.height}")
+
+                    // Chuyển ImageProxy → Bitmap trên background thread
+                    backgroundExecutor.execute {
+                        try {
+                            val bitmap = imageProxyToBitmap(imageProxy)
+                            imageProxy.close()
+
+                            if (bitmap == null) {
+                                if (DEBUG_LOG) Log.e(TAG, "captureAndSaveToGallery: ImageProxy→Bitmap failed")
+                                activity?.runOnUiThread {
+                                    Toast.makeText(requireContext(), "Lỗi chụp ảnh", Toast.LENGTH_SHORT).show()
+                                    fragmentCameraBinding.btnCapture.isEnabled = true
+                                }
+                                return@execute
+                            }
+
+                            if (DEBUG_LOG) Log.v(TAG, "captureAndSaveToGallery: bitmap=${bitmap.width}x${bitmap.height}")
+
+                            // Vẽ overlay AR lên bitmap
+                            val result = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+                            val canvas = android.graphics.Canvas(result)
+                            canvas.drawBitmap(bitmap, 0f, 0f, null)
+
+                            fragmentCameraBinding.overlay.draw(canvas)
+
+                            // Lưu vào MediaStore
+                            val filename = "Nailify_${System.currentTimeMillis()}.png"
+                            val values = android.content.ContentValues().apply {
+                                put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, filename)
+                                put(android.provider.MediaStore.Images.Media.MIME_TYPE, "image/png")
+                                put(android.provider.MediaStore.Images.Media.RELATIVE_PATH,
+                                    android.os.Environment.DIRECTORY_PICTURES + "/Nailify")
+                            }
+                            val resolver = requireContext().contentResolver
+                            val uri = resolver.insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+
+                            if (uri != null) {
+                                try {
+                                    resolver.openOutputStream(uri)?.use { out ->
+                                        result.compress(Bitmap.CompressFormat.PNG, 100, out)
+                                    }
+                                    if (DEBUG_LOG) Log.i(TAG, "captureAndSaveToGallery: saved to $uri")
+                                    activity?.runOnUiThread {
+                                        Toast.makeText(requireContext(), "Đã lưu ảnh vào thư viện!", Toast.LENGTH_SHORT).show()
+                                        fragmentCameraBinding.btnCapture.isEnabled = true
+                                    }
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "Error saving image", e)
+                                    activity?.runOnUiThread {
+                                        Toast.makeText(requireContext(), "Lỗi khi lưu ảnh", Toast.LENGTH_SHORT).show()
+                                        fragmentCameraBinding.btnCapture.isEnabled = true
+                                    }
+                                }
+                            } else {
+                                if (DEBUG_LOG) Log.e(TAG, "captureAndSaveToGallery: MediaStore insert failed")
+                                activity?.runOnUiThread {
+                                    Toast.makeText(requireContext(), "Không thể tạo file ảnh", Toast.LENGTH_SHORT).show()
+                                    fragmentCameraBinding.btnCapture.isEnabled = true
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "captureAndSaveToGallery: processing failed", e)
+                            imageProxy.close()
+                            activity?.runOnUiThread {
+                                Toast.makeText(requireContext(), "Lỗi xử lý ảnh", Toast.LENGTH_SHORT).show()
+                                fragmentCameraBinding.btnCapture.isEnabled = true
+                            }
+                        }
+                    }
                 }
-                Toast.makeText(requireContext(), "Đã lưu ảnh vào thư viện!", Toast.LENGTH_SHORT).show()
-            } catch (e: Exception) {
-                Log.e(TAG, "Error saving image", e)
-                Toast.makeText(requireContext(), "Lỗi khi lưu ảnh", Toast.LENGTH_SHORT).show()
+
+                override fun onError(exception: ImageCaptureException) {
+                    Log.e(TAG, "captureAndSaveToGallery: ImageCapture failed", exception)
+                    activity?.runOnUiThread {
+                        Toast.makeText(requireContext(), "Lỗi chụp ảnh: ${exception.message}", Toast.LENGTH_SHORT).show()
+                        fragmentCameraBinding.btnCapture.isEnabled = true
+                    }
+                }
             }
-        } else {
-            Toast.makeText(requireContext(), "Không thể tạo file ảnh", Toast.LENGTH_SHORT).show()
+        )
+    }
+
+    /**
+     * Chuyển ImageProxy (CameraX) thành Bitmap (ARGB_8888).
+     * ImageProxy.toBitmap() tự động xử lý mọi format (JPEG, YUV_420_888, ...).
+     * Sau khi convert, bitmap được xoay đúng theo rotation.
+     */
+    @SuppressLint("UnsafeOptInUsageError")
+    private fun imageProxyToBitmap(imageProxy: ImageProxy): Bitmap? {
+        val rotation = imageProxy.imageInfo.rotationDegrees
+        var bitmap = imageProxy.toBitmap()
+
+        if (rotation != 0) {
+            val matrix = android.graphics.Matrix().apply { postRotate(rotation.toFloat()) }
+            val rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+            if (rotated != bitmap) {
+                bitmap.recycle()
+                bitmap = rotated
+            }
         }
+        return bitmap
     }
 
     // -------------------------------------------------------------------------
@@ -573,6 +718,14 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
         provider.unbindAll()
         try {
             camera = provider.bindToLifecycle(this, selector, preview, imageAnalyzer)
+            // Bind ImageCapture sau — không dùng viewFinder.bitmap ( gây crash TextureView)
+            if (imageCapture == null) {
+                imageCapture = ImageCapture.Builder()
+                    .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                    .setTargetResolution(targetResolution)
+                    .build()
+                provider.bindToLifecycle(this, selector, preview, imageAnalyzer, imageCapture)
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Use case binding failed", e)
         }
@@ -588,8 +741,9 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
                 imageProxy = imageProxy,
                 isFrontCamera = cameraFacing == CameraSelector.LENS_FACING_FRONT
             )
+            if (DEBUG_LOG) Log.v(TAG, "detectHand: sent frame to MediaPipe (Live mode)")
         } else {
-            // Snapshot mode: không cần live stream phân tích realtime
+            // Snapshot mode: không cần live stream
             imageProxy.close()
         }
     }
@@ -607,6 +761,11 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
         if (isSnapshotMode) return
         activity?.runOnUiThread {
             if (_fragmentCameraBinding != null) {
+                if (DEBUG_LOG) {
+                    Log.v(TAG, "onResults (Live): inputImage=${resultBundle.inputImageWidth}x${resultBundle.inputImageHeight} " +
+                        "hands=${resultBundle.results.size} " +
+                        "config=shape(${viewModel.nailSetConfig.value.shape}) nails(${viewModel.nailSetConfig.value.nails.size})")
+                }
                 fragmentCameraBinding.overlay.setFullDesign(viewModel.nailSetConfig.value)
                 fragmentCameraBinding.overlay.setResults(
                     resultBundle.results.first(),
@@ -620,6 +779,7 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
     }
 
     override fun onError(error: String, errorCode: Int) {
+        if (DEBUG_LOG) Log.e(TAG, "onError: error=\"$error\" code=$errorCode")
         activity?.runOnUiThread {
             Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show()
         }

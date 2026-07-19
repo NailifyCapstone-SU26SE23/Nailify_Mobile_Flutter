@@ -19,6 +19,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.withTranslation
 import com.google.mediapipe.examples.handlandmarker.model.NailDecoration
 import com.google.mediapipe.examples.handlandmarker.model.NailSetConfig
+import com.google.mediapipe.examples.handlandmarker.nail.NailDetectionPipeline
+import com.google.mediapipe.examples.handlandmarker.nail.NailDetectionResult
 import com.google.mediapipe.examples.handlandmarker.utils.OneEuroFilter
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
@@ -143,6 +145,14 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
     private var imageWidth: Int = 1
     private var imageHeight: Int = 1
 
+    // ── Phase 5/6: CV Pipeline — Nail boundary detection & auto-scaling ──
+    // Pipeline chạy async trên background thread, kết quả được cache cho drawNails().
+    // Live mode: throttle 3 frame/lần; Snapshot mode: chạy full sync.
+    private val nailDetectionPipeline = NailDetectionPipeline()
+    @Volatile private var cvResults: List<NailDetectionResult>? = null
+    @Volatile private var sourceBitmap: Bitmap? = null
+    private val cvExecutor = java.util.concurrent.Executors.newSingleThreadExecutor()
+
     // ---------------------------------------------------------------------------
     // Manual offsets — giá trị bù trừ thủ công do người dùng điều chỉnh từ Flutter.
     // Được cộng vào sau khi bộ lọc 1€ đã làm mượt tọa độ Landmark.
@@ -201,6 +211,8 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         pointPaint.reset()
         filtersX.forEach { it.reset() }
         filtersY.forEach { it.reset() }
+        nailDetectionPipeline.reset()
+        cvResults = null
         invalidate()
         initPaints()
     }
@@ -363,9 +375,28 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                     continue
                 }
 
+                // ── CV DETECTION BLEND (Phase 5/6) ──────────────────────────────────
+                // Override geometric values with CV-detected values using confidence weighting.
+                // CV results are only available for the first hand (handIdx == 0).
+                val cvResult = if (handIdx == 0) cvResults?.getOrNull(fingerIndex) else null
+                val cvDetected = cvResult?.detected == true && (cvResult?.confidence ?: 0f) > 0f
+                val cvConf = if (cvDetected && cvResult != null) cvResult.confidence.coerceIn(0f, 1f) else 0f
+
                 // ── FILTERED COORDINATES ──────────────────────────────────────────
-                val rawPx = metrics.nailCenterX
-                val rawPy = metrics.nailCenterY
+                // Blend: confidence × detected + (1 - confidence) × geometric
+                // CV values are in image space → convert to view space via sf
+                val rawPx = if (cvDetected && cvResult != null) {
+                    val cvCenterX = cvResult.nailCenterX * sf
+                    metrics.nailCenterX * (1f - cvConf) + cvCenterX * cvConf
+                } else {
+                    metrics.nailCenterX
+                }
+                val rawPy = if (cvDetected && cvResult != null) {
+                    val cvCenterY = cvResult.nailCenterY * sf
+                    metrics.nailCenterY * (1f - cvConf) + cvCenterY * cvConf
+                } else {
+                    metrics.nailCenterY
+                }
 
                 val finalPx: Float
                 val finalPy: Float
@@ -377,10 +408,15 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                     finalPy = rawPy
                 }
 
-                val rotation = if (applyFilters) {
-                    metrics.rotationDeg + manualRotation
+                val baseRotation = if (cvDetected && cvResult != null) {
+                    metrics.rotationDeg * (1f - cvConf) + cvResult.rotationDeg * cvConf
                 } else {
                     metrics.rotationDeg
+                }
+                val rotation = if (applyFilters) {
+                    baseRotation + manualRotation
+                } else {
+                    baseRotation
                 }
 
                 // ── NAIL BITMAP ──────────────────────────────────────────────────
@@ -398,12 +434,24 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                 // Kích thước base từ finger geometry, scale multiplier từ user adjustment
                 val scaleMultiplier = if (applyFilters) manualScale else 1f
                 val fingerLenPx = metrics.pipTipDist * min(imageWidth, imageHeight) * sf
+                val geometricWidth = metrics.nailWidthPx
+                val geometricHeight = fingerLenPx * 1.2f * nailSetConfig.length * 1.5f
 
-                // nailWidth: base trên finger width ước lượng, nhân 2 vì móng bao quanh ngón
-                val baseNailWidth  = metrics.nailWidthPx
+                // Phase 5/6: CV-detected dimensions (image space → view space via sf)
+                val baseNailWidth = if (cvDetected && cvResult != null) {
+                    val cvWidth = cvResult.nailWidthPx * sf
+                    geometricWidth * (1f - cvConf) + cvWidth * cvConf
+                } else {
+                    geometricWidth
+                }
+                val totalHeight = if (cvDetected && cvResult != null) {
+                    val cvHeight = cvResult.nailLengthPx * sf
+                    geometricHeight * (1f - cvConf) + cvHeight * cvConf
+                } else {
+                    geometricHeight
+                }
+
                 val nailBottom  = fingerLenPx * 0.75f
-                val totalHeight = fingerLenPx * 1.2f * nailSetConfig.length * 1.5f
-
                 val nailWidth  = baseNailWidth  * scaleMultiplier
                 val nailHeight = totalHeight    * scaleMultiplier
 
@@ -444,7 +492,8 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                         "decorationCount=${design.decorations.size} " +
                         "bentRatio=${String.format("%.3f", metrics.bentRatio)} " +
                         "foldAngle=${String.format("%.1f", metrics.foldAngleDeg)}° " +
-                        "nailWidthPx=${String.format("%.1f", metrics.nailWidthPx)}")
+                        "nailWidthPx=${String.format("%.1f", metrics.nailWidthPx)}" +
+                        (if (cvDetected) " cvConf=${String.format("%.2f", cvConf)}" else ""))
                 }
             }
         }
@@ -472,11 +521,13 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         targetBitmap: Bitmap,
         result: com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult,
         imgW: Int,
-        imgH: Int
+        imgH: Int,
+        cvDetectionResults: List<NailDetectionResult>? = null
     ) {
         if (DEBUG_LOG) {
             Log.d(TAG, "renderOnBitmap START: bitmap=${targetBitmap.width}x${targetBitmap.height} " +
-                "mpResultImageSize=${imgW}x${imgH} hands=${result.landmarks().size}")
+                "mpResultImageSize=${imgW}x${imgH} hands=${result.landmarks().size} " +
+                "cvResults=${cvDetectionResults?.count { it.detected } ?: 0}/${cvDetectionResults?.size ?: 0}")
         }
 
         // Reset filters — đảm bảo mỗi snapshot bắt đầu sạch
@@ -495,11 +546,14 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         val prevImageWidth  = imageWidth
         val prevImageHeight = imageHeight
         val prevScaleFactor = scaleFactor
+        val prevCvResults   = cvResults
 
         results     = result
         imageWidth  = imgW
         imageHeight = imgH
         scaleFactor = sf
+        // Phase 6: Use provided CV detection results for snapshot mode
+        cvResults   = cvDetectionResults ?: cvResults
 
         val canvas = android.graphics.Canvas(targetBitmap)
         drawNails(canvas, sf, applyFilters = false)
@@ -509,8 +563,18 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         imageWidth  = prevImageWidth
         imageHeight = prevImageHeight
         scaleFactor = prevScaleFactor
+        cvResults   = prevCvResults
 
         if (DEBUG_LOG) Log.d(TAG, "renderOnBitmap END")
+    }
+
+    /**
+     * Phase 6: Set the source bitmap (camera frame) for CV pipeline.
+     * In live mode, this is called from CameraFragment when a new frame arrives.
+     * The bitmap is used by NailDetectionPipeline for nail boundary detection.
+     */
+    fun setSourceBitmap(bitmap: Bitmap?) {
+        sourceBitmap = bitmap
     }
 
     fun setResults(
@@ -538,6 +602,28 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
             Log.v(TAG, "setResults: runningMode=$runningMode imageSize=${imageWidth}x${imageHeight} " +
                 "viewSize=${width}x${height} scaleFactor=$scaleFactor hands=${handLandmarkerResults.landmarks().size}")
         }
+
+        // Phase 6: Trigger async CV detection for live mode (throttled by pipeline)
+        if (runningMode == RunningMode.LIVE_STREAM && sourceBitmap != null) {
+            val bmp = sourceBitmap!!
+            val imgW = this.imageWidth
+            val imgH = this.imageHeight
+            val firstHand = handLandmarkerResults.landmarks().firstOrNull()
+            if (firstHand != null) {
+                cvExecutor.execute {
+                    try {
+                        val handResult = nailDetectionPipeline.detect(
+                            bmp, firstHand, imgW, imgH, isLiveMode = true
+                        )
+                        cvResults = handResult.results
+                        post { invalidate() }
+                    } catch (e: Exception) {
+                        if (DEBUG_LOG) Log.e(TAG, "CV detection error", e)
+                    }
+                }
+            }
+        }
+
         invalidate()
     }
 
@@ -1202,8 +1288,8 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
     companion object {
         private const val TAG = "NailifyOverlay"
 
-        /** Log verbose khi debug pipeline. Đặt = false trong release để tránh spam logcat. */
-        private const val DEBUG_LOG = true
+        /** Log verbose khi debug pipeline. Tự động tắt trong release builds. */
+        private val DEBUG_LOG = BuildConfig.DEBUG
 
         private const val LANDMARK_STROKE_WIDTH = 8F
         private const val FingerColorFallback = "#FF4081"

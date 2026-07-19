@@ -26,10 +26,13 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.Navigation
 import android.util.Size
+import com.google.mediapipe.examples.handlandmarker.BuildConfig
 import com.google.mediapipe.examples.handlandmarker.HandLandmarkerHelper
 import com.google.mediapipe.examples.handlandmarker.MainViewModel
 import com.google.mediapipe.examples.handlandmarker.R
 import com.google.mediapipe.examples.handlandmarker.databinding.FragmentCameraBinding
+import com.google.mediapipe.examples.handlandmarker.nail.NailDetectionPipeline
+import com.google.mediapipe.examples.handlandmarker.nail.NailDetectionResult
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import org.json.JSONArray
 import org.json.JSONObject
@@ -44,6 +47,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import kotlin.math.atan2
 import kotlin.math.hypot
+import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
 class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
@@ -51,8 +55,8 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
     companion object {
         private const val TAG = "NailifyCamera"
 
-        /** Log verbose khi debug pipeline. Đặt = false trong release. */
-        private const val DEBUG_LOG = true
+        /** Log verbose khi debug pipeline. Tự động tắt trong release builds. */
+        private val DEBUG_LOG = BuildConfig.DEBUG
 
         /** Key để Flutter nhận biết đây là yêu cầu Snapshot mode */
         const val EXTRA_MODE = "camera_mode"
@@ -67,7 +71,16 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
     private var _fragmentCameraBinding: FragmentCameraBinding? = null
     private val fragmentCameraBinding get() = _fragmentCameraBinding!!
 
+    /** Helper cho Live mode (LIVE_STREAM). Khởi tạo trên background thread. */
     private lateinit var handLandmarkerHelper: HandLandmarkerHelper
+
+    /**
+     * Helper cho Snapshot mode (IMAGE) — khởi tạo lười, TÁI SỬ DỤNG qua nhiều lần chụp.
+     * Trước đây mỗi lần chụp snapshot tạo mới helper → reload model (~200ms).
+     * Giờ model load 1 lần duy nhất khi vào fragment.
+     */
+    @Volatile private var snapshotHandLandmarkerHelper: HandLandmarkerHelper? = null
+    private val snapshotHelperLock = Any()
     private val viewModel: MainViewModel by activityViewModels()
     private var preview: Preview? = null
     private var imageAnalyzer: ImageAnalysis? = null
@@ -92,6 +105,12 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
             if (handLandmarkerHelper.isClose()) {
                 handLandmarkerHelper.setupHandLandmarker()
             }
+            // Re-setup snapshot helper nếu đã bị clear trong onPause
+            synchronized(snapshotHelperLock) {
+                snapshotHandLandmarkerHelper?.let { helper ->
+                    if (helper.isClose()) helper.setupHandLandmarker()
+                }
+            }
         }
     }
 
@@ -105,14 +124,52 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
             viewModel.setDelegate(handLandmarkerHelper.currentDelegate)
             backgroundExecutor.execute { handLandmarkerHelper.clearHandLandmarker() }
         }
+        // Snapshot helper giữ nguyên model trong bộ nhớ—chỉ clear để giải phóng bộ nhớ GPU/CPU
+        // khi rời fragment, sẽ setup lại khi onResume nếu cần.
+        backgroundExecutor.execute {
+            synchronized(snapshotHelperLock) {
+                snapshotHandLandmarkerHelper?.let { helper ->
+                    if (!helper.isClose()) helper.clearHandLandmarker()
+                }
+            }
+        }
     }
 
     override fun onDestroyView() {
         _fragmentCameraBinding = null
         super.onDestroyView()
+        // Đóng hoàn toàn snapshot helper để tránh leak native model.
+        synchronized(snapshotHelperLock) {
+            snapshotHandLandmarkerHelper?.clearHandLandmarker()
+            snapshotHandLandmarkerHelper = null
+        }
         backgroundExecutor.shutdown()
         if (!backgroundExecutor.awaitTermination(1000, TimeUnit.MILLISECONDS)) {
             backgroundExecutor.shutdownNow()
+        }
+    }
+
+    /**
+     * Lấy (hoặc khởi tạo lười) HandLandmarkerHelper cho Snapshot mode (IMAGE).
+     * Phải được gọi từ background thread — tạo mới helper sẽ reload model (~200ms).
+     * Sau lần đầu, các lần sau trả về instance cached.
+     */
+    private fun getOrCreateSnapshotHelper(): HandLandmarkerHelper {
+        synchronized(snapshotHelperLock) {
+            snapshotHandLandmarkerHelper?.let { existing ->
+                if (!existing.isClose()) return existing
+            }
+            val helper = HandLandmarkerHelper(
+                context = requireContext(),
+                runningMode = RunningMode.IMAGE,
+                minHandDetectionConfidence = 0.15f,
+                minHandTrackingConfidence  = 0.15f,
+                minHandPresenceConfidence  = 0.15f,
+                maxNumHands = 2,
+                currentDelegate = HandLandmarkerHelper.DELEGATE_CPU
+            )
+            snapshotHandLandmarkerHelper = helper
+            return helper
         }
     }
 
@@ -297,44 +354,46 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
                             if (DEBUG_LOG) Log.d(TAG, "Snapshot pipeline: [1/5] MediaPipe IMAGE mode starting...")
 
                             try {
-                                val imageHelper = HandLandmarkerHelper(
-                                    context = requireContext(),
-                                    runningMode = RunningMode.IMAGE,
-                                    minHandDetectionConfidence = 0.15f,
-                                    minHandTrackingConfidence  = 0.15f,
-                                    minHandPresenceConfidence  = 0.15f,
-                                    maxNumHands = 2,
-                                    currentDelegate = HandLandmarkerHelper.DELEGATE_CPU
-                                )
+                                // Phase 1.2: TÁI SỬ DỤNG HandLandmarkerHelper thay vì tạo mới mỗi lần chụp.
+                                // Tránh reload model (~200ms) — model chỉ load 1 lần khi vào fragment.
+                                val imageHelper = getOrCreateSnapshotHelper()
 
-                                if (DEBUG_LOG) Log.v(TAG, "Snapshot pipeline: HandLandmarkerHelper created (IMAGE mode, CPU)")
+                                if (DEBUG_LOG) Log.v(TAG, "Snapshot pipeline: HandLandmarkerHelper ready (IMAGE mode, CPU, reused)")
 
-                                // ── MULTI-ATTEMPT DETECTION ────────────────────────────────
-                                data class Attempt(val contrastScale: Float, val brightAdd: Float)
-                                val attempts = listOf(
-                                    Attempt(1.0f,  0f),
-                                    Attempt(1.35f, 25f),
-                                    Attempt(1.7f,  50f),
-                                    Attempt(2.0f,  70f),
-                                )
-
+                                // ── Phase 1.4: 2-ATTEMPT DETECTION (thay vì 4-attempt sequential) ────
+                                // Attempt 1: bitmap gốc (contrast bình thường).
+                                // Attempt 2 (chỉ nếu #1 thất bại): auto-contrast (histogram equalization).
+                                // Giảm từ ~400ms (4 attempts) xuống tối đa ~200ms (2 attempts).
                                 var resultBundle: HandLandmarkerHelper.ResultBundle? = null
-                                var usedAttempt: Attempt? = null
 
-                                for (attempt in attempts) {
-                                    if (DEBUG_LOG) Log.v(TAG, "Snapshot pipeline: trying detection contrast=${attempt.contrastScale} bright=${attempt.brightAdd}")
-                                    val candidate = enhanceBitmapWithParams(mutableBitmap, attempt.contrastScale, attempt.brightAdd)
-                                    val bundle = imageHelper.detectImage(candidate)
-                                    val found = bundle != null && bundle.results.isNotEmpty() && bundle.results.first().landmarks().isNotEmpty()
-                                    if (found) {
-                                        resultBundle = bundle
-                                        usedAttempt = attempt
-                                        if (DEBUG_LOG) Log.i(TAG, "Snapshot pipeline: Hand DETECTED with contrast=${attempt.contrastScale} bright=${attempt.brightAdd}")
-                                        break
-                                    }
+                                // Attempt 1: original
+                                if (DEBUG_LOG) Log.v(TAG, "Snapshot pipeline: attempt #1 (original)")
+                                val bundle1 = imageHelper.detectImage(mutableBitmap)
+                                val found1 = bundle1 != null &&
+                                    bundle1!!.results.isNotEmpty() &&
+                                    bundle1.results.first().landmarks().isNotEmpty()
+                                if (found1) {
+                                    resultBundle = bundle1
+                                    if (DEBUG_LOG) Log.i(TAG, "Snapshot pipeline: Hand DETECTED on attempt #1 (original)")
                                 }
 
-                                imageHelper.clearHandLandmarker()
+                                // Attempt 2: auto-contrast (chỉ nếu #1 fail)
+                                if (resultBundle == null) {
+                                    if (DEBUG_LOG) Log.v(TAG, "Snapshot pipeline: attempt #2 (auto-contrast histogram equalization)")
+                                    val enhanced = applyAutoContrast(mutableBitmap)
+                                    val bundle2 = imageHelper.detectImage(enhanced)
+                                    val found2 = bundle2 != null &&
+                                        bundle2!!.results.isNotEmpty() &&
+                                        bundle2.results.first().landmarks().isNotEmpty()
+                                    if (found2) {
+                                        resultBundle = bundle2
+                                        if (DEBUG_LOG) Log.i(TAG, "Snapshot pipeline: Hand DETECTED on attempt #2 (auto-contrast)")
+                                    }
+                                    // Giải phóng enhanced bitmap nếu tạo ra bản copy
+                                    if (enhanced !== mutableBitmap) enhanced.recycle()
+                                }
+
+                                // Phase 1.2: KHÔNG gọi imageHelper.clearHandLandmarker() — giữ để tái sử dụng!
 
                                 val hasHand = resultBundle != null
                                 if (DEBUG_LOG) Log.v(TAG, "Snapshot pipeline: [1/5] MediaPipe done: hasHand=$hasHand")
@@ -348,49 +407,84 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
                                     if (DEBUG_LOG) Log.w(TAG, "Snapshot pipeline: [2/5] SKIPPED — no hand detected, no bitmap needed")
                                 }
 
-                                // Bước 3: Render AR lên bitmap trên main thread
-                                activity?.runOnUiThread {
+                                // ── Phase 6: CV Pipeline (nail boundary detection + auto-scaling) ──
+                                // Chạy full CV pipeline (không throttle) cho độ chính xác cao nhất.
+                                // Pipeline: ROI extraction → segmentation → boundary → auto-scaling.
+                                var cvDetectionResults: List<NailDetectionResult>? = null
+                                if (hasHand) {
                                     try {
-                                        if (hasHand) {
-                                            if (DEBUG_LOG) Log.d(TAG, "Snapshot pipeline: [3/5] Rendering nails on bitmap...")
-
-                                            fragmentCameraBinding.overlay.setFullDesign(viewModel.nailSetConfig.value)
-                                            fragmentCameraBinding.overlay.renderOnBitmap(
-                                                targetBitmap = mutableBitmap,
-                                                result  = resultBundle!!.results.first(),
-                                                imgW    = mutableBitmap.width,
-                                                imgH    = mutableBitmap.height
+                                        if (DEBUG_LOG) Log.d(TAG, "Snapshot pipeline: [2.5/5] Running CV pipeline...")
+                                        val cvPipeline = NailDetectionPipeline()
+                                        val firstHand = resultBundle!!.results.first().landmarks().firstOrNull()
+                                        if (firstHand != null) {
+                                            val handResult = cvPipeline.detect(
+                                                mutableBitmap, firstHand,
+                                                mutableBitmap.width, mutableBitmap.height,
+                                                isLiveMode = false
                                             )
-
-                                            if (DEBUG_LOG) Log.i(TAG, "Snapshot pipeline: [3/5] Nail rendering done")
-                                        } else {
-                                            if (DEBUG_LOG) Log.w(TAG, "Snapshot pipeline: [3/5] SKIPPED — no hand, bitmap unchanged")
+                                            cvDetectionResults = handResult.results
+                                            val detectedCount = cvDetectionResults.count { it.detected }
+                                            if (DEBUG_LOG) Log.i(TAG, "Snapshot pipeline: [2.5/5] CV done: $detectedCount/5 nails detected")
                                         }
-
-                                        // Bước 4: Lưu ảnh vào cache
-                                        if (DEBUG_LOG) Log.d(TAG, "Snapshot pipeline: [4/5] Saving bitmap to cache...")
-                                        val cacheDir = requireContext().cacheDir
-                                        cacheDir.listFiles { _, name -> name.startsWith("hand_snapshot_") }
-                                            ?.forEach { it.delete() }
-
-                                        val cacheFile = File(cacheDir, "hand_snapshot_${System.currentTimeMillis()}.jpg")
-                                        FileOutputStream(cacheFile).use { out ->
-                                            mutableBitmap.compress(Bitmap.CompressFormat.JPEG, 92, out)
-                                        }
-
-                                        // Bước 5: Trả kết quả về Flutter
-                                        val landmarksJson = if (hasHand) "[{\"finger\":\"detected\"}]" else "[]"
-                                        if (DEBUG_LOG) Log.i(TAG, "Snapshot pipeline: [5/5] Returning to Flutter — imagePath=$cacheFile")
-
-                                        val resultIntent = Intent().apply {
-                                            putExtra(RESULT_IMAGE_PATH, cacheFile.absolutePath)
-                                            putExtra(RESULT_LANDMARKS_JSON, landmarksJson)
-                                        }
-                                        requireActivity().setResult(Activity.RESULT_OK, resultIntent)
-                                        requireActivity().finish()
-
                                     } catch (e: Exception) {
-                                        Log.e(TAG, "Render snapshot failed", e)
+                                        if (DEBUG_LOG) Log.w(TAG, "Snapshot pipeline: CV pipeline failed (non-fatal)", e)
+                                    }
+                                }
+
+                                // ── Phase 1.3: Render + Save trên BACKGROUND THREAD ──────────────
+                                // renderOnBitmap() dùng Canvas(bitmap) riêng, không cần main thread.
+                                // Chỉ finish() + Toast cần runOnUiThread.
+                                try {
+                                    if (hasHand) {
+                                        if (DEBUG_LOG) Log.d(TAG, "Snapshot pipeline: [3/5] Rendering nails on bitmap (bg thread)...")
+
+                                        fragmentCameraBinding.overlay.setFullDesign(viewModel.nailSetConfig.value)
+                                        fragmentCameraBinding.overlay.renderOnBitmap(
+                                            targetBitmap = mutableBitmap,
+                                            result  = resultBundle!!.results.first(),
+                                            imgW    = mutableBitmap.width,
+                                            imgH    = mutableBitmap.height,
+                                            cvDetectionResults = cvDetectionResults
+                                        )
+
+                                        if (DEBUG_LOG) Log.i(TAG, "Snapshot pipeline: [3/5] Nail rendering done")
+                                    } else {
+                                        if (DEBUG_LOG) Log.w(TAG, "Snapshot pipeline: [3/5] SKIPPED — no hand, bitmap unchanged")
+                                    }
+
+                                    // Bước 4: Lưu ảnh vào cache (background thread)
+                                    if (DEBUG_LOG) Log.d(TAG, "Snapshot pipeline: [4/5] Saving bitmap to cache (bg thread)...")
+                                    val cacheDir = requireContext().cacheDir
+                                    cacheDir.listFiles { _, name -> name.startsWith("hand_snapshot_") }
+                                        ?.forEach { it.delete() }
+
+                                    val cacheFile = File(cacheDir, "hand_snapshot_${System.currentTimeMillis()}.jpg")
+                                    FileOutputStream(cacheFile).use { out ->
+                                        mutableBitmap.compress(Bitmap.CompressFormat.JPEG, 92, out)
+                                    }
+
+                                    // Bước 5: Trả kết quả về Flutter (chỉ finish() cần main thread)
+                                    val landmarksJson = if (hasHand) "[{\"finger\":\"detected\"}]" else "[]"
+                                    if (DEBUG_LOG) Log.i(TAG, "Snapshot pipeline: [5/5] Returning to Flutter — imagePath=$cacheFile")
+
+                                    activity?.runOnUiThread {
+                                        try {
+                                            val resultIntent = Intent().apply {
+                                                putExtra(RESULT_IMAGE_PATH, cacheFile.absolutePath)
+                                                putExtra(RESULT_LANDMARKS_JSON, landmarksJson)
+                                            }
+                                            requireActivity().setResult(Activity.RESULT_OK, resultIntent)
+                                            requireActivity().finish()
+                                        } catch (e: Exception) {
+                                            Log.e(TAG, "Failed to return snapshot result to Flutter", e)
+                                            hideFreezeFrame()
+                                            fragmentCameraBinding.btnTakePhoto.isEnabled = true
+                                        }
+                                    }
+
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "Render/save snapshot failed", e)
+                                    activity?.runOnUiThread {
                                         hideFreezeFrame()
                                         fragmentCameraBinding.btnTakePhoto.isEnabled = true
                                         Toast.makeText(requireContext(), "Lỗi vẽ móng: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -444,6 +538,7 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
      * @param contrastScale  Hệ số contrast (1.0 = giữ nguyên, 1.5 = tăng 50%)
      * @param brightAdd      Cộng sáng (0–255 scale, 0 = giữ nguyên, 30 = tăng nhẹ)
      */
+    @Suppress("unused")
     private fun enhanceBitmapWithParams(src: Bitmap, contrastScale: Float, brightAdd: Float): Bitmap {
         if (contrastScale == 1.0f && brightAdd == 0f) return src  // Không cần xử lý, trả luôn
         val enhanced = src.copy(Bitmap.Config.ARGB_8888, true)
@@ -459,6 +554,98 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
         paint.colorFilter = android.graphics.ColorMatrixColorFilter(cm)
         canvas.drawBitmap(src, 0f, 0f, paint)
         return enhanced
+    }
+
+    /**
+     * Phase 1.4: Auto-contrast bằng histogram equalization (global).
+     *
+     * Áp dụng cho luminance channel (grayscale), giữ nguyên chroma (color).
+     * Phương pháp:
+     *   1. Build histogram (256 bins) của luminance Y = 0.299R + 0.587G + 0.114B.
+     *   2. Compute CDF (cumulative distribution function).
+     *   3. Build LUT: newY = round((CDF[oldY] - CDFmin) / (total - CDFmin) × 255).
+     *   4. Apply LUT lên mỗi pixel: scale RGB theo ratio newY/oldY.
+     *
+     * Tác dụng: tăng contrast toàn cục → MediaPipe dễ phát hiện tay trong điều kiện
+     * ánh sáng yếu hoặc ảnh quá tối/sáng. Thay thế 4-attempt sequential loop cũ.
+     *
+     * @param src Bitmap gốc (ARGB_8888)
+     * @return Bitmap đã cân bằng histogram (luôn là bản copy mới)
+     */
+    private fun applyAutoContrast(src: Bitmap): Bitmap {
+        val w = src.width
+        val h = src.height
+        val pixelCount = w * h
+        if (pixelCount == 0) return src.copy(Bitmap.Config.ARGB_8888, true)
+
+        // Đọc toàn bộ pixel 1 lần (nhanh hơn getPixel từng pixel)
+        val pixels = IntArray(pixelCount)
+        src.getPixels(pixels, 0, w, 0, 0, w, h)
+
+        // ── Bước 1: Build histogram của luminance ──────────────────────
+        val histogram = IntArray(256)
+        for (pixel in pixels) {
+            val r = (pixel shr 16) and 0xFF
+            val g = (pixel shr 8) and 0xFF
+            val b = pixel and 0xFF
+            // Y = 0.299R + 0.587G + 0.114B (BT.601 luminance)
+            val y = (0.299f * r + 0.587f * g + 0.114f * b).toInt().coerceIn(0, 255)
+            histogram[y]++
+        }
+
+        // ── Bước 2: Compute CDF ────────────────────────────────────────
+        val cdf = IntArray(256)
+        var cumulative = 0
+        for (i in 0..255) {
+            cumulative += histogram[i]
+            cdf[i] = cumulative
+        }
+
+        // Tìm CDFmin = giá trị CDF đầu tiên > 0 (giá trị luminance tối thiểu)
+        var cdfMin = 0
+        for (i in 0..255) {
+            if (cdf[i] > 0) {
+                cdfMin = cdf[i]
+                break
+            }
+        }
+
+        // ── Bước 3: Build LUT ──────────────────────────────────────────
+        // newY = round((cdf[oldY] - cdfMin) / (pixelCount - cdfMin) × 255)
+        val lut = IntArray(256)
+        val denominator = (pixelCount - cdfMin).coerceAtLeast(1)
+        for (i in 0..255) {
+            val newVal = ((cdf[i] - cdfMin).toFloat() / denominator * 255f)
+                .roundToInt().coerceIn(0, 255)
+            lut[i] = newVal
+        }
+
+        // ── Bước 4: Apply LUT ──────────────────────────────────────────
+        // Scale RGB theo ratio newY/oldY để giữ chroma.
+        // Nếu oldY = 0 (pixel đen), giữ nguyên để tránh chia 0.
+        for (i in pixels.indices) {
+            val pixel = pixels[i]
+            val a = (pixel shr 24) and 0xFF
+            val r = (pixel shr 16) and 0xFF
+            val g = (pixel shr 8) and 0xFF
+            val b = pixel and 0xFF
+            val oldY = (0.299f * r + 0.587f * g + 0.114f * b).toInt().coerceIn(0, 255)
+            val newY = lut[oldY]
+            if (oldY > 0) {
+                val ratio = newY.toFloat() / oldY
+                val newR = (r * ratio).roundToInt().coerceIn(0, 255)
+                val newG = (g * ratio).roundToInt().coerceIn(0, 255)
+                val newB = (b * ratio).roundToInt().coerceIn(0, 255)
+                pixels[i] = (a shl 24) or (newR shl 16) or (newG shl 8) or newB
+            } else {
+                // oldY = 0: pixel đen, map sang newY (thường cũng ≈ 0)
+                pixels[i] = (a shl 24) or (newY shl 16) or (newY shl 8) or newY
+            }
+        }
+
+        val result = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        result.setPixels(pixels, 0, w, 0, 0, w, h)
+        return result
     }
 
     /**
@@ -767,6 +954,8 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
                         "config=shape(${viewModel.nailSetConfig.value.shape}) nails(${viewModel.nailSetConfig.value.nails.size})")
                 }
                 fragmentCameraBinding.overlay.setFullDesign(viewModel.nailSetConfig.value)
+                // Phase 6: Set source bitmap for CV pipeline (live mode)
+                fragmentCameraBinding.overlay.setSourceBitmap(resultBundle.sourceBitmap)
                 fragmentCameraBinding.overlay.setResults(
                     resultBundle.results.first(),
                     resultBundle.inputImageHeight,

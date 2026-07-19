@@ -24,6 +24,7 @@ import android.os.SystemClock
 import android.util.Log
 import androidx.annotation.VisibleForTesting
 import androidx.camera.core.ImageProxy
+import com.google.mediapipe.framework.image.BitmapExtractor
 import com.google.mediapipe.framework.image.BitmapImageBuilder
 import com.google.mediapipe.framework.image.MPImage
 import com.google.mediapipe.tasks.core.BaseOptions
@@ -47,6 +48,15 @@ class HandLandmarkerHelper(
     // For this example this needs to be a var so it can be reset on changes.
     // If the Hand Landmarker will not change, a lazy val would be preferable.
     private var handLandmarker: HandLandmarker? = null
+
+    // ── Phase 1.5: Reusable objects to reduce GC pressure in live mode ──
+    // Matrix dùng cho rotation/scale mỗi frame — reset thay vì tạo mới.
+    private val reusableMatrix = Matrix()
+    // Buffer bitmap cho ImageProxy→Bitmap conversion — reuse nếu size không đổi.
+    // Camera resolution cố định (640×480) nên buffer bitmap được tái sử dụng qua các frame.
+    private var reusableBufferBitmap: Bitmap? = null
+    private var bufferBitmapWidth = 0
+    private var bufferBitmapHeight = 0
 
     init {
         setupHandLandmarker()
@@ -169,20 +179,20 @@ class HandLandmarkerHelper(
         }
         imageProxy.close()
 
-        val matrix = Matrix().apply {
-            postRotate(imageProxy.imageInfo.rotationDegrees.toFloat())
-            if (isFrontCamera) {
-                postScale(
-                    -1f,
-                    1f,
-                    imageProxy.width.toFloat(),
-                    imageProxy.height.toFloat()
-                )
-            }
+        // Phase 1.5: Reuse Matrix thay vì tạo mới mỗi frame — giảm allocation.
+        reusableMatrix.reset()
+        reusableMatrix.postRotate(imageProxy.imageInfo.rotationDegrees.toFloat())
+        if (isFrontCamera) {
+            reusableMatrix.postScale(
+                -1f,
+                1f,
+                imageProxy.width.toFloat(),
+                imageProxy.height.toFloat()
+            )
         }
         val rotatedBitmap = Bitmap.createBitmap(
             bitmapBuffer, 0, 0, bitmapBuffer.width, bitmapBuffer.height,
-            matrix, true
+            reusableMatrix, true
         )
 
         val mpImage = BitmapImageBuilder(rotatedBitmap).build()
@@ -193,6 +203,10 @@ class HandLandmarkerHelper(
      * Converts an [ImageProxy] (RGBA_8888 from CameraX ImageAnalysis) to a [Bitmap].
      * Returns null if the frame appears to be empty/corrupt (all-zero buffer or
      * incorrect plane count — a known emulator virtual camera issue).
+     *
+     * Phase 1.5: Reuse buffer bitmap nếu kích thước không đổi (camera resolution cố định).
+     * copyPixelsFromBuffer ghi đè dữ liệu cũ — an toàn vì rotatedBitmap đã copy xong
+     * trước khi method return.
      */
     private fun convertImageProxyToBitmap(imageProxy: ImageProxy): Bitmap? {
         val planes = imageProxy.planes
@@ -208,18 +222,27 @@ class HandLandmarkerHelper(
             return null
         }
 
-        val bitmap = Bitmap.createBitmap(
-            imageProxy.width,
-            imageProxy.height,
-            Bitmap.Config.ARGB_8888
-        )
+        // Phase 1.5: Reuse buffer bitmap nếu size khớp — giảm allocation mỗi frame.
+        val w = imageProxy.width
+        val h = imageProxy.height
+        val bitmap: Bitmap
+        val existing = reusableBufferBitmap
+        if (existing != null && bufferBitmapWidth == w && bufferBitmapHeight == h &&
+            existing.config == Bitmap.Config.ARGB_8888 && !existing.isRecycled) {
+            bitmap = existing
+        } else {
+            bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            reusableBufferBitmap = bitmap
+            bufferBitmapWidth = w
+            bufferBitmapHeight = h
+        }
         bitmap.copyPixelsFromBuffer(buffer)
 
         // Quick sanity-check: if the entire bitmap is one solid color
         // (e.g. green = 0xFF00FF00), it is a corrupt frame from the virtual camera.
-        val pixel = bitmap.getPixel(imageProxy.width / 2, imageProxy.height / 2)
+        val pixel = bitmap.getPixel(w / 2, h / 2)
         val pixel2 = bitmap.getPixel(0, 0)
-        val pixel3 = bitmap.getPixel(imageProxy.width - 1, imageProxy.height - 1)
+        val pixel3 = bitmap.getPixel(w - 1, h - 1)
         if (pixel == pixel2 && pixel2 == pixel3 && pixel == android.graphics.Color.GREEN) {
             Log.w(TAG, "Solid green frame detected — skipping corrupt virtual camera frame.")
             return null
@@ -373,12 +396,21 @@ class HandLandmarkerHelper(
         val finishTimeMs = SystemClock.uptimeMillis()
         val inferenceTime = finishTimeMs - result.timestampMs()
 
+        // Phase 5/6: Trích xuất source bitmap từ MPImage để truyền cho CV pipeline.
+        // BitmapExtractor.extract trả về bitmap gốc (không copy) nếu MPImage được tạo từ BitmapImageBuilder.
+        val sourceBitmap = try {
+            BitmapExtractor.extract(input)
+        } catch (_: Exception) {
+            null
+        }
+
         handLandmarkerHelperListener?.onResults(
             ResultBundle(
                 listOf(result),
                 inferenceTime,
                 input.height,
-                input.width
+                input.width,
+                sourceBitmap
             )
         )
     }
@@ -410,6 +442,12 @@ class HandLandmarkerHelper(
         val inferenceTime: Long,
         val inputImageHeight: Int,
         val inputImageWidth: Int,
+        /**
+         * Phase 5/6: Source bitmap từ camera frame — dùng cho CV pipeline (nail detection).
+         * Chỉ có giá trị trong LIVE_STREAM mode. Trong IMAGE mode có thể là null.
+         * OverlayView truyền bitmap này cho NailDetectionPipeline để trích xuất ROI.
+         */
+        val sourceBitmap: Bitmap? = null,
     )
 
     interface LandmarkerListener {

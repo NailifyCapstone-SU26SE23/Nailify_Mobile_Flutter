@@ -1,0 +1,42 @@
+{
+  "shape": "stiletto",
+  "version": 1,
+  "description": "Stiletto — nhọn dài. 2 bên taper mạnh hội tụ về 1 điểm. Free edge = 1 đỉnh nhọn.",
+  "localSpace": {
+    "origin": "MCP (anchor point) của finger",
+    "x": "ngang: -width/2 .. +width/2 (width=1000px ở local space)",
+    "y": "dọc: 0 = MCP anchor, tăng dần về TIP. nail_end_y=1400 ở local."
+  },
+  "nailBedRatio": 0.55,
+  "polygon": [
+    {"x":  460, "y":  0,   "label": "left_cuticle_start"},
+    {"x":  430, "y":  30,  "label": "left_cuticle_curve"},
+    {"x":  400, "y":  80,  "label": "left_cuticle_end"},
+    {"x":  370, "y":  140, "label": "left_lateral_wall_start"},
+
+    {"x":  300, "y":  400, "label": "left_lateral_wall_mid"},
+
+    {"x":  220, "y":  800, "label": "left_taper_start"},
+    {"x":  140, "y": 1100, "label": "left_taper_mid"},
+    {"x":   70, "y": 1280, "label": "left_taper_high"},
+    {"x":   20, "y": 1370, "label": "left_taper_peak"},
+
+    {"x":    0, "y": 1400, "label": "tip_apex"},
+
+    {"x":   20, "y": 1370, "label": "right_taper_peak"},
+    {"x":   70, "y": 1280, "label": "right_taper_high"},
+    {"x":  140, "y": 1100, "label": "right_taper_mid"},
+
+    {"x":  220, "y":  800, "label": "right_taper_start"},
+    {"x":  300, "y":  400, "label": "right_lateral_wall_mid"},
+
+    {"x":  370, "y":  140, "label": "right_lateral_wall_start"},
+    {"x":  400, "y":  80,  "label": "right_cuticle_end"},
+    {"x":  430, "y":  30,  "label": "right_cuticle_curve"},
+    {"x":  460, "y":  0,   "label": "right_cuticle_start"},
+
+    {"x":  500, "y": -20,  "label": "cuticle_apex"},
+
+    {"x":  460, "y":  0,   "label": "close_path"}
+  ]
+}

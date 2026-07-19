@@ -1,0 +1,53 @@
+{
+  "shape": "squoval",
+  "version": 1,
+  "description": "Squoval — oval trộn square. Free edge tròn, 2 bên thẳng và taper nhẹ, cuticle cong.",
+  "localSpace": {
+    "origin": "MCP (anchor point) của finger",
+    "x": "ngang: -width/2 .. +width/2 (width=1000px ở local space)",
+    "y": "dọc: 0 = MCP anchor, tăng dần về TIP. nail_end_y=1400 ở local."
+  },
+  "nailBedRatio": 0.65,
+  "polygon": [
+    {"x":  460, "y":  0,   "label": "left_cuticle_start"},
+    {"x":  420, "y":  40,  "label": "left_cuticle_curve"},
+    {"x":  380, "y": 100,  "label": "left_cuticle_end"},
+    {"x":  350, "y":  170, "label": "left_lateral_wall_start"},
+
+    {"x":  310, "y":  450, "label": "left_lateral_wall_mid"},
+
+    {"x":  260, "y":  900, "label": "left_curve_start"},
+    {"x":  220, "y": 1100, "label": "left_curve_mid"},
+    {"x":  180, "y": 1250, "label": "left_curve_end"},
+    {"x":  120, "y": 1330, "label": "left_round_low"},
+    {"x":   60, "y": 1380, "label": "left_round_high"},
+    {"x":    0, "y": 1400, "label": "left_peak"},
+
+    {"x": -100, "y": 1395, "label": "free_apex_arc_left"},
+
+    {"x":  -60, "y": 1400, "label": "mirror_label"},
+    {"x":    0, "y": 1400, "label": "free_apex_tip"},
+
+    {"x":  100, "y": 1395, "label": "free_apex_arc_right"},
+
+    {"x":  500, "y": 1400, "label": "right_peak"},
+    {"x":  560, "y": 1390, "label": "right_round_high"},
+    {"x":  620, "y": 1370, "label": "right_round_mid"},
+
+    {"x":  700, "y": 1300, "label": "right_curve_end"},
+    {"x":  760, "y": 1200, "label": "right_curve_mid"},
+    {"x":  800, "y": 1000, "label": "right_curve_start"},
+
+    {"x":  740, "y":  600, "label": "right_lateral_wall_mid"},
+
+    {"x":  690, "y":  300, "label": "right_lateral_wall_low"},
+    {"x":  650, "y":  170, "label": "right_lateral_wall_start"},
+    {"x":  620, "y":  100, "label": "right_cuticle_end"},
+    {"x":  580, "y":  40,  "label": "right_cuticle_curve"},
+    {"x":  540, "y":  0,   "label": "right_cuticle_start"},
+
+    {"x":  500, "y": -20,  "label": "cuticle_apex"},
+
+    {"x":  460, "y":  0,   "label": "close_path"}
+  ]
+}

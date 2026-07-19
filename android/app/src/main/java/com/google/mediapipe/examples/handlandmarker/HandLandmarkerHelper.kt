@@ -154,6 +154,8 @@ class HandLandmarkerHelper(
             )
         }
         val frameTime = SystemClock.uptimeMillis()
+        PipelineLogger.capReceived(imageProxy.width, imageProxy.height, imageProxy.imageInfo.rotationDegrees)
+        PipelineLogger.resetFrameTiming()
 
         // Safely convert ImageProxy to Bitmap, guarding against corrupt/empty
         // frames that the emulator virtual camera sometimes delivers.
@@ -162,12 +164,15 @@ class HandLandmarkerHelper(
         } catch (e: Exception) {
             Log.w(TAG, "Skipping corrupt camera frame: ${e.message}")
             imageProxy.close()
+            PipelineLogger.convFailed("exception: ${e.message}")
             return
         } ?: run {
             imageProxy.close()
+            PipelineLogger.convFailed("bitmapBuffer is null")
             return
         }
         imageProxy.close()
+        PipelineLogger.capClosed()
 
         val matrix = Matrix().apply {
             postRotate(imageProxy.imageInfo.rotationDegrees.toFloat())
@@ -185,7 +190,15 @@ class HandLandmarkerHelper(
             matrix, true
         )
 
+        PipelineLogger.convBitmap(
+            rotatedBitmap.width,
+            rotatedBitmap.height,
+            isFrontCamera,
+            imageProxy.imageInfo.rotationDegrees
+        )
+
         val mpImage = BitmapImageBuilder(rotatedBitmap).build()
+        PipelineLogger.detectCalled(frameTime)
         detectAsync(mpImage, frameTime)
     }
 
@@ -372,6 +385,11 @@ class HandLandmarkerHelper(
     ) {
         val finishTimeMs = SystemClock.uptimeMillis()
         val inferenceTime = finishTimeMs - result.timestampMs()
+
+        val handsFound = result.landmarks().size
+        val landmarksPerHand = result.landmarks().firstOrNull()?.size ?: 0
+        PipelineLogger.modelDone(inferenceTime, handsFound)
+        PipelineLogger.resultReceived(input.width, input.height, handsFound, landmarksPerHand)
 
         handLandmarkerHelperListener?.onResults(
             ResultBundle(

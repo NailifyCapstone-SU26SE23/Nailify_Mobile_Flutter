@@ -1,0 +1,42 @@
+{
+  "shape": "ballerina",
+  "version": 1,
+  "description": "Ballerina / coffin nail. Free edge thẳng (parallel), đầu hơi vuông. 2 bên hơi taper.",
+  "localSpace": {
+    "origin": "MCP (anchor point) của finger",
+    "x": "ngang: -width/2 .. +width/2 (width=1000px ở local space)",
+    "y": "dọc: 0 = MCP anchor, tăng dần về TIP. nail_end_y=1400 ở local."
+  },
+  "nailBedRatio": 0.6,
+  "polygon": [
+    {"x":  450, "y":  0,   "label": "left_cuticle_start"},
+    {"x":  420, "y":  30,  "label": "left_cuticle_curve"},
+    {"x":  380, "y":  90,  "label": "left_cuticle_end"},
+    {"x":  340, "y":  150, "label": "left_lateral_wall_start"},
+
+    {"x":  300, "y":  400, "label": "left_lateral_wall_mid"},
+
+    {"x":  200, "y":  800, "label": "left_taper_start"},
+    {"x":  160, "y": 1100, "label": "left_taper_mid"},
+    {"x":  120, "y": 1350, "label": "left_free_corner"},
+
+    {"x":  120, "y": 1400, "label": "free_edge_left_corner"},
+
+    {"x":  880, "y": 1400, "label": "free_edge_right_corner"},
+
+    {"x":  880, "y": 1350, "label": "right_free_corner"},
+    {"x":  840, "y": 1100, "label": "right_taper_mid"},
+    {"x":  800, "y":  800, "label": "right_taper_start"},
+
+    {"x":  700, "y":  400, "label": "right_lateral_wall_mid"},
+
+    {"x":  660, "y":  150, "label": "right_lateral_wall_start"},
+    {"x":  620, "y":  90,  "label": "right_cuticle_end"},
+    {"x":  580, "y":  30,  "label": "right_cuticle_curve"},
+    {"x":  550, "y":  0,   "label": "right_cuticle_start"},
+
+    {"x":  500, "y": -20,  "label": "cuticle_apex"},
+
+    {"x":  450, "y":  0,   "label": "close_path"}
+  ]
+}

@@ -28,6 +28,7 @@ import androidx.navigation.Navigation
 import android.util.Size
 import com.google.mediapipe.examples.handlandmarker.HandLandmarkerHelper
 import com.google.mediapipe.examples.handlandmarker.MainViewModel
+import com.google.mediapipe.examples.handlandmarker.PipelineLogger
 import com.google.mediapipe.examples.handlandmarker.R
 import com.google.mediapipe.examples.handlandmarker.databinding.FragmentCameraBinding
 import com.google.mediapipe.tasks.vision.core.RunningMode
@@ -277,6 +278,7 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
                             }
 
                             if (DEBUG_LOG) Log.v(TAG, "takeSnapshotAndAnalyze: bitmap=${bitmap.width}x${bitmap.height}")
+                            PipelineLogger.snapStart(bitmap.width, bitmap.height)
 
                             // Chuẩn bị bitmap mutable ARGB_8888 để vẽ lên
                             val mutableBitmap = if (bitmap.config == Bitmap.Config.ARGB_8888 && bitmap.isMutable) {
@@ -294,7 +296,7 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
                             }
 
                             // Bước 1: Chạy MediaPipe ở background thread
-                            if (DEBUG_LOG) Log.d(TAG, "Snapshot pipeline: [1/5] MediaPipe IMAGE mode starting...")
+                            PipelineLogger.snapStep(1, 5, "MediaPipe IMAGE mode")
 
                             try {
                                 val imageHelper = HandLandmarkerHelper(
@@ -321,15 +323,14 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
                                 var resultBundle: HandLandmarkerHelper.ResultBundle? = null
                                 var usedAttempt: Attempt? = null
 
-                                for (attempt in attempts) {
-                                    if (DEBUG_LOG) Log.v(TAG, "Snapshot pipeline: trying detection contrast=${attempt.contrastScale} bright=${attempt.brightAdd}")
+                                for ((attemptIdx, attempt) in attempts.withIndex()) {
                                     val candidate = enhanceBitmapWithParams(mutableBitmap, attempt.contrastScale, attempt.brightAdd)
                                     val bundle = imageHelper.detectImage(candidate)
                                     val found = bundle != null && bundle.results.isNotEmpty() && bundle.results.first().landmarks().isNotEmpty()
+                                    PipelineLogger.snapAttempt(attemptIdx, attempt.contrastScale, attempt.brightAdd, found)
                                     if (found) {
                                         resultBundle = bundle
                                         usedAttempt = attempt
-                                        if (DEBUG_LOG) Log.i(TAG, "Snapshot pipeline: Hand DETECTED with contrast=${attempt.contrastScale} bright=${attempt.brightAdd}")
                                         break
                                     }
                                 }
@@ -337,22 +338,21 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
                                 imageHelper.clearHandLandmarker()
 
                                 val hasHand = resultBundle != null
-                                if (DEBUG_LOG) Log.v(TAG, "Snapshot pipeline: [1/5] MediaPipe done: hasHand=$hasHand")
+                                PipelineLogger.snapStep(1, 5, "MediaPipe done", "hasHand=$hasHand")
 
                                 // Bước 2: Preload bitmaps trên background thread
                                 if (hasHand) {
-                                    if (DEBUG_LOG) Log.d(TAG, "Snapshot pipeline: [2/5] Preloading bitmaps for config...")
+                                    PipelineLogger.snapStep(2, 5, "Preloading nail bitmaps")
                                     fragmentCameraBinding.overlay.preloadAllBitmapsForSnapshot(viewModel.nailSetConfig.value)
-                                    if (DEBUG_LOG) Log.v(TAG, "Snapshot pipeline: [2/5] Bitmaps preloaded")
                                 } else {
-                                    if (DEBUG_LOG) Log.w(TAG, "Snapshot pipeline: [2/5] SKIPPED — no hand detected, no bitmap needed")
+                                    PipelineLogger.snapNoHand()
                                 }
 
                                 // Bước 3: Render AR lên bitmap trên main thread
                                 activity?.runOnUiThread {
                                     try {
                                         if (hasHand) {
-                                            if (DEBUG_LOG) Log.d(TAG, "Snapshot pipeline: [3/5] Rendering nails on bitmap...")
+                                            PipelineLogger.snapStep(3, 5, "Rendering nails on bitmap")
 
                                             fragmentCameraBinding.overlay.setFullDesign(viewModel.nailSetConfig.value)
                                             fragmentCameraBinding.overlay.renderOnBitmap(
@@ -361,14 +361,12 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
                                                 imgW    = mutableBitmap.width,
                                                 imgH    = mutableBitmap.height
                                             )
-
-                                            if (DEBUG_LOG) Log.i(TAG, "Snapshot pipeline: [3/5] Nail rendering done")
                                         } else {
-                                            if (DEBUG_LOG) Log.w(TAG, "Snapshot pipeline: [3/5] SKIPPED — no hand, bitmap unchanged")
+                                            PipelineLogger.snapNoHand()
                                         }
 
                                         // Bước 4: Lưu ảnh vào cache
-                                        if (DEBUG_LOG) Log.d(TAG, "Snapshot pipeline: [4/5] Saving bitmap to cache...")
+                                        PipelineLogger.snapStep(4, 5, "Saving bitmap to cache")
                                         val cacheDir = requireContext().cacheDir
                                         cacheDir.listFiles { _, name -> name.startsWith("hand_snapshot_") }
                                             ?.forEach { it.delete() }
@@ -380,7 +378,7 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
 
                                         // Bước 5: Trả kết quả về Flutter
                                         val landmarksJson = if (hasHand) "[{\"finger\":\"detected\"}]" else "[]"
-                                        if (DEBUG_LOG) Log.i(TAG, "Snapshot pipeline: [5/5] Returning to Flutter — imagePath=$cacheFile")
+                                        PipelineLogger.snapEnd(cacheFile.absolutePath, true)
 
                                         val resultIntent = Intent().apply {
                                             putExtra(RESULT_IMAGE_PATH, cacheFile.absolutePath)
@@ -391,6 +389,7 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
 
                                     } catch (e: Exception) {
                                         Log.e(TAG, "Render snapshot failed", e)
+                                        PipelineLogger.snapEnd("", false)
                                         hideFreezeFrame()
                                         fragmentCameraBinding.btnTakePhoto.isEnabled = true
                                         Toast.makeText(requireContext(), "Lỗi vẽ móng: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -399,6 +398,7 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
 
                             } catch (e: Exception) {
                                 Log.e(TAG, "MediaPipe snapshot failed", e)
+                                PipelineLogger.snapEnd("", false)
                                 activity?.runOnUiThread {
                                     hideFreezeFrame()
                                     fragmentCameraBinding.btnTakePhoto.isEnabled = true
@@ -408,6 +408,7 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
 
                         } catch (e: Exception) {
                             Log.e(TAG, "takeSnapshotAndAnalyze: processing failed", e)
+                            PipelineLogger.snapEnd("", false)
                             activity?.runOnUiThread {
                                 hideFreezeFrame()
                                 fragmentCameraBinding.btnTakePhoto.isEnabled = true
@@ -741,7 +742,6 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
                 imageProxy = imageProxy,
                 isFrontCamera = cameraFacing == CameraSelector.LENS_FACING_FRONT
             )
-            if (DEBUG_LOG) Log.v(TAG, "detectHand: sent frame to MediaPipe (Live mode)")
         } else {
             // Snapshot mode: không cần live stream
             imageProxy.close()
@@ -761,16 +761,18 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
         if (isSnapshotMode) return
         activity?.runOnUiThread {
             if (_fragmentCameraBinding != null) {
-                if (DEBUG_LOG) {
-                    Log.v(TAG, "onResults (Live): inputImage=${resultBundle.inputImageWidth}x${resultBundle.inputImageHeight} " +
-                        "hands=${resultBundle.results.size} " +
-                        "config=shape(${viewModel.nailSetConfig.value.shape}) nails(${viewModel.nailSetConfig.value.nails.size})")
-                }
+                PipelineLogger.metaSetResults(
+                    resultBundle.inputImageWidth,
+                    resultBundle.inputImageHeight,
+                    fragmentCameraBinding.overlay.width,
+                    fragmentCameraBinding.overlay.height,
+                    fragmentCameraBinding.overlay.getScaleFactor()
+                )
                 fragmentCameraBinding.overlay.setFullDesign(viewModel.nailSetConfig.value)
                 fragmentCameraBinding.overlay.setResults(
                     resultBundle.results.first(),
-                    resultBundle.inputImageHeight,
                     resultBundle.inputImageWidth,
+                    resultBundle.inputImageHeight,
                     RunningMode.LIVE_STREAM
                 )
                 fragmentCameraBinding.overlay.invalidate()

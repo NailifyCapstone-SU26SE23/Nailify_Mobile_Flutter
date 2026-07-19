@@ -22,6 +22,7 @@ import com.google.mediapipe.examples.handlandmarker.model.NailSetConfig
 import com.google.mediapipe.examples.handlandmarker.utils.OneEuroFilter
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
+import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import org.json.JSONObject
 import java.net.URL
 import kotlin.math.acos
@@ -140,6 +141,9 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
     private val loadingBitmaps = mutableSetOf<String>()
 
     private var scaleFactor: Float = 1f
+    fun getScaleFactor(): Float = scaleFactor
+    fun getImageWidth(): Int  = imageWidth
+    fun getImageHeight(): Int = imageHeight
     private var imageWidth: Int = 1
     private var imageHeight: Int = 1
 
@@ -187,6 +191,13 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
     private val filtersX = Array(5) { OneEuroFilter(freq = 30f, minCutoff = 1.5f, beta = 0.8f) }
     private val filtersY = Array(5) { OneEuroFilter(freq = 30f, minCutoff = 1.5f, beta = 0.8f) }
 
+    // Anchor filters: dùng riêng cho MCP anchor (polygon-based rendering).
+    // Tách khỏi TIP filter để tránh filter state bị "nhiễm" giữa 2 vị trí khác nhau
+    // trên cùng 1 finger — vì TIP và MCP là 2 điểm khác nhau, dùng chung filter sẽ
+    // làm filter nghĩ tay "nhảy" từ TIP sang MCP giữa frame, gây giật + sai vị trí.
+    private val anchorFiltersX = Array(5) { OneEuroFilter(freq = 30f, minCutoff = 1.5f, beta = 0.8f) }
+    private val anchorFiltersY = Array(5) { OneEuroFilter(freq = 30f, minCutoff = 1.5f, beta = 0.8f) }
+
     init {
         initPaints()
         ballerinaBitmap = BitmapFactory.decodeResource(resources, R.drawable.ballerina)
@@ -201,6 +212,8 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         pointPaint.reset()
         filtersX.forEach { it.reset() }
         filtersY.forEach { it.reset() }
+        anchorFiltersX.forEach { it.reset() }
+        anchorFiltersY.forEach { it.reset() }
         invalidate()
         initPaints()
     }
@@ -236,12 +249,14 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
     private fun drawNails(canvas: Canvas, sf: Float, applyFilters: Boolean) {
         val result = results
         if (result == null) {
-            if (DEBUG_LOG) Log.v(TAG, "drawNails: no results, skip")
+            PipelineLogger.metaNoResults()
             return
         }
 
         val now = System.currentTimeMillis()
 
+        val filterStr = if (applyFilters) "LIVE" else "SNAP"
+        PipelineLogger.metaDrawNails(applyFilters, sf, result.landmarks().size)
         if (DEBUG_LOG) Log.v(TAG, "drawNails: applyFilters=$applyFilters scaleFactor=$sf imageSize=${imageWidth}x${imageHeight}")
 
         val stats = mutableMapOf<String, Int>()
@@ -261,14 +276,19 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                 if (bentCount >= 3) {
                     stats["FIST"] = (stats["FIST"] ?: 0) + 1
                     if (DEBUG_LOG) Log.w(TAG, "  FIST DETECTED hand=$handIdx bentCount=$bentCount — skipping entire hand")
+                    PipelineLogger.log(PipelineLogger.METRICS, 1) { "FIST hand=$handIdx bentCount=$bentCount → SKIP entire hand" }
                     filtersX.forEach { it.reset() }
                     filtersY.forEach { it.reset() }
+                    anchorFiltersX.forEach { it.reset() }
+                    anchorFiltersY.forEach { it.reset() }
                     continue  // Skip toàn bộ hand
                 }
             }
 
+
             for (fingerIndex in 0..4) {
                 val tipIdx = FingerMetrics.FINGER_TIPS[fingerIndex]
+
 
                 // ── VISIBILITY GUARD ───────────────────────────────────────────────
                 // Live mode: visibility dùng như primary signal để phát hiện ngón đang khứa.
@@ -279,6 +299,9 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                     val tipVis = landmark[tipIdx].visibility().orElse(1f)
                     val visThreshold = MIN_LANDMARK_VISIBILITY
                     if (tipVis < visThreshold) {
+                        PipelineLogger.log(PipelineLogger.METRICS, 2) {
+                            "SKIP [LOW_VIS] hand=$handIdx ${FingerMetrics.FINGER_NAMES[fingerIndex]}: vis=${String.format("%.2f", tipVis)} < $visThreshold"
+                        }
                         filtersX[fingerIndex].reset()
                         filtersY[fingerIndex].reset()
                         continue  // Ngón không visible — skip
@@ -288,12 +311,35 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                 // ── COMPUTE METRICS (mode-aware thresholds) ──────────────────────
                 val metrics: FingerMetrics
                 try {
+                    val tipVis = landmark[tipIdx].visibility().orElse(1f)
+                    PipelineLogger.metricsEntry(
+                        FingerMetrics.FINGER_NAMES[fingerIndex],
+                        fingerIndex,
+                        landmark[tipIdx].x(),
+                        landmark[tipIdx].y(),
+                        landmark[tipIdx].z(),
+                        tipVis
+                    )
                     metrics = computeFingerMetrics(fingerIndex, landmark, sf, imageWidth, imageHeight, !applyFilters)
+                    PipelineLogger.metricsComputed(
+                        FingerMetrics.FINGER_NAMES[fingerIndex],
+                        fingerIndex,
+                        metrics.mcpTipDist,
+                        metrics.pipTipDist,
+                        metrics.bentRatio,
+                        metrics.dipDipRatio,
+                        metrics.foldAngleDeg,
+                        metrics.isBent,
+                        metrics.skipReason
+                    )
                 } catch (e: IndexOutOfBoundsException) {
                     if (DEBUG_LOG) Log.w(TAG, "  SKIP [MISS] hand=$handIdx finger=$fingerIndex: landmark index out of bounds")
+                    PipelineLogger.log(PipelineLogger.METRICS, 2) { "SKIP [MISS] hand=$handIdx finger=$fingerIndex: IndexOutOfBoundsException" }
                     stats["MISS"] = (stats["MISS"] ?: 0) + 1
                     filtersX[fingerIndex].reset()
                     filtersY[fingerIndex].reset()
+                    anchorFiltersX[fingerIndex].reset()
+                    anchorFiltersY[fingerIndex].reset()
                     continue
                 }
 
@@ -306,41 +352,31 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                 val skipReason = metrics.skipReason
                 if (applyFilters && skipReason != null) {
                     stats[skipReason] = (stats[skipReason] ?: 0) + 1
-                    if (DEBUG_LOG && skipReason == SkipReason.BENT.code) {
-                        Log.v(TAG, "  OK   hand=$handIdx ${FingerMetrics.FINGER_NAMES[fingerIndex]}: bentRatio=${String.format("%.3f", metrics.bentRatio)}")
-                    } else if (DEBUG_LOG) {
-                        Log.v(TAG, "  SKIP [$skipReason] hand=$handIdx ${FingerMetrics.FINGER_NAMES[fingerIndex]}: " +
-                            "bentRatio=${String.format("%.3f", metrics.bentRatio)} " +
-                            "dipDipRatio=${String.format("%.3f", metrics.dipDipRatio)} " +
-                            "foldAngle=${String.format("%.1f", metrics.foldAngleDeg)}° " +
-                            "depthGap=${String.format("%.3f", 0f)} " +
-                            "tipVis=${String.format("%.2f", 1f)}")
-                    }
+                    PipelineLogger.bentSkipDetailed(
+                        FingerMetrics.FINGER_NAMES[fingerIndex],
+                        metrics.foldAngleDeg,
+                        metrics.bentRatio,
+                        metrics.dipDipRatio,
+                        FOLD_BENT_ANGLE,
+                        BENT_RATIO_THRESHOLD,
+                        DIP_RATIO_THRESHOLD
+                    )
                     filtersX[fingerIndex].reset()
                     filtersY[fingerIndex].reset()
+                    anchorFiltersX[fingerIndex].reset()
+                    anchorFiltersY[fingerIndex].reset()
                     continue
                 }
 
-                // ── SNAPSHOT STRICT FILTER ────────────────────────────────────────────────
-                // MediaPipe IMAGE mode sử dụng 3D structural prior để "bọa" vị trí
-                // các landmark bị khuất — output vẫn đủ 21 điểm dù ngón bị che.
-                // Ba tín hiệu độc lập được dùng kết hợp để phát hiện và loại bỏ ngón bị suy đoán:
-                //
-                //  Signal 1 ─ isBent: fold angle (hướng ngón so với lòng bàn tay)
-                //                     và/hoặc bentRatio+dipDipRatio (tỉ lệ khoảng cách).
-                //  Signal 2 ─ isCurled: wristTipDist/wristMcpDist — khi ngón gập, TIP
-                //                     không vươn ra xa hơn MCP. Đây là tín hiệu mạnh
-                //                     nhất, không phụ thuộc camera angle hay visibility.
-                //  Signal 3 ─ isOccluded: depth gap giữa DIP và PIP — khi DIP gập
-                //                     ra sau lòng bàn tay, z-depth thay đổi đột ngột.
-                //
-                // Nếu BẤT KỲ tín hiệu nào trigger → ẩn móng ngón đó.
+                // ── SNAPSHOT STRICT FILTER ─────────────────────────────────────────
+                // Snapshot mode: áp dụng TẤT CẢ skip signals từ computeFingerMetrics
+                // (isBent, isOccluded, isTooShort) cộng thêm isCurled.
+                // Nếu BẤT KỲ signal nào trigger → ẩn móng ngón đó.
                 if (!applyFilters) {
                     val snapSkipReason: String? = when {
-                        metrics.isBent    -> SkipReason.BENT.code
-                        metrics.isCurled  -> "CURL"
-                        metrics.isOccluded -> SkipReason.OCCLUDED.code
-                        else              -> null
+                        skipReason != null    -> skipReason   // isBent, isOccluded, isTooShort, isUnstable
+                        metrics.isCurled      -> "CURL"       // wristTipDist signal (riêng, không trong skipReason)
+                        else                  -> null
                     }
                     if (snapSkipReason != null) {
                         stats[snapSkipReason] = (stats[snapSkipReason] ?: 0) + 1
@@ -370,8 +406,17 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                 val finalPx: Float
                 val finalPy: Float
                 if (applyFilters) {
-                    finalPx = filtersX[fingerIndex].filter(rawPx, now) + manualOffsetX
-                    finalPy = filtersY[fingerIndex].filter(rawPy, now) + manualOffsetY
+                    val filteredX = filtersX[fingerIndex].filter(rawPx, now)
+                    val filteredY = filtersY[fingerIndex].filter(rawPy, now)
+                    finalPx = filteredX + manualOffsetX
+                    finalPy = filteredY + manualOffsetY
+                    PipelineLogger.filterApplied(
+                        FingerMetrics.FINGER_NAMES[fingerIndex],
+                        rawPx, rawPy,
+                        filteredX, filteredY,
+                        filteredX - rawPx,
+                        filteredY - rawPy
+                    )
                 } else {
                     finalPx = rawPx
                     finalPy = rawPy
@@ -414,38 +459,30 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                      nailBottom
                 )
 
-                // ── RENDER ────────────────────────────────────────────────────────
+                // ── RENDER (TIP-based bitmap drawing) ─────────────────────────────
                 canvas.withTranslation(finalPx, finalPy) {
-                    rotate(rotation)
+                    canvas.save()
+                    canvas.rotate(rotation, 0f, 0f)
 
-                    if (customShapeBitmap == null) {
-                        drawNailBase(this, nailBitmap, destRect, createNailPaint(
-                            design.color,
-                            design.gradient ?: nailSetConfig.gradient,
-                            destRect
-                        ))
-                    } else {
-                        drawBitmap(nailBitmap, null, destRect, null)
+                    drawNailBase(canvas, nailBitmap, destRect, createNailPaint(design.color, nailSetConfig.gradient, destRect))
+                    drawNailSurface(canvas, nailBitmap, destRect)
+
+                    for (decoration in design.decorations) {
+                        drawDecoration(canvas, decoration, destRect)
                     }
 
-                    drawNailSurface(this, nailBitmap, destRect)
-                    design.decorations.forEach { decoration ->
-                        drawDecoration(this, decoration, destRect)
-                    }
+                    canvas.restore()
                 }
 
                 stats["OK"] = (stats["OK"] ?: 0) + 1
-                if (DEBUG_LOG) {
-                    Log.i(TAG, "  RENDER hand=$handIdx ${FingerMetrics.FINGER_NAMES[fingerIndex]}: " +
-                        "center=(${String.format("%.1f", finalPx)},${String.format("%.1f", finalPy)}) " +
-                        "rotation=${String.format("%.1f", rotation)}° " +
-                        "size=${String.format("%.1f", nailWidth)}x${String.format("%.1f", nailHeight)} " +
-                        "color=${design.color} shape=${nailSetConfig.shape} " +
-                        "decorationCount=${design.decorations.size} " +
-                        "bentRatio=${String.format("%.3f", metrics.bentRatio)} " +
-                        "foldAngle=${String.format("%.1f", metrics.foldAngleDeg)}° " +
-                        "nailWidthPx=${String.format("%.1f", metrics.nailWidthPx)}")
-                }
+                PipelineLogger.nailRendered(
+                    FingerMetrics.FINGER_NAMES[fingerIndex],
+                    finalPx, finalPy,
+                    rotation,
+                    nailWidth, nailHeight,
+                    design.color,
+                    design.decorations.size
+                )
             }
         }
 
@@ -474,6 +511,7 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         imgW: Int,
         imgH: Int
     ) {
+        PipelineLogger.metaSetResults(imgW, imgH, targetBitmap.width, targetBitmap.height, 1f)
         if (DEBUG_LOG) {
             Log.d(TAG, "renderOnBitmap START: bitmap=${targetBitmap.width}x${targetBitmap.height} " +
                 "mpResultImageSize=${imgW}x${imgH} hands=${result.landmarks().size}")
@@ -482,6 +520,8 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         // Reset filters — đảm bảo mỗi snapshot bắt đầu sạch
         filtersX.forEach { it.reset() }
         filtersY.forEach { it.reset() }
+        anchorFiltersX.forEach { it.reset() }
+        anchorFiltersY.forEach { it.reset() }
 
         val sf = min(
             targetBitmap.width.toFloat()  / imgW.toFloat(),
@@ -1068,6 +1108,7 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
 
         // Rotation: atan2 của axis direction → góc ngón tay
         // +90° để align với hướng "đầu ngón chỉ lên" sau khi canvas.rotate
+        // Formula: atan2(dy, dx) + 90° — giữ nguyên từ implementation gốc đã hoạt động đúng.
         val rotationDeg = Math.toDegrees(atan2(normAxisDy.toDouble(), normAxisDx.toDouble())).toFloat() + 90f
 
         // Nail height dựa trên shape ratio + length config

@@ -34,7 +34,7 @@ class DiscoverNailCard extends StatelessWidget {
                 child: Image.asset(
                   item.image,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
+                  errorBuilder: (_, _, _) => Container(
                     color: AppColors.surfaceLight,
                     child: const Icon(Icons.image, color: AppColors.textSecondary),
                   ),

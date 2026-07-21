@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 
 class CustomerReviews extends StatelessWidget {
-  const CustomerReviews({Key? key}) : super(key: key);
+  const CustomerReviews({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +32,7 @@ class CustomerReviews extends StatelessWidget {
     ];
 
     return Container(
-      color: AppColors.secondary.withOpacity(0.1), // Màu nền tổng thể nhạt
+      color: AppColors.secondary, // Màu nền tổng thể nhạt
       padding: const EdgeInsets.symmetric(vertical: 48.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,7 +105,7 @@ class CustomerReviews extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.3), // Viền hồng nhạt
+          color: AppColors.primary, // Viền hồng nhạt
           width: 1,
         ),
       ),

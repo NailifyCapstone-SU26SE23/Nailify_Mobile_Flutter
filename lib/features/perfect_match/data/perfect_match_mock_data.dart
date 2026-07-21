@@ -56,10 +56,11 @@ class PerfectMatchMockData {
   ];
 
   /// Maps quiz answers to a personality result (mock logic).
-  static PersonalityResult resolveFromAnswers(List<int> answers) {
+  static PersonalityResult resolveFromAnswers(Map<String, List<String>> answers) {
     if (answers.isEmpty) return personality;
 
-    final dominant = _mostFrequent(answers);
+    // Placeholder: always return default personality until API integration
+    final dominant = answers.length % 4;
     switch (dominant) {
       case 0:
         return const PersonalityResult(
@@ -88,12 +89,5 @@ class PerfectMatchMockData {
         return personality;
     }
   }
-
-  static int _mostFrequent(List<int> values) {
-    final counts = <int, int>{};
-    for (final value in values) {
-      counts[value] = (counts[value] ?? 0) + 1;
-    }
-    return counts.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
-  }
 }
+

@@ -75,7 +75,7 @@ class ProfileViewActions extends StatelessWidget {
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
-            onPressed: () => context.go('/quiz'),
+            onPressed: () => context.push('/quiz'),
             icon: const Icon(Icons.help_outline, size: 18),
             label: const Text('Retake personality quiz'),
             style: OutlinedButton.styleFrom(

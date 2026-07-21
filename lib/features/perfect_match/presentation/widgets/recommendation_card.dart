@@ -31,7 +31,7 @@ class RecommendationCard extends StatelessWidget {
               height: 160,
               width: double.infinity,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
+              errorBuilder: (_, _, _) => Container(
                 height: 160,
                 color: AppColors.surfaceLight,
                 child: const Icon(Icons.image, color: AppColors.textSecondary),

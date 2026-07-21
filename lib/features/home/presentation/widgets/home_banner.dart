@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/auth_guard.dart';
 
 class HomeBanner extends StatelessWidget {
   const HomeBanner({super.key});
@@ -39,7 +41,7 @@ class HomeBanner extends StatelessWidget {
           // Mã màu Gradient
           gradient: const LinearGradient(
             colors: [
-              AppColors.primary, // Hồng
+              AppColors.secondary , // Hồng
               AppColors.background,
             ],
             // Với bố cục dọc
@@ -48,7 +50,7 @@ class HomeBanner extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withOpacity(0.3),
+              color: AppColors.primary,
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -71,7 +73,7 @@ class HomeBanner extends StatelessWidget {
                 errorBuilder: (context, error, stackTrace) => Container(
                   width: 140,
                   height: 140,
-                  color: AppColors.background.withOpacity(0.3),
+                  color: AppColors.background,
                   child: const Icon(Icons.image_not_supported, color: AppColors.background, size: 40),
                 ),
               ),
@@ -110,7 +112,11 @@ class HomeBanner extends StatelessWidget {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: () => _showBookingPopup(context),
+                onPressed: () {
+                  AuthGuard.check(context, () {
+                    context.push('/nail-booking');
+                  });
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,

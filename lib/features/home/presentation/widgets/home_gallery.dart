@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/constants/app_colors.dart';
 
 class HomeGallery extends StatelessWidget {
   const HomeGallery({super.key});
@@ -44,7 +44,7 @@ class HomeGallery extends StatelessWidget {
           gradient: LinearGradient(
             colors: [
               AppColors.primary,
-              AppColors.secondary.withOpacity(0.1),
+              AppColors.secondary,
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -66,16 +66,7 @@ class HomeGallery extends StatelessWidget {
                     color: AppColors.surface,
                   ),
                 ),
-                // TextButton(
-                //   onPressed: () => _showPopup(context),
-                //   child: const Text(
-                //     'Xem tất cả',
-                //     style: TextStyle(
-                //       color: Colors.white, // Đổi sang màu trắng cho dễ đọc
-                //       fontWeight: FontWeight.w600,
-                //     ),
-                //   ),
-                // ),
+
               ],
             ),
             const SizedBox(height: 12),
@@ -100,8 +91,8 @@ class HomeGallery extends StatelessWidget {
                       galleryImages[index],
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => Container(
-                      color: AppColors.surface.withOpacity(0.3), // Nền báo lỗi mờ
-                      child: const Icon(Icons.image, color: AppColors.surface),
+                        color: Colors.white,
+                        child: const Icon(Icons.image, color: AppColors.surface),
                       ),
                     ),
                   ),
@@ -115,7 +106,7 @@ class HomeGallery extends StatelessWidget {
               width: 302,
               height: 50,
               child: ElevatedButton(
-                onPressed: () => context.push('/catalog'),
+                onPressed: () => context.go('/nails'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: AppColors.surface,

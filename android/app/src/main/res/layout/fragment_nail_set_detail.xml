@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <Button
+            android:id="@+id/back_button"
+            style="?attr/borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Back"
+            android:textAllCaps="false" />
+
+        <ProgressBar
+            android:id="@+id/detail_progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="4dp"
+            android:indeterminate="true"
+            android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/detail_image"
+            android:layout_width="match_parent"
+            android:layout_height="220dp"
+            android:layout_marginTop="8dp"
+            android:background="#F3F4F6"
+            android:contentDescription="@null"
+            android:scaleType="centerCrop" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/detail_name"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="@android:color/black"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/detail_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_status_chip"
+                android:paddingStart="10dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="10dp"
+                android:paddingBottom="4dp"
+                android:textColor="@color/mp_color_primary_dark"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/detail_description"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="#4B5563"
+            android:textSize="15sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/detail_price"
+                style="@style/NailSetMetaChip" />
+
+            <TextView
+                android:id="@+id/detail_items"
+                style="@style/NailSetMetaChip" />
+
+            <TextView
+                android:id="@+id/detail_tags"
+                style="@style/NailSetMetaChip" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/ar_try_on_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1"
+                android:text="AR Try On"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/image_try_on_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:text="Image Try On"
+                android:textAllCaps="false" />
+        </LinearLayout>
+
+        <TextView
+            style="@style/NailSetDetailSectionTitle"
+            android:text="Details" />
+
+        <TextView
+            android:id="@+id/detail_shape"
+            style="@style/NailSetDetailValue"
+            android:drawableStart="@null" />
+
+        <TextView
+            android:id="@+id/detail_length"
+            style="@style/NailSetDetailValue" />
+
+        <TextView
+            android:id="@+id/detail_material"
+            style="@style/NailSetDetailValue" />
+
+        <TextView
+            android:id="@+id/detail_gradient"
+            style="@style/NailSetDetailValue" />
+
+        <TextView
+            android:id="@+id/detail_created_at"
+            style="@style/NailSetDetailValue" />
+
+        <TextView
+            style="@style/NailSetDetailSectionTitle"
+            android:text="Tags" />
+
+        <TextView
+            android:id="@+id/detail_tag_list"
+            style="@style/NailSetDetailValue" />
+
+        <TextView
+            style="@style/NailSetDetailSectionTitle"
+            android:text="Components" />
+
+        <TextView
+            android:id="@+id/detail_item_list"
+            style="@style/NailSetDetailValue" />
+    </LinearLayout>
+</ScrollView>

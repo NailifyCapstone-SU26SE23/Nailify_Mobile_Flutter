@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../data/models/user_mock_data.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/di/injection.dart';
+import '../../data/repositories/auth_repository.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -16,23 +17,31 @@ class _LoginPageState extends State<LoginPage> {
 
   // Biến quản lý trạng thái hiển thị mật khẩu
   bool _obscurePassword = true;
+  bool _isSubmitting = false;
 
   // Hàm xử lý logic khi bấm nút Đăng nhập
-  void _handleLogin() {
+  Future<void> _handleLogin() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      _showSnackBar('Vui lòng nhập đầy đủ Email và Mật khẩu', AppColors.error);
+      _showSnackBar('Vui long nhap day du Email va Mat khau', AppColors.error);
       return;
     }
 
-    // So khớp với Mock Data
-    if (email == UserMockData.testEmail && password == UserMockData.testPassword) {
-      _showSnackBar('Đăng nhập thành công! Chào mừng ${UserMockData.mockCustomer['fullName']}', AppColors.success);
-      // Chuyển hướng sang HomePage bằng GoRouter sẽ được cấu hình sau
-    } else {
-      _showSnackBar('Email hoặc mật khẩu không chính xác', AppColors.error);
+    setState(() => _isSubmitting = true);
+    try {
+      await getIt<AuthRepository>().login(email: email, password: password);
+      if (!mounted) return;
+      _showSnackBar('Dang nhap thanh cong', AppColors.success);
+      context.go('/');
+    } catch (e) {
+      if (!mounted) return;
+      _showSnackBar(e.toString(), AppColors.error);
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 
@@ -102,7 +111,7 @@ class _LoginPageState extends State<LoginPage> {
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.textPrimary.withOpacity(0.1),
+                            color: AppColors.textPrimary,
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -186,7 +195,7 @@ class _LoginPageState extends State<LoginPage> {
                           SizedBox(
                             height: 50,
                             child: ElevatedButton(
-                              onPressed: _handleLogin,
+                              onPressed: _isSubmitting ? null : _handleLogin,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
                                 foregroundColor: AppColors.background,
@@ -195,10 +204,16 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                                 elevation: 0,
                               ),
-                              child: const Text(
-                                'ĐĂNG NHẬP',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.0),
-                              ),
+                              child: _isSubmitting
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                  : const Text(
+                                      'DANG NHAP',
+                                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                                    ),
                             ),
                           ),
 

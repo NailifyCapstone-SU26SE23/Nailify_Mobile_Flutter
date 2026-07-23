@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 class AppColors {
   // màu sắc chủ đạo (Brand Colors)
   static const Color primary = Color(0xFFFF66C4);
+  static const Color primaryDark = Color(0xFFC44569);
+  static const Color primaryLight = Color(0xFFFFE0EC);
+  static const Color primarySurface = Color(0xFFFFF0F5);
   static const Color secondary = Color(0xFFFFDE59); // Vàng phối gradient
 
   // màu nền hệ thống
@@ -32,5 +35,26 @@ class AppColors {
     colors: [primary, secondary],
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
+  );
+
+  // ─── Gradients (mới — dùng cho Quiz) ────────────────────────
+
+  /// Dùng cho button, option selected, progress bar — hồng đồng màu
+  static const LinearGradient quizGradient = LinearGradient(
+    colors: [primary, primaryDark],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  /// Dùng cho nền toàn màn hình QuizPage
+  static const LinearGradient quizBgGradient = LinearGradient(
+    colors: [
+      Color(0xFFFFB3C6),
+      Color(0xFFFF66C4),
+      Color(0xFFC44569),
+    ],
+    stops: [0.0, 0.5, 1.0],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
   );
 }

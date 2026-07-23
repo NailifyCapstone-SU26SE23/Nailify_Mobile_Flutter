@@ -11,11 +11,10 @@ import '../../../../core/di/injection.dart';
 import '../../../../core/network/api_client.dart';
 
 import '../../data/profile_data.dart';
-import '../widgets/personality_style_section.dart';
-import '../widgets/favorite_color_section.dart';
-import '../widgets/main_style_section.dart';
-import '../widgets/occasions_section.dart';
 import '../widgets/personal_notes_section.dart';
+import '../widgets/style_profile_form_dialog.dart';
+import '../../../quiz/data/datasources/quiz_repository.dart';
+import 'dart:convert';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -30,6 +29,15 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isLoading = true;
   Map<String, dynamic>? _profileData;
   Map<String, dynamic>? _loyaltyData;
+  Map<String, dynamic>? _styleCompositionResult;
+  final QuizRepository _quizRepo = QuizRepository(getIt<ApiClient>());
+
+  String _skinTone = 'Light';
+  String _skinShade = 'Warm';
+  String _handShape = 'Slender';
+  String _occupation = 'Student';
+  String _complexity = 'Simple';
+  int _nailShapeId = 1;
 
   // state cho các widget
   final Set<String> _selectedPersonalities = Set.from(
@@ -48,6 +56,7 @@ class _ProfilePageState extends State<ProfilePage> {
   void initState() {
     super.initState();
     _fetchProfile();
+    _loadStyleComposition();
 
     // khởi tạo Controllers cho phần Personal Notes
     for (var note in ProfileMockData.personalNotes) {
@@ -67,6 +76,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _logout() async {
     await getIt<SharedPreferences>().remove(AppConstants.authTokenKey);
+    await getIt<SharedPreferences>().remove('has_completed_quiz');
     if (mounted) {
       setState(() {
         _profileData = null;
@@ -81,6 +91,113 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   // gọi tạm api trong này
+
+  Future<void> _loadStyleComposition() async {
+    final prefs = getIt<SharedPreferences>();
+    final jsonStr = prefs.getString('profile_style_composition');
+    if (jsonStr != null) {
+      try {
+        setState(() {
+          _styleCompositionResult = Map<String, dynamic>.from(jsonDecode(jsonStr));
+        });
+      } catch (_) {}
+    }
+
+    _skinTone = prefs.getString('profile_skinTone') ?? 'Light';
+    _skinShade = prefs.getString('profile_skinShade') ?? 'Warm';
+    _handShape = prefs.getString('profile_handShape') ?? 'Slender';
+    _occupation = prefs.getString('profile_occupation') ?? 'Student';
+    _complexity = prefs.getString('profile_complexity') ?? 'Simple';
+    _nailShapeId = prefs.getInt('profile_nailShapeId') ?? 1;
+
+    final pList = prefs.getStringList('profile_selectedPersonalities');
+    if (pList != null) {
+      _selectedPersonalities.clear();
+      _selectedPersonalities.addAll(pList);
+    }
+    final cList = prefs.getStringList('profile_selectedColors');
+    if (cList != null) {
+      _selectedColors.clear();
+      _selectedColors.addAll(cList);
+    }
+    _selectedMainStyle = prefs.getString('profile_selectedMainStyle') ?? ProfileMockData.initialMainStyleId;
+    final oList = prefs.getStringList('profile_selectedOccasions');
+    if (oList != null) {
+      _selectedOccasions.clear();
+      _selectedOccasions.addAll(oList);
+    }
+    final nailCond = prefs.getString('profile_nailCondition');
+    if (nailCond != null) {
+      _noteControllers['NAIL CONDITION']?.text = nailCond;
+    }
+    setState(() {});
+  }
+
+  Future<void> _handleStyleProfileSubmit({
+    required Set<String> personalities,
+    required Set<String> colors,
+    required String mainStyle,
+    required Set<String> occasions,
+    required String nailCondition,
+    required String skinTone,
+    required String skinShade,
+    required String handShape,
+    required String occupation,
+    required String complexity,
+    required int nailShapeId,
+    required Map<String, dynamic> apiBody,
+  }) async {
+    try {
+      final res = await _quizRepo.getNailComposition(apiBody);
+      final jsonStr = jsonEncode(res);
+      final prefs = getIt<SharedPreferences>();
+      
+      await prefs.setString('profile_style_composition', jsonStr);
+      await prefs.setString('profile_skinTone', skinTone);
+      await prefs.setString('profile_skinShade', skinShade);
+      await prefs.setString('profile_handShape', handShape);
+      await prefs.setString('profile_occupation', occupation);
+      await prefs.setString('profile_complexity', complexity);
+      await prefs.setInt('profile_nailShapeId', nailShapeId);
+      await prefs.setStringList('profile_selectedPersonalities', personalities.toList());
+      await prefs.setStringList('profile_selectedColors', colors.toList());
+      await prefs.setString('profile_selectedMainStyle', mainStyle);
+      await prefs.setStringList('profile_selectedOccasions', occasions.toList());
+      await prefs.setString('profile_nailCondition', nailCondition);
+
+      setState(() {
+        _styleCompositionResult = res;
+        _skinTone = skinTone;
+        _skinShade = skinShade;
+        _handShape = handShape;
+        _occupation = occupation;
+        _complexity = complexity;
+        _nailShapeId = nailShapeId;
+
+        _selectedPersonalities.clear();
+        _selectedPersonalities.addAll(personalities);
+        _selectedColors.clear();
+        _selectedColors.addAll(colors);
+        _selectedMainStyle = mainStyle;
+        _selectedOccasions.clear();
+        _selectedOccasions.addAll(occasions);
+        _noteControllers['NAIL CONDITION']?.text = nailCondition;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã cập nhật hồ sơ phong cách và tạo mẫu móng thành công!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi khi tạo cấu hình móng: $e')),
+        );
+      }
+      rethrow;
+    }
+  }
 
   Future<void> _fetchProfile() async {
     try {
@@ -176,6 +293,59 @@ class _ProfilePageState extends State<ProfilePage> {
                 children: [
                   _buildProfileCard(),
                   const SizedBox(height: 16),
+
+                  // Nút Thiết lập phong cách cá nhân
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => StyleProfileFormDialog(
+                            initialPersonalities: _selectedPersonalities,
+                            initialColors: _selectedColors,
+                            initialMainStyle: _selectedMainStyle,
+                            initialOccasions: _selectedOccasions,
+                            initialNailCondition: _noteControllers['NAIL CONDITION']?.text ?? '',
+                            initialSkinTone: _skinTone,
+                            initialSkinShade: _skinShade,
+                            initialHandShape: _handShape,
+                            initialOccupation: _occupation,
+                            initialComplexity: _complexity,
+                            initialNailShapeId: _nailShapeId,
+                            onSubmit: _handleStyleProfileSubmit,
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.psychology, size: 20, color: Colors.white),
+                      label: const Text(
+                        'Thiết Lập Phong Cách Cá Nhân',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Banner gợi ý mẫu nail phù hợp nếu có kết quả
+                  if (_styleCompositionResult != null) ...[
+                    _BlinkingBanner(
+                      onViewPressed: () => _showNailCompositionResultDialog(_styleCompositionResult!),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
@@ -207,67 +377,10 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   const SizedBox(height: 24),
 
-                  PersonalityStyleSection(
-                    options: ProfileMockData.personalityOptions,
-                    selectedIds: _selectedPersonalities,
-                    maxSelections: ProfileMockData.maxPersonalitySelections,
-                    onToggle: (id) {
-                      setState(() {
-                        if (_selectedPersonalities.contains(id)) {
-                          _selectedPersonalities.remove(id);
-                        } else if (_selectedPersonalities.length <
-                            ProfileMockData.maxPersonalitySelections) {
-                          _selectedPersonalities.add(id);
-                        }
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 24),
-
-                  FavoriteColorSection(
-                    swatches: ProfileMockData.colorSwatches,
-                    selectedIds: _selectedColors,
-                    onToggle: (id) {
-                      setState(() {
-                        if (_selectedColors.contains(id)) {
-                          _selectedColors.remove(id);
-                        } else {
-                          _selectedColors.add(id);
-                        }
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 24),
-
-                  MainStyleSection(
-                    options: ProfileMockData.mainStyles,
-                    selectedId: _selectedMainStyle,
-                    onSelected: (id) {
-                      setState(() {
-                        _selectedMainStyle = id;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 24),
-
-                  OccasionsSection(
-                    options: ProfileMockData.occasions,
-                    selectedIds: _selectedOccasions,
-                    onToggle: (id) {
-                      setState(() {
-                        if (_selectedOccasions.contains(id)) {
-                          _selectedOccasions.remove(id);
-                        } else {
-                          _selectedOccasions.add(id);
-                        }
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 24),
-
                   PersonalNotesSection(
                     notes: ProfileMockData.personalNotes,
                     controllers: _noteControllers,
+                    readOnly: _styleCompositionResult != null,
                   ),
                   const SizedBox(height: 40),
                 ],
@@ -652,6 +765,325 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  void _showNailCompositionResultDialog(Map<String, dynamic> data) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final shapeName = data['nailShape']?['name']?.toString() ?? 'Almond';
+        final shapeImageUrl = data['nailShape']?['imageUrl']?.toString() ?? '';
+        final surfaceName = data['nailSurface']?['name']?.toString() ?? 'Glossy';
+        final colorsList = List<String>.from(data['colors'] ?? []);
+        final componentsList = List<dynamic>.from(data['components'] ?? []);
+        final reason = data['reason']?.toString() ?? 'Cấu hình móng thiết kế riêng phù hợp với các nét cá tính và tông da của bạn.';
+
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          backgroundColor: Colors.white,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    const Icon(Icons.auto_awesome, color: AppColors.primary, size: 24),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Mẫu Nail Phù Hợp',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+
+              // Layers List
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      // TẦNG 1
+                      _buildLayerCard(
+                        layerNumber: 'TẦNG 1',
+                        title: 'Dáng Móng Đề Xuất (Nail Shape)',
+                        icon: Icons.design_services_outlined,
+                        color: const Color(0xFFE8F5E9),
+                        iconColor: Colors.green.shade700,
+                        child: Row(
+                          children: [
+                            Text(
+                              shapeName,
+                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                            ),
+                            const Spacer(),
+                            if (shapeImageUrl.isNotEmpty)
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(
+                                  shapeImageUrl,
+                                  width: 44,
+                                  height: 44,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // TẦNG 2
+                      _buildLayerCard(
+                        layerNumber: 'TẦNG 2',
+                        title: 'Màu Sắc Chủ Đạo (Base Colors)',
+                        icon: Icons.palette_outlined,
+                        color: const Color(0xFFE3F2FD),
+                        iconColor: Colors.blue.shade700,
+                        child: colorsList.isEmpty
+                            ? const Text('Màu sắc hài hòa')
+                            : Wrap(
+                                spacing: 10,
+                                runSpacing: 10,
+                                children: colorsList.map((hex) {
+                                  Color colorVal;
+                                  try {
+                                    colorVal = Color(int.parse(hex.replaceAll('#', '0xFF')));
+                                  } catch (_) {
+                                    colorVal = Colors.grey;
+                                  }
+                                  return Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 22,
+                                        height: 22,
+                                        decoration: BoxDecoration(
+                                          color: colorVal,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(color: Colors.grey.shade300, width: 1.2),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        hex,
+                                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                                      ),
+                                    ],
+                                  );
+                                }).toList(),
+                              ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // TẦNG 3
+                      _buildLayerCard(
+                        layerNumber: 'TẦNG 3',
+                        title: 'Bề Mặt Móng (Nail Surface)',
+                        icon: Icons.brush_outlined,
+                        color: const Color(0xFFFFF3E0),
+                        iconColor: Colors.orange.shade700,
+                        child: Text(
+                          surfaceName,
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // TẦNG 4
+                      _buildLayerCard(
+                        layerNumber: 'TẦNG 4',
+                        title: 'Họa Tiết & Phụ Kiện (Components)',
+                        icon: Icons.diamond_outlined,
+                        color: const Color(0xFFF3E5F5),
+                        iconColor: Colors.purple.shade700,
+                        child: componentsList.isEmpty
+                            ? const Text(
+                                'Không đính phụ kiện (Trơn tối giản)',
+                                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                              )
+                            : Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: componentsList.map((comp) {
+                                  final name = comp['name']?.toString() ?? '';
+                                  final url = comp['imageUrl']?.toString() ?? '';
+                                  final type = comp['componentType']?.toString() ?? '';
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFAF9F6),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: const Color(0xFFEDEBE7)),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        if (url.isNotEmpty) ...[
+                                          ClipRRect(
+                                            borderRadius: BorderRadius.circular(6),
+                                            child: Image.network(url, width: 22, height: 22, fit: BoxFit.cover),
+                                          ),
+                                          const SizedBox(width: 8),
+                                        ],
+                                        Text(
+                                          '$name ($type)',
+                                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // TẦNG 5
+                      _buildLayerCard(
+                        layerNumber: 'TẦNG 5',
+                        title: 'Lý Do Đề Xuất (Vibe & Concept)',
+                        icon: Icons.lightbulb_outline_rounded,
+                        color: const Color(0xFFFFFDE7),
+                        iconColor: Colors.amber.shade900,
+                        child: Text(
+                          reason,
+                          style: const TextStyle(fontSize: 14, color: AppColors.textPrimary, height: 1.45),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const Divider(height: 1),
+
+              // Actions
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          side: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        child: Text(
+                          'Đóng',
+                          style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          context.push('/try-on', extra: data);
+                        },
+                        icon: const Icon(Icons.camera_alt_outlined, size: 18),
+                        label: const Text('Thử Móng Ngay 💅', style: TextStyle(fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildLayerCard({
+    required String layerNumber,
+    required String title,
+    required IconData icon,
+    required Color color,
+    required Color iconColor,
+    required Widget child,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFEDEBE7)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: iconColor, size: 22),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      layerNumber,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        color: iconColor,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const Icon(Icons.arrow_right_alt_rounded, size: 16, color: Colors.grey),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  title,
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                child,
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTextField(
     TextEditingController controller,
     String label,
@@ -683,6 +1115,114 @@ class _ProfilePageState extends State<ProfilePage> {
           borderSide: const BorderSide(color: AppColors.primary),
         ),
       ),
+    );
+  }
+}
+
+class _BlinkingBanner extends StatefulWidget {
+  final VoidCallback onViewPressed;
+
+  const _BlinkingBanner({required this.onViewPressed});
+
+  @override
+  State<_BlinkingBanner> createState() => _BlinkingBannerState();
+}
+
+class _BlinkingBannerState extends State<_BlinkingBanner>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+    _animation = Tween<double>(begin: 0.5, end: 1.0).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.purple.shade700.withValues(alpha: _animation.value),
+                Colors.pink.shade500.withValues(alpha: _animation.value),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.purple.withValues(alpha: 0.3 * _animation.value),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.star_purple500_rounded, color: Colors.yellowAccent, size: 28),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Gợi Ý Hoàn Hảo Cho Bạn! 🌟',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Thiết kế móng tối ưu theo tông da, phong cách & sở thích của riêng bạn.',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: widget.onViewPressed,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.purple.shade900,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'XEM NGAY',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

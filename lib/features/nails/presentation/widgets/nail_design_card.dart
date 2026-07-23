@@ -6,8 +6,14 @@ import '../../../../core/utils/price_formatter.dart';
 class NailDesignCard extends StatelessWidget {
   final NailDesignModel design;
   final VoidCallback onTap;
+  final int? matchPercentage;
 
-  const NailDesignCard({super.key, required this.design, required this.onTap});
+  const NailDesignCard({
+    super.key,
+    required this.design,
+    required this.onTap,
+    this.matchPercentage,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -70,6 +76,34 @@ class NailDesignCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                  if (matchPercentage != null)
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFFFD1E1), width: 0.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          '$matchPercentage% match',
+                          style: const TextStyle(
+                            color: Color(0xFFFF66C4),
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),

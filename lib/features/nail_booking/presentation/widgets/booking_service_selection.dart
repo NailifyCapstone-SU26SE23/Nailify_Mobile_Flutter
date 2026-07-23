@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../../../core/utils/duration_formatter.dart';
@@ -7,8 +6,7 @@ import '../../../../core/utils/duration_formatter.dart';
 class BookingServiceSelection extends StatelessWidget {
   final Map<String, dynamic>? nailData;
   final List<dynamic> services;
-  final List<String?>
-  selectedExtraServices; // cho phép null để hiển thị ô trống khi mới thêm
+  final List<String?> selectedExtraServices;
   final ValueChanged<List<String?>> onChanged;
 
   const BookingServiceSelection({
@@ -19,7 +17,7 @@ class BookingServiceSelection extends StatelessWidget {
     required this.onChanged,
   });
 
-  // lụm dữ liệu từ API
+  // Extract services from raw API response list
   List<Map<String, dynamic>> get _availableServices {
     return services
         .whereType<Map>()
@@ -28,7 +26,6 @@ class BookingServiceSelection extends StatelessWidget {
         .toList();
   }
 
-  // Các hàm tiện ích bóc tách dữ liệu linh hoạt (đề phòng API đổi tên field)
   String _serviceId(Map<String, dynamic> service) =>
       service['serviceId']?.toString() ?? service['id']?.toString() ?? '';
 
@@ -43,21 +40,16 @@ class BookingServiceSelection extends StatelessWidget {
   dynamic _serviceDuration(Map<String, dynamic> service) =>
       service['duration'] ?? 0;
 
-  void _addService() {
-    final next = List<String?>.from(selectedExtraServices);
-    next.add(null); // Thêm một ô Dropdown trống
-    onChanged(next);
-  }
+  String _serviceDescription(Map<String, dynamic> service) =>
+      service['description']?.toString() ?? '';
 
-  void _removeService(int index) {
+  void _toggleService(String id) {
     final next = List<String?>.from(selectedExtraServices);
-    next.removeAt(index);
-    onChanged(next);
-  }
-
-  void _updateService(int index, String? value) {
-    final next = List<String?>.from(selectedExtraServices);
-    next[index] = value;
+    if (next.contains(id)) {
+      next.remove(id);
+    } else {
+      next.add(id);
+    }
     onChanged(next);
   }
 
@@ -68,184 +60,216 @@ class BookingServiceSelection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Dịch vụ',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+        // 1. Main Service / Design (Locked default selection)
+        if (nailData != null) ...[
+          const Text(
+            'Dịch vụ chính',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
           ),
+          const SizedBox(height: 12),
+          _buildNailVariantCard(),
+          const SizedBox(height: 20),
+        ],
+
+        // 2. Extra Services Header
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Dịch vụ đi kèm',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            if (selectedExtraServices.isNotEmpty)
+              Text(
+                'Đã chọn ${selectedExtraServices.where((id) => id != null).length}',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+          ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
 
-        // 1. Luôn hiển thị mẫu thiết kế Nail Mặc định (nếu có)
-        if (nailData != null) _buildNailVariantCard(),
-
-        // 2. Danh sách các ô Dropdown chọn thêm dịch vụ
+        // 3. Card-based checklist layout
         if (availableServices.isNotEmpty)
           ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: selectedExtraServices.length,
+            itemCount: availableServices.length,
             itemBuilder: (context, index) {
-              final selectedId = selectedExtraServices[index];
+              final service = availableServices[index];
+              final id = _serviceId(service);
+              final name = _serviceName(service);
+              final price = _servicePrice(service);
+              final duration = _serviceDuration(service);
+              final desc = _serviceDescription(service);
+              final isSelected = selectedExtraServices.contains(id);
 
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12.0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 4,
-                        ), // Mở rộng height để chứa cả tên và duration
+              return GestureDetector(
+                onTap: () => _toggleService(id),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isSelected ? Colors.white : const Color(0xFFFCFAF7),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isSelected ? AppColors.primary : const Color(0xFFF3EFEA),
+                      width: isSelected ? 1.8 : 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: isSelected
+                            ? AppColors.primary.withOpacity(0.06)
+                            : Colors.black.withOpacity(0.01),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      // Checkbox/Check icon
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: 22,
+                        height: 22,
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: selectedId,
-                            hint: const Text(
-                              'Chọn dịch vụ phụ trợ...',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey,
-                              ),
-                            ),
-                            isExpanded: true,
-                            icon: const Icon(
-                              Icons.keyboard_arrow_down,
-                              size: 20,
-                              color: Colors.grey,
-                            ),
-                            itemHeight:
-                                64, // Chiều cao mỗi thẻ trong dropdown để không bị lỗi overflow
-                            // Tạo giao diện từng dòng (Item) trong Dropdown
-                            items: availableServices.map((service) {
-                              final id = _serviceId(service);
-                              final name = _serviceName(service);
-                              final price = _servicePrice(service);
-                              final duration = _serviceDuration(service);
-
-                              return DropdownMenuItem<String>(
-                                value: id,
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            name,
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.bold,
-                                              color: AppColors.textPrimary,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            DurationFormatter.format(duration),
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      PriceFormatter.format(price),
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        color: AppColors.primary,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }).toList(),
-
-                            onChanged: (val) => _updateService(index, val),
+                          color: isSelected ? AppColors.primary : Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isSelected ? AppColors.primary : Colors.grey.shade400,
+                            width: 1.5,
                           ),
                         ),
+                        child: isSelected
+                            ? const Icon(Icons.check, size: 14, color: Colors.white)
+                            : null,
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    IconButton(
-                      icon: const Icon(Icons.cancel, color: Colors.redAccent),
-                      onPressed: () => _removeService(index),
-                    ),
-                  ],
+                      const SizedBox(width: 16),
+                      // Text Info
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              name,
+                              style: TextStyle(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.bold,
+                                color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                              ),
+                            ),
+                            if (desc.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                desc,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                  height: 1.3,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                Icon(Icons.access_time_rounded, size: 13, color: Colors.grey.shade500),
+                                const SizedBox(width: 4),
+                                Text(
+                                  DurationFormatter.format(duration),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Price
+                      Text(
+                        PriceFormatter.format(price),
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               );
             },
-          ),
-
-        // 3. Nút Thêm dịch vụ
-        if (availableServices.isNotEmpty) ...[
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: _addService,
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text(
-              'Thêm dịch vụ',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.primary,
-              side: const BorderSide(color: AppColors.primary),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+          )
+        else
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Text(
+                'Hiện không có dịch vụ phụ trợ nào.',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontStyle: FontStyle.italic,
+                  fontSize: 14,
+                ),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             ),
           ),
-        ] else ...[
-          const Text(
-            'Hiện không có dịch vụ phụ trợ nào.',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-        ],
       ],
     );
   }
 
   Widget _buildNailVariantCard() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+        color: AppColors.primary.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withOpacity(0.2), width: 1),
       ),
       child: Row(
         children: [
-          const Icon(Icons.diamond_outlined, color: AppColors.primary),
-          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.08),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.diamond_outlined,
+              color: AppColors.primary,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Dịch vụ thiết kế Nail (Mặc định)',
                   style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade600,
+                    letterSpacing: 0.5,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -253,14 +277,22 @@ class BookingServiceSelection extends StatelessWidget {
                   nailData!['name']?.toString() ?? '',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                    color: AppColors.primary,
+                    fontSize: 15.5,
+                    color: AppColors.primaryDark,
                   ),
                 ),
               ],
             ),
           ),
-          const Icon(Icons.lock_outline, size: 16, color: Colors.grey),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.lock_rounded, size: 14, color: Colors.grey),
+          ),
         ],
       ),
     );

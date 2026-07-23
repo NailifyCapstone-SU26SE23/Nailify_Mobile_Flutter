@@ -9,10 +9,13 @@ import '../widgets/summary_preview.dart';
 import '../widgets/summary_notes.dart';
 import '../widgets/summary_details_price.dart';
 import '../../data/models/custom_nail_model.dart';
+import '../../data/models/custom_nail_mock_data.dart';
 import 'package:go_router/go_router.dart';
 
 class CustomNailStepperPage extends StatefulWidget {
-  const CustomNailStepperPage({super.key});
+  final Map<String, dynamic>? recommendedData;
+
+  const CustomNailStepperPage({super.key, this.recommendedData});
 
   @override
   State<CustomNailStepperPage> createState() => _CustomNailStepperPageState();
@@ -23,6 +26,119 @@ class _CustomNailStepperPageState extends State<CustomNailStepperPage> {
   final PageController _pageController = PageController();
   final TextEditingController _notesController = TextEditingController();
   int _currentStep = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _prefillRecommendedData();
+  }
+
+  String _findClosestColorName(String hexStr) {
+    final cleanHex = hexStr.replaceAll('#', '').toUpperCase().trim();
+    if (cleanHex.length != 6) return 'Soft Pink'; // Default fallback
+
+    try {
+      final r = int.parse(cleanHex.substring(0, 2), radix: 16);
+      final g = int.parse(cleanHex.substring(2, 4), radix: 16);
+      final b = int.parse(cleanHex.substring(4, 6), radix: 16);
+
+      String closestName = 'Soft Pink';
+      double minDistance = double.maxFinite;
+
+      CustomNailMockData.colorPalettes.forEach((category, list) {
+        for (final item in list) {
+          final Color colorVal = item['color'];
+          final dr = r - (colorVal.r * 255).round();
+          final dg = g - (colorVal.g * 255).round();
+          final db = b - (colorVal.b * 255).round();
+          final distance = (dr * dr + dg * dg + db * db).toDouble();
+          if (distance < minDistance) {
+            minDistance = distance;
+            closestName = item['name'];
+          }
+        }
+      });
+
+      return closestName;
+    } catch (_) {
+      return 'Soft Pink';
+    }
+  }
+
+  void _prefillRecommendedData() {
+    if (widget.recommendedData != null) {
+      final data = widget.recommendedData!;
+
+      // Pre-fill shape: Match by name containment (e.g. Almond)
+      if (data['nailShape'] != null && data['nailShape']['name'] != null) {
+        final shapeName = data['nailShape']['name'].toString().toLowerCase();
+        final matched = CustomNailMockData.shapes.firstWhere(
+          (s) => s.toLowerCase().contains(shapeName) || shapeName.contains(s.toLowerCase()),
+          orElse: () => CustomNailMockData.shapes.first,
+        );
+        _nailDesign.selectedShape = matched;
+      }
+
+      // Pre-fill colors: Map API HEX code to the closest named color in custom_nail_mock_data
+      if (data['colors'] != null && (data['colors'] as List).isNotEmpty) {
+        final hex = (data['colors'] as List).first.toString();
+        final colorName = _findClosestColorName(hex);
+        _nailDesign.globalConfig.color = colorName;
+        for (final key in _nailDesign.fingerConfigs.keys) {
+          _nailDesign.fingerConfigs[key]!.color = colorName;
+        }
+      }
+
+      // Pre-fill pattern / surface: Match by name containment
+      if (data['nailSurface'] != null && data['nailSurface']['name'] != null) {
+        final surfaceName = data['nailSurface']['name'].toString().toLowerCase();
+        final matchedPattern = CustomNailMockData.patterns.firstWhere(
+          (p) => p['name']!.toLowerCase().contains(surfaceName) || surfaceName.contains(p['name']!.toLowerCase()),
+          orElse: () => CustomNailMockData.patterns.first,
+        );
+        final finalPatternName = matchedPattern['name']!;
+        _nailDesign.globalConfig.pattern = finalPatternName;
+        for (final key in _nailDesign.fingerConfigs.keys) {
+          _nailDesign.fingerConfigs[key]!.pattern = finalPatternName;
+        }
+      }
+
+      // Pre-fill accessories: Match by component name containment
+      if (data['components'] != null) {
+        final List<String> accNames = [];
+        final componentsList = data['components'] as List;
+        for (final comp in componentsList) {
+          final compName = comp['name']?.toString().toLowerCase() ?? '';
+          if (compName.isEmpty) continue;
+          
+          final matchedAcc = CustomNailMockData.accessories.firstWhere(
+            (acc) {
+              final accName = acc['name']!.toLowerCase();
+              return accName.contains(compName) || compName.contains(accName);
+            },
+            orElse: () => <String, String>{},
+          );
+          
+          if (matchedAcc.isNotEmpty) {
+            final accName = matchedAcc['name']!;
+            if (!accNames.contains(accName)) {
+              accNames.add(accName);
+            }
+          }
+        }
+        
+        // If no match succeeded, default to at least one accessory
+        if (accNames.isEmpty && CustomNailMockData.accessories.isNotEmpty) {
+          accNames.add(CustomNailMockData.accessories.first['name']!);
+        }
+
+        _nailDesign.globalConfig.accessories = accNames;
+        for (final key in _nailDesign.fingerConfigs.keys) {
+          _nailDesign.fingerConfigs[key]!.accessories = List.from(accNames);
+        }
+      }
+    }
+  }
 
   // Biến lưu trữ ngón tay đang được chọn để tùy chỉnh (nếu isApplyAll == false)
   String _selectedFinger = 'Ngón cái';
@@ -129,7 +245,7 @@ class _CustomNailStepperPageState extends State<CustomNailStepperPage> {
                       boxShadow: _nailDesign.isApplyAll
                           ? [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: Colors.black.withValues(alpha: 0.05),
                                 blurRadius: 4,
                               ),
                             ]
@@ -162,7 +278,7 @@ class _CustomNailStepperPageState extends State<CustomNailStepperPage> {
                       boxShadow: !_nailDesign.isApplyAll
                           ? [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: Colors.black.withValues(alpha: 0.05),
                                 blurRadius: 4,
                               ),
                             ]
@@ -486,7 +602,7 @@ class _CustomNailStepperPageState extends State<CustomNailStepperPage> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),

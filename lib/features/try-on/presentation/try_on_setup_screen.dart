@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/di/injection.dart';
 import '../../nails/data/models/customer_nail_models.dart';
@@ -8,7 +9,6 @@ import '../../nails/data/models/nail_shape_model.dart';
 import '../../nails/data/models/nail_surface_model.dart';
 import '../../nails/data/repositories/customer_nail_repository.dart';
 import '../../nails/data/repositories/nail_component_repository.dart';
-import '../../nails/services/ar_try_on_service.dart';
 import '../models/placed_component_draft.dart';
 import '../models/try_on_data.dart';
 import '../services/try_on_setup_service.dart';
@@ -23,8 +23,9 @@ import 'try_on_method_selection_screen.dart';
 
 class TryOnSetupScreen extends StatefulWidget {
   final CustomerNailModel? customerNail;
+  final Map<String, dynamic>? recommendedData;
 
-  const TryOnSetupScreen({super.key, this.customerNail});
+  const TryOnSetupScreen({super.key, this.customerNail, this.recommendedData});
 
   @override
   State<TryOnSetupScreen> createState() => _TryOnSetupScreenState();
@@ -37,13 +38,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
 
   bool _isLoading = true;
   bool _isSaving = false;
-  bool _launching = false;
-  final bool _showShapeSection = true;
-  final bool _showSurfaceSection = true;
-  final bool _showColorSection = true;
-  final bool _showPlacementSection = true;
-  final bool _showSystemComponents = true;
-  final bool _showCustomerComponents = true;
+  final bool _launching = false;
   String? _error;
   TryOnData? _tryOnData;
   CustomerNailModel? _customerNail;
@@ -154,11 +149,81 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
         }
       }
 
+      NailShapeModel? resolvedShape;
+      if (widget.recommendedData != null && widget.recommendedData!['nailShape'] != null) {
+        final recShapeId = widget.recommendedData!['nailShape']['nailShapeId'];
+        resolvedShape = data.nailShapes.firstWhereOrNull((s) => s.nailShapeId == recShapeId) ??
+            _resolveShape(data.nailShapes, customerNail);
+      } else {
+        resolvedShape = _resolveShape(data.nailShapes, customerNail);
+      }
+
+      NailSurfaceModel? resolvedSurface;
+      if (widget.recommendedData != null && widget.recommendedData!['nailSurface'] != null) {
+        final recSurfaceId = widget.recommendedData!['nailSurface']['nailSurfaceId'];
+        resolvedSurface = data.nailSurfaces.firstWhereOrNull((s) => s.nailSurfaceId == recSurfaceId) ??
+            _resolveSurface(data.nailSurfaces, customerNail);
+      } else {
+        resolvedSurface = _resolveSurface(data.nailSurfaces, customerNail);
+      }
+
+      if (widget.recommendedData != null && widget.recommendedData!['colors'] != null) {
+        final colorsList = widget.recommendedData!['colors'] as List;
+        if (colorsList.isNotEmpty) {
+          final primaryHex = colorsList.first.toString();
+          for (var i = 1; i <= 5; i++) {
+            initialColors[i] = primaryHex;
+          }
+          if (colorsList.length >= 2) {
+            final stops = colorsList.map((item) => item.toString()).take(3).toList();
+            for (var i = 1; i <= 5; i++) {
+              initialGradients[i] = stops;
+            }
+          }
+        }
+      }
+
+      final List<PlacedComponentDraft> resolvedPlacements = [];
+      CombinedComponent? resolvedSelectedComponent;
+      if (widget.recommendedData != null && widget.recommendedData!['components'] != null) {
+        final componentsList = widget.recommendedData!['components'] as List;
+        int localIdCounter = DateTime.now().microsecondsSinceEpoch;
+        for (final comp in componentsList) {
+          final compId = comp['componentId'];
+          final matchedComponent = data.combinedComponents.firstWhereOrNull(
+            (c) => !c.isCustomerComponent && c.componentId == compId,
+          );
+          if (matchedComponent != null) {
+            resolvedSelectedComponent ??= matchedComponent;
+            for (var fIdx = 1; fIdx <= 5; fIdx++) {
+              resolvedPlacements.add(
+                PlacedComponentDraft(
+                  localId: localIdCounter++,
+                  component: matchedComponent,
+                  componentId: matchedComponent.componentId,
+                  customerComponentId: matchedComponent.customerComponentId,
+                  name: matchedComponent.name,
+                  imageUrl: matchedComponent.imageUrl,
+                  fingerIndex: fIdx,
+                  posX: 0,
+                  posY: 0,
+                  scale: 0.5,
+                  rotation: 0,
+                ),
+              );
+            }
+          }
+        }
+      } else {
+        resolvedPlacements.addAll(_buildDrafts(customerNail, data.combinedComponents));
+      }
+
       setState(() {
         _tryOnData = data;
         _customerNail = customerNail;
-        _selectedNailShape = _resolveShape(data.nailShapes, customerNail);
-        _selectedNailSurface = _resolveSurface(data.nailSurfaces, customerNail);
+        _selectedNailShape = resolvedShape;
+        _selectedNailSurface = resolvedSurface;
+        _selectedComponent = resolvedSelectedComponent;
         _fingerColors.clear();
         _fingerColors.addAll(initialColors);
         _fingerGradients
@@ -166,7 +231,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
           ..addAll(initialGradients);
         _placements
           ..clear()
-          ..addAll(_buildDrafts(customerNail, data.combinedComponents));
+          ..addAll(resolvedPlacements);
         _selectedPlacementId = _placements.isEmpty
             ? null
             : _placements.first.localId;
@@ -336,22 +401,35 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
   }
 
   Future<void> _save() async {
-    final nail = _customerNail;
     final shape = _selectedNailShape;
-    if (nail == null || shape == null) {
-      _showMessage('Vui lòng tạo mẫu móng và chọn dáng móng.');
+    if (shape == null) {
+      _showMessage('Vui lòng chọn dáng móng.');
       return;
     }
 
     setState(() => _isSaving = true);
     try {
+      int targetNailId;
+      String targetName = 'My Custom Design';
+      
+      if (_customerNail == null) {
+        // Create new design first
+        targetNailId = await _customerNailRepository.createCustomerNail(
+          name: targetName,
+          isPublic: false,
+        );
+      } else {
+        targetNailId = _customerNail!.customerNailId;
+        targetName = _customerNail!.name;
+      }
+
       await _customerNailRepository.updateCustomerNail(
-        customerNailId: nail.customerNailId,
-        name: nail.name,
+        customerNailId: targetNailId,
+        name: targetName,
         nailShapeId: shape.nailShapeId,
         nailSurfaceId: _selectedNailSurface?.nailSurfaceId,
         customColor: _buildColorJson(),
-        isPublic: nail.isPublic,
+        isPublic: _customerNail?.isPublic ?? false,
       );
 
       for (final id in _deletedPlacementIds) {
@@ -359,7 +437,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
       }
 
       for (final placement in _placements) {
-        final payload = placement.toPayload(nail.customerNailId);
+        final payload = placement.toPayload(targetNailId);
         if (placement.customerNailComponentId == null) {
           await _componentRepository.createCustomerNailComponent(
             customerNailId: payload.customerNailId,
@@ -385,13 +463,18 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
       }
 
       _deletedPlacementIds.clear();
-      final fresh = await _customerNailRepository.getCustomerNailById(
-        nail.customerNailId,
-      );
+      final fresh = await _customerNailRepository.getCustomerNailById(targetNailId);
       setState(() => _customerNail = fresh);
       _showMessage('Đã lưu thiết lập thử móng.');
-      await _fetchData();
-      if (mounted) Navigator.of(context).pop(true);
+      if (mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop(true);
+          } else {
+            context.go('/');
+          }
+        });
+      }
     } catch (error) {
       _showMessage(error.toString());
     } finally {
@@ -483,7 +566,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
               const SizedBox(width: 16),
               Expanded(
                 child: FilledButton.icon(
-                  onPressed: (_customerNail != null && _selectedNailShape != null && !_isSaving) ? _save : null,
+                  onPressed: (_selectedNailShape != null && !_isSaving) ? _save : null,
                   icon: _isSaving 
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) 
                       : const Icon(Icons.save),

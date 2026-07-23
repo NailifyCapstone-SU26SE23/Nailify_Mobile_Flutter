@@ -10,6 +10,8 @@ import '../utils/auth_guard.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_constants.dart';
 import '../di/injection.dart';
+import '../network/api_client.dart';
+import '../../features/quiz/data/datasources/quiz_repository.dart';
 
 class MainShell extends StatefulWidget {
   final Widget child;
@@ -30,10 +32,59 @@ class _MainShellState extends State<MainShell> {
   StreamSubscription<WaitlistExpiredEvent>? _expiredSub;
   StreamSubscription<BookingCancelledEvent>? _cancelledSub;
 
+  bool _hasRecommendations = false;
+  String? _lastCheckedToken;
+  bool _isCheckingRecommendations = false;
+
   @override
   void initState() {
     super.initState();
     _subscribeToSignalR();
+  }
+
+  void _checkAuthAndRecommendations() {
+    final token = getIt<SharedPreferences>().getString(AppConstants.authTokenKey);
+    final localQuizCompleted = getIt<SharedPreferences>().getBool('has_completed_quiz') ?? false;
+
+    if (token != _lastCheckedToken) {
+      _lastCheckedToken = token;
+      _checkRecommendations();
+    } else if (localQuizCompleted != _hasRecommendations) {
+      setState(() {
+        _hasRecommendations = localQuizCompleted;
+      });
+    }
+  }
+
+  Future<void> _checkRecommendations() async {
+    if (!_isLoggedIn) {
+      if (mounted) {
+        setState(() {
+          _hasRecommendations = false;
+        });
+      }
+      return;
+    }
+    if (_isCheckingRecommendations) return;
+    _isCheckingRecommendations = true;
+    try {
+      final repo = QuizRepository(getIt<ApiClient>());
+      final data = await repo.getPersonalizedRecommendations();
+      if (mounted) {
+        setState(() {
+          _hasRecommendations = data.isNotEmpty;
+        });
+        if (data.isNotEmpty) {
+          getIt<SharedPreferences>().setBool('has_completed_quiz', true);
+        } else {
+          getIt<SharedPreferences>().setBool('has_completed_quiz', false);
+        }
+      }
+    } catch (_) {
+      // Bỏ qua lỗi check ngầm
+    } finally {
+      _isCheckingRecommendations = false;
+    }
   }
 
   void _subscribeToSignalR() {
@@ -136,8 +187,11 @@ class _MainShellState extends State<MainShell> {
   // Hàm xử lý Đăng xuất
   Future<void> _logout() async {
     await getIt<SharedPreferences>().remove(AppConstants.authTokenKey);
+    await getIt<SharedPreferences>().remove('has_completed_quiz');
     if (mounted) {
-      setState(() {}); // Làm mới UI để thanh AppBar vẽ lại nút
+      setState(() {
+        _hasRecommendations = false;
+      }); // Làm mới UI để thanh AppBar vẽ lại nút
       context.go('/'); // Đưa người dùng về trang chủ
       ScaffoldMessenger.of(
         context,
@@ -204,6 +258,7 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
+    _checkAuthAndRecommendations();
     return Scaffold(
       backgroundColor: AppColors.background,
 
@@ -233,7 +288,12 @@ class _MainShellState extends State<MainShell> {
                 ),
               ),
               actions: _isLoggedIn
-                  ? []
+                  ? [
+                      if (_hasRecommendations) ...[
+                        const BlinkingPerfectMatchButton(),
+                        const SizedBox(width: 12),
+                      ],
+                    ]
                   : [
                       // HIỂN THỊ NÚT ĐĂNG NHẬP/ĐĂNG KÝ KHI CHƯA CÓ TOKEN
                       OutlinedButton(
@@ -306,6 +366,85 @@ class _MainShellState extends State<MainShell> {
             label: 'Tài khoản',
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ────────────────────────────────────────────────
+// WIDGET: Nút Perfect Match Nhấp Nháy
+// ────────────────────────────────────────────────
+class BlinkingPerfectMatchButton extends StatefulWidget {
+  const BlinkingPerfectMatchButton({super.key});
+
+  @override
+  State<BlinkingPerfectMatchButton> createState() => _BlinkingPerfectMatchButtonState();
+}
+
+class _BlinkingPerfectMatchButtonState extends State<BlinkingPerfectMatchButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    )..repeat(reverse: true);
+    _animation = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _animation,
+      child: Center(
+        child: GestureDetector(
+          onTap: () => context.push('/perfect-match'),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [AppColors.primary, AppColors.secondary],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.3),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.auto_awesome, size: 13, color: Colors.white),
+                SizedBox(width: 4),
+                Text(
+                  'Perfect Match',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

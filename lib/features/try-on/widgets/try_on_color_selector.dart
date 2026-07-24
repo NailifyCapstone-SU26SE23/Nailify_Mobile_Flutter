@@ -164,26 +164,45 @@ class _ColorCircle extends StatelessWidget {
     final color = parseTryOnHexColor(colorHex);
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         margin: const EdgeInsets.only(right: 12),
+        padding: const EdgeInsets.all(3),
         decoration: BoxDecoration(
-          color: color,
           shape: BoxShape.circle,
           border: Border.all(
-            color: selected ? Colors.purple : Colors.grey.shade300,
-            width: selected ? 3 : 1,
+            color: selected ? const Color(0xFFE91E63) : Colors.transparent,
+            width: 2,
           ),
         ),
-        child: selected
-            ? Icon(
-                Icons.check,
-                color: color.computeLuminance() > 0.5
-                    ? Colors.black
-                    : Colors.white,
-              )
-            : null,
+        child: Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+            border: Border.all(
+              color: Colors.white,
+              width: 1.5,
+            ),
+          ),
+          child: selected
+              ? Icon(
+                  Icons.check,
+                  size: 16,
+                  color: color.computeLuminance() > 0.5
+                      ? Colors.black87
+                      : Colors.white,
+                )
+              : null,
+        ),
       ),
     );
   }
@@ -251,12 +270,25 @@ class _CustomColorButton extends StatelessWidget {
         width: 44,
         height: 44,
         margin: const EdgeInsets.only(right: 12),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100,
+        padding: const EdgeInsets.all(3),
+        decoration: const BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.grey.shade300),
         ),
-        child: const Icon(Icons.colorize, color: Colors.grey),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.grey.shade300, width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Icon(Icons.colorize, color: Colors.grey.shade600, size: 16),
+        ),
       ),
     );
   }

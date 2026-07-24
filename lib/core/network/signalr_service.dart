@@ -51,8 +51,7 @@ class SignalRService {
           options: HttpConnectionOptions(
             // Bearer token được gửi qua query string (cách phổ biến với SignalR)
             accessTokenFactory: () async => authToken,
-            // Sử dụng WebSockets, fallback sang SSE nếu không được
-            transport: HttpTransportType.WebSockets,
+            // Omit transport to let the client negotiate all transports and fall back
             logMessageContent: kDebugMode,
           ),
         )
@@ -126,14 +125,32 @@ class SignalRService {
       debugPrint('[SignalR] Đã kết nối lại: $connectionId');
     });
 
-    try {
-      await _hub!.start();
-      _isConnected = true;
-      debugPrint('[SignalR] ✅ Đã kết nối Hub tại $hubUrl');
-    } catch (e) {
-      _isConnected = false;
-      debugPrint('[SignalR] ❌ Lỗi kết nối Hub: $e');
+    _attemptConnection();
+  }
+
+  Future<void> _attemptConnection() async {
+    int attempts = 0;
+    const maxAttempts = 5;
+    
+    while (!_isConnected && attempts < maxAttempts) {
+      if (_hub == null) return;
+      try {
+        attempts++;
+        debugPrint('[SignalR] Đang thử kết nối Hub (lần $attempts)...');
+        await _hub!.start();
+        _isConnected = true;
+        debugPrint('[SignalR] ✅ Đã kết nối Hub thành công');
+        return;
+      } catch (e) {
+        _isConnected = false;
+        debugPrint('[SignalR] ❌ Thử kết nối thất bại (lần $attempts): $e');
+        if (attempts < maxAttempts) {
+          debugPrint('[SignalR] Thử lại sau 10 giây để máy chủ Render kịp khởi động...');
+          await Future.delayed(const Duration(seconds: 10));
+        }
+      }
     }
+    debugPrint('[SignalR] ❌ Đã thử kết nối $maxAttempts lần nhưng thất bại. Dừng kết nối.');
   }
 
   // ─── Ngắt kết nối Hub ──────────────────────────────────────────

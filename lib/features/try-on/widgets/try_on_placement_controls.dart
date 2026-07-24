@@ -122,9 +122,9 @@ class _TryOnPlacementControlsState extends State<TryOnPlacementControls> {
                   ),
                 ),
                 _RemoteBtn(
-                  icon: Icons.delete_outline,
-                  color: Theme.of(context).colorScheme.errorContainer,
-                  iconColor: Theme.of(context).colorScheme.onErrorContainer,
+                  icon: Icons.delete_outline_rounded,
+                  color: const Color(0xFFFFEBEE),
+                  iconColor: const Color(0xFFE53935),
                   onPressed: enabled ? widget.onRemove : null,
                 ),
               ],
@@ -174,11 +174,17 @@ class _RemoteBtn extends StatelessWidget {
         onPressed: onPressed,
         style: FilledButton.styleFrom(
           padding: EdgeInsets.zero,
-          backgroundColor: color ?? Theme.of(context).colorScheme.primaryContainer,
-          foregroundColor: iconColor ?? Theme.of(context).colorScheme.primary,
+          backgroundColor: onPressed == null
+              ? Colors.grey.shade100
+              : color ?? const Color(0xFFFCE4EC),
+          foregroundColor: onPressed == null
+              ? Colors.grey.shade400
+              : iconColor ?? const Color(0xFFE91E63),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: onPressed == null ? 0 : 1,
+          shadowColor: Colors.black.withValues(alpha: 0.1),
         ),
-        child: Icon(icon, size: 24),
+        child: Icon(icon, size: 22),
       ),
     );
   }

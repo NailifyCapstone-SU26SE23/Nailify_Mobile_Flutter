@@ -273,8 +273,9 @@ class AppRouter {
               final extra = state.extra;
               if (extra is nails_model.CustomerNailModel) {
                 return TryOnSetupScreen(customerNail: extra);
-              } else if (extra is Map<String, dynamic>) {
-                return TryOnSetupScreen(recommendedData: extra);
+              } else if (extra is Map) {
+                final map = Map<String, dynamic>.from(extra);
+                return TryOnSetupScreen(recommendedData: map);
               }
               return const TryOnSetupScreen();
             },

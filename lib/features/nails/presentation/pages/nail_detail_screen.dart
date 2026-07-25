@@ -93,7 +93,7 @@ class _DesignDetailContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        _ImageGallery(imageUrls: design.imageUrls),
+        _DesignImage(imageUrl: design.imageUrl),
         const SizedBox(height: 16),
         Text(
           design.name,
@@ -140,14 +140,14 @@ class _DesignDetailContent extends StatelessWidget {
   }
 }
 
-class _ImageGallery extends StatelessWidget {
-  final List<String> imageUrls;
+class _DesignImage extends StatelessWidget {
+  final String imageUrl;
 
-  const _ImageGallery({required this.imageUrls});
+  const _DesignImage({required this.imageUrl});
 
   @override
   Widget build(BuildContext context) {
-    if (imageUrls.isEmpty) {
+    if (imageUrl.isEmpty) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: AspectRatio(
@@ -161,29 +161,20 @@ class _ImageGallery extends StatelessWidget {
       );
     }
 
-    return SizedBox(
-      height: 280,
-      child: PageView.builder(
-        itemCount: imageUrls.length,
-        itemBuilder: (context, index) {
-          return Padding(
-            padding: EdgeInsets.only(
-              right: index == imageUrls.length - 1 ? 0 : 8,
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                imageUrls[index],
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => Container(
-                  color: const Color(0xFFF7E8F1),
-                  alignment: Alignment.center,
-                  child: const Icon(Icons.broken_image_outlined),
-                ),
-              ),
-            ),
-          );
-        },
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: SizedBox(
+        height: 280,
+        width: double.infinity,
+        child: Image.network(
+          imageUrl,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => Container(
+            color: const Color(0xFFF7E8F1),
+            alignment: Alignment.center,
+            child: const Icon(Icons.broken_image_outlined),
+          ),
+        ),
       ),
     );
   }

@@ -8,7 +8,7 @@ class NailDesignModel {
   final double maxPrice;
   final String description;
   final String status;
-  final List<String> imageUrls;
+  final String imageUrl;
   final List<CategoryModel> categories;
   final List<NailVariantModel> nailVariants;
 
@@ -19,15 +19,12 @@ class NailDesignModel {
     required this.maxPrice,
     required this.description,
     required this.status,
-    this.imageUrls = const [],
+    required this.imageUrl,
     this.categories = const [],
     this.nailVariants = const [],
   });
 
-  String get primaryImageUrl => imageUrls.isEmpty ? '' : imageUrls.first;
-
   factory NailDesignModel.fromJson(Map<String, dynamic> json) {
-    final imageUrlsJson = json['imageUrls'] ?? json['ImageUrls'] ?? [];
     final categoriesJson = json['categories'] ?? json['Categories'] ?? [];
     final variantsJson = json['nailVariants'] ?? json['NailVariants'] ?? [];
     return NailDesignModel(
@@ -38,9 +35,7 @@ class NailDesignModel {
       description: (json['description'] ?? json['Description'] ?? '')
           .toString(),
       status: (json['status'] ?? json['Status'] ?? '').toString(),
-      imageUrls: imageUrlsJson is List
-          ? imageUrlsJson.map((item) => item.toString()).toList()
-          : const [],
+      imageUrl: (json['imageUrl'] ?? json['ImageUrl'] ?? '').toString(),
       categories: categoriesJson is List
           ? categoriesJson
                 .whereType<Map>()

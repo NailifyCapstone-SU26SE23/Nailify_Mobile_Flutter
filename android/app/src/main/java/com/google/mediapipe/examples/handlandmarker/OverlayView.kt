@@ -34,9 +34,11 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
     private var results: HandLandmarkerResult? = null
     private var linePaint = Paint()
     private var pointPaint = Paint()
+    private var promptPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private var ballerinaBitmap: Bitmap? = null
     private var squovalBitmap: Bitmap? = null
     private var stilettoBitmap: Bitmap? = null
+    private val nailVisibilityDetector = NailVisibilityDetector(context!!)
     
     private var nailSetConfig: NailSetConfig = NailSetConfig.default()
     private val bitmapCache = mutableMapOf<String, Bitmap?>()
@@ -62,20 +64,38 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
     }
 
     private fun initPaints() {
+        val density = resources.displayMetrics.density
+        
         linePaint.color =
             ContextCompat.getColor(context!!, R.color.mp_color_primary)
-        linePaint.strokeWidth = LANDMARK_STROKE_WIDTH
+        linePaint.strokeWidth = LANDMARK_STROKE_WIDTH * density
         linePaint.style = Paint.Style.STROKE
 
         pointPaint.color = Color.YELLOW
-        pointPaint.strokeWidth = LANDMARK_STROKE_WIDTH
+        pointPaint.strokeWidth = LANDMARK_STROKE_WIDTH * density
         pointPaint.style = Paint.Style.FILL
+
+        promptPaint.color = Color.RED
+        promptPaint.textAlign = Paint.Align.CENTER
+        promptPaint.textSize = PROMPT_TEXT_SIZE * density
+        promptPaint.typeface = android.graphics.Typeface.DEFAULT_BOLD
+        promptPaint.style = Paint.Style.FILL
     }
 
         override fun draw(canvas: Canvas) {
         super.draw(canvas)
         results?.let { handLandmarkerResult ->
+            var hasHiddenNails = false
+            var hasVisibleNails = false
+
             for (landmark in handLandmarkerResult.landmarks()) {
+                val visibilityResult = nailVisibilityDetector.detect(landmark)
+                if (!visibilityResult.nailShown) {
+                    hasHiddenNails = true
+                    continue
+                }
+                hasVisibleNails = true
+
                 val fingerTips = listOf(4, 8, 12, 16, 20) 
 
                 for ((fingerIndex, tipIndex) in fingerTips.withIndex()) {
@@ -144,6 +164,15 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
 
                     }
                 }
+            }
+
+            if (hasHiddenNails && !hasVisibleNails) {
+                canvas.drawText(
+                    PROMPT_TEXT,
+                    width / 2f,
+                    height * PROMPT_VERTICAL_POSITION,
+                    promptPaint
+                )
             }
         }
     }
@@ -553,7 +582,10 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
     }
 
     companion object {
-        private const val LANDMARK_STROKE_WIDTH = 8F
+        private const val LANDMARK_STROKE_WIDTH = 3F // Now treated as DP
         private const val FingerColorFallback = "#FF4081"
+        private const val PROMPT_TEXT = "Please show your nails"
+        private const val PROMPT_TEXT_SIZE = 32F // Now treated as SP/DP
+        private const val PROMPT_VERTICAL_POSITION = 0.18F
     }
 }

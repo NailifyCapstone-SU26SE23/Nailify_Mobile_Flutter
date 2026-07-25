@@ -28,14 +28,14 @@ class NailDesignCard extends StatelessWidget {
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(8),
                 ),
-                child: design.primaryImageUrl.isEmpty
+                child: design.imageUrl.isEmpty
                     ? Container(
                         color: const Color(0xFFF7E8F1),
                         alignment: Alignment.center,
                         child: const Icon(Icons.spa_outlined, size: 32),
                       )
                     : Image.network(
-                        design.primaryImageUrl,
+                        design.imageUrl,
                         width: double.infinity,
                         fit: BoxFit.cover,
                         errorBuilder: (_, _, _) => Container(

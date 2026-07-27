@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "670121582664",
+    "project_id": "nailify-6f2f6",
+    "storage_bucket": "nailify-6f2f6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:670121582664:android:29b158d664782a6a82f87d",
+        "android_client_info": {
+          "package_name": "com.nailify.nailify_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3lC0Ok_dXz1HwDBo1B_Im92O6ZAm1JpM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -155,8 +155,6 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                                 drawBitmap(bitmap, null, destRect, null)
                             }
 
-                            drawNailSurface(this, bitmap, destRect)
-
                             design.decorations.forEach { decoration ->
                                 drawDecoration(this, decoration, destRect)
                             }
@@ -259,18 +257,14 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         nailBounds: RectF
     ): Paint {
         val baseColor = parseColorOrDefault(colorValue)
-        val surfaceColor = applySurfaceOffsets(baseColor)
         return Paint(Paint.ANTI_ALIAS_FLAG).apply {
             shader = if (gradient?.enabled == true) {
                 createGradientShader(gradient, nailBounds)
             } else {
-                createMaterialShader(surfaceColor, nailBounds)
+                null
             }
             if (shader == null) {
-                color = when (nailSetConfig.material) {
-                    NailSetConfig.MATERIAL_MATTE -> adjustColor(surfaceColor, saturation = 0.55f, brightness = 0.9f)
-                    else -> surfaceColor
-                }
+                color = baseColor
             }
         }
     }
@@ -282,7 +276,6 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         val colors = gradient.stops
             .take(gradient.stopCount.coerceIn(2, 3))
             .map(::parseColorOrDefault)
-            .map(::applySurfaceOffsets)
             .toIntArray()
 
         return when (gradient.type) {
@@ -530,10 +523,13 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         val surface = nailSetConfig.surface ?: return color
         val hsv = FloatArray(3)
         Color.colorToHSV(color, hsv)
-        hsv[0] = ((hsv[0] + surface.hueOffset) % 360f + 360f) % 360f
-        hsv[1] = (hsv[1] + surface.saturationOffset).coerceIn(0f, 1f)
-        hsv[2] = (hsv[2] + surface.lightnessOffset).coerceIn(0f, 1f)
+        hsv[1] = (hsv[1] + normalizeUnitOffset(surface.saturationOffset)).coerceIn(0f, 1f)
+        hsv[2] = (hsv[2] + normalizeUnitOffset(surface.lightnessOffset)).coerceIn(0f, 1f)
         return Color.HSVToColor(Color.alpha(color), hsv)
+    }
+
+    private fun normalizeUnitOffset(value: Float): Float {
+        return if (kotlin.math.abs(value) > 1f) value / 100f else value
     }
 
     private fun drawDecoration(canvas: Canvas, decoration: NailDecoration, nailBounds: RectF) {

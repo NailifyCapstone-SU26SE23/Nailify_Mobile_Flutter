@@ -52,19 +52,41 @@ class _MyStudioTabPageState extends State<MyStudioTabPage>
         ),
         centerTitle: true,
         backgroundColor: AppColors.background,
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textSecondary,
-          dividerColor: AppColors.textSecondary,
-          indicatorColor: AppColors.primary,
-          labelStyle: TextStyle(fontWeight: FontWeight.bold),
-          unselectedLabelStyle: TextStyle(fontWeight: FontWeight.normal),
-          tabs: const [
-            Tab(text: 'My nails'),
-            Tab(text: 'My components'),
-            Tab(text: 'Requests'),
-          ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(56),
+          child: Container(
+            height: 44,
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3F3F5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: TabBar(
+              controller: _tabController,
+              labelColor: Colors.white,
+              unselectedLabelColor: AppColors.textSecondary,
+              indicator: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                color: AppColors.primary,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.25),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              indicatorSize: TabBarIndicatorSize.tab,
+              labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+              unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+              dividerColor: Colors.transparent,
+              tabs: const [
+                Tab(text: 'My Nails'),
+                Tab(text: 'Components'),
+                Tab(text: 'Requests'),
+              ],
+            ),
+          ),
         ),
       ),
       body: TabBarView(

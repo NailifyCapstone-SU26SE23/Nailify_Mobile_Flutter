@@ -39,62 +39,90 @@ class HomeGallery extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-
       child: Container(
-        // Thêm padding bên trong để nội dung không dính sát vào mép khung Gradient
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20.0),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          // Mã màu Gradient
-          gradient: LinearGradient(
-            colors: [AppColors.primary, AppColors.secondary],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          borderRadius: BorderRadius.circular(24),
+          // Nền hồng nhạt tinh tế, giúp các mẫu nail tự làm nổi bật chính nó
+          color: const Color(0xFFFFF8FA),
+          border: Border.all(color: const Color(0xFFFFE5EE), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.08),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
-
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 5),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // Tiêu đề sang trọng
+            const Row(
               children: [
-                const Text(
+                Icon(Icons.auto_awesome, color: AppColors.primary, size: 20),
+                SizedBox(width: 8),
+                Text(
                   'Thư viện mẫu Nail',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.surface,
+                    color: AppColors.primaryDark,
+                    letterSpacing: 0.5,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const Padding(
+              padding: EdgeInsets.only(left: 28.0, top: 4),
+              child: Text(
+                'Khám phá xu hướng thiết kế móng mới nhất',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
 
-            // 2. Lưới hình ảnh bo tròn góc
+            // 2. Lưới hình ảnh bo tròn góc có đổ bóng nhẹ tạo chiều sâu
             GridView.builder(
-              shrinkWrap: true, // Cuộn chung với trang chính
+              shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2, // Chia 2 cột
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.85, // Tỉ lệ khung ảnh
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 0.85,
               ),
               itemCount: galleryImages.length,
               itemBuilder: (context, index) {
                 return GestureDetector(
-                  onTap: () => _showPopup(context), // hiện Popup
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.asset(
-                      galleryImages[index],
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: Colors.white,
-                        child: const Icon(
-                          Icons.image,
-                          color: AppColors.surface,
+                  onTap: () => _showPopup(context),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.asset(
+                        galleryImages[index],
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: Colors.white,
+                          child: const Icon(
+                            Icons.spa_outlined,
+                            color: AppColors.primary,
+                            size: 32,
+                          ),
                         ),
                       ),
                     ),
@@ -102,33 +130,58 @@ class HomeGallery extends StatelessWidget {
                 );
               },
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 28),
 
-            // Nút xem thêm
-            SizedBox(
-              width: 302,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: () => context.go('/nails'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.surface,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
+            // Nút xem thêm cao cấp dạng Gradient
+            Center(
+              child: Container(
+                width: 260,
+                height: 48,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  gradient: const LinearGradient(
+                    colors: [AppColors.primary, AppColors.primaryDark],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primaryDark.withValues(alpha: 0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: const Text(
-                  'Xem thêm ->',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
+                child: ElevatedButton(
+                  onPressed: () => context.go('/nails'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    foregroundColor: Colors.white,
+                    shadowColor: Colors.transparent,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Khám phá thư viện',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Icon(Icons.arrow_forward_rounded, size: 16),
+                    ],
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
           ],
         ),
       ),

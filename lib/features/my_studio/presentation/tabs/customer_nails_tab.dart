@@ -186,12 +186,16 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: _create,
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        elevation: 4,
-        child: const Icon(Icons.add),
+        elevation: 6,
+        icon: const Icon(Icons.add_rounded, size: 20),
+        label: const Text(
+          'Tạo mới',
+          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+        ),
       ),
       body: Column(
         children: [
@@ -204,17 +208,20 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
                   flex: 5,
                   child: TextField(
                     controller: _searchController,
+                    style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
                     decoration: InputDecoration(
-                      hintText: 'Tìm theo tên...',
+                      hintText: 'Tìm mẫu móng...',
                       prefixIcon: const Icon(
-                        Icons.search,
+                        Icons.search_rounded,
                         color: AppColors.textSecondary,
+                        size: 20,
                       ),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
                               icon: const Icon(
-                                Icons.clear,
+                                Icons.clear_rounded,
                                 color: AppColors.textSecondary,
+                                size: 18,
                               ),
                               onPressed: () {
                                 _searchController.clear();
@@ -223,9 +230,9 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
                             )
                           : null,
                       filled: true,
-                      fillColor: Colors.grey.shade50,
+                      fillColor: const Color(0xFFF5F5F7),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
                         borderSide: BorderSide.none,
                       ),
                       contentPadding: const EdgeInsets.symmetric(
@@ -244,21 +251,41 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
                     height: 48,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(12),
+                      color: const Color(0xFFF5F5F7),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey.shade100, width: 1),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<bool?>(
                         value: _isPublicFilter,
+                        dropdownColor: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        icon: const Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: AppColors.textSecondary,
+                          size: 22,
+                        ),
                         hint: const Text(
                           'Tất cả',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
-                        icon: const Icon(Icons.filter_list, size: 20),
                         isExpanded: true,
                         items: const [
-                          DropdownMenuItem(value: null, child: Text('Tất cả')),
+                          DropdownMenuItem(
+                            value: null,
+                            child: Text('Tất cả'),
+                          ),
                           DropdownMenuItem(
                             value: true,
                             child: Text('Công khai'),

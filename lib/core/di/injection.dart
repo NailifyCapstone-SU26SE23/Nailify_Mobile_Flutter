@@ -12,6 +12,7 @@ import '../../features/nails/data/repositories/nail_component_repository.dart';
 import '../../features/nails/data/repositories/component_catalog_repository.dart';
 import '../../features/nails/services/ar_try_on_service.dart';
 import '../../features/auth/data/repositories/auth_repository.dart';
+import '../network/signalr_service.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -31,10 +32,13 @@ Future<void> configureDependencies() async {
     () => ApiClient(preferences: getIt<SharedPreferences>()),
   );
 
+  // 3b. SignalR Service (Real-time notifications)
+  getIt.registerLazySingleton<SignalRService>(() => SignalRService());
+
   // 4. Repositories (directly using ApiClient)
   // Auth
   getIt.registerLazySingleton<AuthRepository>(
-    () => AuthRepository(getIt<ApiClient>()),
+        () => AuthRepository(getIt<ApiClient>(), getIt<SignalRService>()),
   );
 
   // Nail repositories

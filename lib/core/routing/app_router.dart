@@ -22,13 +22,13 @@ import '../../features/nail_booking/presentation/pages/payment_qr_page.dart';
 import '../../features/nail_booking/presentation/pages/payment_result_page.dart';
 import '../../features/nail_booking/presentation/pages/refund_bank_info_page.dart';
 import '../../features/nail_booking/presentation/pages/service_booking_page.dart';
-import '../../features/nail_booking/presentation/pages/transaction_detail_page.dart';
 import '../../features/my_studio/presentation/pages/my_studio_tab_page.dart';
 import '../../features/nails/presentation/pages/nail_detail_screen.dart';
 import '../../features/nails/presentation/pages/nail_list_screen.dart';
 import '../../features/nails/presentation/pages/nail_variant_detail_screen.dart';
 import '../../features/perfect_match/presentation/pages/perfect_match_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/quiz/data/models/quiz_result_model.dart';
 import '../../features/quiz/presentation/pages/analyze_page.dart';
 import '../../features/quiz/presentation/pages/quiz_page.dart';
 import '../../features/services/presentation/pages/service_detail_page.dart';
@@ -40,7 +40,10 @@ class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: '/',
     routes: [
-      GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
+      GoRoute(
+        path: '/login',
+        builder: (context, state) => const LoginPage(),
+      ),
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterPage(),
@@ -62,19 +65,7 @@ class AppRouter {
       GoRoute(
         path: '/custom-nail-booking',
         builder: (context, state) {
-          final extra = state.extra;
-          if (extra is Map<String, dynamic>) {
-            return CustomNailBookingPage(
-              nail: extra['nail'] as CustomerNailModel,
-              shapeMethodConfigId: (extra['shapeMethodConfigId'] as num?)
-                  ?.toInt(),
-              shapeMethodName: extra['shapeMethodName']?.toString(),
-              shapeMethodPrice: extra['shapeMethodPrice'] as num?,
-              shapeMethodDuration: (extra['shapeMethodDuration'] as num?)
-                  ?.toInt(),
-            );
-          }
-          final nail = extra as CustomerNailModel;
+          final nail = state.extra as CustomerNailModel;
           return CustomNailBookingPage(nail: nail);
         },
       ),
@@ -85,45 +76,13 @@ class AppRouter {
           return BookingSuccessPage(bookingDetails: details);
         },
       ),
-      GoRoute(
-        path: '/payment-qr',
-        builder: (context, state) {
-          final paymentData = state.extra as Map<String, dynamic>? ?? {};
-          return PaymentQrPage(paymentData: paymentData);
-        },
-      ),
-      GoRoute(
-        path: '/payment-success',
-        builder: (context, state) {
-          final paymentData = state.extra as Map<String, dynamic>? ?? {};
-          return PaymentSuccessPage(paymentData: paymentData);
-        },
-      ),
-      GoRoute(
-        path: '/payment-cancelled',
-        builder: (context, state) {
-          final paymentData = state.extra as Map<String, dynamic>? ?? {};
-          return PaymentCancelledPage(paymentData: paymentData);
-        },
-      ),
-      GoRoute(
-        path: '/refund-bank-info',
-        builder: (context, state) {
-          final bookingId = state.extra?.toString() ?? '';
-          return RefundBankInfoPage(bookingId: bookingId);
-        },
-      ),
-      GoRoute(
-        path: '/transaction-detail',
-        builder: (context, state) {
-          final transaction = state.extra as Map<String, dynamic>? ?? {};
-          return TransactionDetailPage(transaction: transaction);
-        },
-      ),
       ShellRoute(
         builder: (context, state, child) => MainShell(child: child),
         routes: [
-          GoRoute(path: '/', builder: (context, state) => const HomePage()),
+          GoRoute(
+            path: '/',
+            builder: (context, state) => const HomePage(),
+          ),
           GoRoute(
             path: '/discover',
             builder: (context, state) => const DiscoverPage(),
@@ -215,19 +174,26 @@ class AppRouter {
               return CustomerNailDetailPage(id: id);
             },
           ),
-          GoRoute(path: '/quiz', builder: (context, state) => const QuizPage()),
+          GoRoute(
+            path: '/quiz',
+            builder: (context, state) => const QuizPage(),
+          ),
           GoRoute(
             path: '/quiz/analyze',
             builder: (context, state) {
-              final answers = state.extra as List<int>? ?? [];
-              return AnalyzePage(answers: answers);
+              final selectedOptionIds =
+                  (state.extra as List?)?.map((item) => item.toString()).toList() ??
+                  const <String>[];
+              return AnalyzePage(selectedOptionIds: selectedOptionIds);
             },
           ),
           GoRoute(
             path: '/perfect-match',
             builder: (context, state) {
-              final answers = state.extra as List<int>? ?? [];
-              return PerfectMatchPage(answers: answers);
+              final results = state.extra is List
+                  ? List<QuizResultModel>.from(state.extra as List)
+                  : const <QuizResultModel>[];
+              return PerfectMatchPage(results: results);
             },
           ),
           GoRoute(

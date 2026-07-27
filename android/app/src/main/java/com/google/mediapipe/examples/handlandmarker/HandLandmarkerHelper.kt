@@ -155,21 +155,22 @@ class HandLandmarkerHelper(
         }
         val frameTime = SystemClock.uptimeMillis()
 
-        // Copy out RGB bits from the frame to a bitmap buffer
-        val bitmapBuffer =
-            Bitmap.createBitmap(
-                imageProxy.width,
-                imageProxy.height,
-                Bitmap.Config.ARGB_8888
-            )
-        imageProxy.use { bitmapBuffer.copyPixelsFromBuffer(imageProxy.planes[0].buffer) }
+        // Safely convert ImageProxy to Bitmap, guarding against corrupt/empty
+        // frames that the emulator virtual camera sometimes delivers.
+        val bitmapBuffer = try {
+            convertImageProxyToBitmap(imageProxy)
+        } catch (e: Exception) {
+            Log.w(TAG, "Skipping corrupt camera frame: ${e.message}")
+            imageProxy.close()
+            return
+        } ?: run {
+            imageProxy.close()
+            return
+        }
         imageProxy.close()
 
         val matrix = Matrix().apply {
-            // Rotate the frame received from the camera to be in the same direction as it'll be shown
             postRotate(imageProxy.imageInfo.rotationDegrees.toFloat())
-
-            // flip image if user use front camera
             if (isFrontCamera) {
                 postScale(
                     -1f,
@@ -184,10 +185,47 @@ class HandLandmarkerHelper(
             matrix, true
         )
 
-        // Convert the input Bitmap object to an MPImage object to run inference
         val mpImage = BitmapImageBuilder(rotatedBitmap).build()
-
         detectAsync(mpImage, frameTime)
+    }
+
+    /**
+     * Converts an [ImageProxy] (RGBA_8888 from CameraX ImageAnalysis) to a [Bitmap].
+     * Returns null if the frame appears to be empty/corrupt (all-zero buffer or
+     * incorrect plane count — a known emulator virtual camera issue).
+     */
+    private fun convertImageProxyToBitmap(imageProxy: ImageProxy): Bitmap? {
+        val planes = imageProxy.planes
+        if (planes.isEmpty()) return null
+
+        val buffer = planes[0].buffer
+        val remaining = buffer.remaining()
+        val expectedSize = imageProxy.width * imageProxy.height * 4 // RGBA_8888: 4 bytes/pixel
+
+        // Guard: emulator sometimes returns a buffer with 0 bytes or wrong size
+        if (remaining <= 0 || remaining < expectedSize) {
+            Log.w(TAG, "Invalid frame buffer: remaining=$remaining expected=$expectedSize")
+            return null
+        }
+
+        val bitmap = Bitmap.createBitmap(
+            imageProxy.width,
+            imageProxy.height,
+            Bitmap.Config.ARGB_8888
+        )
+        bitmap.copyPixelsFromBuffer(buffer)
+
+        // Quick sanity-check: if the entire bitmap is one solid color
+        // (e.g. green = 0xFF00FF00), it is a corrupt frame from the virtual camera.
+        val pixel = bitmap.getPixel(imageProxy.width / 2, imageProxy.height / 2)
+        val pixel2 = bitmap.getPixel(0, 0)
+        val pixel3 = bitmap.getPixel(imageProxy.width - 1, imageProxy.height - 1)
+        if (pixel == pixel2 && pixel2 == pixel3 && pixel == android.graphics.Color.GREEN) {
+            Log.w(TAG, "Solid green frame detected — skipping corrupt virtual camera frame.")
+            return null
+        }
+
+        return bitmap
     }
 
     // Run hand hand landmark using MediaPipe Hand Landmarker API

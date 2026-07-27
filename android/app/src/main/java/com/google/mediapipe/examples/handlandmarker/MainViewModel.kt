@@ -60,6 +60,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _nailSetConfig = MutableStateFlow(NailSetConfig.default())
     val nailSetConfig: StateFlow<NailSetConfig> = _nailSetConfig.asStateFlow()
 
+    // Manual overlay offsets — giá trị bù trừ thủ công từ Flutter D-Pad.
+    data class ManualOffsetConfig(
+        val offsetX: Float = 0f,
+        val offsetY: Float = 0f,
+        val scale: Float = 1f,
+        val rotation: Float = 0f
+    )
+    private val _manualOffset = MutableStateFlow(ManualOffsetConfig())
+    val manualOffset: StateFlow<ManualOffsetConfig> = _manualOffset.asStateFlow()
+
+    /** Gọi bởi MainActivity khi Flutter gửi config mới qua intent / MethodChannel. */
+    fun updateManualOffsets(offsetX: Float, offsetY: Float, scale: Float, rotation: Float) {
+        _manualOffset.value = ManualOffsetConfig(offsetX, offsetY, scale, rotation)
+    }
+
     private val _selectedFingerIndex = MutableStateFlow(0)
     val selectedFingerIndex: StateFlow<Int> = _selectedFingerIndex.asStateFlow()
 

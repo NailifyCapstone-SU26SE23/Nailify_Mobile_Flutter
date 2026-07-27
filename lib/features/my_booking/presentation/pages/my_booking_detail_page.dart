@@ -13,6 +13,7 @@ import '../../../nails/data/repositories/nail_variant_repository.dart';
 import '../../data/datasources/my_booking_api_service.dart';
 import '../utils/booking_status_utils.dart';
 import '../widgets/cancel_booking_dialog.dart';
+import '../widgets/reschedule_booking_dialog.dart';
 
 class MyBookingDetailPage extends StatefulWidget {
   final String bookingId;
@@ -255,9 +256,9 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
         rawStatus == 'Pending' ||
         rawStatus == 'Approved' ||
         rawStatus == 'Assigned';
+    final canReschedule = rawStatus == 'Approved';
     final canRate = rawStatus == 'Completed' && !isRated;
-    final amountPaid = booking['amountPaid'];
-    final isPaid = amountPaid != null && amountPaid is num && amountPaid > 0;
+    final isPaid = _readBool(booking['isPaid']);
     final isRefunded = _readBool(booking['isRefunded']);
     final canRequestRefund = isPaid && !isRefunded && rawStatus == 'Cancelled';
 
@@ -296,13 +297,28 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                 decoration: BoxDecoration(
                   color: status.backgroundColor,
                   borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  status.label,
-                  style: TextStyle(
-                    color: status.textColor,
-                    fontWeight: FontWeight.bold,
+                  border: Border.all(
+                    color: status.textColor.withValues(alpha: 0.15),
+                    width: 1,
                   ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      status.icon,
+                      color: status.textColor,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      status.label,
+                      style: TextStyle(
+                        color: status.textColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -542,8 +558,78 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                 ),
               ),
             ],
-            if (canCancel) ...[
+            if (canReschedule) ...[
               const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => RescheduleBookingDialog(
+                        bookingId: widget.bookingId,
+                        onConfirm: (newDate, newTime, reason) async {
+                          try {
+                            final success = await _apiService.requestRescheduleBooking(
+                              widget.bookingId,
+                              newDate: newDate,
+                              newTime: newTime,
+                              reason: reason,
+                            );
+                            if (!context.mounted) return false;
+                            if (success) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Gửi yêu cầu dời lịch thành công'),
+                                  backgroundColor: Colors.green,
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                              // Chuyển về trang danh sách lịch đặt, tab Dời lịch (index 2)
+                              context.go('/my-bookings', extra: {'initialTab': 2});
+                              return true;
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Gửi yêu cầu dời lịch thất bại'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                              return false;
+                            }
+                          } catch (e) {
+                            if (!context.mounted) return false;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Lỗi: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return false;
+                          }
+                        },
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                  ),
+                  icon: const Icon(Icons.edit_calendar_rounded, color: Colors.white),
+                  label: const Text(
+                    'Dời lịch hẹn',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+            if (canCancel) ...[
+              SizedBox(height: canReschedule ? 12 : 24),
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
@@ -553,13 +639,13 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                       builder: (context) => CancelBookingDialog(
                         bookingId: widget.bookingId,
                         onConfirm: (reason) async {
-                          /* TODO: Bỏ chú thích khi API hoàn thiện
                           try {
                             final success = await _apiService.cancelBooking(
                               widget.bookingId, 
                               reason: reason,
                             );
-                            if (success && mounted) {
+                            if (!context.mounted) return;
+                            if (success) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('Hủy lịch thành công')),
                               );
@@ -570,18 +656,9 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                               );
                             }
                           } catch (e) {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Lỗi: $e')),
-                              );
-                            }
-                          }
-                          */
-                          if (mounted) {
+                            if (!context.mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('API chưa hoàn thiện'),
-                              ),
+                              SnackBar(content: Text('Lỗi: $e')),
                             );
                           }
                         },
@@ -593,7 +670,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                     side: const BorderSide(color: Colors.red),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                   ),
                   child: const Text(

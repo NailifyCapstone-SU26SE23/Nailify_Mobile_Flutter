@@ -15,6 +15,8 @@
  */
 package com.google.mediapipe.examples.handlandmarker
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -22,12 +24,13 @@ import androidx.navigation.fragment.NavHostFragment
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.google.mediapipe.examples.handlandmarker.databinding.ActivityMainBinding
+import com.google.mediapipe.examples.handlandmarker.fragment.CameraFragment
 import com.google.mediapipe.examples.handlandmarker.fragment.GalleryFragment
 import com.google.mediapipe.examples.handlandmarker.model.NailSetConfig
 
 class MainActivity : AppCompatActivity() {
     private lateinit var activityMainBinding: ActivityMainBinding
-    private val viewModel : MainViewModel by viewModels()
+    private val viewModel: MainViewModel by viewModels()
     private val gson = Gson()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,6 +51,14 @@ class MainActivity : AppCompatActivity() {
         try {
             val config = gson.fromJson(configJson, NailSetConfig::class.java)
             viewModel.applyNailSetConfig(config)
+
+            val json = org.json.JSONObject(configJson)
+            viewModel.updateManualOffsets(
+                offsetX  = json.optDouble("manualOffsetX",  0.0).toFloat(),
+                offsetY  = json.optDouble("manualOffsetY",  0.0).toFloat(),
+                scale    = json.optDouble("manualScale",    1.0).toFloat(),
+                rotation = json.optDouble("manualRotation", 0.0).toFloat()
+            )
         } catch (_: JsonSyntaxException) {
             viewModel.applyNailSetConfig(NailSetConfig.default())
         }
@@ -72,7 +83,31 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Khi CameraFragment kết thúc ở Snapshot mode, nó trả về RESULT_OK
+     * cùng với đường dẫn ảnh và JSON tọa độ.
+     *
+     * MainActivity chuyển dữ liệu này vào Intent kết quả của chính mình
+     * (được Flutter đọc qua MethodChannel.Result).
+     */
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (resultCode == Activity.RESULT_OK && data != null) {
+            val imagePath    = data.getStringExtra(CameraFragment.RESULT_IMAGE_PATH)
+            val landmarksJson = data.getStringExtra(CameraFragment.RESULT_LANDMARKS_JSON)
+            if (imagePath != null && landmarksJson != null) {
+                // Trả kết quả về cho Flutter thông qua setResult
+                val resultIntent = Intent().apply {
+                    putExtra(CameraFragment.RESULT_IMAGE_PATH, imagePath)
+                    putExtra(CameraFragment.RESULT_LANDMARKS_JSON, landmarksJson)
+                }
+                setResult(Activity.RESULT_OK, resultIntent)
+                finish()
+            }
+        }
+    }
+
     override fun onBackPressed() {
-       finish()
+        finish()
     }
 }

@@ -78,16 +78,11 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
   }
 
   // ── Navigation ────────────────────────────────────────────────────────────
-  void _handleNextAction(NailBookingState state, NailBookingCubit cubit) {
+  Future<void> _handleNextAction(NailBookingState state, NailBookingCubit cubit) async {
     if (_currentStep == 0 && state.selectedBranch == null) {
       _showSnackBar('Vui lòng chọn 1 chi nhánh!');
       return;
     }
-    // Tạm ẩn bước chọn ghế
-    // if (_currentStep == 1 && state.selectedSeatId == null) {
-    //   _showSnackBar('Vui lòng chọn ghế ngồi!');
-    //   return;
-    // }
     if (_currentStep == 1 && state.selectedExtraServices.contains(null)) {
       _showSnackBar('Có ô dịch vụ đang bị bỏ trống!');
       return;
@@ -105,6 +100,13 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
         _showSnackBar('Vui lòng chọn khung giờ!');
         return;
       }
+      // Chỉ tạo hold mới nếu chưa có token (tránh reset timer khi back/forward)
+      if (!state.noArtistSelected) {
+        if (state.holdToken == null || !state.isHolding) {
+          final held = await cubit.holdSelectedSlot();
+          if (!held || !mounted) return;
+        }
+      }
     }
 
     if (_currentStep < 3) {
@@ -116,6 +118,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
       _executeBooking(state, cubit);
     }
   }
+
 
   Future<void> _executeBooking(
     NailBookingState state,
@@ -175,8 +178,15 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
     }
   }
 
-  void _showSnackBar(String msg) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  void _showSnackBar(String msg) {
+    final isError = msg.contains('chọn') || msg.contains('Lỗi') || msg.contains('hết');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? Colors.red : null,
+      ),
+    );
+  }
 
   // ── Price helpers ─────────────────────────────────────────────────────────
   int _totalPrice(NailBookingState state, NailBookingCubit cubit) {
@@ -208,7 +218,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: AppColors.primaryDark),
           onPressed: () => _currentStep > 0
               ? _pageController.previousPage(
                   duration: const Duration(milliseconds: 300),
@@ -219,12 +229,14 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
         title: const Text(
           'Đặt Lịch Dịch Vụ',
           style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w800,
+            fontFamily: 'Georgia',
+            color: AppColors.primaryDark,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFFDFBF7),
         elevation: 0,
+        scrolledUnderElevation: 0,
         centerTitle: true,
       ),
       body: BlocConsumer<NailBookingCubit, NailBookingState>(
@@ -232,6 +244,11 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
             curr.errorMessage != null && prev.errorMessage != curr.errorMessage,
         listener: (context, state) {
           _showSnackBar(state.errorMessage!);
+          if (state.errorMessage!.contains('hết') && _currentStep > 1) {
+            _pageController.animateToPage(2,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut);
+          }
           context.read<NailBookingCubit>().clearError();
         },
         builder: (context, state) {
@@ -239,6 +256,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
           return Column(
             children: [
               _buildStepIndicator(),
+              _buildHoldCountdownBanner(state),
               Expanded(
                 child: PageView(
                   controller: _pageController,
@@ -348,7 +366,10 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                                     selectedTime: state.selectedTime,
                                     canSelect: true,
                                     selectedDate: state.selectedDate,
+                                    salonId: state.selectedBranch?['salonId']?.toString(),
+                                    artistId: state.noArtistSelected ? null : state.selectedStylist?['nailArtistId']?.toString(),
                                     onTimeChanged: cubit.selectTime,
+                                    onRefreshSlots: cubit.refreshTimeSlots,
                                   )
                                 : const SizedBox(key: ValueKey('time-hidden')),
                           ),
@@ -698,35 +719,122 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
     );
   }
 
-  Widget _buildStepIndicator() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      color: Colors.white,
+  Widget _buildHoldCountdownBanner(NailBookingState state) {
+    if (!state.isHolding) return const SizedBox.shrink();
+    final secs = state.holdRemainingSeconds;
+    final min = (secs ~/ 60).toString().padLeft(2, '0');
+    final sec = (secs % 60).toString().padLeft(2, '0');
+    final isUrgent = secs <= 60;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      color: isUrgent ? Colors.red.shade600 : Colors.orange.shade700,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(4, (index) {
-          final isCompleted = index <= _currentStep;
-          return Row(
-            children: [
-              CircleAvatar(
-                radius: 12,
-                backgroundColor: isCompleted
-                    ? AppColors.primary
-                    : Colors.grey.shade300,
-                child: Text(
-                  '${index + 1}',
-                  style: const TextStyle(color: Colors.white, fontSize: 11),
+        children: [
+          const Icon(Icons.lock_clock, color: Colors.white, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              isUrgent
+                  ? 'Chỗ có thể bị hủy sau $min:$sec giây!'
+                  : 'Slot đang được giữ chỗ cho bạn – còn $min:$sec để hoàn tất',
+              style: const TextStyle(
+                  color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepIndicator() {
+    final steps = ['Chi nhánh', 'Dịch vụ', 'Thời gian', 'Xác nhận'];
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.015),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: List.generate(steps.length, (index) {
+          final isActive = index == _currentStep;
+          final isCompleted = index < _currentStep;
+          
+          return Expanded(
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    children: [
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        width: 26,
+                        height: 26,
+                        decoration: BoxDecoration(
+                          color: isCompleted
+                              ? AppColors.primary
+                              : isActive
+                                  ? AppColors.primary
+                                  : Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isCompleted || isActive
+                                ? AppColors.primary
+                                : Colors.grey.shade300,
+                            width: 2,
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: isCompleted
+                            ? const Icon(Icons.check_rounded, color: Colors.white, size: 14)
+                            : Text(
+                                '${index + 1}',
+                                style: TextStyle(
+                                  color: isCompleted || isActive
+                                      ? Colors.white
+                                      : Colors.grey.shade500,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        steps[index],
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                          color: isActive
+                              ? AppColors.primary
+                              : isCompleted
+                                  ? AppColors.textPrimary
+                                  : Colors.grey.shade400,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              if (index < 3)
-                Container(
-                  width: 30,
-                  height: 2,
-                  color: index < _currentStep
-                      ? AppColors.primary
-                      : Colors.grey.shade300,
-                ),
-            ],
+                if (index < steps.length - 1)
+                  Container(
+                    width: 20,
+                    height: 2,
+                    margin: const EdgeInsets.only(bottom: 18),
+                    decoration: BoxDecoration(
+                      color: isCompleted
+                          ? AppColors.primary
+                          : Colors.grey.shade200,
+                    ),
+                  ),
+              ],
+            ),
           );
         }),
       ),

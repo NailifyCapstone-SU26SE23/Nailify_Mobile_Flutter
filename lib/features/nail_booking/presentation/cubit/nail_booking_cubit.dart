@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -10,6 +11,7 @@ part 'nail_booking_state.dart';
 
 class NailBookingCubit extends Cubit<NailBookingState> {
   final NailBookingRepository _repository;
+  Timer? _holdTimer;
 
   NailBookingCubit({NailBookingRepository? repository})
     : _repository = repository ?? NailBookingRepositoryImpl(),
@@ -69,6 +71,21 @@ class NailBookingCubit extends Cubit<NailBookingState> {
         timeSlotsStatus: NailBookingLoadStatus.initial,
       ),
     );
+  }
+
+  void initializeWarranty({
+    required Map<String, dynamic> salon,
+    required List<Map<String, dynamic>> warrantyBookingItems,
+  }) {
+    emit(state.copyWith(
+      selectedBranch: salon,
+      selectedExtraServices: const [],
+      selectedWarrantyItems: warrantyBookingItems,
+    ));
+  }
+
+  void updateSelectedWarrantyItems(List<Map<String, dynamic>> items) {
+    emit(state.copyWith(selectedWarrantyItems: items));
   }
 
   void selectSeat(String seatId) {
@@ -134,7 +151,7 @@ class NailBookingCubit extends Cubit<NailBookingState> {
           salonId: branch['salonId'],
           bookingDate: dateStr,
           nailVariantId: nailVariantId,
-          serviceIds: state.selectedExtraServices.whereType<String>().toList(),
+          serviceIds: state.selectedExtraServices.whereType<String>().toSet().toList(),
           shapeMethodConfigId: shapeMethodConfigId,
         );
       } else {
@@ -251,8 +268,180 @@ class NailBookingCubit extends Cubit<NailBookingState> {
     );
   }
 
+  /// Reload danh sách khung giờ từ bên ngoài (VD: từ widget khi detect isHeld).
+  Future<void> refreshTimeSlots() async {
+    emit(state.copyWith(timeSlotsStatus: NailBookingLoadStatus.loading));
+    if (state.noArtistSelected) {
+      await _loadSalonSlots();
+    } else {
+      await _fetchTimeSlots();
+    }
+  }
+
   void selectTime(String time) {
-    emit(state.copyWith(selectedTime: time));
+    // Người dùng đổi giờ → huỷ giữ chỗ cũ (nếu có) nhưng KHÔNG gọi holdSlot mới.
+    // HoldSlot sẽ chỉ được gọi khi user bấm "Tiếp theo" sang trang Xác nhận.
+    if (state.holdToken != null) {
+      _cancelCurrentHold(state.holdToken!);
+    }
+    emit(state.copyWith(
+      selectedTime: time,
+      clearHoldToken: true,
+      isHolding: false,
+      holdRemainingSeconds: 0,
+    ));
+  }
+
+  /// Giữ chỗ trước khi bước sang trang Xác nhận.
+  /// Trả về true nếu giữ chỗ thành công, false nếu thất bại (đã emit errorMessage).
+  Future<bool> holdSelectedSlot({int? nailVariantId}) async {
+    final time = state.selectedTime;
+    if (time == null) return false;
+
+    // Nếu chọn luồng "Không chọn thợ", bỏ qua việc lấy holdToken
+    if (state.noArtistSelected) return true;
+
+    await _holdSlot(time, nailVariantId: nailVariantId);
+    return state.holdToken != null;
+  }
+
+  /// Gọi API giữ chỗ và khởi động bộ đếm thời gian.
+  Future<void> _holdSlot(String time, {int? nailVariantId}) async {
+    final branch = state.selectedBranch;
+    final date = state.selectedDate;
+    if (branch == null || date == null) return;
+
+    final salonId = branch['salonId']?.toString() ?? '';
+    final artistId = state.noArtistSelected
+        ? ''
+        : (state.selectedStylist?['nailArtistId']?.toString() ?? '');
+
+    if (salonId.isEmpty || artistId.isEmpty) return;
+
+    final bookingDate = _formatDate(date);
+    final formattedTime = time.length == 5 ? '$time:00' : time;
+
+    final List<Map<String, dynamic>> bookingItems = [];
+    final isWarranty = state.selectedWarrantyItems.isNotEmpty;
+
+    // Group extra services by ID and count duplicates for correct quantity
+    final extraCounts = <String, int>{};
+    for (final id in state.selectedExtraServices.whereType<String>()) {
+      extraCounts[id] = (extraCounts[id] ?? 0) + 1;
+    }
+
+    if (isWarranty) {
+      bookingItems.addAll(state.selectedWarrantyItems);
+      for (final entry in extraCounts.entries) {
+        bookingItems.add({
+          'nailVariantId': null,
+          'serviceId': entry.key,
+          'customerNailId': null,
+          'quantity': entry.value,
+        });
+      }
+    } else {
+      bookingItems.addAll(
+        extraCounts.entries
+            .map((e) => {'serviceId': e.key, 'quantity': e.value})
+            .toList(),
+      );
+      if (nailVariantId != null && nailVariantId > 0) {
+        bookingItems.insert(0, {'nailVariantId': nailVariantId, 'quantity': 1});
+      }
+    }
+
+    try {
+      final data = await _repository.holdSlot(
+        salonId: salonId,
+        nailArtistId: artistId,
+        bookingDate: bookingDate,
+        startTime: formattedTime,
+        bookingItems: bookingItems,
+      );
+
+      if (isClosed) return;
+
+      final token = data['holdToken']?.toString();
+      final expiresAtStr = data['expiresAt']?.toString();
+
+      if (token == null || token.isEmpty) return;
+
+      // Bỏ qua việc tính difference từ expiresAt vì đồng hồ device có thể lệch với server.
+      // Ưu tiên dùng remainingSeconds từ server trả về, nếu không có mặc định 300s (5 phút).
+      DateTime? expiresAt;
+      if (expiresAtStr != null) {
+        try { expiresAt = DateTime.parse(expiresAtStr).toUtc(); } catch (_) {}
+      }
+
+      final remaining = (data['remainingSeconds'] as num?)?.toInt() ?? 300;
+
+      emit(state.copyWith(
+        holdToken: token,
+        holdExpiresAt: expiresAt,
+        holdRemainingSeconds: remaining,
+        isHolding: true,
+      ));
+
+      _startHoldTimer(token, expiresAt);
+    } catch (e) {
+      // Bắt lỗi khi giờ bị người khác đặt trước (Race Condition)
+      emit(state.copyWith(
+        clearHoldToken: true,
+        isHolding: false,
+        holdRemainingSeconds: 0,
+        clearTime: true, // Xoá giờ đang chọn
+        errorMessage: 'Khung giờ này vừa mới có người chọn. Vui lòng chọn giờ khác.',
+      ));
+
+      // Tải lại danh sách giờ để cập nhật trạng thái isHeld mới nhất
+      if (state.noArtistSelected) {
+        _loadSalonSlots();
+      } else {
+        _fetchTimeSlots();
+      }
+    }
+  }
+
+  /// Bộ đếm ngược từ máy client, không phụ thuộc vào đồng hồ hệ thống.
+  void _startHoldTimer(String token, DateTime? expiresAt) {
+    _holdTimer?.cancel();
+    // Bỏ qua sự sai lệch đồng hồ thiết bị và server, luôn đếm ngược từ remaining ban đầu
+    _holdTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (isClosed) {
+        _holdTimer?.cancel();
+        return;
+      }
+
+      final remaining = (state.holdRemainingSeconds - 1).clamp(0, 600);
+
+      if (state.holdToken != token) {
+        // Token đã thay đổi (user đổi giờ), huỷ timer
+        _holdTimer?.cancel();
+        return;
+      }
+
+      if (remaining <= 0) {
+        _holdTimer?.cancel();
+        emit(state.copyWith(
+          clearHoldToken: true,
+          isHolding: false,
+          clearTime: true,
+          clearStylist: true,
+          noArtistSelected: false,
+          errorMessage: 'Thời gian giữ chỗ đã hết! Vui lòng chọn lại thợ và khung giờ.',
+        ));
+      } else {
+        emit(state.copyWith(holdRemainingSeconds: remaining));
+      }
+    });
+  }
+
+  /// Huỷ token cũ (khi đổi giờ, đổi thợ, hoặc đóng trang).
+  void _cancelCurrentHold(String token) {
+    _holdTimer?.cancel();
+    _holdTimer = null;
+    _repository.cancelHoldSlot(token); // fire-and-forget
   }
 
   void selectPromotions(List<dynamic> promos) {
@@ -302,9 +491,14 @@ class NailBookingCubit extends Cubit<NailBookingState> {
   }
 
   int extraServicesTotal(List<String?> services) {
-    return services.whereType<String>().fold<int>(
+    // Count duplicates so total price reflects quantity
+    final counts = <String, int>{};
+    for (final id in services.whereType<String>()) {
+      counts[id] = (counts[id] ?? 0) + 1;
+    }
+    return counts.entries.fold<int>(
       0,
-      (sum, id) => sum + servicePriceById(id),
+      (sum, e) => sum + servicePriceById(e.key) * e.value,
     );
   }
 
@@ -334,6 +528,8 @@ class NailBookingCubit extends Cubit<NailBookingState> {
     required List<String> serviceIds,
     List<int>? selectedPromotionIds,
     int? shapeMethodConfigId,
+    String? warrantyForBookingId,
+    List<Map<String, dynamic>>? warrantyBookingItems,
   }) async {
     emit(state.copyWith(isSubmitting: true));
     try {
@@ -341,6 +537,20 @@ class NailBookingCubit extends Cubit<NailBookingState> {
       final formattedTime = s.selectedTime!.length == 5
           ? '${s.selectedTime}:00'
           : s.selectedTime!;
+
+      List<Map<String, dynamic>>? finalBookingItems;
+      if (warrantyForBookingId != null && warrantyBookingItems != null) {
+        finalBookingItems = List<Map<String, dynamic>>.from(warrantyBookingItems);
+        for (final sId in serviceIds) {
+          finalBookingItems.add({
+            'nailVariantId': null,
+            'serviceId': sId,
+            'customerNailId': null,
+            'quantity': 1,
+          });
+        }
+      }
+
       final result = await _repository.createBooking(
         salonId: s.selectedBranch!['salonId'],
         bookingDate: _formatDate(s.selectedDate!),
@@ -351,9 +561,13 @@ class NailBookingCubit extends Cubit<NailBookingState> {
         nailVariantId: nailVariantId,
         serviceIds: serviceIds,
         selectedPromotionIds: selectedPromotionIds,
+        holdToken: s.holdToken,
         shapeMethodConfigId: shapeMethodConfigId,
+        warrantyForBookingId: warrantyForBookingId,
+        warrantyBookingItems: warrantyForBookingId != null ? (finalBookingItems ?? warrantyBookingItems) : null,
       );
-      emit(state.copyWith(isSubmitting: false));
+      _holdTimer?.cancel();
+      emit(state.copyWith(isSubmitting: false, clearHoldToken: true, isHolding: false));
       return result;
     } catch (e) {
       emit(
@@ -373,8 +587,10 @@ class NailBookingCubit extends Cubit<NailBookingState> {
       final result = await _repository.createServiceBooking(
         payload,
         selectedPromotionIds: selectedPromotionIds,
+        holdToken: state.holdToken,
       );
-      emit(state.copyWith(isSubmitting: false));
+      _holdTimer?.cancel();
+      emit(state.copyWith(isSubmitting: false, clearHoldToken: true, isHolding: false));
       return result;
     } catch (e) {
       emit(
@@ -396,4 +612,14 @@ class NailBookingCubit extends Cubit<NailBookingState> {
   }
 
   String formatBookingDate(DateTime date) => _formatDate(date);
+
+  /// Huỷ giữ chỗ khi user thoát khỏi quá trình đặt lịch.
+  @override
+  Future<void> close() {
+    if (state.holdToken != null) {
+      _repository.cancelHoldSlot(state.holdToken!); // fire-and-forget
+    }
+    _holdTimer?.cancel();
+    return super.close();
+  }
 }

@@ -46,7 +46,7 @@ class NailVariantModel {
       nailDesignId: _asInt(json['nailDesignId'] ?? json['NailDesignId']),
       price: _asDouble(json['price'] ?? json['Price']),
       duration: _asNullableInt(json['duration'] ?? json['Duration']),
-      imageUrl: (json['imageUrl'] ?? json['ImageUrl'] ?? '').toString(),
+      imageUrl: (json['imageUrl'] ?? json['ImageUrl'] ?? json['image'] ?? json['Image'] ?? '').toString(),
       colorJson: _asNullableJsonString(json['colorJson'] ?? json['ColorJson']),
       nailShape: shapeJson is Map
           ? NailShapeModel.fromJson(Map<String, dynamic>.from(shapeJson))

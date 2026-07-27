@@ -31,7 +31,7 @@ class BookingApiService {
           'nailVariantId': nailVariantId,
           'serviceId': null,
           'customerNailId': null,
-          'shapeMethodConfigId': ?shapeMethodConfigId,
+          if (shapeMethodConfigId != null) 'shapeMethodConfigId': shapeMethodConfigId,
           'quantity': 1,
         },
       ...serviceIds.map(
@@ -120,6 +120,47 @@ class BookingApiService {
     return slots;
   }
 
+  // =================================================================
+  // HOLD SLOT APIs
+  // =================================================================
+
+  /// Giữ chỗ slot 5 phút để tránh race condition.
+  /// Dùng [expiresAt] (UTC) để tính toán thời gian còn lại chính xác,
+  /// tránh sai lệch đồng hồ giữa app và server.
+  Future<Map<String, dynamic>> holdSlot({
+    required String salonId,
+    required String nailArtistId,
+    required String bookingDate,
+    required String startTime,
+    required List<Map<String, dynamic>> bookingItems,
+  }) async {
+    final response = await _apiClient.post('/Bookings/hold-slot', data: {
+      'salonId': salonId,
+      'nailArtistId': nailArtistId,
+      'bookingDate': bookingDate,
+      'startTime': startTime,
+      'bookingItems': bookingItems,
+    });
+    return response.data['data'] ?? {};
+  }
+
+  /// Huỷ giữ chỗ thủ công (khi user đổi ý hoặc thoát màn hình đặt lịch).
+  Future<void> cancelHoldSlot(String holdToken) async {
+    try {
+      await _apiClient.delete('/Bookings/hold-slot/$holdToken');
+    } catch (_) {
+      // Fire-and-forget: không throw để không ảnh hưởng UX
+    }
+  }
+
+  /// Kiểm tra trạng thái giữ chỗ (còn hiệu lực không, còn bao nhiêu giây).
+  Future<Map<String, dynamic>> checkHoldStatus(String holdToken) async {
+    final response = await _apiClient.get('/Bookings/hold-slot/$holdToken/status');
+    return response.data['data'] ?? {};
+  }
+
+  // =================================================================
+
   Future<Map<String, dynamic>> createBooking(
     String salonId,
     String bookingDate,
@@ -127,25 +168,22 @@ class BookingApiService {
     String? artistId,
     int nailVariantId,
     List<String> serviceIds, {
-    List<int>? selectedPromotionIds,
-    int? shapeMethodConfigId,
-  }) async {
-    final response = await _apiClient.post(
-      '/Bookings',
-      data: {
-        'salonId': salonId,
-        'bookingDate': bookingDate,
-        'startTime': startTime,
-        'nailArtistId': artistId?.isEmpty == true ? null : artistId,
-        'holdToken': null,
-        'bookingItems': _buildBookingItems(
-          nailVariantId,
-          serviceIds,
-          shapeMethodConfigId,
-        ),
-        'selectedPromotionIds': selectedPromotionIds,
-      },
-    );
+      List<int>? selectedPromotionIds,
+      String? holdToken,
+      int? shapeMethodConfigId,
+      String? warrantyForBookingId,
+      List<Map<String, dynamic>>? warrantyBookingItems,
+    }) async {
+    final response = await _apiClient.post('/Bookings', data: {
+      'salonId': salonId,
+      'bookingDate': bookingDate,
+      'startTime': startTime,
+      'nailArtistId': artistId?.isEmpty == true ? null : artistId,
+      'holdToken': holdToken,
+      'bookingItems': warrantyBookingItems ?? _buildBookingItems(nailVariantId, serviceIds, shapeMethodConfigId),
+      'selectedPromotionIds': selectedPromotionIds,
+      if (warrantyForBookingId != null) 'warrantyForBookingId': warrantyForBookingId,
+    });
     return response.data['data'] ?? {};
   }
 
@@ -199,12 +237,15 @@ class BookingApiService {
   Future<Map<String, dynamic>> createServiceBooking(
     Map<String, dynamic> bookingData, {
     List<int>? selectedPromotionIds,
+    String? holdToken,
   }) async {
-    final data = Map<String, dynamic>.from(bookingData);
-    if (selectedPromotionIds != null && selectedPromotionIds.isNotEmpty) {
-      data['selectedPromotionIds'] = selectedPromotionIds;
-    }
-    final response = await _apiClient.post('/Bookings', data: data);
+    final payload = {
+      ...bookingData,
+      'holdToken': holdToken,
+      if (selectedPromotionIds != null && selectedPromotionIds.isNotEmpty)
+        'selectedPromotionIds': selectedPromotionIds,
+    };
+    final response = await _apiClient.post('/Bookings', data: payload);
     return response.data['data'] ?? {};
   }
 
@@ -212,18 +253,19 @@ class BookingApiService {
     String salonId,
     String bookingDate,
     String startTime,
-    String artistId,
+    String? artistId,
     String customerNailRequestId,
     Map<String, int> groupedExtraServices, {
     int? shapeMethodConfigId,
     List<int>? selectedPromotionIds,
+    String? holdToken,
   }) async {
     final bookingItems = <Map<String, dynamic>>[
       {
         'nailVariantId': null,
         'serviceId': null,
         'customerNailRequestId': customerNailRequestId,
-        'shapeMethodConfigId': ?shapeMethodConfigId,
+        if (shapeMethodConfigId != null) 'shapeMethodConfigId': shapeMethodConfigId,
         'quantity': 1,
       },
     ];
@@ -237,19 +279,16 @@ class BookingApiService {
       });
     });
 
-    final response = await _apiClient.post(
-      '/Bookings',
-      data: {
-        'salonId': salonId,
-        'bookingDate': bookingDate,
-        'startTime': startTime,
-        'nailArtistId': artistId,
-        'holdToken': '',
-        'bookingItems': bookingItems,
-        if (selectedPromotionIds != null && selectedPromotionIds.isNotEmpty)
-          'selectedPromotionIds': selectedPromotionIds,
-      },
-    );
+    final response = await _apiClient.post('/Bookings', data: {
+      'salonId': salonId,
+      'bookingDate': bookingDate,
+      'startTime': startTime,
+      if (artistId != null && artistId.isNotEmpty) 'nailArtistId': artistId,
+      if (holdToken != null && holdToken.isNotEmpty) 'holdToken': holdToken,
+      'bookingItems': bookingItems,
+      if (selectedPromotionIds != null && selectedPromotionIds.isNotEmpty)
+        'selectedPromotionIds': selectedPromotionIds,
+    });
 
     return response.data['data'] ?? {};
   }

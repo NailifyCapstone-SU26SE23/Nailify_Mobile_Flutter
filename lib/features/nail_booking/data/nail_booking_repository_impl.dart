@@ -91,6 +91,33 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
   }
 
   @override
+  Future<Map<String, dynamic>> holdSlot({
+    required String salonId,
+    required String nailArtistId,
+    required String bookingDate,
+    required String startTime,
+    required List<Map<String, dynamic>> bookingItems,
+  }) {
+    return _bookingApi.holdSlot(
+      salonId: salonId,
+      nailArtistId: nailArtistId,
+      bookingDate: bookingDate,
+      startTime: startTime,
+      bookingItems: bookingItems,
+    );
+  }
+
+  @override
+  Future<void> cancelHoldSlot(String holdToken) {
+    return _bookingApi.cancelHoldSlot(holdToken);
+  }
+
+  @override
+  Future<Map<String, dynamic>> checkHoldStatus(String holdToken) {
+    return _bookingApi.checkHoldStatus(holdToken);
+  }
+
+  @override
   Future<Map<String, dynamic>> createBooking({
     required String salonId,
     required String bookingDate,
@@ -99,7 +126,10 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
     required int nailVariantId,
     required List<String> serviceIds,
     List<int>? selectedPromotionIds,
+    String? holdToken,
     int? shapeMethodConfigId,
+    String? warrantyForBookingId,
+    List<Map<String, dynamic>>? warrantyBookingItems,
   }) {
     return _bookingApi.createBooking(
       salonId,
@@ -109,7 +139,10 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
       nailVariantId,
       serviceIds,
       selectedPromotionIds: selectedPromotionIds,
+      holdToken: holdToken,
       shapeMethodConfigId: shapeMethodConfigId,
+      warrantyForBookingId: warrantyForBookingId,
+      warrantyBookingItems: warrantyBookingItems,
     );
   }
 
@@ -117,10 +150,12 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
   Future<Map<String, dynamic>> createServiceBooking(
     Map<String, dynamic> bookingData, {
     List<int>? selectedPromotionIds,
+    String? holdToken,
   }) {
     return _bookingApi.createServiceBooking(
       bookingData,
       selectedPromotionIds: selectedPromotionIds,
+      holdToken: holdToken,
     );
   }
 
@@ -134,6 +169,7 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
     required Map<String, int> groupedExtraServices,
     int? shapeMethodConfigId,
     List<int>? selectedPromotionIds,
+    String? holdToken,
   }) {
     return _bookingApi.createCustomNailBooking(
       salonId,
@@ -144,6 +180,7 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
       groupedExtraServices,
       shapeMethodConfigId: shapeMethodConfigId,
       selectedPromotionIds: selectedPromotionIds,
+      holdToken: holdToken,
     );
   }
 

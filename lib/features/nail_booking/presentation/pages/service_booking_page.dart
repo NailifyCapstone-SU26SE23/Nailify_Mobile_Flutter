@@ -78,7 +78,10 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
   }
 
   // ── Navigation ────────────────────────────────────────────────────────────
-  Future<void> _handleNextAction(NailBookingState state, NailBookingCubit cubit) async {
+  Future<void> _handleNextAction(
+    NailBookingState state,
+    NailBookingCubit cubit,
+  ) async {
     if (_currentStep == 0 && state.selectedBranch == null) {
       _showSnackBar('Vui lòng chọn 1 chi nhánh!');
       return;
@@ -118,7 +121,6 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
       _executeBooking(state, cubit);
     }
   }
-
 
   Future<void> _executeBooking(
     NailBookingState state,
@@ -179,7 +181,8 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
   }
 
   void _showSnackBar(String msg) {
-    final isError = msg.contains('chọn') || msg.contains('Lỗi') || msg.contains('hết');
+    final isError =
+        msg.contains('chọn') || msg.contains('Lỗi') || msg.contains('hết');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
@@ -218,7 +221,11 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: AppColors.primaryDark),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            size: 20,
+            color: AppColors.primaryDark,
+          ),
           onPressed: () => _currentStep > 0
               ? _pageController.previousPage(
                   duration: const Duration(milliseconds: 300),
@@ -245,9 +252,11 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
         listener: (context, state) {
           _showSnackBar(state.errorMessage!);
           if (state.errorMessage!.contains('hết') && _currentStep > 1) {
-            _pageController.animateToPage(2,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut);
+            _pageController.animateToPage(
+              2,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
           }
           context.read<NailBookingCubit>().clearError();
         },
@@ -366,8 +375,12 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                                     selectedTime: state.selectedTime,
                                     canSelect: true,
                                     selectedDate: state.selectedDate,
-                                    salonId: state.selectedBranch?['salonId']?.toString(),
-                                    artistId: state.noArtistSelected ? null : state.selectedStylist?['nailArtistId']?.toString(),
+                                    salonId: state.selectedBranch?['salonId']
+                                        ?.toString(),
+                                    artistId: state.noArtistSelected
+                                        ? null
+                                        : state.selectedStylist?['nailArtistId']
+                                              ?.toString(),
                                     onTimeChanged: cubit.selectTime,
                                     onRefreshSlots: cubit.refreshTimeSlots,
                                   )
@@ -740,7 +753,10 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                   ? 'Chỗ có thể bị hủy sau $min:$sec giây!'
                   : 'Slot đang được giữ chỗ cho bạn – còn $min:$sec để hoàn tất',
               style: const TextStyle(
-                  color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -766,7 +782,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
         children: List.generate(steps.length, (index) {
           final isActive = index == _currentStep;
           final isCompleted = index < _currentStep;
-          
+
           return Expanded(
             child: Row(
               children: [
@@ -781,8 +797,8 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                           color: isCompleted
                               ? AppColors.primary
                               : isActive
-                                  ? AppColors.primary
-                                  : Colors.white,
+                              ? AppColors.primary
+                              : Colors.white,
                           shape: BoxShape.circle,
                           border: Border.all(
                             color: isCompleted || isActive
@@ -793,7 +809,11 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                         ),
                         alignment: Alignment.center,
                         child: isCompleted
-                            ? const Icon(Icons.check_rounded, color: Colors.white, size: 14)
+                            ? const Icon(
+                                Icons.check_rounded,
+                                color: Colors.white,
+                                size: 14,
+                              )
                             : Text(
                                 '${index + 1}',
                                 style: TextStyle(
@@ -811,12 +831,14 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 10.5,
-                          fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                          fontWeight: isActive
+                              ? FontWeight.bold
+                              : FontWeight.w500,
                           color: isActive
                               ? AppColors.primary
                               : isCompleted
-                                  ? AppColors.textPrimary
-                                  : Colors.grey.shade400,
+                              ? AppColors.textPrimary
+                              : Colors.grey.shade400,
                         ),
                       ),
                     ],

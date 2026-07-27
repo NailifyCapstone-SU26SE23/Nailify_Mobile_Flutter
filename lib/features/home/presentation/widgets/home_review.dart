@@ -54,7 +54,11 @@ class CustomerReviews extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: 24.0),
             child: Row(
               children: [
-                Icon(Icons.favorite_rounded, color: AppColors.primary, size: 16),
+                Icon(
+                  Icons.favorite_rounded,
+                  color: AppColors.primary,
+                  size: 16,
+                ),
                 SizedBox(width: 6),
                 Text(
                   'HAPPY CLIENTS',
@@ -122,10 +126,7 @@ class CustomerReviews extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: const Color(0xFFFFF0F5),
-          width: 1.5,
-        ),
+        border: Border.all(color: const Color(0xFFFFF0F5), width: 1.5),
         boxShadow: [
           BoxShadow(
             color: AppColors.primaryDark.withValues(alpha: 0.04),
@@ -153,8 +154,11 @@ class CustomerReviews extends StatelessWidget {
               Row(
                 children: List.generate(
                   5,
-                  (index) => const Icon(Icons.star_rounded,
-                      color: Color(0xFFFFD54F), size: 18),
+                  (index) => const Icon(
+                    Icons.star_rounded,
+                    color: Color(0xFFFFD54F),
+                    size: 18,
+                  ),
                 ),
               ),
               const SizedBox(height: 14),

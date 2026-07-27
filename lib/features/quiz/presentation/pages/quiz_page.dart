@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -18,14 +17,16 @@ class QuizPage extends StatefulWidget {
 class _QuizPageState extends State<QuizPage> {
   // ─── State ────────────────────────────────────────────────────────────────
   bool _isLoading = true;
-  bool _isSubmitting = false;
+  final bool _isSubmitting = false;
   String? _errorMessage;
   List<QuizQuestionModel> _questions = [];
   int _currentIndex = 0;
 
   // ValueNotifiers — rebuild ONLY the option list, not the whole page
   late final ValueNotifier<String?> _selectedSingleId = ValueNotifier(null);
-  late final ValueNotifier<Set<String>> _selectedMultipleIds = ValueNotifier({});
+  late final ValueNotifier<Set<String>> _selectedMultipleIds = ValueNotifier(
+    {},
+  );
 
   final List<List<String>> _history = [];
 
@@ -88,8 +89,11 @@ class _QuizPageState extends State<QuizPage> {
       }
       setState(() => _currentIndex--);
     } else {
-      if (context.canPop()) context.pop();
-      else context.go('/nails');
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go('/nails');
+      }
     }
   }
 
@@ -116,8 +120,11 @@ class _QuizPageState extends State<QuizPage> {
     HapticFeedback.selectionClick();
     if (_current.isMultiple) {
       final current = Set<String>.from(_selectedMultipleIds.value);
-      if (current.contains(optionId)) current.remove(optionId);
-      else current.add(optionId);
+      if (current.contains(optionId)) {
+        current.remove(optionId);
+      } else {
+        current.add(optionId);
+      }
       _selectedMultipleIds.value = current;
     } else {
       _selectedSingleId.value = optionId;
@@ -239,18 +246,29 @@ class _QuizPageState extends State<QuizPage> {
               const SizedBox(height: 24),
               const Text(
                 'Opps! Có lỗi xảy ra',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 _errorMessage ?? '',
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.5),
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                  height: 1.5,
+                ),
               ),
               const SizedBox(height: 32),
               ElevatedButton(
                 onPressed: () {
-                  setState(() { _isLoading = true; _errorMessage = null; });
+                  setState(() {
+                    _isLoading = true;
+                    _errorMessage = null;
+                  });
                   _loadQuestions();
                 },
                 style: ElevatedButton.styleFrom(
@@ -258,10 +276,18 @@ class _QuizPageState extends State<QuizPage> {
                   foregroundColor: Colors.white,
                   elevation: 4,
                   shadowColor: AppColors.primary.withOpacity(0.4),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 40,
+                    vertical: 16,
+                  ),
                 ),
-                child: const Text('Thử lại ngay', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                child: const Text(
+                  'Thử lại ngay',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                ),
               ),
             ],
           ),
@@ -296,10 +322,16 @@ class _QuizPageState extends State<QuizPage> {
             switchInCurve: Curves.easeOutCubic,
             switchOutCurve: Curves.easeInCubic,
             transitionBuilder: (child, animation) {
-              final slide = Tween<Offset>(
-                begin: const Offset(0.04, 0),
-                end: Offset.zero,
-              ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic));
+              final slide =
+                  Tween<Offset>(
+                    begin: const Offset(0.04, 0),
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    ),
+                  );
               return FadeTransition(
                 opacity: animation,
                 child: SlideTransition(position: slide, child: child),
@@ -318,9 +350,9 @@ class _QuizPageState extends State<QuizPage> {
           // Only rebuild button when selection changes
           ValueListenableBuilder<String?>(
             valueListenable: _selectedSingleId,
-            builder: (context, _, __) => ValueListenableBuilder<Set<String>>(
+            builder: (context, _, _) => ValueListenableBuilder<Set<String>>(
               valueListenable: _selectedMultipleIds,
-              builder: (context, _, __) => _buildNextButton(),
+              builder: (context, _, _) => _buildNextButton(),
             ),
           ),
         ],
@@ -337,8 +369,10 @@ class _QuizPageState extends State<QuizPage> {
             Text(
               'Question ${_currentIndex + 1}/$_total',
               style: const TextStyle(
-                fontSize: 14, fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary, letterSpacing: 0.5,
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+                letterSpacing: 0.5,
               ),
             ),
             Container(
@@ -350,7 +384,11 @@ class _QuizPageState extends State<QuizPage> {
               ),
               child: Text(
                 '${(100 * _progress).toInt()}%',
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: AppColors.primaryDark),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.primaryDark,
+                ),
               ),
             ),
           ],
@@ -377,7 +415,8 @@ class _QuizPageState extends State<QuizPage> {
                     boxShadow: [
                       BoxShadow(
                         color: AppColors.primary.withOpacity(0.4),
-                        blurRadius: 8, offset: const Offset(0, 2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
@@ -401,7 +440,11 @@ class _QuizPageState extends State<QuizPage> {
           end: Alignment.bottomRight,
         ),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 24, offset: const Offset(0, 12)),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
         ],
       ),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
@@ -411,8 +454,11 @@ class _QuizPageState extends State<QuizPage> {
             _current.questionText,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontSize: 18, fontWeight: FontWeight.w700,
-              color: Colors.white, height: 1.5, letterSpacing: 0.3,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+              height: 1.5,
+              letterSpacing: 0.3,
             ),
           ),
           if (_current.isMultiple) ...[
@@ -427,13 +473,19 @@ class _QuizPageState extends State<QuizPage> {
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.check_box_rounded, size: 14, color: Color(0xFFFFB3C6)),
+                  Icon(
+                    Icons.check_box_rounded,
+                    size: 14,
+                    color: Color(0xFFFFB3C6),
+                  ),
                   SizedBox(width: 6),
                   Text(
                     'Chọn nhiều đáp án',
                     style: TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w600,
-                      color: Color(0xFFFFB3C6), letterSpacing: 0.2,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFFFB3C6),
+                      letterSpacing: 0.2,
                     ),
                   ),
                 ],
@@ -458,7 +510,9 @@ class _QuizPageState extends State<QuizPage> {
           children: List.generate(options.length, (i) {
             final option = options[i];
             return Padding(
-              padding: EdgeInsets.only(bottom: i == options.length - 1 ? 0 : 12),
+              padding: EdgeInsets.only(
+                bottom: i == options.length - 1 ? 0 : 12,
+              ),
               child: _OptionTile(
                 label: i < labels.length ? labels[i] : '${i + 1}',
                 text: option.label,
@@ -477,7 +531,9 @@ class _QuizPageState extends State<QuizPage> {
           children: List.generate(options.length, (i) {
             final option = options[i];
             return Padding(
-              padding: EdgeInsets.only(bottom: i == options.length - 1 ? 0 : 12),
+              padding: EdgeInsets.only(
+                bottom: i == options.length - 1 ? 0 : 12,
+              ),
               child: _OptionTile(
                 label: i < labels.length ? labels[i] : '${i + 1}',
                 text: option.label,
@@ -509,7 +565,13 @@ class _QuizPageState extends State<QuizPage> {
             gradient: isEnabled ? AppColors.quizGradient : null,
             color: isEnabled ? null : const Color(0xFFE0E0E0),
             boxShadow: isEnabled
-                ? [BoxShadow(color: AppColors.primary.withOpacity(0.4), blurRadius: 20, offset: const Offset(0, 8))]
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.4),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ]
                 : null,
           ),
           child: Material(
@@ -526,12 +588,16 @@ class _QuizPageState extends State<QuizPage> {
                     _isLast ? 'Hoàn thành' : 'Tiếp theo',
                     style: TextStyle(
                       color: isEnabled ? Colors.white : Colors.grey[500],
-                      fontWeight: FontWeight.w800, fontSize: 17, letterSpacing: 0.5,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 17,
+                      letterSpacing: 0.5,
                     ),
                   ),
                   const SizedBox(width: 10),
                   Icon(
-                    _isLast ? Icons.check_circle_rounded : Icons.arrow_forward_rounded,
+                    _isLast
+                        ? Icons.check_circle_rounded
+                        : Icons.arrow_forward_rounded,
                     size: 22,
                     color: isEnabled ? Colors.white : Colors.grey[500],
                   ),
@@ -557,7 +623,11 @@ class _QuizBackground extends StatelessWidget {
           child: Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFFFFFAFC), Color(0xFFFFF0F5), Color(0xFFFFE0EC)],
+                colors: [
+                  Color(0xFFFFFAFC),
+                  Color(0xFFFFF0F5),
+                  Color(0xFFFFE0EC),
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -565,9 +635,11 @@ class _QuizBackground extends StatelessWidget {
           ),
         ),
         Positioned(
-          top: -80, left: -50,
+          top: -80,
+          left: -50,
           child: Container(
-            width: 250, height: 250,
+            width: 250,
+            height: 250,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: AppColors.primary.withOpacity(0.07),
@@ -575,9 +647,11 @@ class _QuizBackground extends StatelessWidget {
           ),
         ),
         Positioned(
-          bottom: -100, right: -80,
+          bottom: -100,
+          right: -80,
           child: Container(
-            width: 300, height: 300,
+            width: 300,
+            height: 300,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: AppColors.secondary.withOpacity(0.05),
@@ -605,21 +679,29 @@ class _QuizCardHeader extends StatelessWidget {
             boxShadow: [
               BoxShadow(
                 color: AppColors.primary.withOpacity(0.1),
-                blurRadius: 15, offset: const Offset(0, 8),
+                blurRadius: 15,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
           child: ShaderMask(
-            shaderCallback: (bounds) => AppColors.quizGradient.createShader(bounds),
-            child: const Icon(Icons.auto_awesome_rounded, size: 28, color: Colors.white),
+            shaderCallback: (bounds) =>
+                AppColors.quizGradient.createShader(bounds),
+            child: const Icon(
+              Icons.auto_awesome_rounded,
+              size: 28,
+              color: Colors.white,
+            ),
           ),
         ),
         const SizedBox(height: 16),
         const Text(
           'Personal Style',
           style: TextStyle(
-            fontSize: 26, fontWeight: FontWeight.w900,
-            color: AppColors.primaryDark, letterSpacing: -0.5,
+            fontSize: 26,
+            fontWeight: FontWeight.w900,
+            color: AppColors.primaryDark,
+            letterSpacing: -0.5,
           ),
         ),
         const SizedBox(height: 8),
@@ -627,8 +709,10 @@ class _QuizCardHeader extends StatelessWidget {
           'Khám phá thiết kế sinh ra là dành cho bạn',
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: 14, fontWeight: FontWeight.w500,
-            color: AppColors.textSecondary, height: 1.4,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textSecondary,
+            height: 1.4,
           ),
         ),
       ],
@@ -656,7 +740,8 @@ class _OptionTile extends StatefulWidget {
   State<_OptionTile> createState() => _OptionTileState();
 }
 
-class _OptionTileState extends State<_OptionTile> with SingleTickerProviderStateMixin {
+class _OptionTileState extends State<_OptionTile>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _scaleController;
 
   @override
@@ -678,7 +763,11 @@ class _OptionTileState extends State<_OptionTile> with SingleTickerProviderState
   }
 
   void _handleTapDown(TapDownDetails _) => _scaleController.reverse();
-  void _handleTapUp(TapUpDetails _) { _scaleController.forward(); widget.onTap(); }
+  void _handleTapUp(TapUpDetails _) {
+    _scaleController.forward();
+    widget.onTap();
+  }
+
   void _handleTapCancel() => _scaleController.forward();
 
   @override
@@ -696,32 +785,57 @@ class _OptionTileState extends State<_OptionTile> with SingleTickerProviderState
             borderRadius: BorderRadius.circular(22),
             color: widget.isSelected ? AppColors.primarySurface : Colors.white,
             border: Border.all(
-              color: widget.isSelected ? AppColors.primary : Colors.grey.withOpacity(0.15),
+              color: widget.isSelected
+                  ? AppColors.primary
+                  : Colors.grey.withOpacity(0.15),
               width: widget.isSelected ? 2 : 1.5,
             ),
             boxShadow: widget.isSelected
-                ? [BoxShadow(color: AppColors.primary.withOpacity(0.15), blurRadius: 16, offset: const Offset(0, 6))]
-                : [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 4))],
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.15),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           child: Row(
             children: [
               AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                width: 36, height: 36,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
-                  shape: widget.isMultiple ? BoxShape.rectangle : BoxShape.circle,
-                  borderRadius: widget.isMultiple ? BorderRadius.circular(10) : null,
+                  shape: widget.isMultiple
+                      ? BoxShape.rectangle
+                      : BoxShape.circle,
+                  borderRadius: widget.isMultiple
+                      ? BorderRadius.circular(10)
+                      : null,
                   gradient: widget.isSelected ? AppColors.quizGradient : null,
                   color: widget.isSelected ? null : const Color(0xFFF5F5F5),
                 ),
                 alignment: Alignment.center,
                 child: widget.isSelected
-                    ? const Icon(Icons.check_rounded, size: 18, color: Colors.white)
+                    ? const Icon(
+                        Icons.check_rounded,
+                        size: 18,
+                        color: Colors.white,
+                      )
                     : Text(
                         widget.label,
                         style: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textSecondary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textSecondary,
                         ),
                       ),
               ),
@@ -731,8 +845,12 @@ class _OptionTileState extends State<_OptionTile> with SingleTickerProviderState
                   widget.text,
                   style: TextStyle(
                     fontSize: 15,
-                    fontWeight: widget.isSelected ? FontWeight.bold : FontWeight.w600,
-                    color: widget.isSelected ? AppColors.primaryDark : AppColors.textPrimary,
+                    fontWeight: widget.isSelected
+                        ? FontWeight.bold
+                        : FontWeight.w600,
+                    color: widget.isSelected
+                        ? AppColors.primaryDark
+                        : AppColors.textPrimary,
                     height: 1.4,
                   ),
                 ),
@@ -741,12 +859,17 @@ class _OptionTileState extends State<_OptionTile> with SingleTickerProviderState
                 opacity: widget.isSelected ? 1.0 : 0.0,
                 duration: const Duration(milliseconds: 200),
                 child: Container(
-                  width: 10, height: 10,
+                  width: 10,
+                  height: 10,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: AppColors.primary,
                     boxShadow: [
-                      BoxShadow(color: AppColors.primary.withOpacity(0.6), blurRadius: 6, spreadRadius: 1),
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.6),
+                        blurRadius: 6,
+                        spreadRadius: 1,
+                      ),
                     ],
                   ),
                 ),

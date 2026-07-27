@@ -11,7 +11,8 @@ class QuizBanner extends StatefulWidget {
   State<QuizBanner> createState() => _QuizBannerState();
 }
 
-class _QuizBannerState extends State<QuizBanner> with SingleTickerProviderStateMixin {
+class _QuizBannerState extends State<QuizBanner>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
   bool _hasCompletedQuiz = false;
@@ -19,14 +20,16 @@ class _QuizBannerState extends State<QuizBanner> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
-    _hasCompletedQuiz = getIt<SharedPreferences>().getBool('has_completed_quiz') ?? false;
+    _hasCompletedQuiz =
+        getIt<SharedPreferences>().getBool('has_completed_quiz') ?? false;
     _controller = AnimationController(
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     )..repeat(reverse: true);
-    _animation = Tween<double>(begin: 0.3, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: 0.3,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -37,7 +40,8 @@ class _QuizBannerState extends State<QuizBanner> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    _hasCompletedQuiz = getIt<SharedPreferences>().getBool('has_completed_quiz') ?? false;
+    _hasCompletedQuiz =
+        getIt<SharedPreferences>().getBool('has_completed_quiz') ?? false;
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
@@ -86,7 +90,10 @@ class _QuizBannerState extends State<QuizBanner> with SingleTickerProviderStateM
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 14,
+                  ),
                 ),
                 child: const Text(
                   'XEM KẾT QUẢ PERFECT MATCH',
@@ -105,7 +112,10 @@ class _QuizBannerState extends State<QuizBanner> with SingleTickerProviderStateM
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(24),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
               ),
               child: const Text(
                 'Làm lại trắc nghiệm cá tính',
@@ -122,7 +132,10 @@ class _QuizBannerState extends State<QuizBanner> with SingleTickerProviderStateM
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(24),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
               ),
               child: const Text(
                 'Take personality test',

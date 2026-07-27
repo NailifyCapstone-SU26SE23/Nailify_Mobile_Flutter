@@ -79,7 +79,9 @@ class BookingServiceSelection extends StatelessWidget {
     final availableServices = _availableServices;
     final isWarranty = nailData?['warrantyForBookingId'] != null;
     final warrantyBookingItems = nailData?['warrantyBookingItems'] != null
-        ? List<Map<String, dynamic>>.from(nailData!['warrantyBookingItems'] as List)
+        ? List<Map<String, dynamic>>.from(
+            nailData!['warrantyBookingItems'] as List,
+          )
         : <Map<String, dynamic>>[];
 
     final counts = _serviceCounts;
@@ -100,16 +102,16 @@ class BookingServiceSelection extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           ...warrantyBookingItems.map((item) {
-            final isSelected = selectedWarrantyItems
-                .any((selected) => _isSameItem(selected, item));
+            final isSelected = selectedWarrantyItems.any(
+              (selected) => _isSameItem(selected, item),
+            );
 
             final names = [
               item['nailVariantName']?.toString().trim() ?? '',
               item['customerNailName']?.toString().trim() ?? '',
               item['serviceName']?.toString().trim() ?? '',
             ].where((name) => name.isNotEmpty).toList();
-            final name =
-                names.isEmpty ? 'Dịch vụ bảo hành' : names.join(' & ');
+            final name = names.isEmpty ? 'Dịch vụ bảo hành' : names.join(' & ');
 
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
@@ -138,12 +140,12 @@ class BookingServiceSelection extends StatelessWidget {
                 ),
                 subtitle: Text(
                   'Bảo hành miễn phí • Số lượng: ${item['quantity'] ?? 1}',
-                  style: TextStyle(
-                      fontSize: 12, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
                 onChanged: (val) {
                   final next = List<Map<String, dynamic>>.from(
-                      selectedWarrantyItems);
+                    selectedWarrantyItems,
+                  );
                   if (val == true) {
                     if (!next.any((s) => _isSameItem(s, item))) next.add(item);
                   } else {
@@ -232,7 +234,10 @@ class BookingServiceSelection extends StatelessWidget {
   // ── Service quantity card ─────────────────────────────────────────────────
 
   Widget _buildServiceCard(
-      Map<String, dynamic> service, int count, String serviceId) {
+    Map<String, dynamic> service,
+    int count,
+    String serviceId,
+  ) {
     final name = _serviceName(service);
     final unitPrice = _servicePrice(service);
     final duration = _serviceDuration(service);
@@ -245,13 +250,11 @@ class BookingServiceSelection extends StatelessWidget {
         children: [
           Expanded(
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(14),
-                border:
-                    Border.all(color: const Color(0xFFF3EFEA), width: 1.2),
+                border: Border.all(color: const Color(0xFFF3EFEA), width: 1.2),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.01),
@@ -281,14 +284,18 @@ class BookingServiceSelection extends StatelessWidget {
                             const SizedBox(height: 4),
                             Row(
                               children: [
-                                Icon(Icons.access_time_rounded,
-                                    size: 12, color: Colors.grey.shade500),
+                                Icon(
+                                  Icons.access_time_rounded,
+                                  size: 12,
+                                  color: Colors.grey.shade500,
+                                ),
                                 const SizedBox(width: 4),
                                 Text(
                                   DurationFormatter.format(duration),
                                   style: TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.grey.shade500),
+                                    fontSize: 11,
+                                    color: Colors.grey.shade500,
+                                  ),
                                 ),
                               ],
                             ),
@@ -311,8 +318,9 @@ class BookingServiceSelection extends StatelessWidget {
                             Text(
                               '${PriceFormatter.format(unitPrice)} / cái',
                               style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey.shade500),
+                                fontSize: 11,
+                                color: Colors.grey.shade500,
+                              ),
                             ),
                         ],
                       ),
@@ -353,8 +361,11 @@ class BookingServiceSelection extends StatelessWidget {
                 color: Colors.red.shade50,
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.cancel_rounded,
-                  color: Colors.red.shade400, size: 20),
+              child: Icon(
+                Icons.cancel_rounded,
+                color: Colors.red.shade400,
+                size: 20,
+              ),
             ),
           ),
         ],
@@ -368,7 +379,9 @@ class BookingServiceSelection extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(
-            color: AppColors.primary.withOpacity(0.35), width: 1),
+          color: AppColors.primary.withOpacity(0.35),
+          width: 1,
+        ),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -378,8 +391,11 @@ class BookingServiceSelection extends StatelessWidget {
             onTap: () => _decrementService(serviceId),
             child: Padding(
               padding: const EdgeInsets.all(5),
-              child: Icon(Icons.remove_rounded,
-                  size: 16, color: AppColors.primary),
+              child: Icon(
+                Icons.remove_rounded,
+                size: 16,
+                color: AppColors.primary,
+              ),
             ),
           ),
           Padding(
@@ -397,8 +413,11 @@ class BookingServiceSelection extends StatelessWidget {
             onTap: () => _addService(serviceId),
             child: Padding(
               padding: const EdgeInsets.all(5),
-              child: Icon(Icons.add_rounded,
-                  size: 16, color: AppColors.primary),
+              child: Icon(
+                Icons.add_rounded,
+                size: 16,
+                color: AppColors.primary,
+              ),
             ),
           ),
         ],
@@ -409,7 +428,9 @@ class BookingServiceSelection extends StatelessWidget {
   // ── "Thêm dịch vụ" picker ────────────────────────────────────────────────
 
   Widget _buildAddButton(
-      BuildContext context, List<Map<String, dynamic>> availableServices) {
+    BuildContext context,
+    List<Map<String, dynamic>> availableServices,
+  ) {
     return PopupMenuButton<String>(
       onSelected: _addService,
       offset: const Offset(0, 48),
@@ -438,7 +459,9 @@ class BookingServiceSelection extends StatelessWidget {
                         Text(
                           DurationFormatter.format(_serviceDuration(s)),
                           style: TextStyle(
-                              fontSize: 11, color: Colors.grey.shade500),
+                            fontSize: 11,
+                            color: Colors.grey.shade500,
+                          ),
                         ),
                       ],
                     ),
@@ -490,8 +513,7 @@ class BookingServiceSelection extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.primary.withOpacity(0.04),
         borderRadius: BorderRadius.circular(16),
-        border:
-            Border.all(color: AppColors.primary.withOpacity(0.2), width: 1),
+        border: Border.all(color: AppColors.primary.withOpacity(0.2), width: 1),
       ),
       child: Row(
         children: [
@@ -501,8 +523,11 @@ class BookingServiceSelection extends StatelessWidget {
               color: AppColors.primary.withOpacity(0.08),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.diamond_outlined,
-                color: AppColors.primary, size: 24),
+            child: const Icon(
+              Icons.diamond_outlined,
+              color: AppColors.primary,
+              size: 24,
+            ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -537,8 +562,7 @@ class BookingServiceSelection extends StatelessWidget {
               color: Colors.grey.shade200,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.lock_rounded,
-                size: 14, color: Colors.grey),
+            child: const Icon(Icons.lock_rounded, size: 14, color: Colors.grey),
           ),
         ],
       ),

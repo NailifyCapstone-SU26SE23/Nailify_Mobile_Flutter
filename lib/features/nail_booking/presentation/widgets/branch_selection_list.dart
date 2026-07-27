@@ -32,7 +32,11 @@ class BranchSelectionList extends StatelessWidget {
           padding: EdgeInsets.symmetric(vertical: 40),
           child: Text(
             'Không có chi nhánh nào.',
-            style: TextStyle(color: Colors.grey, fontSize: 15, fontWeight: FontWeight.w500),
+            style: TextStyle(
+              color: Colors.grey,
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
       );
@@ -47,10 +51,10 @@ class BranchSelectionList extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 20),
           child: ElevatedButton.icon(
             onPressed: () {
-              context.push('/salon-map', extra: {
-                'salons': salons,
-                'onSalonSelected': onBranchSelected,
-              });
+              context.push(
+                '/salon-map',
+                extra: {'salons': salons, 'onSalonSelected': onBranchSelected},
+              );
             },
             icon: const Icon(Icons.near_me_outlined, size: 20),
             label: const Text(
@@ -84,7 +88,9 @@ class BranchSelectionList extends StatelessWidget {
                 color: isSelected ? Colors.white : const Color(0xFFFCFAF7),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isSelected ? AppColors.primary : const Color(0xFFF3EFEA),
+                  color: isSelected
+                      ? AppColors.primary
+                      : const Color(0xFFF3EFEA),
                   width: isSelected ? 1.8 : 1,
                 ),
                 boxShadow: [
@@ -102,13 +108,17 @@ class BranchSelectionList extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: isSelected ? AppColors.primaryLight : Colors.grey.shade100,
+                      color: isSelected
+                          ? AppColors.primaryLight
+                          : Colors.grey.shade100,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.storefront_rounded,
                       size: 24,
-                      color: isSelected ? AppColors.primary : Colors.grey.shade600,
+                      color: isSelected
+                          ? AppColors.primary
+                          : Colors.grey.shade600,
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -124,13 +134,18 @@ class BranchSelectionList extends StatelessWidget {
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 15,
-                                  color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : AppColors.textPrimary,
                                 ),
                               ),
                             ),
                             const SizedBox(width: 6),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.green.shade50,
                                 borderRadius: BorderRadius.circular(6),
@@ -150,7 +165,11 @@ class BranchSelectionList extends StatelessWidget {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.location_on_rounded, size: 13, color: Colors.grey),
+                            const Icon(
+                              Icons.location_on_rounded,
+                              size: 13,
+                              color: Colors.grey,
+                            ),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
@@ -171,8 +190,12 @@ class BranchSelectionList extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Icon(
-                    isSelected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
-                    color: isSelected ? AppColors.primary : Colors.grey.shade300,
+                    isSelected
+                        ? Icons.radio_button_checked_rounded
+                        : Icons.radio_button_off_rounded,
+                    color: isSelected
+                        ? AppColors.primary
+                        : Colors.grey.shade300,
                     size: 22,
                   ),
                 ],

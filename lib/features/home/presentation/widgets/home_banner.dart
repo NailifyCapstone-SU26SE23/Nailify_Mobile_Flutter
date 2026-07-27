@@ -100,7 +100,7 @@ class HomeBanner extends StatelessWidget {
             ),
 
             const SizedBox(height: 24),
-            
+
             // Tiêu đề với font chữ Serif nghiêng cao cấp kiểu tạp chí thời trang
             const Text(
               'Beauty on\nyour\nfingertips',

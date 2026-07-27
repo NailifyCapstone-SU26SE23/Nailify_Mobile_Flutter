@@ -180,7 +180,10 @@ class _CustomerComponentsTabState extends State<CustomerComponentsTab> {
                   flex: 5,
                   child: TextField(
                     controller: _searchController,
-                    style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textPrimary,
+                    ),
                     decoration: InputDecoration(
                       hintText: 'Tìm thành phần...',
                       prefixIcon: const Icon(

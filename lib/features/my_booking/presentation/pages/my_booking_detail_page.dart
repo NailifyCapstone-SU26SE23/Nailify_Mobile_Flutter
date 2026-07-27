@@ -305,11 +305,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      status.icon,
-                      color: status.textColor,
-                      size: 16,
-                    ),
+                    Icon(status.icon, color: status.textColor, size: 16),
                     const SizedBox(width: 6),
                     Text(
                       status.label,
@@ -570,28 +566,36 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                         bookingId: widget.bookingId,
                         onConfirm: (newDate, newTime, reason) async {
                           try {
-                            final success = await _apiService.requestRescheduleBooking(
-                              widget.bookingId,
-                              newDate: newDate,
-                              newTime: newTime,
-                              reason: reason,
-                            );
+                            final success = await _apiService
+                                .requestRescheduleBooking(
+                                  widget.bookingId,
+                                  newDate: newDate,
+                                  newTime: newTime,
+                                  reason: reason,
+                                );
                             if (!context.mounted) return false;
                             if (success) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('Gửi yêu cầu dời lịch thành công'),
+                                  content: Text(
+                                    'Gửi yêu cầu dời lịch thành công',
+                                  ),
                                   backgroundColor: Colors.green,
                                   duration: Duration(seconds: 2),
                                 ),
                               );
                               // Chuyển về trang danh sách lịch đặt, tab Dời lịch (index 2)
-                              context.go('/my-bookings', extra: {'initialTab': 2});
+                              context.go(
+                                '/my-bookings',
+                                extra: {'initialTab': 2},
+                              );
                               return true;
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('Gửi yêu cầu dời lịch thất bại'),
+                                  content: Text(
+                                    'Gửi yêu cầu dời lịch thất bại',
+                                  ),
                                   backgroundColor: Colors.red,
                                 ),
                               );
@@ -620,7 +624,10 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                     ),
                     elevation: 0,
                   ),
-                  icon: const Icon(Icons.edit_calendar_rounded, color: Colors.white),
+                  icon: const Icon(
+                    Icons.edit_calendar_rounded,
+                    color: Colors.white,
+                  ),
                   label: const Text(
                     'Dời lịch hẹn',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -641,25 +648,29 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                         onConfirm: (reason) async {
                           try {
                             final success = await _apiService.cancelBooking(
-                              widget.bookingId, 
+                              widget.bookingId,
                               reason: reason,
                             );
                             if (!context.mounted) return;
                             if (success) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Hủy lịch thành công')),
+                                const SnackBar(
+                                  content: Text('Hủy lịch thành công'),
+                                ),
                               );
                               _fetchBookingDetail(); // Load lại trang
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Hủy lịch thất bại')),
+                                const SnackBar(
+                                  content: Text('Hủy lịch thất bại'),
+                                ),
                               );
                             }
                           } catch (e) {
                             if (!context.mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Lỗi: $e')),
-                            );
+                            ScaffoldMessenger.of(
+                              context,
+                            ).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
                           }
                         },
                       ),

@@ -10,7 +10,9 @@ class OurPromisePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFFFCFCFC), // Nền xám/beige siêu nhẹ để tạo nhịp điệu tương phản
+      color: const Color(
+        0xFFFCFCFC,
+      ), // Nền xám/beige siêu nhẹ để tạo nhịp điệu tương phản
       padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 48.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

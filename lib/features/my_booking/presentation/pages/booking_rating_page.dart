@@ -26,7 +26,7 @@ class _BookingRatingPageState extends State<BookingRatingPage> {
   Map<String, dynamic>? _existingRating;
   File? _localImage;
   String? _existingImageUrl;
-  
+
   int _overallScore = 5;
   int _serviceQuality = 5;
   int _punctuality = 5;
@@ -50,13 +50,19 @@ class _BookingRatingPageState extends State<BookingRatingPage> {
     try {
       final rating = await _apiService.getRatingByBooking(widget.bookingId);
       if (!mounted) return;
-      
+
       if (rating != null) {
         // Calculate editability (48 hours limit)
-        final dateStr = rating['createdDate'] ?? rating['createdAt'] ?? rating['creationDate'] ?? rating['created'] ?? '';
-        final createdTime = DateTime.tryParse(dateStr.toString()) ?? DateTime.now();
+        final dateStr =
+            rating['createdDate'] ??
+            rating['createdAt'] ??
+            rating['creationDate'] ??
+            rating['created'] ??
+            '';
+        final createdTime =
+            DateTime.tryParse(dateStr.toString()) ?? DateTime.now();
         final difference = DateTime.now().difference(createdTime);
-        
+
         setState(() {
           _existingRating = rating;
           _overallScore = rating['overallScore'] ?? 5;
@@ -65,7 +71,7 @@ class _BookingRatingPageState extends State<BookingRatingPage> {
           _cleanliness = rating['cleanliness'] ?? 5;
           _commentController.text = rating['comment'] ?? '';
           _existingImageUrl = rating['imageUrl'] ?? rating['image'];
-          
+
           if (difference.inHours > 48) {
             _canEdit = false;
             _disableReason = 'Chỉ có thể chỉnh sửa trong 48h sau khi đánh giá';
@@ -112,16 +118,27 @@ class _BookingRatingPageState extends State<BookingRatingPage> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Xóa đánh giá', style: TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.bold)),
-        content: const Text('Bạn có chắc chắn muốn xóa đánh giá này không? Hành động này không thể hoàn tác.'),
+        title: const Text(
+          'Xóa đánh giá',
+          style: TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          'Bạn có chắc chắn muốn xóa đánh giá này không? Hành động này không thể hoàn tác.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Hủy', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Hủy',
+              style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Xóa', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Xóa',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -131,7 +148,8 @@ class _BookingRatingPageState extends State<BookingRatingPage> {
 
     setState(() => _isSubmitting = true);
     try {
-      final ratingId = _existingRating!['bookingRatingId'] ?? _existingRating!['id'] ?? '';
+      final ratingId =
+          _existingRating!['bookingRatingId'] ?? _existingRating!['id'] ?? '';
       await _apiService.deleteBookingRating(ratingId.toString());
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -141,9 +159,9 @@ class _BookingRatingPageState extends State<BookingRatingPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Xóa đánh giá thất bại: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Xóa đánh giá thất bại: $e')));
     }
   }
 
@@ -167,7 +185,8 @@ class _BookingRatingPageState extends State<BookingRatingPage> {
           const SnackBar(content: Text('Đã gửi đánh giá thành công!')),
         );
       } else {
-        final ratingId = _existingRating!['bookingRatingId'] ?? _existingRating!['id'] ?? '';
+        final ratingId =
+            _existingRating!['bookingRatingId'] ?? _existingRating!['id'] ?? '';
         await _apiService.updateBookingRating(
           ratingId: ratingId.toString(),
           overallScore: _overallScore,
@@ -186,9 +205,9 @@ class _BookingRatingPageState extends State<BookingRatingPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gặp lỗi: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gặp lỗi: $e')));
     }
   }
 
@@ -200,7 +219,11 @@ class _BookingRatingPageState extends State<BookingRatingPage> {
       backgroundColor: const Color(0xFFFDFBF7),
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: AppColors.primaryDark),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            size: 20,
+            color: AppColors.primaryDark,
+          ),
           onPressed: () => context.pop(),
         ),
         title: Text(
@@ -217,7 +240,9 @@ class _BookingRatingPageState extends State<BookingRatingPage> {
         scrolledUnderElevation: 0,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               physics: const BouncingScrollPhysics(),
@@ -237,7 +262,11 @@ class _BookingRatingPageState extends State<BookingRatingPage> {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.info_outline_rounded, color: Colors.amber.shade800, size: 20),
+                          Icon(
+                            Icons.info_outline_rounded,
+                            color: Colors.amber.shade800,
+                            size: 20,
+                          ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
@@ -308,7 +337,9 @@ class _BookingRatingPageState extends State<BookingRatingPage> {
                     child: Tooltip(
                       message: _canEdit ? '' : _disableReason,
                       child: ElevatedButton(
-                        onPressed: _canEdit && !_isSubmitting ? _submitRating : null,
+                        onPressed: _canEdit && !_isSubmitting
+                            ? _submitRating
+                            : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
@@ -323,11 +354,17 @@ class _BookingRatingPageState extends State<BookingRatingPage> {
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
                               )
                             : Text(
                                 isNewRating ? 'Gửi đánh giá' : 'Cập nhật',
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
                               ),
                       ),
                     ),
@@ -340,15 +377,28 @@ class _BookingRatingPageState extends State<BookingRatingPage> {
                       child: Tooltip(
                         message: _canEdit ? '' : _disableReason,
                         child: OutlinedButton(
-                          onPressed: _canEdit && !_isSubmitting ? _deleteRating : null,
+                          onPressed: _canEdit && !_isSubmitting
+                              ? _deleteRating
+                              : null,
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.red,
-                            side: BorderSide(color: _canEdit ? Colors.red : Colors.grey.shade300, width: 1.2),
+                            side: BorderSide(
+                              color: _canEdit
+                                  ? Colors.red
+                                  : Colors.grey.shade300,
+                              width: 1.2,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(26),
                             ),
                           ),
-                          child: const Text('Xóa đánh giá', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                          child: const Text(
+                            'Xóa đánh giá',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
                         ),
                       ),
                     ),

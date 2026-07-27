@@ -60,8 +60,12 @@ class _MyBookingListPageState extends State<MyBookingListPage>
 
     _fetchBookings();
 
-    _rescheduleSub = getIt<SignalRService>().onBookingRescheduled.listen((event) {
-      debugPrint('[RescheduleTab] ⚡ Nhận sự kiện status=${event.status}, bookingId=${event.bookingId}, message=${event.message}');
+    _rescheduleSub = getIt<SignalRService>().onBookingRescheduled.listen((
+      event,
+    ) {
+      debugPrint(
+        '[RescheduleTab] ⚡ Nhận sự kiện status=${event.status}, bookingId=${event.bookingId}, message=${event.message}',
+      );
       if (mounted) {
         _fetchBookings();
       }
@@ -266,9 +270,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
                 ),
 
           // ─── TAB 2: Lịch chờ ───
-          WaitlistTab(
-            onRefreshBookings: _fetchBookings,
-          ),
+          WaitlistTab(onRefreshBookings: _fetchBookings),
 
           // ─── TAB 3: Dời lịch ───
           _isLoading
@@ -424,9 +426,10 @@ class _MyBookingListPageState extends State<MyBookingListPage>
           ),
           const SizedBox(height: 16),
           Text(
-            message ?? (hasDataButFilteredOut
-                ? 'Không có kết quả'
-                : 'Bạn chưa có lịch hẹn nào'),
+            message ??
+                (hasDataButFilteredOut
+                    ? 'Không có kết quả'
+                    : 'Bạn chưa có lịch hẹn nào'),
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -435,9 +438,10 @@ class _MyBookingListPageState extends State<MyBookingListPage>
           ),
           const SizedBox(height: 8),
           Text(
-            subMessage ?? (hasDataButFilteredOut
-                ? 'Thử thay đổi bộ lọc tháng, năm hoặc trạng thái.'
-                : 'Hãy đặt ngay một lịch làm móng để trải nghiệm!'),
+            subMessage ??
+                (hasDataButFilteredOut
+                    ? 'Thử thay đổi bộ lọc tháng, năm hoặc trạng thái.'
+                    : 'Hãy đặt ngay một lịch làm móng để trải nghiệm!'),
             style: const TextStyle(color: Colors.grey),
           ),
           const SizedBox(height: 24),
@@ -483,7 +487,9 @@ class _MyBookingListPageState extends State<MyBookingListPage>
 
     final artistName = booking['artistName']?.toString() ?? 'Bất kỳ';
     final bookingIdStr = booking['bookingId']?.toString() ?? '';
-    final canRate = (rawStatus == 'Completed' || rawStatus == 'ServiceCompleted') && !bookingIsRated(booking);
+    final canRate =
+        (rawStatus == 'Completed' || rawStatus == 'ServiceCompleted') &&
+        !bookingIsRated(booking);
 
     return GestureDetector(
       onTap: () {
@@ -534,11 +540,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        status.icon,
-                        color: status.textColor,
-                        size: 13,
-                      ),
+                      Icon(status.icon, color: status.textColor, size: 13),
                       const SizedBox(width: 4),
                       Text(
                         status.label,
@@ -615,7 +617,9 @@ class _MyBookingListPageState extends State<MyBookingListPage>
               ),
             ],
             // Check & render Warranty button
-            if (rawStatus == 'Completed' && bookingIdStr.isNotEmpty && !_hasWarranty(bookingIdStr)) ...[
+            if (rawStatus == 'Completed' &&
+                bookingIdStr.isNotEmpty &&
+                !_hasWarranty(bookingIdStr)) ...[
               Padding(
                 padding: const EdgeInsets.only(top: 12),
                 child: SizedBox(
@@ -644,7 +648,9 @@ class _MyBookingListPageState extends State<MyBookingListPage>
 
   bool _hasWarranty(String bookingId) {
     if (bookingId.isEmpty) return false;
-    return _allBookings.any((b) => b['warrantyForBookingId']?.toString() == bookingId);
+    return _allBookings.any(
+      (b) => b['warrantyForBookingId']?.toString() == bookingId,
+    );
   }
 
   void _handleWarrantyAction(Map<String, dynamic> booking) {
@@ -674,7 +680,8 @@ class _MyBookingListPageState extends State<MyBookingListPage>
         }
         map['serviceName'] = item['serviceName']?.toString();
 
-        final shapeConfigVal = item['shapeMethodConfigId'] ?? item['ShapeMethodConfigId'];
+        final shapeConfigVal =
+            item['shapeMethodConfigId'] ?? item['ShapeMethodConfigId'];
         if (shapeConfigVal != null) {
           final configId = int.tryParse(shapeConfigVal.toString());
           shapeMethodConfigId = configId;
@@ -684,14 +691,18 @@ class _MyBookingListPageState extends State<MyBookingListPage>
         map['shapeMethodName'] = shapeMethodName;
 
         if (item['customerNailId'] != null) {
-          map['customerNailId'] = int.tryParse(item['customerNailId'].toString());
+          map['customerNailId'] = int.tryParse(
+            item['customerNailId'].toString(),
+          );
         }
         map['customerNailName'] = item['customerNailName']?.toString();
 
         if (item['customerNailRequestId'] != null) {
-          map['customerNailRequestId'] = item['customerNailRequestId'].toString();
+          map['customerNailRequestId'] = item['customerNailRequestId']
+              .toString();
         }
-        map['quantity'] = int.tryParse(item['quantity']?.toString() ?? '1') ?? 1;
+        map['quantity'] =
+            int.tryParse(item['quantity']?.toString() ?? '1') ?? 1;
         map['price'] = item['price'] ?? item['basePrice'] ?? 0;
       }
       return map;
@@ -701,7 +712,8 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     if (items.isNotEmpty && items.first is Map) {
       final firstItem = items.first as Map;
       final variantName = firstItem['nailVariantName']?.toString().trim() ?? '';
-      final customNailName = firstItem['customerNailName']?.toString().trim() ?? '';
+      final customNailName =
+          firstItem['customerNailName']?.toString().trim() ?? '';
       final serviceName = firstItem['serviceName']?.toString().trim() ?? '';
       if (variantName.isNotEmpty) {
         displayName = variantName;
@@ -725,7 +737,8 @@ class _MyBookingListPageState extends State<MyBookingListPage>
       'warrantyForBookingId': bookingIdStr,
       'salonId': salonId,
       'extraServiceIds': extraServiceIds,
-      'warrantyBookingItems': bookingItemsForApi, // Truyền chuẩn mảng bookingItems cũ
+      'warrantyBookingItems':
+          bookingItemsForApi, // Truyền chuẩn mảng bookingItems cũ
     };
 
     context.push('/nail-booking', extra: nailData);

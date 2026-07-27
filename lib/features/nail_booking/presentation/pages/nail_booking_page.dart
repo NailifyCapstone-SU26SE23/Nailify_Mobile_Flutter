@@ -12,7 +12,6 @@ import '../../data/datasources/promotion_api_service.dart';
 import '../../data/models/booking_mock_data.dart';
 import '../../data/models/promotion_model.dart';
 import '../widgets/booking_date_selection.dart';
-import '../widgets/booking_seat_selection.dart';
 import '../widgets/booking_service_selection.dart';
 import '../widgets/booking_stylist_selection.dart';
 import '../widgets/booking_time_selection.dart';
@@ -50,7 +49,6 @@ class _NailBookingPageState extends State<NailBookingPage> {
   NailVariantModel? _nailVariantDetail;
 
   Map<String, dynamic>? _selectedBranch;
-  String? _selectedSeatId;
   List<String?> _selectedExtraServices = [];
   DateTime? _selectedDate;
   Map<String, dynamic>? _selectedStylist;
@@ -168,7 +166,10 @@ class _NailBookingPageState extends State<NailBookingPage> {
   Future<void> _fetchPromotions() async {
     setState(() => _isLoadingPromotions = true);
     try {
-      final data = await _promotionApiService.getVouchers();
+      final data = await _promotionApiService.getTodayPromotions(
+        pageNumber: 1,
+        pageSize: 20,
+      );
       if (!mounted) return;
       setState(() {
         _promotions = data
@@ -341,7 +342,6 @@ class _NailBookingPageState extends State<NailBookingPage> {
             'stylistName': _noArtistSelected
                 ? 'Tu dong phan cong'
                 : (_selectedStylist?['fullName'] ?? 'Bat ky'),
-            'seatId': _selectedSeatId,
           },
         );
       } catch (e) {
@@ -398,7 +398,6 @@ class _NailBookingPageState extends State<NailBookingPage> {
   void _handleBranchSelected(dynamic branch) {
     setState(() {
       _selectedBranch = Map<String, dynamic>.from(branch as Map);
-      _selectedSeatId = null;
       _selectedDate = null;
       _selectedStylist = null;
       _selectedTime = null;
@@ -553,7 +552,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
               onPageChanged: (idx) => setState(() => _currentStep = idx),
               children: [
                 _buildSalonStep(),
-                _buildServiceAndSeatStep(),
+                _buildServiceStep(),
                 _buildScheduleStep(),
                 _buildSummaryStep(),
               ],
@@ -577,7 +576,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
     );
   }
 
-  Widget _buildServiceAndSeatStep() {
+  Widget _buildServiceStep() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -588,12 +587,6 @@ class _NailBookingPageState extends State<NailBookingPage> {
             services: _availableServices,
             selectedExtraServices: _selectedExtraServices,
             onChanged: _handleServiceChanged,
-          ),
-          const SizedBox(height: 28),
-          BookingSeatSelection(
-            selectedSeatId: _selectedSeatId,
-            onSeatSelected: (seatId) =>
-                setState(() => _selectedSeatId = seatId),
           ),
         ],
       ),
@@ -673,13 +666,6 @@ class _NailBookingPageState extends State<NailBookingPage> {
             _selectedBranch?['name']?.toString() ?? '',
           ),
           _buildSummaryRow(
-            Icons.chair,
-            'Ghe',
-            _selectedSeatId == null
-                ? 'Chua chon'
-                : 'Ghe ${_selectedSeatId!.split('_').last}',
-          ),
-          _buildSummaryRow(
             Icons.calendar_month,
             'Ngay hen',
             _selectedDate == null
@@ -744,8 +730,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
               muted: true,
             );
           }),
-          const Divider(height: 24),
-          _buildPaymentRow('Tam tinh', _estimatedTotalPrice, strong: true),
+          const Divider(height: 16),
           ..._discountBreakdown.map(_buildDiscountRow),
           const Divider(height: 16),
           _buildPaymentRow(
@@ -772,16 +757,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
           ),
           if (variant != null) ...[
             const SizedBox(height: 4),
-            if (variant.nailSurface != null)
-              _buildVariantDetailLine(
-                'Be mat ${variant.nailSurface!.name}',
-                variant.nailSurface!.price,
-              ),
+
             if (variant.nailShape != null)
-              _buildVariantDetailLine(
-                _shapeMethodName ?? variant.nailShape!.name,
-                _shapeMethodPrice,
-              ),
+              _buildVariantDetailLine(_shapeMethodName!, _shapeMethodPrice),
             ...variant.nailComponents.map((component) {
               final detail = component.component;
               return _buildVariantDetailLine(

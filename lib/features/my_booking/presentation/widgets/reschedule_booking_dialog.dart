@@ -3,7 +3,8 @@ import '../../../../core/constants/app_colors.dart';
 
 class RescheduleBookingDialog extends StatefulWidget {
   final String bookingId;
-  final Future<bool> Function(String newDate, String newTime, String reason) onConfirm;
+  final Future<bool> Function(String newDate, String newTime, String reason)
+  onConfirm;
 
   const RescheduleBookingDialog({
     super.key,
@@ -12,7 +13,8 @@ class RescheduleBookingDialog extends StatefulWidget {
   });
 
   @override
-  State<RescheduleBookingDialog> createState() => _RescheduleBookingDialogState();
+  State<RescheduleBookingDialog> createState() =>
+      _RescheduleBookingDialogState();
 }
 
 class _RescheduleBookingDialogState extends State<RescheduleBookingDialog> {
@@ -25,9 +27,29 @@ class _RescheduleBookingDialogState extends State<RescheduleBookingDialog> {
 
   List<String> _getSlotsForPeriod(String period) {
     if (period == 'Sáng') {
-      return ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30"];
+      return [
+        "08:00",
+        "08:30",
+        "09:00",
+        "09:30",
+        "10:00",
+        "10:30",
+        "11:00",
+        "11:30",
+      ];
     } else if (period == 'Chiều') {
-      return ["13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30"];
+      return [
+        "13:00",
+        "13:30",
+        "14:00",
+        "14:30",
+        "15:00",
+        "15:30",
+        "16:00",
+        "16:30",
+        "17:00",
+        "17:30",
+      ];
     } else {
       return ["18:00", "18:30", "19:00", "19:30", "20:00"];
     }
@@ -135,9 +157,7 @@ class _RescheduleBookingDialogState extends State<RescheduleBookingDialog> {
 
     return Dialog(
       backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -162,7 +182,10 @@ class _RescheduleBookingDialogState extends State<RescheduleBookingDialog> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close_rounded, color: AppColors.textSecondary),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: AppColors.textSecondary,
+                      ),
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                   ],
@@ -192,25 +215,40 @@ class _RescheduleBookingDialogState extends State<RescheduleBookingDialog> {
                   onTap: () => _selectDate(context),
                   borderRadius: BorderRadius.circular(16),
                   child: Ink(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF5F5F7),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.calendar_today_rounded, color: AppColors.primary, size: 20),
+                        const Icon(
+                          Icons.calendar_today_rounded,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
                         const SizedBox(width: 12),
                         Text(
                           dateText,
                           style: TextStyle(
                             fontSize: 14,
-                            fontWeight: _selectedDate == null ? FontWeight.normal : FontWeight.bold,
-                            color: _selectedDate == null ? AppColors.textSecondary : AppColors.textPrimary,
+                            fontWeight: _selectedDate == null
+                                ? FontWeight.normal
+                                : FontWeight.bold,
+                            color: _selectedDate == null
+                                ? AppColors.textSecondary
+                                : AppColors.textPrimary,
                           ),
                         ),
                         const Spacer(),
-                        const Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey, size: 14),
+                        const Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          color: Colors.grey,
+                          size: 14,
+                        ),
                       ],
                     ),
                   ),
@@ -228,7 +266,7 @@ class _RescheduleBookingDialogState extends State<RescheduleBookingDialog> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  
+
                   // Tabs chọn buổi: Sáng / Chiều / Tối
                   Row(
                     children: [
@@ -240,11 +278,13 @@ class _RescheduleBookingDialogState extends State<RescheduleBookingDialog> {
                     ],
                   ),
                   const SizedBox(height: 14),
-                  
+
                   // Slots giờ theo buổi
                   LayoutBuilder(
                     builder: (context, constraints) {
-                      final itemWidth = (constraints.maxWidth - 24) / 4; // 4 cột, 3 khoảng cách 8px
+                      final itemWidth =
+                          (constraints.maxWidth - 24) /
+                          4; // 4 cột, 3 khoảng cách 8px
                       final slots = _getSlotsForPeriod(_selectedPeriod);
                       return Wrap(
                         spacing: 8,
@@ -262,10 +302,14 @@ class _RescheduleBookingDialogState extends State<RescheduleBookingDialog> {
                               width: itemWidth,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: isSelected ? AppColors.primary.withValues(alpha: 0.12) : const Color(0xFFF5F5F7),
+                                color: isSelected
+                                    ? AppColors.primary.withValues(alpha: 0.12)
+                                    : const Color(0xFFF5F5F7),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: isSelected ? AppColors.primary : Colors.transparent,
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : Colors.transparent,
                                   width: 1.2,
                                 ),
                               ),
@@ -273,8 +317,12 @@ class _RescheduleBookingDialogState extends State<RescheduleBookingDialog> {
                                 child: Text(
                                   slot,
                                   style: TextStyle(
-                                    color: isSelected ? AppColors.primary : AppColors.textPrimary,
-                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                    color: isSelected
+                                        ? AppColors.primary
+                                        : AppColors.textPrimary,
+                                    fontWeight: isSelected
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
                                     fontSize: 13,
                                   ),
                                 ),
@@ -301,10 +349,17 @@ class _RescheduleBookingDialogState extends State<RescheduleBookingDialog> {
                 TextFormField(
                   controller: _reasonController,
                   maxLines: 3,
-                  style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textPrimary,
+                  ),
                   decoration: InputDecoration(
-                    hintText: 'Nhập lý do dời lịch (ví dụ: bận việc đột xuất, tối đa 50 từ)...',
-                    hintStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                    hintText:
+                        'Nhập lý do dời lịch (ví dụ: bận việc đột xuất, tối đa 50 từ)...',
+                    hintStyle: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                    ),
                     filled: true,
                     fillColor: const Color(0xFFF5F5F7),
                     border: OutlineInputBorder(
@@ -335,9 +390,14 @@ class _RescheduleBookingDialogState extends State<RescheduleBookingDialog> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          side: const BorderSide(color: Color(0xFFE0E0E0), width: 1.2),
+                          side: const BorderSide(
+                            color: Color(0xFFE0E0E0),
+                            width: 1.2,
+                          ),
                         ),
-                        onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
+                        onPressed: _isSubmitting
+                            ? null
+                            : () => Navigator.of(context).pop(),
                         child: const Text(
                           'Hủy bỏ',
                           style: TextStyle(
@@ -364,13 +424,21 @@ class _RescheduleBookingDialogState extends State<RescheduleBookingDialog> {
                             : () async {
                                 if (_selectedDate == null) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Vui lòng chọn ngày hẹn mới')),
+                                    const SnackBar(
+                                      content: Text(
+                                        'Vui lòng chọn ngày hẹn mới',
+                                      ),
+                                    ),
                                   );
                                   return;
                                 }
                                 if (_selectedTimeStr == null) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Vui lòng chọn khung giờ hẹn mới')),
+                                    const SnackBar(
+                                      content: Text(
+                                        'Vui lòng chọn khung giờ hẹn mới',
+                                      ),
+                                    ),
                                   );
                                   return;
                                 }

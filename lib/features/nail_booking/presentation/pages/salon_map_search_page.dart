@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:dio/dio.dart';
-import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 
 class SalonMapSearchPage extends StatefulWidget {
@@ -22,7 +21,7 @@ class SalonMapSearchPage extends StatefulWidget {
 class _SalonMapSearchPageState extends State<SalonMapSearchPage> {
   final LatLng _customerLocation = const LatLng(10.8444, 106.8122);
   final MapController _mapController = MapController();
-  
+
   dynamic _selectedSalon;
   List<LatLng> _routePoints = [];
   bool _isLoadingRoute = false;
@@ -49,13 +48,17 @@ class _SalonMapSearchPageState extends State<SalonMapSearchPage> {
     final int index = widget.salons.indexOf(salon);
     final double offsetLat = 0.003 * ((index % 3) - 1);
     final double offsetLng = 0.003 * (((index ~/ 3) % 3) - 1);
-    return LatLng(_customerLocation.latitude + offsetLat, _customerLocation.longitude + offsetLng);
+    return LatLng(
+      _customerLocation.latitude + offsetLat,
+      _customerLocation.longitude + offsetLng,
+    );
   }
 
   // Get distance in Km between two coords (Manhattan calculation for visual placeholder fallback)
   double _calculateDirectDistance(LatLng start, LatLng end) {
     final double latDiff = (start.latitude - end.latitude).abs() * 111.0;
-    final double lngDiff = (start.longitude - end.longitude).abs() * 111.0 * 0.98;
+    final double lngDiff =
+        (start.longitude - end.longitude).abs() * 111.0 * 0.98;
     return double.parse((latDiff + lngDiff).toStringAsFixed(1));
   }
 
@@ -68,16 +71,17 @@ class _SalonMapSearchPageState extends State<SalonMapSearchPage> {
     final start = _customerLocation;
     try {
       final dio = Dio();
-      final url = 'https://router.project-osrm.org/route/v1/driving/${start.longitude},${start.latitude};${endLoc.longitude},${endLoc.latitude}?overview=full&geometries=geojson';
+      final url =
+          'https://router.project-osrm.org/route/v1/driving/${start.longitude},${start.latitude};${endLoc.longitude},${endLoc.latitude}?overview=full&geometries=geojson';
       final response = await dio.get(url);
-      
+
       if (response.statusCode == 200) {
         final data = response.data;
         if (data['routes'] != null && data['routes'].isNotEmpty) {
           final route = data['routes'][0];
           final geometry = route['geometry'];
           final coordinates = geometry['coordinates'] as List;
-          
+
           final List<LatLng> points = coordinates.map((c) {
             return LatLng(c[1] as double, c[0] as double);
           }).toList();
@@ -108,8 +112,14 @@ class _SalonMapSearchPageState extends State<SalonMapSearchPage> {
         _durationMin = (directDist * 3.5).round(); // ~20km/h average driving
         _routePoints = [
           start,
-          LatLng(start.latitude + (endLoc.latitude - start.latitude) * 0.4, start.longitude),
-          LatLng(start.latitude + (endLoc.latitude - start.latitude) * 0.4, endLoc.longitude),
+          LatLng(
+            start.latitude + (endLoc.latitude - start.latitude) * 0.4,
+            start.longitude,
+          ),
+          LatLng(
+            start.latitude + (endLoc.latitude - start.latitude) * 0.4,
+            endLoc.longitude,
+          ),
           endLoc,
         ];
         _isLoadingRoute = false;
@@ -129,7 +139,9 @@ class _SalonMapSearchPageState extends State<SalonMapSearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    final LatLng selectedLoc = _selectedSalon != null ? _getSalonLatLng(_selectedSalon) : _customerLocation;
+    final LatLng selectedLoc = _selectedSalon != null
+        ? _getSalonLatLng(_selectedSalon)
+        : _customerLocation;
 
     return Scaffold(
       body: Stack(
@@ -145,7 +157,8 @@ class _SalonMapSearchPageState extends State<SalonMapSearchPage> {
             ),
             children: [
               TileLayer(
-                urlTemplate: 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                urlTemplate:
+                    'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.nailify.app',
               ),
               if (_routePoints.isNotEmpty)
@@ -191,7 +204,9 @@ class _SalonMapSearchPageState extends State<SalonMapSearchPage> {
                   // Salons Markers
                   ...widget.salons.map((salon) {
                     final latLng = _getSalonLatLng(salon);
-                    final isSelected = _selectedSalon != null && _selectedSalon['salonId'] == salon['salonId'];
+                    final isSelected =
+                        _selectedSalon != null &&
+                        _selectedSalon['salonId'] == salon['salonId'];
 
                     return Marker(
                       point: latLng,
@@ -205,7 +220,9 @@ class _SalonMapSearchPageState extends State<SalonMapSearchPage> {
                           child: Icon(
                             Icons.location_on_rounded,
                             size: isSelected ? 44 : 34,
-                            color: isSelected ? AppColors.primary : AppColors.primaryDark.withOpacity(0.7),
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.primaryDark.withOpacity(0.7),
                           ),
                         ),
                       ),
@@ -238,7 +255,11 @@ class _SalonMapSearchPageState extends State<SalonMapSearchPage> {
                         ),
                       ],
                     ),
-                    child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.textPrimary),
+                    child: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      size: 18,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -259,12 +280,20 @@ class _SalonMapSearchPageState extends State<SalonMapSearchPage> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.search_rounded, color: Colors.grey, size: 20),
+                        const Icon(
+                          Icons.search_rounded,
+                          color: Colors.grey,
+                          size: 20,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'Tìm salon xung quanh bạn',
-                            style: TextStyle(color: Colors.grey.shade600, fontSize: 14, fontWeight: FontWeight.w500),
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ],
@@ -282,7 +311,10 @@ class _SalonMapSearchPageState extends State<SalonMapSearchPage> {
             right: 16,
             child: _selectedSalon == null
                 ? Container(
-                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 14,
+                      horizontal: 16,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(24),
@@ -297,11 +329,19 @@ class _SalonMapSearchPageState extends State<SalonMapSearchPage> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.info_outline_rounded, size: 16, color: Colors.grey.shade600),
+                        Icon(
+                          Icons.info_outline_rounded,
+                          size: 16,
+                          color: Colors.grey.shade600,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           'Nhấn vào ghim trên bản đồ để xem Salon',
-                          style: TextStyle(color: Colors.grey.shade600, fontSize: 13, fontWeight: FontWeight.w500),
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ],
                     ),
@@ -327,15 +367,20 @@ class _SalonMapSearchPageState extends State<SalonMapSearchPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             // ── Salon Photo (if available) ──
-                            if (_selectedSalon['imageUrl'] != null || _selectedSalon['avatarUrl'] != null || _selectedSalon['image'] != null) ...[
+                            if (_selectedSalon['imageUrl'] != null ||
+                                _selectedSalon['avatarUrl'] != null ||
+                                _selectedSalon['image'] != null) ...[
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(16),
                                 child: Image.network(
-                                  _selectedSalon['imageUrl'] ?? _selectedSalon['avatarUrl'] ?? _selectedSalon['image'],
+                                  _selectedSalon['imageUrl'] ??
+                                      _selectedSalon['avatarUrl'] ??
+                                      _selectedSalon['image'],
                                   width: 80,
                                   height: 80,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                                  errorBuilder: (_, _, _) =>
+                                      const SizedBox.shrink(),
                                 ),
                               ),
                               const SizedBox(width: 14),
@@ -346,7 +391,8 @@ class _SalonMapSearchPageState extends State<SalonMapSearchPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Expanded(
                                         child: Text(
@@ -359,14 +405,24 @@ class _SalonMapSearchPageState extends State<SalonMapSearchPage> {
                                         ),
                                       ),
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 4,
+                                        ),
                                         decoration: BoxDecoration(
                                           color: Colors.green.shade50,
-                                          borderRadius: BorderRadius.circular(8),
-                                          border: Border.all(color: Colors.green.shade200, width: 0.8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          border: Border.all(
+                                            color: Colors.green.shade200,
+                                            width: 0.8,
+                                          ),
                                         ),
                                         child: Text(
-                                          _selectedSalon['status']?.toString() ?? 'Hoạt động',
+                                          _selectedSalon['status']
+                                                  ?.toString() ??
+                                              'Hoạt động',
                                           style: TextStyle(
                                             fontSize: 11,
                                             fontWeight: FontWeight.bold,
@@ -379,12 +435,20 @@ class _SalonMapSearchPageState extends State<SalonMapSearchPage> {
                                   const SizedBox(height: 8),
                                   Row(
                                     children: [
-                                      const Icon(Icons.location_on_rounded, size: 14, color: AppColors.primary),
+                                      const Icon(
+                                        Icons.location_on_rounded,
+                                        size: 14,
+                                        color: AppColors.primary,
+                                      ),
                                       const SizedBox(width: 6),
                                       Expanded(
                                         child: Text(
                                           _selectedSalon['address'] ?? '',
-                                          style: TextStyle(color: Colors.grey.shade600, fontSize: 13, height: 1.3),
+                                          style: TextStyle(
+                                            color: Colors.grey.shade600,
+                                            fontSize: 13,
+                                            height: 1.3,
+                                          ),
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -394,11 +458,19 @@ class _SalonMapSearchPageState extends State<SalonMapSearchPage> {
                                   const SizedBox(height: 4),
                                   Row(
                                     children: [
-                                      const Icon(Icons.phone_rounded, size: 14, color: Colors.grey),
+                                      const Icon(
+                                        Icons.phone_rounded,
+                                        size: 14,
+                                        color: Colors.grey,
+                                      ),
                                       const SizedBox(width: 6),
                                       Text(
-                                        _selectedSalon['phone']?.toString() ?? '090 123 4567',
-                                        style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                                        _selectedSalon['phone']?.toString() ??
+                                            '090 123 4567',
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: 13,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -406,20 +478,31 @@ class _SalonMapSearchPageState extends State<SalonMapSearchPage> {
                                   const SizedBox(height: 4),
                                   Row(
                                     children: [
-                                      const Icon(Icons.directions_car_rounded, size: 14, color: AppColors.primary),
+                                      const Icon(
+                                        Icons.directions_car_rounded,
+                                        size: 14,
+                                        color: AppColors.primary,
+                                      ),
                                       const SizedBox(width: 6),
                                       if (_isLoadingRoute)
                                         const SizedBox(
                                           width: 12,
                                           height: 12,
-                                          child: CircularProgressIndicator(strokeWidth: 1.5, color: AppColors.primary),
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 1.5,
+                                            color: AppColors.primary,
+                                          ),
                                         )
                                       else
                                         Text(
                                           _routePoints.isNotEmpty
                                               ? '$_distanceKm km - $_durationMin phút đi xe'
                                               : 'Đang tải thông tin đường đi...',
-                                          style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.bold),
+                                          style: const TextStyle(
+                                            color: AppColors.textPrimary,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
                                     ],
                                   ),
@@ -438,7 +521,9 @@ class _SalonMapSearchPageState extends State<SalonMapSearchPage> {
                                 child: SizedBox(
                                   height: 48,
                                   child: Center(
-                                    child: CircularProgressIndicator(color: AppColors.primary),
+                                    child: CircularProgressIndicator(
+                                      color: AppColors.primary,
+                                    ),
                                   ),
                                 ),
                               )
@@ -448,13 +533,26 @@ class _SalonMapSearchPageState extends State<SalonMapSearchPage> {
                                   child: SizedBox(
                                     height: 48,
                                     child: OutlinedButton(
-                                      onPressed: () => setState(() => _routePoints = []),
+                                      onPressed: () =>
+                                          setState(() => _routePoints = []),
                                       style: OutlinedButton.styleFrom(
                                         foregroundColor: AppColors.textPrimary,
-                                        side: BorderSide(color: Colors.grey.shade300),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                        side: BorderSide(
+                                          color: Colors.grey.shade300,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                        ),
                                       ),
-                                      child: const Text('Ẩn đường đi', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                      child: const Text(
+                                        'Ẩn đường đi',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -472,9 +570,17 @@ class _SalonMapSearchPageState extends State<SalonMapSearchPage> {
                                       backgroundColor: AppColors.primary,
                                       foregroundColor: Colors.white,
                                       elevation: 0,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
                                     ),
-                                    child: const Text('Đặt lịch tại đây', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                    child: const Text(
+                                      'Đặt lịch tại đây',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),

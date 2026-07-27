@@ -16,10 +16,12 @@ class NailCompositionDesignPage extends StatefulWidget {
   });
 
   @override
-  State<NailCompositionDesignPage> createState() => _NailCompositionDesignPageState();
+  State<NailCompositionDesignPage> createState() =>
+      _NailCompositionDesignPageState();
 }
 
-class _NailCompositionDesignPageState extends State<NailCompositionDesignPage> with SingleTickerProviderStateMixin {
+class _NailCompositionDesignPageState extends State<NailCompositionDesignPage>
+    with SingleTickerProviderStateMixin {
   final QuizRepository _quizRepo = QuizRepository(getIt<ApiClient>());
 
   bool _isGenerating = false;
@@ -37,7 +39,7 @@ class _NailCompositionDesignPageState extends State<NailCompositionDesignPage> w
     'Đang tính toán dáng móng tối ưu...',
     'Đang phối màu sắc độc quyền...',
     'Đang kết hợp phụ kiện và họa tiết vẽ...',
-    'Đang thiết lập thiết kế hoàn chỉnh...'
+    'Đang thiết lập thiết kế hoàn chỉnh...',
   ];
 
   @override
@@ -92,10 +94,7 @@ class _NailCompositionDesignPageState extends State<NailCompositionDesignPage> w
         setState(() {
           _isGenerating = false;
         });
-        context.push('/try-on', extra: {
-          ...res,
-          'fromPerfectMatch': true,
-        });
+        context.push('/try-on', extra: {...res, 'fromPerfectMatch': true});
       }
     } catch (e) {
       if (mounted) {
@@ -116,7 +115,11 @@ class _NailCompositionDesignPageState extends State<NailCompositionDesignPage> w
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.primaryDark, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.primaryDark,
+            size: 20,
+          ),
           onPressed: () => context.pop(),
         ),
         title: const Text(
@@ -132,8 +135,8 @@ class _NailCompositionDesignPageState extends State<NailCompositionDesignPage> w
       body: _isGenerating
           ? _buildGeneratingState()
           : _error != null
-              ? _buildErrorState()
-              : _buildIntroState(),
+          ? _buildErrorState()
+          : _buildIntroState(),
     );
   }
 
@@ -179,9 +182,18 @@ class _NailCompositionDesignPageState extends State<NailCompositionDesignPage> w
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 40),
-            _buildFeatureRow(Icons.fingerprint_rounded, 'Đề xuất dáng móng phù hợp cấu trúc tay'),
-            _buildFeatureRow(Icons.color_lens_outlined, 'Phối màu sắc tôn da theo sắc độ Warm/Cool'),
-            _buildFeatureRow(Icons.brush_outlined, 'Tự động chọn họa tiết & phụ kiện tinh tế'),
+            _buildFeatureRow(
+              Icons.fingerprint_rounded,
+              'Đề xuất dáng móng phù hợp cấu trúc tay',
+            ),
+            _buildFeatureRow(
+              Icons.color_lens_outlined,
+              'Phối màu sắc tôn da theo sắc độ Warm/Cool',
+            ),
+            _buildFeatureRow(
+              Icons.brush_outlined,
+              'Tự động chọn họa tiết & phụ kiện tinh tế',
+            ),
             const Spacer(),
             SizedBox(
               width: double.infinity,
@@ -193,14 +205,20 @@ class _NailCompositionDesignPageState extends State<NailCompositionDesignPage> w
                   foregroundColor: Colors.white,
                   elevation: 4,
                   shadowColor: AppColors.primary.withValues(alpha: 0.3),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(28),
+                  ),
                 ),
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       'GENERATE THIẾT KẾ',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, letterSpacing: 0.5),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                     SizedBox(width: 8),
                     Icon(Icons.arrow_forward_ios_rounded, size: 14),
@@ -230,7 +248,10 @@ class _NailCompositionDesignPageState extends State<NailCompositionDesignPage> w
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: AppColors.primary.withValues(alpha: 0.06),
-                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.15), width: 1.5),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.15),
+                    width: 1.5,
+                  ),
                 ),
                 child: Center(
                   child: Container(
@@ -307,12 +328,20 @@ class _NailCompositionDesignPageState extends State<NailCompositionDesignPage> w
                 color: Colors.red.shade50,
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.error_outline_rounded, color: Colors.red.shade400, size: 40),
+              child: Icon(
+                Icons.error_outline_rounded,
+                color: Colors.red.shade400,
+                size: 40,
+              ),
             ),
             const SizedBox(height: 24),
             const Text(
               'Không thể tạo cấu hình móng',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryDark),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primaryDark,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -327,11 +356,16 @@ class _NailCompositionDesignPageState extends State<NailCompositionDesignPage> w
               child: ElevatedButton.icon(
                 onPressed: _startGeneration,
                 icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Thử lại', style: TextStyle(fontWeight: FontWeight.bold)),
+                label: const Text(
+                  'Thử lại',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(26),
+                  ),
                 ),
               ),
             ),
@@ -340,8 +374,6 @@ class _NailCompositionDesignPageState extends State<NailCompositionDesignPage> w
       ),
     );
   }
-
-
 
   Widget _buildFeatureRow(IconData icon, String text) {
     return Padding(

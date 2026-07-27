@@ -47,16 +47,20 @@ class QuizResultModel {
       name: json['name'] as String? ?? '',
       imageUrl: json['imageUrl'] as String? ?? '',
       score: (json['score'] as num?)?.toDouble() ?? 0.0,
-      reasons: (json['reasons'] as List<dynamic>?)
+      reasons:
+          (json['reasons'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           [],
       matchedCharacteristics:
           (json['matchedCharacteristics'] as List<dynamic>?)
-                  ?.map((e) => MatchedCharacteristic.fromJson(
-                      Map<String, dynamic>.from(e as Map)))
-                  .toList() ??
-              [],
+              ?.map(
+                (e) => MatchedCharacteristic.fromJson(
+                  Map<String, dynamic>.from(e as Map),
+                ),
+              )
+              .toList() ??
+          [],
     );
   }
 }

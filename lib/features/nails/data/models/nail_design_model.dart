@@ -27,7 +27,8 @@ class NailDesignModel {
   String get primaryImageUrl => imageUrls.isEmpty ? '' : imageUrls.first;
 
   factory NailDesignModel.fromJson(Map<String, dynamic> json) {
-    final imageUrlsJson = json['imageUrls'] ??
+    final imageUrlsJson =
+        json['imageUrls'] ??
         json['ImageUrls'] ??
         json['imageUrl'] ??
         json['ImageUrl'] ??
@@ -40,7 +41,8 @@ class NailDesignModel {
     List<String> parsedImageUrls = [];
     if (imageUrlsJson is List) {
       parsedImageUrls = imageUrlsJson.map((item) => item.toString()).toList();
-    } else if (imageUrlsJson != null && imageUrlsJson.toString().trim().isNotEmpty) {
+    } else if (imageUrlsJson != null &&
+        imageUrlsJson.toString().trim().isNotEmpty) {
       parsedImageUrls = [imageUrlsJson.toString().trim()];
     }
 

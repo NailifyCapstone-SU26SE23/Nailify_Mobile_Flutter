@@ -73,8 +73,11 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
         return StatefulBuilder(
           builder: (context, setSheetState) {
             final filteredNails = nails
-                .where((nail) =>
-                    nail.name.toLowerCase().contains(searchQuery.toLowerCase()))
+                .where(
+                  (nail) => nail.name.toLowerCase().contains(
+                    searchQuery.toLowerCase(),
+                  ),
+                )
                 .toList();
 
             return DraggableScrollableSheet(
@@ -114,15 +117,20 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                         style: const TextStyle(fontSize: 13),
                         decoration: InputDecoration(
                           hintText: 'Tìm mẫu móng...',
-                          prefixIcon: const Icon(Icons.search_rounded,
-                              size: 18, color: AppColors.textSecondary),
+                          prefixIcon: const Icon(
+                            Icons.search_rounded,
+                            size: 18,
+                            color: AppColors.textSecondary,
+                          ),
                           filled: true,
                           fillColor: const Color(0xFFF5F5F7),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,
                           ),
-                          contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 0,
+                          ),
                         ),
                         onChanged: (val) {
                           setSheetState(() => searchQuery = val);
@@ -135,13 +143,19 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    const Icon(Icons.spa_outlined,
-                                        size: 48, color: Colors.grey),
+                                    const Icon(
+                                      Icons.spa_outlined,
+                                      size: 48,
+                                      color: Colors.grey,
+                                    ),
                                     const SizedBox(height: 8),
-                                    Text('Không tìm thấy mẫu móng nào',
-                                        style: TextStyle(
-                                            color: Colors.grey.shade600,
-                                            fontSize: 13)),
+                                    Text(
+                                      'Không tìm thấy mẫu móng nào',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                        fontSize: 13,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               )
@@ -150,12 +164,16 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                                 itemCount: filteredNails.length,
                                 separatorBuilder: (context, index) =>
                                     const Divider(
-                                        color: Color(0xFFFFF0F5), height: 1),
+                                      color: Color(0xFFFFF0F5),
+                                      height: 1,
+                                    ),
                                 itemBuilder: (context, index) {
                                   final nail = filteredNails[index];
                                   return ListTile(
                                     contentPadding: const EdgeInsets.symmetric(
-                                        vertical: 4, horizontal: 8),
+                                      vertical: 4,
+                                      horizontal: 8,
+                                    ),
                                     leading: ClipRRect(
                                       borderRadius: BorderRadius.circular(10),
                                       child: SizedBox(
@@ -166,21 +184,26 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                                                 color: AppColors.primary
                                                     .withValues(alpha: 0.08),
                                                 child: const Icon(
-                                                    Icons.spa_rounded,
-                                                    color: AppColors.primary,
-                                                    size: 22),
+                                                  Icons.spa_rounded,
+                                                  color: AppColors.primary,
+                                                  size: 22,
+                                                ),
                                               )
                                             : Image.network(
                                                 nail.imageUrl,
                                                 fit: BoxFit.cover,
-                                                errorBuilder: (_, __, ___) =>
+                                                errorBuilder: (_, _, _) =>
                                                     Container(
-                                                  color: const Color(0xFFF5F5F7),
-                                                  child: const Icon(
-                                                      Icons.broken_image_rounded,
-                                                      color: Colors.grey,
-                                                      size: 20),
-                                                ),
+                                                      color: const Color(
+                                                        0xFFF5F5F7,
+                                                      ),
+                                                      child: const Icon(
+                                                        Icons
+                                                            .broken_image_rounded,
+                                                        color: Colors.grey,
+                                                        size: 20,
+                                                      ),
+                                                    ),
                                               ),
                                       ),
                                     ),
@@ -195,8 +218,9 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     trailing: const Icon(
-                                        Icons.chevron_right_rounded,
-                                        color: AppColors.textSecondary),
+                                      Icons.chevron_right_rounded,
+                                      color: AppColors.textSecondary,
+                                    ),
                                     onTap: () =>
                                         Navigator.of(context).pop(nail),
                                   );
@@ -230,15 +254,14 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
         String searchQuery = "";
         return StatefulBuilder(
           builder: (context, setSheetState) {
-            final filteredSalons = salons
-                .where((salon) {
-                  final name = (salon['name']?.toString() ??
+            final filteredSalons = salons.where((salon) {
+              final name =
+                  (salon['name']?.toString() ??
                           salon['salonName']?.toString() ??
                           '')
                       .toLowerCase();
-                  return name.contains(searchQuery.toLowerCase());
-                })
-                .toList();
+              return name.contains(searchQuery.toLowerCase());
+            }).toList();
 
             return DraggableScrollableSheet(
               initialChildSize: 0.55,
@@ -277,15 +300,20 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                         style: const TextStyle(fontSize: 13),
                         decoration: InputDecoration(
                           hintText: 'Tìm kiếm salon...',
-                          prefixIcon: const Icon(Icons.search_rounded,
-                              size: 18, color: AppColors.textSecondary),
+                          prefixIcon: const Icon(
+                            Icons.search_rounded,
+                            size: 18,
+                            color: AppColors.textSecondary,
+                          ),
                           filled: true,
                           fillColor: const Color(0xFFF5F5F7),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,
                           ),
-                          contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 0,
+                          ),
                         ),
                         onChanged: (val) {
                           setSheetState(() => searchQuery = val);
@@ -298,13 +326,19 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    const Icon(Icons.storefront_rounded,
-                                        size: 48, color: Colors.grey),
+                                    const Icon(
+                                      Icons.storefront_rounded,
+                                      size: 48,
+                                      color: Colors.grey,
+                                    ),
                                     const SizedBox(height: 8),
-                                    Text('Không tìm thấy salon nào',
-                                        style: TextStyle(
-                                            color: Colors.grey.shade600,
-                                            fontSize: 13)),
+                                    Text(
+                                      'Không tìm thấy salon nào',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                        fontSize: 13,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               )
@@ -313,25 +347,32 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                                 itemCount: filteredSalons.length,
                                 separatorBuilder: (context, index) =>
                                     const Divider(
-                                        color: Color(0xFFFFF0F5), height: 1),
+                                      color: Color(0xFFFFF0F5),
+                                      height: 1,
+                                    ),
                                 itemBuilder: (context, index) {
                                   final salon = filteredSalons[index];
-                                  final name = salon['name']?.toString() ??
+                                  final name =
+                                      salon['name']?.toString() ??
                                       salon['salonName']?.toString() ??
                                       'Salon Nailify';
-                                  final address = salon['address']?.toString() ??
+                                  final address =
+                                      salon['address']?.toString() ??
                                       salon['salonAddress']?.toString() ??
                                       'Địa chỉ đang cập nhật';
 
                                   return ListTile(
                                     contentPadding: const EdgeInsets.symmetric(
-                                        vertical: 4, horizontal: 8),
+                                      vertical: 4,
+                                      horizontal: 8,
+                                    ),
                                     leading: Container(
                                       width: 44,
                                       height: 44,
                                       decoration: BoxDecoration(
-                                        color: AppColors.primary
-                                            .withValues(alpha: 0.08),
+                                        color: AppColors.primary.withValues(
+                                          alpha: 0.08,
+                                        ),
                                         borderRadius: BorderRadius.circular(10),
                                       ),
                                       child: const Icon(
@@ -363,8 +404,9 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                                       ),
                                     ),
                                     trailing: const Icon(
-                                        Icons.chevron_right_rounded,
-                                        color: AppColors.textSecondary),
+                                      Icons.chevron_right_rounded,
+                                      color: AppColors.textSecondary,
+                                    ),
                                     onTap: () =>
                                         Navigator.of(context).pop(salon),
                                   );
@@ -459,23 +501,33 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 24),
-                        
+
                         // Bộ chọn mẫu móng trực quan thay thế DropdownButtonFormField
                         GestureDetector(
                           onTap: isSubmitting
                               ? null
                               : () async {
-                                  final result = await _showNailSelectorBottomSheet(context, nails);
+                                  final result =
+                                      await _showNailSelectorBottomSheet(
+                                        context,
+                                        nails,
+                                      );
                                   if (result != null) {
                                     setDialogState(() => selectedNail = result);
                                   }
                                 },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFF5F5F7),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.grey.shade100, width: 1),
+                              border: Border.all(
+                                color: Colors.grey.shade100,
+                                width: 1,
+                              ),
                             ),
                             child: Row(
                               children: [
@@ -487,39 +539,65 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                                     child: selectedNail == null
                                         ? Container(
                                             color: Colors.grey.shade300,
-                                            child: const Icon(Icons.spa_rounded, color: Colors.white, size: 20),
+                                            child: const Icon(
+                                              Icons.spa_rounded,
+                                              color: Colors.white,
+                                              size: 20,
+                                            ),
                                           )
                                         : (selectedNail!.imageUrl.isEmpty
-                                            ? Container(
-                                                color: AppColors.primary.withValues(alpha: 0.1),
-                                                child: const Icon(Icons.spa_rounded, color: AppColors.primary, size: 20),
-                                              )
-                                            : Image.network(
-                                                selectedNail!.imageUrl,
-                                                fit: BoxFit.cover,
-                                                errorBuilder: (_, __, ___) => Container(
-                                                  color: const Color(0xFFE0E0E0),
-                                                  child: const Icon(Icons.broken_image_rounded, color: Colors.grey, size: 18),
-                                                ),
-                                              )),
+                                              ? Container(
+                                                  color: AppColors.primary
+                                                      .withValues(alpha: 0.1),
+                                                  child: const Icon(
+                                                    Icons.spa_rounded,
+                                                    color: AppColors.primary,
+                                                    size: 20,
+                                                  ),
+                                                )
+                                              : Image.network(
+                                                  selectedNail!.imageUrl,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (_, _, _) =>
+                                                      Container(
+                                                        color: const Color(
+                                                          0xFFE0E0E0,
+                                                        ),
+                                                        child: const Icon(
+                                                          Icons
+                                                              .broken_image_rounded,
+                                                          color: Colors.grey,
+                                                          size: 18,
+                                                        ),
+                                                      ),
+                                                )),
                                   ),
                                 ),
                                 const SizedBox(width: 14),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Text(
                                         'Mẫu móng *',
-                                        style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                                        style: TextStyle(
+                                          color: AppColors.textSecondary,
+                                          fontSize: 11,
+                                        ),
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
-                                        selectedNail?.name ?? 'Chọn mẫu móng...',
+                                        selectedNail?.name ??
+                                            'Chọn mẫu móng...',
                                         style: TextStyle(
                                           fontSize: 14,
-                                          fontWeight: selectedNail != null ? FontWeight.bold : FontWeight.normal,
-                                          color: selectedNail != null ? AppColors.textPrimary : AppColors.textSecondary,
+                                          fontWeight: selectedNail != null
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
+                                          color: selectedNail != null
+                                              ? AppColors.textPrimary
+                                              : AppColors.textSecondary,
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -537,23 +615,35 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        
+
                         // Bộ chọn Salon trực quan thay thế DropdownButtonFormField
                         GestureDetector(
                           onTap: isSubmitting
                               ? null
                               : () async {
-                                  final result = await _showSalonSelectorBottomSheet(context, salonOptions);
+                                  final result =
+                                      await _showSalonSelectorBottomSheet(
+                                        context,
+                                        salonOptions,
+                                      );
                                   if (result != null) {
-                                    setDialogState(() => selectedSalon = result);
+                                    setDialogState(
+                                      () => selectedSalon = result,
+                                    );
                                   }
                                 },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFF5F5F7),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.grey.shade100, width: 1),
+                              border: Border.all(
+                                color: Colors.grey.shade100,
+                                width: 1,
+                              ),
                             ),
                             child: Row(
                               children: [
@@ -563,35 +653,49 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                                   decoration: BoxDecoration(
                                     color: selectedSalon == null
                                         ? Colors.grey.shade300
-                                        : AppColors.primary.withValues(alpha: 0.1),
+                                        : AppColors.primary.withValues(
+                                            alpha: 0.1,
+                                          ),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Icon(
                                     Icons.location_on_rounded,
-                                    color: selectedSalon == null ? Colors.white : AppColors.primary,
+                                    color: selectedSalon == null
+                                        ? Colors.white
+                                        : AppColors.primary,
                                     size: 20,
                                   ),
                                 ),
                                 const SizedBox(width: 14),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Text(
                                         'Salon *',
-                                        style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                                        style: TextStyle(
+                                          color: AppColors.textSecondary,
+                                          fontSize: 11,
+                                        ),
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
                                         selectedSalon != null
-                                            ? (selectedSalon!['name']?.toString() ??
-                                                selectedSalon!['salonName']?.toString() ??
-                                                'Salon')
+                                            ? (selectedSalon!['name']
+                                                      ?.toString() ??
+                                                  selectedSalon!['salonName']
+                                                      ?.toString() ??
+                                                  'Salon')
                                             : 'Chọn chi nhánh Salon...',
                                         style: TextStyle(
                                           fontSize: 14,
-                                          fontWeight: selectedSalon != null ? FontWeight.bold : FontWeight.normal,
-                                          color: selectedSalon != null ? AppColors.textPrimary : AppColors.textSecondary,
+                                          fontWeight: selectedSalon != null
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
+                                          color: selectedSalon != null
+                                              ? AppColors.textPrimary
+                                              : AppColors.textSecondary,
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -609,7 +713,7 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                           ),
                         ),
                         const SizedBox(height: 28),
-                        
+
                         // Hàng Nút Bấm
                         Row(
                           children: [
@@ -622,7 +726,10 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(16),
                                   ),
-                                  side: const BorderSide(color: Color(0xFFE0E0E0), width: 1.2),
+                                  side: const BorderSide(
+                                    color: Color(0xFFE0E0E0),
+                                    width: 1.2,
+                                  ),
                                 ),
                                 onPressed: isSubmitting
                                     ? null

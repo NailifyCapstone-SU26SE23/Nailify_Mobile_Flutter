@@ -37,7 +37,10 @@ class _RegisterPageState extends State<RegisterPage> {
         lastName.isEmpty ||
         phone.isEmpty ||
         password.isEmpty) {
-      _showSnackBar('Vui lòng điền đầy đủ các thông tin bắt buộc', AppColors.error);
+      _showSnackBar(
+        'Vui lòng điền đầy đủ các thông tin bắt buộc',
+        AppColors.error,
+      );
       return;
     }
 
@@ -154,7 +157,10 @@ class _RegisterPageState extends State<RegisterPage> {
                 child: Center(
                   child: Container(
                     constraints: const BoxConstraints(maxWidth: 400),
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24.0,
+                      vertical: 24.0,
+                    ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -166,7 +172,9 @@ class _RegisterPageState extends State<RegisterPage> {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.15),
+                                color: AppColors.primary.withValues(
+                                  alpha: 0.15,
+                                ),
                                 blurRadius: 16,
                                 offset: const Offset(0, 6),
                               ),
@@ -240,14 +248,23 @@ class _RegisterPageState extends State<RegisterPage> {
                                   ),
                                   filled: true,
                                   fillColor: const Color(0xFFFCFAF6),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 16,
+                                  ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(16),
-                                    borderSide: const BorderSide(color: Color(0xFFEEEAE2), width: 1.2),
+                                    borderSide: const BorderSide(
+                                      color: Color(0xFFEEEAE2),
+                                      width: 1.2,
+                                    ),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(16),
-                                    borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                                    borderSide: const BorderSide(
+                                      color: AppColors.primary,
+                                      width: 1.5,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -259,7 +276,8 @@ class _RegisterPageState extends State<RegisterPage> {
                                   Expanded(
                                     child: TextField(
                                       controller: _firstNameController,
-                                      textCapitalization: TextCapitalization.words,
+                                      textCapitalization:
+                                          TextCapitalization.words,
                                       decoration: InputDecoration(
                                         labelText: 'Họ',
                                         labelStyle: TextStyle(
@@ -268,14 +286,28 @@ class _RegisterPageState extends State<RegisterPage> {
                                         ),
                                         filled: true,
                                         fillColor: const Color(0xFFFCFAF6),
-                                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                              vertical: 16,
+                                            ),
                                         enabledBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(16),
-                                          borderSide: const BorderSide(color: Color(0xFFEEEAE2), width: 1.2),
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                          borderSide: const BorderSide(
+                                            color: Color(0xFFEEEAE2),
+                                            width: 1.2,
+                                          ),
                                         ),
                                         focusedBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(16),
-                                          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                          borderSide: const BorderSide(
+                                            color: AppColors.primary,
+                                            width: 1.5,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -284,7 +316,8 @@ class _RegisterPageState extends State<RegisterPage> {
                                   Expanded(
                                     child: TextField(
                                       controller: _lastNameController,
-                                      textCapitalization: TextCapitalization.words,
+                                      textCapitalization:
+                                          TextCapitalization.words,
                                       decoration: InputDecoration(
                                         labelText: 'Tên',
                                         labelStyle: TextStyle(
@@ -293,14 +326,28 @@ class _RegisterPageState extends State<RegisterPage> {
                                         ),
                                         filled: true,
                                         fillColor: const Color(0xFFFCFAF6),
-                                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                              vertical: 16,
+                                            ),
                                         enabledBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(16),
-                                          borderSide: const BorderSide(color: Color(0xFFEEEAE2), width: 1.2),
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                          borderSide: const BorderSide(
+                                            color: Color(0xFFEEEAE2),
+                                            width: 1.2,
+                                          ),
                                         ),
                                         focusedBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(16),
-                                          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                          borderSide: const BorderSide(
+                                            color: AppColors.primary,
+                                            width: 1.5,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -326,14 +373,23 @@ class _RegisterPageState extends State<RegisterPage> {
                                   ),
                                   filled: true,
                                   fillColor: const Color(0xFFFCFAF6),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 16,
+                                  ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(16),
-                                    borderSide: const BorderSide(color: Color(0xFFEEEAE2), width: 1.2),
+                                    borderSide: const BorderSide(
+                                      color: Color(0xFFEEEAE2),
+                                      width: 1.2,
+                                    ),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(16),
-                                    borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                                    borderSide: const BorderSide(
+                                      color: AppColors.primary,
+                                      width: 1.5,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -362,18 +418,30 @@ class _RegisterPageState extends State<RegisterPage> {
                                       color: Colors.grey.shade400,
                                       size: 20,
                                     ),
-                                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                                    onPressed: () => setState(
+                                      () =>
+                                          _obscurePassword = !_obscurePassword,
+                                    ),
                                   ),
                                   filled: true,
                                   fillColor: const Color(0xFFFCFAF6),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 16,
+                                  ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(16),
-                                    borderSide: const BorderSide(color: Color(0xFFEEEAE2), width: 1.2),
+                                    borderSide: const BorderSide(
+                                      color: Color(0xFFEEEAE2),
+                                      width: 1.2,
+                                    ),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(16),
-                                    borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                                    borderSide: const BorderSide(
+                                      color: AppColors.primary,
+                                      width: 1.5,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -402,18 +470,30 @@ class _RegisterPageState extends State<RegisterPage> {
                                       color: Colors.grey.shade400,
                                       size: 20,
                                     ),
-                                    onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                                    onPressed: () => setState(
+                                      () => _obscureConfirmPassword =
+                                          !_obscureConfirmPassword,
+                                    ),
                                   ),
                                   filled: true,
                                   fillColor: const Color(0xFFFCFAF6),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 16,
+                                  ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(16),
-                                    borderSide: const BorderSide(color: Color(0xFFEEEAE2), width: 1.2),
+                                    borderSide: const BorderSide(
+                                      color: Color(0xFFEEEAE2),
+                                      width: 1.2,
+                                    ),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(16),
-                                    borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                                    borderSide: const BorderSide(
+                                      color: AppColors.primary,
+                                      width: 1.5,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -457,14 +537,18 @@ class _RegisterPageState extends State<RegisterPage> {
                                   borderRadius: BorderRadius.circular(16),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: AppColors.primary.withValues(alpha: 0.3),
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.3,
+                                      ),
                                       blurRadius: 12,
                                       offset: const Offset(0, 4),
                                     ),
                                   ],
                                 ),
                                 child: ElevatedButton(
-                                  onPressed: _isSubmitting ? null : _handleRegister,
+                                  onPressed: _isSubmitting
+                                      ? null
+                                      : _handleRegister,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.transparent,
                                     shadowColor: Colors.transparent,

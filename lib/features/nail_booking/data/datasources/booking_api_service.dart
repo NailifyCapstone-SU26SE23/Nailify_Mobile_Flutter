@@ -31,7 +31,7 @@ class BookingApiService {
           'nailVariantId': nailVariantId,
           'serviceId': null,
           'customerNailId': null,
-          if (shapeMethodConfigId != null) 'shapeMethodConfigId': shapeMethodConfigId,
+          'shapeMethodConfigId': ?shapeMethodConfigId,
           'quantity': 1,
         },
       ...serviceIds.map(
@@ -134,13 +134,16 @@ class BookingApiService {
     required String startTime,
     required List<Map<String, dynamic>> bookingItems,
   }) async {
-    final response = await _apiClient.post('/Bookings/hold-slot', data: {
-      'salonId': salonId,
-      'nailArtistId': nailArtistId,
-      'bookingDate': bookingDate,
-      'startTime': startTime,
-      'bookingItems': bookingItems,
-    });
+    final response = await _apiClient.post(
+      '/Bookings/hold-slot',
+      data: {
+        'salonId': salonId,
+        'nailArtistId': nailArtistId,
+        'bookingDate': bookingDate,
+        'startTime': startTime,
+        'bookingItems': bookingItems,
+      },
+    );
     return response.data['data'] ?? {};
   }
 
@@ -155,7 +158,9 @@ class BookingApiService {
 
   /// Kiểm tra trạng thái giữ chỗ (còn hiệu lực không, còn bao nhiêu giây).
   Future<Map<String, dynamic>> checkHoldStatus(String holdToken) async {
-    final response = await _apiClient.get('/Bookings/hold-slot/$holdToken/status');
+    final response = await _apiClient.get(
+      '/Bookings/hold-slot/$holdToken/status',
+    );
     return response.data['data'] ?? {};
   }
 
@@ -168,22 +173,27 @@ class BookingApiService {
     String? artistId,
     int nailVariantId,
     List<String> serviceIds, {
-      List<int>? selectedPromotionIds,
-      String? holdToken,
-      int? shapeMethodConfigId,
-      String? warrantyForBookingId,
-      List<Map<String, dynamic>>? warrantyBookingItems,
-    }) async {
-    final response = await _apiClient.post('/Bookings', data: {
-      'salonId': salonId,
-      'bookingDate': bookingDate,
-      'startTime': startTime,
-      'nailArtistId': artistId?.isEmpty == true ? null : artistId,
-      'holdToken': holdToken,
-      'bookingItems': warrantyBookingItems ?? _buildBookingItems(nailVariantId, serviceIds, shapeMethodConfigId),
-      'selectedPromotionIds': selectedPromotionIds,
-      if (warrantyForBookingId != null) 'warrantyForBookingId': warrantyForBookingId,
-    });
+    List<int>? selectedPromotionIds,
+    String? holdToken,
+    int? shapeMethodConfigId,
+    String? warrantyForBookingId,
+    List<Map<String, dynamic>>? warrantyBookingItems,
+  }) async {
+    final response = await _apiClient.post(
+      '/Bookings',
+      data: {
+        'salonId': salonId,
+        'bookingDate': bookingDate,
+        'startTime': startTime,
+        'nailArtistId': artistId?.isEmpty == true ? null : artistId,
+        'holdToken': holdToken,
+        'bookingItems':
+            warrantyBookingItems ??
+            _buildBookingItems(nailVariantId, serviceIds, shapeMethodConfigId),
+        'selectedPromotionIds': selectedPromotionIds,
+        'warrantyForBookingId': ?warrantyForBookingId,
+      },
+    );
     return response.data['data'] ?? {};
   }
 
@@ -265,7 +275,7 @@ class BookingApiService {
         'nailVariantId': null,
         'serviceId': null,
         'customerNailRequestId': customerNailRequestId,
-        if (shapeMethodConfigId != null) 'shapeMethodConfigId': shapeMethodConfigId,
+        'shapeMethodConfigId': ?shapeMethodConfigId,
         'quantity': 1,
       },
     ];
@@ -279,16 +289,19 @@ class BookingApiService {
       });
     });
 
-    final response = await _apiClient.post('/Bookings', data: {
-      'salonId': salonId,
-      'bookingDate': bookingDate,
-      'startTime': startTime,
-      if (artistId != null && artistId.isNotEmpty) 'nailArtistId': artistId,
-      if (holdToken != null && holdToken.isNotEmpty) 'holdToken': holdToken,
-      'bookingItems': bookingItems,
-      if (selectedPromotionIds != null && selectedPromotionIds.isNotEmpty)
-        'selectedPromotionIds': selectedPromotionIds,
-    });
+    final response = await _apiClient.post(
+      '/Bookings',
+      data: {
+        'salonId': salonId,
+        'bookingDate': bookingDate,
+        'startTime': startTime,
+        if (artistId != null && artistId.isNotEmpty) 'nailArtistId': artistId,
+        if (holdToken != null && holdToken.isNotEmpty) 'holdToken': holdToken,
+        'bookingItems': bookingItems,
+        if (selectedPromotionIds != null && selectedPromotionIds.isNotEmpty)
+          'selectedPromotionIds': selectedPromotionIds,
+      },
+    );
 
     return response.data['data'] ?? {};
   }

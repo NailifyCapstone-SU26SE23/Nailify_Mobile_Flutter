@@ -64,7 +64,10 @@ class CustomerNailCard extends StatelessWidget {
                           fit: BoxFit.cover,
                           errorBuilder: (_, _, _) => Container(
                             color: const Color(0xFFF5F5F7),
-                            child: const Icon(Icons.broken_image_rounded, color: Colors.grey),
+                            child: const Icon(
+                              Icons.broken_image_rounded,
+                              color: Colors.grey,
+                            ),
                           ),
                         ),
                 ),
@@ -104,7 +107,9 @@ class CustomerNailCard extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                nail.isPublic ? Icons.public_rounded : Icons.lock_outline_rounded,
+                                nail.isPublic
+                                    ? Icons.public_rounded
+                                    : Icons.lock_outline_rounded,
                                 size: 12,
                                 color: nail.isPublic
                                     ? const Color(0xFF2E7D32)
@@ -179,7 +184,11 @@ class CustomerNailCard extends StatelessWidget {
                         value: 'edit',
                         child: Row(
                           children: [
-                            Icon(Icons.edit_rounded, size: 18, color: AppColors.textSecondary),
+                            Icon(
+                              Icons.edit_rounded,
+                              size: 18,
+                              color: AppColors.textSecondary,
+                            ),
                             SizedBox(width: 8),
                             Text('Sửa'),
                           ],
@@ -190,7 +199,9 @@ class CustomerNailCard extends StatelessWidget {
                         child: Row(
                           children: [
                             Icon(
-                              nail.isPublic ? Icons.public_off_rounded : Icons.public_rounded,
+                              nail.isPublic
+                                  ? Icons.public_off_rounded
+                                  : Icons.public_rounded,
                               size: 18,
                               color: AppColors.textSecondary,
                             ),
@@ -213,7 +224,13 @@ class CustomerNailCard extends StatelessWidget {
                               color: Colors.red,
                             ),
                             SizedBox(width: 8),
-                            Text('Xóa', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500)),
+                            Text(
+                              'Xóa',
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                           ],
                         ),
                       ),

@@ -12,7 +12,8 @@ import '../utils/booking_status_utils.dart';
 class RescheduleTab extends StatefulWidget {
   final List<Map<String, dynamic>> rescheduleBookings;
   final VoidCallback onRefreshBookings;
-  final VoidCallback? onActionSuccess; // Callback khi accept/decline thành công → chuyển tab
+  final VoidCallback?
+  onActionSuccess; // Callback khi accept/decline thành công → chuyển tab
 
   const RescheduleTab({
     super.key,
@@ -57,10 +58,7 @@ class _RescheduleTabState extends State<RescheduleTab> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Lỗi: $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
       );
     } finally {
       if (mounted) setState(() => _isActionLoading = false);
@@ -94,10 +92,7 @@ class _RescheduleTabState extends State<RescheduleTab> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Lỗi: $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
       );
     } finally {
       if (mounted) setState(() => _isActionLoading = false);
@@ -108,7 +103,8 @@ class _RescheduleTabState extends State<RescheduleTab> {
     final bookings = widget.rescheduleBookings;
     if (_selectedFilterDate == null) return bookings;
     return bookings.where((booking) {
-      final dateStr = booking['proposedBookingDate']?.toString() ??
+      final dateStr =
+          booking['proposedBookingDate']?.toString() ??
           booking['newDate']?.toString() ??
           booking['suggestedDate']?.toString() ??
           booking['bookingDate']?.toString() ??
@@ -162,22 +158,37 @@ class _RescheduleTabState extends State<RescheduleTab> {
             child: InkWell(
               onTap: () => _selectFilterDate(context),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF8FB), // Tông hồng sữa ngọt ngào tinh tế
+                  color: const Color(
+                    0xFFFFF8FB,
+                  ), // Tông hồng sữa ngọt ngào tinh tế
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.15),
+                  ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.calendar_month, color: AppColors.primary, size: 20),
+                    const Icon(
+                      Icons.calendar_month,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
                     const SizedBox(width: 10),
                     Text(
                       textDisplay,
                       style: TextStyle(
                         fontSize: 14,
-                        fontWeight: hasFilter ? FontWeight.bold : FontWeight.w500,
-                        color: hasFilter ? AppColors.primary : Colors.grey.shade600,
+                        fontWeight: hasFilter
+                            ? FontWeight.bold
+                            : FontWeight.w500,
+                        color: hasFilter
+                            ? AppColors.primary
+                            : Colors.grey.shade600,
                       ),
                     ),
                   ],
@@ -193,7 +204,11 @@ class _RescheduleTabState extends State<RescheduleTab> {
                   _selectedFilterDate = null;
                 });
               },
-              icon: const Icon(Icons.highlight_off_rounded, color: Colors.grey, size: 24),
+              icon: const Icon(
+                Icons.highlight_off_rounded,
+                color: Colors.grey,
+                size: 24,
+              ),
               tooltip: 'Xóa lọc ngày',
             ),
           ],
@@ -218,7 +233,9 @@ class _RescheduleTabState extends State<RescheduleTab> {
         onRefresh: _handleRefresh,
         child: ListView.builder(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
           itemCount: filteredBookings.length,
           itemBuilder: (context, index) {
             return _buildRescheduleCard(filteredBookings[index]);
@@ -243,7 +260,10 @@ class _RescheduleTabState extends State<RescheduleTab> {
                         borderRadius: BorderRadius.all(Radius.circular(12)),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 24,
+                        ),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -268,7 +288,8 @@ class _RescheduleTabState extends State<RescheduleTab> {
     final dateStr = booking['bookingDate']?.toString() ?? '';
     final bookingDate = DateTime.tryParse(dateStr) ?? DateTime.now();
 
-    final newDateStr = booking['proposedBookingDate']?.toString() ??
+    final newDateStr =
+        booking['proposedBookingDate']?.toString() ??
         booking['newDate']?.toString() ??
         booking['suggestedDate']?.toString() ??
         booking['bookingDate']?.toString() ??
@@ -281,7 +302,8 @@ class _RescheduleTabState extends State<RescheduleTab> {
     if (items.isNotEmpty && items.first is Map) {
       final firstItem = items.first as Map;
       final variantName = firstItem['nailVariantName']?.toString().trim() ?? '';
-      final customNailName = firstItem['customerNailName']?.toString().trim() ?? '';
+      final customNailName =
+          firstItem['customerNailName']?.toString().trim() ?? '';
       final serviceName = firstItem['serviceName']?.toString().trim() ?? '';
       if (variantName.isNotEmpty) {
         nailName = variantName;
@@ -295,7 +317,8 @@ class _RescheduleTabState extends State<RescheduleTab> {
     String timeStr = booking['startTime']?.toString() ?? '';
     if (timeStr.length >= 5) timeStr = timeStr.substring(0, 5);
 
-    String newTimeStr = booking['proposedStartTime']?.toString() ??
+    String newTimeStr =
+        booking['proposedStartTime']?.toString() ??
         booking['newTime']?.toString() ??
         booking['suggestedTime']?.toString() ??
         timeStr;
@@ -304,7 +327,8 @@ class _RescheduleTabState extends State<RescheduleTab> {
     final artistName = booking['artistName']?.toString() ?? 'Bất kỳ';
     final salonName = booking['salonName']?.toString() ?? 'Nailify Salon';
     final salonAddress = booking['salonAddress']?.toString() ?? '';
-    final reason = booking['rescheduleReason']?.toString() ??
+    final reason =
+        booking['rescheduleReason']?.toString() ??
         booking['reason']?.toString() ??
         '';
 
@@ -338,15 +362,24 @@ class _RescheduleTabState extends State<RescheduleTab> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: statusView.backgroundColor,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: statusView.textColor.withValues(alpha: 0.2)),
+                    border: Border.all(
+                      color: statusView.textColor.withValues(alpha: 0.2),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      Icon(statusView.icon, size: 12, color: statusView.textColor),
+                      Icon(
+                        statusView.icon,
+                        size: 12,
+                        color: statusView.textColor,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         statusView.label,
@@ -377,7 +410,11 @@ class _RescheduleTabState extends State<RescheduleTab> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.storefront_outlined, size: 16, color: Colors.grey.shade500),
+                Icon(
+                  Icons.storefront_outlined,
+                  size: 16,
+                  color: Colors.grey.shade500,
+                ),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Column(
@@ -395,7 +432,10 @@ class _RescheduleTabState extends State<RescheduleTab> {
                         const SizedBox(height: 2),
                         Text(
                           salonAddress,
-                          style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade500,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -414,14 +454,20 @@ class _RescheduleTabState extends State<RescheduleTab> {
               decoration: BoxDecoration(
                 color: statusView.backgroundColor.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: statusView.textColor.withValues(alpha: 0.15)),
+                border: Border.all(
+                  color: statusView.textColor.withValues(alpha: 0.15),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Icon(statusView.icon, size: 16, color: statusView.textColor),
+                      Icon(
+                        statusView.icon,
+                        size: 16,
+                        color: statusView.textColor,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         rawStatus == 'RescheduleSuggested'
@@ -478,7 +524,11 @@ class _RescheduleTabState extends State<RescheduleTab> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Icon(Icons.person_outline, size: 15, color: Colors.grey.shade500),
+                Icon(
+                  Icons.person_outline,
+                  size: 15,
+                  color: Colors.grey.shade500,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   artistName,
@@ -492,12 +542,20 @@ class _RescheduleTabState extends State<RescheduleTab> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.info_outline, size: 15, color: statusView.textColor),
+                  Icon(
+                    Icons.info_outline,
+                    size: 15,
+                    color: statusView.textColor,
+                  ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: RichText(
                       text: TextSpan(
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade700, height: 1.4),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade700,
+                          height: 1.4,
+                        ),
                         children: [
                           const TextSpan(
                             text: 'Lý do dời: ',
@@ -568,15 +626,24 @@ class _RescheduleTabState extends State<RescheduleTab> {
                 padding: const EdgeInsets.only(top: 14),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 10,
+                    horizontal: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: statusView.backgroundColor.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: statusView.textColor.withValues(alpha: 0.15)),
+                    border: Border.all(
+                      color: statusView.textColor.withValues(alpha: 0.15),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      Icon(statusView.icon, size: 14, color: statusView.textColor),
+                      Icon(
+                        statusView.icon,
+                        size: 14,
+                        color: statusView.textColor,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -611,14 +678,18 @@ class _RescheduleTabState extends State<RescheduleTab> {
               shape: BoxShape.circle,
             ),
             child: Icon(
-              isFiltered ? Icons.filter_alt_off_outlined : Icons.edit_calendar_outlined,
+              isFiltered
+                  ? Icons.filter_alt_off_outlined
+                  : Icons.edit_calendar_outlined,
               size: 52,
               color: Colors.grey.shade400,
             ),
           ),
           const SizedBox(height: 20),
           Text(
-            isFiltered ? 'Không có yêu cầu dời lịch trong ngày này' : 'Không có yêu cầu dời lịch nào',
+            isFiltered
+                ? 'Không có yêu cầu dời lịch trong ngày này'
+                : 'Không có yêu cầu dời lịch nào',
             style: const TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.bold,

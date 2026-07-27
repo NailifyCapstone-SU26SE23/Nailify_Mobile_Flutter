@@ -98,7 +98,9 @@ class _ProfilePageState extends State<ProfilePage> {
     if (jsonStr != null) {
       try {
         setState(() {
-          _styleCompositionResult = Map<String, dynamic>.from(jsonDecode(jsonStr));
+          _styleCompositionResult = Map<String, dynamic>.from(
+            jsonDecode(jsonStr),
+          );
         });
       } catch (_) {}
     }
@@ -120,7 +122,9 @@ class _ProfilePageState extends State<ProfilePage> {
       _selectedColors.clear();
       _selectedColors.addAll(cList);
     }
-    _selectedMainStyle = prefs.getString('profile_selectedMainStyle') ?? ProfileMockData.initialMainStyleId;
+    _selectedMainStyle =
+        prefs.getString('profile_selectedMainStyle') ??
+        ProfileMockData.initialMainStyleId;
     final oList = prefs.getStringList('profile_selectedOccasions');
     if (oList != null) {
       _selectedOccasions.clear();
@@ -151,7 +155,7 @@ class _ProfilePageState extends State<ProfilePage> {
       final res = await _quizRepo.getNailComposition(apiBody);
       final jsonStr = jsonEncode(res);
       final prefs = getIt<SharedPreferences>();
-      
+
       await prefs.setString('profile_style_composition', jsonStr);
       await prefs.setString('profile_skinTone', skinTone);
       await prefs.setString('profile_skinShade', skinShade);
@@ -159,10 +163,16 @@ class _ProfilePageState extends State<ProfilePage> {
       await prefs.setString('profile_occupation', occupation);
       await prefs.setString('profile_complexity', complexity);
       await prefs.setInt('profile_nailShapeId', nailShapeId);
-      await prefs.setStringList('profile_selectedPersonalities', personalities.toList());
+      await prefs.setStringList(
+        'profile_selectedPersonalities',
+        personalities.toList(),
+      );
       await prefs.setStringList('profile_selectedColors', colors.toList());
       await prefs.setString('profile_selectedMainStyle', mainStyle);
-      await prefs.setStringList('profile_selectedOccasions', occasions.toList());
+      await prefs.setStringList(
+        'profile_selectedOccasions',
+        occasions.toList(),
+      );
       await prefs.setString('profile_nailCondition', nailCondition);
 
       setState(() {
@@ -186,7 +196,11 @@ class _ProfilePageState extends State<ProfilePage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đã cập nhật hồ sơ phong cách và tạo mẫu móng thành công!')),
+          const SnackBar(
+            content: Text(
+              'Đã cập nhật hồ sơ phong cách và tạo mẫu móng thành công!',
+            ),
+          ),
         );
       }
     } catch (e) {
@@ -306,7 +320,8 @@ class _ProfilePageState extends State<ProfilePage> {
                             initialColors: _selectedColors,
                             initialMainStyle: _selectedMainStyle,
                             initialOccasions: _selectedOccasions,
-                            initialNailCondition: _noteControllers['NAIL CONDITION']?.text ?? '',
+                            initialNailCondition:
+                                _noteControllers['NAIL CONDITION']?.text ?? '',
                             initialSkinTone: _skinTone,
                             initialSkinShade: _skinShade,
                             initialHandShape: _handShape,
@@ -317,7 +332,11 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                         );
                       },
-                      icon: const Icon(Icons.psychology, size: 20, color: Colors.white),
+                      icon: const Icon(
+                        Icons.psychology,
+                        size: 20,
+                        color: Colors.white,
+                      ),
                       label: const Text(
                         'Thiết Lập Phong Cách Cá Nhân',
                         style: TextStyle(
@@ -341,7 +360,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   // Banner gợi ý mẫu nail phù hợp nếu có kết quả
                   if (_styleCompositionResult != null) ...[
                     _BlinkingBanner(
-                      onViewPressed: () => _showNailCompositionResultDialog(_styleCompositionResult!),
+                      onViewPressed: () => _showNailCompositionResultDialog(
+                        _styleCompositionResult!,
+                      ),
                     ),
                     const SizedBox(height: 12),
                   ],
@@ -771,15 +792,23 @@ class _ProfilePageState extends State<ProfilePage> {
       builder: (context) {
         final shapeName = data['nailShape']?['name']?.toString() ?? 'Almond';
         final shapeImageUrl = data['nailShape']?['imageUrl']?.toString() ?? '';
-        final surfaceName = data['nailSurface']?['name']?.toString() ?? 'Glossy';
+        final surfaceName =
+            data['nailSurface']?['name']?.toString() ?? 'Glossy';
         final colorsList = List<String>.from(data['colors'] ?? []);
         final componentsList = List<dynamic>.from(data['components'] ?? []);
-        final reason = data['reason']?.toString() ?? 'Cấu hình móng thiết kế riêng phù hợp với các nét cá tính và tông da của bạn.';
+        final reason =
+            data['reason']?.toString() ??
+            'Cấu hình móng thiết kế riêng phù hợp với các nét cá tính và tông da của bạn.';
 
         return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
           backgroundColor: Colors.white,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 24,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -788,7 +817,11 @@ class _ProfilePageState extends State<ProfilePage> {
                 padding: const EdgeInsets.all(20),
                 child: Row(
                   children: [
-                    const Icon(Icons.auto_awesome, color: AppColors.primary, size: 24),
+                    const Icon(
+                      Icons.auto_awesome,
+                      color: AppColors.primary,
+                      size: 24,
+                    ),
                     const SizedBox(width: 8),
                     const Text(
                       'Mẫu Nail Phù Hợp',
@@ -827,7 +860,11 @@ class _ProfilePageState extends State<ProfilePage> {
                           children: [
                             Text(
                               shapeName,
-                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
                             ),
                             const Spacer(),
                             if (shapeImageUrl.isNotEmpty)
@@ -838,7 +875,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                   width: 44,
                                   height: 44,
                                   fit: BoxFit.contain,
-                                  errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const SizedBox(),
                                 ),
                               ),
                           ],
@@ -861,7 +899,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                 children: colorsList.map((hex) {
                                   Color colorVal;
                                   try {
-                                    colorVal = Color(int.parse(hex.replaceAll('#', '0xFF')));
+                                    colorVal = Color(
+                                      int.parse(hex.replaceAll('#', '0xFF')),
+                                    );
                                   } catch (_) {
                                     colorVal = Colors.grey;
                                   }
@@ -874,13 +914,20 @@ class _ProfilePageState extends State<ProfilePage> {
                                         decoration: BoxDecoration(
                                           color: colorVal,
                                           shape: BoxShape.circle,
-                                          border: Border.all(color: Colors.grey.shade300, width: 1.2),
+                                          border: Border.all(
+                                            color: Colors.grey.shade300,
+                                            width: 1.2,
+                                          ),
                                         ),
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
                                         hex,
-                                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.textPrimary,
+                                        ),
                                       ),
                                     ],
                                   );
@@ -898,7 +945,11 @@ class _ProfilePageState extends State<ProfilePage> {
                         iconColor: Colors.orange.shade700,
                         child: Text(
                           surfaceName,
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -913,35 +964,56 @@ class _ProfilePageState extends State<ProfilePage> {
                         child: componentsList.isEmpty
                             ? const Text(
                                 'Không đính phụ kiện (Trơn tối giản)',
-                                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: AppColors.textSecondary,
+                                ),
                               )
                             : Wrap(
                                 spacing: 8,
                                 runSpacing: 8,
                                 children: componentsList.map((comp) {
                                   final name = comp['name']?.toString() ?? '';
-                                  final url = comp['imageUrl']?.toString() ?? '';
-                                  final type = comp['componentType']?.toString() ?? '';
+                                  final url =
+                                      comp['imageUrl']?.toString() ?? '';
+                                  final type =
+                                      comp['componentType']?.toString() ?? '';
                                   return Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFFFAF9F6),
                                       borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: const Color(0xFFEDEBE7)),
+                                      border: Border.all(
+                                        color: const Color(0xFFEDEBE7),
+                                      ),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         if (url.isNotEmpty) ...[
                                           ClipRRect(
-                                            borderRadius: BorderRadius.circular(6),
-                                            child: Image.network(url, width: 22, height: 22, fit: BoxFit.cover),
+                                            borderRadius: BorderRadius.circular(
+                                              6,
+                                            ),
+                                            child: Image.network(
+                                              url,
+                                              width: 22,
+                                              height: 22,
+                                              fit: BoxFit.cover,
+                                            ),
                                           ),
                                           const SizedBox(width: 8),
                                         ],
                                         Text(
                                           '$name ($type)',
-                                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.textPrimary,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -960,7 +1032,11 @@ class _ProfilePageState extends State<ProfilePage> {
                         iconColor: Colors.amber.shade900,
                         child: Text(
                           reason,
-                          style: const TextStyle(fontSize: 14, color: AppColors.textPrimary, height: 1.45),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textPrimary,
+                            height: 1.45,
+                          ),
                         ),
                       ),
                     ],
@@ -979,12 +1055,17 @@ class _ProfilePageState extends State<ProfilePage> {
                         onPressed: () => Navigator.of(context).pop(),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           side: BorderSide(color: Colors.grey.shade300),
                         ),
                         child: Text(
                           'Đóng',
-                          style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: Colors.grey.shade700,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
@@ -996,12 +1077,17 @@ class _ProfilePageState extends State<ProfilePage> {
                           context.push('/try-on', extra: data);
                         },
                         icon: const Icon(Icons.camera_alt_outlined, size: 18),
-                        label: const Text('Thử Móng Ngay 💅', style: TextStyle(fontWeight: FontWeight.bold)),
+                        label: const Text(
+                          'Thử Móng Ngay 💅',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           elevation: 0,
                         ),
                       ),
@@ -1043,10 +1129,7 @@ class _ProfilePageState extends State<ProfilePage> {
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             child: Icon(icon, color: iconColor, size: 22),
           ),
           const SizedBox(width: 16),
@@ -1066,13 +1149,21 @@ class _ProfilePageState extends State<ProfilePage> {
                         letterSpacing: 0.5,
                       ),
                     ),
-                    const Icon(Icons.arrow_right_alt_rounded, size: 16, color: Colors.grey),
+                    const Icon(
+                      Icons.arrow_right_alt_rounded,
+                      size: 16,
+                      color: Colors.grey,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 2),
                 Text(
                   title,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade500,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 child,
@@ -1177,7 +1268,11 @@ class _BlinkingBannerState extends State<_BlinkingBanner>
           ),
           child: Row(
             children: [
-              const Icon(Icons.star_purple500_rounded, color: Colors.yellowAccent, size: 28),
+              const Icon(
+                Icons.star_purple500_rounded,
+                color: Colors.yellowAccent,
+                size: 28,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -1209,7 +1304,10 @@ class _BlinkingBannerState extends State<_BlinkingBanner>
                   backgroundColor: Colors.white,
                   foregroundColor: Colors.purple.shade900,
                   elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

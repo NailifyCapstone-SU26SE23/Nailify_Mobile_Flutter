@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -20,10 +19,10 @@ class _AnalyzePageState extends State<AnalyzePage>
     with TickerProviderStateMixin {
   double _progress = 0;
   Timer? _progressTimer;
-  
+
   late final AnimationController _pulseController;
   late final AnimationController _textController;
-  
+
   final List<String> _analysisMessages = [
     'Đang phân tích phong cách...',
     'Đang tìm kiếm màu sắc phù hợp...',
@@ -36,13 +35,13 @@ class _AnalyzePageState extends State<AnalyzePage>
   @override
   void initState() {
     super.initState();
-    
+
     // Pulsing lotus animation
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     )..repeat(reverse: true);
-    
+
     // Text fade animation
     _textController = AnimationController(
       vsync: this,
@@ -84,8 +83,11 @@ class _AnalyzePageState extends State<AnalyzePage>
 
       // Speed up artificial progress if API returns quickly
       if (_progress < 1.0) {
-        final remaining = ((1.0 - _progress) * 100 * 15).toInt(); // Faster animation (15ms instead of 40ms)
-        await Future.delayed(Duration(milliseconds: remaining.clamp(100, 1500)));
+        final remaining = ((1.0 - _progress) * 100 * 15)
+            .toInt(); // Faster animation (15ms instead of 40ms)
+        await Future.delayed(
+          Duration(milliseconds: remaining.clamp(100, 1500)),
+        );
       } else {
         await Future.delayed(const Duration(milliseconds: 200));
       }
@@ -108,15 +110,20 @@ class _AnalyzePageState extends State<AnalyzePage>
       barrierDismissible: false,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Row(children: [
-          Icon(Icons.error_outline_rounded, color: AppColors.error),
-          SizedBox(width: 10),
-          Text('Có lỗi xảy ra'),
-        ]),
+        title: const Row(
+          children: [
+            Icon(Icons.error_outline_rounded, color: AppColors.error),
+            SizedBox(width: 10),
+            Text('Có lỗi xảy ra'),
+          ],
+        ),
         content: Text(
           message,
           style: const TextStyle(
-              fontSize: 14, color: AppColors.textSecondary, height: 1.5),
+            fontSize: 14,
+            color: AppColors.textSecondary,
+            height: 1.5,
+          ),
         ),
         actions: [
           TextButton(
@@ -124,9 +131,13 @@ class _AnalyzePageState extends State<AnalyzePage>
               Navigator.of(context).pop();
               if (context.canPop()) context.pop();
             },
-            child: const Text('Quay lại',
-                style: TextStyle(
-                    color: AppColors.primaryDark, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Quay lại',
+              style: TextStyle(
+                color: AppColors.primaryDark,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -152,19 +163,15 @@ class _AnalyzePageState extends State<AnalyzePage>
             child: Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    Color(0xFFFFF0F5),
-                    Color(0xFFFFE0EC),
-                  ],
+                  colors: [Color(0xFFFFF0F5), Color(0xFFFFE0EC)],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
               ),
             ),
           ),
-          
+
           // Removed heavy BackdropFilter for performance
-          
           Center(
             child: Container(
               constraints: const BoxConstraints(maxWidth: 402),
@@ -174,18 +181,21 @@ class _AnalyzePageState extends State<AnalyzePage>
                 children: [
                   _buildLotusAnimation(),
                   const SizedBox(height: 48),
-                  
+
                   // Text and progress
                   FadeTransition(
                     opacity: _textController,
                     child: SlideTransition(
-                      position: Tween<Offset>(
-                        begin: const Offset(0, 0.2),
-                        end: Offset.zero,
-                      ).animate(CurvedAnimation(
-                        parent: _textController,
-                        curve: Curves.easeOut,
-                      )),
+                      position:
+                          Tween<Offset>(
+                            begin: const Offset(0, 0.2),
+                            end: Offset.zero,
+                          ).animate(
+                            CurvedAnimation(
+                              parent: _textController,
+                              curve: Curves.easeOut,
+                            ),
+                          ),
                       child: Text(
                         _analysisMessages[_messageIndex],
                         textAlign: TextAlign.center,
@@ -198,11 +208,11 @@ class _AnalyzePageState extends State<AnalyzePage>
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 32),
                   _buildProgressBar(),
                   const SizedBox(height: 16),
-                  
+
                   Text(
                     '${(_progress * 100).toInt()}%',
                     style: TextStyle(
@@ -245,12 +255,9 @@ class _AnalyzePageState extends State<AnalyzePage>
           ],
         ),
         child: ShaderMask(
-          shaderCallback: (bounds) => AppColors.quizGradient.createShader(bounds),
-          child: const Icon(
-            Icons.spa_rounded,
-            size: 80,
-            color: Colors.white,
-          ),
+          shaderCallback: (bounds) =>
+              AppColors.quizGradient.createShader(bounds),
+          child: const Icon(Icons.spa_rounded, size: 80, color: Colors.white),
         ),
       ),
     );

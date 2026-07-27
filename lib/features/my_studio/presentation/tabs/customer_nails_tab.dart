@@ -208,7 +208,10 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
                   flex: 5,
                   child: TextField(
                     controller: _searchController,
-                    style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textPrimary,
+                    ),
                     decoration: InputDecoration(
                       hintText: 'Tìm mẫu móng...',
                       prefixIcon: const Icon(
@@ -282,10 +285,7 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
                         ),
                         isExpanded: true,
                         items: const [
-                          DropdownMenuItem(
-                            value: null,
-                            child: Text('Tất cả'),
-                          ),
+                          DropdownMenuItem(value: null, child: Text('Tất cả')),
                           DropdownMenuItem(
                             value: true,
                             child: Text('Công khai'),

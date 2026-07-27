@@ -107,7 +107,10 @@ class HomeServices extends StatelessWidget {
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.primaryDark,
                 side: const BorderSide(color: AppColors.primary, width: 1.5),
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 40,
+                  vertical: 14,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(26),
                 ),
@@ -159,7 +162,11 @@ class HomeServices extends StatelessWidget {
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => Container(
                   color: Colors.grey.shade100,
-                  child: const Icon(Icons.spa_outlined, color: Colors.grey, size: 32),
+                  child: const Icon(
+                    Icons.spa_outlined,
+                    color: Colors.grey,
+                    size: 32,
+                  ),
                 ),
               ),
 

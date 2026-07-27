@@ -6,7 +6,12 @@ class BookingStatusView {
   final Color textColor;
   final IconData icon;
 
-  const BookingStatusView(this.label, this.backgroundColor, this.textColor, this.icon);
+  const BookingStatusView(
+    this.label,
+    this.backgroundColor,
+    this.textColor,
+    this.icon,
+  );
 }
 
 BookingStatusView bookingStatusView(String? status) {

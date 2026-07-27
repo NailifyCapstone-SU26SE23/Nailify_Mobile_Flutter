@@ -18,9 +18,6 @@ import '../../features/my_studio/presentation/pages/customer_nail_detail_page.da
 import '../../features/nail_booking/presentation/pages/booking_success_page.dart';
 import '../../features/nail_booking/presentation/pages/custom_nail_booking_page.dart';
 import '../../features/nail_booking/presentation/pages/nail_booking_page.dart';
-import '../../features/nail_booking/presentation/pages/payment_qr_page.dart';
-import '../../features/nail_booking/presentation/pages/payment_result_page.dart';
-import '../../features/nail_booking/presentation/pages/refund_bank_info_page.dart';
 import '../../features/nail_booking/presentation/pages/service_booking_page.dart';
 import '../../features/my_studio/presentation/pages/my_studio_tab_page.dart';
 import '../../features/nails/presentation/pages/nail_detail_screen.dart';
@@ -40,10 +37,7 @@ class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: '/',
     routes: [
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginPage(),
-      ),
+      GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterPage(),
@@ -79,10 +73,7 @@ class AppRouter {
       ShellRoute(
         builder: (context, state, child) => MainShell(child: child),
         routes: [
-          GoRoute(
-            path: '/',
-            builder: (context, state) => const HomePage(),
-          ),
+          GoRoute(path: '/', builder: (context, state) => const HomePage()),
           GoRoute(
             path: '/discover',
             builder: (context, state) => const DiscoverPage(),
@@ -174,15 +165,14 @@ class AppRouter {
               return CustomerNailDetailPage(id: id);
             },
           ),
-          GoRoute(
-            path: '/quiz',
-            builder: (context, state) => const QuizPage(),
-          ),
+          GoRoute(path: '/quiz', builder: (context, state) => const QuizPage()),
           GoRoute(
             path: '/quiz/analyze',
             builder: (context, state) {
               final selectedOptionIds =
-                  (state.extra as List?)?.map((item) => item.toString()).toList() ??
+                  (state.extra as List?)
+                      ?.map((item) => item.toString())
+                      .toList() ??
                   const <String>[];
               return AnalyzePage(selectedOptionIds: selectedOptionIds);
             },

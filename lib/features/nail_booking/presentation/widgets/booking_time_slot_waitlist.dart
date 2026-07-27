@@ -57,7 +57,11 @@ class BookingTimeSlotWaitlist extends StatefulWidget {
   final ValueChanged<String>? onTimeSelected;
   final DateTime? selectedDate; // Ngày được chọn để check quá khứ
 
-  const BookingTimeSlotWaitlist({super.key, this.onTimeSelected, this.selectedDate});
+  const BookingTimeSlotWaitlist({
+    super.key,
+    this.onTimeSelected,
+    this.selectedDate,
+  });
 
   @override
   State<BookingTimeSlotWaitlist> createState() =>
@@ -71,7 +75,9 @@ class _BookingTimeSlotWaitlistState extends State<BookingTimeSlotWaitlist> {
   @override
   void initState() {
     super.initState();
-    _slots = TimeSlotMockData.slots.map((s) => TimeSlotItem(time: s.time, state: s.state)).toList();
+    _slots = TimeSlotMockData.slots
+        .map((s) => TimeSlotItem(time: s.time, state: s.state))
+        .toList();
     _applyPastTimeLogic();
   }
 
@@ -85,10 +91,14 @@ class _BookingTimeSlotWaitlistState extends State<BookingTimeSlotWaitlist> {
 
   void _applyPastTimeLogic() {
     if (widget.selectedDate == null) return;
-    
+
     final now = DateTime.now();
     final todayStart = DateTime(now.year, now.month, now.day);
-    final selectedDateStart = DateTime(widget.selectedDate!.year, widget.selectedDate!.month, widget.selectedDate!.day);
+    final selectedDateStart = DateTime(
+      widget.selectedDate!.year,
+      widget.selectedDate!.month,
+      widget.selectedDate!.day,
+    );
 
     final isPastDate = selectedDateStart.isBefore(todayStart);
     final isToday = selectedDateStart.isAtSameMomentAs(todayStart);
@@ -102,12 +112,12 @@ class _BookingTimeSlotWaitlistState extends State<BookingTimeSlotWaitlist> {
           final parts = slot.time.split(':');
           final hour = int.tryParse(parts[0]) ?? 0;
           final minute = int.tryParse(parts[1]) ?? 0;
-          
+
           if (hour < now.hour || (hour == now.hour && minute <= now.minute)) {
             isPast = true;
           }
         }
-        
+
         if (isPast) {
           slot.state = TimeSlotState.past;
         }
@@ -119,8 +129,16 @@ class _BookingTimeSlotWaitlistState extends State<BookingTimeSlotWaitlist> {
     // Kiểm tra lại tại thời điểm tap (người dùng gửi request)
     if (widget.selectedDate != null) {
       final currentNow = DateTime.now();
-      final currentTodayStart = DateTime(currentNow.year, currentNow.month, currentNow.day);
-      final selDateStart = DateTime(widget.selectedDate!.year, widget.selectedDate!.month, widget.selectedDate!.day);
+      final currentTodayStart = DateTime(
+        currentNow.year,
+        currentNow.month,
+        currentNow.day,
+      );
+      final selDateStart = DateTime(
+        widget.selectedDate!.year,
+        widget.selectedDate!.month,
+        widget.selectedDate!.day,
+      );
 
       bool isCurrentlyPast = false;
       if (selDateStart.isBefore(currentTodayStart)) {
@@ -129,8 +147,9 @@ class _BookingTimeSlotWaitlistState extends State<BookingTimeSlotWaitlist> {
         final parts = slot.time.split(':');
         final hour = int.tryParse(parts[0]) ?? 0;
         final minute = int.tryParse(parts[1]) ?? 0;
-        
-        if (hour < currentNow.hour || (hour == currentNow.hour && minute <= currentNow.minute)) {
+
+        if (hour < currentNow.hour ||
+            (hour == currentNow.hour && minute <= currentNow.minute)) {
           isCurrentlyPast = true;
         }
       }

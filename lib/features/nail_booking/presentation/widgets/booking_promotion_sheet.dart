@@ -43,7 +43,7 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
 
   Future<void> _fetchPromotions() async {
     try {
-      final result = await _apiService.getPromotions(pageSize: 20);
+      final result = await _apiService.getTodayPromotions(pageSize: 20);
       if (mounted) {
         setState(() {
           _allPromotions = result;

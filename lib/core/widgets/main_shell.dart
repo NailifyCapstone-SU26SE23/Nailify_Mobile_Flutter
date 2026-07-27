@@ -55,8 +55,11 @@ class _MainShellState extends State<MainShell> {
   }
 
   void _checkAuthAndRecommendations() {
-    final token = getIt<SharedPreferences>().getString(AppConstants.authTokenKey);
-    final localQuizCompleted = getIt<SharedPreferences>().getBool('has_completed_quiz') ?? false;
+    final token = getIt<SharedPreferences>().getString(
+      AppConstants.authTokenKey,
+    );
+    final localQuizCompleted =
+        getIt<SharedPreferences>().getBool('has_completed_quiz') ?? false;
 
     if (token != _lastCheckedToken) {
       _lastCheckedToken = token;
@@ -102,10 +105,14 @@ class _MainShellState extends State<MainShell> {
   String _cleanNotificationMessage(String msg) {
     // 1. Loại bỏ các chuỗi hex 24 ký tự (như MongoDB ObjectId) hoặc UUID 36 ký tự, có hoặc không có dấu '#' phía trước
     final objectIdRegex = RegExp(r'#?[0-9a-fA-F]{24}');
-    final uuidRegex = RegExp(r'#?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}');
-    
-    String cleaned = msg.replaceAll(uuidRegex, '').replaceAll(objectIdRegex, '');
-    
+    final uuidRegex = RegExp(
+      r'#?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}',
+    );
+
+    String cleaned = msg
+        .replaceAll(uuidRegex, '')
+        .replaceAll(objectIdRegex, '');
+
     // 2. Loại bỏ các cụm từ đi kèm nếu có (ví dụ: "mã: ", "Mã: ", "ID: ", "id: ", v.v.)
     cleaned = cleaned
         .replaceAll(RegExp(r'\(\s*[Mm]ã\s*:\s*\)'), '')
@@ -120,10 +127,12 @@ class _MainShellState extends State<MainShell> {
     cleaned = cleaned.replaceAll(RegExp(r'\s+'), ' ').trim();
 
     // 4. Nếu kết quả thừa ký tự đặc biệt ở đầu/cuối sau khi xóa ID
-    if (cleaned.startsWith(':') || cleaned.startsWith('-') || cleaned.startsWith(',')) {
+    if (cleaned.startsWith(':') ||
+        cleaned.startsWith('-') ||
+        cleaned.startsWith(',')) {
       cleaned = cleaned.substring(1).trim();
     }
-    
+
     return cleaned;
   }
 
@@ -162,7 +171,9 @@ class _MainShellState extends State<MainShell> {
         content: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFF8FB), // Hồng ngọc trai nhẹ, siêu nữ tính & sang trọng
+            color: const Color(
+              0xFFFFF8FB,
+            ), // Hồng ngọc trai nhẹ, siêu nữ tính & sang trọng
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
@@ -171,7 +182,10 @@ class _MainShellState extends State<MainShell> {
                 offset: const Offset(0, 6),
               ),
             ],
-            border: Border.all(color: color.withValues(alpha: 0.35), width: 1.2),
+            border: Border.all(
+              color: color.withValues(alpha: 0.35),
+              width: 1.2,
+            ),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -190,7 +204,9 @@ class _MainShellState extends State<MainShell> {
                 child: Text(
                   cleanedMessage,
                   style: const TextStyle(
-                    color: Color(0xFF4A3543), // Màu mận/nâu sẫm ấm áp, dễ đọc trên nền hồng nhạt
+                    color: Color(
+                      0xFF4A3543,
+                    ), // Màu mận/nâu sẫm ấm áp, dễ đọc trên nền hồng nhạt
                     fontSize: 13.5,
                     fontWeight: FontWeight.w600,
                     height: 1.35,
@@ -204,7 +220,10 @@ class _MainShellState extends State<MainShell> {
                   style: TextButton.styleFrom(
                     backgroundColor: color.withValues(alpha: 0.12),
                     foregroundColor: color,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -213,7 +232,10 @@ class _MainShellState extends State<MainShell> {
                   ),
                   child: Text(
                     actionLabel,
-                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -283,7 +305,10 @@ class _MainShellState extends State<MainShell> {
           color: color,
           actionLabel: 'Xem lịch',
           onAction: () {
-            final targetTab = (event.status == 'Approved' || event.status == 'Rejected') ? 0 : 2;
+            final targetTab =
+                (event.status == 'Approved' || event.status == 'Rejected')
+                ? 0
+                : 2;
             context.go('/my-bookings', extra: {'initialTab': targetTab});
           },
           duration: const Duration(seconds: 8),
@@ -292,7 +317,6 @@ class _MainShellState extends State<MainShell> {
       });
     });
   }
-
 
   void _showWaitlistBanner(WaitlistPromotedEvent event) {
     final cleanedMessage = _cleanNotificationMessage(event.message);
@@ -304,7 +328,10 @@ class _MainShellState extends State<MainShell> {
         leading: const Icon(Icons.notifications_active, color: Colors.white),
         content: Text(
           cleanedMessage,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         actions: [
           TextButton(
@@ -314,7 +341,10 @@ class _MainShellState extends State<MainShell> {
             },
             child: const Text(
               'Xác nhận ngay',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           TextButton(
@@ -513,17 +543,12 @@ class _MainShellState extends State<MainShell> {
   Widget _buildCustomBottomBar(BuildContext context) {
     final currentIndex = _calculateCurrentIndex(context);
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-    
+
     return Container(
       height: 64 + bottomPadding,
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: Colors.grey.shade200,
-            width: 1,
-          ),
-        ),
+        border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -576,7 +601,7 @@ class _MainShellState extends State<MainShell> {
               ],
             ),
           ),
-          
+
           // Nút tròn nhô lên ở giữa (Shortcut đi tới màn hình đặt lịch mới /nail-booking)
           Positioned(
             top: -24, // Nhô lên 24px để tạo đường cong nhô lên đẹp mắt
@@ -628,7 +653,9 @@ class _MainShellState extends State<MainShell> {
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFFFF66C4), // Luôn hiển thị màu hồng chủ đạo
+                      color: Color(
+                        0xFFFF66C4,
+                      ), // Luôn hiển thị màu hồng chủ đạo
                     ),
                   ),
                 ),
@@ -649,7 +676,7 @@ class _MainShellState extends State<MainShell> {
     required bool isSelected,
   }) {
     final color = isSelected ? const Color(0xFFFF66C4) : Colors.grey.shade400;
-    
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => _onTabTapped(context, index),
@@ -659,11 +686,7 @@ class _MainShellState extends State<MainShell> {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              isSelected ? activeIcon : icon,
-              color: color,
-              size: 24,
-            ),
+            Icon(isSelected ? activeIcon : icon, color: color, size: 24),
             const SizedBox(height: 4),
             Text(
               label,
@@ -687,7 +710,8 @@ class BlinkingPerfectMatchButton extends StatefulWidget {
   const BlinkingPerfectMatchButton({super.key});
 
   @override
-  State<BlinkingPerfectMatchButton> createState() => _BlinkingPerfectMatchButtonState();
+  State<BlinkingPerfectMatchButton> createState() =>
+      _BlinkingPerfectMatchButtonState();
 }
 
 class _BlinkingPerfectMatchButtonState extends State<BlinkingPerfectMatchButton>
@@ -702,9 +726,10 @@ class _BlinkingPerfectMatchButtonState extends State<BlinkingPerfectMatchButton>
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     )..repeat(reverse: true);
-    _animation = Tween<double>(begin: 0.3, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: 0.3,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override

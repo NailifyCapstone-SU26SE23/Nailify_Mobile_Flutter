@@ -185,7 +185,7 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
   }
 
   @override
-  Future<List<PromotionModel>> getPromotions() {
-    return _promotionApi.getPromotions();
+  Future<List<PromotionModel>> getTodayPromotions() {
+    return _promotionApi.getTodayPromotions();
   }
 }

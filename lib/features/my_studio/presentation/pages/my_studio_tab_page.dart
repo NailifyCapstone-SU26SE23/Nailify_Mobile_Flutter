@@ -77,8 +77,14 @@ class _MyStudioTabPageState extends State<MyStudioTabPage>
                 ],
               ),
               indicatorSize: TabBarIndicatorSize.tab,
-              labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-              unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+              labelStyle: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 12,
+              ),
               dividerColor: Colors.transparent,
               tabs: const [
                 Tab(text: 'My Nails'),

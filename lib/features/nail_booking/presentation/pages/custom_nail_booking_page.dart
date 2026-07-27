@@ -93,20 +93,6 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   String get _shapeMethodName =>
       _selectedShapeMethod?.name ?? 'Phuong phap tao form';
 
-  int get _estimatedTotalPrice {
-    return widget.nail.customerNailPrice +
-        widget.nail.price +
-        _shapeMethodPrice +
-        _selectedExtraServicesTotal;
-  }
-
-  int get _selectedExtraServicesTotal {
-    return _groupedServicesMap.entries.fold<int>(
-      0,
-      (total, entry) => total + _servicePriceById(entry.key) * entry.value,
-    );
-  }
-
   Map<String, int> get _groupedServicesMap {
     final map = <String, int>{};
     for (final id in _selectedExtraServices.whereType<String>()) {
@@ -643,12 +629,6 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
               muted: true,
             );
           }),
-          const Divider(height: 24),
-          _buildPaymentLine(
-            'Tong tam tinh',
-            _estimatedTotalPrice,
-            strong: true,
-          ),
         ],
       ),
     );

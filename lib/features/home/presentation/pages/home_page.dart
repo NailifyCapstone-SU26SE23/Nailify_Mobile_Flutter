@@ -91,7 +91,11 @@ class HomeQuizBanner extends StatelessWidget {
                 children: [
                   const Row(
                     children: [
-                      Icon(Icons.auto_awesome_rounded, color: AppColors.primary, size: 18),
+                      Icon(
+                        Icons.auto_awesome_rounded,
+                        color: AppColors.primary,
+                        size: 18,
+                      ),
                       SizedBox(width: 6),
                       Text(
                         'Nailify Match AI',
@@ -130,7 +134,10 @@ class HomeQuizBanner extends StatelessWidget {
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
@@ -261,7 +268,9 @@ Widget _buildCallToAction(BuildContext context) {
                       height: 1.5,
                       fontWeight: FontWeight.w400,
                     ),
-                  ).copyWithColor(Colors.white.withValues(alpha: 0.9)), // Tránh text bị chói
+                  ).copyWithColor(
+                    Colors.white.withValues(alpha: 0.9),
+                  ), // Tránh text bị chói
                   const SizedBox(height: 28),
                   ElevatedButton.icon(
                     onPressed: () {

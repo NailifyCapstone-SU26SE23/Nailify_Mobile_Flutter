@@ -126,47 +126,65 @@ class _CustomerComponentFormDialogState
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
-                
+
                 // Tên thành phần
                 TextFormField(
                   controller: _nameController,
-                  style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textPrimary,
+                  ),
                   decoration: InputDecoration(
                     labelText: 'Tên thành phần *',
-                    labelStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                    labelStyle: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                    ),
                     filled: true,
                     fillColor: const Color(0xFFF5F5F7),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide.none,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
                   ),
                   validator: (value) => value?.trim().isEmpty == true
                       ? 'Vui lòng nhập tên'
                       : null,
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Giá tiền
                 TextFormField(
                   controller: _priceController,
-                  style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textPrimary,
+                  ),
                   decoration: InputDecoration(
                     labelText: 'Giá tiền (VND)',
-                    labelStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                    labelStyle: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                    ),
                     filled: true,
                     fillColor: const Color(0xFFF5F5F7),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide.none,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
                   ),
                   keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Loại thành phần (Dropdown)
                 DropdownButtonFormField<int>(
                   initialValue: _componentType,
@@ -175,14 +193,20 @@ class _CustomerComponentFormDialogState
                   borderRadius: BorderRadius.circular(16),
                   decoration: InputDecoration(
                     labelText: 'Loại thành phần *',
-                    labelStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                    labelStyle: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                    ),
                     filled: true,
                     fillColor: const Color(0xFFF5F5F7),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide.none,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                   ),
                   icon: const Icon(
                     Icons.keyboard_arrow_down_rounded,
@@ -190,16 +214,28 @@ class _CustomerComponentFormDialogState
                     size: 22,
                   ),
                   items: const [
-                    DropdownMenuItem(value: 0, child: Text('💎 Gem', style: TextStyle(fontSize: 14))),
-                    DropdownMenuItem(value: 1, child: Text('📝 Sticker', style: TextStyle(fontSize: 14))),
-                    DropdownMenuItem(value: 2, child: Text('🔗 Charm', style: TextStyle(fontSize: 14))),
-                    DropdownMenuItem(value: 3, child: Text('🎨 Art', style: TextStyle(fontSize: 14))),
+                    DropdownMenuItem(
+                      value: 0,
+                      child: Text('💎 Gem', style: TextStyle(fontSize: 14)),
+                    ),
+                    DropdownMenuItem(
+                      value: 1,
+                      child: Text('📝 Sticker', style: TextStyle(fontSize: 14)),
+                    ),
+                    DropdownMenuItem(
+                      value: 2,
+                      child: Text('🔗 Charm', style: TextStyle(fontSize: 14)),
+                    ),
+                    DropdownMenuItem(
+                      value: 3,
+                      child: Text('🎨 Art', style: TextStyle(fontSize: 14)),
+                    ),
                   ],
                   onChanged: (value) =>
                       setState(() => _componentType = value ?? 0),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Bộ chọn ảnh trực quan tích hợp
                 GestureDetector(
                   onTap: _pickImage,
@@ -228,13 +264,22 @@ class _CustomerComponentFormDialogState
                                   color: Colors.black38,
                                   child: const Center(
                                     child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
-                                        Icon(Icons.photo_library_rounded, color: Colors.white, size: 20),
+                                        Icon(
+                                          Icons.photo_library_rounded,
+                                          color: Colors.white,
+                                          size: 20,
+                                        ),
                                         SizedBox(width: 8),
                                         Text(
                                           'Đổi ảnh mới',
-                                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -244,58 +289,70 @@ class _CustomerComponentFormDialogState
                             ),
                           )
                         : (widget.component?.imageUrl != null &&
-                                widget.component!.imageUrl.isNotEmpty)
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(14),
-                                child: Stack(
-                                  children: [
-                                    Image.network(
-                                      widget.component!.imageUrl,
-                                      width: double.infinity,
-                                      height: double.infinity,
-                                      fit: BoxFit.cover,
-                                    ),
-                                    Container(
-                                      color: Colors.black38,
-                                      child: const Center(
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Icon(Icons.photo_library_rounded, color: Colors.white, size: 20),
-                                            SizedBox(width: 8),
-                                            Text(
-                                              'Đổi ảnh mới',
-                                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                                            ),
-                                          ],
+                              widget.component!.imageUrl.isNotEmpty)
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(14),
+                            child: Stack(
+                              children: [
+                                Image.network(
+                                  widget.component!.imageUrl,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  fit: BoxFit.cover,
+                                ),
+                                Container(
+                                  color: Colors.black38,
+                                  child: const Center(
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.photo_library_rounded,
+                                          color: Colors.white,
+                                          size: 20,
                                         ),
-                                      ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'Đổi ảnh mới',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ],
+                                  ),
                                 ),
-                              )
-                            : const Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.add_photo_alternate_rounded,
-                                        size: 32, color: AppColors.primary),
-                                    SizedBox(height: 6),
-                                    Text(
-                                      'Chọn ảnh thành phần',
-                                      style: TextStyle(
-                                        color: AppColors.primary,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ],
+                              ],
+                            ),
+                          )
+                        : const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.add_photo_alternate_rounded,
+                                  size: 32,
+                                  color: AppColors.primary,
                                 ),
-                              ),
+                                SizedBox(height: 6),
+                                Text(
+                                  'Chọn ảnh thành phần',
+                                  style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Trạng thái công khai
                 Container(
                   decoration: BoxDecoration(
@@ -305,14 +362,21 @@ class _CustomerComponentFormDialogState
                   child: SwitchListTile(
                     title: const Text(
                       'Công khai',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
                     subtitle: const Text(
                       'Mọi người có thể sử dụng',
-                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                     value: _isPublic,
-                    activeColor: Colors.white,
+                    activeThumbColor: Colors.white,
                     activeTrackColor: AppColors.primary,
                     inactiveThumbColor: Colors.grey.shade400,
                     inactiveTrackColor: Colors.grey.shade200,
@@ -324,7 +388,7 @@ class _CustomerComponentFormDialogState
                   ),
                 ),
                 const SizedBox(height: 28),
-                
+
                 // Nút hành động
                 Row(
                   children: [
@@ -335,7 +399,10 @@ class _CustomerComponentFormDialogState
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          side: const BorderSide(color: Color(0xFFE0E0E0), width: 1.2),
+                          side: const BorderSide(
+                            color: Color(0xFFE0E0E0),
+                            width: 1.2,
+                          ),
                         ),
                         onPressed: _isLoading
                             ? null

@@ -68,7 +68,10 @@ class _NailFilterSheetState extends State<NailFilterSheet> {
                   IconButton(
                     tooltip: 'Đóng',
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close_rounded, color: AppColors.textSecondary),
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -76,29 +79,51 @@ class _NailFilterSheetState extends State<NailFilterSheet> {
               TextField(
                 controller: _nameController,
                 autofocus: false,
-                style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textPrimary,
+                ),
                 decoration: InputDecoration(
                   labelText: 'Tên thiết kế',
-                  labelStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
-                  prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textSecondary, size: 20),
+                  labelStyle: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.search_rounded,
+                    color: AppColors.textSecondary,
+                    size: 20,
+                  ),
                   filled: true,
                   fillColor: const Color(0xFFF5F5F7),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                     borderSide: BorderSide.none,
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
               const Text(
                 'Danh mục',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: AppColors.textPrimary,
+                ),
               ),
               const SizedBox(height: 10),
               Expanded(
                 child: widget.categoryTypes.isEmpty
-                    ? const Center(child: Text('Không có danh mục nào.', style: TextStyle(color: AppColors.textSecondary)))
+                    ? const Center(
+                        child: Text(
+                          'Không có danh mục nào.',
+                          style: TextStyle(color: AppColors.textSecondary),
+                        ),
+                      )
                     : ListView.separated(
                         itemCount: widget.categoryTypes.length,
                         separatorBuilder: (_, _) => const SizedBox(height: 18),
@@ -147,24 +172,36 @@ class _NailFilterSheetState extends State<NailFilterSheet> {
                                         }
                                       });
                                     },
-                                    selectedColor: AppColors.primary.withValues(alpha: 0.12),
+                                    selectedColor: AppColors.primary.withValues(
+                                      alpha: 0.12,
+                                    ),
                                     checkmarkColor: AppColors.primary,
                                     backgroundColor: const Color(0xFFF5F5F7),
                                     labelStyle: TextStyle(
-                                      color: selected ? AppColors.primary : AppColors.textPrimary,
-                                      fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                                      color: selected
+                                          ? AppColors.primary
+                                          : AppColors.textPrimary,
+                                      fontWeight: selected
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
                                       fontSize: 13,
                                     ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(30),
                                       side: BorderSide(
-                                        color: selected ? AppColors.primary : Colors.transparent,
+                                        color: selected
+                                            ? AppColors.primary
+                                            : Colors.transparent,
                                         width: 1.2,
                                       ),
                                     ),
                                     showCheckmark: false,
-                                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                                    materialTapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                      vertical: 4,
+                                    ),
                                   );
                                 }).toList(),
                               ),
@@ -183,7 +220,10 @@ class _NailFilterSheetState extends State<NailFilterSheet> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        side: const BorderSide(color: Color(0xFFE0E0E0), width: 1.2),
+                        side: const BorderSide(
+                          color: Color(0xFFE0E0E0),
+                          width: 1.2,
+                        ),
                       ),
                       onPressed: () =>
                           Navigator.pop(context, const NailFilters()),

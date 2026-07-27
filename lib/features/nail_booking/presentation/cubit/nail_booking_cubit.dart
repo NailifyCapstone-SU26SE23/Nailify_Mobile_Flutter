@@ -44,27 +44,13 @@ class NailBookingCubit extends Cubit<NailBookingState> {
   Future<void> loadServices() async {
     try {
       final services = await _repository.getServices();
-      emit(
-        state.copyWith(
-          services: services,
-          selectedExtraServices: state.selectedExtraServices.isEmpty
-              ? [null]
-              : state.selectedExtraServices,
-        ),
-      );
+      emit(state.copyWith(services: services));
     } catch (_) {
       // Fallback về mock data
       final mock = BookingMockData.extraServices
           .map((e) => Map<String, dynamic>.from(e))
           .toList();
-      emit(
-        state.copyWith(
-          services: mock,
-          selectedExtraServices: state.selectedExtraServices.isEmpty
-              ? [null]
-              : state.selectedExtraServices,
-        ),
-      );
+      emit(state.copyWith(services: mock));
     }
   }
 
@@ -89,12 +75,11 @@ class NailBookingCubit extends Cubit<NailBookingState> {
 
   void initializeWarranty({
     required Map<String, dynamic> salon,
-    required List<String> extraServiceIds,
     required List<Map<String, dynamic>> warrantyBookingItems,
   }) {
     emit(state.copyWith(
       selectedBranch: salon,
-      selectedExtraServices: extraServiceIds.isEmpty ? [null] : extraServiceIds,
+      selectedExtraServices: const [],
       selectedWarrantyItems: warrantyBookingItems,
     ));
   }
@@ -166,7 +151,7 @@ class NailBookingCubit extends Cubit<NailBookingState> {
           salonId: branch['salonId'],
           bookingDate: dateStr,
           nailVariantId: nailVariantId,
-          serviceIds: state.selectedExtraServices.whereType<String>().toList(),
+          serviceIds: state.selectedExtraServices.whereType<String>().toSet().toList(),
           shapeMethodConfigId: shapeMethodConfigId,
         );
       } else {
@@ -339,21 +324,26 @@ class NailBookingCubit extends Cubit<NailBookingState> {
     final List<Map<String, dynamic>> bookingItems = [];
     final isWarranty = state.selectedWarrantyItems.isNotEmpty;
 
+    // Group extra services by ID and count duplicates for correct quantity
+    final extraCounts = <String, int>{};
+    for (final id in state.selectedExtraServices.whereType<String>()) {
+      extraCounts[id] = (extraCounts[id] ?? 0) + 1;
+    }
+
     if (isWarranty) {
       bookingItems.addAll(state.selectedWarrantyItems);
-      for (final sId in state.selectedExtraServices.whereType<String>()) {
+      for (final entry in extraCounts.entries) {
         bookingItems.add({
           'nailVariantId': null,
-          'serviceId': sId,
+          'serviceId': entry.key,
           'customerNailId': null,
-          'quantity': 1,
+          'quantity': entry.value,
         });
       }
     } else {
       bookingItems.addAll(
-        state.selectedExtraServices
-            .whereType<String>()
-            .map((id) => {'serviceId': id, 'quantity': 1})
+        extraCounts.entries
+            .map((e) => {'serviceId': e.key, 'quantity': e.value})
             .toList(),
       );
       if (nailVariantId != null && nailVariantId > 0) {
@@ -501,9 +491,14 @@ class NailBookingCubit extends Cubit<NailBookingState> {
   }
 
   int extraServicesTotal(List<String?> services) {
-    return services.whereType<String>().fold<int>(
+    // Count duplicates so total price reflects quantity
+    final counts = <String, int>{};
+    for (final id in services.whereType<String>()) {
+      counts[id] = (counts[id] ?? 0) + 1;
+    }
+    return counts.entries.fold<int>(
       0,
-      (sum, id) => sum + servicePriceById(id),
+      (sum, e) => sum + servicePriceById(e.key) * e.value,
     );
   }
 

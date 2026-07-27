@@ -324,13 +324,11 @@ class _NailBookingPageState extends State<NailBookingPage> {
                 }
               }
               if (targetSalon != null && state.selectedBranch == null) {
-                final extraServiceIds = List<String>.from(widget.nailData?['extraServiceIds'] ?? []);
                 final warrantyBookingItems = widget.nailData?['warrantyBookingItems'] != null
                     ? List<Map<String, dynamic>>.from(widget.nailData!['warrantyBookingItems'] as List)
                     : <Map<String, dynamic>>[];
                 _cubit.initializeWarranty(
                   salon: targetSalon,
-                  extraServiceIds: extraServiceIds,
                   warrantyBookingItems: warrantyBookingItems,
                 );
                 Future.microtask(() {

@@ -172,7 +172,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
         _services = services;
         _isLoadingServices = false;
         if (_selectedExtraServices.isEmpty) {
-          _selectedExtraServices = [null];
+          _selectedExtraServices = [];
         }
       });
     } catch (e) {

@@ -44,13 +44,27 @@ class NailBookingCubit extends Cubit<NailBookingState> {
   Future<void> loadServices() async {
     try {
       final services = await _repository.getServices();
-      emit(state.copyWith(services: services));
+      emit(
+        state.copyWith(
+          services: services,
+          selectedExtraServices: state.selectedExtraServices.isEmpty
+              ? [null]
+              : state.selectedExtraServices,
+        ),
+      );
     } catch (_) {
       // Fallback về mock data
       final mock = BookingMockData.extraServices
           .map((e) => Map<String, dynamic>.from(e))
           .toList();
-      emit(state.copyWith(services: mock));
+      emit(
+        state.copyWith(
+          services: mock,
+          selectedExtraServices: state.selectedExtraServices.isEmpty
+              ? [null]
+              : state.selectedExtraServices,
+        ),
+      );
     }
   }
 
@@ -71,6 +85,22 @@ class NailBookingCubit extends Cubit<NailBookingState> {
         timeSlotsStatus: NailBookingLoadStatus.initial,
       ),
     );
+  }
+
+  void initializeWarranty({
+    required Map<String, dynamic> salon,
+    required List<String> extraServiceIds,
+    required List<Map<String, dynamic>> warrantyBookingItems,
+  }) {
+    emit(state.copyWith(
+      selectedBranch: salon,
+      selectedExtraServices: extraServiceIds.isEmpty ? [null] : extraServiceIds,
+      selectedWarrantyItems: warrantyBookingItems,
+    ));
+  }
+
+  void updateSelectedWarrantyItems(List<Map<String, dynamic>> items) {
+    emit(state.copyWith(selectedWarrantyItems: items));
   }
 
   void selectSeat(String seatId) {
@@ -306,13 +336,29 @@ class NailBookingCubit extends Cubit<NailBookingState> {
     final bookingDate = _formatDate(date);
     final formattedTime = time.length == 5 ? '$time:00' : time;
 
-    final bookingItems = state.selectedExtraServices
-        .whereType<String>()
-        .map((id) => {'serviceId': id, 'quantity': 1})
-        .toList();
+    final List<Map<String, dynamic>> bookingItems = [];
+    final isWarranty = state.selectedWarrantyItems.isNotEmpty;
 
-    if (nailVariantId != null && nailVariantId > 0) {
-      bookingItems.insert(0, {'nailVariantId': nailVariantId, 'quantity': 1});
+    if (isWarranty) {
+      bookingItems.addAll(state.selectedWarrantyItems);
+      for (final sId in state.selectedExtraServices.whereType<String>()) {
+        bookingItems.add({
+          'nailVariantId': null,
+          'serviceId': sId,
+          'customerNailId': null,
+          'quantity': 1,
+        });
+      }
+    } else {
+      bookingItems.addAll(
+        state.selectedExtraServices
+            .whereType<String>()
+            .map((id) => {'serviceId': id, 'quantity': 1})
+            .toList(),
+      );
+      if (nailVariantId != null && nailVariantId > 0) {
+        bookingItems.insert(0, {'nailVariantId': nailVariantId, 'quantity': 1});
+      }
     }
 
     try {
@@ -487,6 +533,8 @@ class NailBookingCubit extends Cubit<NailBookingState> {
     required List<String> serviceIds,
     List<int>? selectedPromotionIds,
     int? shapeMethodConfigId,
+    String? warrantyForBookingId,
+    List<Map<String, dynamic>>? warrantyBookingItems,
   }) async {
     emit(state.copyWith(isSubmitting: true));
     try {
@@ -494,6 +542,20 @@ class NailBookingCubit extends Cubit<NailBookingState> {
       final formattedTime = s.selectedTime!.length == 5
           ? '${s.selectedTime}:00'
           : s.selectedTime!;
+
+      List<Map<String, dynamic>>? finalBookingItems;
+      if (warrantyForBookingId != null && warrantyBookingItems != null) {
+        finalBookingItems = List<Map<String, dynamic>>.from(warrantyBookingItems);
+        for (final sId in serviceIds) {
+          finalBookingItems.add({
+            'nailVariantId': null,
+            'serviceId': sId,
+            'customerNailId': null,
+            'quantity': 1,
+          });
+        }
+      }
+
       final result = await _repository.createBooking(
         salonId: s.selectedBranch!['salonId'],
         bookingDate: _formatDate(s.selectedDate!),
@@ -506,6 +568,8 @@ class NailBookingCubit extends Cubit<NailBookingState> {
         selectedPromotionIds: selectedPromotionIds,
         holdToken: s.holdToken,
         shapeMethodConfigId: shapeMethodConfigId,
+        warrantyForBookingId: warrantyForBookingId,
+        warrantyBookingItems: warrantyForBookingId != null ? (finalBookingItems ?? warrantyBookingItems) : null,
       );
       _holdTimer?.cancel();
       emit(state.copyWith(isSubmitting: false, clearHoldToken: true, isHolding: false));

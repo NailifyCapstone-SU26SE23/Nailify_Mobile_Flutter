@@ -43,6 +43,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   int get _nailVariantPrice {
+    if (widget.nailData?['warrantyForBookingId'] != null) return 0;
     final price = widget.nailData?['price'];
     if (price is num) return price.round();
     return int.tryParse(price?.toString() ?? '') ?? 0;
@@ -61,6 +62,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   num get _shapeMethodPrice {
+    if (widget.nailData?['warrantyForBookingId'] != null) return 0;
     final value = widget.nailData?['shapeMethodPrice'];
     if (value is num) return value;
     return num.tryParse(value?.toString() ?? '') ?? 0;
@@ -70,9 +72,13 @@ class _NailBookingPageState extends State<NailBookingPage> {
 
   int get _estimatedTotalPrice {
     final state = _cubit.state;
+    final extraTotal = _cubit.extraServicesTotal(state.selectedExtraServices);
+    if (widget.nailData?['warrantyForBookingId'] != null) {
+      return extraTotal;
+    }
     return _nailVariantPrice +
         _shapeMethodPrice.round() +
-        _cubit.extraServicesTotal(state.selectedExtraServices);
+        extraTotal;
   }
 
   List<Map<String, dynamic>> get _discountBreakdown {
@@ -126,6 +132,17 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   void _handleBackAction() {
+    if (widget.nailData?['warrantyForBookingId'] != null) {
+      if (_currentStep > 1) {
+        _pageController.previousPage(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      } else {
+        context.pop();
+      }
+      return;
+    }
     if (_currentStep > 0) {
       _pageController.previousPage(
         duration: const Duration(milliseconds: 300),
@@ -202,6 +219,8 @@ class _NailBookingPageState extends State<NailBookingPage> {
           selectedPromotionIds:
               promos.isEmpty ? null : promos.map((p) => p.promotionId).toList(),
           shapeMethodConfigId: _shapeMethodConfigId,
+          warrantyForBookingId: widget.nailData?['warrantyForBookingId']?.toString(),
+          warrantyBookingItems: state.selectedWarrantyItems,
         );
 
         if (!mounted) return;
@@ -210,19 +229,23 @@ class _NailBookingPageState extends State<NailBookingPage> {
             ? '${state.selectedTime}:00'
             : state.selectedTime!;
 
+        final isWarranty = widget.nailData?['warrantyForBookingId'] != null;
+
         context.go('/booking-success', extra: {
+          'isWarranty': isWarranty,
           'bookingId': booking['bookingId']?.toString() ?? '',
           'serviceName': widget.nailData?['name'] ?? 'Làm móng',
           'date': state.selectedDate,
           'time': formattedTime,
-          'price': booking['price'] ?? _priceReview?['price'],
-          'discount': booking['discount'] ?? _priceReview?['discount'],
-          'totalPrice': booking['totalPrice'] ?? _priceReview?['totalPrice'],
-          'discounts':
-              booking['discounts'] ??
-              booking['discountBreakdown'] ??
-              _priceReview?['discounts'] ??
-              _priceReview?['discountBreakdown'],
+          'price': isWarranty ? _estimatedTotalPrice : (booking['price'] ?? _priceReview?['price']),
+          'discount': isWarranty ? 0 : (booking['discount'] ?? _priceReview?['discount']),
+          'totalPrice': isWarranty ? _estimatedTotalPrice : (booking['totalPrice'] ?? _priceReview?['totalPrice']),
+          'discounts': isWarranty
+              ? []
+              : (booking['discounts'] ??
+                  booking['discountBreakdown'] ??
+                  _priceReview?['discounts'] ??
+                  _priceReview?['discountBreakdown']),
           'stylistName': state.noArtistSelected
               ? 'Tự động phân công'
               : (state.selectedStylist?['fullName'] ?? 'Bất kỳ'),
@@ -276,17 +299,46 @@ class _NailBookingPageState extends State<NailBookingPage> {
         ),
         body: BlocConsumer<NailBookingCubit, NailBookingState>(
           listenWhen: (prev, curr) =>
-              curr.errorMessage != null && prev.errorMessage != curr.errorMessage,
+              (curr.errorMessage != null && prev.errorMessage != curr.errorMessage) ||
+              (prev.salonsStatus != curr.salonsStatus && curr.salonsStatus == NailBookingLoadStatus.loaded),
           listener: (context, state) {
-            _showSnackBar(state.errorMessage!);
-            if (state.errorMessage!.contains('hết') && _currentStep > 1) {
-              _pageController.animateToPage(
-                2,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
+            if (state.errorMessage != null) {
+              _showSnackBar(state.errorMessage!);
+              if (state.errorMessage!.contains('hết') && _currentStep > 1) {
+                _pageController.animateToPage(
+                  2,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+              }
+              _cubit.clearError();
             }
-            _cubit.clearError();
+
+            if (state.salonsStatus == NailBookingLoadStatus.loaded && widget.nailData?['warrantyForBookingId'] != null) {
+              final targetSalonId = widget.nailData?['salonId']?.toString();
+              Map<String, dynamic>? targetSalon;
+              for (final s in state.salons) {
+                if (s['salonId']?.toString() == targetSalonId) {
+                  targetSalon = s;
+                  break;
+                }
+              }
+              if (targetSalon != null && state.selectedBranch == null) {
+                final extraServiceIds = List<String>.from(widget.nailData?['extraServiceIds'] ?? []);
+                final warrantyBookingItems = widget.nailData?['warrantyBookingItems'] != null
+                    ? List<Map<String, dynamic>>.from(widget.nailData!['warrantyBookingItems'] as List)
+                    : <Map<String, dynamic>>[];
+                _cubit.initializeWarranty(
+                  salon: targetSalon,
+                  extraServiceIds: extraServiceIds,
+                  warrantyBookingItems: warrantyBookingItems,
+                );
+                Future.microtask(() {
+                  _pageController.jumpToPage(1);
+                  setState(() => _currentStep = 1);
+                });
+              }
+            }
           },
           builder: (context, state) {
             return Column(
@@ -340,6 +392,8 @@ class _NailBookingPageState extends State<NailBookingPage> {
         services: state.services,
         selectedExtraServices: state.selectedExtraServices,
         onChanged: _cubit.updateExtraServices,
+        selectedWarrantyItems: state.selectedWarrantyItems,
+        onWarrantyItemsChanged: _cubit.updateSelectedWarrantyItems,
       ),
     );
   }
@@ -472,10 +526,13 @@ class _NailBookingPageState extends State<NailBookingPage> {
   // ══════════════════════════════════════════════════════════════
 
   Widget _buildPaymentDetails(NailBookingState state) {
-    final reviewTotal = _priceReview?['totalPrice'];
-    final totalPrice = reviewTotal is num
-        ? reviewTotal.round()
-        : int.tryParse(reviewTotal?.toString() ?? '') ?? _estimatedTotalPrice;
+    final isWarranty = widget.nailData?['warrantyForBookingId'] != null;
+    final reviewTotal = isWarranty ? _estimatedTotalPrice : _priceReview?['totalPrice'];
+    final totalPrice = isWarranty
+        ? _estimatedTotalPrice
+        : (reviewTotal is num
+            ? reviewTotal.round()
+            : int.tryParse(reviewTotal?.toString() ?? '') ?? _estimatedTotalPrice);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -570,6 +627,8 @@ class _NailBookingPageState extends State<NailBookingPage> {
     bool muted = false,
     bool highlight = false,
   }) {
+    final displayPrice = price;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -590,7 +649,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
             ),
           ),
           Text(
-            PriceFormatter.format(price),
+            PriceFormatter.format(displayPrice),
             style: TextStyle(
               fontWeight: strong ? FontWeight.bold : FontWeight.w600,
               color: highlight ? AppColors.primary : AppColors.textPrimary,
@@ -603,6 +662,8 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   Widget _buildVariantDetailLine(String label, num price) {
+    final displayPrice = price;
+
     return Padding(
       padding: const EdgeInsets.only(top: 4, left: 12),
       child: Row(
@@ -619,7 +680,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
             ),
           ),
           Text(
-            PriceFormatter.format(price),
+            PriceFormatter.format(displayPrice),
             style: const TextStyle(
               fontSize: 13,
               color: Colors.grey,

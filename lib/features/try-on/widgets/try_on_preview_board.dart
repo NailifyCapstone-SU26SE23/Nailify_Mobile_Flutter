@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -365,45 +366,100 @@ class _TryOnPreviewBoardState extends State<TryOnPreviewBoard> with SingleTicker
                         onSelectPlacement: widget.onSelectPlacement,
                         onUpdate: widget.onUpdatePlacement,
                         onDelete: () => widget.onDeletePlacement(placement.localId),
+                        selectedShape: widget.selectedShape,
                       );
                     }),
 
-                  // 5. Detail UI Overlay Buttons
+                  // 5. Detail UI Back Button (Left side)
+                  if (t > 0.0)
+                    Positioned(
+                      top: 12,
+                      left: 12,
+                      child: Opacity(
+                        opacity: t,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.06),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            borderRadius: BorderRadius.circular(20),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(20),
+                              onTap: t > 0.9 ? () => widget.onToggleDetailFinger?.call(-1) : null,
+                              child: const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.arrow_back_rounded, size: 16, color: Color(0xFFE91E63)),
+                                    SizedBox(width: 6),
+                                    Text(
+                                      'Bàn tay',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                        color: Color(0xFFE91E63),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  // 6. Detail UI Apply to All Button (Right side)
                   if (t > 0.0)
                     Positioned(
                       top: 12,
                       right: 12,
                       child: Opacity(
                         opacity: t,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            ElevatedButton.icon(
-                              onPressed: t > 0.9 ? () => widget.onToggleDetailFinger?.call(-1) : null,
-                              icon: const Icon(Icons.arrow_back, size: 14),
-                              label: const Text('Bàn tay', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: Colors.pink,
-                                elevation: 3,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.06),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            borderRadius: BorderRadius.circular(20),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(20),
+                              onTap: t > 0.9 ? widget.onApplyToAll : null,
+                              child: const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.copy_all_rounded, size: 16, color: Color(0xFFE91E63)),
+                                    SizedBox(width: 6),
+                                    Text(
+                                      'Áp dụng tất cả',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                        color: Color(0xFFE91E63),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            ElevatedButton.icon(
-                              onPressed: t > 0.9 ? widget.onApplyToAll : null,
-                              icon: const Icon(Icons.copy_all, size: 14),
-                              label: const Text('Áp dụng tất cả', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: Colors.pink,
-                                elevation: 3,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
@@ -521,6 +577,7 @@ class _FingerSlot extends StatelessWidget {
               onSelectPlacement: onSelectPlacement ?? (_) {},
               onUpdate: onUpdatePlacement,
               onDelete: () => onDeletePlacement(placement.localId),
+              selectedShape: selectedShape,
             );
           }),
       ],
@@ -549,6 +606,7 @@ class _PlacedComponentPreview extends StatefulWidget {
   final ValueChanged<int> onSelectPlacement;
   final ValueChanged<PlacedComponentDraft> onUpdate;
   final VoidCallback onDelete;
+  final NailShapeModel? selectedShape;
 
   const _PlacedComponentPreview({
     required this.placement,
@@ -562,6 +620,7 @@ class _PlacedComponentPreview extends StatefulWidget {
     required this.onSelectPlacement,
     required this.onUpdate,
     required this.onDelete,
+    required this.selectedShape,
   });
 
   @override
@@ -573,6 +632,50 @@ class _PlacedComponentPreviewState extends State<_PlacedComponentPreview> {
   double _initialRotation = 0.0;
   double _initialDistance = 1.0;
   double _initialAngle = 0.0;
+
+  // Track drag start state for precise movement alignment
+  Offset? _startGlobalPosition;
+  double _startPosX = 0.0;
+  double _startPosY = 0.0;
+
+  bool _isPixelOnNail(double posX, double posY, CachedNailImage cached) {
+    final contentRect = cached.contentRect;
+    final img = cached.image;
+    final byteData = cached.byteData;
+
+    // Convert relative posX/posY (range -0.5 to 0.5) based on contentRect back to original image pixel coordinate
+    final double pixelX = contentRect.left + contentRect.width * (0.5 + posX);
+    final double pixelY = contentRect.top + contentRect.height * (0.5 + posY);
+
+    final int x = pixelX.round();
+    final int y = pixelY.round();
+
+    if (x < 0 || x >= img.width || y < 0 || y >= img.height) {
+      return false;
+    }
+
+    final int offset = (y * img.width + x) * 4;
+    if (offset + 3 >= byteData.lengthInBytes) return false;
+    
+    final int alpha = byteData.getUint8(offset + 3);
+    return alpha > 10; // Non-transparent pixel (threshold > 10)
+  }
+
+  bool _isPlacementOnNail(double posX, double posY, CachedNailImage cached) {
+    // 1. Check center point
+    if (!_isPixelOnNail(posX, posY, cached)) return false;
+
+    // 2. Check 4 edge points based on accessory scale to prevent overflowing the boundary.
+    // We check points at 30% of the accessory's relative radius for a balanced margin.
+    final double radius = widget.placement.scale * 0.5 * 0.3;
+
+    if (!_isPixelOnNail(posX - radius, posY, cached)) return false;
+    if (!_isPixelOnNail(posX + radius, posY, cached)) return false;
+    if (!_isPixelOnNail(posX, posY - radius, cached)) return false;
+    if (!_isPixelOnNail(posX, posY + radius, cached)) return false;
+
+    return true;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -592,16 +695,52 @@ class _PlacedComponentPreviewState extends State<_PlacedComponentPreview> {
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () => widget.onSelectPlacement(widget.placement.localId),
-            onPanStart: (_) => widget.onSelectPlacement(widget.placement.localId),
+            onPanStart: (details) {
+              widget.onSelectPlacement(widget.placement.localId);
+              _startGlobalPosition = details.globalPosition;
+              _startPosX = widget.placement.posX;
+              _startPosY = widget.placement.posY;
+            },
             onPanUpdate: (details) {
-              final dx = details.delta.dx / widget.nailWidth;
-              final dy = details.delta.dy / widget.nailHeight;
-              widget.onUpdate(
-                widget.placement.copyWith(
-                  posX: (widget.placement.posX + dx).clamp(-0.8, 0.8),
-                  posY: (widget.placement.posY + dy).clamp(-0.8, 0.8),
-                ),
-              );
+              if (_startGlobalPosition == null) return;
+              final double dx = (details.globalPosition.dx - _startGlobalPosition!.dx) / widget.nailWidth;
+              final double dy = (details.globalPosition.dy - _startGlobalPosition!.dy) / widget.nailHeight;
+
+              final double targetPosX = (_startPosX + dx).clamp(-0.8, 0.8);
+              final double targetPosY = (_startPosY + dy).clamp(-0.8, 0.8);
+
+              final cached = widget.selectedShape != null
+                  ? _NailImageCache._resolved[widget.selectedShape!.imageUrl]
+                  : null;
+
+              if (cached != null) {
+                if (_isPlacementOnNail(targetPosX, targetPosY, cached)) {
+                  widget.onUpdate(
+                    widget.placement.copyWith(
+                      posX: targetPosX,
+                      posY: targetPosY,
+                    ),
+                  );
+                } else {
+                  // Sliding collision check: Try updating only X or only Y axis for smooth edge sliding
+                  final bool xValid = _isPlacementOnNail(targetPosX, widget.placement.posY, cached);
+                  final bool yValid = _isPlacementOnNail(widget.placement.posX, targetPosY, cached);
+
+                  if (xValid) {
+                    widget.onUpdate(widget.placement.copyWith(posX: targetPosX));
+                  } else if (yValid) {
+                    widget.onUpdate(widget.placement.copyWith(posY: targetPosY));
+                  }
+                }
+              } else {
+                // Fallback if image cache is not ready
+                widget.onUpdate(
+                  widget.placement.copyWith(
+                    posX: targetPosX,
+                    posY: targetPosY,
+                  ),
+                );
+              }
             },
             child: Container(
               padding: EdgeInsets.all(widget.compact ? 1 : 2),
@@ -746,7 +885,8 @@ class _PlacedComponentPreviewState extends State<_PlacedComponentPreview> {
 class CachedNailImage {
   final ui.Image image;
   final Rect contentRect;
-  CachedNailImage(this.image, this.contentRect);
+  final ByteData byteData;
+  CachedNailImage(this.image, this.contentRect, this.byteData);
 }
 
 class _NailImageCache {
@@ -767,8 +907,12 @@ class _NailImageCache {
       (info, synchronousCall) async {
         try {
           final img = info.image;
-          final rect = await _calculateContentRect(img);
-          final cachedImage = CachedNailImage(img, rect);
+          final byteData = await img.toByteData(format: ui.ImageByteFormat.rawRgba);
+          if (byteData == null) {
+            throw Exception("Failed to get byte data from image");
+          }
+          final rect = _calculateContentRect(img, byteData);
+          final cachedImage = CachedNailImage(img, rect, byteData);
           _resolved[url] = cachedImage;
           _pending.remove(url);
           if (!completer.isCompleted) completer.complete(cachedImage);
@@ -789,11 +933,7 @@ class _NailImageCache {
     return completer.future;
   }
 
-  static Future<Rect> _calculateContentRect(ui.Image img) async {
-    final byteData = await img.toByteData(format: ui.ImageByteFormat.rawRgba);
-    if (byteData == null) {
-      return Rect.fromLTWH(0, 0, img.width.toDouble(), img.height.toDouble());
-    }
+  static Rect _calculateContentRect(ui.Image img, ByteData byteData) {
     final width = img.width;
     final height = img.height;
     int minX = width;
@@ -932,13 +1072,18 @@ class _NailPainter extends CustomPainter {
       );
     } else {
       canvas.drawImageRect(image, srcRect, destRect, Paint());
+      final colors = gradientColors!;
+      final colorStops = colors.length == 2
+          ? null
+          : List<double>.generate(colors.length, (i) => i / (colors.length - 1));
       canvas.drawRect(
         destRect,
         Paint()
           ..shader = ui.Gradient.linear(
             destRect.topLeft,
             destRect.bottomRight,
-            gradientColors!,
+            colors,
+            colorStops,
           )
           ..blendMode = BlendMode.srcIn,
       );
@@ -964,11 +1109,12 @@ class _NailPainter extends CustomPainter {
           ..shader = ui.Gradient.linear(
             destRect.centerLeft,
             destRect.centerRight,
-            [
-              Colors.black.withValues(alpha: 0.18),
+            const [
+              Color(0x2E000000),
               Colors.transparent,
-              Colors.white.withValues(alpha: 0.22),
+              Color(0x38FFFFFF),
             ],
+            const [0.0, 0.5, 1.0],
           )
           ..blendMode = BlendMode.srcATop,
       );
@@ -1006,6 +1152,7 @@ class _NailPainter extends CustomPainter {
               Colors.blue.withValues(alpha: 0.40),
               Colors.purple.withValues(alpha: 0.45),
             ],
+            const [0.0, 0.25, 0.5, 0.75, 1.0],
           )
           ..blendMode = BlendMode.srcATop,
       );
@@ -1115,38 +1262,80 @@ class _SurfaceShader {
   factory _SurfaceShader.fromSurface(NailSurfaceModel? surface) {
     final params = _decodeShaderParams(surface?.shaderParam);
     final name = surface?.name.toLowerCase() ?? '';
-    final shine = _asMap(params['shine']);
-    final metalness = _asMap(params['metalness']);
-    final stripe = _asMap(params['stripe']);
-    final gradient = _asMap(params['gradient']);
-    final prism = _asMap(params['prism']);
-    final rainbow = _asMap(params['rainbow']);
-    final iridescence = _asMap(params['iridescence']);
+
+    // Support both flat API values (e.g. {"shine":0.85}) and legacy nested objects
+    final shineRaw = params['shine'];
+    final shineMap = _asMap(shineRaw);
+    // Flat: shine is a numeric value → use directly as opacity
+    final shineValue = shineRaw is num ? shineRaw.toDouble() : null;
+
+    final metalnessMap = _asMap(params['metalness']);
+    // Flat: "metallic" key with numeric value (Chrome: {"metallic":1.0})
+    final metallicFlat = params['metallic'];
+
+    final stripeMap = _asMap(params['stripe']);
+    // Flat: "streak" key (Cat Eyes: {"streak":0.9,"angle":90})
+    final streakFlat = params['streak'];
+
+    final gradientMap = _asMap(params['gradient']);
+    final prismMap = _asMap(params['prism']);
+
+    // Flat: "rainbow" key as boolean (Holographic: {"rainbow":true})
+    final rainbowRaw = params['rainbow'];
+    final rainbowMap = _asMap(rainbowRaw);
+    final rainbowFlat = rainbowRaw == true;
+
+    final iridescenceMap = _asMap(params['iridescence']);
 
     final isMatte = name.contains('matte') ||
         _asMap(params['texture'])?['type'] == 'matte' ||
         params.containsKey('opacity') ||
         params.containsKey('blur');
 
+    final isShine = name.contains('glossy') ||
+        name.contains('shine') ||
+        shineValue != null ||
+        _asEnabled(shineMap);
+
+    final isMetallic = name.contains('chrome') ||
+        name.contains('metallic') ||
+        (metallicFlat is num && metallicFlat > 0) ||
+        _asEnabled(metalnessMap);
+
+    final isStripe = name.contains('cat') ||
+        name.contains('stripe') ||
+        (streakFlat is num && streakFlat > 0) ||
+        _asEnabled(stripeMap);
+
+    final isRainbow = name.contains('holo') ||
+        name.contains('rainbow') ||
+        rainbowFlat ||
+        _asEnabled(prismMap) ||
+        _asEnabled(rainbowMap) ||
+        _asEnabled(iridescenceMap);
+
+    // Resolve shine opacity: flat numeric value takes priority over nested map
+    final resolvedShineOpacity = shineValue ??
+        _asDouble(shineMap?['opacity'], fallback: 0.55);
+
+    // Resolve metallic reflectivity for shine size scaling
+    final reflectivity = _asDouble(params['reflectivity'], fallback: 0.75);
+
+    // Resolve boosted shine (Glossy surface specific)
+    final boostedShine = _asDouble(params['boostedShine'], fallback: 1.0);
+
     return _SurfaceShader(
       matte: isMatte,
       matteOpacity: _asDouble(params['opacity'], fallback: 0.08).clamp(0.0, 1.0),
       matteBlur: _asDouble(params['blur'], fallback: 0.0).clamp(0.0, 20.0),
-      shine: name.contains('glossy') || name.contains('shine') || _asEnabled(shine),
-      metallic: name.contains('chrome') || name.contains('metallic') || _asEnabled(metalness),
-      stripe: name.contains('cat') || name.contains('stripe') || _asEnabled(stripe),
-      gradient: _asEnabled(gradient),
-      rainbow: name.contains('holo') ||
-          name.contains('rainbow') ||
-          _asEnabled(prism) ||
-          _asEnabled(rainbow) ||
-          _asEnabled(iridescence),
-      shineAlignment: _alignmentFromPosition(shine?['position']?.toString()),
-      shineSize: (_asDouble(shine?['size'], fallback: 0.42)).clamp(0.18, 0.9),
-      shineOpacity: (_asDouble(
-        shine?['opacity'],
-        fallback: 0.55,
-      )).clamp(0.0, 1.0),
+      shine: isShine,
+      metallic: isMetallic,
+      stripe: isStripe,
+      gradient: _asEnabled(gradientMap),
+      rainbow: isRainbow,
+      shineAlignment: _alignmentFromPosition(shineMap?['position']?.toString()),
+      shineSize: (_asDouble(shineMap?['size'], fallback: 0.42) * boostedShine).clamp(0.18, 0.9),
+      shineOpacity: (resolvedShineOpacity * (isMetallic ? reflectivity : 1.0)).clamp(0.0, 1.0),
     );
   }
 

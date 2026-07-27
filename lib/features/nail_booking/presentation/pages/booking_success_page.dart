@@ -19,6 +19,7 @@ class _BookingSuccessPageState extends State<BookingSuccessPage> {
   bool _isCreatingPayment = false;
 
   Map<String, dynamic> get bookingDetails => widget.bookingDetails;
+  bool get isWarranty => bookingDetails['isWarranty'] == true;
 
   Future<void> _createPayment(String bookingId) async {
     if (_isCreatingPayment) return;
@@ -46,6 +47,8 @@ class _BookingSuccessPageState extends State<BookingSuccessPage> {
     final bookingId = bookingDetails['bookingId']?.toString();
     final discounts = _discounts;
     final hasPrice = bookingDetails['totalPrice'] != null;
+    final totalPrice = bookingDetails['totalPrice'];
+    final hasFee = totalPrice != null && (totalPrice is num ? totalPrice > 0 : (double.tryParse(totalPrice.toString()) ?? 0) > 0);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -162,47 +165,55 @@ class _BookingSuccessPageState extends State<BookingSuccessPage> {
                       ),
                     ),
                     const SizedBox(height: 40),
-                    ElevatedButton(
-                      onPressed:
-                          bookingId == null ||
-                              bookingId.isEmpty ||
-                              _isCreatingPayment
-                          ? null
-                          : () => _createPayment(bookingId),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    if (!isWarranty || hasFee) ...[
+                      ElevatedButton(
+                        onPressed: bookingId == null ||
+                                bookingId.isEmpty ||
+                                _isCreatingPayment
+                            ? null
+                            : () => _createPayment(bookingId),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          minimumSize: const Size(double.infinity, 50),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
+                        child: _isCreatingPayment
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                'Thanh Toán',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
                       ),
-                      child: _isCreatingPayment
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Text(
-                              'Thanh Toán',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                    ),
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 16),
+                    ],
                     ElevatedButton(
                       onPressed: bookingId == null || bookingId.isEmpty
                           ? null
-                          : () => context.go(
-                              '/my-bookings/detail',
-                              extra: bookingId,
-                            ),
+                          : () {
+                              if (isWarranty && !hasFee) {
+                                context.go('/my-bookings',
+                                    extra: {'initialTab': 0});
+                              } else {
+                                context.go(
+                                  '/my-bookings/detail',
+                                  extra: bookingId,
+                                );
+                              }
+                            },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,

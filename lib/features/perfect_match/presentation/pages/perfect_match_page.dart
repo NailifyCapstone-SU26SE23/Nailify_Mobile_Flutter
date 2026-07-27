@@ -117,7 +117,12 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
 
     // If backend returns a general color match reason, align it to show the color the user actually selected
     if (text.contains('khớp với màu bạn thích') && chosenColorChar.label.isNotEmpty) {
-      return 'Tông màu ${chosenColorChar.label} khớp với màu bạn thích.';
+      final regExp = RegExp(r'#([0-9A-Fa-f]{6})');
+      final cleanedLabel = chosenColorChar.label.replaceAllMapped(regExp, (match) {
+        final hex = match.group(0) ?? '';
+        return _getColorName(hex);
+      });
+      return 'Tông màu $cleanedLabel khớp với màu bạn thích.';
     }
 
     final regExp = RegExp(r'#([0-9A-Fa-f]{6})');
@@ -697,7 +702,7 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
                           crossAxisCount: 2,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 16,
-                          childAspectRatio: 0.68,
+                          childAspectRatio: 0.72,
                         ),
                         itemCount: others.length,
                         itemBuilder: (context, index) {
@@ -821,6 +826,216 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
     );
   }
 
+  // Hiển thị Bottom Sheet chi tiết sự tương thích dành cho sản phẩm đề xuất thêm
+  void _showMatchDetailBottomSheet(BuildContext context, QuizResultModel result) {
+    final matchPercentage = (result.score <= 1 ? result.score * 100 : result.score).toInt();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFFFDFBF7), // Warm cream background
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(32),
+              topRight: Radius.circular(32),
+            ),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Thanh kéo drag handle
+              Center(
+                child: Container(
+                  width: 48,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Tiêu đề & Match %
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          result.name,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontFamily: 'Georgia',
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primaryDark,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Premium Nail Design',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade500,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Score Badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFF4081), Color(0xFFFF80AB)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withOpacity(0.2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      '$matchPercentage% Match',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              
+              // Ảnh sản phẩm
+              if (result.imageUrl.isNotEmpty) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Image.network(
+                    result.imageUrl,
+                    height: 200,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _imagePlaceholder(200),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+
+              // Lý do phù hợp (Why it fits)
+              if (result.reasons.isNotEmpty) ...[
+                const Text(
+                  'Why it fits your style',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.height * 0.25,
+                  ),
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      children: result.reasons.map((reason) => Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(
+                                  Icons.check_circle_outline_rounded,
+                                  color: AppColors.primary,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _cleanColorText(reason, result.matchedCharacteristics),
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.black87,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )).toList(),
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 24),
+
+              // Nút xem chi tiết
+              Container(
+                width: double.infinity,
+                height: 52,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(26),
+                  gradient: const LinearGradient(
+                    colors: [AppColors.primary, Color(0xFFFF80AB)],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(26),
+                    onTap: () {
+                      Navigator.pop(context); // Đóng Bottom Sheet
+                      HapticFeedback.mediumImpact();
+                      context.push('/nail-variants/${result.nailVariantId}');
+                    },
+                    child: const Center(
+                      child: Text(
+                        'Xem chi tiết',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildOtherCard(BuildContext context, QuizResultModel result) {
     return Container(
       decoration: BoxDecoration(
@@ -842,8 +1057,8 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
           child: InkWell(
             onTap: () {
               HapticFeedback.lightImpact();
-              // Navigate to the variant detail page when clicked
-              context.push('/nail-variants/${result.nailVariantId}');
+              // Hiển thị bottom sheet chi tiết khi nhấn vào card đề xuất
+              _showMatchDetailBottomSheet(context, result);
             },
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -860,7 +1075,7 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
                               )
                             : _imagePlaceholder(double.infinity),
                       ),
-                      // Small score badge on secondary recommendations (beautiful soft pink/white glassmorphism)
+                      // Small score badge on secondary recommendations
                       Positioned(
                         bottom: 8,
                         right: 8,
@@ -922,6 +1137,7 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
       ),
     );
   }
+
 
   Widget _buildEmptyState(BuildContext context) {
     return Scaffold(

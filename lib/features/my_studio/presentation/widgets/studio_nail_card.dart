@@ -57,17 +57,24 @@ class StudioNailCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade200, width: 1.5),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFFFF0F5), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryDark.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      color: Colors.white,
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -77,12 +84,12 @@ class StudioNailCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
                     child: nail.imageUrl != null && nail.imageUrl!.isNotEmpty
                         ? Image.network(
                             nail.imageUrl!,
-                            width: 64,
-                            height: 64,
+                            width: 72,
+                            height: 72,
                             fit: BoxFit.cover,
                             errorBuilder: (_, _, _) => _fallbackImage(),
                           )
@@ -93,47 +100,54 @@ class StudioNailCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 4),
                         Text(
                           nail.name,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                             color: AppColors.textPrimary,
+                            letterSpacing: -0.2,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         if (nail.salonName != null &&
                             nail.salonName!.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            nail.salonName!,
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 13,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textSecondary),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  nail.salonName!,
+                                  style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 12,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                            horizontal: 10,
+                            vertical: 5,
                           ),
                           decoration: BoxDecoration(
-                            color: _getStatusColor(
-                              nail.status,
-                            ).withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(6),
+                            color: _getStatusColor(nail.status).withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(30),
                           ),
                           child: Text(
                             _getStatusText(nail.status),
                             style: TextStyle(
                               color: _getStatusColor(nail.status),
-                              fontSize: 12,
+                              fontSize: 11,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -156,10 +170,10 @@ class StudioNailCard extends StatelessWidget {
 
   Widget _fallbackImage() {
     return Container(
-      width: 64,
-      height: 64,
-      color: AppColors.primary.withValues(alpha: 0.1),
-      child: const Icon(Icons.spa_outlined, color: AppColors.primary, size: 28),
+      width: 72,
+      height: 72,
+      color: AppColors.primary.withValues(alpha: 0.08),
+      child: const Icon(Icons.spa_rounded, color: AppColors.primary, size: 32),
     );
   }
 }

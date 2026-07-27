@@ -101,13 +101,14 @@ class _CustomerComponentFormDialogState
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       backgroundColor: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
+      clipBehavior: Clip.antiAlias,
+      child: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -120,158 +121,211 @@ class _CustomerComponentFormDialogState
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
+                    letterSpacing: -0.5,
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
+                
+                // Tên thành phần
                 TextFormField(
                   controller: _nameController,
+                  style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
                   decoration: InputDecoration(
                     labelText: 'Tên thành phần *',
+                    labelStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                    filled: true,
+                    fillColor: const Color(0xFFF5F5F7),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: AppColors.borderLight,
-                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
                     ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: AppColors.primary,
-                        width: 2,
-                      ),
-                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   ),
                   validator: (value) => value?.trim().isEmpty == true
                       ? 'Vui lòng nhập tên'
                       : null,
                 ),
                 const SizedBox(height: 16),
+                
+                // Giá tiền
                 TextFormField(
                   controller: _priceController,
+                  style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
                   decoration: InputDecoration(
                     labelText: 'Giá tiền (VND)',
+                    labelStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                    filled: true,
+                    fillColor: const Color(0xFFF5F5F7),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
                     ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   ),
                   keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 16),
+                
+                // Loại thành phần (Dropdown)
                 DropdownButtonFormField<int>(
                   initialValue: _componentType,
+                  isExpanded: true,
+                  dropdownColor: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
                   decoration: InputDecoration(
                     labelText: 'Loại thành phần *',
+                    labelStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                    filled: true,
+                    fillColor: const Color(0xFFF5F5F7),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
                     ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                  icon: const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: AppColors.textSecondary,
+                    size: 22,
                   ),
                   items: const [
-                    DropdownMenuItem(value: 0, child: Text('💎 Gem')),
-                    DropdownMenuItem(value: 1, child: Text('📝 Sticker')),
-                    DropdownMenuItem(value: 2, child: Text('🔗 Charm')),
-                    DropdownMenuItem(value: 3, child: Text('🎨 Art')),
+                    DropdownMenuItem(value: 0, child: Text('💎 Gem', style: TextStyle(fontSize: 14))),
+                    DropdownMenuItem(value: 1, child: Text('📝 Sticker', style: TextStyle(fontSize: 14))),
+                    DropdownMenuItem(value: 2, child: Text('🔗 Charm', style: TextStyle(fontSize: 14))),
+                    DropdownMenuItem(value: 3, child: Text('🎨 Art', style: TextStyle(fontSize: 14))),
                   ],
                   onChanged: (value) =>
                       setState(() => _componentType = value ?? 0),
                 ),
                 const SizedBox(height: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        side: BorderSide(color: Colors.grey.shade300),
+                
+                // Bộ chọn ảnh trực quan tích hợp
+                GestureDetector(
+                  onTap: _pickImage,
+                  child: Container(
+                    height: 130,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F5F7),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.15),
+                        width: 1.5,
                       ),
-                      onPressed: _pickImage,
-                      icon: const Icon(Icons.photo_library_outlined, size: 20),
-                      label: Text(_imageFile != null ? 'Đổi ảnh' : 'Chọn ảnh'),
                     ),
-                    const SizedBox(height: 12),
-                    if (_imageFile != null) ...[
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.file(
-                          File(_imageFile!.path),
-                          height: 180,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Ảnh mới',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey.shade600,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ] else if (widget.component?.imageUrl != null &&
-                        widget.component!.imageUrl.isNotEmpty) ...[
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.network(
-                          widget.component!.imageUrl,
-                          height: 180,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Ảnh hiện tại',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey.shade600,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ],
+                    child: _imageFile != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(14),
+                            child: Stack(
+                              children: [
+                                Image.file(
+                                  File(_imageFile!.path),
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  fit: BoxFit.cover,
+                                ),
+                                Container(
+                                  color: Colors.black38,
+                                  child: const Center(
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.photo_library_rounded, color: Colors.white, size: 20),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'Đổi ảnh mới',
+                                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : (widget.component?.imageUrl != null &&
+                                widget.component!.imageUrl.isNotEmpty)
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(14),
+                                child: Stack(
+                                  children: [
+                                    Image.network(
+                                      widget.component!.imageUrl,
+                                      width: double.infinity,
+                                      height: double.infinity,
+                                      fit: BoxFit.cover,
+                                    ),
+                                    Container(
+                                      color: Colors.black38,
+                                      child: const Center(
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.photo_library_rounded, color: Colors.white, size: 20),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              'Đổi ảnh mới',
+                                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : const Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.add_photo_alternate_rounded,
+                                        size: 32, color: AppColors.primary),
+                                    SizedBox(height: 6),
+                                    Text(
+                                      'Chọn ảnh thành phần',
+                                      style: TextStyle(
+                                        color: AppColors.primary,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                  ),
                 ),
                 const SizedBox(height: 16),
+                
+                // Trạng thái công khai
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade200),
+                    color: const Color(0xFFF5F5F7),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: SwitchListTile(
                     title: const Text(
                       'Công khai',
-                      style: TextStyle(fontWeight: FontWeight.w600),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
                     ),
                     subtitle: const Text(
                       'Mọi người có thể sử dụng',
-                      style: TextStyle(fontSize: 12),
+                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                     ),
                     value: _isPublic,
-                    activeThumbColor: AppColors.primary,
+                    activeColor: Colors.white,
+                    activeTrackColor: AppColors.primary,
+                    inactiveThumbColor: Colors.grey.shade400,
+                    inactiveTrackColor: Colors.grey.shade200,
                     onChanged: (value) => setState(() => _isPublic = value),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
-                      vertical: 4,
+                      vertical: 0,
                     ),
                   ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 28),
+                
+                // Nút hành động
                 Row(
                   children: [
                     Expanded(
@@ -279,16 +333,20 @@ class _CustomerComponentFormDialogState
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          side: BorderSide(color: Colors.grey.shade300),
+                          side: const BorderSide(color: Color(0xFFE0E0E0), width: 1.2),
                         ),
                         onPressed: _isLoading
                             ? null
                             : () => Navigator.of(context).pop(false),
                         child: const Text(
                           'Hủy',
-                          style: TextStyle(color: AppColors.textSecondary),
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
                         ),
                       ),
                     ),
@@ -299,8 +357,9 @@ class _CustomerComponentFormDialogState
                           backgroundColor: AppColors.primary,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(16),
                           ),
+                          elevation: 0,
                         ),
                         onPressed: _isLoading ? null : _save,
                         child: _isLoading
@@ -314,7 +373,10 @@ class _CustomerComponentFormDialogState
                               )
                             : const Text(
                                 'Lưu',
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
                               ),
                       ),
                     ),

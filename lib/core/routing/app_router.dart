@@ -214,7 +214,14 @@ class AppRouter {
           ),
           GoRoute(
             path: '/my-bookings',
-            builder: (context, state) => const MyBookingListPage(),
+            builder: (context, state) {
+              final extra = state.extra;
+              int initialTab = 0;
+              if (extra is Map && extra['initialTab'] is int) {
+                initialTab = extra['initialTab'] as int;
+              }
+              return MyBookingListPage(initialTab: initialTab);
+            },
           ),
           GoRoute(
             path: '/my-bookings/detail',
@@ -280,6 +287,7 @@ class AppRouter {
               return const TryOnSetupScreen();
             },
           ),
+
           GoRoute(
             path: '/profile',
             builder: (context, state) => const ProfilePage(),

@@ -11,7 +11,12 @@ import '../../data/models/waitlist_model.dart';
 import 'waitlist_card.dart';
 
 class WaitlistTab extends StatefulWidget {
-  const WaitlistTab({super.key});
+  final VoidCallback onRefreshBookings;
+
+  const WaitlistTab({
+    super.key,
+    required this.onRefreshBookings,
+  });
 
   @override
   State<WaitlistTab> createState() => _WaitlistTabState();
@@ -107,6 +112,11 @@ class _WaitlistTabState extends State<WaitlistTab> {
 
   void _declineOpened(String id) => _cancelWaitlist(id);
 
+  Future<void> _handleRefresh() async {
+    widget.onRefreshBookings();
+    await _fetchWaitlists();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) return const Center(child: CircularProgressIndicator());
@@ -130,13 +140,15 @@ class _WaitlistTabState extends State<WaitlistTab> {
       );
     }
 
-    if (_waitlist.isEmpty) return _buildEmptyState();
+    final hasWaitlist = _waitlist.isNotEmpty;
+
+    if (!hasWaitlist) return _buildEmptyState();
 
     return RefreshIndicator(
-      onRefresh: _fetchWaitlists,
+      onRefresh: _handleRefresh,
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        physics: const BouncingScrollPhysics(),
+        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
         itemCount: _waitlist.length,
         itemBuilder: (context, index) {
           final item = _waitlist[index];
@@ -180,7 +192,7 @@ class _WaitlistTabState extends State<WaitlistTab> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Khi khung giờ bạn chờ có chỗ trống,\nbạn sẽ nhận được thông báo tại đây.',
+            'Khi khung giờ bạn đăng ký chờ có chỗ trống,\nbản ghi sẽ được hiển thị tại đây.',
             style: TextStyle(color: Colors.grey.shade500, height: 1.5),
             textAlign: TextAlign.center,
           ),

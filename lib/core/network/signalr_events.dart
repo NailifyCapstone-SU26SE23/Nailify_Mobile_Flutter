@@ -64,3 +64,33 @@ class BookingCancelledEvent {
     );
   }
 }
+
+/// Sự kiện: Liên quan đến dời lịch hẹn (reschedule)
+class BookingRescheduleEvent {
+  final String bookingId;
+  final String status; // Approved, Suggested, Rejected
+  final String message;
+  final String? suggestedDate;
+  final String? suggestedTime;
+  final String? reason;
+
+  const BookingRescheduleEvent({
+    required this.bookingId,
+    required this.status,
+    required this.message,
+    this.suggestedDate,
+    this.suggestedTime,
+    this.reason,
+  });
+
+  factory BookingRescheduleEvent.fromJson(Map<String, dynamic> json, String status) {
+    return BookingRescheduleEvent(
+      bookingId: json['bookingId']?.toString() ?? json['BookingId']?.toString() ?? '',
+      status: status,
+      message: json['message']?.toString() ?? json['Message']?.toString() ?? '',
+      suggestedDate: json['suggestedDate']?.toString() ?? json['SuggestedDate']?.toString(),
+      suggestedTime: json['suggestedTime']?.toString() ?? json['SuggestedTime']?.toString(),
+      reason: json['reason']?.toString() ?? json['Reason']?.toString(),
+    );
+  }
+}

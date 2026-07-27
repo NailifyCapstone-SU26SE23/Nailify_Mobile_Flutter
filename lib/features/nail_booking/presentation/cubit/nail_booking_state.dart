@@ -24,6 +24,7 @@ class NailBookingState extends Equatable {
   final bool noArtistSelected;
   final String? selectedTime;
   final List<dynamic> selectedPromotions; // PromotionModel list
+  final List<Map<String, dynamic>> selectedWarrantyItems;
 
   // ── Trạng thái submit ─────────────────────────────────────────────────────
   final bool isSubmitting;
@@ -55,6 +56,7 @@ class NailBookingState extends Equatable {
     this.noArtistSelected = false,
     this.selectedTime,
     this.selectedPromotions = const [],
+    this.selectedWarrantyItems = const [],
     this.isSubmitting = false,
     this.errorMessage,
     this.holdToken,
@@ -97,6 +99,7 @@ class NailBookingState extends Equatable {
     String? selectedTime,
     bool clearTime = false,
     List<dynamic>? selectedPromotions,
+    List<Map<String, dynamic>>? selectedWarrantyItems,
     bool? isSubmitting,
     String? errorMessage,
     bool clearError = false,
@@ -130,6 +133,8 @@ class NailBookingState extends Equatable {
       noArtistSelected: noArtistSelected ?? this.noArtistSelected,
       selectedTime: clearTime ? null : (selectedTime ?? this.selectedTime),
       selectedPromotions: selectedPromotions ?? this.selectedPromotions,
+      selectedWarrantyItems:
+          selectedWarrantyItems ?? this.selectedWarrantyItems,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       holdToken: clearHoldToken ? null : (holdToken ?? this.holdToken),
@@ -156,6 +161,7 @@ class NailBookingState extends Equatable {
         noArtistSelected,
         selectedTime,
         selectedPromotions,
+        selectedWarrantyItems,
         isSubmitting,
         errorMessage,
         holdToken,

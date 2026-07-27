@@ -44,7 +44,7 @@ class CustomerReviews extends StatelessWidget {
     ];
 
     return Container(
-      color: AppColors.secondary, // Màu nền tổng thể nhạt
+      color: const Color(0xFFFFF5F8), // Màu nền hồng phấn cực kỳ dịu mắt
       padding: const EdgeInsets.symmetric(vertical: 48.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -52,14 +52,20 @@ class CustomerReviews extends StatelessWidget {
           // --- Phần Tiêu đề ---
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 24.0),
-            child: Text(
-              'HAPPY CLIENTS',
-              style: TextStyle(
-                color: AppColors.primary,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.5,
-                fontSize: 12,
-              ),
+            child: Row(
+              children: [
+                Icon(Icons.favorite_rounded, color: AppColors.primary, size: 16),
+                SizedBox(width: 6),
+                Text(
+                  'HAPPY CLIENTS',
+                  style: TextStyle(
+                    color: AppColors.primaryDark,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2.0,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 8),
@@ -68,22 +74,21 @@ class CustomerReviews extends StatelessWidget {
             child: Text(
               'Our Valuable Customers',
               style: TextStyle(
-                color: AppColors.primary,
-                fontSize: 32,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'Cormorant Garamond',
+                color: AppColors.textPrimary,
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                letterSpacing: -0.5,
               ),
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
 
           // --- Carousel ---
           SizedBox(
-            height: 260, // chiều cao  danh sách ngang
+            height: 250, // chiều cao danh sách ngang
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              physics:
-                  const BouncingScrollPhysics(), // Hiệu ứng nảy mượt mà khi cuộn
+              physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               itemCount: reviews.length,
               itemBuilder: (context, index) {
@@ -111,90 +116,123 @@ class CustomerReviews extends StatelessWidget {
     required List<Color> gradientColors,
   }) {
     return Container(
-      width: 280, //tạo hiệu ứng carousel
-      margin: const EdgeInsets.only(right: 16.0),
+      width: 290,
+      margin: const EdgeInsets.only(right: 18.0),
       padding: const EdgeInsets.all(24.0),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: AppColors.primary, // Viền hồng nhạt
-          width: 1,
+          color: const Color(0xFFFFF0F5),
+          width: 1.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryDark.withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          // 5 Ngôi sao
-          Row(
-            children: List.generate(
-              5,
-              (index) =>
-                  const Icon(Icons.star, color: Color(0xFFFFD54F), size: 20),
+          // Watermark Quote Icon trang nhã ở góc trên bên phải
+          Positioned(
+            top: -10,
+            right: -10,
+            child: Icon(
+              Icons.format_quote_rounded,
+              size: 70,
+              color: AppColors.primary.withValues(alpha: 0.12),
             ),
           ),
-          const SizedBox(height: 16),
-
-          // Nội dung đánh giá
-          Expanded(
-            child: Text(
-              reviewText,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 15,
-                fontStyle: FontStyle.italic,
-                height: 1.5,
-              ),
-              overflow: TextOverflow.fade,
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Thông tin khách hàng
-          Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Avatar Gradient
-              Container(
-                width: 48,
-                height: 48,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: gradientColors,
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: Text(
-                  initials,
-                  style: const TextStyle(
-                    color: AppColors.surface,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+              // 5 Ngôi sao
+              Row(
+                children: List.generate(
+                  5,
+                  (index) => const Icon(Icons.star_rounded,
+                      color: Color(0xFFFFD54F), size: 18),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(height: 14),
 
-              // Tên và Loại khách hàng
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              // Nội dung đánh giá
+              Expanded(
+                child: Text(
+                  reviewText,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                    fontStyle: FontStyle.italic,
+                    height: 1.5,
+                  ),
+                  overflow: TextOverflow.fade,
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // Thông tin khách hàng
+              Row(
                 children: [
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                  // Avatar Gradient bo tròn tinh tế
+                  Container(
+                    width: 44,
+                    height: 44,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: gradientColors,
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: gradientColors.last.withValues(alpha: 0.3),
+                          blurRadius: 6,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      initials,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    type,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 14,
+                  const SizedBox(width: 12),
+
+                  // Tên và Loại khách hàng
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          name,
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          type,
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

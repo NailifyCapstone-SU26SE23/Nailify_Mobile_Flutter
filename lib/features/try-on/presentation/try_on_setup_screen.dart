@@ -734,29 +734,6 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
       appBar: AppBar(
         title: Text(_customerNail == null ? 'Thiết kế móng' : _customerNail!.name),
         backgroundColor: Colors.transparent,
-        actions: [
-          if (widget.recommendedData?['fromPerfectMatch'] == true)
-            Padding(
-              padding: const EdgeInsets.only(right: 8.0),
-              child: _isSaving
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : TextButton.icon(
-                      onPressed: _reGenerateDesign,
-                      icon: const Icon(Icons.refresh, size: 18),
-                      label: const Text(
-                        'Gen lại',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.pink,
-                      ),
-                    ),
-            ),
-        ],
       ),
       body: Stack(
         children: [
@@ -772,7 +749,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
       ),
       bottomNavigationBar: SafeArea(
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             boxShadow: [
@@ -795,7 +772,35 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
               ),
-              const SizedBox(width: 16),
+              if (widget.recommendedData?['fromPerfectMatch'] == true) ...[
+                const SizedBox(width: 12),
+                OutlinedButton.icon(
+                  onPressed: _isSaving ? null : _reGenerateDesign,
+                  icon: _isSaving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFFE91E63),
+                          ),
+                        )
+                      : const Icon(Icons.refresh_rounded, size: 20),
+                  label: const Text(
+                    'Gen lại',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFE91E63),
+                    side: const BorderSide(color: Color(0xFFFFD1E1), width: 1.5),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(width: 12),
               Expanded(
                 child: FilledButton.icon(
                   onPressed: (_selectedNailShape != null && !_isSaving) ? _save : null,
@@ -982,18 +987,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
   }
 
   Widget _buildComponentsTab(TryOnData data) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Nửa trên: Danh sách phụ kiện
-        _buildComponentsTool(data),
-        const SizedBox(height: 16),
-        const Divider(height: 1),
-        const SizedBox(height: 16),
-        // Nửa dưới: Remote D-Pad
-        _buildPlacementTool(),
-      ],
-    );
+    return _buildComponentsTool(data);
   }
 
   Widget _buildPlacementTool() {

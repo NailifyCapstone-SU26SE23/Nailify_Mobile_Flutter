@@ -128,6 +128,8 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
     List<int>? selectedPromotionIds,
     String? holdToken,
     int? shapeMethodConfigId,
+    String? warrantyForBookingId,
+    List<Map<String, dynamic>>? warrantyBookingItems,
   }) {
     return _bookingApi.createBooking(
       salonId,
@@ -139,6 +141,8 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
       selectedPromotionIds: selectedPromotionIds,
       holdToken: holdToken,
       shapeMethodConfigId: shapeMethodConfigId,
+      warrantyForBookingId: warrantyForBookingId,
+      warrantyBookingItems: warrantyBookingItems,
     );
   }
 

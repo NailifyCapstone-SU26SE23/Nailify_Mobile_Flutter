@@ -171,6 +171,8 @@ class BookingApiService {
       List<int>? selectedPromotionIds,
       String? holdToken,
       int? shapeMethodConfigId,
+      String? warrantyForBookingId,
+      List<Map<String, dynamic>>? warrantyBookingItems,
     }) async {
     final response = await _apiClient.post('/Bookings', data: {
       'salonId': salonId,
@@ -178,8 +180,9 @@ class BookingApiService {
       'startTime': startTime,
       'nailArtistId': artistId?.isEmpty == true ? null : artistId,
       'holdToken': holdToken,
-      'bookingItems': _buildBookingItems(nailVariantId, serviceIds, shapeMethodConfigId),
+      'bookingItems': warrantyBookingItems ?? _buildBookingItems(nailVariantId, serviceIds, shapeMethodConfigId),
       'selectedPromotionIds': selectedPromotionIds,
+      if (warrantyForBookingId != null) 'warrantyForBookingId': warrantyForBookingId,
     });
     return response.data['data'] ?? {};
   }

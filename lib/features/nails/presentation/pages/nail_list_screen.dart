@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection.dart';
 import '../../data/repositories/nail_design_repository.dart';
 import '../../data/models/nail_design_model.dart';
@@ -112,22 +113,28 @@ class _NailListViewState extends State<_NailListView> {
                   child: Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.arrow_back_ios, size: 20),
+                        icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
                         onPressed: () => context.go('/'),
                       ),
+                      const SizedBox(width: 4),
                       const Expanded(
                         child: Text(
-                          'Nail designs',
+                          'Thiết kế móng',
                           style: TextStyle(
                             fontSize: 24,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                            letterSpacing: -0.5,
                           ),
                         ),
                       ),
-                      IconButton.filledTonal(
-                        tooltip: 'Filter',
+                      IconButton(
+                        icon: const Icon(Icons.tune_rounded, color: AppColors.primary, size: 20),
+                        style: IconButton.styleFrom(
+                          backgroundColor: AppColors.primary.withValues(alpha: 0.08),
+                          padding: const EdgeInsets.all(10),
+                        ),
                         onPressed: () => _openFilters(context, state),
-                        icon: const Icon(Icons.tune),
                       ),
                     ],
                   ),
@@ -145,14 +152,19 @@ class _NailListViewState extends State<_NailListView> {
                   state.designs.isEmpty)
                 SliverFillRemaining(
                   child: _ErrorState(
-                    message: state.errorMessage ?? 'Could not load nails.',
+                    message: state.errorMessage ?? 'Không thể tải danh sách móng.',
                     onRetry: () =>
                         context.read<NailCatalogCubit>().loadDesigns(),
                   ),
                 )
               else if (state.designs.isEmpty)
                 const SliverFillRemaining(
-                  child: Center(child: Text('No nail designs found.')),
+                  child: Center(
+                    child: Text(
+                      'Không tìm thấy thiết kế móng nào.',
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                  ),
                 )
               else () {
                 final sortedDesigns = List<NailDesignModel>.from(state.designs);
@@ -215,6 +227,10 @@ class _NailListViewState extends State<_NailListView> {
   ) async {
     final filters = await showModalBottomSheet<NailFilters>(
       context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       isScrollControlled: true,
       builder: (_) => NailFilterSheet(
         initialFilters: state.filters,

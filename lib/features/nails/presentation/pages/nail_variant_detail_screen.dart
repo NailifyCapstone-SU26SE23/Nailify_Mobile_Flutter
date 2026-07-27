@@ -67,22 +67,25 @@ class _NailVariantDetailScreenState extends State<NailVariantDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
-          'Chi tiết biến thể',
+          'Chi tiết phiên bản',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: AppColors.textPrimary,
+            fontSize: 18,
+            letterSpacing: -0.5,
           ),
         ),
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
+        scrolledUnderElevation: 0,
         leading: IconButton(
           icon: const Icon(
-            Icons.arrow_back_ios,
-            size: 20,
+            Icons.arrow_back_ios_new_rounded,
+            size: 18,
             color: AppColors.textPrimary,
           ),
           onPressed: () {
@@ -108,10 +111,17 @@ class _NailVariantDetailScreenState extends State<NailVariantDetailScreen> {
                   Text(
                     'Lỗi khi tải dữ liệu: ${snapshot.error}',
                     textAlign: TextAlign.center,
+                    style: const TextStyle(color: AppColors.textSecondary),
                   ),
                   const SizedBox(height: 12),
-                  ElevatedButton.icon(
+                  FilledButton.icon(
                     onPressed: () => setState(() => _future = _loadVariant()),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
                     icon: const Icon(Icons.refresh),
                     label: const Text('Thử lại'),
                   ),
@@ -175,28 +185,40 @@ class _DetailContentState extends State<_DetailContent> {
       children: [
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 32),
             physics: const BouncingScrollPhysics(),
             children: [
               // 1. Hình ảnh
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 300,
-                  child: widget.variant.imageUrl.isEmpty
-                      ? Container(
-                          color: AppColors.primary.withOpacity(0.1),
-                          child: const Icon(
-                            Icons.spa_outlined,
-                            size: 64,
-                            color: AppColors.primary,
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 300,
+                    child: widget.variant.imageUrl.isEmpty
+                        ? Container(
+                            color: AppColors.primary.withValues(alpha: 0.08),
+                            child: const Icon(
+                              Icons.spa_rounded,
+                              size: 64,
+                              color: AppColors.primary,
+                            ),
+                          )
+                        : Image.network(
+                            widget.variant.imageUrl,
+                            fit: BoxFit.cover,
                           ),
-                        )
-                      : Image.network(
-                          widget.variant.imageUrl,
-                          fit: BoxFit.cover,
-                        ),
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -208,15 +230,16 @@ class _DetailContentState extends State<_DetailContent> {
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
+                  letterSpacing: -0.5,
                 ),
               ),
               if (widget.designName != null) ...[
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
-                  'Thuộc bộ sưu tập: ${widget.designName}',
+                  'Bộ sưu tập: ${widget.designName}',
                   style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade600,
+                    fontSize: 13,
+                    color: Colors.grey.shade500,
                   ),
                 ),
               ],
@@ -225,7 +248,7 @@ class _DetailContentState extends State<_DetailContent> {
                 PriceFormatter.format(widget.variant.price),
                 style: const TextStyle(
                   fontSize: 20,
-                  color: AppColors.primary,
+                  color: Color(0xFFFF4081),
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -237,8 +260,15 @@ class _DetailContentState extends State<_DetailContent> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFFFF0F5), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.02),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Column(
                   children: [
@@ -246,28 +276,29 @@ class _DetailContentState extends State<_DetailContent> {
                       _buildSpecRow('Form móng', widget.variant.nailShape!.name),
                     if (widget.variant.nailSurface != null) ...[
                       if (widget.variant.nailShape != null)
-                        const Divider(height: 24, color: Colors.black12),
+                        const Divider(height: 24, color: Color(0xFFFFF0F5)),
                       _buildSpecRow('Bề mặt', widget.variant.nailSurface!.name),
                     ],
                     if (widget.variant.duration != null) ...[
                       if (widget.variant.nailShape != null || widget.variant.nailSurface != null)
-                        const Divider(height: 24, color: Colors.black12),
-                      _buildSpecRow('Thời gian', '${widget.variant.duration} phút'),
+                        const Divider(height: 24, color: Color(0xFFFFF0F5)),
+                      _buildSpecRow('Thời gian thực hiện', '${widget.variant.duration} phút'),
                     ],
                   ],
                 ),
               ),
               const SizedBox(height: 24),
               _buildShapeMethodSelection(),
-              const SizedBox(height: 32),
+              const SizedBox(height: 28),
 
               // 4. Các thành phần chi tiết (Components)
               const Text(
-                'Thành phần (Components)',
+                'Thành phần thiết kế',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
+                  letterSpacing: -0.5,
                 ),
               ),
               const SizedBox(height: 16),
@@ -280,22 +311,22 @@ class _DetailContentState extends State<_DetailContent> {
                 _FingerComponents(
                   fingerIndex: -1,
                   components: grouped[-1]!,
-                  title: 'Dùng chung (Shared)',
+                  title: 'Dùng chung',
                 ),
             ],
           ),
         ),
 
-        // FOOTER CHỨA NÚT AR TRY ON & BOOK NOW
+        // FOOTER CHỨA NÚT AR TRY ON & ĐẶT LỊCH NGAY
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: Colors.white,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 10,
-                offset: const Offset(0, -5),
+                offset: const Offset(0, -4),
               ),
             ],
           ),
@@ -308,7 +339,6 @@ class _DetailContentState extends State<_DetailContent> {
                   child: SizedBox(
                     height: 50,
                     child: OutlinedButton(
-                      // BỎ async và await đi
                       onPressed: widget.launching
                           ? null
                           : () {
@@ -328,7 +358,7 @@ class _DetailContentState extends State<_DetailContent> {
                           width: 1.5,
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(16),
                         ),
                       ),
                       child: widget.launching
@@ -340,13 +370,13 @@ class _DetailContentState extends State<_DetailContent> {
                                 color: AppColors.primary,
                               ),
                             )
-                          : const Icon(Icons.view_in_ar, size: 24),
+                          : const Icon(Icons.view_in_ar_rounded, size: 24),
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
 
-                // Nút Book Now
+                // Nút Đặt lịch ngay
                 Expanded(
                   flex: 3,
                   child: SizedBox(
@@ -375,11 +405,11 @@ class _DetailContentState extends State<_DetailContent> {
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(16),
                         ),
                       ),
                       child: const Text(
-                        'Book Now',
+                        'Đặt lịch ngay',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
@@ -445,11 +475,12 @@ class _DetailContentState extends State<_DetailContent> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Phuong phap tao form',
+              'Phương pháp tạo form',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
+                letterSpacing: -0.5,
               ),
             ),
             const SizedBox(height: 12),
@@ -461,11 +492,12 @@ class _DetailContentState extends State<_DetailContent> {
                 margin: const EdgeInsets.only(bottom: 10),
                 decoration: BoxDecoration(
                   color: selected
-                      ? AppColors.primary.withOpacity(0.06)
+                      ? AppColors.primary.withValues(alpha: 0.05)
                       : Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: selected ? AppColors.primary : AppColors.borderLight,
+                    color: selected ? AppColors.primary : const Color(0xFFFFF0F5),
+                    width: 1.5,
                   ),
                 ),
                 child: RadioListTile<int>(
@@ -476,17 +508,19 @@ class _DetailContentState extends State<_DetailContent> {
                   },
                   title: Text(
                     method.name,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
-                  subtitle: Text('${method.duration} phut'),
+                  subtitle: Text('${method.duration} phút', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
                   secondary: Text(
                     PriceFormatter.format(method.price),
                     style: const TextStyle(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
+                      fontSize: 14,
                     ),
                   ),
                   activeColor: AppColors.primary,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                 ),
               );
             }),
@@ -517,13 +551,16 @@ class _FingerComponents extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 60,
-            child: Text(
-              title ?? _fingerName(fingerIndex),
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textSecondary,
+            width: 70,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 10.0),
+              child: Text(
+                title ?? _fingerName(fingerIndex),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textSecondary,
+                ),
               ),
             ),
           ),
@@ -566,26 +603,28 @@ class _ComponentChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        border: Border.all(color: AppColors.borderLight),
-        borderRadius: BorderRadius.circular(8),
+        color: const Color(0xFFF5F5F7),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            width: 30,
-            height: 30,
-            child: component.component?.imageUrl.isNotEmpty == true
-                ? Image.network(
-                    component.component!.imageUrl,
-                    fit: BoxFit.contain,
-                  )
-                : const Icon(
-                    Icons.auto_awesome,
-                    color: AppColors.primary,
-                    size: 20,
-                  ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: SizedBox(
+              width: 30,
+              height: 30,
+              child: component.component?.imageUrl.isNotEmpty == true
+                  ? Image.network(
+                      component.component!.imageUrl,
+                      fit: BoxFit.contain,
+                    )
+                  : const Icon(
+                      Icons.auto_awesome,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
+            ),
           ),
           const SizedBox(width: 8),
           Flexible(
@@ -595,19 +634,20 @@ class _ComponentChip extends StatelessWidget {
               children: [
                 Text(
                   component.component?.name ??
-                      'Component ${component.componentId}',
+                      'Thành phần ${component.componentId}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 Text(
                   subtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                  style: const TextStyle(fontSize: 10, color: Colors.grey),
                 ),
               ],
             ),

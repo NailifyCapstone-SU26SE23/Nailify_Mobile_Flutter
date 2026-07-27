@@ -44,7 +44,48 @@ class MyBookingApiService {
         "holdToken": holdToken,
       },
     );
-    return response.statusCode == 200 || response.statusCode == 204;
+    return response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 300;
+  }
+
+  Future<bool> rescheduleBooking(String bookingId, {required String bookingDate, required String startTime}) async {
+    final formattedTime = startTime.length == 5 ? "$startTime:00" : startTime;
+    final response = await _apiClient.put(
+      '/Bookings/$bookingId/reschedule',
+      data: {
+        "bookingDate": bookingDate,
+        "startTime": formattedTime,
+      },
+    );
+    return response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 300;
+  }
+
+  Future<bool> requestRescheduleBooking(
+    String bookingId, {
+    required String newDate,
+    required String newTime,
+    required String reason,
+  }) async {
+    // Đảm bảo định dạng giờ luôn có giây (ví dụ: "10:00" -> "10:00:00")
+    final formattedTime = newTime.length == 5 ? "$newTime:00" : newTime;
+    final response = await _apiClient.post(
+      '/Bookings/$bookingId/request-reschedule',
+      data: {
+        "newDate": newDate,
+        "newTime": formattedTime,
+        "reason": reason,
+      },
+    );
+    return response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 300;
+  }
+
+  Future<bool> acceptSuggestedTime(String bookingId) async {
+    final response = await _apiClient.post('/Bookings/$bookingId/accept-suggested-time');
+    return response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 300;
+  }
+
+  Future<bool> declineSuggestedTime(String bookingId) async {
+    final response = await _apiClient.post('/Bookings/$bookingId/decline-suggested-time');
+    return response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 300;
   }
 
   Future<Map<String, dynamic>?> getRatingByBooking(String bookingId) async {

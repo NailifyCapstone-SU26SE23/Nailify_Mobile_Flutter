@@ -5,6 +5,8 @@ import '../../../../core/utils/auth_guard.dart';
 import '../../../../core/utils/price_formatter.dart';
 
 import '../../../../core/di/injection.dart';
+import '../../data/models/component_model.dart';
+import '../../data/models/customer_nail_models.dart' as nails_model;
 import '../../data/models/nail_component_model.dart';
 import '../../data/models/nail_surface_model.dart';
 import '../../data/models/nail_variant_model.dart';
@@ -339,18 +341,41 @@ class _DetailContentState extends State<_DetailContent> {
                   child: SizedBox(
                     height: 50,
                     child: OutlinedButton(
-                      onPressed: widget.launching
-                          ? null
-                          : () {
-                              final service = getIt<ArTryOnService>();
-                              widget.onTryOn(
-                                (nailVariant, surface) => service.launch(
-                                  nailVariant,
-                                  surface: surface,
-                                ),
-                                surface: widget.variant.nailSurface,
-                              );
-                            },
+                      onPressed: () {
+                        final customerNail = nails_model.CustomerNailModel(
+                          customerNailId: widget.variant.nailVariantId,
+                          name: widget.variant.name,
+                          imageUrl: widget.variant.imageUrl,
+                          nailShapeId: widget.variant.nailShapeId,
+                          nailSurfaceId: widget.variant.nailSurfaceId,
+                          price: widget.variant.price,
+                          customColor: widget.variant.colorJson,
+                          duration: widget.variant.duration,
+                          isPublic: true,
+                          nailShape: widget.variant.nailShape,
+                          nailSurface: widget.variant.nailSurface,
+                          customerNailComponents: widget.variant.nailComponents.map((c) {
+                            return nails_model.CustomerNailComponentModel(
+                              customerNailComponentId: c.nailComponentId,
+                              customerNailId: widget.variant.nailVariantId,
+                              componentId: c.componentId,
+                              customerComponentId: null,
+                              posX: c.posX,
+                              posY: c.posY,
+                              fingerIndex: c.fingerIndex,
+                              configJson: c.configJson,
+                              component: c.component != null ? ComponentModel(
+                                componentId: c.component!.componentId,
+                                name: c.component!.name,
+                                imageUrl: c.component!.imageUrl,
+                                componentType: c.component!.componentType,
+                                price: c.component!.price,
+                              ) : null,
+                            );
+                          }).toList(),
+                        );
+                        context.push('/try-on', extra: customerNail);
+                      },
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.primary,
                         side: const BorderSide(

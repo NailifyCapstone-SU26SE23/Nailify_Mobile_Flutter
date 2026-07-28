@@ -1071,12 +1071,13 @@ class _NailPainter extends CustomPainter {
         Paint()..colorFilter = ColorFilter.mode(baseColor, BlendMode.srcIn),
       );
     } else {
-      canvas.drawImageRect(image, srcRect, destRect, Paint());
       final colors = gradientColors!;
       final colorStops = colors.length == 2
           ? null
           : List<double>.generate(colors.length, (i) => i / (colors.length - 1));
-      canvas.drawRect(
+      canvas.drawImageRect(
+        image,
+        srcRect,
         destRect,
         Paint()
           ..shader = ui.Gradient.linear(
@@ -1084,8 +1085,7 @@ class _NailPainter extends CustomPainter {
             destRect.bottomRight,
             colors,
             colorStops,
-          )
-          ..blendMode = BlendMode.srcIn,
+          ),
       );
     }
 
@@ -1223,12 +1223,21 @@ bool _colorListEquals(List<Color>? a, List<Color>? b) {
 Color _applySurfaceOffsets(Color color, NailSurfaceModel? surface) {
   if (surface == null) return color;
   final hsl = HSLColor.fromColor(color);
+
+  double satOffset = surface.saturationOffset;
+  if (satOffset.abs() > 1.0) {
+    satOffset /= 100.0;
+  }
+
+  double lightOffset = surface.lightnessOffset;
+  if (lightOffset.abs() > 1.0) {
+    lightOffset /= 100.0;
+  }
+
   return hsl
       .withHue((hsl.hue + surface.hueOffset) % 360)
-      .withSaturation(
-        (hsl.saturation + surface.saturationOffset).clamp(0.0, 1.0),
-      )
-      .withLightness((hsl.lightness + surface.lightnessOffset).clamp(0.0, 1.0))
+      .withSaturation((hsl.saturation + satOffset).clamp(0.0, 1.0))
+      .withLightness((hsl.lightness + lightOffset).clamp(0.0, 1.0))
       .toColor();
 }
 

@@ -87,7 +87,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
       debugPrint('[TryOnSetupScreen] _fetchData started. widget.customerNail=${widget.customerNail?.customerNailId}, widget.recommendedData=${widget.recommendedData != null}');
       final results = await Future.wait([
         _setupService.fetchTryOnData(),
-        if (widget.customerNail != null)
+        if (widget.customerNail != null && widget.customerNail!.customerNailId > 0)
           _customerNailRepository.getCustomerNailById(
             widget.customerNail!.customerNailId,
           ),
@@ -627,7 +627,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
       int targetNailId;
       String targetName = 'My Custom Design';
       
-      if (_customerNail == null) {
+      if (_customerNail == null || _customerNail!.customerNailId <= 0) {
         // Create new design first
         targetNailId = await _customerNailRepository.createCustomerNail(
           name: targetName,
@@ -653,7 +653,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
 
       for (final placement in _placements) {
         final payload = placement.toPayload(targetNailId);
-        if (placement.customerNailComponentId == null) {
+        if (placement.customerNailComponentId == null || placement.customerNailComponentId == 0) {
           await _componentRepository.createCustomerNailComponent(
             customerNailId: payload.customerNailId,
             componentId: payload.componentId,

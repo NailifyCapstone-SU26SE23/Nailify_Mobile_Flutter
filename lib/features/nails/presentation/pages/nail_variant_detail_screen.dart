@@ -343,7 +343,7 @@ class _DetailContentState extends State<_DetailContent> {
                     child: OutlinedButton(
                       onPressed: () {
                         final customerNail = nails_model.CustomerNailModel(
-                          customerNailId: widget.variant.nailVariantId,
+                          customerNailId: 0,
                           name: widget.variant.name,
                           imageUrl: widget.variant.imageUrl,
                           nailShapeId: widget.variant.nailShapeId,
@@ -356,8 +356,8 @@ class _DetailContentState extends State<_DetailContent> {
                           nailSurface: widget.variant.nailSurface,
                           customerNailComponents: widget.variant.nailComponents.map((c) {
                             return nails_model.CustomerNailComponentModel(
-                              customerNailComponentId: c.nailComponentId,
-                              customerNailId: widget.variant.nailVariantId,
+                              customerNailComponentId: 0,
+                              customerNailId: 0,
                               componentId: c.componentId,
                               customerComponentId: null,
                               posX: c.posX,

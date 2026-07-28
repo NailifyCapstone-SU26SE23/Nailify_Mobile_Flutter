@@ -215,13 +215,6 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     );
   }
 
-  bool _readBool(dynamic value) {
-    if (value is bool) return value;
-    if (value is num) return value != 0;
-    final text = value?.toString().toLowerCase().trim();
-    return text == 'true' || text == '1' || text == 'yes';
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -256,10 +249,6 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
         rawStatus == 'Approved' ||
         rawStatus == 'Assigned';
     final canRate = rawStatus == 'Completed' && !isRated;
-    final amountPaid = booking['amountPaid'];
-    final isPaid = amountPaid != null && amountPaid is num && amountPaid > 0;
-    final isRefunded = _readBool(booking['isRefunded']);
-    final canRequestRefund = isPaid && !isRefunded && rawStatus == 'Cancelled';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -911,27 +900,6 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
         .trim();
     if (name != null && name.isNotEmpty) return name;
     return 'Thanh phan nail';
-  }
-
-  num _componentPrice(Map<String, dynamic> component) {
-    for (final key in const [
-      'component',
-      'customerComponent',
-      'nailComponent',
-      'customerNailComponent',
-    ]) {
-      final nested = component[key];
-      if (nested is Map) {
-        final price = nested['price'] ?? nested['Price'];
-        if (price is num) return price;
-        final parsed = num.tryParse(price?.toString() ?? '');
-        if (parsed != null) return parsed;
-      }
-    }
-
-    final price = component['price'] ?? component['Price'];
-    if (price is num) return price;
-    return num.tryParse(price?.toString() ?? '') ?? 0;
   }
 
   int? _readNullableInt(dynamic value) {

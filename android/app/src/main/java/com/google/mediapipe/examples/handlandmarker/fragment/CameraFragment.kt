@@ -377,6 +377,7 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
 
                 fragmentCameraBinding.overlay.setResults(
                     resultBundle.results.first(),
+                    resultBundle.nailDetections.firstOrNull().orEmpty(),
                     resultBundle.inputImageHeight,
                     resultBundle.inputImageWidth,
                     RunningMode.LIVE_STREAM

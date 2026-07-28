@@ -11,6 +11,7 @@ import com.google.mediapipe.examples.handlandmarker.model.NailDecoration
 import com.google.mediapipe.examples.handlandmarker.model.NailSetConfig
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
+import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import kotlin.math.max
 import kotlin.math.min
 import android.graphics.Bitmap
@@ -32,8 +33,10 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
     View(context, attrs) {
 
     private var results: HandLandmarkerResult? = null
+    private var nailDetections: List<YoloNailOnnxRecognizer.NailDetection> = emptyList()
     private var linePaint = Paint()
     private var pointPaint = Paint()
+    private var promptPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private var ballerinaBitmap: Bitmap? = null
     private var squovalBitmap: Bitmap? = null
     private var stilettoBitmap: Bitmap? = null
@@ -62,14 +65,22 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
     }
 
     private fun initPaints() {
+        val density = resources.displayMetrics.density
+        
         linePaint.color =
             ContextCompat.getColor(context!!, R.color.mp_color_primary)
-        linePaint.strokeWidth = LANDMARK_STROKE_WIDTH
+        linePaint.strokeWidth = LANDMARK_STROKE_WIDTH * density
         linePaint.style = Paint.Style.STROKE
 
         pointPaint.color = Color.YELLOW
-        pointPaint.strokeWidth = LANDMARK_STROKE_WIDTH
+        pointPaint.strokeWidth = LANDMARK_STROKE_WIDTH * density
         pointPaint.style = Paint.Style.FILL
+
+        promptPaint.color = Color.RED
+        promptPaint.textAlign = Paint.Align.CENTER
+        promptPaint.textSize = PROMPT_TEXT_SIZE * density
+        promptPaint.typeface = android.graphics.Typeface.DEFAULT_BOLD
+        promptPaint.style = Paint.Style.FILL
     }
 
         override fun draw(canvas: Canvas) {
@@ -77,24 +88,30 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         results?.let { handLandmarkerResult ->
             for (landmark in handLandmarkerResult.landmarks()) {
                 val fingerTips = listOf(4, 8, 12, 16, 20) 
+                val unmatchedNails = nailDetections.toMutableList()
 
                 for ((fingerIndex, tipIndex) in fingerTips.withIndex()) {
                     val tip = landmark[tipIndex]
                     val joint =
                         landmark[tipIndex - 1] // The joint right below the tip (7, 11, 15, 19, 3)
+                    val nailDetection = nearestNailDetection(tip, unmatchedNails)
+                        ?: continue
+                    unmatchedNails.remove(nailDetection)
                     val design = nailSetConfig.nails.getOrNull(fingerIndex)
                         ?: nailSetConfig.nails.firstOrNull()
                         ?: continue
 
-                    val px = tip.x() * imageWidth * scaleFactor
-                    val py = tip.y() * imageHeight * scaleFactor
+                    val px = nailDetection.centerXNormalized * imageWidth * scaleFactor
+                    val py = nailDetection.centerYNormalized * imageHeight * scaleFactor
                     
                     val jx = joint.x() * imageWidth * scaleFactor
                     val jy = joint.y() * imageHeight * scaleFactor
+                    val tx = tip.x() * imageWidth * scaleFactor
+                    val ty = tip.y() * imageHeight * scaleFactor
 
-                    val angle = Math.toDegrees(atan2((py - jy).toDouble(), (px - jx).toDouble())).toFloat()
+                    val angle = Math.toDegrees(atan2((ty - jy).toDouble(), (tx - jx).toDouble())).toFloat()
 
-                    val fingerLength = hypot((px - jx).toDouble(), (py - jy).toDouble()).toFloat()
+                    val fingerLength = hypot((tx - jx).toDouble(), (ty - jy).toDouble()).toFloat()
 
                     canvas.withTranslation(px, py) {
                         rotate(angle + 90f) // Rotate to match finger direction
@@ -106,8 +123,10 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                             ?: getShapeBitmap(nailSetConfig.shape)
 
                         nailBitmap?.let { bitmap ->
-                            val nailWidth = fingerLength * 2f
-                            val nailHeight = fingerLength * 1.2f * nailSetConfig.length
+                            val detectedWidth = nailDetection.normalizedWidth * imageWidth * scaleFactor
+                            val detectedHeight = nailDetection.normalizedHeight * imageHeight * scaleFactor
+                            val nailWidth = max(detectedWidth * NAIL_SEGMENT_WIDTH_SCALE, fingerLength * 2f)
+                            val nailHeight = max(detectedHeight, fingerLength * 1.2f) * nailSetConfig.length
 
                             val nailBottom = fingerLength * 0.75f // Fixed base position relative to tip
                             val totalHeight = nailHeight * 1.5f    // Total height expands with multiplier
@@ -150,11 +169,13 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
 
     fun setResults(
         handLandmarkerResults: HandLandmarkerResult,
+        nailDetections: List<YoloNailOnnxRecognizer.NailDetection> = emptyList(),
         imageHeight: Int,
         imageWidth: Int,
         runningMode: RunningMode = RunningMode.IMAGE
     ) {
         results = handLandmarkerResults
+        this.nailDetections = nailDetections
 
         this.imageHeight = imageHeight
         this.imageWidth = imageWidth
@@ -170,6 +191,22 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
             }
         }
         invalidate()
+    }
+
+    private fun nearestNailDetection(
+        tip: NormalizedLandmark,
+        detections: List<YoloNailOnnxRecognizer.NailDetection>
+    ): YoloNailOnnxRecognizer.NailDetection? {
+        val maxDistance = MAX_TIP_TO_NAIL_DISTANCE
+        return detections
+            .map { detection ->
+                val dx = detection.centerXNormalized - tip.x()
+                val dy = detection.centerYNormalized - tip.y()
+                detection to hypot(dx.toDouble(), dy.toDouble()).toFloat()
+            }
+            .filter { (_, distance) -> distance <= maxDistance }
+            .minByOrNull { (_, distance) -> distance }
+            ?.first
     }
 
     fun setFullDesign(config: NailSetConfig) {
@@ -230,18 +267,14 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         nailBounds: RectF
     ): Paint {
         val baseColor = parseColorOrDefault(colorValue)
-        val surfaceColor = applySurfaceOffsets(baseColor)
         return Paint(Paint.ANTI_ALIAS_FLAG).apply {
             shader = if (gradient?.enabled == true) {
                 createGradientShader(gradient, nailBounds)
             } else {
-                createMaterialShader(surfaceColor, nailBounds)
+                null
             }
             if (shader == null) {
-                color = when (nailSetConfig.material) {
-                    NailSetConfig.MATERIAL_MATTE -> adjustColor(surfaceColor, saturation = 0.55f, brightness = 0.9f)
-                    else -> surfaceColor
-                }
+                color = baseColor
             }
         }
     }
@@ -253,7 +286,6 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         val colors = gradient.stops
             .take(gradient.stopCount.coerceIn(2, 3))
             .map(::parseColorOrDefault)
-            .map(::applySurfaceOffsets)
             .toIntArray()
 
         return when (gradient.type) {
@@ -501,10 +533,13 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         val surface = nailSetConfig.surface ?: return color
         val hsv = FloatArray(3)
         Color.colorToHSV(color, hsv)
-        hsv[0] = ((hsv[0] + surface.hueOffset) % 360f + 360f) % 360f
-        hsv[1] = (hsv[1] + surface.saturationOffset).coerceIn(0f, 1f)
-        hsv[2] = (hsv[2] + surface.lightnessOffset).coerceIn(0f, 1f)
+        hsv[1] = (hsv[1] + normalizeUnitOffset(surface.saturationOffset)).coerceIn(0f, 1f)
+        hsv[2] = (hsv[2] + normalizeUnitOffset(surface.lightnessOffset)).coerceIn(0f, 1f)
         return Color.HSVToColor(Color.alpha(color), hsv)
+    }
+
+    private fun normalizeUnitOffset(value: Float): Float {
+        return if (kotlin.math.abs(value) > 1f) value / 100f else value
     }
 
     private fun drawDecoration(canvas: Canvas, decoration: NailDecoration, nailBounds: RectF) {
@@ -553,7 +588,12 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
     }
 
     companion object {
-        private const val LANDMARK_STROKE_WIDTH = 8F
+        private const val LANDMARK_STROKE_WIDTH = 3F // Now treated as DP
         private const val FingerColorFallback = "#FF4081"
+        private const val PROMPT_TEXT = "Please show your nails"
+        private const val PROMPT_TEXT_SIZE = 32F // Now treated as SP/DP
+        private const val PROMPT_VERTICAL_POSITION = 0.18F
+        private const val MAX_TIP_TO_NAIL_DISTANCE = 0.16F
+        private const val NAIL_SEGMENT_WIDTH_SCALE = 1.45F
     }
 }

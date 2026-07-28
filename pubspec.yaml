@@ -22,7 +22,7 @@ dependencies:
   flutter_svg: ^2.0.9
 
   flutter_map: ^8.3.0
-  latlong2: ^0.9.1
+  latlong2: ^0.10.1
 
   # State Management (BLoC/Cubit)
   flutter_bloc: ^9.1.1

@@ -66,10 +66,11 @@ dependencies {
     implementation("androidx.camera:camera-view:$cameraXVersion")
 
     implementation("androidx.window:window:1.1.0-alpha03")
-    implementation("com.google.mediapipe:tasks-vision:0.10.29")
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.18.0")
     implementation("com.google.code.gson:gson:2.11.0")
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("com.github.bumptech.glide:glide:4.16.0")
+    implementation("com.google.mediapipe:tasks-vision:0.10.29")
 }

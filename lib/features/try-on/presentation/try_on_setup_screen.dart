@@ -39,12 +39,6 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
   bool _isLoading = true;
   bool _isSaving = false;
   bool _launching = false;
-  final bool _showShapeSection = true;
-  final bool _showSurfaceSection = true;
-  final bool _showColorSection = true;
-  final bool _showPlacementSection = true;
-  final bool _showSystemComponents = true;
-  final bool _showCustomerComponents = true;
   String? _error;
   TryOnData? _tryOnData;
   CustomerNailModel? _customerNail;

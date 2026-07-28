@@ -31,6 +31,7 @@ import com.google.mediapipe.tasks.core.Delegate
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarker
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
+import java.util.concurrent.ConcurrentHashMap
 
 class HandLandmarkerHelper(
     var minHandDetectionConfidence: Float = DEFAULT_HAND_DETECTION_CONFIDENCE,
@@ -47,6 +48,10 @@ class HandLandmarkerHelper(
     // For this example this needs to be a var so it can be reset on changes.
     // If the Hand Landmarker will not change, a lazy val would be preferable.
     private var handLandmarker: HandLandmarker? = null
+    private var nailRecognizer: YoloNailOnnxRecognizer? = null
+    private val liveNailDetections = ConcurrentHashMap<Long, List<YoloNailOnnxRecognizer.NailDetection>>()
+    private var lastLiveNailDetectionTimeMs = 0L
+    private var lastLiveNailDetections: List<YoloNailOnnxRecognizer.NailDetection> = emptyList()
 
     init {
         setupHandLandmarker()
@@ -55,6 +60,11 @@ class HandLandmarkerHelper(
     fun clearHandLandmarker() {
         handLandmarker?.close()
         handLandmarker = null
+        nailRecognizer?.close()
+        nailRecognizer = null
+        liveNailDetections.clear()
+        lastLiveNailDetectionTimeMs = 0L
+        lastLiveNailDetections = emptyList()
     }
 
     // Return running status of HandLandmarkerHelper
@@ -120,6 +130,7 @@ class HandLandmarkerHelper(
             val options = optionsBuilder.build()
             handLandmarker =
                 HandLandmarker.createFromOptions(context, options)
+            nailRecognizer = YoloNailOnnxRecognizer(context)
         } catch (e: IllegalStateException) {
             handLandmarkerHelperListener?.onError(
                 "Hand Landmarker failed to initialize. See error logs for " +
@@ -184,6 +195,8 @@ class HandLandmarkerHelper(
             matrix, true
         )
 
+        liveNailDetections[frameTime] = detectLiveNails(rotatedBitmap, frameTime)
+
         // Convert the input Bitmap object to an MPImage object to run inference
         val mpImage = BitmapImageBuilder(rotatedBitmap).build()
 
@@ -238,6 +251,7 @@ class HandLandmarkerHelper(
 
         // Next, we'll get one frame every frameInterval ms, then run detection on these frames.
         val resultList = mutableListOf<HandLandmarkerResult>()
+        val nailDetectionList = mutableListOf<List<YoloNailOnnxRecognizer.NailDetection>>()
         val numberOfFrameToRead = videoLengthMs.div(inferenceIntervalMs)
 
         for (i in 0..numberOfFrameToRead) {
@@ -256,11 +270,13 @@ class HandLandmarkerHelper(
 
                     // Convert the input Bitmap object to an MPImage object to run inference
                     val mpImage = BitmapImageBuilder(argb8888Frame).build()
+                    val nailDetections = detectNails(argb8888Frame)
 
                     // Run hand landmarker using MediaPipe Hand Landmarker API
                     handLandmarker?.detectForVideo(mpImage, timestampMs)
                         ?.let { detectionResult ->
                             resultList.add(detectionResult)
+                            nailDetectionList.add(nailDetections)
                         } ?: run{
                             didErrorOccurred = true
                             handLandmarkerHelperListener?.onError(
@@ -286,7 +302,7 @@ class HandLandmarkerHelper(
         return if (didErrorOccurred) {
             null
         } else {
-            ResultBundle(resultList, inferenceTimePerFrameMs, height, width)
+            ResultBundle(resultList, nailDetectionList, inferenceTimePerFrameMs, height, width)
         }
     }
 
@@ -307,12 +323,14 @@ class HandLandmarkerHelper(
 
         // Convert the input Bitmap object to an MPImage object to run inference
         val mpImage = BitmapImageBuilder(image).build()
+        val nailDetections = detectNails(image)
 
         // Run hand landmarker using MediaPipe Hand Landmarker API
         handLandmarker?.detect(mpImage)?.also { landmarkResult ->
             val inferenceTimeMs = SystemClock.uptimeMillis() - startTime
             return ResultBundle(
                 listOf(landmarkResult),
+                listOf(nailDetections),
                 inferenceTimeMs,
                 image.height,
                 image.width
@@ -334,10 +352,12 @@ class HandLandmarkerHelper(
     ) {
         val finishTimeMs = SystemClock.uptimeMillis()
         val inferenceTime = finishTimeMs - result.timestampMs()
+        val nailDetections = liveNailDetections.remove(result.timestampMs()).orEmpty()
 
         handLandmarkerHelperListener?.onResults(
             ResultBundle(
                 listOf(result),
+                listOf(nailDetections),
                 inferenceTime,
                 input.height,
                 input.width
@@ -353,9 +373,32 @@ class HandLandmarkerHelper(
         )
     }
 
+    private fun detectNails(bitmap: Bitmap): List<YoloNailOnnxRecognizer.NailDetection> {
+        return try {
+            nailRecognizer?.recognizeNails(bitmap).orEmpty()
+        } catch (error: RuntimeException) {
+            Log.e(TAG, "ONNX nail detection failed with error: ${error.message}")
+            emptyList()
+        }
+    }
+
+    private fun detectLiveNails(
+        bitmap: Bitmap,
+        frameTime: Long
+    ): List<YoloNailOnnxRecognizer.NailDetection> {
+        if (frameTime - lastLiveNailDetectionTimeMs < LIVE_NAIL_DETECTION_INTERVAL_MS) {
+            return lastLiveNailDetections
+        }
+
+        lastLiveNailDetectionTimeMs = frameTime
+        lastLiveNailDetections = detectNails(bitmap)
+        return lastLiveNailDetections
+    }
+
     companion object {
         const val TAG = "HandLandmarkerHelper"
         private const val MP_HAND_LANDMARKER_TASK = "hand_landmarker.task"
+        private const val LIVE_NAIL_DETECTION_INTERVAL_MS = 300L
 
         const val DELEGATE_CPU = 0
         const val DELEGATE_GPU = 1
@@ -369,6 +412,7 @@ class HandLandmarkerHelper(
 
     data class ResultBundle(
         val results: List<HandLandmarkerResult>,
+        val nailDetections: List<List<YoloNailOnnxRecognizer.NailDetection>>,
         val inferenceTime: Long,
         val inputImageHeight: Int,
         val inputImageWidth: Int,

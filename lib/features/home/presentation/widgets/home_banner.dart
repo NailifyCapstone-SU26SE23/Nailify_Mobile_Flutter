@@ -6,35 +6,6 @@ import '../../../../core/utils/auth_guard.dart';
 class HomeBanner extends StatelessWidget {
   const HomeBanner({super.key});
 
-  // chưa có pages booking nên chèn đỡ
-  void _showBookingPopup(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.event_available, color: AppColors.primary),
-            SizedBox(width: 8),
-            Text('Thông báo'),
-          ],
-        ),
-        content: const Text(
-          'Tính năng "Book Now" đang được phát triển. Vui lòng quay lại sau!',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text(
-              'Đóng',
-              style: TextStyle(color: AppColors.textPrimary),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Padding(

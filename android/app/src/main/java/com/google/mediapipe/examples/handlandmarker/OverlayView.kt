@@ -153,9 +153,6 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                             } else {
                                 drawBitmap(bitmap, null, destRect, null)
                             }
-
-                            drawNailSurface(this, bitmap, destRect)
-
                             design.decorations.forEach { decoration ->
                                 drawDecoration(this, decoration, destRect)
                             }

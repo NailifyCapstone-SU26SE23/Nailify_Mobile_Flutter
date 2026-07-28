@@ -30,8 +30,6 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
     return int.tryParse(raw?.toString() ?? '') ?? 0;
   }
 
-  String get _bookingId => widget.paymentData['bookingId']?.toString() ?? '';
-
   @override
   void initState() {
     super.initState();
@@ -188,7 +186,6 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
                     const SizedBox(height: 20),
                     _buildInfoRow('Mã đơn', _orderCode.toString()),
                     const SizedBox(height: 8),
-                    _buildInfoRow('Mã lịch hẹn', _bookingId),
                     const SizedBox(height: 8),
                     _buildInfoRow(
                       'Số tiền',

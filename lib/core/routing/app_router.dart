@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-
 import '../../features/another_design/presentation/pages/another_design_page.dart';
 import '../../features/auth/presentation/pages/customer_login_page.dart';
 import '../../features/auth/presentation/pages/customer_register_page.dart';
@@ -18,12 +17,15 @@ import '../../features/my_studio/presentation/pages/customer_nail_detail_page.da
 import '../../features/nail_booking/presentation/pages/booking_success_page.dart';
 import '../../features/nail_booking/presentation/pages/custom_nail_booking_page.dart';
 import '../../features/nail_booking/presentation/pages/nail_booking_page.dart';
+import '../../features/nail_booking/presentation/pages/payment_qr_page.dart';
+import '../../features/nail_booking/presentation/pages/payment_result_page.dart';
 import '../../features/nail_booking/presentation/pages/service_booking_page.dart';
 import '../../features/my_studio/presentation/pages/my_studio_tab_page.dart';
 import '../../features/nails/presentation/pages/nail_detail_screen.dart';
 import '../../features/nails/presentation/pages/nail_list_screen.dart';
 import '../../features/nails/presentation/pages/nail_variant_detail_screen.dart';
 import '../../features/perfect_match/presentation/pages/perfect_match_page.dart';
+import '../../features/perfect_match/presentation/pages/nail_composition_design_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/quiz/data/models/quiz_result_model.dart';
 import '../../features/quiz/presentation/pages/analyze_page.dart';
@@ -68,6 +70,27 @@ class AppRouter {
         builder: (context, state) {
           final details = state.extra as Map<String, dynamic>? ?? {};
           return BookingSuccessPage(bookingDetails: details);
+        },
+      ),
+      GoRoute(
+        path: '/payment-qr',
+        builder: (context, state) {
+          final paymentData = state.extra as Map<String, dynamic>? ?? {};
+          return PaymentQrPage(paymentData: paymentData);
+        },
+      ),
+      GoRoute(
+        path: '/payment-success',
+        builder: (context, state) {
+          final paymentData = state.extra as Map<String, dynamic>? ?? {};
+          return PaymentSuccessPage(paymentData: paymentData);
+        },
+      ),
+      GoRoute(
+        path: '/payment-cancelled',
+        builder: (context, state) {
+          final paymentData = state.extra as Map<String, dynamic>? ?? {};
+          return PaymentCancelledPage(paymentData: paymentData);
         },
       ),
       ShellRoute(
@@ -184,6 +207,18 @@ class AppRouter {
                   ? List<QuizResultModel>.from(state.extra as List)
                   : const <QuizResultModel>[];
               return PerfectMatchPage(results: results);
+            },
+          ),
+          GoRoute(
+            path: '/perfect-match/composition',
+            builder: (context, state) {
+              final matchedCharacteristics =
+                  state.extra is List<MatchedCharacteristic>
+                  ? state.extra as List<MatchedCharacteristic>
+                  : const <MatchedCharacteristic>[];
+              return NailCompositionDesignPage(
+                matchedCharacteristics: matchedCharacteristics,
+              );
             },
           ),
           GoRoute(

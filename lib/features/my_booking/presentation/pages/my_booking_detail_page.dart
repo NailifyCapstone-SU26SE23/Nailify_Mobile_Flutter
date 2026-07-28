@@ -471,24 +471,60 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   const Divider(height: 24),
 
                   // 3. Tổng thanh toán
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Tổng thanh toán:',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Tổng thanh toán:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            PriceFormatter.format(booking['totalPrice'] ?? 0),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        PriceFormatter.format(booking['totalPrice'] ?? 0),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                          color: AppColors.primary,
+                      const SizedBox(height: 8),
+                      if (booking['amountPaid'] != null)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Đã thanh toán:'),
+                            Text(
+                              PriceFormatter.format(booking['amountPaid']),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
+                      if (booking['amountDue'] != null)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Còn lại:'),
+                            Text(
+                              PriceFormatter.format(booking['amountDue']),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
                     ],
                   ),
                 ],

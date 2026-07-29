@@ -9,7 +9,7 @@ import 'core/di/injection.dart';
 import 'core/network/signalr_service.dart';
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
-import 'core/localization/app_localizations.dart';
+import 'generated/l10n.dart';
 import 'core/localization/locale_service.dart';
 import 'core/utils/token_utils.dart';
 
@@ -72,12 +72,12 @@ class CoreApp extends StatelessWidget {
 
           // Đa ngôn ngữ cơ bản, chưa cần dùng
           localizationsDelegates: const [
-            AppLocalizations.delegate,
+            S.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: AppLocalizations.supportedLocales,
+          supportedLocales: S.delegate.supportedLocales,
           locale: localeService.currentLocale,
 
           // Cấu hình định tuyến trung tâm GoRouter

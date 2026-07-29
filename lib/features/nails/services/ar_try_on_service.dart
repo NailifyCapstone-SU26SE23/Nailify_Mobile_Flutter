@@ -48,11 +48,13 @@ class ArTryOnService {
   /// Mở camera ở chế độ Snapshot:
   /// Native chụp ảnh → chạy MediaPipe IMAGE → trả về [SnapshotResult]
   /// chứa đường dẫn ảnh và danh sách tọa độ từng ngón tay.
-  Future<SnapshotResult> launchCustomerSnapshot(CustomerNailModel customerNail) async {
+  Future<SnapshotResult> launchCustomerSnapshot(
+    CustomerNailModel customerNail,
+  ) async {
     if (!Platform.isAndroid) {
       throw UnsupportedError('Snapshot try-on chỉ hỗ trợ Android.');
     }
-    
+
     final config = _convertCustomerToArFormat(customerNail);
 
     final result = await _channel.invokeMethod<Map<dynamic, dynamic>>(
@@ -63,7 +65,7 @@ class ArTryOnService {
       throw Exception('Native không trả về kết quả Snapshot.');
     }
     final imagePath = result['imagePath'] as String? ?? '';
-    final jsonStr   = result['landmarksJson'] as String? ?? '[]';
+    final jsonStr = result['landmarksJson'] as String? ?? '[]';
     return SnapshotResult.fromJson(imagePath, jsonStr);
   }
 
@@ -383,7 +385,9 @@ class SnapshotResult {
     final list = jsonDecode(jsonStr) as List<dynamic>;
     return SnapshotResult(
       imagePath: imagePath,
-      landmarks: list.map((item) => FingerLandmark.fromMap(item as Map<dynamic, dynamic>)).toList(),
+      landmarks: list
+          .map((item) => FingerLandmark.fromMap(item as Map<dynamic, dynamic>))
+          .toList(),
     );
   }
 
@@ -398,8 +402,8 @@ class SnapshotResult {
 ///   finalRotation = baseRotation + manualRotation
 ///   finalScale = baseScale * manualScale  (tuỳ chỉnh kích thước từ D-Pad)
 class FingerLandmark {
-  final String finger;      // "thumb", "index", "middle", "ring", "pinky"
-  final int fingerIndex;    // 0..4
+  final String finger; // "thumb", "index", "middle", "ring", "pinky"
+  final int fingerIndex; // 0..4
 
   /// Tọa độ pixel của đầu ngón tay trên ảnh gốc từ Native.
   final double baseX;
@@ -428,14 +432,14 @@ class FingerLandmark {
 
   factory FingerLandmark.fromMap(Map<dynamic, dynamic> map) {
     return FingerLandmark(
-      finger:       map['finger']       as String? ?? '',
-      fingerIndex:  (map['fingerIndex'] as num?)?.toInt() ?? 0,
-      baseX:        (map['baseX']       as num?)?.toDouble() ?? 0,
-      baseY:        (map['baseY']       as num?)?.toDouble() ?? 0,
+      finger: map['finger'] as String? ?? '',
+      fingerIndex: (map['fingerIndex'] as num?)?.toInt() ?? 0,
+      baseX: (map['baseX'] as num?)?.toDouble() ?? 0,
+      baseY: (map['baseY'] as num?)?.toDouble() ?? 0,
       baseRotation: (map['baseRotation'] as num?)?.toDouble() ?? 0,
-      baseScale:    (map['baseScale']   as num?)?.toDouble() ?? 1,
-      imageWidth:   (map['imageWidth']  as num?)?.toInt() ?? 1,
-      imageHeight:  (map['imageHeight'] as num?)?.toInt() ?? 1,
+      baseScale: (map['baseScale'] as num?)?.toDouble() ?? 1,
+      imageWidth: (map['imageWidth'] as num?)?.toInt() ?? 1,
+      imageHeight: (map['imageHeight'] as num?)?.toInt() ?? 1,
     );
   }
 }

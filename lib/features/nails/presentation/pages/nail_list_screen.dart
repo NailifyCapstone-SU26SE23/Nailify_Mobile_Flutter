@@ -31,7 +31,8 @@ class NailListScreen extends StatelessWidget {
       _globalMatchedResults = matchedResults;
     }
     return BlocProvider(
-      create: (_) => NailCatalogCubit(getIt<NailDesignRepository>())..loadDesigns(),
+      create: (_) =>
+          NailCatalogCubit(getIt<NailDesignRepository>())..loadDesigns(),
       child: _NailListView(matchedResults: _globalMatchedResults),
     );
   }
@@ -70,27 +71,31 @@ class _NailListViewState extends State<_NailListView> {
 
   // Calculate highest matching score percentage for a given nail design
   int? _getMatchPercentage(NailDesignModel design) {
-    if (widget.matchedResults == null || widget.matchedResults!.isEmpty) return null;
+    if (widget.matchedResults == null || widget.matchedResults!.isEmpty)
+      return null;
 
     double maxScore = -1.0;
-    
+
     for (final r in widget.matchedResults!) {
       final variantId = int.tryParse(r.nailVariantId);
-      final hasVariantMatch = variantId != null && design.nailVariants.any((v) => v.nailVariantId == variantId);
-      
+      final hasVariantMatch =
+          variantId != null &&
+          design.nailVariants.any((v) => v.nailVariantId == variantId);
+
       final designNameClean = design.name.toLowerCase().trim();
       final resultNameClean = r.name.toLowerCase().trim();
-      final hasNameMatch = designNameClean == resultNameClean ||
+      final hasNameMatch =
+          designNameClean == resultNameClean ||
           resultNameClean.contains(designNameClean) ||
           designNameClean.contains(resultNameClean);
-          
+
       if (hasVariantMatch || hasNameMatch) {
         if (r.score > maxScore) {
           maxScore = r.score;
         }
       }
     }
-    
+
     if (maxScore >= 0) {
       return (maxScore <= 1 ? maxScore * 100 : maxScore).toInt();
     }
@@ -113,7 +118,10 @@ class _NailListViewState extends State<_NailListView> {
                   child: Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          size: 18,
+                        ),
                         onPressed: () => context.go('/'),
                       ),
                       const SizedBox(width: 4),
@@ -129,9 +137,15 @@ class _NailListViewState extends State<_NailListView> {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.tune_rounded, color: AppColors.primary, size: 20),
+                        icon: const Icon(
+                          Icons.tune_rounded,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
                         style: IconButton.styleFrom(
-                          backgroundColor: AppColors.primary.withValues(alpha: 0.08),
+                          backgroundColor: AppColors.primary.withValues(
+                            alpha: 0.08,
+                          ),
                           padding: const EdgeInsets.all(10),
                         ),
                         onPressed: () => _openFilters(context, state),
@@ -152,7 +166,8 @@ class _NailListViewState extends State<_NailListView> {
                   state.designs.isEmpty)
                 SliverFillRemaining(
                   child: _ErrorState(
-                    message: state.errorMessage ?? 'Không thể tải danh sách móng.',
+                    message:
+                        state.errorMessage ?? 'Không thể tải danh sách móng.',
                     onRetry: () =>
                         context.read<NailCatalogCubit>().loadDesigns(),
                   ),
@@ -166,45 +181,50 @@ class _NailListViewState extends State<_NailListView> {
                     ),
                   ),
                 )
-              else () {
-                final sortedDesigns = List<NailDesignModel>.from(state.designs);
-                
-                if (widget.matchedResults != null && widget.matchedResults!.isNotEmpty) {
-                  sortedDesigns.sort((a, b) {
-                    final aPct = _getMatchPercentage(a);
-                    final bPct = _getMatchPercentage(b);
-                    
-                    if (aPct != null && bPct == null) return -1;
-                    if (aPct == null && bPct != null) return 1;
-                    if (aPct != null && bPct != null) return bPct.compareTo(aPct); // Sort descending
-                    return 0;
-                  });
-                }
+              else
+                () {
+                  final sortedDesigns = List<NailDesignModel>.from(
+                    state.designs,
+                  );
 
-                return SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                  sliver: SliverGrid.builder(
-                    itemCount: sortedDesigns.length,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 12,
-                          crossAxisSpacing: 12,
-                          childAspectRatio: 0.55,
-                        ),
-                    itemBuilder: (context, index) {
-                      final design = sortedDesigns[index];
-                      final matchPct = _getMatchPercentage(design);
-                      return NailDesignCard(
-                        design: design,
-                        matchPercentage: matchPct,
-                        onTap: () =>
-                            context.go('/nails/${design.nailDesignId}'),
-                      );
-                    },
-                  ),
-                );
-              }(),
+                  if (widget.matchedResults != null &&
+                      widget.matchedResults!.isNotEmpty) {
+                    sortedDesigns.sort((a, b) {
+                      final aPct = _getMatchPercentage(a);
+                      final bPct = _getMatchPercentage(b);
+
+                      if (aPct != null && bPct == null) return -1;
+                      if (aPct == null && bPct != null) return 1;
+                      if (aPct != null && bPct != null)
+                        return bPct.compareTo(aPct); // Sort descending
+                      return 0;
+                    });
+                  }
+
+                  return SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                    sliver: SliverGrid.builder(
+                      itemCount: sortedDesigns.length,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 12,
+                            crossAxisSpacing: 12,
+                            childAspectRatio: 0.55,
+                          ),
+                      itemBuilder: (context, index) {
+                        final design = sortedDesigns[index];
+                        final matchPct = _getMatchPercentage(design);
+                        return NailDesignCard(
+                          design: design,
+                          matchPercentage: matchPct,
+                          onTap: () =>
+                              context.go('/nails/${design.nailDesignId}'),
+                        );
+                      },
+                    ),
+                  );
+                }(),
 
               // Loading thêm khi cuộn
               if (state.status == NailCatalogStatus.loadingMore)
@@ -262,7 +282,7 @@ class _ErrorState extends StatelessWidget {
             FilledButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
+              label: const Text('Thử lại'),
             ),
           ],
         ),

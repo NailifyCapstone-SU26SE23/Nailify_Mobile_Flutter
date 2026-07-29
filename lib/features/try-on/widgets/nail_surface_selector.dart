@@ -26,8 +26,30 @@ class NailSurfaceSelector extends StatelessWidget {
     return Icons.auto_awesome_outlined;
   }
 
-  String _formatPrice(double price) {
-    if (price == 0) return 'Miễn phí';
+  String _translateName(BuildContext context, String name) {
+    if (Localizations.localeOf(context).languageCode == 'en') {
+      var result = name;
+      result = result.replaceAll('Bóng', 'Glossy');
+      result = result.replaceAll('Lì', 'Matte');
+      result = result.replaceAll('Mờ', 'Matte');
+      result = result.replaceAll('Nhũ', 'Shimmer');
+      result = result.replaceAll('Kim tuyến', 'Glitter');
+      return result;
+    }
+    return name;
+  }
+
+  String _formatPrice(BuildContext context, double price) {
+    if (price == 0) return Localizations.localeOf(context).languageCode == 'en' ? 'Free' : 'Miễn phí';
+    final isEn = Localizations.localeOf(context).languageCode == 'en';
+    if (isEn) {
+      final formatter = NumberFormat.currency(
+        locale: 'en_US',
+        symbol: '\$',
+        decimalDigits: 0,
+      );
+      return '+${formatter.format(price)}';
+    }
     final formatter = NumberFormat.currency(
       locale: 'vi_VN',
       symbol: '₫',
@@ -93,7 +115,7 @@ class NailSurfaceSelector extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        surface.name,
+                        _translateName(context, surface.name),
                         style: TextStyle(
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                           fontSize: 12,
@@ -104,7 +126,7 @@ class NailSurfaceSelector extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        _formatPrice(surface.price),
+                        _formatPrice(context, surface.price),
                         style: TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.w600,

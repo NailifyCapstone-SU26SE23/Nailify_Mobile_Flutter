@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../generated/l10n.dart';
 
 class OurPromisePage extends StatelessWidget {
   const OurPromisePage({
@@ -10,19 +11,21 @@ class OurPromisePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFFFCFCFC), // Nền xám/beige siêu nhẹ để tạo nhịp điệu tương phản
+      color: const Color(
+        0xFFFCFCFC,
+      ), // Nền xám/beige siêu nhẹ để tạo nhịp điệu tương phản
       padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 48.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.star_rounded, color: AppColors.primary, size: 16),
-              SizedBox(width: 6),
+              const Icon(Icons.star_rounded, color: AppColors.primary, size: 16),
+              const SizedBox(width: 6),
               Text(
-                'OUR PROMISE',
-                style: TextStyle(
+                S.of(context).ourPromiseTitle,
+                style: const TextStyle(
                   color: AppColors.primaryDark,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 2.0,
@@ -32,9 +35,9 @@ class OurPromisePage extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Why Choose Us',
-            style: TextStyle(
+          Text(
+            S.of(context).ourPromiseHeading,
+            style: const TextStyle(
               color: AppColors.textPrimary,
               fontSize: 28,
               fontWeight: FontWeight.bold,
@@ -42,9 +45,9 @@ class OurPromisePage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'At Nailify, we understand that when it comes to nail art, you have many options to choose from. Here is why we are different:',
-            style: TextStyle(
+          Text(
+            S.of(context).ourPromiseSubtitle,
+            style: const TextStyle(
               color: AppColors.textSecondary,
               fontSize: 14,
               height: 1.5,
@@ -55,30 +58,26 @@ class OurPromisePage extends StatelessWidget {
           // --- Phần Danh sách Card ---
           _buildPromiseCard(
             icon: Icons.access_time_rounded,
-            title: 'Years of Experience',
-            description:
-                'We bring a wealth of experience and artistry to the world of nail design.',
+            title: S.of(context).ourPromiseExpTitle,
+            description: S.of(context).ourPromiseExpDesc,
           ),
           const SizedBox(height: 16),
           _buildPromiseCard(
             icon: Icons.people_outline_rounded,
-            title: 'Experienced Staff',
-            description:
-                'Our certified staff members are highly trained to perform detailed care.',
+            title: S.of(context).ourPromiseTechTitle,
+            description: S.of(context).ourPromiseTechDesc,
           ),
           const SizedBox(height: 16),
           _buildPromiseCard(
             icon: Icons.star_border_rounded,
-            title: 'Best Quality',
-            description:
-                'Only premium, non-toxic products are used for your safety and satisfaction.',
+            title: S.of(context).ourPromiseQualityTitle,
+            description: S.of(context).ourPromiseQualityDesc,
           ),
           const SizedBox(height: 16),
           _buildPromiseCard(
             icon: Icons.trending_up_rounded,
-            title: 'Trend Awareness',
-            description:
-                'We constantly update our catalog with the latest techniques and global trends.',
+            title: S.of(context).ourPromiseTrendTitle,
+            description: S.of(context).ourPromiseTrendDesc,
           ),
         ],
       ),

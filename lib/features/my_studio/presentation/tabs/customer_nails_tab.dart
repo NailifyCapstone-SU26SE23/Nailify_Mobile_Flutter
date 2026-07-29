@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../generated/l10n.dart';
 import '../../../nails/data/models/customer_nail_models.dart';
 import '../../../nails/data/repositories/customer_nail_repository.dart';
 import '../../../try-on/presentation/try_on_setup_screen.dart';
@@ -121,17 +122,17 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Xóa mẫu móng',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          S.of(context).deleteNailTitle,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        content: Text('Bạn có chắc muốn xóa "${nail.name}"?'),
+        content: Text(S.of(context).deleteNailConfirm(nail.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text(
-              'Hủy',
-              style: TextStyle(color: AppColors.textSecondary),
+            child: Text(
+              S.of(context).cancelBtn,
+              style: const TextStyle(color: AppColors.textSecondary),
             ),
           ),
           FilledButton(
@@ -142,7 +143,7 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text('Xóa'),
+            child: Text(S.of(context).deleteBtn),
           ),
         ],
       ),
@@ -192,9 +193,9 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
         foregroundColor: Colors.white,
         elevation: 6,
         icon: const Icon(Icons.add_rounded, size: 20),
-        label: const Text(
-          'Tạo mới',
-          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+        label: Text(
+          S.of(context).createNewBtn,
+          style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
         ),
       ),
       body: Column(
@@ -208,9 +209,12 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
                   flex: 5,
                   child: TextField(
                     controller: _searchController,
-                    style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textPrimary,
+                    ),
                     decoration: InputDecoration(
-                      hintText: 'Tìm mẫu móng...',
+                      hintText: S.of(context).searchNailHint,
                       prefixIcon: const Icon(
                         Icons.search_rounded,
                         color: AppColors.textSecondary,
@@ -271,9 +275,9 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
                           color: AppColors.textSecondary,
                           size: 22,
                         ),
-                        hint: const Text(
-                          'Tất cả',
-                          style: TextStyle(
+                        hint: Text(
+                          S.of(context).filterAll,
+                          style: const TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
@@ -281,19 +285,10 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
                           overflow: TextOverflow.ellipsis,
                         ),
                         isExpanded: true,
-                        items: const [
-                          DropdownMenuItem(
-                            value: null,
-                            child: Text('Tất cả'),
-                          ),
-                          DropdownMenuItem(
-                            value: true,
-                            child: Text('Công khai'),
-                          ),
-                          DropdownMenuItem(
-                            value: false,
-                            child: Text('Riêng tư'),
-                          ),
+                        items: [
+                          DropdownMenuItem(value: null, child: Text(S.of(context).filterAll)),
+                          DropdownMenuItem(value: true, child: Text(S.of(context).filterPublic)),
+                          DropdownMenuItem(value: false, child: Text(S.of(context).filterPrivate)),
                         ],
                         onChanged: (value) {
                           setState(() => _isPublicFilter = value);
@@ -328,7 +323,7 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
                         FilledButton.icon(
                           onPressed: () => _loadData(reset: true),
                           icon: const Icon(Icons.refresh),
-                          label: const Text('Thử lại'),
+                        label: Text(S.of(context).retryBtn),
                         ),
                       ],
                     ),
@@ -345,7 +340,7 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Chưa có mẫu móng nào',
+                          S.of(context).noNailDesigns,
                           style: TextStyle(
                             color: Colors.grey.shade600,
                             fontSize: 16,
@@ -360,7 +355,7 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
                           ),
                           onPressed: _create,
                           icon: const Icon(Icons.add),
-                          label: const Text('Tạo mẫu móng mới'),
+                          label: Text(S.of(context).createNewNailBtn),
                         ),
                       ],
                     ),

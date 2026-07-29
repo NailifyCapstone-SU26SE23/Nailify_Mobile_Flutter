@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../generated/l10n.dart';
 
 import '../../../core/di/injection.dart';
 import '../../nails/data/models/customer_nail_models.dart';
@@ -11,10 +12,12 @@ class TryOnMethodSelectionScreen extends StatefulWidget {
   const TryOnMethodSelectionScreen({super.key, required this.previewNail});
 
   @override
-  State<TryOnMethodSelectionScreen> createState() => _TryOnMethodSelectionScreenState();
+  State<TryOnMethodSelectionScreen> createState() =>
+      _TryOnMethodSelectionScreenState();
 }
 
-class _TryOnMethodSelectionScreenState extends State<TryOnMethodSelectionScreen> {
+class _TryOnMethodSelectionScreenState
+    extends State<TryOnMethodSelectionScreen> {
   bool _launching = false;
 
   // ---- Live Try-on (hành vi cũ) ----
@@ -23,7 +26,9 @@ class _TryOnMethodSelectionScreenState extends State<TryOnMethodSelectionScreen>
     try {
       final service = getIt<ArTryOnService>();
       if (!await service.isAvailable()) {
-        throw UnsupportedError('Virtual try-on is not available on this build.');
+        throw UnsupportedError(
+          'Virtual try-on is not available on this build.',
+        );
       }
       await service.launchCustomerLive(widget.previewNail);
     } catch (error) {
@@ -39,7 +44,9 @@ class _TryOnMethodSelectionScreenState extends State<TryOnMethodSelectionScreen>
     try {
       final service = getIt<ArTryOnService>();
       if (!await service.isAvailable()) {
-        throw UnsupportedError('Virtual try-on is not available on this build.');
+        throw UnsupportedError(
+          'Virtual try-on is not available on this build.',
+        );
       }
 
       // Vòng lặp: mở camera → nếu user bấm "Chụp lại" thì mở camera lại
@@ -53,7 +60,7 @@ class _TryOnMethodSelectionScreenState extends State<TryOnMethodSelectionScreen>
           MaterialPageRoute(
             builder: (_) => SnapshotPreviewScreen(
               snapshot: result,
-              nail:     widget.previewNail,
+              nail: widget.previewNail,
             ),
           ),
         );
@@ -84,7 +91,7 @@ class _TryOnMethodSelectionScreenState extends State<TryOnMethodSelectionScreen>
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text('Chọn phương thức thử móng'),
+        title: Text(S.of(context).selectTryOnMethodTitle),
       ),
       body: Stack(
         children: [
@@ -109,7 +116,9 @@ class _TryOnMethodSelectionScreenState extends State<TryOnMethodSelectionScreen>
                   padding: const EdgeInsets.symmetric(horizontal: 40),
                   child: Text(
                     'Chụp 1 tấm ảnh bàn tay, AI phân tích rồi ghép móng lên ảnh tĩnh.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: Colors.grey),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -134,7 +143,9 @@ class _TryOnMethodSelectionScreenState extends State<TryOnMethodSelectionScreen>
                   padding: const EdgeInsets.symmetric(horizontal: 40),
                   child: Text(
                     'Thử móng trực tiếp qua camera theo thời gian thực.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: Colors.grey),
                     textAlign: TextAlign.center,
                   ),
                 ),

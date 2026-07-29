@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../generated/l10n.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection.dart';
@@ -8,8 +8,10 @@ import '../../../../core/utils/auth_guard.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../../nails/data/models/nail_variant_model.dart';
 import '../../../nails/data/repositories/nail_variant_repository.dart';
+import '../../data/datasources/booking_api_service.dart';
+import '../../data/datasources/promotion_api_service.dart';
+import '../../data/models/booking_mock_data.dart';
 import '../../data/models/promotion_model.dart';
-import '../cubit/nail_booking_cubit.dart';
 import '../widgets/booking_date_selection.dart';
 import '../widgets/booking_service_selection.dart';
 import '../widgets/booking_stylist_selection.dart';
@@ -27,23 +29,61 @@ class NailBookingPage extends StatefulWidget {
 
 class _NailBookingPageState extends State<NailBookingPage> {
   final PageController _pageController = PageController();
-  final NailBookingCubit _cubit = NailBookingCubit();
+  final BookingApiService _apiService = BookingApiService();
+  final PromotionApiService _promotionApiService = PromotionApiService();
 
   int _currentStep = 0;
+  bool _isSubmitting = false;
+  bool _isLoadingSalons = true;
+  bool _isLoadingArtists = false;
+  bool _isLoadingTimes = false;
+  bool _isLoadingPromotions = false;
   bool _isPromotionExpanded = false;
   bool _isReviewingPrice = false;
 
+  List<dynamic> _salons = [];
+  List<dynamic> _services = [];
+  List<dynamic> _artists = [];
+  List<dynamic> _timeSlots = [];
+  List<PromotionModel> _promotions = [];
   Map<String, dynamic>? _priceReview;
   NailVariantModel? _nailVariantDetail;
 
-  // ── Getters từ nailData ──────────────────────────────────────────────────
+  Map<String, dynamic>? _selectedBranch;
+  List<String?> _selectedExtraServices = [];
+  DateTime? _selectedDate;
+  Map<String, dynamic>? _selectedStylist;
+  String? _selectedTime;
+  int? _selectedPromotionId;
+  bool _noArtistSelected = false;
+
+  List<Map<String, dynamic>> get _bookingSteps => [
+    {'title': S.of(context).bookingStepSelectSalon, 'icon': Icons.storefront_rounded},
+    {'title': S.of(context).bookingStepServices, 'icon': Icons.spa_rounded},
+    {'title': S.of(context).bookingStepBook, 'icon': Icons.calendar_month_rounded},
+    {'title': S.of(context).bookingStepCompleted, 'icon': Icons.check_circle_rounded},
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchSalons();
+    _fetchServices();
+    _fetchPromotions();
+    _fetchNailVariantDetail();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   int get _nailVariantId {
     return int.tryParse(widget.nailData?['id']?.toString() ?? '0') ?? 0;
   }
 
   int get _nailVariantPrice {
-    if (widget.nailData?['warrantyForBookingId'] != null) return 0;
     final price = widget.nailData?['price'];
     if (price is num) return price.round();
     return int.tryParse(price?.toString() ?? '') ?? 0;
@@ -62,53 +102,103 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   num get _shapeMethodPrice {
-    if (widget.nailData?['warrantyForBookingId'] != null) return 0;
     final value = widget.nailData?['shapeMethodPrice'];
     if (value is num) return value;
     return num.tryParse(value?.toString() ?? '') ?? 0;
   }
 
-  // ── Helpers ──────────────────────────────────────────────────────────────
-
-  int get _estimatedTotalPrice {
-    final state = _cubit.state;
-    final extraTotal = _cubit.extraServicesTotal(state.selectedExtraServices);
-    if (widget.nailData?['warrantyForBookingId'] != null) {
-      return extraTotal;
-    }
-    return _nailVariantPrice +
-        _shapeMethodPrice.round() +
-        extraTotal;
+  int get _selectedExtraServicesTotal {
+    return _selectedExtraServices.whereType<String>().fold<int>(
+      0,
+      (total, serviceId) => total + _servicePriceById(serviceId),
+    );
   }
 
-  List<Map<String, dynamic>> get _discountBreakdown {
-    final raw = _priceReview?['discountBreakdown'] ?? _priceReview?['discounts'];
-    if (raw is! List) return [];
-    return raw
+  int get _estimatedTotalPrice {
+    return _nailVariantPrice +
+        _shapeMethodPrice.round() +
+        _selectedExtraServicesTotal;
+  }
+
+  List<Map<String, dynamic>> get _availableServices {
+    final source = _services.isEmpty
+        ? BookingMockData.extraServices
+        : _services;
+    return source
         .whereType<Map>()
-        .map((d) => Map<String, dynamic>.from(d))
+        .map((service) => Map<String, dynamic>.from(service))
         .toList();
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _cubit.loadSalons();
-    _cubit.loadServices();
-    _fetchNailVariantDetail();
+  List<int>? get _selectedPromotionIds {
+    final id = _selectedPromotionId;
+    return id == null ? null : [id];
   }
 
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
+  List<Map<String, dynamic>> get _discountBreakdown {
+    final raw =
+        _priceReview?['discountBreakdown'] ?? _priceReview?['discounts'];
+    if (raw is! List) return [];
+    return raw
+        .whereType<Map>()
+        .map((discount) => Map<String, dynamic>.from(discount))
+        .toList();
+  }
+
+  Future<void> _fetchSalons() async {
+    try {
+      final data = await _apiService.getSalons();
+      if (!mounted) return;
+      setState(() {
+        _salons = data;
+        _isLoadingSalons = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoadingSalons = false);
+      _showSnackBar('Loi tai danh sach salon: $e');
+    }
+  }
+
+  Future<void> _fetchServices() async {
+    try {
+      final data = await _apiService.getServices();
+      if (!mounted) return;
+      setState(() => _services = data);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _services = BookingMockData.extraServices);
+    }
+  }
+
+  Future<void> _fetchPromotions() async {
+    setState(() => _isLoadingPromotions = true);
+    try {
+      final data = await _promotionApiService.getTodayPromotions(
+        pageNumber: 1,
+        pageSize: 20,
+      );
+      if (!mounted) return;
+      setState(() {
+        _promotions = data
+            .where((promotion) => promotion.isSelectable)
+            .toList();
+        _isLoadingPromotions = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoadingPromotions = false);
+      _showSnackBar('Loi tai khuyen mai: $e');
+    }
   }
 
   Future<void> _fetchNailVariantDetail() async {
     final id = _nailVariantId;
     if (id <= 0) return;
     try {
-      final variant = await getIt<NailVariantRepository>().getNailVariantById(id);
+      final variant = await getIt<NailVariantRepository>().getNailVariantById(
+        id,
+      );
       if (!mounted) return;
       setState(() => _nailVariantDetail = variant);
     } catch (e) {
@@ -116,33 +206,279 @@ class _NailBookingPageState extends State<NailBookingPage> {
     }
   }
 
+  Future<void> _fetchArtists() async {
+    if (_selectedBranch == null || _selectedDate == null) return;
+    setState(() {
+      _isLoadingArtists = true;
+      _artists = [];
+      _selectedStylist = null;
+      _selectedTime = null;
+      _noArtistSelected = false;
+    });
+
+    try {
+      final data = await _apiService.getSuggestedArtists(
+        _selectedBranch!['salonId'],
+        _formatBookingDate(_selectedDate!),
+        _nailVariantId,
+        _selectedExtraServices.whereType<String>().toList(),
+        _shapeMethodConfigId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _artists = data;
+        _isLoadingArtists = false;
+        _noArtistSelected = _artists.isEmpty;
+      });
+      if (_artists.isEmpty) {
+        _loadSalonSlots();
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoadingArtists = false);
+      _showSnackBar('Loi tai danh sach tho: $e');
+    }
+  }
+
+  Future<void> _fetchTimeSlots() async {
+    if (_noArtistSelected) {
+      _loadSalonSlots();
+      return;
+    }
+    if (_selectedStylist == null || _selectedDate == null) return;
+
+    setState(() {
+      _isLoadingTimes = true;
+      _timeSlots = [];
+      _selectedTime = null;
+    });
+
+    try {
+      final data = await _apiService.getArtistAvailableSlots(
+        _selectedStylist!['nailArtistId'],
+        _formatBookingDate(_selectedDate!),
+      );
+      if (!mounted) return;
+      setState(() {
+        _timeSlots = data;
+        _isLoadingTimes = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoadingTimes = false);
+      _showSnackBar('Loi tai khung gio: $e');
+    }
+  }
+
+  void _loadSalonSlots() {
+    if (_selectedBranch == null || _selectedDate == null) return;
+    setState(() {
+      _timeSlots = _apiService.getSalonOperatingSlots(
+        _selectedBranch!,
+        _selectedDate!,
+      );
+      _selectedTime = null;
+      _isLoadingTimes = false;
+    });
+  }
+
   Future<void> _reviewPrice() async {
-    final state = _cubit.state;
-    if (state.selectedBranch == null ||
-        state.selectedDate == null ||
-        state.selectedTime == null) return;
+    if (_selectedBranch == null ||
+        _selectedDate == null ||
+        _selectedTime == null) {
+      return;
+    }
 
     setState(() => _isReviewingPrice = true);
     try {
-      // Dùng cubit để tính giá nếu có method, nếu không dùng local estimate
-      // (Giá chính xác sẽ từ API khi createBooking trả về)
+      final review = await _apiService.reviewBookingPrice(
+        salonId: _selectedBranch!['salonId'],
+        bookingDate: _formatBookingDate(_selectedDate!),
+        startTime: _normalizedSelectedTime,
+        artistId: _noArtistSelected
+            ? null
+            : _selectedStylist?['nailArtistId'] as String?,
+        nailVariantId: _nailVariantId,
+        serviceIds: _selectedExtraServices.whereType<String>().toList(),
+        selectedPromotionIds: _selectedPromotionIds,
+        shapeMethodConfigId: _shapeMethodConfigId,
+      );
+      if (!mounted) return;
+      setState(() => _priceReview = review);
+    } catch (e) {
+      if (mounted) _showSnackBar('Loi tinh gia: $e');
     } finally {
       if (mounted) setState(() => _isReviewingPrice = false);
     }
   }
 
-  void _handleBackAction() {
-    if (widget.nailData?['warrantyForBookingId'] != null) {
-      if (_currentStep > 1) {
-        _pageController.previousPage(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
+  Future<void> _executeBooking() async {
+    AuthGuard.check(context, () async {
+      if (_isSubmitting) return;
+      setState(() => _isSubmitting = true);
+
+      try {
+        final booking = await _apiService.createBooking(
+          _selectedBranch!['salonId'],
+          _formatBookingDate(_selectedDate!),
+          _normalizedSelectedTime,
+          _noArtistSelected
+              ? null
+              : _selectedStylist?['nailArtistId'] as String?,
+          _nailVariantId,
+          _selectedExtraServices.whereType<String>().toList(),
+          selectedPromotionIds: _selectedPromotionIds,
+          shapeMethodConfigId: _shapeMethodConfigId,
         );
-      } else {
-        context.pop();
+
+        if (!mounted) return;
+        context.go(
+          '/booking-success',
+          extra: {
+            'bookingId': booking['bookingId']?.toString() ?? '',
+            'serviceName': widget.nailData?['name'] ?? 'Lam mong',
+            'date': _selectedDate,
+            'time': _normalizedSelectedTime,
+            'price': booking['price'] ?? _priceReview?['price'],
+            'discount': booking['discount'] ?? _priceReview?['discount'],
+            'totalPrice': booking['totalPrice'] ?? _priceReview?['totalPrice'],
+            'discounts':
+                booking['discounts'] ??
+                booking['discountBreakdown'] ??
+                _priceReview?['discounts'] ??
+                _priceReview?['discountBreakdown'],
+            'stylistName': _noArtistSelected
+                ? 'Tu dong phan cong'
+                : (_selectedStylist?['fullName'] ?? 'Bat ky'),
+          },
+        );
+      } catch (e) {
+        _showSnackBar('Loi dat lich: $e');
+      } finally {
+        if (mounted) setState(() => _isSubmitting = false);
       }
-      return;
+    });
+  }
+
+  String get _normalizedSelectedTime {
+    final time = _selectedTime ?? '';
+    return time.length == 5 ? '$time:00' : time;
+  }
+
+  String _formatBookingDate(DateTime date) {
+    final y = date.year.toString().padLeft(4, '0');
+    final m = date.month.toString().padLeft(2, '0');
+    final d = date.day.toString().padLeft(2, '0');
+    return '$y-$m-${d}T00:00:00';
+  }
+
+  String _serviceId(Map<String, dynamic> service) {
+    return service['serviceId']?.toString() ?? service['id']?.toString() ?? '';
+  }
+
+  String _serviceName(Map<String, dynamic> service) {
+    return service['serviceName']?.toString() ??
+        service['name']?.toString() ??
+        '';
+  }
+
+  String _serviceNameById(String? serviceId) {
+    if (serviceId == null) return '';
+    final matches = _availableServices.where(
+      (service) => _serviceId(service) == serviceId,
+    );
+    if (matches.isEmpty) return serviceId;
+    final name = _serviceName(matches.first);
+    return name.isEmpty ? serviceId : name;
+  }
+
+  int _servicePriceById(String? serviceId) {
+    if (serviceId == null) return 0;
+    final matches = _availableServices.where(
+      (service) => _serviceId(service) == serviceId,
+    );
+    if (matches.isEmpty) return 0;
+    final price = matches.first['price'] ?? matches.first['basePrice'];
+    if (price is num) return price.round();
+    return int.tryParse(price?.toString() ?? '') ?? 0;
+  }
+
+  void _handleBranchSelected(dynamic branch) {
+    setState(() {
+      _selectedBranch = Map<String, dynamic>.from(branch as Map);
+      _selectedDate = null;
+      _selectedStylist = null;
+      _selectedTime = null;
+      _noArtistSelected = false;
+      _artists = [];
+      _timeSlots = [];
+      _priceReview = null;
+    });
+  }
+
+  void _handleServiceChanged(List<String?> services) {
+    setState(() {
+      _selectedExtraServices = services;
+      _selectedStylist = null;
+      _selectedTime = null;
+      _priceReview = null;
+      _artists = [];
+      _timeSlots = [];
+    });
+
+    if (_selectedBranch != null && _selectedDate != null) {
+      _fetchArtists();
     }
+  }
+
+  void _handleDateChanged(DateTime date) {
+    setState(() {
+      _selectedDate = date;
+      _selectedStylist = null;
+      _selectedTime = null;
+      _noArtistSelected = false;
+      _priceReview = null;
+      _artists = [];
+      _timeSlots = [];
+    });
+    _fetchArtists();
+  }
+
+  void _handleStylistSelected(Map<String, dynamic>? stylist) {
+    setState(() {
+      _selectedStylist = stylist;
+      _selectedTime = null;
+      _noArtistSelected = stylist == null;
+      _priceReview = null;
+    });
+    _fetchTimeSlots();
+  }
+
+  void _handleArtistModeChanged(bool isNoArtist) {
+    setState(() {
+      _noArtistSelected = isNoArtist;
+      _selectedStylist = null;
+      _selectedTime = null;
+      _priceReview = null;
+      _timeSlots = [];
+    });
+
+    if (isNoArtist) {
+      _loadSalonSlots();
+    }
+  }
+
+  void _handlePromotionChanged(int? promotionId) {
+    setState(() {
+      _selectedPromotionId = promotionId;
+      _priceReview = null;
+    });
+    if (_currentStep == 3) {
+      _reviewPrice();
+    }
+  }
+
+  void _handleBackAction() {
     if (_currentStep > 0) {
       _pageController.previousPage(
         duration: const Duration(milliseconds: 300),
@@ -153,44 +489,28 @@ class _NailBookingPageState extends State<NailBookingPage> {
     }
   }
 
-  Future<void> _handleNextAction() async {
-    final state = _cubit.state;
-
-    if (_currentStep == 0 && state.selectedBranch == null) {
-      _showSnackBar('Vui lòng chọn một chi nhánh salon!');
+  void _handleNextAction() {
+    if (_currentStep == 0 && _selectedBranch == null) {
+      _showSnackBar(S.of(context).bookingValidateSalon);
       return;
     }
     if (_currentStep == 1) {
-      if (state.selectedExtraServices.contains(null)) {
-        _showSnackBar('Vui long chon hoac xoa dich vu dang bo trong.');
+      if (_selectedExtraServices.contains(null)) {
+        _showSnackBar(S.of(context).bookingValidateService);
         return;
       }
-      final validServices = state.selectedExtraServices.whereType<String>().toList();
+      final validServices = _selectedExtraServices.whereType<String>().toList();
       if (widget.nailData == null && validServices.isEmpty) {
-        _showSnackBar('Vui long chon it nhat mot dich vu.');
+        _showSnackBar(S.of(context).bookingValidateServiceMin);
         return;
       }
     }
-    if (_currentStep == 2) {
-      if (state.selectedDate == null) {
-        _showSnackBar('Vui lòng chọn ngày hẹn!');
-        return;
-      }
-      if (state.selectedStylist == null && !state.noArtistSelected) {
-        _showSnackBar('Vui lòng chọn thợ hoặc chọn "Không chọn thợ"!');
-        return;
-      }
-      if (state.selectedTime == null) {
-        _showSnackBar('Vui lòng chọn khung giờ!');
-        return;
-      }
-      // Chỉ tạo hold mới nếu chưa có token (tránh reset timer khi back/forward)
-      if (!state.noArtistSelected) {
-        if (state.holdToken == null || !state.isHolding) {
-          final held = await _cubit.holdSelectedSlot(nailVariantId: _nailVariantId);
-          if (!held || !mounted) return;
-        }
-      }
+    if (_currentStep == 2 &&
+        (_selectedDate == null ||
+            (_selectedStylist == null && !_noArtistSelected) ||
+            _selectedTime == null)) {
+      _showSnackBar(S.of(context).bookingValidateDateTime);
+      return;
     }
 
     if (_currentStep < 3) {
@@ -206,348 +526,214 @@ class _NailBookingPageState extends State<NailBookingPage> {
     }
   }
 
-  void _executeBooking() {
-    AuthGuard.check(context, () async {
-      final state = _cubit.state;
-      final promos = state.selectedPromotions.whereType<PromotionModel>().toList();
-      final serviceIds = state.selectedExtraServices.whereType<String>().toList();
-
-      try {
-        final booking = await _cubit.createNailVariantBooking(
-          nailVariantId: _nailVariantId,
-          serviceIds: serviceIds,
-          selectedPromotionIds:
-              promos.isEmpty ? null : promos.map((p) => p.promotionId).toList(),
-          shapeMethodConfigId: _shapeMethodConfigId,
-          warrantyForBookingId: widget.nailData?['warrantyForBookingId']?.toString(),
-          warrantyBookingItems: state.selectedWarrantyItems,
-        );
-
-        if (!mounted) return;
-
-        final formattedTime = state.selectedTime!.length == 5
-            ? '${state.selectedTime}:00'
-            : state.selectedTime!;
-
-        final isWarranty = widget.nailData?['warrantyForBookingId'] != null;
-
-        context.go('/booking-success', extra: {
-          'isWarranty': isWarranty,
-          'bookingId': booking['bookingId']?.toString() ?? '',
-          'serviceName': widget.nailData?['name'] ?? 'Làm móng',
-          'date': state.selectedDate,
-          'time': formattedTime,
-          'price': isWarranty ? _estimatedTotalPrice : (booking['price'] ?? _priceReview?['price']),
-          'discount': isWarranty ? 0 : (booking['discount'] ?? _priceReview?['discount']),
-          'totalPrice': isWarranty ? _estimatedTotalPrice : (booking['totalPrice'] ?? _priceReview?['totalPrice']),
-          'discounts': isWarranty
-              ? []
-              : (booking['discounts'] ??
-                  booking['discountBreakdown'] ??
-                  _priceReview?['discounts'] ??
-                  _priceReview?['discountBreakdown']),
-          'stylistName': state.noArtistSelected
-              ? 'Tự động phân công'
-              : (state.selectedStylist?['fullName'] ?? 'Bất kỳ'),
-        });
-      } catch (_) {
-        // Lỗi đã được emit vào state.errorMessage và xử lý bởi BlocConsumer
-      }
-    });
-  }
-
   void _showSnackBar(String msg) {
-    final isError = msg.contains('chọn') ||
-        msg.contains('Lỗi') ||
-        msg.contains('hết') ||
-        msg.contains('lỗi');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: isError ? Colors.red : null,
-      ),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
-
-  // ══════════════════════════════════════════════════════════════
-  // BUILD
-  // ══════════════════════════════════════════════════════════════
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<NailBookingCubit>(
-      create: (_) => _cubit,
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: AppColors.primaryDark),
-            onPressed: _handleBackAction,
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: AppColors.primaryDark),
+          onPressed: _handleBackAction,
+        ),
+        title: Text(
+          S.of(context).bookAppointmentTitle,
+          style: const TextStyle(
+            fontWeight: FontWeight.w800,
+            fontFamily: 'Georgia',
+            color: AppColors.primaryDark,
           ),
-          title: const Text(
-            'Đặt Lịch Hẹn',
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-              fontFamily: 'Georgia',
-              color: AppColors.primaryDark,
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+      ),
+      body: Column(
+        children: [
+          _buildStepIndicator(),
+          Expanded(
+            child: PageView(
+              controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(),
+              onPageChanged: (idx) => setState(() => _currentStep = idx),
+              children: [
+                _buildSalonStep(),
+                _buildServiceStep(),
+                _buildScheduleStep(),
+                _buildSummaryStep(),
+              ],
             ),
           ),
-          backgroundColor: const Color(0xFFFDFBF7),
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          centerTitle: true,
-        ),
-        body: BlocConsumer<NailBookingCubit, NailBookingState>(
-          listenWhen: (prev, curr) =>
-              (curr.errorMessage != null && prev.errorMessage != curr.errorMessage) ||
-              (prev.salonsStatus != curr.salonsStatus && curr.salonsStatus == NailBookingLoadStatus.loaded),
-          listener: (context, state) {
-            if (state.errorMessage != null) {
-              _showSnackBar(state.errorMessage!);
-              if (state.errorMessage!.contains('hết') && _currentStep > 1) {
-                _pageController.animateToPage(
-                  2,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                );
-              }
-              _cubit.clearError();
-            }
-
-            if (state.salonsStatus == NailBookingLoadStatus.loaded && widget.nailData?['warrantyForBookingId'] != null) {
-              final targetSalonId = widget.nailData?['salonId']?.toString();
-              Map<String, dynamic>? targetSalon;
-              for (final s in state.salons) {
-                if (s['salonId']?.toString() == targetSalonId) {
-                  targetSalon = s;
-                  break;
-                }
-              }
-              if (targetSalon != null && state.selectedBranch == null) {
-                final warrantyBookingItems = widget.nailData?['warrantyBookingItems'] != null
-                    ? List<Map<String, dynamic>>.from(widget.nailData!['warrantyBookingItems'] as List)
-                    : <Map<String, dynamic>>[];
-                _cubit.initializeWarranty(
-                  salon: targetSalon,
-                  warrantyBookingItems: warrantyBookingItems,
-                );
-                Future.microtask(() {
-                  _pageController.jumpToPage(1);
-                  setState(() => _currentStep = 1);
-                });
-              }
-            }
-          },
-          builder: (context, state) {
-            return Column(
-              children: [
-                _buildStepIndicator(),
-                _buildHoldCountdownBanner(state),
-                Expanded(
-                  child: PageView(
-                    controller: _pageController,
-                    physics: const NeverScrollableScrollPhysics(),
-                    onPageChanged: (idx) => setState(() => _currentStep = idx),
-                    children: [
-                      _buildSalonStep(state),
-                      _buildServiceStep(state),
-                      _buildScheduleStep(state),
-                      _buildSummaryStep(state),
-                    ],
-                  ),
-                ),
-                _buildFooter(state),
-              ],
-            );
-          },
-        ),
+          _buildFooter(),
+        ],
       ),
     );
   }
 
-  // ══════════════════════════════════════════════════════════════
-  // STEP WIDGETS
-  // ══════════════════════════════════════════════════════════════
-
-  Widget _buildSalonStep(NailBookingState state) {
+  Widget _buildSalonStep() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: BranchSelectionList(
-        salons: state.salons,
-        isLoading: state.isLoadingSalons,
-        selectedBranchId: state.selectedBranch?['salonId'],
-        onBranchSelected: (dynamic branch) =>
-            _cubit.selectBranch(Map<String, dynamic>.from(branch as Map)),
+        salons: _salons,
+        isLoading: _isLoadingSalons,
+        selectedBranchId: _selectedBranch?['salonId'],
+        onBranchSelected: _handleBranchSelected,
       ),
     );
   }
 
-  Widget _buildServiceStep(NailBookingState state) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: BookingServiceSelection(
-        nailData: widget.nailData,
-        services: state.services,
-        selectedExtraServices: state.selectedExtraServices,
-        onChanged: _cubit.updateExtraServices,
-        selectedWarrantyItems: state.selectedWarrantyItems,
-        onWarrantyItemsChanged: _cubit.updateSelectedWarrantyItems,
-      ),
-    );
-  }
-
-  Widget _buildScheduleStep(NailBookingState state) {
+  Widget _buildServiceStep() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Chọn ngày
+          BookingServiceSelection(
+            nailData: widget.nailData,
+            services: _availableServices,
+            selectedExtraServices: _selectedExtraServices,
+            onChanged: _handleServiceChanged,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScheduleStep() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           BookingDateSelection(
-            selectedDate: state.selectedDate,
-            onDateChanged: (date) => _cubit.selectDate(
-              date: date,
-              nailVariantId: _nailVariantId,
-              shapeMethodConfigId: _shapeMethodConfigId,
-              useSuggestedArtists: true,
-            ),
+            selectedDate: _selectedDate,
+            onDateChanged: _handleDateChanged,
           ),
-          const SizedBox(height: 24),
-
-          // 2. Chọn thợ (chỉ hiện sau khi chọn ngày)
+          const SizedBox(height: 28),
           BookingStylistSelection(
-            artists: state.artists,
-            isLoading: state.isLoadingArtists,
-            selectedStylistId: state.selectedStylist?['nailArtistId'],
-            noArtistSelected: state.noArtistSelected,
-            isDateSelected: state.isDateSelected,
-            onStylistSelected: (artist) {
-              if (artist != null) _cubit.selectStylist(artist);
-            },
-            onModeChanged: (isNoArtist) {
-              if (isNoArtist) {
-                _cubit.setNoArtistMode();
-              } else {
-                _cubit.setSelectArtistMode();
-              }
-            },
+            artists: _artists,
+            isLoading: _isLoadingArtists,
+            selectedStylistId: _selectedStylist?['nailArtistId'],
+            noArtistSelected: _noArtistSelected,
+            isDateSelected: _selectedDate != null,
+            onStylistSelected: _handleStylistSelected,
+            onModeChanged: _handleArtistModeChanged,
           ),
-          const SizedBox(height: 24),
-
-          // 3. Chọn giờ (chỉ hiện sau khi chọn thợ/mode)
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 250),
-            child: state.canSelectTime
-                ? BookingTimeSelection(
-                    key: const ValueKey('time-visible'),
-                    timeSlots: state.timeSlots,
-                    isLoading: state.isLoadingTimes,
-                    selectedTime: state.selectedTime,
-                    canSelect: true,
-                    selectedDate: state.selectedDate,
-                    salonId: state.selectedBranch?['salonId']?.toString(),
-                    artistId: state.noArtistSelected
-                        ? null
-                        : state.selectedStylist?['nailArtistId']?.toString(),
-                    onTimeChanged: _cubit.selectTime,
-                    onRefreshSlots: _cubit.refreshTimeSlots,
-                  )
-                : const SizedBox(key: ValueKey('time-hidden')),
+          const SizedBox(height: 28),
+          BookingTimeSelection(
+            timeSlots: _timeSlots,
+            isLoading: _isLoadingTimes,
+            selectedTime: _selectedTime,
+            canSelect:
+                _selectedDate != null &&
+                (_selectedStylist != null || _noArtistSelected),
+            selectedDate: _selectedDate,
+            salonId: _selectedBranch?['salonId'],
+            artistId: _selectedStylist?['nailArtistId'],
+            onTimeChanged: (time) => setState(() {
+              _selectedTime = time;
+              _priceReview = null;
+            }),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSummaryStep(NailBookingState state) {
+  Widget _buildSummaryStep() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildBookingSummaryCard(state),
+          _buildBookingSummaryCard(),
           const SizedBox(height: 24),
-          _buildPromotionSelector(state),
+          _buildPromotionSelector(),
           const SizedBox(height: 24),
-          _buildPaymentDetails(state),
+          _buildPaymentDetails(),
         ],
       ),
     );
   }
 
-  // ══════════════════════════════════════════════════════════════
-  // SUMMARY CARD
-  // ══════════════════════════════════════════════════════════════
-
-  Widget _buildBookingSummaryCard(NailBookingState state) {
-    final time = state.selectedTime;
+  Widget _buildBookingSummaryCard() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderLight),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade100),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
           _buildSummaryRow(
-            Icons.storefront,
-            'Chi nhanh',
-            state.selectedBranch?['name']?.toString() ?? '',
+            Icons.storefront_rounded,
+            S.of(context).bookingSummaryBranch,
+            _selectedBranch?['name']?.toString() ?? '',
           ),
           _buildSummaryRow(
-            Icons.calendar_month,
-            'Ngay hen',
-            state.selectedDate == null
+            Icons.calendar_month_rounded,
+            S.of(context).bookingSummaryDate,
+            _selectedDate == null
                 ? ''
-                : '${state.selectedDate!.day}/${state.selectedDate!.month}/${state.selectedDate!.year}',
+                : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
           ),
           _buildSummaryRow(
-            Icons.access_time,
-            'Thoi gian',
-            time == null ? '' : time.substring(0, 5),
+            Icons.access_time_rounded,
+            S.of(context).bookingSummaryTime,
+            _selectedTime == null ? '' : _selectedTime!.substring(0, 5),
           ),
           _buildSummaryRow(
-            Icons.face,
-            'Tho thuc hien',
-            state.noArtistSelected
-                ? 'Tu dong phan cong'
-                : (state.selectedStylist?['fullName']?.toString() ?? ''),
+            Icons.face_3_rounded,
+            S.of(context).bookingSummaryArtist,
+            _noArtistSelected
+                ? S.of(context).bookingAutoAssign
+                : (_selectedStylist?['fullName']?.toString() ?? ''),
           ),
         ],
       ),
     );
   }
 
-  // ══════════════════════════════════════════════════════════════
-  // PAYMENT DETAILS
-  // ══════════════════════════════════════════════════════════════
-
-  Widget _buildPaymentDetails(NailBookingState state) {
-    final isWarranty = widget.nailData?['warrantyForBookingId'] != null;
-    final reviewTotal = isWarranty ? _estimatedTotalPrice : _priceReview?['totalPrice'];
-    final totalPrice = isWarranty
-        ? _estimatedTotalPrice
-        : (reviewTotal is num
-            ? reviewTotal.round()
-            : int.tryParse(reviewTotal?.toString() ?? '') ?? _estimatedTotalPrice);
+  Widget _buildPaymentDetails() {
+    final reviewTotal = _priceReview?['totalPrice'];
+    final totalPrice = reviewTotal is num
+        ? reviewTotal.round()
+        : int.tryParse(reviewTotal?.toString() ?? '') ?? _estimatedTotalPrice;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderLight),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade100),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Chi tiet thanh toan',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  S.of(context).bookingPaymentDetails,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ),
               if (_isReviewingPrice)
@@ -560,19 +746,18 @@ class _NailBookingPageState extends State<NailBookingPage> {
           ),
           const SizedBox(height: 12),
           if (widget.nailData != null) _buildNailVariantPaymentItem(),
-          ...state.selectedExtraServices.whereType<String>().map((serviceId) {
+          ..._selectedExtraServices.whereType<String>().map((serviceId) {
             return _buildPaymentRow(
-              'Dich vu them: ${_cubit.serviceNameById(serviceId)}',
-              _cubit.servicePriceById(serviceId),
+              S.of(context).bookingExtraService(_serviceNameById(serviceId)),
+              _servicePriceById(serviceId),
               muted: true,
             );
           }),
-          const Divider(height: 24),
-          _buildPaymentRow('Tam tinh', _estimatedTotalPrice, strong: true),
+          const Divider(height: 16),
           ..._discountBreakdown.map(_buildDiscountRow),
           const Divider(height: 16),
           _buildPaymentRow(
-            'Tong cong',
+            S.of(context).bookingTotal,
             totalPrice,
             strong: true,
             highlight: true,
@@ -590,25 +775,18 @@ class _NailBookingPageState extends State<NailBookingPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildPaymentRow(
-            widget.nailData!['name']?.toString() ?? 'Bien the nail',
+            widget.nailData!['name']?.toString() ?? S.of(context).bookingNailVariantDefault,
             _nailVariantPrice + _shapeMethodPrice.round(),
           ),
           if (variant != null) ...[
             const SizedBox(height: 4),
-            if (variant.nailSurface != null)
-              _buildVariantDetailLine(
-                'Be mat ${variant.nailSurface!.name}',
-                variant.nailSurface!.price,
-              ),
+
             if (variant.nailShape != null)
-              _buildVariantDetailLine(
-                _shapeMethodName ?? variant.nailShape!.name,
-                _shapeMethodPrice,
-              ),
+              _buildVariantDetailLine(_shapeMethodName!, _shapeMethodPrice),
             ...variant.nailComponents.map((component) {
               final detail = component.component;
-              return _buildVariantDetailLine(
-                detail?.name ?? 'Thanh phan nail',
+                return _buildVariantDetailLine(
+                detail?.name ?? S.of(context).bookingComponentDefault,
                 detail?.price ?? 0,
               );
             }),
@@ -625,8 +803,6 @@ class _NailBookingPageState extends State<NailBookingPage> {
     bool muted = false,
     bool highlight = false,
   }) {
-    final displayPrice = price;
-
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -647,7 +823,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
             ),
           ),
           Text(
-            PriceFormatter.format(displayPrice),
+            PriceFormatter.format(price),
             style: TextStyle(
               fontWeight: strong ? FontWeight.bold : FontWeight.w600,
               color: highlight ? AppColors.primary : AppColors.textPrimary,
@@ -660,8 +836,6 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   Widget _buildVariantDetailLine(String label, num price) {
-    final displayPrice = price;
-
     return Padding(
       padding: const EdgeInsets.only(top: 4, left: 12),
       child: Row(
@@ -678,7 +852,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
             ),
           ),
           Text(
-            PriceFormatter.format(displayPrice),
+            PriceFormatter.format(price),
             style: const TextStyle(
               fontSize: 13,
               color: Colors.grey,
@@ -719,28 +893,27 @@ class _NailBookingPageState extends State<NailBookingPage> {
     );
   }
 
-  // ══════════════════════════════════════════════════════════════
-  // PROMOTION SELECTOR
-  // ══════════════════════════════════════════════════════════════
-
-  Widget _buildPromotionSelector(NailBookingState state) {
-    final selectedPromotions =
-        state.selectedPromotions.whereType<PromotionModel>().toList();
-    final selectedLabel = selectedPromotions.isEmpty
-        ? 'Khong ap dung khuyen mai'
-        : selectedPromotions.first.name;
-
-    // Dùng PromotionModel list từ cubit
-    // promotions cần được load vào state — hiện chưa có trong NailBookingState
-    // Tạm thời dùng list rỗng, có thể mở rộng sau
-    final promotions = <PromotionModel>[];
+  Widget _buildPromotionSelector() {
+    final selectedPromotion = _promotions.where(
+      (promotion) => promotion.promotionId == _selectedPromotionId,
+    );
+    final selectedLabel = selectedPromotion.isEmpty
+        ? S.of(context).bookingNoPromotion
+        : selectedPromotion.first.name;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderLight),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade100),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -753,9 +926,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Khuyen mai',
-                      style: TextStyle(
+                    Text(
+                      S.of(context).bookingPromotion,
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -770,45 +943,53 @@ class _NailBookingPageState extends State<NailBookingPage> {
                   ],
                 ),
               ),
-              IconButton(
-                onPressed: () =>
-                    setState(() => _isPromotionExpanded = !_isPromotionExpanded),
-                icon: Icon(
-                  _isPromotionExpanded
-                      ? Icons.keyboard_arrow_up
-                      : Icons.keyboard_arrow_down,
+              if (_isLoadingPromotions)
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                IconButton(
+                  onPressed: () => setState(
+                    () => _isPromotionExpanded = !_isPromotionExpanded,
+                  ),
+                  icon: Icon(
+                    _isPromotionExpanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                  ),
                 ),
-              ),
             ],
           ),
           if (_isPromotionExpanded) ...[
             const SizedBox(height: 8),
-            if (promotions.isEmpty)
-              const Padding(
-                padding: EdgeInsets.only(top: 4),
+            RadioListTile<int>(
+              value: 0,
+              groupValue: _selectedPromotionId ?? 0,
+              onChanged: (_) => _handlePromotionChanged(null),
+              title: Text(S.of(context).bookingNoApply),
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              activeColor: AppColors.primary,
+            ),
+            if (!_isLoadingPromotions && _promotions.isEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
                 child: Text(
-                  'Khong co khuyen mai kha dung.',
-                  style: TextStyle(color: Colors.grey, fontSize: 13),
+                  S.of(context).bookingNoPromotionAvailable,
+                  style: const TextStyle(color: Colors.grey, fontSize: 13),
                 ),
               ),
-            ...promotions.map(
-              (promotion) => CheckboxListTile(
-                value: selectedPromotions
-                    .any((p) => p.promotionId == promotion.promotionId),
-                onChanged: (checked) {
-                  final current = List<dynamic>.from(state.selectedPromotions);
-                  if (checked == true) {
-                    current.add(promotion);
-                  } else {
-                    current.removeWhere(
-                      (p) =>
-                          p is PromotionModel &&
-                          p.promotionId == promotion.promotionId,
-                    );
-                  }
-                  _cubit.selectPromotions(current);
-                },
-                title: Text(promotion.name),
+            ..._promotions.map(
+              (promotion) => RadioListTile<int>(
+                value: promotion.promotionId,
+                groupValue: _selectedPromotionId ?? 0,
+                onChanged: _handlePromotionChanged,
+                title: Text(
+                  promotion.name,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
                 subtitle: Text(
                   promotion.description.isNotEmpty
                       ? '${promotion.discountLabel} - ${promotion.description}'
@@ -826,10 +1007,6 @@ class _NailBookingPageState extends State<NailBookingPage> {
       ),
     );
   }
-
-  // ══════════════════════════════════════════════════════════════
-  // SHARED WIDGETS
-  // ══════════════════════════════════════════════════════════════
 
   Widget _buildSummaryRow(IconData icon, String title, String value) {
     return Padding(
@@ -862,123 +1039,110 @@ class _NailBookingPageState extends State<NailBookingPage> {
     );
   }
 
-  Widget _buildHoldCountdownBanner(NailBookingState state) {
-    if (!state.isHolding) return const SizedBox.shrink();
-    final secs = state.holdRemainingSeconds;
-    final min = (secs ~/ 60).toString().padLeft(2, '0');
-    final sec = (secs % 60).toString().padLeft(2, '0');
-    final isUrgent = secs <= 60;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      color: isUrgent ? Colors.red.shade600 : Colors.orange.shade700,
-      child: Row(
-        children: [
-          const Icon(Icons.lock_clock, color: Colors.white, size: 18),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              isUrgent
-                  ? 'Chỗ có thể bị hủy sau $min:$sec giây!'
-                  : 'Slot đang được giữ chỗ cho bạn – còn $min:$sec để hoàn tất',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildStepIndicator() {
-    final steps = ['Chi nhánh', 'Dịch vụ', 'Thời gian', 'Xác nhận'];
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
+      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.015),
+            color: Colors.black.withOpacity(0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Row(
-        children: List.generate(steps.length, (index) {
-          final isActive = index == _currentStep;
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: List.generate(_bookingSteps.length, (index) {
+          final step = _bookingSteps[index];
           final isCompleted = index < _currentStep;
-          
+          final isActive = index == _currentStep;
+
           return Expanded(
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Left connector line
                 Expanded(
-                  child: Column(
-                    children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        width: 26,
-                        height: 26,
-                        decoration: BoxDecoration(
-                          color: isCompleted
-                              ? AppColors.primary
-                              : isActive
-                                  ? AppColors.primary
-                                  : Colors.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: isCompleted || isActive
-                                ? AppColors.primary
-                                : Colors.grey.shade300,
-                            width: 2,
-                          ),
-                        ),
-                        alignment: Alignment.center,
-                        child: isCompleted
-                            ? const Icon(Icons.check_rounded, color: Colors.white, size: 14)
-                            : Text(
-                                '${index + 1}',
-                                style: TextStyle(
-                                  color: isCompleted || isActive
-                                      ? Colors.white
-                                      : Colors.grey.shade500,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        steps[index],
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-                          color: isActive
-                              ? AppColors.primary
-                              : isCompleted
-                                  ? AppColors.textPrimary
-                                  : Colors.grey.shade400,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (index < steps.length - 1)
-                  Container(
-                    width: 20,
-                    height: 2,
-                    margin: const EdgeInsets.only(bottom: 18),
-                    decoration: BoxDecoration(
-                      color: isCompleted
-                          ? AppColors.primary
-                          : Colors.grey.shade200,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 17),
+                    child: Container(
+                      height: 2,
+                      color: index == 0
+                          ? Colors.transparent
+                          : (isCompleted || isActive ? AppColors.primary : Colors.grey.shade300),
                     ),
                   ),
+                ),
+                // Step Circle
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isActive
+                            ? Colors.white
+                            : (isCompleted ? AppColors.primary : Colors.grey.shade50),
+                        border: Border.all(
+                          color: (isActive || isCompleted)
+                              ? AppColors.primary
+                              : Colors.grey.shade300,
+                          width: isActive ? 2.5 : 1.5,
+                        ),
+                        boxShadow: isActive
+                            ? [
+                                BoxShadow(
+                                  color: AppColors.primary.withOpacity(0.25),
+                                  blurRadius: 8,
+                                  spreadRadius: 1,
+                                )
+                              ]
+                            : null,
+                      ),
+                      child: Center(
+                        child: Icon(
+                          step['icon'] as IconData,
+                          size: 16,
+                          color: isCompleted
+                              ? Colors.white
+                              : (isActive ? AppColors.primary : Colors.grey.shade400),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      step['title'] as String,
+                      // Already localized from getter
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: (isActive || isCompleted)
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: (isActive || isCompleted)
+                            ? AppColors.primaryDark
+                            : Colors.grey.shade500,
+                      ),
+                    ),
+                  ],
+                ),
+                // Right connector line
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 17),
+                    child: Container(
+                      height: 2,
+                      color: index == _bookingSteps.length - 1
+                          ? Colors.transparent
+                          : (isCompleted ? AppColors.primary : Colors.grey.shade300),
+                    ),
+                  ),
+                ),
               ],
             ),
           );
@@ -987,7 +1151,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
     );
   }
 
-  Widget _buildFooter(NailBookingState state) {
+  Widget _buildFooter() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -1005,20 +1169,20 @@ class _NailBookingPageState extends State<NailBookingPage> {
         children: [
           if (_currentStep > 0)
             OutlinedButton(
-              onPressed: state.isSubmitting ? null : _handleBackAction,
+              onPressed: _isSubmitting ? null : _handleBackAction,
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
-                  vertical: 15,
+                  vertical: 14,
                 ),
-                side: const BorderSide(color: AppColors.primary),
+                side: const BorderSide(color: AppColors.primary, width: 1.5),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(25),
                 ),
               ),
-              child: const Text(
-                'Quay lai',
-                style: TextStyle(
+              child: Text(
+                S.of(context).bookingBackBtn,
+                style: const TextStyle(
                   color: AppColors.primary,
                   fontWeight: FontWeight.bold,
                 ),
@@ -1026,29 +1190,59 @@ class _NailBookingPageState extends State<NailBookingPage> {
             )
           else
             const SizedBox.shrink(),
-          ElevatedButton(
-            onPressed: state.isSubmitting ? null : _handleNextAction,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 15),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Container(
+                height: 48,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  gradient: LinearGradient(
+                    colors: _isSubmitting
+                        ? [Colors.grey.shade400, Colors.grey.shade500]
+                        : [AppColors.primary, const Color(0xFFFF80AB)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    if (!_isSubmitting)
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                  ],
+                ),
+                child: ElevatedButton(
+                  onPressed: _isSubmitting ? null : _handleNextAction,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    foregroundColor: Colors.white,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    elevation: 0,
+                  ),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2.5,
+                          ),
+                        )
+                      : Text(
+                          _currentStep == 3
+                              ? S.of(context).bookingConfirmBtn
+                              : S.of(context).bookingContinueBtn,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                ),
               ),
             ),
-            child: state.isSubmitting
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  )
-                : Text(
-                    _currentStep == 3 ? 'Xac nhan dat lich' : 'Tiep tuc',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
           ),
         ],
       ),

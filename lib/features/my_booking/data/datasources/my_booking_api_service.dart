@@ -36,27 +36,33 @@ class MyBookingApiService {
     return response.data['data'] ?? {};
   }
 
-  Future<bool> cancelBooking(String bookingId, {required String reason, String holdToken = ""}) async {
+  Future<bool> cancelBooking(
+    String bookingId, {
+    required String reason,
+    String holdToken = "",
+  }) async {
     final response = await _apiClient.post(
       '/Bookings/$bookingId/cancel',
-      data: {
-        "reason": reason,
-        "holdToken": holdToken,
-      },
+      data: {"reason": reason, "holdToken": holdToken},
     );
-    return response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 300;
+    return response.statusCode != null &&
+        response.statusCode! >= 200 &&
+        response.statusCode! < 300;
   }
 
-  Future<bool> rescheduleBooking(String bookingId, {required String bookingDate, required String startTime}) async {
+  Future<bool> rescheduleBooking(
+    String bookingId, {
+    required String bookingDate,
+    required String startTime,
+  }) async {
     final formattedTime = startTime.length == 5 ? "$startTime:00" : startTime;
     final response = await _apiClient.put(
       '/Bookings/$bookingId/reschedule',
-      data: {
-        "bookingDate": bookingDate,
-        "startTime": formattedTime,
-      },
+      data: {"bookingDate": bookingDate, "startTime": formattedTime},
     );
-    return response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 300;
+    return response.statusCode != null &&
+        response.statusCode! >= 200 &&
+        response.statusCode! < 300;
   }
 
   Future<bool> requestRescheduleBooking(
@@ -69,27 +75,35 @@ class MyBookingApiService {
     final formattedTime = newTime.length == 5 ? "$newTime:00" : newTime;
     final response = await _apiClient.post(
       '/Bookings/$bookingId/request-reschedule',
-      data: {
-        "newDate": newDate,
-        "newTime": formattedTime,
-        "reason": reason,
-      },
+      data: {"newDate": newDate, "newTime": formattedTime, "reason": reason},
     );
-    return response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 300;
+    return response.statusCode != null &&
+        response.statusCode! >= 200 &&
+        response.statusCode! < 300;
   }
 
   Future<bool> acceptSuggestedTime(String bookingId) async {
-    final response = await _apiClient.post('/Bookings/$bookingId/accept-suggested-time');
-    return response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 300;
+    final response = await _apiClient.post(
+      '/Bookings/$bookingId/accept-suggested-time',
+    );
+    return response.statusCode != null &&
+        response.statusCode! >= 200 &&
+        response.statusCode! < 300;
   }
 
   Future<bool> declineSuggestedTime(String bookingId) async {
-    final response = await _apiClient.post('/Bookings/$bookingId/decline-suggested-time');
-    return response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 300;
+    final response = await _apiClient.post(
+      '/Bookings/$bookingId/decline-suggested-time',
+    );
+    return response.statusCode != null &&
+        response.statusCode! >= 200 &&
+        response.statusCode! < 300;
   }
 
   Future<Map<String, dynamic>?> getRatingByBooking(String bookingId) async {
-    final response = await _apiClient.get('/BookingRatings/by-booking/$bookingId');
+    final response = await _apiClient.get(
+      '/BookingRatings/by-booking/$bookingId',
+    );
     final data = response.data['data'];
     return data is Map<String, dynamic> ? data : null;
   }
@@ -104,7 +118,8 @@ class MyBookingApiService {
       }
 
       if (responseData is Map) {
-        if (responseData.containsKey('items') && responseData['items'] is List) {
+        if (responseData.containsKey('items') &&
+            responseData['items'] is List) {
           return responseData['items'];
         }
         if (responseData.containsKey('data') && responseData['data'] is List) {
@@ -120,7 +135,9 @@ class MyBookingApiService {
         }
         if (directData.containsKey('data') && directData['data'] is List) {
           final nested = directData['data'];
-          if (nested is Map && nested.containsKey('items') && nested['items'] is List) {
+          if (nested is Map &&
+              nested.containsKey('items') &&
+              nested['items'] is List) {
             return nested['items'];
           }
         }
@@ -176,7 +193,10 @@ class MyBookingApiService {
         'image': await MultipartFile.fromFile(imagePath),
     });
 
-    final response = await _apiClient.put('/BookingRatings/$ratingId', data: formData);
+    final response = await _apiClient.put(
+      '/BookingRatings/$ratingId',
+      data: formData,
+    );
     final data = response.data['data'];
     return data is Map<String, dynamic> ? data : {};
   }

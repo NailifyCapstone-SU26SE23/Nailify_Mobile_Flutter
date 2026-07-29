@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../generated/l10n.dart';
 
 class CancelBookingDialog extends StatefulWidget {
   final String bookingId;
@@ -32,9 +33,9 @@ class _CancelBookingDialogState extends State<CancelBookingDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text(
-        'Hủy đặt lịch',
-        style: TextStyle(fontWeight: FontWeight.bold),
+      title: Text(
+        S.of(context).cancelBookingTitle,
+        style: const TextStyle(fontWeight: FontWeight.bold),
       ),
       content: Form(
         key: _formKey,
@@ -42,16 +43,16 @@ class _CancelBookingDialogState extends State<CancelBookingDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Bạn có chắc chắn muốn hủy lịch hẹn này không?',
-              style: TextStyle(fontSize: 14),
+            Text(
+              S.of(context).cancelBookingConfirmMsg,
+              style: const TextStyle(fontSize: 14),
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _reasonController,
               maxLines: 3,
               decoration: InputDecoration(
-                hintText: 'Nhập lý do hủy (tối đa 50 từ)',
+                hintText: S.of(context).cancelBookingReasonHint,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -59,10 +60,10 @@ class _CancelBookingDialogState extends State<CancelBookingDialog> {
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Vui lòng nhập lý do';
+                  return S.of(context).cancelBookingReasonRequired;
                 }
                 if (_countWords(value) > 50) {
-                  return 'Lý do không được vượt quá 50 từ';
+                  return S.of(context).cancelBookingReasonTooLong;
                 }
                 return null;
               },
@@ -73,7 +74,7 @@ class _CancelBookingDialogState extends State<CancelBookingDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Hủy', style: TextStyle(color: Colors.grey)),
+          child: Text(S.of(context).cancelBtn, style: const TextStyle(color: Colors.grey)),
         ),
         ElevatedButton(
           onPressed: () {
@@ -88,7 +89,7 @@ class _CancelBookingDialogState extends State<CancelBookingDialog> {
               borderRadius: BorderRadius.circular(8),
             ),
           ),
-          child: const Text('Xác nhận', style: TextStyle(color: Colors.white)),
+          child: Text(S.of(context).confirmBtn, style: const TextStyle(color: Colors.white)),
         ),
       ],
     );

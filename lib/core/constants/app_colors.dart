@@ -48,11 +48,7 @@ class AppColors {
 
   /// Dùng cho nền toàn màn hình QuizPage
   static const LinearGradient quizBgGradient = LinearGradient(
-    colors: [
-      Color(0xFFFFB3C6),
-      Color(0xFFFF66C4),
-      Color(0xFFC44569),
-    ],
+    colors: [Color(0xFFFFB3C6), Color(0xFFFF66C4), Color(0xFFC44569)],
     stops: [0.0, 0.5, 1.0],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,

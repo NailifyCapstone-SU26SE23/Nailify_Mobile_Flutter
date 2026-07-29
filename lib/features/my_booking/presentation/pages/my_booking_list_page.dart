@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../generated/l10n.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection.dart';
@@ -35,18 +36,18 @@ class _MyBookingListPageState extends State<MyBookingListPage>
   String _selectedStatus = 'Tất cả';
 
   // Danh sách trạng thái dùng cho Filter
-  final List<Map<String, String>> _statusOptions = [
-    {'key': 'Tất cả', 'label': 'Tất cả'},
-    {'key': 'Pending', 'label': 'Chờ xác nhận'},
-    {'key': 'Approved', 'label': 'Đã chấp nhận'},
-    {'key': 'Assigned', 'label': 'Đã xếp lịch'},
-    {'key': 'CheckedIn', 'label': 'Đã Check-in'},
-    {'key': 'InProgress', 'label': 'Đang thực hiện'},
-    {'key': 'Completed', 'label': 'Đã hoàn thành'},
-    {'key': 'Reviewed', 'label': 'Đã xem xét'},
-    {'key': 'Repaired', 'label': 'Đã bảo hành'},
-    {'key': 'Rejected', 'label': 'Từ chối'},
-    {'key': 'Cancelled', 'label': 'Đã hủy'},
+  List<Map<String, String>> get _statusOptions => [
+    {'key': 'Tất cả', 'label': S.of(context).allStatus},
+    {'key': 'Pending', 'label': S.of(context).statusPending},
+    {'key': 'Approved', 'label': S.of(context).statusApproved},
+    {'key': 'Assigned', 'label': S.of(context).statusAssigned},
+    {'key': 'CheckedIn', 'label': S.of(context).statusCheckedIn},
+    {'key': 'InProgress', 'label': S.of(context).statusInProgress},
+    {'key': 'Completed', 'label': S.of(context).statusCompleted},
+    {'key': 'Reviewed', 'label': S.of(context).statusReviewed},
+    {'key': 'Repaired', 'label': S.of(context).statusRepaired},
+    {'key': 'Rejected', 'label': S.of(context).statusRejected},
+    {'key': 'Cancelled', 'label': S.of(context).statusCancelled},
   ];
 
   @override
@@ -60,8 +61,12 @@ class _MyBookingListPageState extends State<MyBookingListPage>
 
     _fetchBookings();
 
-    _rescheduleSub = getIt<SignalRService>().onBookingRescheduled.listen((event) {
-      debugPrint('[RescheduleTab] ⚡ Nhận sự kiện status=${event.status}, bookingId=${event.bookingId}, message=${event.message}');
+    _rescheduleSub = getIt<SignalRService>().onBookingRescheduled.listen((
+      event,
+    ) {
+      debugPrint(
+        '[RescheduleTab] ⚡ Nhận sự kiện status=${event.status}, bookingId=${event.bookingId}, message=${event.message}',
+      );
       if (mounted) {
         _fetchBookings();
       }
@@ -181,11 +186,12 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
-          'Lịch hẹn của tôi',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+        title: Text(
+          S.of(context).myBookingsTitle,
+          style: const TextStyle(
+            color: AppColors.primaryDark,
+            fontWeight: FontWeight.w800,
+            fontFamily: 'Georgia',
           ),
         ),
         centerTitle: true,
@@ -200,42 +206,27 @@ class _MyBookingListPageState extends State<MyBookingListPage>
           indicatorWeight: 2.5,
           labelStyle: const TextStyle(
             fontWeight: FontWeight.bold,
-            fontSize: 14,
+            fontSize: 12,
           ),
           unselectedLabelStyle: const TextStyle(
             fontWeight: FontWeight.normal,
-            fontSize: 14,
+            fontSize: 12,
           ),
-          tabs: const [
+          tabs: [
             Tab(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.calendar_month_outlined, size: 16),
-                  SizedBox(width: 6),
-                  Text('Lịch đặt'),
-                ],
-              ),
+              iconMargin: const EdgeInsets.only(bottom: 2),
+              icon: const Icon(Icons.calendar_month_outlined, size: 16),
+              text: S.of(context).bookingTabScheduled,
             ),
             Tab(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.notifications_outlined, size: 16),
-                  SizedBox(width: 6),
-                  Text('Lịch chờ'),
-                ],
-              ),
+              iconMargin: const EdgeInsets.only(bottom: 2),
+              icon: const Icon(Icons.notifications_outlined, size: 16),
+              text: S.of(context).bookingTabWaitlist,
             ),
             Tab(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.edit_calendar_outlined, size: 16),
-                  SizedBox(width: 6),
-                  Text('Dời lịch'),
-                ],
-              ),
+              iconMargin: const EdgeInsets.only(bottom: 2),
+              icon: const Icon(Icons.edit_calendar_outlined, size: 16),
+              text: S.of(context).bookingTabReschedule,
             ),
           ],
         ),
@@ -266,9 +257,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
                 ),
 
           // ─── TAB 2: Lịch chờ ───
-          WaitlistTab(
-            onRefreshBookings: _fetchBookings,
-          ),
+          WaitlistTab(onRefreshBookings: _fetchBookings),
 
           // ─── TAB 3: Dời lịch ───
           _isLoading
@@ -298,21 +287,21 @@ class _MyBookingListPageState extends State<MyBookingListPage>
               children: [
                 Expanded(
                   child: _buildDropdown(
-                    hint: 'Tháng',
+                    hint: S.of(context).monthHint,
                     value: _selectedMonth,
                     items: [null, ...List.generate(12, (i) => i + 1)],
                     itemLabel: (val) =>
-                        val == null ? 'Tất cả tháng' : 'Tháng $val',
+                        val == null ? S.of(context).allMonths : S.of(context).monthFormat(val),
                     onChanged: (val) => setState(() => _selectedMonth = val),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: _buildDropdown(
-                    hint: 'Năm',
+                    hint: S.of(context).yearHint,
                     value: _selectedYear,
                     items: [null, ..._availableYears],
-                    itemLabel: (val) => val == null ? 'Tất cả năm' : 'Năm $val',
+                    itemLabel: (val) => val == null ? S.of(context).allYears : S.of(context).yearFormat(val),
                     onChanged: (val) => setState(() => _selectedYear = val),
                   ),
                 ),
@@ -424,9 +413,10 @@ class _MyBookingListPageState extends State<MyBookingListPage>
           ),
           const SizedBox(height: 16),
           Text(
-            message ?? (hasDataButFilteredOut
-                ? 'Không có kết quả'
-                : 'Bạn chưa có lịch hẹn nào'),
+            message ??
+                (hasDataButFilteredOut
+                    ? S.of(context).noData
+                    : S.of(context).noMatchingFound),
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -435,9 +425,10 @@ class _MyBookingListPageState extends State<MyBookingListPage>
           ),
           const SizedBox(height: 8),
           Text(
-            subMessage ?? (hasDataButFilteredOut
-                ? 'Thử thay đổi bộ lọc tháng, năm hoặc trạng thái.'
-                : 'Hãy đặt ngay một lịch làm móng để trải nghiệm!'),
+            subMessage ??
+                (hasDataButFilteredOut
+                    ? S.of(context).tryChangeFilter
+                    : S.of(context).bookNowHint),
             style: const TextStyle(color: Colors.grey),
           ),
           const SizedBox(height: 24),
@@ -448,7 +439,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Khám phá dịch vụ'),
+              child: Text(S.of(context).exploreServices),
             ),
         ],
       ),
@@ -458,10 +449,10 @@ class _MyBookingListPageState extends State<MyBookingListPage>
   Widget _buildBookingCard(Map<String, dynamic> booking) {
     final dateStr = booking['bookingDate']?.toString() ?? '';
     final bookingDate = DateTime.tryParse(dateStr) ?? DateTime.now();
-    final status = bookingStatusView(booking['status']?.toString());
+    final status = bookingStatusView(booking['status']?.toString(), context);
     final rawStatus = booking['status']?.toString();
     final items = booking['bookingItems'] as List<dynamic>? ?? [];
-    var nailName = 'Dịch vụ làm móng';
+    var nailName = S.of(context).nailServiceDefault;
 
     if (items.isNotEmpty && items.first is Map) {
       final firstItem = items.first as Map;
@@ -481,9 +472,11 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     String timeStr = booking['startTime']?.toString() ?? '';
     if (timeStr.length >= 5) timeStr = timeStr.substring(0, 5);
 
-    final artistName = booking['artistName']?.toString() ?? 'Bất kỳ';
+    final artistName = booking['artistName']?.toString() ?? S.of(context).anyArtist;
     final bookingIdStr = booking['bookingId']?.toString() ?? '';
-    final canRate = (rawStatus == 'Completed' || rawStatus == 'ServiceCompleted') && !bookingIsRated(booking);
+    final canRate =
+        (rawStatus == 'Completed' || rawStatus == 'ServiceCompleted') &&
+        !bookingIsRated(booking);
 
     return GestureDetector(
       onTap: () {
@@ -491,8 +484,8 @@ class _MyBookingListPageState extends State<MyBookingListPage>
           context.push('/my-bookings/detail', extra: bookingIdStr);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Lỗi: Lịch hẹn này bị khuyết ID từ hệ thống.'),
+            SnackBar(
+              content: Text(S.of(context).bookingMissingId),
             ),
           );
         }
@@ -534,11 +527,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        status.icon,
-                        color: status.textColor,
-                        size: 13,
-                      ),
+                      Icon(status.icon, color: status.textColor, size: 13),
                       const SizedBox(width: 4),
                       Text(
                         status.label,
@@ -615,7 +604,10 @@ class _MyBookingListPageState extends State<MyBookingListPage>
               ),
             ],
             // Check & render Warranty button
-            if (rawStatus == 'Completed' && bookingIdStr.isNotEmpty && !_hasWarranty(bookingIdStr)) ...[
+            if (rawStatus == 'Completed' &&
+                bookingIdStr.isNotEmpty &&
+                !_readBool(booking['isWarrantied'] ?? booking['IsWarrantied']) &&
+                !_hasWarranty(bookingIdStr)) ...[
               Padding(
                 padding: const EdgeInsets.only(top: 12),
                 child: SizedBox(
@@ -623,7 +615,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
                   child: ElevatedButton.icon(
                     onPressed: () => _handleWarrantyAction(booking),
                     icon: const Icon(Icons.shield_outlined, size: 18),
-                    label: const Text('Bảo hành'),
+                    label: Text(S.of(context).warrantyButton),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
@@ -642,9 +634,18 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     );
   }
 
+  bool _readBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    final text = value?.toString().toLowerCase().trim();
+    return text == 'true' || text == '1' || text == 'yes';
+  }
+
   bool _hasWarranty(String bookingId) {
     if (bookingId.isEmpty) return false;
-    return _allBookings.any((b) => b['warrantyForBookingId']?.toString() == bookingId);
+    return _allBookings.any(
+      (b) => b['warrantyForBookingId']?.toString() == bookingId,
+    );
   }
 
   void _handleWarrantyAction(Map<String, dynamic> booking) {
@@ -674,7 +675,8 @@ class _MyBookingListPageState extends State<MyBookingListPage>
         }
         map['serviceName'] = item['serviceName']?.toString();
 
-        final shapeConfigVal = item['shapeMethodConfigId'] ?? item['ShapeMethodConfigId'];
+        final shapeConfigVal =
+            item['shapeMethodConfigId'] ?? item['ShapeMethodConfigId'];
         if (shapeConfigVal != null) {
           final configId = int.tryParse(shapeConfigVal.toString());
           shapeMethodConfigId = configId;
@@ -684,24 +686,29 @@ class _MyBookingListPageState extends State<MyBookingListPage>
         map['shapeMethodName'] = shapeMethodName;
 
         if (item['customerNailId'] != null) {
-          map['customerNailId'] = int.tryParse(item['customerNailId'].toString());
+          map['customerNailId'] = int.tryParse(
+            item['customerNailId'].toString(),
+          );
         }
         map['customerNailName'] = item['customerNailName']?.toString();
 
         if (item['customerNailRequestId'] != null) {
-          map['customerNailRequestId'] = item['customerNailRequestId'].toString();
+          map['customerNailRequestId'] = item['customerNailRequestId']
+              .toString();
         }
-        map['quantity'] = int.tryParse(item['quantity']?.toString() ?? '1') ?? 1;
+        map['quantity'] =
+            int.tryParse(item['quantity']?.toString() ?? '1') ?? 1;
         map['price'] = item['price'] ?? item['basePrice'] ?? 0;
       }
       return map;
     }).toList();
 
-    var displayName = 'Dịch vụ bảo hành';
+    var displayName = S.of(context).warrantyServiceDefault;
     if (items.isNotEmpty && items.first is Map) {
       final firstItem = items.first as Map;
       final variantName = firstItem['nailVariantName']?.toString().trim() ?? '';
-      final customNailName = firstItem['customerNailName']?.toString().trim() ?? '';
+      final customNailName =
+          firstItem['customerNailName']?.toString().trim() ?? '';
       final serviceName = firstItem['serviceName']?.toString().trim() ?? '';
       if (variantName.isNotEmpty) {
         displayName = variantName;
@@ -717,7 +724,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
 
     final nailData = {
       'id': nailVariantId ?? 0,
-      'name': 'Bảo hành: $displayName',
+      'name': '${S.of(context).warrantyPrefix}: $displayName',
       'price': 0, // Bảo hành miễn phí
       'shapeMethodConfigId': shapeMethodConfigId,
       'shapeMethodPrice': 0.0, // Bảo hành tạo form miễn phí
@@ -725,7 +732,8 @@ class _MyBookingListPageState extends State<MyBookingListPage>
       'warrantyForBookingId': bookingIdStr,
       'salonId': salonId,
       'extraServiceIds': extraServiceIds,
-      'warrantyBookingItems': bookingItemsForApi, // Truyền chuẩn mảng bookingItems cũ
+      'warrantyBookingItems':
+          bookingItemsForApi, // Truyền chuẩn mảng bookingItems cũ
     };
 
     context.push('/nail-booking', extra: nailData);

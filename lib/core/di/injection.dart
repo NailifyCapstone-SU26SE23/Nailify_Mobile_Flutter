@@ -38,7 +38,7 @@ Future<void> configureDependencies() async {
   // 4. Repositories (directly using ApiClient)
   // Auth
   getIt.registerLazySingleton<AuthRepository>(
-        () => AuthRepository(getIt<ApiClient>(), getIt<SignalRService>()),
+    () => AuthRepository(getIt<ApiClient>(), getIt<SignalRService>()),
   );
 
   // Nail repositories

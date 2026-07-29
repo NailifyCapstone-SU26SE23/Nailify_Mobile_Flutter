@@ -14,7 +14,8 @@ class QuizOptionModel {
   factory QuizOptionModel.fromJson(Map<String, dynamic> json) {
     return QuizOptionModel(
       quizOptionId: json['quizOptionId'] as String? ?? '',
-      values: (json['values'] as List<dynamic>?)
+      values:
+          (json['values'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           [],
@@ -47,8 +48,13 @@ class QuizQuestionModel {
       questionText: json['questionText'] as String? ?? '',
       type: json['type'] as String? ?? 'single',
       categoryKey: json['categoryKey'] as String? ?? '',
-      options: (json['options'] as List<dynamic>?)
-              ?.map((e) => QuizOptionModel.fromJson(Map<String, dynamic>.from(e as Map)))
+      options:
+          (json['options'] as List<dynamic>?)
+              ?.map(
+                (e) => QuizOptionModel.fromJson(
+                  Map<String, dynamic>.from(e as Map),
+                ),
+              )
               .toList() ??
           [],
     );

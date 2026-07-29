@@ -49,12 +49,18 @@ class ScoreCard extends StatelessWidget {
               final score = index + 1;
               final isSelected = score <= value;
               return GestureDetector(
-                onTap: enabled && onChanged != null ? () => onChanged!(score) : null,
+                onTap: enabled && onChanged != null
+                    ? () => onChanged!(score)
+                    : null,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 2),
                   child: Icon(
-                    isSelected ? Icons.star_rounded : Icons.star_outline_rounded,
-                    color: isSelected ? const Color(0xFFFFB300) : Colors.grey.shade300,
+                    isSelected
+                        ? Icons.star_rounded
+                        : Icons.star_outline_rounded,
+                    color: isSelected
+                        ? const Color(0xFFFFB300)
+                        : Colors.grey.shade300,
                     size: 28,
                   ),
                 ),
@@ -131,15 +137,22 @@ class RatingImagePicker extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (localImage == null && (existingImageUrl == null || existingImageUrl!.isEmpty))
+        if (localImage == null &&
+            (existingImageUrl == null || existingImageUrl!.isEmpty))
           OutlinedButton.icon(
             onPressed: enabled ? onPickImage : null,
             icon: const Icon(Icons.add_photo_alternate_outlined, size: 20),
-            label: const Text('Thêm hình ảnh thực tế', style: TextStyle(fontWeight: FontWeight.w600)),
+            label: const Text(
+              'Thêm hình ảnh thực tế',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.primary,
               disabledForegroundColor: Colors.grey,
-              side: BorderSide(color: enabled ? AppColors.primary : Colors.grey.shade300, width: 1.2),
+              side: BorderSide(
+                color: enabled ? AppColors.primary : Colors.grey.shade300,
+                width: 1.2,
+              ),
               padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -163,11 +176,14 @@ class RatingImagePicker extends StatelessWidget {
                         width: double.infinity,
                         height: 200,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
+                        errorBuilder: (_, _, _) => Container(
                           height: 120,
                           color: Colors.grey.shade100,
                           alignment: Alignment.center,
-                          child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
+                          child: const Icon(
+                            Icons.broken_image_outlined,
+                            color: Colors.grey,
+                          ),
                         ),
                       ),
               ),
@@ -183,7 +199,11 @@ class RatingImagePicker extends StatelessWidget {
                         color: Colors.black54,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.close_rounded, color: Colors.white, size: 18),
+                      child: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                     ),
                   ),
                 ),

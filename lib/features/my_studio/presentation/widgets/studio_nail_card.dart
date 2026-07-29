@@ -117,7 +117,11 @@ class StudioNailCard extends StatelessWidget {
                           const SizedBox(height: 6),
                           Row(
                             children: [
-                              const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textSecondary),
+                              const Icon(
+                                Icons.location_on_outlined,
+                                size: 14,
+                                color: AppColors.textSecondary,
+                              ),
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
@@ -140,7 +144,9 @@ class StudioNailCard extends StatelessWidget {
                             vertical: 5,
                           ),
                           decoration: BoxDecoration(
-                            color: _getStatusColor(nail.status).withValues(alpha: 0.08),
+                            color: _getStatusColor(
+                              nail.status,
+                            ).withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(30),
                           ),
                           child: Text(

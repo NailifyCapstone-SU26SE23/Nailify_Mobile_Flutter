@@ -8,6 +8,8 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../data/datasources/payment_api_service.dart';
 
+import '../../../../generated/l10n.dart';
+
 class PaymentQrPage extends StatefulWidget {
   final Map<String, dynamic> paymentData;
 
@@ -29,8 +31,6 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
     if (raw is num) return raw.toInt();
     return int.tryParse(raw?.toString() ?? '') ?? 0;
   }
-
-  String get _bookingId => widget.paymentData['bookingId']?.toString() ?? '';
 
   @override
   void initState() {
@@ -112,10 +112,21 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Thanh Toán'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: AppColors.primaryDark),
+          onPressed: () => context.pop(),
+        ),
+        title: Text(
+          S.of(context).paymentTitle,
+          style: const TextStyle(
+            fontWeight: FontWeight.w800,
+            fontFamily: 'Georgia',
+            color: AppColors.primaryDark,
+          ),
+        ),
         backgroundColor: Colors.white,
-        foregroundColor: AppColors.textPrimary,
         elevation: 0,
+        centerTitle: true,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -140,6 +151,37 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
                         color: AppColors.textPrimary,
                       ),
                     ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.orange.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: Colors.orange.shade700,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Vui lòng thanh toán 20% tiền cọc trước',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.orange.shade800,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                     const SizedBox(height: 20),
                     if (qrCode.isEmpty)
                       const Text(
@@ -157,7 +199,6 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
                     const SizedBox(height: 20),
                     _buildInfoRow('Mã đơn', _orderCode.toString()),
                     const SizedBox(height: 8),
-                    _buildInfoRow('Mã lịch hẹn', _bookingId),
                     const SizedBox(height: 8),
                     _buildInfoRow(
                       'Số tiền',

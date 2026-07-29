@@ -77,11 +77,13 @@ class NailBookingCubit extends Cubit<NailBookingState> {
     required Map<String, dynamic> salon,
     required List<Map<String, dynamic>> warrantyBookingItems,
   }) {
-    emit(state.copyWith(
-      selectedBranch: salon,
-      selectedExtraServices: const [],
-      selectedWarrantyItems: warrantyBookingItems,
-    ));
+    emit(
+      state.copyWith(
+        selectedBranch: salon,
+        selectedExtraServices: const [],
+        selectedWarrantyItems: warrantyBookingItems,
+      ),
+    );
   }
 
   void updateSelectedWarrantyItems(List<Map<String, dynamic>> items) {
@@ -151,7 +153,10 @@ class NailBookingCubit extends Cubit<NailBookingState> {
           salonId: branch['salonId'],
           bookingDate: dateStr,
           nailVariantId: nailVariantId,
-          serviceIds: state.selectedExtraServices.whereType<String>().toSet().toList(),
+          serviceIds: state.selectedExtraServices
+              .whereType<String>()
+              .toSet()
+              .toList(),
           shapeMethodConfigId: shapeMethodConfigId,
         );
       } else {
@@ -284,12 +289,14 @@ class NailBookingCubit extends Cubit<NailBookingState> {
     if (state.holdToken != null) {
       _cancelCurrentHold(state.holdToken!);
     }
-    emit(state.copyWith(
-      selectedTime: time,
-      clearHoldToken: true,
-      isHolding: false,
-      holdRemainingSeconds: 0,
-    ));
+    emit(
+      state.copyWith(
+        selectedTime: time,
+        clearHoldToken: true,
+        isHolding: false,
+        holdRemainingSeconds: 0,
+      ),
+    );
   }
 
   /// Giữ chỗ trước khi bước sang trang Xác nhận.
@@ -297,10 +304,10 @@ class NailBookingCubit extends Cubit<NailBookingState> {
   Future<bool> holdSelectedSlot({int? nailVariantId}) async {
     final time = state.selectedTime;
     if (time == null) return false;
-    
+
     // Nếu chọn luồng "Không chọn thợ", bỏ qua việc lấy holdToken
     if (state.noArtistSelected) return true;
-    
+
     await _holdSlot(time, nailVariantId: nailVariantId);
     return state.holdToken != null;
   }
@@ -371,29 +378,36 @@ class NailBookingCubit extends Cubit<NailBookingState> {
       // Ưu tiên dùng remainingSeconds từ server trả về, nếu không có mặc định 300s (5 phút).
       DateTime? expiresAt;
       if (expiresAtStr != null) {
-        try { expiresAt = DateTime.parse(expiresAtStr).toUtc(); } catch (_) {}
+        try {
+          expiresAt = DateTime.parse(expiresAtStr).toUtc();
+        } catch (_) {}
       }
 
       final remaining = (data['remainingSeconds'] as num?)?.toInt() ?? 300;
 
-      emit(state.copyWith(
-        holdToken: token,
-        holdExpiresAt: expiresAt,
-        holdRemainingSeconds: remaining,
-        isHolding: true,
-      ));
+      emit(
+        state.copyWith(
+          holdToken: token,
+          holdExpiresAt: expiresAt,
+          holdRemainingSeconds: remaining,
+          isHolding: true,
+        ),
+      );
 
       _startHoldTimer(token, expiresAt);
     } catch (e) {
       // Bắt lỗi khi giờ bị người khác đặt trước (Race Condition)
-      emit(state.copyWith(
-        clearHoldToken: true,
-        isHolding: false,
-        holdRemainingSeconds: 0,
-        clearTime: true, // Xoá giờ đang chọn
-        errorMessage: 'Khung giờ này vừa mới có người chọn. Vui lòng chọn giờ khác.',
-      ));
-      
+      emit(
+        state.copyWith(
+          clearHoldToken: true,
+          isHolding: false,
+          holdRemainingSeconds: 0,
+          clearTime: true, // Xoá giờ đang chọn
+          errorMessage:
+              'Khung giờ này vừa mới có người chọn. Vui lòng chọn giờ khác.',
+        ),
+      );
+
       // Tải lại danh sách giờ để cập nhật trạng thái isHeld mới nhất
       if (state.noArtistSelected) {
         _loadSalonSlots();
@@ -412,7 +426,7 @@ class NailBookingCubit extends Cubit<NailBookingState> {
         _holdTimer?.cancel();
         return;
       }
-      
+
       final remaining = (state.holdRemainingSeconds - 1).clamp(0, 600);
 
       if (state.holdToken != token) {
@@ -423,14 +437,17 @@ class NailBookingCubit extends Cubit<NailBookingState> {
 
       if (remaining <= 0) {
         _holdTimer?.cancel();
-        emit(state.copyWith(
-          clearHoldToken: true,
-          isHolding: false,
-          clearTime: true,
-          clearStylist: true,
-          noArtistSelected: false,
-          errorMessage: 'Thời gian giữ chỗ đã hết! Vui lòng chọn lại thợ và khung giờ.',
-        ));
+        emit(
+          state.copyWith(
+            clearHoldToken: true,
+            isHolding: false,
+            clearTime: true,
+            clearStylist: true,
+            noArtistSelected: false,
+            errorMessage:
+                'Thời gian giữ chỗ đã hết! Vui lòng chọn lại thợ và khung giờ.',
+          ),
+        );
       } else {
         emit(state.copyWith(holdRemainingSeconds: remaining));
       }
@@ -540,7 +557,9 @@ class NailBookingCubit extends Cubit<NailBookingState> {
 
       List<Map<String, dynamic>>? finalBookingItems;
       if (warrantyForBookingId != null && warrantyBookingItems != null) {
-        finalBookingItems = List<Map<String, dynamic>>.from(warrantyBookingItems);
+        finalBookingItems = List<Map<String, dynamic>>.from(
+          warrantyBookingItems,
+        );
         for (final sId in serviceIds) {
           finalBookingItems.add({
             'nailVariantId': null,
@@ -564,10 +583,18 @@ class NailBookingCubit extends Cubit<NailBookingState> {
         holdToken: s.holdToken,
         shapeMethodConfigId: shapeMethodConfigId,
         warrantyForBookingId: warrantyForBookingId,
-        warrantyBookingItems: warrantyForBookingId != null ? (finalBookingItems ?? warrantyBookingItems) : null,
+        warrantyBookingItems: warrantyForBookingId != null
+            ? (finalBookingItems ?? warrantyBookingItems)
+            : null,
       );
       _holdTimer?.cancel();
-      emit(state.copyWith(isSubmitting: false, clearHoldToken: true, isHolding: false));
+      emit(
+        state.copyWith(
+          isSubmitting: false,
+          clearHoldToken: true,
+          isHolding: false,
+        ),
+      );
       return result;
     } catch (e) {
       emit(
@@ -590,7 +617,13 @@ class NailBookingCubit extends Cubit<NailBookingState> {
         holdToken: state.holdToken,
       );
       _holdTimer?.cancel();
-      emit(state.copyWith(isSubmitting: false, clearHoldToken: true, isHolding: false));
+      emit(
+        state.copyWith(
+          isSubmitting: false,
+          clearHoldToken: true,
+          isHolding: false,
+        ),
+      );
       return result;
     } catch (e) {
       emit(

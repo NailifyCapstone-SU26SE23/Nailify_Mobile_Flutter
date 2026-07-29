@@ -33,10 +33,13 @@ class NailBookingState extends Equatable {
   // ── Giữ chỗ (Hold Slot) ──────────────────────────────────────────
   /// Token xác nhận việc giữ chỗ, dùng để truyền vào API tạo booking.
   final String? holdToken;
+
   /// Thời điểm hết hạn theo UTC của server (để đồng bộ đồng hồ).
   final DateTime? holdExpiresAt;
+
   /// Số giây còn lại (được cập nhật mỗi giây bởi Timer).
   final int holdRemainingSeconds;
+
   /// Đang trong trạng thái giữ chỗ (hiện countdown bar).
   final bool isHolding;
 
@@ -138,7 +141,9 @@ class NailBookingState extends Equatable {
       isSubmitting: isSubmitting ?? this.isSubmitting,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       holdToken: clearHoldToken ? null : (holdToken ?? this.holdToken),
-      holdExpiresAt: clearHoldToken ? null : (holdExpiresAt ?? this.holdExpiresAt),
+      holdExpiresAt: clearHoldToken
+          ? null
+          : (holdExpiresAt ?? this.holdExpiresAt),
       holdRemainingSeconds: holdRemainingSeconds ?? this.holdRemainingSeconds,
       isHolding: isHolding ?? this.isHolding,
     );
@@ -146,27 +151,27 @@ class NailBookingState extends Equatable {
 
   @override
   List<Object?> get props => [
-        salonsStatus,
-        artistsStatus,
-        timeSlotsStatus,
-        salons,
-        services,
-        artists,
-        timeSlots,
-        selectedBranch,
-        selectedSeatId,
-        selectedExtraServices,
-        selectedDate,
-        selectedStylist,
-        noArtistSelected,
-        selectedTime,
-        selectedPromotions,
-        selectedWarrantyItems,
-        isSubmitting,
-        errorMessage,
-        holdToken,
-        holdExpiresAt,
-        holdRemainingSeconds,
-        isHolding,
-      ];
+    salonsStatus,
+    artistsStatus,
+    timeSlotsStatus,
+    salons,
+    services,
+    artists,
+    timeSlots,
+    selectedBranch,
+    selectedSeatId,
+    selectedExtraServices,
+    selectedDate,
+    selectedStylist,
+    noArtistSelected,
+    selectedTime,
+    selectedPromotions,
+    selectedWarrantyItems,
+    isSubmitting,
+    errorMessage,
+    holdToken,
+    holdExpiresAt,
+    holdRemainingSeconds,
+    isHolding,
+  ];
 }

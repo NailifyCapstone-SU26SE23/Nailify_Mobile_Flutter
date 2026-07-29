@@ -132,7 +132,7 @@ class _NailShapeCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        shape.name,
+                        _translateName(context, shape.name),
                         style: TextStyle(
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                           fontSize: 12,
@@ -143,7 +143,7 @@ class _NailShapeCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        _formatPrice(shape.price),
+                        _formatPrice(context, shape.price),
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
@@ -178,8 +178,29 @@ class _NailShapeCard extends StatelessWidget {
     );
   }
 
-  String _formatPrice(double? price) {
-    if (price == null) return 'Contact for price';
+  String _translateName(BuildContext context, String name) {
+    if (Localizations.localeOf(context).languageCode == 'en') {
+      var result = name;
+      result = result.replaceAll('Dài', 'Long');
+      result = result.replaceAll('Ngắn', 'Short');
+      result = result.replaceAll('Vừa', 'Medium');
+      return result;
+    }
+    return name;
+  }
+
+  String _formatPrice(BuildContext context, double? price) {
+    if (price == null) return Localizations.localeOf(context).languageCode == 'en' ? 'Contact' : 'Liên hệ';
+    if (price == 0) return Localizations.localeOf(context).languageCode == 'en' ? 'Free' : 'Miễn phí';
+    final isEn = Localizations.localeOf(context).languageCode == 'en';
+    if (isEn) {
+      final formatter = NumberFormat.currency(
+        locale: 'en_US',
+        symbol: '\$',
+        decimalDigits: 0,
+      );
+      return formatter.format(price);
+    }
     final formatter = NumberFormat.currency(
       locale: 'vi_VN',
       symbol: '₫',

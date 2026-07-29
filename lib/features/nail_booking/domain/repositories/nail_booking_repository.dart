@@ -84,5 +84,5 @@ abstract class NailBookingRepository {
   });
 
   /// Lấy danh sách khuyến mãi.
-  Future<List<PromotionModel>> getPromotions();
+  Future<List<PromotionModel>> getTodayPromotions();
 }

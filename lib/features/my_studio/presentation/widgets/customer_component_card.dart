@@ -92,7 +92,10 @@ class CustomerComponentCard extends StatelessWidget {
                           fit: BoxFit.cover,
                           errorBuilder: (_, _, _) => Container(
                             color: const Color(0xFFF5F5F7),
-                            child: const Icon(Icons.broken_image_rounded, color: Colors.grey),
+                            child: const Icon(
+                              Icons.broken_image_rounded,
+                              color: Colors.grey,
+                            ),
                           ),
                         ),
                 ),
@@ -189,7 +192,11 @@ class CustomerComponentCard extends StatelessWidget {
                         value: 'edit',
                         child: Row(
                           children: [
-                            Icon(Icons.edit_rounded, size: 18, color: AppColors.textSecondary),
+                            Icon(
+                              Icons.edit_rounded,
+                              size: 18,
+                              color: AppColors.textSecondary,
+                            ),
                             SizedBox(width: 8),
                             Text('Sửa'),
                           ],
@@ -205,7 +212,13 @@ class CustomerComponentCard extends StatelessWidget {
                               color: Colors.red,
                             ),
                             SizedBox(width: 8),
-                            Text('Xóa', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500)),
+                            Text(
+                              'Xóa',
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                           ],
                         ),
                       ),

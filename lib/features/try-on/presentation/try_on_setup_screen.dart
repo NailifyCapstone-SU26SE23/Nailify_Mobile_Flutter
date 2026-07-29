@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import '../../../generated/l10n.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../quiz/data/datasources/quiz_repository.dart';
@@ -87,7 +88,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
       debugPrint('[TryOnSetupScreen] _fetchData started. widget.customerNail=${widget.customerNail?.customerNailId}, widget.recommendedData=${widget.recommendedData != null}');
       final results = await Future.wait([
         _setupService.fetchTryOnData(),
-        if (widget.customerNail != null && widget.customerNail!.customerNailId > 0)
+        if (widget.customerNail != null)
           _customerNailRepository.getCustomerNailById(
             widget.customerNail!.customerNailId,
           ),
@@ -357,13 +358,13 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
       if (mounted) {
         _applyRecommendedData(res);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đã tạo lại thiết kế móng phù hợp mới!')),
+          SnackBar(content: Text(S.of(context).reGenSuccess)),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi khi tạo lại thiết kế: $e')),
+          SnackBar(content: Text(S.of(context).reGenError(e))),
         );
       }
     } finally {
@@ -415,9 +416,9 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đã áp dụng mẫu thiết kế của ngón này cho tất cả các ngón!'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(S.of(context).applyToAllSuccess),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -582,7 +583,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
   void _navigateToMethodSelection() {
     final preview = _buildPreviewNail();
     if (preview == null) {
-      _showMessage('Vui lòng chọn dáng móng.');
+      _showMessage(S.of(context).selectNailShapeWarn);
       return;
     }
     Navigator.of(context).push(
@@ -618,7 +619,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
   Future<void> _save() async {
     final shape = _selectedNailShape;
     if (shape == null) {
-      _showMessage('Vui lòng chọn dáng móng.');
+      _showMessage(S.of(context).selectNailShapeWarn);
       return;
     }
 
@@ -627,7 +628,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
       int targetNailId;
       String targetName = 'My Custom Design';
       
-      if (_customerNail == null || _customerNail!.customerNailId <= 0) {
+      if (_customerNail == null) {
         // Create new design first
         targetNailId = await _customerNailRepository.createCustomerNail(
           name: targetName,
@@ -653,7 +654,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
 
       for (final placement in _placements) {
         final payload = placement.toPayload(targetNailId);
-        if (placement.customerNailComponentId == null || placement.customerNailComponentId == 0) {
+        if (placement.customerNailComponentId == null) {
           await _componentRepository.createCustomerNailComponent(
             customerNailId: payload.customerNailId,
             componentId: payload.componentId,
@@ -680,7 +681,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
       _deletedPlacementIds.clear();
       final fresh = await _customerNailRepository.getCustomerNailById(targetNailId);
       setState(() => _customerNail = fresh);
-      _showMessage('Đã lưu thiết lập thử móng.');
+      if (mounted) _showMessage(S.of(context).saveDesignSuccess);
       await _fetchData();
       if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
@@ -732,7 +733,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       appBar: AppBar(
-        title: Text(_customerNail == null ? 'Thiết kế móng' : _customerNail!.name),
+        title: Text(_customerNail == null ? S.of(context).nailDesignTitle : _customerNail!.name),
         backgroundColor: Colors.transparent,
       ),
       body: Stack(
@@ -786,9 +787,9 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
                           ),
                         )
                       : const Icon(Icons.refresh_rounded, size: 20),
-                  label: const Text(
-                    'Gen lại',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  label: Text(
+                    S.of(context).reGenerateButton,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFFE91E63),
@@ -807,7 +808,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
                   icon: _isSaving
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                       : const Icon(Icons.save_rounded, size: 20),
-                  label: const Text('Lưu thiết kế', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  label: Text(S.of(context).saveDesignButton, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     backgroundColor: const Color(0xFFE91E63),
@@ -914,11 +915,11 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
                           dividerColor: Colors.transparent,
                           labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                           unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                          tabs: const [
-                            Tab(text: "Dáng móng"),
-                            Tab(text: "Bề mặt"),
-                            Tab(text: "Màu sắc"),
-                            Tab(text: "Phụ kiện"),
+                          tabs: [
+                            Tab(text: S.of(context).tryOnTabShape),
+                            Tab(text: S.of(context).tryOnTabSurface),
+                            Tab(text: S.of(context).tryOnTabColor),
+                            Tab(text: S.of(context).tryOnTabAccessories),
                           ],
                         ),
                       ),
@@ -941,12 +942,12 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
                 ),
                 
                 if (!_isSelectorExpanded)
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 12, left: 16, right: 16),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12, left: 16, right: 16),
                     child: Text(
-                      'Bấm nút mũi tên bên phải để hiển thị bảng thiết kế móng',
+                      S.of(context).tryOnHintText,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: Colors.grey,
@@ -1001,7 +1002,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
             children: [
               Expanded(
                 child: Text(
-                  _selectedPlacement?.name ?? 'Chưa chọn phụ kiện trên móng',
+                  _selectedPlacement?.name ?? S.of(context).noAccessorySelected,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
@@ -1014,7 +1015,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
               FilledButton.icon(
                 onPressed: _selectedComponent == null ? null : _addSelectedComponent,
                 icon: const Icon(Icons.add_rounded, size: 16),
-                label: const Text('Thêm vào móng', style: TextStyle(fontWeight: FontWeight.bold)),
+                label: Text(S.of(context).addToNail, style: const TextStyle(fontWeight: FontWeight.bold)),
                 style: FilledButton.styleFrom(
                   visualDensity: VisualDensity.compact,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -1125,9 +1126,9 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
               dividerColor: Colors.transparent,
               labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
               unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
-              tabs: const [
-                Tab(text: 'Mẫu hệ thống'),
-                Tab(text: 'Phụ kiện của tôi'),
+              tabs: [
+                Tab(text: S.of(context).systemModels),
+                Tab(text: S.of(context).myComponents),
               ],
             ),
           ),
@@ -1197,4 +1198,3 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 }
-

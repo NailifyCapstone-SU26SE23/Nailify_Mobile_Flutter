@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../generated/l10n.dart';
 
 class CustomerReviews extends StatelessWidget {
   const CustomerReviews({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Dữ liệu mẫu (Mock data)
     final List<Map<String, dynamic>> reviews = [
       {
         'initials': 'LM',
         'name': 'Linh Mai',
-        'type': 'Regular client',
-        'review':
-            '"Absolutely love my nails! The team here is so talented and the designs are stunning. Will definitely be back!"',
+        'type': S.of(context).loyalCustomer,
+        'review': S.of(context).reviewLinhMai,
         'gradientColors': [
           const Color(0xFFFF66C4),
           const Color(0xFFFFB347),
@@ -22,9 +21,8 @@ class CustomerReviews extends StatelessWidget {
       {
         'initials': 'TN',
         'name': 'Thu Nga',
-        'type': 'New client',
-        'review':
-            '"The chrome finish is breathtaking and the staff is so welcoming."',
+        'type': S.of(context).newCustomer,
+        'review': S.of(context).reviewThuNga,
         'gradientColors': [
           const Color(0xFFB39DDB),
           const Color(0xFF7E57C2),
@@ -32,10 +30,9 @@ class CustomerReviews extends StatelessWidget {
       },
       {
         'initials': 'HA',
-        'name': 'Hoang Anh',
-        'type': 'VIP client',
-        'review':
-            '"Best nail salon in town. The attention to detail is unmatched, and my nails last for weeks without chipping!"',
+        'name': 'Hoàng Anh',
+        'type': S.of(context).vipCustomer,
+        'review': S.of(context).reviewHoangAnh,
         'gradientColors': [
           const Color(0xFF81D4FA),
           const Color(0xFF29B6F6),
@@ -50,15 +47,19 @@ class CustomerReviews extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // --- Phần Tiêu đề ---
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24.0),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Row(
               children: [
-                Icon(Icons.favorite_rounded, color: AppColors.primary, size: 16),
-                SizedBox(width: 6),
+                const Icon(
+                  Icons.favorite_rounded,
+                  color: AppColors.primary,
+                  size: 16,
+                ),
+                const SizedBox(width: 6),
                 Text(
-                  'HAPPY CLIENTS',
-                  style: TextStyle(
+                  S.of(context).reviewsTitle,
+                  style: const TextStyle(
                     color: AppColors.primaryDark,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 2.0,
@@ -69,11 +70,11 @@ class CustomerReviews extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24.0),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Text(
-              'Our Valuable Customers',
-              style: TextStyle(
+              S.of(context).reviewsHeading,
+              style: const TextStyle(
                 color: AppColors.textPrimary,
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
@@ -122,10 +123,7 @@ class CustomerReviews extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: const Color(0xFFFFF0F5),
-          width: 1.5,
-        ),
+        border: Border.all(color: const Color(0xFFFFF0F5), width: 1.5),
         boxShadow: [
           BoxShadow(
             color: AppColors.primaryDark.withValues(alpha: 0.04),
@@ -153,8 +151,11 @@ class CustomerReviews extends StatelessWidget {
               Row(
                 children: List.generate(
                   5,
-                  (index) => const Icon(Icons.star_rounded,
-                      color: Color(0xFFFFD54F), size: 18),
+                  (index) => const Icon(
+                    Icons.star_rounded,
+                    color: Color(0xFFFFD54F),
+                    size: 18,
+                  ),
                 ),
               ),
               const SizedBox(height: 14),

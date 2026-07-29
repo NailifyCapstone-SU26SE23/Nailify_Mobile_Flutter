@@ -33,6 +33,26 @@ class PromotionApiService {
         .toList();
   }
 
+  Future<List<PromotionModel>> getTodayPromotions({
+    int pageNumber = 1,
+    int pageSize = 20,
+  }) async {
+    final queryParams = <String, dynamic>{
+      'pageNumber': pageNumber,
+      'pageSize': pageSize,
+    };
+    final response = await _apiClient.get(
+      '/Promotions/today',
+      queryParameters: queryParams,
+    );
+
+    final items = response.data['data']?['items'] as List<dynamic>? ?? [];
+    return items
+        .whereType<Map>()
+        .map((json) => PromotionModel.fromJson(Map<String, dynamic>.from(json)))
+        .toList();
+  }
+
   /// Giữ lại hàm cũ để tương thích ngược với các file đang dùng
   Future<List<PromotionModel>> getVouchers({
     int pageNumber = 1,

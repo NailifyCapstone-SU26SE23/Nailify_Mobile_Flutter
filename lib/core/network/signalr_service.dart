@@ -21,21 +21,14 @@ class SignalRService {
   bool _isConnected = false;
 
   // ─── Broadcast Streams ─────────────────────────────────────────
-  final _promotedCtrl =
-      StreamController<WaitlistPromotedEvent>.broadcast();
-  final _expiredCtrl =
-      StreamController<WaitlistExpiredEvent>.broadcast();
-  final _cancelledCtrl =
-      StreamController<BookingCancelledEvent>.broadcast();
-  final _rescheduleCtrl =
-      StreamController<BookingRescheduleEvent>.broadcast();
+  final _promotedCtrl = StreamController<WaitlistPromotedEvent>.broadcast();
+  final _expiredCtrl = StreamController<WaitlistExpiredEvent>.broadcast();
+  final _cancelledCtrl = StreamController<BookingCancelledEvent>.broadcast();
+  final _rescheduleCtrl = StreamController<BookingRescheduleEvent>.broadcast();
 
-  Stream<WaitlistPromotedEvent> get onWaitlistPromoted =>
-      _promotedCtrl.stream;
-  Stream<WaitlistExpiredEvent> get onWaitlistExpired =>
-      _expiredCtrl.stream;
-  Stream<BookingCancelledEvent> get onBookingCancelled =>
-      _cancelledCtrl.stream;
+  Stream<WaitlistPromotedEvent> get onWaitlistPromoted => _promotedCtrl.stream;
+  Stream<WaitlistExpiredEvent> get onWaitlistExpired => _expiredCtrl.stream;
+  Stream<BookingCancelledEvent> get onBookingCancelled => _cancelledCtrl.stream;
   Stream<BookingRescheduleEvent> get onBookingRescheduled =>
       _rescheduleCtrl.stream;
 
@@ -49,7 +42,9 @@ class SignalRService {
     }
 
     if (_hub != null) {
-      try { await _hub!.stop(); } catch (_) {}
+      try {
+        await _hub!.stop();
+      } catch (_) {}
       _hub = null;
       _isConnected = false;
     }
@@ -67,9 +62,7 @@ class SignalRService {
             logMessageContent: kDebugMode,
           ),
         )
-        .withAutomaticReconnect(
-          retryDelays: [0, 2000, 5000, 10000, 30000],
-        )
+        .withAutomaticReconnect(retryDelays: [0, 2000, 5000, 10000, 30000])
         .configureLogging(Logger('SignalR'))
         .build();
 
@@ -82,8 +75,9 @@ class SignalRService {
 
         final messageType = args[0]?.toString() ?? '';
         final rawPayload = args.length > 1 ? args[1] : null;
-        final Map<String, dynamic>? payloadMap =
-            rawPayload is Map ? Map<String, dynamic>.from(rawPayload) : null;
+        final Map<String, dynamic>? payloadMap = rawPayload is Map
+            ? Map<String, dynamic>.from(rawPayload)
+            : null;
 
         if (kDebugMode) {
           debugPrint('[SignalR] Nhận event: $messageType');
@@ -95,8 +89,10 @@ class SignalRService {
                 ? WaitlistPromotedEvent.fromJson(payloadMap)
                 : WaitlistPromotedEvent(
                     waitlistId: '',
-                    message: rawPayload?.toString() ??
-                        'Đã có slot trống! Bạn có 15 phút để xác nhận.');
+                    message:
+                        rawPayload?.toString() ??
+                        'Đã có slot trống! Bạn có 15 phút để xác nhận.',
+                  );
             _promotedCtrl.add(payload);
             break;
 
@@ -104,8 +100,10 @@ class SignalRService {
             final payload = payloadMap != null
                 ? WaitlistExpiredEvent.fromJson(payloadMap)
                 : WaitlistExpiredEvent(
-                    message: rawPayload?.toString() ??
-                        'Thời gian xác nhận lịch hẹn từ hàng chờ (15 phút) đã hết hạn.');
+                    message:
+                        rawPayload?.toString() ??
+                        'Thời gian xác nhận lịch hẹn từ hàng chờ (15 phút) đã hết hạn.',
+                  );
             _expiredCtrl.add(payload);
             break;
 
@@ -114,8 +112,10 @@ class SignalRService {
                 ? BookingCancelledEvent.fromJson(payloadMap)
                 : BookingCancelledEvent(
                     bookingId: '',
-                    message: rawPayload?.toString() ??
-                        'Lịch hẹn của bạn đã tự động hủy do trễ quá 15 phút.');
+                    message:
+                        rawPayload?.toString() ??
+                        'Lịch hẹn của bạn đã tự động hủy do trễ quá 15 phút.',
+                  );
             _cancelledCtrl.add(payload);
             break;
 
@@ -125,8 +125,10 @@ class SignalRService {
                 : BookingRescheduleEvent(
                     bookingId: '',
                     status: 'Approved',
-                    message: rawPayload?.toString() ??
-                        'Yêu cầu dời lịch của bạn đã được salon xác nhận.');
+                    message:
+                        rawPayload?.toString() ??
+                        'Yêu cầu dời lịch của bạn đã được salon xác nhận.',
+                  );
             _rescheduleCtrl.add(payload);
             break;
 
@@ -136,8 +138,10 @@ class SignalRService {
                 : BookingRescheduleEvent(
                     bookingId: '',
                     status: 'Suggested',
-                    message: rawPayload?.toString() ??
-                        'Salon đề xuất khung giờ hẹn mới cho bạn.');
+                    message:
+                        rawPayload?.toString() ??
+                        'Salon đề xuất khung giờ hẹn mới cho bạn.',
+                  );
             _rescheduleCtrl.add(payload);
             break;
 
@@ -147,8 +151,10 @@ class SignalRService {
                 : BookingRescheduleEvent(
                     bookingId: '',
                     status: 'Rejected',
-                    message: rawPayload?.toString() ??
-                        'Yêu cầu dời lịch của bạn không được salon chấp nhận.');
+                    message:
+                        rawPayload?.toString() ??
+                        'Yêu cầu dời lịch của bạn không được salon chấp nhận.',
+                  );
             _rescheduleCtrl.add(payload);
             break;
 

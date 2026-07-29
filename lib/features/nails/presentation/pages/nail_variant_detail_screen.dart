@@ -8,7 +8,6 @@ import '../../../../core/di/injection.dart';
 import '../../data/models/component_model.dart';
 import '../../data/models/customer_nail_models.dart' as nails_model;
 import '../../data/models/nail_component_model.dart';
-import '../../data/models/nail_surface_model.dart';
 import '../../data/models/nail_variant_model.dart';
 import '../../data/models/shape_method_config_model.dart';
 import '../../data/repositories/nail_variant_repository.dart';
@@ -45,14 +44,16 @@ class _NailVariantDetailScreenState extends State<NailVariantDetailScreen> {
     );
   }
 
-  Future<void> _openTryOn(
-    Future<void> Function(NailVariantModel, NailSurfaceModel?) launcher, {
-    NailSurfaceModel? surface,
-  }) async {
+  Future<void> _openTryOn(nails_model.CustomerNailModel customerNail) async {
     setState(() => _launching = true);
     try {
-      final variant = await _future;
-      await launcher(variant, surface);
+      final service = getIt<ArTryOnService>();
+      if (!await service.isAvailable()) {
+        throw UnsupportedError(
+          'Virtual try-on is not available on this build.',
+        );
+      }
+      await service.launchCustomerLive(customerNail);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -147,10 +148,7 @@ class _DetailContent extends StatefulWidget {
   final NailVariantModel variant;
   final String? designName;
   final bool launching;
-  final void Function(
-    Future<void> Function(NailVariantModel, NailSurfaceModel?) launcher, {
-    NailSurfaceModel? surface,
-  })
+  final Future<void> Function(nails_model.CustomerNailModel customerNail)
   onTryOn;
 
   const _DetailContent({
@@ -239,10 +237,7 @@ class _DetailContentState extends State<_DetailContent> {
                 const SizedBox(height: 6),
                 Text(
                   'Bộ sưu tập: ${widget.designName}',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade500,
-                  ),
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
                 ),
               ],
               const SizedBox(height: 8),
@@ -263,7 +258,10 @@ class _DetailContentState extends State<_DetailContent> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFFFF0F5), width: 1.5),
+                  border: Border.all(
+                    color: const Color(0xFFFFF0F5),
+                    width: 1.5,
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.02),
@@ -275,16 +273,23 @@ class _DetailContentState extends State<_DetailContent> {
                 child: Column(
                   children: [
                     if (widget.variant.nailShape != null)
-                      _buildSpecRow('Form móng', widget.variant.nailShape!.name),
+                      _buildSpecRow(
+                        'Form móng',
+                        widget.variant.nailShape!.name,
+                      ),
                     if (widget.variant.nailSurface != null) ...[
                       if (widget.variant.nailShape != null)
                         const Divider(height: 24, color: Color(0xFFFFF0F5)),
                       _buildSpecRow('Bề mặt', widget.variant.nailSurface!.name),
                     ],
                     if (widget.variant.duration != null) ...[
-                      if (widget.variant.nailShape != null || widget.variant.nailSurface != null)
+                      if (widget.variant.nailShape != null ||
+                          widget.variant.nailSurface != null)
                         const Divider(height: 24, color: Color(0xFFFFF0F5)),
-                      _buildSpecRow('Thời gian thực hiện', '${widget.variant.duration} phút'),
+                      _buildSpecRow(
+                        'Thời gian thực hiện',
+                        '${widget.variant.duration} phút',
+                      ),
                     ],
                   ],
                 ),
@@ -341,41 +346,11 @@ class _DetailContentState extends State<_DetailContent> {
                   child: SizedBox(
                     height: 50,
                     child: OutlinedButton(
-                      onPressed: () {
-                        final customerNail = nails_model.CustomerNailModel(
-                          customerNailId: 0,
-                          name: widget.variant.name,
-                          imageUrl: widget.variant.imageUrl,
-                          nailShapeId: widget.variant.nailShapeId,
-                          nailSurfaceId: widget.variant.nailSurfaceId,
-                          price: widget.variant.price,
-                          customColor: widget.variant.colorJson,
-                          duration: widget.variant.duration,
-                          isPublic: true,
-                          nailShape: widget.variant.nailShape,
-                          nailSurface: widget.variant.nailSurface,
-                          customerNailComponents: widget.variant.nailComponents.map((c) {
-                            return nails_model.CustomerNailComponentModel(
-                              customerNailComponentId: 0,
-                              customerNailId: 0,
-                              componentId: c.componentId,
-                              customerComponentId: null,
-                              posX: c.posX,
-                              posY: c.posY,
-                              fingerIndex: c.fingerIndex,
-                              configJson: c.configJson,
-                              component: c.component != null ? ComponentModel(
-                                componentId: c.component!.componentId,
-                                name: c.component!.name,
-                                imageUrl: c.component!.imageUrl,
-                                componentType: c.component!.componentType,
-                                price: c.component!.price,
-                              ) : null,
-                            );
-                          }).toList(),
-                        );
-                        context.push('/try-on', extra: customerNail);
-                      },
+                      onPressed: widget.launching
+                          ? null
+                          : () {
+                              widget.onTryOn(_toCustomerNail(widget.variant));
+                            },
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.primary,
                         side: const BorderSide(
@@ -451,6 +426,44 @@ class _DetailContentState extends State<_DetailContent> {
     );
   }
 
+  nails_model.CustomerNailModel _toCustomerNail(NailVariantModel variant) {
+    return nails_model.CustomerNailModel(
+      customerNailId: variant.nailVariantId,
+      name: variant.name,
+      imageUrl: variant.imageUrl,
+      nailShapeId: variant.nailShapeId,
+      nailSurfaceId: variant.nailSurfaceId,
+      price: variant.price,
+      customColor: variant.colorJson,
+      duration: variant.duration,
+      isPublic: true,
+      nailShape: variant.nailShape,
+      nailSurface: variant.nailSurface,
+      customerNailComponents: variant.nailComponents.map((component) {
+        final source = component.component;
+        return nails_model.CustomerNailComponentModel(
+          customerNailComponentId: component.nailComponentId,
+          customerNailId: variant.nailVariantId,
+          componentId: component.componentId,
+          customerComponentId: null,
+          posX: component.posX,
+          posY: component.posY,
+          fingerIndex: component.fingerIndex,
+          configJson: component.configJson,
+          component: source == null
+              ? null
+              : ComponentModel(
+                  componentId: source.componentId,
+                  name: source.name,
+                  imageUrl: source.imageUrl,
+                  componentType: source.componentType,
+                  price: source.price,
+                ),
+        );
+      }).toList(),
+    );
+  }
+
   Widget _buildSpecRow(String label, String value) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -521,7 +534,9 @@ class _DetailContentState extends State<_DetailContent> {
                       : Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: selected ? AppColors.primary : const Color(0xFFFFF0F5),
+                    color: selected
+                        ? AppColors.primary
+                        : const Color(0xFFFFF0F5),
                     width: 1.5,
                   ),
                 ),
@@ -533,9 +548,15 @@ class _DetailContentState extends State<_DetailContent> {
                   },
                   title: Text(
                     method.name,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
                   ),
-                  subtitle: Text('${method.duration} phút', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+                  subtitle: Text(
+                    '${method.duration} phút',
+                    style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                  ),
                   secondary: Text(
                     PriceFormatter.format(method.price),
                     style: const TextStyle(
@@ -682,4 +703,3 @@ class _ComponentChip extends StatelessWidget {
     );
   }
 }
-

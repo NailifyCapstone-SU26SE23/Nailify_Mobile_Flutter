@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/auth_guard.dart';
+import '../../../../generated/l10n.dart';
 
 class HomeBanner extends StatelessWidget {
   const HomeBanner({super.key});
@@ -100,12 +101,12 @@ class HomeBanner extends StatelessWidget {
             ),
 
             const SizedBox(height: 24),
-            
+
             // Tiêu đề với font chữ Serif nghiêng cao cấp kiểu tạp chí thời trang
-            const Text(
-              'Beauty on\nyour\nfingertips',
+            Text(
+              S.of(context).homeBannerTitle,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 44,
                 fontFamily: 'serif',
                 fontStyle: FontStyle.italic,
@@ -125,10 +126,10 @@ class HomeBanner extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            const Text(
-              'Discover effortless elegance with every touch',
+            Text(
+              S.of(context).homeBannerSubtitle,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.w500,
@@ -171,9 +172,9 @@ class HomeBanner extends StatelessWidget {
                     borderRadius: BorderRadius.circular(26),
                   ),
                 ),
-                child: const Text(
-                  'Book Now',
-                  style: TextStyle(
+                child: Text(
+                  S.of(context).bookNowButton,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.5,

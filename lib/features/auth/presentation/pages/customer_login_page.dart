@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/localization/locale_service.dart';
+import '../../../../generated/l10n.dart';
 import '../../data/repositories/auth_repository.dart';
 
 class LoginPage extends StatefulWidget {
@@ -23,7 +26,7 @@ class _LoginPageState extends State<LoginPage> {
     final password = _passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      _showSnackBar('Vui lòng nhập đầy đủ Email và Mật khẩu', AppColors.error);
+      _showSnackBar(S.of(context).loginRequiredFields, AppColors.error);
       return;
     }
 
@@ -31,7 +34,7 @@ class _LoginPageState extends State<LoginPage> {
     try {
       await getIt<AuthRepository>().login(email: email, password: password);
       if (!mounted) return;
-      _showSnackBar('Đăng nhập thành công', AppColors.success);
+      _showSnackBar(S.of(context).loginSuccess, AppColors.success);
       context.go('/');
     } catch (e) {
       if (!mounted) return;
@@ -116,7 +119,10 @@ class _LoginPageState extends State<LoginPage> {
                 child: Center(
                   child: Container(
                     constraints: const BoxConstraints(maxWidth: 400),
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 36.0),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24.0,
+                      vertical: 36.0,
+                    ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -128,7 +134,9 @@ class _LoginPageState extends State<LoginPage> {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.15),
+                                color: AppColors.primary.withValues(
+                                  alpha: 0.15,
+                                ),
                                 blurRadius: 16,
                                 offset: const Offset(0, 6),
                               ),
@@ -184,10 +192,10 @@ class _LoginPageState extends State<LoginPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              const Text(
-                                'Đăng nhập',
+                              Text(
+                                S.of(context).login,
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w800,
                                   color: AppColors.textPrimary,
@@ -200,7 +208,7 @@ class _LoginPageState extends State<LoginPage> {
                                 controller: _emailController,
                                 keyboardType: TextInputType.emailAddress,
                                 decoration: InputDecoration(
-                                  labelText: 'Email',
+                                  labelText: S.of(context).email,
                                   labelStyle: TextStyle(
                                     color: Colors.grey.shade400,
                                     fontSize: 14,
@@ -239,7 +247,7 @@ class _LoginPageState extends State<LoginPage> {
                                 controller: _passwordController,
                                 obscureText: _obscurePassword,
                                 decoration: InputDecoration(
-                                  labelText: 'Mật khẩu',
+                                  labelText: S.of(context).password,
                                   labelStyle: TextStyle(
                                     color: Colors.grey.shade400,
                                     fontSize: 14,
@@ -292,9 +300,9 @@ class _LoginPageState extends State<LoginPage> {
                                 alignment: Alignment.centerRight,
                                 child: TextButton(
                                   onPressed: () {},
-                                  child: const Text(
-                                    'Quên mật khẩu?',
-                                    style: TextStyle(
+                                  child: Text(
+                                    S.of(context).forgotPassword,
+                                    style: const TextStyle(
                                       color: AppColors.primaryDark,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13,
@@ -312,14 +320,18 @@ class _LoginPageState extends State<LoginPage> {
                                   borderRadius: BorderRadius.circular(16),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: AppColors.primary.withValues(alpha: 0.3),
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.3,
+                                      ),
                                       blurRadius: 12,
                                       offset: const Offset(0, 4),
                                     ),
                                   ],
                                 ),
                                 child: ElevatedButton(
-                                  onPressed: _isSubmitting ? null : _handleLogin,
+                                  onPressed: _isSubmitting
+                                      ? null
+                                      : _handleLogin,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.transparent,
                                     shadowColor: Colors.transparent,
@@ -336,9 +348,9 @@ class _LoginPageState extends State<LoginPage> {
                                             color: Colors.white,
                                           ),
                                         )
-                                      : const Text(
-                                          'ĐĂNG NHẬP',
-                                          style: TextStyle(
+                                      : Text(
+                                          S.of(context).login.toUpperCase(),
+                                          style: const TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.bold,
                                             color: Colors.white,
@@ -353,7 +365,7 @@ class _LoginPageState extends State<LoginPage> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    'Bạn chưa có tài khoản? ',
+                                    S.of(context).dontHaveAccount,
                                     style: TextStyle(
                                       color: Colors.grey.shade600,
                                       fontSize: 13,
@@ -361,9 +373,9 @@ class _LoginPageState extends State<LoginPage> {
                                   ),
                                   GestureDetector(
                                     onTap: () => context.push('/register'),
-                                    child: const Text(
-                                      'Đăng ký ngay',
-                                      style: TextStyle(
+                                    child: Text(
+                                      S.of(context).registerNow,
+                                      style: const TextStyle(
                                         color: AppColors.primary,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 13,
@@ -379,6 +391,76 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ],
                     ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 16,
+                left: 16,
+                child: SafeArea(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+                      color: AppColors.primaryDark,
+                      onPressed: () {
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go('/');
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 16,
+                right: 16,
+                child: SafeArea(
+                  child: Consumer<LocaleService>(
+                    builder: (context, localeService, _) {
+                      final isVi = localeService.currentLocale.languageCode == 'vi';
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: TextButton(
+                          onPressed: () => localeService.toggleLocale(),
+                          style: TextButton.styleFrom(
+                            minimumSize: const Size(40, 40),
+                            padding: EdgeInsets.zero,
+                            shape: const CircleBorder(),
+                          ),
+                          child: Text(
+                            isVi ? 'EN' : 'VI',
+                            style: const TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),

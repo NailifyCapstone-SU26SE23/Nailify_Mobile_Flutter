@@ -43,12 +43,15 @@ class WaitlistApiModel {
     this.convertedBookingId,
   });
 
-  bool get isOpened => status.toLowerCase() == 'opened' || status.toLowerCase() == 'notified';
-  bool get isPending => status.toLowerCase() == 'pending' || status.toLowerCase() == 'waiting';
+  bool get isOpened =>
+      status.toLowerCase() == 'opened' || status.toLowerCase() == 'notified';
+  bool get isPending =>
+      status.toLowerCase() == 'pending' || status.toLowerCase() == 'waiting';
 
   factory WaitlistApiModel.fromJson(Map<String, dynamic> json) {
     return WaitlistApiModel(
-      waitlistId: json['wailistId']?.toString() ?? json['waitlistId']?.toString() ?? '',
+      waitlistId:
+          json['wailistId']?.toString() ?? json['waitlistId']?.toString() ?? '',
       customerId: json['customerId']?.toString(),
       customerName: json['customerName']?.toString(),
       salonId: json['salonId']?.toString(),
@@ -114,7 +117,9 @@ class WaitlistModel {
   /// Tạo WaitlistModel từ WaitlistApiModel (để tương thích WaitlistCard)
   factory WaitlistModel.fromApi(WaitlistApiModel api) {
     final timeRaw = api.requestedStartTime ?? '00:00';
-    final timeFormatted = timeRaw.length >= 5 ? timeRaw.substring(0, 5) : timeRaw;
+    final timeFormatted = timeRaw.length >= 5
+        ? timeRaw.substring(0, 5)
+        : timeRaw;
     return WaitlistModel(
       id: api.waitlistId,
       salonName: api.salonName ?? 'Salon',
@@ -124,7 +129,8 @@ class WaitlistModel {
       staffName: api.preferredNailArtistName ?? 'Bất kỳ',
       services: [],
       status: api.isOpened ? WaitlistStatus.opened : WaitlistStatus.pending,
-      holdUntil: api.expiresAt ?? DateTime.now().add(const Duration(minutes: 30)),
+      holdUntil:
+          api.expiresAt ?? DateTime.now().add(const Duration(minutes: 30)),
       registeredAt: api.createdAt ?? DateTime.now(),
     );
   }
@@ -155,4 +161,3 @@ class WaitlistModel {
     );
   }
 }
-

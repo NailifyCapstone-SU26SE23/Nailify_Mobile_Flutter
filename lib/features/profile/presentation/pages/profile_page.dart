@@ -3,12 +3,15 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/localization/locale_service.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../generated/l10n.dart';
 
 import '../../data/profile_data.dart';
 import '../widgets/personal_notes_section.dart';
@@ -86,7 +89,7 @@ class _ProfilePageState extends State<ProfilePage> {
       context.go('/'); // Đưa người dùng về trang chủ
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Đã đăng xuất thành công!')));
+      ).showSnackBar(SnackBar(content: Text(S.of(context).logoutSuccess)));
     }
   }
 
@@ -98,7 +101,9 @@ class _ProfilePageState extends State<ProfilePage> {
     if (jsonStr != null) {
       try {
         setState(() {
-          _styleCompositionResult = Map<String, dynamic>.from(jsonDecode(jsonStr));
+          _styleCompositionResult = Map<String, dynamic>.from(
+            jsonDecode(jsonStr),
+          );
         });
       } catch (_) {}
     }
@@ -120,7 +125,9 @@ class _ProfilePageState extends State<ProfilePage> {
       _selectedColors.clear();
       _selectedColors.addAll(cList);
     }
-    _selectedMainStyle = prefs.getString('profile_selectedMainStyle') ?? ProfileMockData.initialMainStyleId;
+    _selectedMainStyle =
+        prefs.getString('profile_selectedMainStyle') ??
+        ProfileMockData.initialMainStyleId;
     final oList = prefs.getStringList('profile_selectedOccasions');
     if (oList != null) {
       _selectedOccasions.clear();
@@ -151,7 +158,7 @@ class _ProfilePageState extends State<ProfilePage> {
       final res = await _quizRepo.getNailComposition(apiBody);
       final jsonStr = jsonEncode(res);
       final prefs = getIt<SharedPreferences>();
-      
+
       await prefs.setString('profile_style_composition', jsonStr);
       await prefs.setString('profile_skinTone', skinTone);
       await prefs.setString('profile_skinShade', skinShade);
@@ -159,10 +166,16 @@ class _ProfilePageState extends State<ProfilePage> {
       await prefs.setString('profile_occupation', occupation);
       await prefs.setString('profile_complexity', complexity);
       await prefs.setInt('profile_nailShapeId', nailShapeId);
-      await prefs.setStringList('profile_selectedPersonalities', personalities.toList());
+      await prefs.setStringList(
+        'profile_selectedPersonalities',
+        personalities.toList(),
+      );
       await prefs.setStringList('profile_selectedColors', colors.toList());
       await prefs.setString('profile_selectedMainStyle', mainStyle);
-      await prefs.setStringList('profile_selectedOccasions', occasions.toList());
+      await prefs.setStringList(
+        'profile_selectedOccasions',
+        occasions.toList(),
+      );
       await prefs.setString('profile_nailCondition', nailCondition);
 
       setState(() {
@@ -186,13 +199,17 @@ class _ProfilePageState extends State<ProfilePage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đã cập nhật hồ sơ phong cách và tạo mẫu móng thành công!')),
+          SnackBar(
+            content: Text(
+              S.of(context).updateSuccess,
+            ),
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi khi tạo cấu hình móng: $e')),
+          SnackBar(content: Text(S.of(context).updateFailure(e))),
         );
       }
       rethrow;
@@ -200,6 +217,17 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _fetchProfile() async {
+    final token = getIt<SharedPreferences>().getString(AppConstants.authTokenKey);
+    if (token == null || token.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _profileData = null;
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
     try {
       final results = await Future.wait([
         _apiClient.get('/Profile/customers'),
@@ -228,7 +256,7 @@ class _ProfilePageState extends State<ProfilePage> {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Không thể tải thông tin: $e')));
+        ).showSnackBar(SnackBar(content: Text(S.of(context).loadFailure(e))));
       }
     }
   }
@@ -258,7 +286,7 @@ class _ProfilePageState extends State<ProfilePage> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Lỗi cập nhật: $e')));
+        ).showSnackBar(SnackBar(content: Text(S.of(context).updateProfileError(e))));
       }
       return false;
     }
@@ -269,11 +297,12 @@ class _ProfilePageState extends State<ProfilePage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
-          'Hồ sơ cá nhân',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+        title: Text(
+          S.of(context).profileTitle,
+          style: const TextStyle(
+            color: AppColors.primaryDark,
+            fontWeight: FontWeight.w800,
+            fontFamily: 'Georgia',
           ),
         ),
         centerTitle: true,
@@ -284,7 +313,230 @@ class _ProfilePageState extends State<ProfilePage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _profileData == null
-          ? const Center(child: Text('Không có dữ liệu khách hàng.'))
+          ? Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Elegant Icon
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.08),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.account_circle_outlined,
+                        size: 80,
+                        color: AppColors.primary.withValues(alpha: 0.7),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    // Prompt Message
+                    Text(
+                      S.of(context).pleaseLoginToViewProfile,
+                      style: const TextStyle(
+                        fontFamily: 'Georgia',
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 28),
+                    // Action Buttons (Login & Register)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => context.push('/login'),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(
+                                color: AppColors.primary,
+                                width: 1.5,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            child: Text(
+                              S.of(context).login,
+                              style: const TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () => context.push('/register'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            child: Text(
+                              S.of(context).register,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 48),
+                    const Divider(thickness: 1, color: Color(0xFFF5F5F5)),
+                    const SizedBox(height: 24),
+                    // --- Language Toggle widget ---
+                    Consumer<LocaleService>(
+                      builder: (ctx, localeService, _) {
+                        final isVi = localeService.currentLocale.languageCode == 'vi';
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.grey.shade100),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.02),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.language_rounded,
+                                  color: AppColors.primary,
+                                  size: 22,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Ngôn ngữ / Language',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    Text(
+                                      isVi ? 'Tiếng Việt' : 'English',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () async {
+                                  await localeService.toggleLocale();
+                                },
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 250),
+                                  width: 72,
+                                  height: 34,
+                                  padding: const EdgeInsets.all(3),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(20),
+                                    gradient: LinearGradient(
+                                      colors: isVi
+                                          ? [AppColors.primary, AppColors.secondary]
+                                          : [Colors.grey.shade300, Colors.grey.shade400],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                  ),
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Padding(
+                                            padding: const EdgeInsets.only(left: 6),
+                                            child: Text(
+                                              'VI',
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                                color: isVi ? Colors.white : Colors.white60,
+                                              ),
+                                            ),
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.only(right: 6),
+                                            child: Text(
+                                              'EN',
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                                color: !isVi ? Colors.white : Colors.white60,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      AnimatedAlign(
+                                        duration: const Duration(milliseconds: 250),
+                                        curve: Curves.easeInOut,
+                                        alignment: isVi ? Alignment.centerLeft : Alignment.centerRight,
+                                        child: Container(
+                                          width: 28,
+                                          height: 28,
+                                          decoration: const BoxDecoration(
+                                            color: Colors.white,
+                                            shape: BoxShape.circle,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black12,
+                                                blurRadius: 4,
+                                                offset: Offset(0, 2),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               physics: const BouncingScrollPhysics(),
@@ -306,7 +558,8 @@ class _ProfilePageState extends State<ProfilePage> {
                             initialColors: _selectedColors,
                             initialMainStyle: _selectedMainStyle,
                             initialOccasions: _selectedOccasions,
-                            initialNailCondition: _noteControllers['NAIL CONDITION']?.text ?? '',
+                            initialNailCondition:
+                                _noteControllers['NAIL CONDITION']?.text ?? '',
                             initialSkinTone: _skinTone,
                             initialSkinShade: _skinShade,
                             initialHandShape: _handShape,
@@ -317,10 +570,14 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                         );
                       },
-                      icon: const Icon(Icons.psychology, size: 20, color: Colors.white),
-                      label: const Text(
-                        'Thiết Lập Phong Cách Cá Nhân',
-                        style: TextStyle(
+                      icon: const Icon(
+                        Icons.psychology,
+                        size: 20,
+                        color: Colors.white,
+                      ),
+                      label: Text(
+                        S.of(context).styleProfileSetup,
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                           color: Colors.white,
@@ -341,10 +598,149 @@ class _ProfilePageState extends State<ProfilePage> {
                   // Banner gợi ý mẫu nail phù hợp nếu có kết quả
                   if (_styleCompositionResult != null) ...[
                     _BlinkingBanner(
-                      onViewPressed: () => _showNailCompositionResultDialog(_styleCompositionResult!),
+                      onViewPressed: () => _showNailCompositionResultDialog(
+                        _styleCompositionResult!,
+                      ),
                     ),
                     const SizedBox(height: 12),
                   ],
+
+                  // --- Language Toggle ---
+                  Consumer<LocaleService>(
+                    builder: (ctx, localeService, _) {
+                      final isVi = localeService.currentLocale.languageCode == 'vi';
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade100),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.02),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.language_rounded,
+                                color: AppColors.primary,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Ngôn ngữ / Language',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  Text(
+                                    isVi ? 'Tiếng Việt' : 'English',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Toggle switch VI <-> EN
+                            GestureDetector(
+                              onTap: () async {
+                                await localeService.toggleLocale();
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 250),
+                                width: 72,
+                                height: 34,
+                                padding: const EdgeInsets.all(3),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(20),
+                                  gradient: LinearGradient(
+                                    colors: isVi
+                                        ? [AppColors.primary, AppColors.secondary]
+                                        : [Colors.grey.shade300, Colors.grey.shade400],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                ),
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.only(left: 6),
+                                          child: Text(
+                                            'VI',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: isVi ? Colors.white : Colors.white60,
+                                            ),
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.only(right: 6),
+                                          child: Text(
+                                            'EN',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: !isVi ? Colors.white : Colors.white60,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    AnimatedAlign(
+                                      duration: const Duration(milliseconds: 250),
+                                      curve: Curves.easeInOut,
+                                      alignment: isVi ? Alignment.centerLeft : Alignment.centerRight,
+                                      child: Container(
+                                        width: 28,
+                                        height: 28,
+                                        decoration: const BoxDecoration(
+                                          color: Colors.white,
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black12,
+                                              blurRadius: 4,
+                                              offset: Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
 
                   SizedBox(
                     width: double.infinity,
@@ -355,9 +751,9 @@ class _ProfilePageState extends State<ProfilePage> {
                         size: 20,
                         color: Colors.redAccent,
                       ),
-                      label: const Text(
-                        'Đăng xuất',
-                        style: TextStyle(
+                      label: Text(
+                        S.of(context).logout,
+                        style: const TextStyle(
                           color: Colors.redAccent,
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -487,12 +883,14 @@ class _ProfilePageState extends State<ProfilePage> {
                           color: Colors.yellowAccent,
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          '$loyaltyPoint điểm',
-                          style: const TextStyle(
-                            color: Colors.yellowAccent,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                        Flexible(
+                          child: Text(
+                            '$loyaltyPoint ${S.of(context).pointsLabel}',
+                            style: const TextStyle(
+                              color: Colors.yellowAccent,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
                           ),
                         ),
                       ],
@@ -507,11 +905,13 @@ class _ProfilePageState extends State<ProfilePage> {
                             color: Colors.white70,
                           ),
                           const SizedBox(width: 8),
-                          Text(
-                            'Hạng $loyaltyTier',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
+                          Flexible(
+                            child: Text(
+                              '${S.of(context).tierLabel} $loyaltyTier',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                              ),
                             ),
                           ),
                         ],
@@ -538,7 +938,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  'Trạng thái: $status',
+                  '${S.of(context).statusLabel}: $status',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 12,
@@ -553,9 +953,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   size: 16,
                   color: AppColors.primary,
                 ),
-                label: const Text(
-                  'Cập nhật',
-                  style: TextStyle(
+                label: Text(
+                  S.of(context).updateProfile,
+                  style: const TextStyle(
                     color: AppColors.primary,
                     fontWeight: FontWeight.bold,
                   ),
@@ -771,15 +1171,23 @@ class _ProfilePageState extends State<ProfilePage> {
       builder: (context) {
         final shapeName = data['nailShape']?['name']?.toString() ?? 'Almond';
         final shapeImageUrl = data['nailShape']?['imageUrl']?.toString() ?? '';
-        final surfaceName = data['nailSurface']?['name']?.toString() ?? 'Glossy';
+        final surfaceName =
+            data['nailSurface']?['name']?.toString() ?? 'Glossy';
         final colorsList = List<String>.from(data['colors'] ?? []);
         final componentsList = List<dynamic>.from(data['components'] ?? []);
-        final reason = data['reason']?.toString() ?? 'Cấu hình móng thiết kế riêng phù hợp với các nét cá tính và tông da của bạn.';
+        final reason =
+            data['reason']?.toString() ??
+            'Cấu hình móng thiết kế riêng phù hợp với các nét cá tính và tông da của bạn.';
 
         return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
           backgroundColor: Colors.white,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 24,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -788,7 +1196,11 @@ class _ProfilePageState extends State<ProfilePage> {
                 padding: const EdgeInsets.all(20),
                 child: Row(
                   children: [
-                    const Icon(Icons.auto_awesome, color: AppColors.primary, size: 24),
+                    const Icon(
+                      Icons.auto_awesome,
+                      color: AppColors.primary,
+                      size: 24,
+                    ),
                     const SizedBox(width: 8),
                     const Text(
                       'Mẫu Nail Phù Hợp',
@@ -827,7 +1239,11 @@ class _ProfilePageState extends State<ProfilePage> {
                           children: [
                             Text(
                               shapeName,
-                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
                             ),
                             const Spacer(),
                             if (shapeImageUrl.isNotEmpty)
@@ -838,7 +1254,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                   width: 44,
                                   height: 44,
                                   fit: BoxFit.contain,
-                                  errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const SizedBox(),
                                 ),
                               ),
                           ],
@@ -861,7 +1278,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                 children: colorsList.map((hex) {
                                   Color colorVal;
                                   try {
-                                    colorVal = Color(int.parse(hex.replaceAll('#', '0xFF')));
+                                    colorVal = Color(
+                                      int.parse(hex.replaceAll('#', '0xFF')),
+                                    );
                                   } catch (_) {
                                     colorVal = Colors.grey;
                                   }
@@ -874,13 +1293,20 @@ class _ProfilePageState extends State<ProfilePage> {
                                         decoration: BoxDecoration(
                                           color: colorVal,
                                           shape: BoxShape.circle,
-                                          border: Border.all(color: Colors.grey.shade300, width: 1.2),
+                                          border: Border.all(
+                                            color: Colors.grey.shade300,
+                                            width: 1.2,
+                                          ),
                                         ),
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
                                         hex,
-                                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.textPrimary,
+                                        ),
                                       ),
                                     ],
                                   );
@@ -898,7 +1324,11 @@ class _ProfilePageState extends State<ProfilePage> {
                         iconColor: Colors.orange.shade700,
                         child: Text(
                           surfaceName,
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -913,35 +1343,56 @@ class _ProfilePageState extends State<ProfilePage> {
                         child: componentsList.isEmpty
                             ? const Text(
                                 'Không đính phụ kiện (Trơn tối giản)',
-                                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: AppColors.textSecondary,
+                                ),
                               )
                             : Wrap(
                                 spacing: 8,
                                 runSpacing: 8,
                                 children: componentsList.map((comp) {
                                   final name = comp['name']?.toString() ?? '';
-                                  final url = comp['imageUrl']?.toString() ?? '';
-                                  final type = comp['componentType']?.toString() ?? '';
+                                  final url =
+                                      comp['imageUrl']?.toString() ?? '';
+                                  final type =
+                                      comp['componentType']?.toString() ?? '';
                                   return Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFFFAF9F6),
                                       borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: const Color(0xFFEDEBE7)),
+                                      border: Border.all(
+                                        color: const Color(0xFFEDEBE7),
+                                      ),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         if (url.isNotEmpty) ...[
                                           ClipRRect(
-                                            borderRadius: BorderRadius.circular(6),
-                                            child: Image.network(url, width: 22, height: 22, fit: BoxFit.cover),
+                                            borderRadius: BorderRadius.circular(
+                                              6,
+                                            ),
+                                            child: Image.network(
+                                              url,
+                                              width: 22,
+                                              height: 22,
+                                              fit: BoxFit.cover,
+                                            ),
                                           ),
                                           const SizedBox(width: 8),
                                         ],
                                         Text(
                                           '$name ($type)',
-                                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.textPrimary,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -960,7 +1411,11 @@ class _ProfilePageState extends State<ProfilePage> {
                         iconColor: Colors.amber.shade900,
                         child: Text(
                           reason,
-                          style: const TextStyle(fontSize: 14, color: AppColors.textPrimary, height: 1.45),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textPrimary,
+                            height: 1.45,
+                          ),
                         ),
                       ),
                     ],
@@ -979,12 +1434,17 @@ class _ProfilePageState extends State<ProfilePage> {
                         onPressed: () => Navigator.of(context).pop(),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           side: BorderSide(color: Colors.grey.shade300),
                         ),
                         child: Text(
                           'Đóng',
-                          style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: Colors.grey.shade700,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
@@ -996,12 +1456,17 @@ class _ProfilePageState extends State<ProfilePage> {
                           context.push('/try-on', extra: data);
                         },
                         icon: const Icon(Icons.camera_alt_outlined, size: 18),
-                        label: const Text('Thử Móng Ngay 💅', style: TextStyle(fontWeight: FontWeight.bold)),
+                        label: const Text(
+                          'Thử Móng Ngay 💅',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           elevation: 0,
                         ),
                       ),
@@ -1043,10 +1508,7 @@ class _ProfilePageState extends State<ProfilePage> {
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             child: Icon(icon, color: iconColor, size: 22),
           ),
           const SizedBox(width: 16),
@@ -1066,13 +1528,21 @@ class _ProfilePageState extends State<ProfilePage> {
                         letterSpacing: 0.5,
                       ),
                     ),
-                    const Icon(Icons.arrow_right_alt_rounded, size: 16, color: Colors.grey),
+                    const Icon(
+                      Icons.arrow_right_alt_rounded,
+                      size: 16,
+                      color: Colors.grey,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 2),
                 Text(
                   title,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade500,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 child,
@@ -1177,7 +1647,11 @@ class _BlinkingBannerState extends State<_BlinkingBanner>
           ),
           child: Row(
             children: [
-              const Icon(Icons.star_purple500_rounded, color: Colors.yellowAccent, size: 28),
+              const Icon(
+                Icons.star_purple500_rounded,
+                color: Colors.yellowAccent,
+                size: 28,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -1209,7 +1683,10 @@ class _BlinkingBannerState extends State<_BlinkingBanner>
                   backgroundColor: Colors.white,
                   foregroundColor: Colors.purple.shade900,
                   elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

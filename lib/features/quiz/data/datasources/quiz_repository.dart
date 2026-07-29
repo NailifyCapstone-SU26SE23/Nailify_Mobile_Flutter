@@ -21,7 +21,8 @@ class QuizRepository {
   }
 
   Future<List<QuizResultModel>> submitQuiz(
-      List<String> selectedOptionIds) async {
+    List<String> selectedOptionIds,
+  ) async {
     final response = await _apiClient.post<dynamic>(
       '/Quizzes/submit',
       data: {'selectedOptionIds': selectedOptionIds},
@@ -30,7 +31,9 @@ class QuizRepository {
     return items.map(QuizResultModel.fromJson).toList();
   }
 
-  Future<Map<String, dynamic>> getNailComposition(Map<String, dynamic> body) async {
+  Future<Map<String, dynamic>> getNailComposition(
+    Map<String, dynamic> body,
+  ) async {
     final response = await _apiClient.post<dynamic>(
       '/Recommendations/composition',
       data: body,
@@ -45,7 +48,9 @@ class QuizRepository {
   }
 
   Future<Map<String, dynamic>> getCustomerNailComposition() async {
-    final response = await _apiClient.get<dynamic>('/Recommendations/composition/customer');
+    final response = await _apiClient.get<dynamic>(
+      '/Recommendations/composition/customer',
+    );
     if (response.data != null && response.data['isSucceeded'] == true) {
       return Map<String, dynamic>.from(response.data['data'] as Map);
     }

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../generated/l10n.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../../../core/di/injection.dart';
-import '../../data/models/nail_component_model.dart';
 import '../../data/models/nail_design_model.dart';
 import '../../data/models/nail_variant_model.dart';
 import '../../data/repositories/nail_design_repository.dart';
@@ -38,7 +38,11 @@ class _NailDetailScreenState extends State<NailDetailScreen> {
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textPrimary, size: 18),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.textPrimary,
+            size: 18,
+          ),
           onPressed: () {
             if (context.canPop()) {
               context.pop();
@@ -47,9 +51,9 @@ class _NailDetailScreenState extends State<NailDetailScreen> {
             }
           },
         ),
-        title: const Text(
-          'Chi tiết thiết kế',
-          style: TextStyle(
+        title: Text(
+          S.of(context).nailDetailsTitle,
+          style: const TextStyle(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.bold,
             fontSize: 18,
@@ -72,7 +76,8 @@ class _NailDetailScreenState extends State<NailDetailScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      snapshot.error?.toString() ?? 'Không thể tải chi tiết thiết kế.',
+                      snapshot.error?.toString() ??
+                          S.of(context).nailDetailsError,
                       textAlign: TextAlign.center,
                       style: const TextStyle(color: AppColors.textSecondary),
                     ),
@@ -85,9 +90,8 @@ class _NailDetailScreenState extends State<NailDetailScreen> {
                         ),
                       ),
                       onPressed: () => setState(() {
-                        _future = getIt<NailDesignRepository>().getNailDesignById(
-                          widget.nailDesignId,
-                        );
+                        _future = getIt<NailDesignRepository>()
+                            .getNailDesignById(widget.nailDesignId);
                       }),
                       icon: const Icon(Icons.refresh),
                       label: const Text('Thử lại'),
@@ -119,7 +123,7 @@ class _DesignDetailContent extends StatelessWidget {
         Text(
           design.name,
           style: const TextStyle(
-            fontSize: 24, 
+            fontSize: 24,
             fontWeight: FontWeight.bold,
             color: AppColors.textPrimary,
             letterSpacing: -0.5,
@@ -137,7 +141,7 @@ class _DesignDetailContent extends StatelessWidget {
         if (design.description.isNotEmpty) ...[
           const SizedBox(height: 14),
           Text(
-            design.description, 
+            design.description,
             style: const TextStyle(
               height: 1.5,
               fontSize: 14,
@@ -151,31 +155,36 @@ class _DesignDetailContent extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: design.categories
-                .map((category) => Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF5F5F7),
-                        borderRadius: BorderRadius.circular(30),
+                .map(
+                  (category) => Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F5F7),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: Text(
+                      category.name,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
                       ),
-                      child: Text(
-                        category.name,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ))
+                    ),
+                  ),
+                )
                 .toList(),
           ),
         ],
         const SizedBox(height: 28),
         Row(
           children: [
-            const Text(
-              'Phiên bản móng',
-              style: TextStyle(
-                fontSize: 18, 
+             Text(
+              S.of(context).nailVariantsLabel,
+              style: const TextStyle(
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
                 letterSpacing: -0.5,
@@ -273,7 +282,10 @@ class _ImageGalleryState extends State<_ImageGallery> {
                   errorBuilder: (_, _, _) => Container(
                     color: const Color(0xFFF5F5F7),
                     alignment: Alignment.center,
-                    child: const Icon(Icons.broken_image_rounded, color: Colors.grey),
+                    child: const Icon(
+                      Icons.broken_image_rounded,
+                      color: Colors.grey,
+                    ),
                   ),
                 );
               },
@@ -291,7 +303,9 @@ class _ImageGalleryState extends State<_ImageGallery> {
                 width: _currentIndex == index ? 16 : 6,
                 height: 6,
                 decoration: BoxDecoration(
-                  color: _currentIndex == index ? AppColors.primary : Colors.grey.shade300,
+                  color: _currentIndex == index
+                      ? AppColors.primary
+                      : Colors.grey.shade300,
                   borderRadius: BorderRadius.circular(3),
                 ),
               ),
@@ -345,7 +359,10 @@ class _VariantSection extends StatelessWidget {
                   child: variant.imageUrl.isEmpty
                       ? Container(
                           color: const Color(0xFFF5F5F7),
-                          child: const Icon(Icons.spa_rounded, color: Colors.grey),
+                          child: const Icon(
+                            Icons.spa_rounded,
+                            color: Colors.grey,
+                          ),
                         )
                       : Image.network(variant.imageUrl, fit: BoxFit.cover),
                 ),
@@ -381,7 +398,10 @@ class _VariantSection extends StatelessWidget {
               ),
               const Padding(
                 padding: EdgeInsets.only(left: 8),
-                child: Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+                child: Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.textSecondary,
+                ),
               ),
             ],
           ),

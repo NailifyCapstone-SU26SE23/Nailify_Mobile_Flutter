@@ -86,11 +86,22 @@ class YoloNailOnnxRecognizer(private val context: Context) : AutoCloseable {
     ): List<NailDetection> {
         val raw = output as Array<Array<FloatArray>>
         val channels = raw[0]
+        require(channels.size >= BOX_CHANNELS + CLASS_LABELS.size) {
+            "Unexpected YOLO output channels: ${channels.size}"
+        }
         val count = channels[0].size
         val boxes = mutableListOf<NailDetection>()
 
         for (i in 0 until count) {
-            val confidence = channels[4][i]
+            var classId = 0
+            var confidence = channels[BOX_CHANNELS][i]
+            for (candidateClassId in 1 until CLASS_LABELS.size) {
+                val score = channels[BOX_CHANNELS + candidateClassId][i]
+                if (score > confidence) {
+                    confidence = score
+                    classId = candidateClassId
+                }
+            }
             if (confidence < CONFIDENCE_THRESHOLD) continue
 
             val centerX = channels[0][i]
@@ -104,7 +115,19 @@ class YoloNailOnnxRecognizer(private val context: Context) : AutoCloseable {
             val bottom = ((centerY + height / 2f - input.padY) / input.scale).coerceIn(0f, imageHeight.toFloat())
 
             if (right > left && bottom > top) {
-                boxes.add(NailDetection(left, top, right, bottom, confidence, imageWidth, imageHeight))
+                boxes.add(
+                    NailDetection(
+                        left,
+                        top,
+                        right,
+                        bottom,
+                        confidence,
+                        classId,
+                        CLASS_LABELS[classId],
+                        imageWidth,
+                        imageHeight
+                    )
+                )
             }
         }
 
@@ -114,7 +137,7 @@ class YoloNailOnnxRecognizer(private val context: Context) : AutoCloseable {
     private fun nonMaxSuppression(detections: List<NailDetection>): List<NailDetection> {
         val selected = mutableListOf<NailDetection>()
         detections.forEach { candidate ->
-            if (selected.none { iou(candidate, it) > IOU_THRESHOLD }) {
+            if (selected.none { it.classId == candidate.classId && iou(candidate, it) > IOU_THRESHOLD }) {
                 selected.add(candidate)
             }
         }
@@ -160,6 +183,8 @@ class YoloNailOnnxRecognizer(private val context: Context) : AutoCloseable {
         val right: Float,
         val bottom: Float,
         val confidence: Float,
+        val classId: Int,
+        val className: String,
         val imageWidth: Int,
         val imageHeight: Int
     ) {
@@ -172,13 +197,15 @@ class YoloNailOnnxRecognizer(private val context: Context) : AutoCloseable {
     }
 
     companion object {
-        private const val MODEL_ASSET = "nail-seg.onnx"
+        private const val MODEL_ASSET = "best.onnx"
         private const val MODEL_SIZE = 640
+        private const val BOX_CHANNELS = 4
         private const val CONFIDENCE_THRESHOLD = 0.25f
         private const val IOU_THRESHOLD = 0.45f
         private const val MAX_CANDIDATES = 80
         private const val MAX_NAILS = 5
         private val FINGER_TIP_INDICES = listOf(4, 8, 12, 16, 20)
+        private val CLASS_LABELS = listOf("index", "middle", "pinky", "ring", "thumb")
 
     }
 }

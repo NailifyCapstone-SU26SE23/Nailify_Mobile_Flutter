@@ -94,7 +94,9 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                     val tip = landmark[tipIndex]
                     val joint =
                         landmark[tipIndex - 1] // The joint right below the tip (7, 11, 15, 19, 3)
-                    val nailDetection = nearestNailDetection(tip, unmatchedNails)
+                    val expectedClassId = fingerClassIds.getOrNull(fingerIndex)
+                        ?: continue
+                    val nailDetection = nearestNailDetection(tip, unmatchedNails, expectedClassId)
                         ?: continue
                     unmatchedNails.remove(nailDetection)
                     val design = nailSetConfig.nails.getOrNull(fingerIndex)
@@ -191,10 +193,12 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
 
     private fun nearestNailDetection(
         tip: NormalizedLandmark,
-        detections: List<YoloNailOnnxRecognizer.NailDetection>
+        detections: List<YoloNailOnnxRecognizer.NailDetection>,
+        expectedClassId: Int
     ): YoloNailOnnxRecognizer.NailDetection? {
         val maxDistance = MAX_TIP_TO_NAIL_DISTANCE
         return detections
+            .filter { detection -> detection.classId == expectedClassId }
             .map { detection ->
                 val dx = detection.centerXNormalized - tip.x()
                 val dy = detection.centerYNormalized - tip.y()
@@ -591,5 +595,6 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         private const val PROMPT_VERTICAL_POSITION = 0.18F
         private const val MAX_TIP_TO_NAIL_DISTANCE = 0.16F
         private const val NAIL_SEGMENT_WIDTH_SCALE = 1.45F
+        private val fingerClassIds = listOf(4, 0, 1, 3, 2)
     }
 }

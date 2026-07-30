@@ -101,13 +101,12 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                         ?: nailSetConfig.nails.firstOrNull()
                         ?: continue
 
-                    val px = nailDetection.centerXNormalized * imageWidth * scaleFactor
-                    val py = nailDetection.centerYNormalized * imageHeight * scaleFactor
-                    
                     val jx = joint.x() * imageWidth * scaleFactor
                     val jy = joint.y() * imageHeight * scaleFactor
                     val tx = tip.x() * imageWidth * scaleFactor
                     val ty = tip.y() * imageHeight * scaleFactor
+                    val px = tx
+                    val py = ty
 
                     val angle = Math.toDegrees(atan2((ty - jy).toDouble(), (tx - jx).toDouble())).toFloat()
 

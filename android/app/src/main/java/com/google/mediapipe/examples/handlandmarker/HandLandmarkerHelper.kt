@@ -32,6 +32,9 @@ import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarker
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
 
 class HandLandmarkerHelper(
     var minHandDetectionConfidence: Float = DEFAULT_HAND_DETECTION_CONFIDENCE,
@@ -50,7 +53,10 @@ class HandLandmarkerHelper(
     private var handLandmarker: HandLandmarker? = null
     private var nailRecognizer: YoloNailOnnxRecognizer? = null
     private val liveNailDetections = ConcurrentHashMap<Long, List<YoloNailOnnxRecognizer.NailDetection>>()
+    private val liveNailExecutor: ExecutorService = Executors.newSingleThreadExecutor()
+    private val liveNailDetectionRunning = AtomicBoolean(false)
     private var lastLiveNailDetectionTimeMs = 0L
+    @Volatile
     private var lastLiveNailDetections: List<YoloNailOnnxRecognizer.NailDetection> = emptyList()
 
     init {
@@ -63,8 +69,14 @@ class HandLandmarkerHelper(
         nailRecognizer?.close()
         nailRecognizer = null
         liveNailDetections.clear()
+        liveNailDetectionRunning.set(false)
         lastLiveNailDetectionTimeMs = 0L
         lastLiveNailDetections = emptyList()
+    }
+
+    fun close() {
+        clearHandLandmarker()
+        liveNailExecutor.shutdownNow()
     }
 
     // Return running status of HandLandmarkerHelper
@@ -391,14 +403,24 @@ class HandLandmarkerHelper(
         }
 
         lastLiveNailDetectionTimeMs = frameTime
-        lastLiveNailDetections = detectNails(bitmap)
+        if (liveNailDetectionRunning.compareAndSet(false, true)) {
+            val detectionBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, false)
+            liveNailExecutor.execute {
+                try {
+                    lastLiveNailDetections = detectNails(detectionBitmap)
+                } finally {
+                    detectionBitmap.recycle()
+                    liveNailDetectionRunning.set(false)
+                }
+            }
+        }
         return lastLiveNailDetections
     }
 
     companion object {
         const val TAG = "HandLandmarkerHelper"
         private const val MP_HAND_LANDMARKER_TASK = "hand_landmarker.task"
-        private const val LIVE_NAIL_DETECTION_INTERVAL_MS = 300L
+        private const val LIVE_NAIL_DETECTION_INTERVAL_MS = 600L
 
         const val DELEGATE_CPU = 0
         const val DELEGATE_GPU = 1

@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.res.Configuration
 import android.os.Bundle
 import android.util.Log
+import android.util.Size
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -34,6 +35,8 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
 
     companion object {
         private const val TAG = "Hand Landmarker"
+        private const val LIVE_ANALYSIS_WIDTH = 640
+        private const val LIVE_ANALYSIS_HEIGHT = 480
     }
 
     private var _fragmentCameraBinding: FragmentCameraBinding? = null
@@ -86,6 +89,9 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
     }
 
     override fun onDestroyView() {
+        if (this::handLandmarkerHelper.isInitialized) {
+            handLandmarkerHelper.close()
+        }
         _fragmentCameraBinding = null
         super.onDestroyView()
 
@@ -315,7 +321,8 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
 
         // ImageAnalysis. Using RGBA 8888 to match how our models work
         imageAnalyzer =
-            ImageAnalysis.Builder().setTargetAspectRatio(AspectRatio.RATIO_4_3)
+            ImageAnalysis.Builder()
+                .setTargetResolution(Size(LIVE_ANALYSIS_WIDTH, LIVE_ANALYSIS_HEIGHT))
                 .setTargetRotation(fragmentCameraBinding.viewFinder.display.rotation)
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)

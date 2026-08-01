@@ -420,7 +420,7 @@ class HandLandmarkerHelper(
     companion object {
         const val TAG = "HandLandmarkerHelper"
         private const val MP_HAND_LANDMARKER_TASK = "hand_landmarker.task"
-        private const val LIVE_NAIL_DETECTION_INTERVAL_MS = 600L
+        private const val LIVE_NAIL_DETECTION_INTERVAL_MS = 200L
 
         const val DELEGATE_CPU = 0
         const val DELEGATE_GPU = 1

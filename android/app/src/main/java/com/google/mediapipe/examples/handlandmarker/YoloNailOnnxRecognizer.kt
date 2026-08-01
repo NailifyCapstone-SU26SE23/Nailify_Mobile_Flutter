@@ -210,11 +210,11 @@ class YoloNailOnnxRecognizer(private val context: Context) : AutoCloseable {
 
     companion object {
         private const val MODEL_ASSET = "best.tflite"
-        private const val MODEL_SIZE = 640
-        private const val BOX_COUNT = 8400
+        private const val MODEL_SIZE = 320
+        private const val BOX_COUNT = 2100
         private const val BOX_CHANNELS = 4
         private const val MASK_CHANNELS = 32
-        private const val MASK_SIZE = 160
+        private const val MASK_SIZE = 80
         private const val FLOAT_BYTES = 4
         private const val TFLITE_NUM_THREADS = 4
         private const val NORMALIZED_COORDINATE_MAX = 1.5f

@@ -66,7 +66,6 @@ dependencies {
     implementation("androidx.camera:camera-view:$cameraXVersion")
 
     implementation("androidx.window:window:1.1.0-alpha03")
-    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.18.0")
     implementation("com.google.code.gson:gson:2.11.0")
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")

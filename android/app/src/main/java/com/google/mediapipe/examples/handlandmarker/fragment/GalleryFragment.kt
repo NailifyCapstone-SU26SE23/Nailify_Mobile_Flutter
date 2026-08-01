@@ -295,7 +295,6 @@ class GalleryFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
                             fragmentGalleryBinding.overlay.setFullDesign(viewModel.nailSetConfig.value)
                             fragmentGalleryBinding.overlay.setResults(
                                 result.results[0],
-                                result.nailDetections.firstOrNull().orEmpty(),
                                 bitmap.height,
                                 bitmap.width,
                                 RunningMode.IMAGE
@@ -376,7 +375,6 @@ class GalleryFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
                         fragmentGalleryBinding.overlay.setFullDesign(viewModel.nailSetConfig.value)
                         fragmentGalleryBinding.overlay.setResults(
                             result.results[resultIndex],
-                            result.nailDetections.getOrNull(resultIndex).orEmpty(),
                             result.inputImageHeight,
                             result.inputImageWidth,
                             RunningMode.VIDEO

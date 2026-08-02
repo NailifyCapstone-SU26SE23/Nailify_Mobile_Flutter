@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -57,13 +56,6 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   DateTime? _selectedDate;
   String? _selectedTime;
 
-  // Hold slot state
-  String? _holdToken;
-  DateTime? _holdExpiresAt;
-  int _holdRemainingSeconds = 0;
-  bool _isHolding = false;
-  Timer? _holdTimer;
-
   @override
   void initState() {
     super.initState();
@@ -75,16 +67,9 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
 
   @override
   void dispose() {
-    // Huỷ giữ chỗ khi user thoát khỏi quá trình đặt lịch
-    if (_holdToken != null) {
-      _apiService.cancelHoldSlot(_holdToken!);
-    }
-    _holdTimer?.cancel();
     _pageController.dispose();
     super.dispose();
   }
-
-  // ── Getters ──────────────────────────────────────────────────────────────
 
   ShapeMethodConfigModel? get _initialShapeMethod {
     final id = widget.shapeMethodConfigId;
@@ -108,20 +93,6 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   String get _shapeMethodName =>
       _selectedShapeMethod?.name ?? 'Phuong phap tao form';
 
-  int get _selectedExtraServicesTotal {
-    return _selectedExtraServices.whereType<String>().fold<int>(
-      0,
-      (total, serviceId) => total + _servicePriceById(serviceId),
-    );
-  }
-
-  int get _estimatedTotalPrice {
-    return widget.nail.customerNailPrice +
-        widget.nail.price +
-        _shapeMethodPrice +
-        _selectedExtraServicesTotal;
-  }
-
   Map<String, int> get _groupedServicesMap {
     final map = <String, int>{};
     for (final id in _selectedExtraServices.whereType<String>()) {
@@ -132,15 +103,10 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
 
   List<int>? get _selectedPromotionIds {
     if (_selectedPromotions.isEmpty) return null;
-    return _selectedPromotions.map((p) => p.promotionId).toList();
+    return _selectedPromotions
+        .map((promotion) => promotion.promotionId)
+        .toList();
   }
-
-  String get _normalizedSelectedTime {
-    final time = _selectedTime ?? '';
-    return time.length == 5 ? '$time:00' : time;
-  }
-
-  // ── API calls ─────────────────────────────────────────────────────────────
 
   Future<List<ShapeMethodConfigModel>> _loadShapeMethods() async {
     final shapeId = widget.nail.nailShapeId;
@@ -229,130 +195,6 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
     }
   }
 
-  // ── Hold Slot Logic ───────────────────────────────────────────────────────
-
-  Future<void> _holdSlot(String time) async {
-    final artistId = widget.nail.nailArtistId ?? '';
-    final salonId = widget.nail.salonId;
-    if (artistId.isEmpty || salonId.isEmpty || _selectedDate == null) return;
-
-    final bookingDate = _formatBookingDate(_selectedDate!);
-    final formattedTime = time.length == 5 ? '$time:00' : time;
-
-    final bookingItems = <Map<String, dynamic>>[
-      {'customerNailId': widget.nail.customerNailId, 'quantity': 1},
-      ..._groupedServicesMap.entries
-          .map((e) => {'serviceId': e.key, 'quantity': e.value}),
-    ];
-
-    try {
-      final data = await _apiService.holdSlot(
-        salonId: salonId,
-        nailArtistId: artistId,
-        bookingDate: bookingDate,
-        startTime: formattedTime,
-        bookingItems: bookingItems,
-      );
-
-      if (!mounted) return;
-
-      final token = data['holdToken']?.toString();
-      final expiresAtStr = data['expiresAt']?.toString();
-      if (token == null || token.isEmpty) return;
-
-      DateTime? expiresAt;
-      if (expiresAtStr != null) {
-        try {
-          expiresAt = DateTime.parse(expiresAtStr).toUtc();
-        } catch (_) {}
-      }
-      final remaining = (data['remainingSeconds'] as num?)?.toInt() ?? 300;
-
-      setState(() {
-        _holdToken = token;
-        _holdExpiresAt = expiresAt;
-        _holdRemainingSeconds = remaining;
-        _isHolding = true;
-      });
-      _startHoldTimer(token, expiresAt);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content:
-                Text('Khung giờ này vừa mới có người chọn. Vui lòng chọn giờ khác.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        setState(() {
-          _holdToken = null;
-          _isHolding = false;
-          _holdRemainingSeconds = 0;
-          _selectedTime = null;
-        });
-        _fetchTimeSlots();
-      }
-    }
-  }
-
-  void _startHoldTimer(String token, DateTime? expiresAt) {
-    _holdTimer?.cancel();
-    _holdTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) {
-        _holdTimer?.cancel();
-        return;
-      }
-
-      final remaining = (_holdRemainingSeconds - 1).clamp(0, 600);
-
-      if (_holdToken != token) {
-        _holdTimer?.cancel();
-        return;
-      }
-
-      if (remaining <= 0) {
-        _holdTimer?.cancel();
-        setState(() {
-          _holdToken = null;
-          _holdExpiresAt = null;
-          _holdRemainingSeconds = 0;
-          _isHolding = false;
-          _selectedTime = null;
-        });
-        if (_currentStep == 2) {
-          _pageController.animateToPage(
-            1,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-          );
-        }
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Thời gian giữ chỗ đã hết! Vui lòng chọn lại khung giờ.'),
-          ),
-        );
-      } else {
-        setState(() => _holdRemainingSeconds = remaining);
-      }
-    });
-  }
-
-  void _cancelCurrentHold() {
-    if (_holdToken != null) {
-      _apiService.cancelHoldSlot(_holdToken!); // fire-and-forget
-    }
-    _holdTimer?.cancel();
-    _holdTimer = null;
-    setState(() {
-      _holdToken = null;
-      _holdExpiresAt = null;
-      _holdRemainingSeconds = 0;
-      _isHolding = false;
-    });
-  }
-
-  // ── Booking ───────────────────────────────────────────────────────────────
-
   Future<void> _executeBooking() async {
     if (_isSubmitting) return;
     setState(() => _isSubmitting = true);
@@ -365,22 +207,19 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
       if (customerNailRequestId.isEmpty) {
         throw Exception('ID yeu cau mong custom khong hop le.');
       }
-      if (salonId.isEmpty) {
-        throw Exception('Thieu thong tin chi nhanh.');
+      if (salonId.isEmpty || artistId.isEmpty) {
+        throw Exception('Thieu thong tin chi nhanh hoac tho.');
       }
-      
-      final isNoArtist = artistId.isEmpty;
 
       final response = await _apiService.createCustomNailBooking(
         salonId,
         _formatBookingDate(_selectedDate!),
         _normalizedSelectedTime,
-        isNoArtist ? null : artistId,
+        artistId,
         customerNailRequestId,
         _groupedServicesMap,
         shapeMethodConfigId: _selectedShapeMethodConfigId,
         selectedPromotionIds: _selectedPromotionIds,
-        holdToken: isNoArtist ? null : _holdToken,
       );
 
       if (!mounted) return;
@@ -407,7 +246,10 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
     }
   }
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
+  String get _normalizedSelectedTime {
+    final time = _selectedTime ?? '';
+    return time.length == 5 ? '$time:00' : time;
+  }
 
   String _formatBookingDate(DateTime date) {
     final y = date.year.toString().padLeft(4, '0');
@@ -454,8 +296,6 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
       _selectedTime = null;
       _timeSlots = [];
     });
-    // Huỷ giữ chỗ cũ khi đổi dịch vụ
-    if (_holdToken != null) _cancelCurrentHold();
     if (_selectedDate != null) _fetchTimeSlots();
   }
 
@@ -470,29 +310,14 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
     }
   }
 
-  Future<void> _handleNextAction() async {
+  void _handleNextAction() {
     if (_currentStep == 0 && _selectedExtraServices.contains(null)) {
       _showSnackBar('Vui long chon hoac xoa dich vu dang bo trong.');
       return;
     }
-    if (_currentStep == 1) {
-      if (_selectedDate == null || _selectedTime == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Vui lòng chọn đầy đủ ngày và khung giờ!'),
-          ),
-        );
-        return;
-      }
-      // Chỉ tạo hold mới nếu chưa có token (tránh reset timer khi back/forward)
-      final bool isNoArtist = widget.nail.nailArtistId == null || widget.nail.nailArtistId!.isEmpty;
-      if (!isNoArtist) {
-        if (_holdToken == null || !_isHolding) {
-          await _holdSlot(_selectedTime!);
-          if (!mounted) return;
-          if (_holdToken == null) return;
-        }
-      }
+    if (_currentStep == 1 && (_selectedDate == null || _selectedTime == null)) {
+      _showSnackBar('Vui long chon ngay va khung gio.');
+      return;
     }
 
     if (_currentStep < 2) {
@@ -505,15 +330,11 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
     }
   }
 
-  void _showSnackBar(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg)),
-    );
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
-
-  // ══════════════════════════════════════════════════════════════
-  // BUILD
-  // ══════════════════════════════════════════════════════════════
 
   @override
   Widget build(BuildContext context) {
@@ -545,7 +366,6 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
           : Column(
               children: [
                 _buildStepIndicator(),
-                _buildHoldCountdownBanner(),
                 Expanded(
                   child: PageView(
                     controller: _pageController,
@@ -563,10 +383,6 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
             ),
     );
   }
-
-  // ══════════════════════════════════════════════════════════════
-  // STEP WIDGETS
-  // ══════════════════════════════════════════════════════════════
 
   Widget _buildServiceStep(Map<String, dynamic> customNailMappedData) {
     return SingleChildScrollView(
@@ -586,72 +402,6 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
       ),
     );
   }
-
-  Widget _buildScheduleStep() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildAssignedArtistCard(),
-          BookingDateSelection(
-            selectedDate: _selectedDate,
-            onDateChanged: (date) {
-              setState(() => _selectedDate = date);
-              _fetchTimeSlots();
-            },
-          ),
-          const SizedBox(height: 24),
-          BookingTimeSelection(
-            timeSlots: _timeSlots,
-            isLoading: _isLoadingTimes,
-            selectedTime: _selectedTime,
-            canSelect: _selectedDate != null,
-            selectedDate: _selectedDate,
-            salonId: widget.nail.salonId,
-            artistId: widget.nail.nailArtistId,
-            onTimeChanged: (time) {
-              // Chỉ lưu giờ đã chọn, KHÔNG gọi holdSlot.
-              // holdSlot sẽ được gọi khi user bấm "Tiếp theo" sang bước Xác nhận.
-              if (_holdToken != null) _cancelCurrentHold();
-              setState(() {
-                _selectedTime = time;
-                _holdToken = null;
-                _isHolding = false;
-                _holdRemainingSeconds = 0;
-              });
-            },
-            onRefreshSlots: _fetchTimeSlots,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSummaryStep() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Xac nhan thong tin',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          _buildSummaryCard(),
-          const SizedBox(height: 24),
-          _buildPromotionSelector(),
-          const SizedBox(height: 24),
-          _buildPaymentDetails(),
-        ],
-      ),
-    );
-  }
-
-  // ══════════════════════════════════════════════════════════════
-  // COMPONENT WIDGETS
-  // ══════════════════════════════════════════════════════════════
 
   Widget _buildShapeMethodSelector() {
     final future = _shapeMethodsFuture;
@@ -700,17 +450,19 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                       : Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color:
-                        selected ? AppColors.primary : AppColors.borderLight,
+                    color: selected ? AppColors.primary : AppColors.borderLight,
                   ),
                 ),
                 child: RadioListTile<int>(
                   value: method.shapeMethodConfigId,
-                  groupValue: _selectedShapeMethodConfigId ?? -1,
-                  onChanged: (val) {
+                  groupValue: _selectedShapeMethodConfigId,
+                  onChanged: (_) {
                     setState(() => _selectedShapeMethod = method);
                   },
-                  title: Text(method.name),
+                  title: Text(
+                    method.name,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
                   subtitle: Text('${method.duration} phut'),
                   secondary: Text(
                     PriceFormatter.format(method.price),
@@ -726,6 +478,57 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildScheduleStep() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildAssignedArtistCard(),
+          BookingDateSelection(
+            selectedDate: _selectedDate,
+            onDateChanged: (date) {
+              setState(() => _selectedDate = date);
+              _fetchTimeSlots();
+            },
+          ),
+          const SizedBox(height: 24),
+          BookingTimeSelection(
+            timeSlots: _timeSlots,
+            isLoading: _isLoadingTimes,
+            selectedTime: _selectedTime,
+            canSelect: _selectedDate != null,
+            selectedDate: _selectedDate,
+            salonId: widget.nail.salonId,
+            artistId: widget.nail.nailArtistId,
+            onTimeChanged: (time) => setState(() => _selectedTime = time),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryStep() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Xac nhan thong tin',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          _buildSummaryCard(),
+          const SizedBox(height: 24),
+          _buildPromotionSelector(),
+          const SizedBox(height: 24),
+          _buildPaymentDetails(),
+        ],
+      ),
     );
   }
 
@@ -826,12 +629,6 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
               muted: true,
             );
           }),
-          const Divider(height: 24),
-          _buildPaymentLine(
-            'Tong tam tinh',
-            _estimatedTotalPrice,
-            strong: true,
-          ),
         ],
       ),
     );
@@ -1063,8 +860,9 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
             children: [
               CircleAvatar(
                 radius: 12,
-                backgroundColor:
-                    isCompleted ? AppColors.primary : Colors.grey.shade300,
+                backgroundColor: isCompleted
+                    ? AppColors.primary
+                    : Colors.grey.shade300,
                 child: Text(
                   '${index + 1}',
                   style: const TextStyle(color: Colors.white, fontSize: 11),
@@ -1148,38 +946,6 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                     _currentStep == 2 ? 'Xac nhan dat lich' : 'Tiep tuc',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHoldCountdownBanner() {
-    if (!_isHolding) return const SizedBox.shrink();
-    final secs = _holdRemainingSeconds;
-    final min = (secs ~/ 60).toString().padLeft(2, '0');
-    final sec = (secs % 60).toString().padLeft(2, '0');
-    final isUrgent = secs <= 60;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      color: isUrgent ? Colors.red.shade600 : Colors.orange.shade700,
-      child: Row(
-        children: [
-          const Icon(Icons.lock_clock, color: Colors.white, size: 18),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              isUrgent
-                  ? 'Chỗ có thể bị hủy sau $min:$sec giây!'
-                  : 'Slot đang được giữ chỗ cho bạn – còn $min:$sec để hoàn tất',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
           ),
         ],
       ),

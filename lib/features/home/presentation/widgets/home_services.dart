@@ -35,33 +35,58 @@ class HomeServices extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          //Dòng tiêu đề
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // Dòng tiêu đề sang trọng
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Dịch vụ của chúng tôi',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+              Row(
+                children: [
+                  Container(
+                    width: 4,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Dịch vụ nổi bật',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+              const Padding(
+                padding: EdgeInsets.only(left: 12.0, top: 4),
+                child: Text(
+                  'Trải nghiệm chăm sóc móng chuẩn salon cao cấp',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 18),
 
-          // 2. Lưới 2 cột chứa các hình ảnh dịch vụ
+          // 2. Lưới 2 cột chứa các hình ảnh dịch vụ có đổ bóng mịn màng
           GridView.builder(
-            shrinkWrap: true, // Ép GridView cuộn chung với trang tổng
+            shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2, // Chia 2 cột
-              crossAxisSpacing: 16, // Khoảng cách giữa 2 cột
-              mainAxisSpacing: 16, // Khoảng cách giữa các hàng
-              childAspectRatio:
-                  0.9, // Tỉ lệ chiều cao nhỉnh hơn chiều rộng một chút
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 0.95,
             ),
             itemCount: services.length,
             itemBuilder: (context, index) {
@@ -73,39 +98,41 @@ class HomeServices extends StatelessWidget {
               );
             },
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 28),
 
-          SizedBox(
-            width: 302,
-            height: 50,
-            child: ElevatedButton.icon(
+          // Nút xem thêm dạng Outlined Button thanh lịch
+          Center(
+            child: OutlinedButton.icon(
               onPressed: () => context.go('/services'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.surface,
-                elevation: 0,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primaryDark,
+                side: const BorderSide(color: AppColors.primary, width: 1.5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 40,
+                  vertical: 14,
+                ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
+                  borderRadius: BorderRadius.circular(26),
                 ),
               ),
+              icon: const Icon(Icons.arrow_forward_rounded, size: 18),
               label: const Text(
-                'Xem thêm',
+                'Xem tất cả dịch vụ',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
+                  letterSpacing: 1.0,
                 ),
               ),
-              icon: const Icon(Icons.arrow_forward, size: 20),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
         ],
       ),
     );
   }
 
-  //dựng Layout xếp chồng cho từng ô (Card)
+  // Dựng Layout xếp chồng cho từng ô (Card) với đổ bóng sang trọng
   Widget _buildServiceCard(
     BuildContext context,
     String title,
@@ -113,52 +140,74 @@ class HomeServices extends StatelessWidget {
   ) {
     return GestureDetector(
       onTap: () => _showPopup(context, title),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16), // Bo tròn khung
-        child: Stack(
-          fit: StackFit.expand, // Cho phép các lớp mở rộng chiếm hết ô lưới
-          children: [
-            // HÌNH ẢNH SẢN PHẨM
-            Image.asset(
-              imagePath,
-              fit: BoxFit.cover, // Cắt cúp ảnh cho vừa vặn không bị méo
-              errorBuilder: (context, error, stackTrace) => Container(
-                color: Colors.grey.shade200,
-                child: const Icon(Icons.image, color: Colors.grey),
-              ),
-            ),
-
-            // ==========================================
-            // LỚP GIỮA: HIỆU ỨNG GRADIENT ĐEN MỜ
-            // (Giúp chữ trắng không bị chìm nếu nền ảnh quá sáng)
-            // ==========================================
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.transparent, AppColors.primary],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  stops: const [0.2, 1.0], // Bắt đầu đổ mờ
-                ),
-              ),
-            ),
-
-            // CHỮ TÊN DỊCH Vụ
-            Positioned(
-              bottom: 12,
-              left: 12,
-              right: 12,
-              child: Text(
-                title,
-                style: const TextStyle(
-                  color: AppColors.surface,
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                ),
-              ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
           ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // HÌNH ẢNH SẢN PHẨM
+              Image.asset(
+                imagePath,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  color: Colors.grey.shade100,
+                  child: const Icon(
+                    Icons.spa_outlined,
+                    color: Colors.grey,
+                    size: 32,
+                  ),
+                ),
+              ),
+
+              // Gradient tối mịn màng để nổi bật chữ
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.65),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: const [0.3, 1.0],
+                  ),
+                ),
+              ),
+
+              // CHỮ TÊN DỊCH VỤ
+              Positioned(
+                bottom: 14,
+                left: 14,
+                right: 14,
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black45,
+                        blurRadius: 4,
+                        offset: Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

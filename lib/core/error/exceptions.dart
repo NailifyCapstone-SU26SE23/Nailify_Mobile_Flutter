@@ -3,6 +3,9 @@ class AppException implements Exception {
   final String code;
   final dynamic data;
   const AppException({required this.message, this.code = '', this.data});
+
+  @override
+  String toString() => message;
 }
 
 class TimeoutException extends AppException {

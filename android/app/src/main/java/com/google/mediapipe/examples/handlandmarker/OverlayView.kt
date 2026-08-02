@@ -230,8 +230,6 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                             drawBitmap(bitmap, null, destRect, null)
                         }
 
-                        drawNailSurface(this, bitmap, destRect)
-
                         design.decorations.forEach { decoration ->
                             drawDecoration(this, decoration, destRect)
                         }
@@ -423,18 +421,14 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         nailBounds: RectF
     ): Paint {
         val baseColor = parseColorOrDefault(colorValue)
-        val surfaceColor = applySurfaceOffsets(baseColor)
         return Paint(Paint.ANTI_ALIAS_FLAG).apply {
             shader = if (gradient?.enabled == true) {
                 createGradientShader(gradient, nailBounds)
             } else {
-                createMaterialShader(surfaceColor, nailBounds)
+                null
             }
             if (shader == null) {
-                color = when (nailSetConfig.material) {
-                    NailSetConfig.MATERIAL_MATTE -> adjustColor(surfaceColor, saturation = 0.55f, brightness = 0.9f)
-                    else -> surfaceColor
-                }
+                color = baseColor
             }
         }
     }
@@ -446,7 +440,6 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         val colors = gradient.stops
             .take(gradient.stopCount.coerceIn(2, 3))
             .map(::parseColorOrDefault)
-            .map(::applySurfaceOffsets)
             .toIntArray()
 
         return when (gradient.type) {

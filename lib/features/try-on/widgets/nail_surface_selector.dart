@@ -27,23 +27,34 @@ class NailSurfaceSelector extends StatelessWidget {
         children: [
           for (var i = 0; i < surfaces.length; i++)
             Padding(
-              padding: EdgeInsets.only(bottom: i == surfaces.length - 1 ? 0 : 16.0),
+              padding: EdgeInsets.only(
+                bottom: i == surfaces.length - 1 ? 0 : 16.0,
+              ),
               child: SizedBox(
                 height: 64,
                 child: FilledButton.tonal(
                   onPressed: () => onSelected(surfaces[i]),
                   style: FilledButton.styleFrom(
-                    backgroundColor: selectedSurface?.nailSurfaceId == surfaces[i].nailSurfaceId
+                    backgroundColor:
+                        selectedSurface?.nailSurfaceId ==
+                            surfaces[i].nailSurfaceId
                         ? Colors.pink
                         : Colors.pink.shade50,
-                    foregroundColor: selectedSurface?.nailSurfaceId == surfaces[i].nailSurfaceId
+                    foregroundColor:
+                        selectedSurface?.nailSurfaceId ==
+                            surfaces[i].nailSurfaceId
                         ? Colors.white
                         : Colors.pink.shade900,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                   child: Text(
                     surfaces[i].name,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),

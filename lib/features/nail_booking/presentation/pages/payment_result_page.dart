@@ -15,7 +15,6 @@ class PaymentSuccessPage extends StatelessWidget {
       iconColor: Colors.green,
       title: 'Thanh toán thành công',
       message: 'Giao dịch đã được xác nhận. Cảm ơn bạn đã thanh toán.',
-      bookingId: paymentData['bookingId']?.toString() ?? '',
       primaryLabel: 'Xem lịch hẹn',
       onPrimaryPressed: () {
         final bookingId = paymentData['bookingId']?.toString() ?? '';
@@ -37,7 +36,6 @@ class PaymentCancelledPage extends StatelessWidget {
       iconColor: Colors.red,
       title: 'Thanh toán đã bị hủy',
       message: 'Giao dịch thanh toán không hoàn tất hoặc đã bị hủy.',
-      bookingId: paymentData['bookingId']?.toString() ?? '',
       primaryLabel: 'Về trang chủ',
       onPrimaryPressed: () => context.go('/'),
     );
@@ -49,7 +47,6 @@ class _PaymentResultView extends StatelessWidget {
   final Color iconColor;
   final String title;
   final String message;
-  final String bookingId;
   final String primaryLabel;
   final VoidCallback onPrimaryPressed;
 
@@ -58,7 +55,6 @@ class _PaymentResultView extends StatelessWidget {
     required this.iconColor,
     required this.title,
     required this.message,
-    required this.bookingId,
     required this.primaryLabel,
     required this.onPrimaryPressed,
   });
@@ -91,14 +87,7 @@ class _PaymentResultView extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.grey, height: 1.5),
               ),
-              if (bookingId.isNotEmpty) ...[
-                const SizedBox(height: 24),
-                Text(
-                  'Mã lịch hẹn: $bookingId',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-              ],
+
               const SizedBox(height: 36),
               ElevatedButton(
                 onPressed: onPrimaryPressed,

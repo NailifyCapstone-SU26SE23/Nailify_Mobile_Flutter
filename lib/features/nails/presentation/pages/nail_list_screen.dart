@@ -2,29 +2,46 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection.dart';
 import '../../data/repositories/nail_design_repository.dart';
+import '../../data/models/nail_design_model.dart';
 import '../../data/models/nail_filters.dart';
 import '../cubit/nail_catalog_cubit.dart';
 import '../widgets/nail_design_card.dart';
 import '../widgets/nail_filter_sheet.dart';
 import '../widgets/banner.dart';
+import '../../../quiz/data/models/quiz_result_model.dart';
 
 class NailListScreen extends StatelessWidget {
-  const NailListScreen({super.key});
+  final List<QuizResultModel>? matchedResults;
+
+  // Static global field to persist match results until logout
+  static List<QuizResultModel>? _globalMatchedResults;
+
+  const NailListScreen({super.key, this.matchedResults});
+
+  static void clearMatchedResults() {
+    _globalMatchedResults = null;
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (matchedResults != null && matchedResults!.isNotEmpty) {
+      _globalMatchedResults = matchedResults;
+    }
     return BlocProvider(
       create: (_) =>
           NailCatalogCubit(getIt<NailDesignRepository>())..loadDesigns(),
-      child: const _NailListView(),
+      child: _NailListView(matchedResults: _globalMatchedResults),
     );
   }
 }
 
 class _NailListView extends StatefulWidget {
-  const _NailListView();
+  final List<QuizResultModel>? matchedResults;
+
+  const _NailListView({this.matchedResults});
 
   @override
   State<_NailListView> createState() => _NailListViewState();
@@ -52,6 +69,39 @@ class _NailListViewState extends State<_NailListView> {
     }
   }
 
+  // Calculate highest matching score percentage for a given nail design
+  int? _getMatchPercentage(NailDesignModel design) {
+    if (widget.matchedResults == null || widget.matchedResults!.isEmpty)
+      return null;
+
+    double maxScore = -1.0;
+
+    for (final r in widget.matchedResults!) {
+      final variantId = int.tryParse(r.nailVariantId);
+      final hasVariantMatch =
+          variantId != null &&
+          design.nailVariants.any((v) => v.nailVariantId == variantId);
+
+      final designNameClean = design.name.toLowerCase().trim();
+      final resultNameClean = r.name.toLowerCase().trim();
+      final hasNameMatch =
+          designNameClean == resultNameClean ||
+          resultNameClean.contains(designNameClean) ||
+          designNameClean.contains(resultNameClean);
+
+      if (hasVariantMatch || hasNameMatch) {
+        if (r.score > maxScore) {
+          maxScore = r.score;
+        }
+      }
+    }
+
+    if (maxScore >= 0) {
+      return (maxScore <= 1 ? maxScore * 100 : maxScore).toInt();
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<NailCatalogCubit, NailCatalogState>(
@@ -68,22 +118,37 @@ class _NailListViewState extends State<_NailListView> {
                   child: Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.arrow_back_ios, size: 20),
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          size: 18,
+                        ),
                         onPressed: () => context.go('/'),
                       ),
+                      const SizedBox(width: 4),
                       const Expanded(
                         child: Text(
-                          'Nail designs',
+                          'Thiết kế móng',
                           style: TextStyle(
                             fontSize: 24,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                            letterSpacing: -0.5,
                           ),
                         ),
                       ),
-                      IconButton.filledTonal(
-                        tooltip: 'Filter',
+                      IconButton(
+                        icon: const Icon(
+                          Icons.tune_rounded,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
+                        style: IconButton.styleFrom(
+                          backgroundColor: AppColors.primary.withValues(
+                            alpha: 0.08,
+                          ),
+                          padding: const EdgeInsets.all(10),
+                        ),
                         onPressed: () => _openFilters(context, state),
-                        icon: const Icon(Icons.tune),
                       ),
                     ],
                   ),
@@ -101,37 +166,65 @@ class _NailListViewState extends State<_NailListView> {
                   state.designs.isEmpty)
                 SliverFillRemaining(
                   child: _ErrorState(
-                    message: state.errorMessage ?? 'Could not load nails.',
+                    message:
+                        state.errorMessage ?? 'Không thể tải danh sách móng.',
                     onRetry: () =>
                         context.read<NailCatalogCubit>().loadDesigns(),
                   ),
                 )
               else if (state.designs.isEmpty)
                 const SliverFillRemaining(
-                  child: Center(child: Text('No nail designs found.')),
+                  child: Center(
+                    child: Text(
+                      'Không tìm thấy thiết kế móng nào.',
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                  ),
                 )
               else
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                  sliver: SliverGrid.builder(
-                    itemCount: state.designs.length,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 12,
-                          crossAxisSpacing: 12,
-                          childAspectRatio: 0.55,
-                        ),
-                    itemBuilder: (context, index) {
-                      final design = state.designs[index];
-                      return NailDesignCard(
-                        design: design,
-                        onTap: () =>
-                            context.go('/nails/${design.nailDesignId}'),
-                      );
-                    },
-                  ),
-                ),
+                () {
+                  final sortedDesigns = List<NailDesignModel>.from(
+                    state.designs,
+                  );
+
+                  if (widget.matchedResults != null &&
+                      widget.matchedResults!.isNotEmpty) {
+                    sortedDesigns.sort((a, b) {
+                      final aPct = _getMatchPercentage(a);
+                      final bPct = _getMatchPercentage(b);
+
+                      if (aPct != null && bPct == null) return -1;
+                      if (aPct == null && bPct != null) return 1;
+                      if (aPct != null && bPct != null)
+                        return bPct.compareTo(aPct); // Sort descending
+                      return 0;
+                    });
+                  }
+
+                  return SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                    sliver: SliverGrid.builder(
+                      itemCount: sortedDesigns.length,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 12,
+                            crossAxisSpacing: 12,
+                            childAspectRatio: 0.55,
+                          ),
+                      itemBuilder: (context, index) {
+                        final design = sortedDesigns[index];
+                        final matchPct = _getMatchPercentage(design);
+                        return NailDesignCard(
+                          design: design,
+                          matchPercentage: matchPct,
+                          onTap: () =>
+                              context.go('/nails/${design.nailDesignId}'),
+                        );
+                      },
+                    ),
+                  );
+                }(),
 
               // Loading thêm khi cuộn
               if (state.status == NailCatalogStatus.loadingMore)
@@ -154,6 +247,10 @@ class _NailListViewState extends State<_NailListView> {
   ) async {
     final filters = await showModalBottomSheet<NailFilters>(
       context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       isScrollControlled: true,
       builder: (_) => NailFilterSheet(
         initialFilters: state.filters,

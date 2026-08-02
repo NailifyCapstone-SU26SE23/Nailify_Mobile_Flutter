@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../generated/l10n.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/price_formatter.dart';
@@ -50,9 +51,9 @@ class _NailDetailScreenState extends State<NailDetailScreen> {
             }
           },
         ),
-        title: const Text(
-          'Chi tiết thiết kế',
-          style: TextStyle(
+        title: Text(
+          S.of(context).nailDetailsTitle,
+          style: const TextStyle(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.bold,
             fontSize: 18,
@@ -76,7 +77,7 @@ class _NailDetailScreenState extends State<NailDetailScreen> {
                   children: [
                     Text(
                       snapshot.error?.toString() ??
-                          'Không thể tải chi tiết thiết kế.',
+                          S.of(context).nailDetailsError,
                       textAlign: TextAlign.center,
                       style: const TextStyle(color: AppColors.textSecondary),
                     ),
@@ -180,9 +181,9 @@ class _DesignDetailContent extends StatelessWidget {
         const SizedBox(height: 28),
         Row(
           children: [
-            const Text(
-              'Phiên bản móng',
-              style: TextStyle(
+             Text(
+              S.of(context).nailVariantsLabel,
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,

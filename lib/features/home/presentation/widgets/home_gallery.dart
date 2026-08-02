@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../generated/l10n.dart';
 
 class HomeGallery extends StatelessWidget {
   const HomeGallery({super.key});
@@ -58,13 +59,13 @@ class HomeGallery extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Tiêu đề sang trọng
-            const Row(
+            Row(
               children: [
-                Icon(Icons.auto_awesome, color: AppColors.primary, size: 20),
-                SizedBox(width: 8),
+                const Icon(Icons.auto_awesome, color: AppColors.primary, size: 20),
+                const SizedBox(width: 8),
                 Text(
-                  'Thư viện mẫu Nail',
-                  style: TextStyle(
+                  S.of(context).nailGalleryTitle,
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: AppColors.primaryDark,
@@ -73,11 +74,11 @@ class HomeGallery extends StatelessWidget {
                 ),
               ],
             ),
-            const Padding(
-              padding: EdgeInsets.only(left: 28.0, top: 4),
+            Padding(
+              padding: const EdgeInsets.only(left: 28.0, top: 4),
               child: Text(
-                'Khám phá xu hướng thiết kế móng mới nhất',
-                style: TextStyle(
+                S.of(context).nailGallerySubtitle,
+                style: const TextStyle(
                   fontSize: 13,
                   color: AppColors.textSecondary,
                   fontWeight: FontWeight.w500,
@@ -163,19 +164,19 @@ class HomeGallery extends StatelessWidget {
                       borderRadius: BorderRadius.circular(24),
                     ),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Khám phá thư viện',
-                        style: TextStyle(
+                        S.of(context).exploreGalleryButton,
+                        style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.0,
                         ),
                       ),
-                      SizedBox(width: 8),
-                      Icon(Icons.arrow_forward_rounded, size: 16),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.arrow_forward_rounded, size: 16),
                     ],
                   ),
                 ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../generated/l10n.dart';
 
 import '../../../core/di/injection.dart';
 import '../../nails/data/models/customer_nail_models.dart';
@@ -90,7 +91,7 @@ class _TryOnMethodSelectionScreenState
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text('Chọn phương thức thử móng'),
+        title: Text(S.of(context).selectTryOnMethodTitle),
       ),
       body: Stack(
         children: [

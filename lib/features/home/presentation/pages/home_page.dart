@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../generated/l10n.dart';
 import '../../../../core/utils/auth_guard.dart';
 import '../widgets/home_banner.dart';
 import '../widgets/home_services.dart';
@@ -89,17 +90,17 @@ class HomeQuizBanner extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.auto_awesome_rounded,
                         color: AppColors.primary,
                         size: 18,
                       ),
-                      SizedBox(width: 6),
+                      const SizedBox(width: 6),
                       Text(
-                        'Nailify Match AI',
-                        style: TextStyle(
+                        S.of(context).homeQuizTitle,
+                        style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                           color: AppColors.primaryDark,
@@ -109,9 +110,9 @@ class HomeQuizBanner extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Tìm kiếm mẫu móng tay hoàn hảo cho bạn',
-                    style: TextStyle(
+                  Text(
+                    S.of(context).homeQuizHeading,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
@@ -120,7 +121,7 @@ class HomeQuizBanner extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Hãy làm khảo sát Style Quiz nhanh để tìm ra mẫu móng phù hợp nhất với phong cách cá nhân của bạn.',
+                    S.of(context).homeQuizSubtitle,
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey.shade600,
@@ -142,19 +143,23 @@ class HomeQuizBanner extends StatelessWidget {
                         borderRadius: BorderRadius.circular(20),
                       ),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          'LÀM STYLE QUIZ NGAY',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
+                        Flexible(
+                          child: Text(
+                            S.of(context).doQuizButton,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        SizedBox(width: 6),
-                        Icon(Icons.arrow_forward_rounded, size: 14),
+                        const SizedBox(width: 6),
+                        const Icon(Icons.arrow_forward_rounded, size: 14),
                       ],
                     ),
                   ),
@@ -247,10 +252,10 @@ Widget _buildCallToAction(BuildContext context) {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const Text(
-                    "Let's Book Now!",
+                  Text(
+                    S.of(context).homeCtaTitle,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
                       fontStyle: FontStyle.italic,
@@ -259,10 +264,10 @@ Widget _buildCallToAction(BuildContext context) {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'Book your appointment with Nailify — join us on a journey of exquisite nail artistry.',
+                  Text(
+                    S.of(context).homeCtaSubtitle,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 14,
                       color: Colors.white,
                       height: 1.5,
@@ -283,10 +288,10 @@ Widget _buildCallToAction(BuildContext context) {
                       size: 18,
                       color: AppColors.primaryDark,
                     ),
-                    label: const Text(
-                      'BOOK AN APPOINTMENT',
+                    label: Text(
+                      S.of(context).homeCtaButton,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         letterSpacing: 1.2,
                         fontWeight: FontWeight.bold,
                         fontSize: 13,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../generated/l10n.dart';
 
 class HomeServices extends StatelessWidget {
   const HomeServices({super.key});
@@ -26,10 +27,10 @@ class HomeServices extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final services = [
-      {'title': 'Cắt móng & Da', 'image': 'assets/images/image 1.png'},
-      {'title': 'Sơn Gel', 'image': 'assets/images/image 2.png'},
-      {'title': 'Vẽ Móng', 'image': 'assets/images/image 3.png'},
-      {'title': 'Đắp Bột', 'image': 'assets/images/image 4.png'},
+      {'title': S.of(context).serviceCare, 'image': 'assets/images/image 1.png'},
+      {'title': S.of(context).serviceGel, 'image': 'assets/images/image 2.png'},
+      {'title': S.of(context).serviceArt, 'image': 'assets/images/image 3.png'},
+      {'title': S.of(context).serviceAcrylic, 'image': 'assets/images/image 4.png'},
     ];
 
     return Padding(
@@ -52,9 +53,9 @@ class HomeServices extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Text(
-                    'Dịch vụ nổi bật',
-                    style: TextStyle(
+                  Text(
+                    S.of(context).servicesTitle,
+                    style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
@@ -63,11 +64,11 @@ class HomeServices extends StatelessWidget {
                   ),
                 ],
               ),
-              const Padding(
-                padding: EdgeInsets.only(left: 12.0, top: 4),
+              Padding(
+                padding: const EdgeInsets.only(left: 12.0, top: 4),
                 child: Text(
-                  'Trải nghiệm chăm sóc móng chuẩn salon cao cấp',
-                  style: TextStyle(
+                  S.of(context).servicesSubtitle,
+                  style: const TextStyle(
                     fontSize: 13,
                     color: AppColors.textSecondary,
                     fontWeight: FontWeight.w500,
@@ -116,9 +117,9 @@ class HomeServices extends StatelessWidget {
                 ),
               ),
               icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-              label: const Text(
-                'Xem tất cả dịch vụ',
-                style: TextStyle(
+              label: Text(
+                S.of(context).viewAllServices,
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.0,

@@ -3,12 +3,15 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/localization/locale_service.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../generated/l10n.dart';
 
 import '../../data/profile_data.dart';
 import '../widgets/personal_notes_section.dart';
@@ -86,7 +89,7 @@ class _ProfilePageState extends State<ProfilePage> {
       context.go('/'); // Đưa người dùng về trang chủ
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Đã đăng xuất thành công!')));
+      ).showSnackBar(SnackBar(content: Text(S.of(context).logoutSuccess)));
     }
   }
 
@@ -196,9 +199,9 @@ class _ProfilePageState extends State<ProfilePage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
-              'Đã cập nhật hồ sơ phong cách và tạo mẫu móng thành công!',
+              S.of(context).updateSuccess,
             ),
           ),
         );
@@ -206,7 +209,7 @@ class _ProfilePageState extends State<ProfilePage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi khi tạo cấu hình móng: $e')),
+          SnackBar(content: Text(S.of(context).updateFailure(e))),
         );
       }
       rethrow;
@@ -214,6 +217,17 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _fetchProfile() async {
+    final token = getIt<SharedPreferences>().getString(AppConstants.authTokenKey);
+    if (token == null || token.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _profileData = null;
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
     try {
       final results = await Future.wait([
         _apiClient.get('/Profile/customers'),
@@ -242,7 +256,7 @@ class _ProfilePageState extends State<ProfilePage> {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Không thể tải thông tin: $e')));
+        ).showSnackBar(SnackBar(content: Text(S.of(context).loadFailure(e))));
       }
     }
   }
@@ -274,7 +288,7 @@ class _ProfilePageState extends State<ProfilePage> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Lỗi cập nhật: $e')));
+        ).showSnackBar(SnackBar(content: Text(S.of(context).updateProfileError(e))));
       }
       return false;
     }
@@ -318,11 +332,12 @@ class _ProfilePageState extends State<ProfilePage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
-          'Hồ sơ cá nhân',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+        title: Text(
+          S.of(context).profileTitle,
+          style: const TextStyle(
+            color: AppColors.primaryDark,
+            fontWeight: FontWeight.w800,
+            fontFamily: 'Georgia',
           ),
         ),
         centerTitle: true,
@@ -333,52 +348,228 @@ class _ProfilePageState extends State<ProfilePage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _profileData == null
-          ? Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  OutlinedButton(
-                    onPressed: () => context.push('/login'),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(
-                        color: AppColors.primary,
-                        width: 1.2,
+          ? Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Elegant Icon
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.08),
+                        shape: BoxShape.circle,
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                    ),
-                    child: const Text(
-                      'Sign in',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 14,
+                      child: Icon(
+                        Icons.account_circle_outlined,
+                        size: 80,
+                        color: AppColors.primary.withValues(alpha: 0.7),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: () => context.push('/register'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
+                    const SizedBox(height: 24),
+                    // Prompt Message
+                    Text(
+                      S.of(context).pleaseLoginToViewProfile,
+                      style: const TextStyle(
+                        fontFamily: 'Georgia',
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      textAlign: TextAlign.center,
                     ),
-                    child: const Text(
-                      'Register',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 14,
-                      ),
+                    const SizedBox(height: 28),
+                    // Action Buttons (Login & Register)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => context.push('/login'),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(
+                                color: AppColors.primary,
+                                width: 1.5,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            child: Text(
+                              S.of(context).login,
+                              style: const TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () => context.push('/register'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            child: Text(
+                              S.of(context).register,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 48),
+                    const Divider(thickness: 1, color: Color(0xFFF5F5F5)),
+                    const SizedBox(height: 24),
+                    // --- Language Toggle widget ---
+                    Consumer<LocaleService>(
+                      builder: (ctx, localeService, _) {
+                        final isVi = localeService.currentLocale.languageCode == 'vi';
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.grey.shade100),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.02),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.language_rounded,
+                                  color: AppColors.primary,
+                                  size: 22,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Ngôn ngữ / Language',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    Text(
+                                      isVi ? 'Tiếng Việt' : 'English',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () async {
+                                  await localeService.toggleLocale();
+                                },
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 250),
+                                  width: 72,
+                                  height: 34,
+                                  padding: const EdgeInsets.all(3),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(20),
+                                    gradient: LinearGradient(
+                                      colors: isVi
+                                          ? [AppColors.primary, AppColors.secondary]
+                                          : [Colors.grey.shade300, Colors.grey.shade400],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                  ),
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Padding(
+                                            padding: const EdgeInsets.only(left: 6),
+                                            child: Text(
+                                              'VI',
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                                color: isVi ? Colors.white : Colors.white60,
+                                              ),
+                                            ),
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.only(right: 6),
+                                            child: Text(
+                                              'EN',
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                                color: !isVi ? Colors.white : Colors.white60,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      AnimatedAlign(
+                                        duration: const Duration(milliseconds: 250),
+                                        curve: Curves.easeInOut,
+                                        alignment: isVi ? Alignment.centerLeft : Alignment.centerRight,
+                                        child: Container(
+                                          width: 28,
+                                          height: 28,
+                                          decoration: const BoxDecoration(
+                                            color: Colors.white,
+                                            shape: BoxShape.circle,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black12,
+                                                blurRadius: 4,
+                                                offset: Offset(0, 2),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             )
           : SingleChildScrollView(
@@ -419,9 +610,9 @@ class _ProfilePageState extends State<ProfilePage> {
                         size: 20,
                         color: Colors.white,
                       ),
-                      label: const Text(
-                        'Thiết Lập Phong Cách Cá Nhân',
-                        style: TextStyle(
+                      label: Text(
+                        S.of(context).styleProfileSetup,
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                           color: Colors.white,
@@ -449,6 +640,143 @@ class _ProfilePageState extends State<ProfilePage> {
                     const SizedBox(height: 12),
                   ],
 
+                  // --- Language Toggle ---
+                  Consumer<LocaleService>(
+                    builder: (ctx, localeService, _) {
+                      final isVi = localeService.currentLocale.languageCode == 'vi';
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade100),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.02),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.language_rounded,
+                                color: AppColors.primary,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Ngôn ngữ / Language',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  Text(
+                                    isVi ? 'Tiếng Việt' : 'English',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Toggle switch VI <-> EN
+                            GestureDetector(
+                              onTap: () async {
+                                await localeService.toggleLocale();
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 250),
+                                width: 72,
+                                height: 34,
+                                padding: const EdgeInsets.all(3),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(20),
+                                  gradient: LinearGradient(
+                                    colors: isVi
+                                        ? [AppColors.primary, AppColors.secondary]
+                                        : [Colors.grey.shade300, Colors.grey.shade400],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                ),
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.only(left: 6),
+                                          child: Text(
+                                            'VI',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: isVi ? Colors.white : Colors.white60,
+                                            ),
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.only(right: 6),
+                                          child: Text(
+                                            'EN',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: !isVi ? Colors.white : Colors.white60,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    AnimatedAlign(
+                                      duration: const Duration(milliseconds: 250),
+                                      curve: Curves.easeInOut,
+                                      alignment: isVi ? Alignment.centerLeft : Alignment.centerRight,
+                                      child: Container(
+                                        width: 28,
+                                        height: 28,
+                                        decoration: const BoxDecoration(
+                                          color: Colors.white,
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black12,
+                                              blurRadius: 4,
+                                              offset: Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
@@ -458,9 +786,9 @@ class _ProfilePageState extends State<ProfilePage> {
                         size: 20,
                         color: Colors.redAccent,
                       ),
-                      label: const Text(
-                        'Đăng xuất',
-                        style: TextStyle(
+                      label: Text(
+                        S.of(context).logout,
+                        style: const TextStyle(
                           color: Colors.redAccent,
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -590,12 +918,14 @@ class _ProfilePageState extends State<ProfilePage> {
                           color: Colors.yellowAccent,
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          '$loyaltyPoint điểm',
-                          style: const TextStyle(
-                            color: Colors.yellowAccent,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                        Flexible(
+                          child: Text(
+                            '$loyaltyPoint ${S.of(context).pointsLabel}',
+                            style: const TextStyle(
+                              color: Colors.yellowAccent,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
                           ),
                         ),
                       ],
@@ -610,11 +940,13 @@ class _ProfilePageState extends State<ProfilePage> {
                             color: Colors.white70,
                           ),
                           const SizedBox(width: 8),
-                          Text(
-                            'Hạng $loyaltyTier',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
+                          Flexible(
+                            child: Text(
+                              '${S.of(context).tierLabel} $loyaltyTier',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                              ),
                             ),
                           ),
                         ],
@@ -641,7 +973,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  'Trạng thái: $status',
+                  '${S.of(context).statusLabel}: $status',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 12,
@@ -656,9 +988,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   size: 16,
                   color: AppColors.primary,
                 ),
-                label: const Text(
-                  'Cập nhật',
-                  style: TextStyle(
+                label: Text(
+                  S.of(context).updateProfile,
+                  style: const TextStyle(
                     color: AppColors.primary,
                     fontWeight: FontWeight.bold,
                   ),

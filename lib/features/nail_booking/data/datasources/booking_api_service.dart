@@ -29,16 +29,13 @@ class BookingApiService {
       if (nailVariantId > 0)
         {
           'nailVariantId': nailVariantId,
-          'serviceId': null,
-          'customerNailId': null,
-          'shapeMethodConfigId': ?shapeMethodConfigId,
+          if (shapeMethodConfigId != null)
+            'shapeMethodConfigId': shapeMethodConfigId,
           'quantity': 1,
         },
       ...serviceIds.map(
         (serviceId) => {
-          'nailVariantId': null,
           'serviceId': serviceId,
-          'customerNailId': null,
           'quantity': 1,
         },
       ),
@@ -272,19 +269,16 @@ class BookingApiService {
   }) async {
     final bookingItems = <Map<String, dynamic>>[
       {
-        'nailVariantId': null,
-        'serviceId': null,
         'customerNailRequestId': customerNailRequestId,
-        'shapeMethodConfigId': ?shapeMethodConfigId,
+        if (shapeMethodConfigId != null)
+          'shapeMethodConfigId': shapeMethodConfigId,
         'quantity': 1,
       },
     ];
 
     groupedExtraServices.forEach((serviceId, quantity) {
       bookingItems.add({
-        'nailVariantId': null,
         'serviceId': serviceId,
-        'customerNailId': null,
         'quantity': quantity,
       });
     });

@@ -65,6 +65,16 @@ class CustomerNailModel {
     final salon = json['salon'] as Map<String, dynamic>?;
     final approvedArtist = json['approvedArtist'] as Map<String, dynamic>?;
 
+    final rawPrice = json['price'] ?? json['Price'];
+    final fallbackPrice = customerNail['price'] ?? customerNail['Price'];
+    final parsedPrice = (rawPrice as num?)?.toInt() ?? 0;
+    final finalPrice = parsedPrice > 0 ? parsedPrice : ((fallbackPrice as num?)?.toInt() ?? 0);
+
+    final rawDuration = json['duration'] ?? json['Duration'];
+    final fallbackDuration = customerNail['duration'] ?? customerNail['Duration'];
+    final parsedDuration = (rawDuration as num?)?.toInt() ?? 0;
+    final finalDuration = parsedDuration > 0 ? parsedDuration : ((fallbackDuration as num?)?.toInt() ?? 0);
+
     return CustomerNailModel(
       customerNailRequestId: json['customerNailRequestId']?.toString() ?? '',
       customerNailId: (json['customerNailId'] as num?)?.toInt() ?? 0,
@@ -72,8 +82,8 @@ class CustomerNailModel {
       status: json['status']?.toString() ?? 'Pending',
       rejectReason: json['rejectReason']?.toString(),
       approvedArtistId: json['approvedArtistId']?.toString(),
-      price: (json['price'] as num?)?.toInt() ?? 0,
-      duration: (json['duration'] as num?)?.toInt() ?? 0,
+      price: finalPrice,
+      duration: finalDuration,
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'])
           : null,

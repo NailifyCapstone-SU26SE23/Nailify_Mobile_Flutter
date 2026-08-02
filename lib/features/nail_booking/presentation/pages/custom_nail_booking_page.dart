@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../generated/l10n.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection.dart';
@@ -55,6 +56,12 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   List<String?> _selectedExtraServices = [];
   DateTime? _selectedDate;
   String? _selectedTime;
+
+  final List<Map<String, dynamic>> _bookingSteps = [
+    {'title': 'Dịch vụ', 'icon': Icons.spa_rounded},
+    {'title': 'Đặt lịch', 'icon': Icons.calendar_month_rounded},
+    {'title': 'Hoàn tất', 'icon': Icons.check_circle_rounded},
+  ];
 
   @override
   void initState() {
@@ -347,14 +354,15 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: AppColors.primaryDark),
           onPressed: _handleBackAction,
         ),
-        title: const Text(
-          'Dat lich custom nail',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+        title: Text(
+          S.of(context).bookCustomNailTitle,
+          style: const TextStyle(
+            fontWeight: FontWeight.w800,
+            fontFamily: 'Georgia',
+            color: AppColors.primaryDark,
           ),
         ),
         backgroundColor: Colors.white,
@@ -431,7 +439,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Phuong phap tao form',
+              'Phương pháp tạo form',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -463,7 +471,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                     method.name,
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
-                  subtitle: Text('${method.duration} phut'),
+                  subtitle: Text('${method.duration} phút'),
                   secondary: Text(
                     PriceFormatter.format(method.price),
                     style: const TextStyle(
@@ -518,7 +526,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Xac nhan thong tin',
+            'Xác nhận thông tin',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
@@ -537,26 +545,26 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
-        color: Colors.blue.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.shade200),
+        color: const Color(0xFFFFF5F8),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFFD1E3)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.face_retouching_natural, color: Colors.blue),
+          const Icon(Icons.face_retouching_natural, color: AppColors.primary),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Tho da duyet',
-                  style: TextStyle(color: Colors.blue, fontSize: 12),
+                  'Thợ đã duyệt',
+                  style: TextStyle(color: Color(0xFFC44569), fontSize: 12, fontWeight: FontWeight.bold),
                 ),
                 Text(
                   widget.nail.stylistName,
                   style: const TextStyle(
-                    color: Colors.blue,
+                    color: AppColors.textPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
@@ -574,26 +582,33 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderLight),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade100),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
           _buildSummaryRow(
-            Icons.calendar_month,
-            'Ngay hen',
+            Icons.calendar_month_rounded,
+            'Ngày hẹn',
             _selectedDate == null
                 ? ''
                 : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
           ),
           _buildSummaryRow(
-            Icons.access_time,
-            'Thoi gian',
+            Icons.access_time_rounded,
+            'Thời gian',
             _selectedTime == null ? '' : _selectedTime!.substring(0, 5),
           ),
           _buildSummaryRow(
-            Icons.face,
-            'Tho thuc hien',
+            Icons.face_3_rounded,
+            'Thợ thực hiện',
             widget.nail.stylistName,
           ),
         ],
@@ -602,24 +617,49 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   }
 
   Widget _buildPaymentDetails() {
+    final double customPrice = (widget.nail.customerNailPrice + widget.nail.price).toDouble();
+    final double shapePrice = _shapeMethodPrice.toDouble();
+    final double servicesTotal = _groupedServicesMap.entries.fold<double>(
+      0.0,
+      (sum, entry) => sum + (_servicePriceById(entry.key) * entry.value),
+    );
+    final double subtotal = customPrice + shapePrice + servicesTotal;
+
+    double discount = 0.0;
+    for (final promo in _selectedPromotions) {
+      if (promo.discountType == 'Percentage') {
+        discount += subtotal * (promo.discountValue / 100);
+      } else {
+        discount += promo.discountValue;
+      }
+    }
+    final double finalPrice = (subtotal - discount).clamp(0, double.maxFinite);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderLight),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade100),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Chi tiet thanh toan',
+            'Chi tiết thanh toán',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
           const SizedBox(height: 12),
           _buildCustomerNailPaymentItem(),
           if (widget.nail.price > 0)
-            _buildPaymentLine('Phi xu ly custom', widget.nail.price),
+            _buildPaymentLine('Phí xử lý custom', widget.nail.price),
           if (_shapeMethodPrice > 0)
             _buildPaymentLine(_shapeMethodName, _shapeMethodPrice),
           ..._groupedServicesMap.entries.map((entry) {
@@ -629,6 +669,43 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
               muted: true,
             );
           }),
+          const Divider(height: 16),
+          _buildPaymentLine('Tạm tính', subtotal, muted: true),
+          if (discount > 0)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Khuyến mại giảm giá',
+                    style: TextStyle(fontSize: 14, color: Colors.green),
+                  ),
+                  Text(
+                    '-${PriceFormatter.format(discount)}',
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+                  ),
+                ],
+              ),
+            ),
+          const Divider(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Tổng cộng',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              ),
+              Text(
+                PriceFormatter.format(finalPrice),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -638,18 +715,18 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
     return Column(
       children: [
         _buildPaymentLine(
-          'Thiet ke mong: ${widget.nail.name}',
+          'Thiết kế móng: ${widget.nail.name}',
           widget.nail.customerNailPrice,
         ),
         if (widget.nail.shapeName.isNotEmpty)
           _buildPaymentLine(
-            'Dang mong: ${widget.nail.shapeName}',
+            'Dáng móng: ${widget.nail.shapeName}',
             0,
             muted: true,
           ),
         if (widget.nail.surfaceName.isNotEmpty)
           _buildPaymentLine(
-            'Be mat: ${widget.nail.surfaceName}',
+            'Bề mặt: ${widget.nail.surfaceName}',
             0,
             muted: true,
           ),
@@ -674,7 +751,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
       if (name != null && name.isNotEmpty) return name;
     }
     final name = component['name']?.toString().trim();
-    return name == null || name.isEmpty ? 'Thanh phan custom' : name;
+    return name == null || name.isEmpty ? 'Thành phần custom' : name;
   }
 
   num _customerComponentPrice(Map<String, dynamic> component) {
@@ -730,15 +807,22 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
 
   Widget _buildPromotionSelector() {
     final label = _selectedPromotions.isEmpty
-        ? 'Khong ap dung khuyen mai'
-        : 'Da chon ${_selectedPromotions.length} khuyen mai';
+        ? 'Không áp dụng khuyến mại'
+        : 'Đã chọn ${_selectedPromotions.length} khuyến mại';
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderLight),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade100),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -777,7 +861,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
               const Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'Khong co khuyen mai kha dung.',
+                  'Không có khuyến mại khả dụng.',
                   style: TextStyle(color: Colors.grey, fontSize: 13),
                 ),
               ),
@@ -850,33 +934,116 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
 
   Widget _buildStepIndicator() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      color: Colors.white,
+      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(3, (index) {
-          final isCompleted = index <= _currentStep;
-          return Row(
-            children: [
-              CircleAvatar(
-                radius: 12,
-                backgroundColor: isCompleted
-                    ? AppColors.primary
-                    : Colors.grey.shade300,
-                child: Text(
-                  '${index + 1}',
-                  style: const TextStyle(color: Colors.white, fontSize: 11),
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: List.generate(_bookingSteps.length, (index) {
+          final step = _bookingSteps[index];
+          final isCompleted = index < _currentStep;
+          final isActive = index == _currentStep;
+
+          return Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Left connector line
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 17),
+                    child: Container(
+                      height: 2,
+                      color: index == 0
+                          ? Colors.transparent
+                          : (isCompleted || isActive ? AppColors.primary : Colors.grey.shade300),
+                    ),
+                  ),
                 ),
-              ),
-              if (index < 2)
-                Container(
-                  width: 40,
-                  height: 2,
-                  color: index < _currentStep
-                      ? AppColors.primary
-                      : Colors.grey.shade300,
+                // Step Circle
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isActive
+                            ? Colors.white
+                            : (isCompleted ? AppColors.primary : Colors.grey.shade50),
+                        border: Border.all(
+                          color: (isActive || isCompleted)
+                              ? AppColors.primary
+                              : Colors.grey.shade300,
+                          width: isActive ? 2.5 : 1.5,
+                        ),
+                        boxShadow: isActive
+                            ? [
+                                BoxShadow(
+                                  color: AppColors.primary.withOpacity(0.25),
+                                  blurRadius: 8,
+                                  spreadRadius: 1,
+                                )
+                              ]
+                            : null,
+                      ),
+                      child: Center(
+                        child: Icon(
+                          step['icon'] as IconData,
+                          size: 16,
+                          color: isCompleted
+                              ? Colors.white
+                              : (isActive ? AppColors.primary : Colors.grey.shade400),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      () {
+                        final rawTitle = step['title'] as String;
+                        if (rawTitle == 'Chọn tiệm') return S.of(context).selectSalon;
+                        if (rawTitle == 'Dịch vụ') return S.of(context).servicesLabel;
+                        if (rawTitle == 'Đặt lịch') return S.of(context).bookAppointment;
+                        if (rawTitle == 'Hoàn tất') return S.of(context).completedLabel;
+                        return rawTitle;
+                      }(),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: (isActive || isCompleted)
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: (isActive || isCompleted)
+                            ? AppColors.primaryDark
+                            : Colors.grey.shade500,
+                      ),
+                    ),
+                  ],
                 ),
-            ],
+                // Right connector line
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 17),
+                    child: Container(
+                      height: 2,
+                      color: index == _bookingSteps.length - 1
+                          ? Colors.transparent
+                          : (isCompleted ? AppColors.primary : Colors.grey.shade300),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           );
         }),
       ),
@@ -897,55 +1064,82 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
         ],
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           if (_currentStep > 0)
-            Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: OutlinedButton(
-                onPressed: _isSubmitting ? null : _handleBackAction,
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 15,
-                  ),
-                  side: const BorderSide(color: AppColors.primary),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+            OutlinedButton(
+              onPressed: _isSubmitting ? null : _handleBackAction,
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 14,
                 ),
-                child: const Text(
-                  'Quay lai',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
+                side: const BorderSide(color: AppColors.primary, width: 1.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25),
                 ),
               ),
-            ),
-          ElevatedButton(
-            onPressed: _isSubmitting ? null : _handleNextAction,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 15),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+              child: const Text(
+                'Quay lại',
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            child: _isSubmitting
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
+            )
+          else
+            const SizedBox.shrink(),
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Container(
+                height: 48,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  gradient: LinearGradient(
+                    colors: _isSubmitting
+                        ? [Colors.grey.shade400, Colors.grey.shade500]
+                        : [AppColors.primary, const Color(0xFFFF80AB)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    if (!_isSubmitting)
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                  ],
+                ),
+                child: ElevatedButton(
+                  onPressed: _isSubmitting ? null : _handleNextAction,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    foregroundColor: Colors.white,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
                     ),
-                  )
-                : Text(
-                    _currentStep == 2 ? 'Xac nhan dat lich' : 'Tiep tuc',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    elevation: 0,
                   ),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2.5,
+                          ),
+                        )
+                      : Text(
+                          _currentStep == 2 ? 'Xác nhận đặt lịch' : 'Tiếp tục',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                ),
+              ),
+            ),
           ),
         ],
       ),

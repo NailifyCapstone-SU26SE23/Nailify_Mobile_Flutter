@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../generated/l10n.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/network/api_client.dart';
@@ -109,6 +110,68 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
   }
 
   // Helper to replace hex codes inside string, and dynamically correct matching colors based on user selection
+  String _translateDynamicText(String val) {
+    if (Localizations.localeOf(context).languageCode == 'en') {
+      var result = val;
+
+      // Match pattern "Tông màu [Color] khớp với màu bạn thích."
+      if (result.startsWith('Tông màu ') && result.endsWith(' khớp với màu bạn thích.')) {
+        var colorName = result.substring('Tông màu '.length, result.length - ' khớp với màu bạn thích.'.length);
+        colorName = colorName.replaceAll('Hồng đậm', 'Deep Pink');
+        colorName = colorName.replaceAll('Nude', 'Nude');
+        colorName = colorName.replaceAll('Đỏ', 'Red');
+        colorName = colorName.replaceAll('Xanh dương', 'Blue');
+        colorName = colorName.replaceAll('Hồng', 'Pink');
+        colorName = colorName.replaceAll('Xanh lá', 'Green');
+        colorName = colorName.replaceAll('Vàng', 'Yellow');
+        colorName = colorName.replaceAll('Đen', 'Black');
+        colorName = colorName.replaceAll('Trắng', 'White');
+        colorName = colorName.replaceAll('Xám', 'Grey');
+        colorName = colorName.replaceAll('Tím', 'Purple');
+        colorName = colorName.replaceAll('Cam', 'Orange');
+        colorName = colorName.replaceAll('Nâu', 'Brown');
+        colorName = colorName.replaceAll('Hồng nhạt', 'Light Pink');
+        return 'Color tone $colorName matches your preferred color.';
+      }
+
+      // Match pattern "Mang phong cách [Style] yêu thích của bạn."
+      if (result.startsWith('Mang phong cách ') && result.endsWith(' yêu thích của bạn.')) {
+        final styleName = result.substring('Mang phong cách '.length, result.length - ' yêu thích của bạn.'.length);
+        return 'Matches your favorite $styleName style.';
+      }
+      
+      // Match pattern "Mẫu móng dáng [Shape] theo sở thích."
+      if (result.startsWith('Mẫu móng dáng ') && result.endsWith(' theo sở thích.')) {
+        final shapeName = result.substring('Mẫu móng dáng '.length, result.length - ' theo sở thích.'.length);
+        return 'Matches your preferred $shapeName nail shape.';
+      }
+      
+      result = result.replaceAll('Màu Đỏ', 'Red');
+      result = result.replaceAll('Màu Nude', 'Nude');
+      result = result.replaceAll('Màu Hồng đậm', 'Deep Pink');
+      result = result.replaceAll('Màu Xanh dương', 'Blue');
+      result = result.replaceAll('Màu Hồng', 'Pink');
+      result = result.replaceAll('Màu Xanh lá', 'Green');
+      result = result.replaceAll('Màu Vàng', 'Yellow');
+      result = result.replaceAll('Màu Đen', 'Black');
+      result = result.replaceAll('Màu Trắng', 'White');
+      result = result.replaceAll('Màu Xám', 'Grey');
+      result = result.replaceAll('Màu Tím', 'Purple');
+      result = result.replaceAll('Màu Cam', 'Orange');
+      result = result.replaceAll('Màu Nâu', 'Brown');
+      result = result.replaceAll('Màu Hồng nhạt', 'Light Pink');
+      result = result.replaceAll('Màu sắc', 'Color');
+      result = result.replaceAll('Màu ', 'Color ');
+      result = result.replaceAll('Dáng móng:', 'Nail Shape:');
+      result = result.replaceAll('Độ phức tạp:', 'Complexity:');
+      result = result.replaceAll('simple', 'Simple');
+      result = result.replaceAll('Winter', 'Winter');
+      return result;
+    }
+    return val;
+  }
+
+  // Helper to replace hex codes inside string, and dynamically correct matching colors based on user selection
   String _cleanColorText(
     String text,
     List<MatchedCharacteristic> characteristics,
@@ -133,14 +196,15 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
         final hex = match.group(0) ?? '';
         return _getColorName(hex);
       });
-      return 'Tông màu $cleanedLabel khớp với màu bạn thích.';
+      return S.of(context).colorMatchReason(cleanedLabel);
     }
 
     final regExp = RegExp(r'#([0-9A-Fa-f]{6})');
-    return text.replaceAllMapped(regExp, (match) {
+    final cleaned = text.replaceAllMapped(regExp, (match) {
       final hex = match.group(0) ?? '';
       return _getColorName(hex);
     });
+    return _translateDynamicText(cleaned);
   }
 
   @override
@@ -265,8 +329,8 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
               const Icon(Icons.spa_rounded, color: AppColors.primary, size: 20),
               const SizedBox(width: 6),
               Text(
-                'Nailify Match',
-                style: TextStyle(
+                S.of(context).perfectMatchTitle,
+                style: const TextStyle(
                   color: AppColors.primaryDark,
                   fontWeight: FontWeight.w800,
                   fontSize: 16,
@@ -290,17 +354,17 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // Sparkle Spark Header
-                    const Row(
+                    Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.auto_awesome_outlined,
                           color: AppColors.primary,
                           size: 16,
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
-                          'TAILORED FOR YOU',
+                          S.of(context).forYouTitle,
                           style: TextStyle(
                             color: AppColors.primary,
                             fontSize: 11,
@@ -321,25 +385,38 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
                     // Main Header Title (Serif styled font layout as requested)
                     RichText(
                       textAlign: TextAlign.center,
-                      text: const TextSpan(
+                      text: TextSpan(
                         style: TextStyle(
                           fontSize: 30,
                           color: Colors.black87,
                           fontFamily: 'Georgia',
                           height: 1.25,
                         ),
-                        children: [
-                          TextSpan(text: 'Your '),
-                          TextSpan(
-                            text: 'perfect match',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w600,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                          TextSpan(text: ' is here'),
-                        ],
+                        children: Localizations.localeOf(context).languageCode == 'en'
+                            ? [
+                                const TextSpan(text: 'Your '),
+                                const TextSpan(
+                                  text: 'perfect',
+                                  style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w600,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                                const TextSpan(text: ' nail designs are here'),
+                              ]
+                            : [
+                                const TextSpan(text: 'Mẫu móng '),
+                                const TextSpan(
+                                  text: 'hoàn hảo nhất',
+                                  style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w600,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                                const TextSpan(text: ' của bạn ở đây'),
+                              ],
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -385,9 +462,9 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
                                 ),
                               ),
                               const SizedBox(width: 10),
-                              const Text(
-                                'Unlocked Insights',
-                                style: TextStyle(
+                              Text(
+                                S.of(context).styleRecommendation,
+                                style: const TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w800,
                                   color: AppColors.primaryDark,
@@ -404,9 +481,9 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
                                 color: Colors.black87,
                               ),
                               children: [
-                                const TextSpan(
-                                  text: 'Your style profile vibe: ',
-                                  style: TextStyle(fontWeight: FontWeight.w500),
+                                 TextSpan(
+                                  text: S.of(context).yourPersonalStyle,
+                                  style: const TextStyle(fontWeight: FontWeight.w500),
                                 ),
                                 TextSpan(
                                   text: styleChar.label,
@@ -466,9 +543,9 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
                           );
                         },
                         icon: const Icon(Icons.palette_outlined, size: 20),
-                        label: const Text(
-                          'DESIGN YOUR OWN NAIL',
-                          style: TextStyle(
+                        label: Text(
+                          S.of(context).designYourOwnNail,
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 1.1,
@@ -600,7 +677,7 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
                                 const SizedBox(height: 8),
                                 Center(
                                   child: Text(
-                                    'Premium Nail Design',
+                                    S.of(context).premiumNailDesign,
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: Colors.grey.shade500,
@@ -614,9 +691,9 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
                                   const SizedBox(height: 20),
                                   const Divider(color: Color(0xFFF3EFEA)),
                                   const SizedBox(height: 12),
-                                  const Text(
-                                    'Why it fits your style',
-                                    style: TextStyle(
+                                  Text(
+                                    S.of(context).styleFitReasons,
+                                    style: const TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w800,
                                       color: Colors.black87,
@@ -697,9 +774,9 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
                                           '/nail-variants/${top.nailVariantId}',
                                         );
                                       },
-                                      child: const Center(
+                                      child: Center(
                                         child: Text(
-                                          'Book this look',
+                                          S.of(context).bookThisDesign,
                                           style: TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.w800,
@@ -724,9 +801,9 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
                                     size: 18,
                                     color: AppColors.primary,
                                   ),
-                                  label: const Text(
-                                    'Try another analysis',
-                                    style: TextStyle(
+                                  label: Text(
+                                    S.of(context).takeAnotherAnalysis,
+                                    style: const TextStyle(
                                       color: AppColors.primary,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 15,
@@ -769,10 +846,10 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 4),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
                         child: Text(
-                          'You may also love',
+                          S.of(context).youMayAlsoLike,
                           style: TextStyle(
                             fontSize: 20,
                             fontFamily: 'Georgia',
@@ -785,7 +862,7 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                         child: Text(
-                          'Other designs matching your profile characteristics',
+                          S.of(context).otherStyleFits,
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey.shade600,
@@ -846,18 +923,18 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
                         // Navigate to /nails and pass results to show them on top
                         context.go('/nails', extra: _results);
                       },
-                      child: const Center(
+                      child: Center(
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.palette_outlined,
                               color: Colors.white,
                               size: 20,
                             ),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             Text(
-                              'Try Another Design',
+                              S.of(context).tryAnotherDesign,
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w800,
@@ -991,7 +1068,7 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Premium Nail Design',
+                          S.of(context).premiumNailDesign,
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey.shade500,
@@ -1054,8 +1131,8 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
 
               // Lý do phù hợp (Why it fits)
               if (result.reasons.isNotEmpty) ...[
-                const Text(
-                  'Why it fits your style',
+                Text(
+                  S.of(context).styleFitReasons,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -1136,9 +1213,9 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
                       HapticFeedback.mediumImpact();
                       context.push('/nail-variants/${result.nailVariantId}');
                     },
-                    child: const Center(
+                    child: Center(
                       child: Text(
-                        'Xem chi tiết',
+                        S.of(context).viewDetail,
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -1306,8 +1383,8 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
                 ),
               ),
               const SizedBox(height: 24),
-              const Text(
-                'No match found',
+              Text(
+                S.of(context).noMatchingFound,
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -1316,8 +1393,8 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                "We couldn't find any nail designs matching your characteristics. Try taking the style quiz again.",
+              Text(
+                S.of(context).noMatchingDesc,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
@@ -1329,7 +1406,7 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
               ElevatedButton.icon(
                 onPressed: () => context.push('/quiz'),
                 icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Try Again'),
+                label: Text(S.of(context).retry),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,

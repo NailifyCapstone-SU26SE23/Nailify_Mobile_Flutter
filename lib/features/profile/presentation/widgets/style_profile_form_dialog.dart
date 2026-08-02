@@ -81,6 +81,65 @@ class _StyleProfileFormDialogState extends State<StyleProfileFormDialog> {
   final List<String> _complexities = ['Simple', 'Moderate', 'Complex'];
   final List<String> _nailConditions = ['Normal', 'Dry', 'Brittle', 'Weak'];
 
+  final Map<String, String> _skinToneTranslations = {
+    'Light': 'Sáng',
+    'Medium': 'Trung bình',
+    'Dark': 'Tối',
+  };
+  final Map<String, String> _skinShadeTranslations = {
+    'Warm': 'Ấm',
+    'Cool': 'Lạnh',
+    'Neutral': 'Trung tính',
+  };
+  final Map<String, String> _handShapeTranslations = {
+    'Slender': 'Thon dài',
+    'Plump': 'Đầy đặn',
+    'Square': 'Vuông',
+  };
+  final Map<String, String> _complexityTranslations = {
+    'Simple': 'Đơn giản',
+    'Moderate': 'Vừa phải',
+    'Complex': 'Phức tạp',
+  };
+  final Map<String, String> _nailConditionTranslations = {
+    'Normal': 'Bình thường',
+    'Dry': 'Khô',
+    'Brittle': 'Dễ gãy',
+    'Weak': 'Yếu',
+  };
+
+  final Map<String, String> _personalityIdToTitleVi = {
+    'gentle_cute': 'Dịu dàng & Đáng yêu',
+    'elegant': 'Thanh lịch & Tinh tế',
+    'personality': 'Cá tính & Mạnh mẽ',
+    'creativity': 'Sáng tạo & Nghệ thuật',
+    'professional': 'Chuyên nghiệp & Lịch sự',
+    'natural': 'Tự nhiên & Mộc mạc',
+    'party': 'Nổi bật & Tiệc tùng',
+    'minimal': 'Tối giản & Sạch sẽ',
+  };
+
+  final Map<String, String> _mainStyleIdToTitleVi = {
+    'kbeauty': 'K-Beauty / Móng Hàn Quốc',
+    'minimalist': 'Tối giản Sang trọng',
+    'maximalist': 'Tối đa / Nghệ thuật Táo bạo',
+    'dark': 'Tối & Huyền bí',
+    'vintage': 'Cổ điển / Retro',
+  };
+
+  final Map<String, String> _occasionIdToLabelVi = {
+    'work': 'Đi làm hàng ngày',
+    'party': 'Tiệc tùng & Sự kiện',
+    'wedding': 'Đám cưới',
+    'travel': 'Đi chơi / Du lịch',
+    'photos': 'Chụp ảnh / Làm nội dung',
+    'graduate': 'Lễ tốt nghiệp',
+    'reward': 'Tự thưởng bản thân',
+    'date': 'Hẹn hò',
+    'sport': 'Năng động / Thể thao',
+    'perform': 'Biểu diễn',
+  };
+
   final Map<String, String> _swatchIdToHex = {
     'pink': '#F8BBD0',
     'beige': '#D7CCC8',
@@ -232,6 +291,7 @@ class _StyleProfileFormDialogState extends State<StyleProfileFormDialog> {
                                 label: 'Tông da (Skin Tone)',
                                 value: _skinTone,
                                 items: _skinTones,
+                                translations: _skinToneTranslations,
                                 onChanged: (val) =>
                                     setState(() => _skinTone = val!),
                               ),
@@ -242,6 +302,7 @@ class _StyleProfileFormDialogState extends State<StyleProfileFormDialog> {
                                 label: 'Sắc độ da (Skin Shade)',
                                 value: _skinShade,
                                 items: _skinShades,
+                                translations: _skinShadeTranslations,
                                 onChanged: (val) =>
                                     setState(() => _skinShade = val!),
                               ),
@@ -258,6 +319,7 @@ class _StyleProfileFormDialogState extends State<StyleProfileFormDialog> {
                                 label: 'Dáng tay (Hand Shape)',
                                 value: _handShape,
                                 items: _handShapes,
+                                translations: _handShapeTranslations,
                                 onChanged: (val) =>
                                     setState(() => _handShape = val!),
                               ),
@@ -268,6 +330,7 @@ class _StyleProfileFormDialogState extends State<StyleProfileFormDialog> {
                                 label: 'Tình trạng móng',
                                 value: _nailCondition,
                                 items: _nailConditions,
+                                translations: _nailConditionTranslations,
                                 onChanged: (val) =>
                                     setState(() => _nailCondition = val!),
                               ),
@@ -288,12 +351,23 @@ class _StyleProfileFormDialogState extends State<StyleProfileFormDialog> {
                                     color: Colors.grey.shade600,
                                     fontSize: 13,
                                   ),
+                                  filled: true,
+                                  fillColor: Colors.grey.shade50,
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: Colors.grey.shade200),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: Colors.grey.shade200),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
                                   ),
                                   contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 10,
+                                    horizontal: 16,
+                                    vertical: 12,
                                   ),
                                 ),
                                 style: const TextStyle(fontSize: 14),
@@ -305,6 +379,7 @@ class _StyleProfileFormDialogState extends State<StyleProfileFormDialog> {
                                 label: 'Độ phức tạp (Complexity)',
                                 value: _complexity,
                                 items: _complexities,
+                                translations: _complexityTranslations,
                                 onChanged: (val) =>
                                     setState(() => _complexity = val!),
                               ),
@@ -345,12 +420,23 @@ class _StyleProfileFormDialogState extends State<StyleProfileFormDialog> {
                                     color: Colors.grey.shade600,
                                     fontSize: 13,
                                   ),
+                                  filled: true,
+                                  fillColor: Colors.grey.shade50,
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: Colors.grey.shade200),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: Colors.grey.shade200),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
                                   ),
                                   contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 10,
+                                    horizontal: 16,
+                                    vertical: 12,
                                   ),
                                 ),
                                 items: _nailShapesList.map((shape) {
@@ -378,7 +464,7 @@ class _StyleProfileFormDialogState extends State<StyleProfileFormDialog> {
                               opt.id,
                             );
                             return FilterChip(
-                              label: Text(opt.title),
+                              label: Text(_personalityIdToTitleVi[opt.id] ?? opt.title),
                               selected: isSelected,
                               selectedColor: AppColors.primary.withValues(
                                 alpha: 0.15,
@@ -424,19 +510,30 @@ class _StyleProfileFormDialogState extends State<StyleProfileFormDialog> {
                               color: Colors.grey.shade600,
                               fontSize: 13,
                             ),
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade200),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey.shade200),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
                             ),
                             contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
+                              horizontal: 16,
+                              vertical: 12,
                             ),
                           ),
                           items: ProfileMockData.mainStyles.map((style) {
                             return DropdownMenuItem<String>(
                               value: style.id,
                               child: Text(
-                                style.title,
+                                _mainStyleIdToTitleVi[style.id] ?? style.title,
                                 style: const TextStyle(fontSize: 14),
                               ),
                             );
@@ -518,7 +615,7 @@ class _StyleProfileFormDialogState extends State<StyleProfileFormDialog> {
                               opt.id,
                             );
                             return FilterChip(
-                              label: Text(opt.label),
+                              label: Text(_occasionIdToLabelVi[opt.id] ?? opt.label),
                               selected: isSelected,
                               selectedColor: AppColors.primary.withValues(
                                 alpha: 0.15,
@@ -622,14 +719,27 @@ class _StyleProfileFormDialogState extends State<StyleProfileFormDialog> {
 
   Widget _buildSectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0, top: 4.0),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
-          color: Colors.grey,
-        ),
+      padding: const EdgeInsets.only(bottom: 12.0, top: 16.0),
+      child: Row(
+        children: [
+          Container(
+            width: 3,
+            height: 14,
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -638,6 +748,7 @@ class _StyleProfileFormDialogState extends State<StyleProfileFormDialog> {
     required String label,
     required String value,
     required List<String> items,
+    required Map<String, String> translations,
     required ValueChanged<String?> onChanged,
   }) {
     return DropdownButtonFormField<String>(
@@ -645,16 +756,29 @@ class _StyleProfileFormDialogState extends State<StyleProfileFormDialog> {
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        filled: true,
+        fillColor: Colors.grey.shade50,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade200),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade200),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+        ),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 10,
+          horizontal: 16,
+          vertical: 12,
         ),
       ),
       items: items.map((item) {
         return DropdownMenuItem<String>(
           value: item,
-          child: Text(item, style: const TextStyle(fontSize: 14)),
+          child: Text(translations[item] ?? item, style: const TextStyle(fontSize: 14)),
         );
       }).toList(),
       onChanged: onChanged,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../generated/l10n.dart';
 import '../../data/datasources/promotion_api_service.dart';
 import '../../data/models/promotion_model.dart';
 
@@ -53,7 +54,7 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Không thể tải danh sách khuyến mãi';
+          _errorMessage = S.of(context).bookingNoPromotions;
           _isLoading = false;
         });
       }
@@ -88,14 +89,13 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
       final value = p.discountValue % 1 == 0
           ? p.discountValue.toInt().toString()
           : p.discountValue.toString();
-      return 'Giảm $value%';
+      return S.of(context).bookingDiscountPercent(value);
     } else {
-      // FixedAmount
       final value = p.discountValue.round().toString().replaceAllMapped(
         RegExp(r'\B(?=(\d{3})+(?!\d))'),
         (_) => ',',
       );
-      return 'Giảm $value đ';
+      return S.of(context).bookingDiscountFixed(value);
     }
   }
 
@@ -119,10 +119,10 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
                 padding: const EdgeInsets.fromLTRB(20, 16, 8, 0),
                 child: Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Chọn khuyến mãi',
-                        style: TextStyle(
+                        S.of(context).bookingSelectPromotion,
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -131,9 +131,9 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
                     if (_tempSelected.isNotEmpty)
                       TextButton(
                         onPressed: () => setState(() => _tempSelected.clear()),
-                        child: const Text(
-                          'Bỏ chọn tất cả',
-                          style: TextStyle(color: Colors.grey),
+                        child: Text(
+                          S.of(context).bookingClearAll,
+                          style: const TextStyle(color: Colors.grey),
                         ),
                       ),
                     IconButton(
@@ -199,7 +199,7 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
                                 });
                                 _fetchPromotions();
                               },
-                              child: const Text('Thử lại'),
+                              child: Text(S.of(context).bookingRetry),
                             ),
                           ],
                         ),
@@ -231,8 +231,8 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
                       ),
                       child: Text(
                         _tempSelected.isEmpty
-                            ? 'Không áp dụng khuyến mãi'
-                            : 'Áp dụng (${_tempSelected.length})',
+                            ? S.of(context).bookingNoPromotion
+                            : S.of(context).bookingApplyPromotion(_tempSelected.length.toString()),
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -265,7 +265,7 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
             ),
             const SizedBox(height: 12),
             Text(
-              'Không có khuyến mãi nào',
+              S.of(context).bookingNoPromotions,
               style: TextStyle(color: Colors.grey.shade500),
             ),
           ],

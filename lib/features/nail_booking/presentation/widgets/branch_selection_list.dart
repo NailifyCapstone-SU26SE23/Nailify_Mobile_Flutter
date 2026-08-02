@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../generated/l10n.dart';
 
 class BranchSelectionList extends StatelessWidget {
   final List<dynamic> salons;
@@ -27,12 +28,12 @@ class BranchSelectionList extends StatelessWidget {
       );
     }
     if (salons.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 40),
+          padding: const EdgeInsets.symmetric(vertical: 40),
           child: Text(
-            'Không có chi nhánh nào.',
-            style: TextStyle(
+            S.of(context).bookingNoBranch,
+            style: const TextStyle(
               color: Colors.grey,
               fontSize: 15,
               fontWeight: FontWeight.w500,
@@ -57,9 +58,9 @@ class BranchSelectionList extends StatelessWidget {
               );
             },
             icon: const Icon(Icons.near_me_outlined, size: 20),
-            label: const Text(
-              'Tìm kiếm salon gần đây (Xem Bản đồ)',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            label: Text(
+              S.of(context).findNearbySalons,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,

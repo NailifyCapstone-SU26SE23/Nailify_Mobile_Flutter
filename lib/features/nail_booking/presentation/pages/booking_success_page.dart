@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/price_formatter.dart';
+import '../../../../generated/l10n.dart';
 import '../../data/datasources/payment_api_service.dart';
 
 class BookingSuccessPage extends StatefulWidget {
@@ -31,7 +32,7 @@ class _BookingSuccessPageState extends State<BookingSuccessPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Không thể tạo thanh toán: $e')));
+      ).showSnackBar(SnackBar(content: Text(S.of(context).bookingPaymentError(e.toString()))));
     } finally {
       if (mounted) setState(() => _isCreatingPayment = false);
     }
@@ -64,25 +65,39 @@ class _BookingSuccessPageState extends State<BookingSuccessPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.check_circle,
-                      color: Colors.green,
-                      size: 100,
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8F5E9),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.green.withOpacity(0.15),
+                            blurRadius: 20,
+                            spreadRadius: 4,
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.check_circle_rounded,
+                        color: Colors.green,
+                        size: 68,
+                      ),
                     ),
                     const SizedBox(height: 24),
-                    const Text(
-                      'Đặt lịch thành công!',
-                      style: TextStyle(
+                    Text(
+                      S.of(context).bookingSuccessTitle,
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Cảm ơn bạn đã tin tưởng Nailify. Dưới đây là thông tin chi tiết lịch hẹn của bạn.',
+                    Text(
+                      S.of(context).bookingSuccessSubtitle,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Colors.grey,
                         fontSize: 14,
                         height: 1.5,
@@ -94,10 +109,10 @@ class _BookingSuccessPageState extends State<BookingSuccessPage> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.borderLight),
+                        border: Border.all(color: Colors.grey.shade100),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.03),
+                            color: Colors.black.withOpacity(0.02),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -106,26 +121,26 @@ class _BookingSuccessPageState extends State<BookingSuccessPage> {
                       child: Column(
                         children: [
                           _buildInfoRow(
-                            Icons.spa,
-                            'Dịch vụ',
+                            Icons.spa_rounded,
+                            S.of(context).bookingInfoService,
                             bookingDetails['serviceName']?.toString() ?? '',
                           ),
                           const Divider(
                             height: 24,
-                            color: AppColors.borderLight,
+                            color: Color(0xFFFFF0F5),
                           ),
                           _buildInfoRow(
-                            Icons.calendar_month,
-                            'Ngày hẹn',
+                            Icons.calendar_month_rounded,
+                            S.of(context).bookingInfoDate,
                             dateString,
                           ),
                           const Divider(
                             height: 24,
-                            color: AppColors.borderLight,
+                            color: Color(0xFFFFF0F5),
                           ),
                           _buildInfoRow(
-                            Icons.access_time,
-                            'Thời gian',
+                            Icons.access_time_rounded,
+                            S.of(context).bookingInfoTime,
                             bookingDetails['time']?.toString().substring(
                                   0,
                                   5,
@@ -134,26 +149,26 @@ class _BookingSuccessPageState extends State<BookingSuccessPage> {
                           ),
                           const Divider(
                             height: 24,
-                            color: AppColors.borderLight,
+                            color: Color(0xFFFFF0F5),
                           ),
                           _buildInfoRow(
-                            Icons.face_2,
-                            'Nhân viên',
+                            Icons.face_3_rounded,
+                            S.of(context).bookingInfoStaff,
                             bookingDetails['stylistName']?.toString() ?? '',
                           ),
                           if (discounts.isNotEmpty || hasPrice) ...[
                             const Divider(
                               height: 24,
-                              color: AppColors.borderLight,
+                              color: Color(0xFFFFF0F5),
                             ),
-                            if (bookingDetails['price'] != null)
+                             if (bookingDetails['price'] != null)
                               _buildAmountRow(
-                                'Giá gốc',
+                                S.of(context).bookingInfoOriginalPrice,
                                 bookingDetails['price'],
                               ),
-                            ...discounts.map(_buildDiscountRow),
+                             ...discounts.map(_buildDiscountRow),
                             _buildAmountRow(
-                              'Tổng thanh toán',
+                              S.of(context).bookingInfoTotal,
                               bookingDetails['totalPrice'],
                               isTotal: true,
                             ),
@@ -162,80 +177,100 @@ class _BookingSuccessPageState extends State<BookingSuccessPage> {
                       ),
                     ),
                     const SizedBox(height: 40),
-                    ElevatedButton(
-                      onPressed:
-                          bookingId == null ||
-                              bookingId.isEmpty ||
-                              _isCreatingPayment
-                          ? null
-                          : () => _createPayment(bookingId),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: _isCreatingPayment
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
+                    if (bookingId != null && bookingId.isNotEmpty) ...[
+                      Container(
+                        height: 50,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(25),
+                          gradient: LinearGradient(
+                            colors: _isCreatingPayment
+                                ? [Colors.grey.shade400, Colors.grey.shade500]
+                                : [AppColors.primary, const Color(0xFFFF80AB)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          boxShadow: [
+                            if (!_isCreatingPayment)
+                              BoxShadow(
+                                color: AppColors.primary.withOpacity(0.3),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
                               ),
-                            )
-                          : const Text(
-                              'Thanh Toán',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
+                          ],
+                        ),
+                        child: ElevatedButton(
+                          onPressed: _isCreatingPayment
+                              ? null
+                              : () => _createPayment(bookingId),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            foregroundColor: Colors.white,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(25),
                             ),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: bookingId == null || bookingId.isEmpty
-                          ? null
-                          : () => context.go(
-                              '/my-bookings/detail',
-                              extra: bookingId,
-                            ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                            elevation: 0,
+                          ),
+                          child: _isCreatingPayment
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Text(
+                                  S.of(context).bookingPayBtn,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
                         ),
                       ),
-                      child: const Text(
-                        'View Booking',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: () => context.go(
+                            '/my-bookings/detail',
+                            extra: bookingId,
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFFF5F8),
+                            foregroundColor: const Color(0xFFC44569),
+                            elevation: 0,
+                            side: const BorderSide(color: Color(0xFFFFD1E3), width: 1),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(25),
+                            ),
+                          ),
+                          child: Text(
+                            S.of(context).bookingViewBtn,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                     const SizedBox(height: 16),
-                    OutlinedButton(
+                    TextButton.icon(
                       onPressed: () => context.go('/'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        side: const BorderSide(color: AppColors.primary),
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFFC44569),
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
                       ),
-                      child: const Text(
-                        'Back to Home',
-                        style: TextStyle(
+                      icon: const Icon(Icons.home_rounded, size: 18),
+                      label: Text(
+                        S.of(context).bookingGoHome,
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: 15,
                         ),
                       ),
                     ),
@@ -313,7 +348,7 @@ class _BookingSuccessPageState extends State<BookingSuccessPage> {
   }
 
   Widget _buildDiscountRow(Map<String, dynamic> discount) {
-    final name = discount['name']?.toString() ?? 'Giảm giá';
+    final name = discount['name']?.toString() ?? S.of(context).bookingDiscount;
     final amountDisplay = discount['amountDisplay']?.toString();
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),

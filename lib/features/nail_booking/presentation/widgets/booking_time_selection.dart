@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../generated/l10n.dart';
 import '../../../my_booking/data/datasources/waitlist_api_service.dart';
 
 class BookingTimeSelection extends StatefulWidget {
@@ -76,7 +77,7 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
           } catch (e) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Lỗi tham gia hàng chờ: $e')),
+                SnackBar(content: Text(S.of(context).bookingWaitlistError(e.toString()))),
               );
             }
           } finally {
@@ -93,20 +94,20 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Khung giờ rảnh',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        Text(
+          S.of(context).bookingAvailableSlots,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         if (!widget.canSelect)
-          const Text(
-            'Vui lòng chọn Thợ (hoặc "Không chọn thợ") để xem giờ rảnh.',
-            style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+          Text(
+            S.of(context).bookingSelectArtistFirst,
+            style: const TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
           )
         else if (widget.isLoading)
           const CircularProgressIndicator()
         else if (widget.timeSlots.isEmpty)
-          const Text('Thợ không có lịch làm việc vào ngày này.')
+          Text(S.of(context).bookingNoSchedule)
         else
           GridView.builder(
             shrinkWrap: true,
@@ -239,15 +240,13 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
 
                   if (isCurrentlyPast) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Khung giờ này đã qua, vui lòng chọn giờ khác.',
-                        ),
+                      SnackBar(
+                        content: Text(S.of(context).bookingSlotPast),
                         backgroundColor: Colors.redAccent,
                         behavior: SnackBarBehavior.floating,
                       ),
                     );
-                    return; // Chặn không cho chọn
+                    return;
                   }
 
                   if (isAvail) {
@@ -265,7 +264,7 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'Bạn đã đăng ký chờ cho giờ ${time.substring(0, 5)}',
+                              S.of(context).bookingWaitlistJoined(time.substring(0, 5)),
                             ),
                           ],
                         ),

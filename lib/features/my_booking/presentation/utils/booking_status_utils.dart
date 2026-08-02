@@ -14,7 +14,37 @@ class BookingStatusView {
   );
 }
 
-BookingStatusView bookingStatusView(String? status) {
+BookingStatusView bookingStatusView(String? status, BuildContext context) {
+  final view = _rawBookingStatusView(status);
+  if (Localizations.localeOf(context).languageCode == 'en') {
+    final enLabels = {
+      'Đang chờ xác nhận': 'Pending',
+      'Đã xếp lịch': 'Scheduled',
+      'Đã xem xét': 'Reviewed',
+      'Đã chấp nhận': 'Approved',
+      'Đã từ chối': 'Rejected',
+      'Đã hủy': 'Cancelled',
+      'Đã Checked In': 'Checked In',
+      'Đang thực hiện': 'In Progress',
+      'Đã hoàn thành': 'Completed',
+      'Hoàn thành dịch vụ': 'Service Completed',
+      'Đã bảo hành': 'Repaired',
+      'Chờ duyệt dời lịch': 'Reschedule Pending',
+      'Đề xuất dời lịch': 'Reschedule Suggested',
+      'Đã duyệt dời lịch': 'Reschedule Approved',
+      'Từ chối dời lịch': 'Reschedule Rejected',
+    };
+    return BookingStatusView(
+      enLabels[view.label] ?? view.label,
+      view.backgroundColor,
+      view.textColor,
+      view.icon,
+    );
+  }
+  return view;
+}
+
+BookingStatusView _rawBookingStatusView(String? status) {
   switch (status) {
     case 'Pending':
       return BookingStatusView(

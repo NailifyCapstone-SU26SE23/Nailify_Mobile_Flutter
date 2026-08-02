@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/localization/locale_service.dart';
+import '../../../../generated/l10n.dart';
 import '../../data/repositories/auth_repository.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -38,20 +41,20 @@ class _RegisterPageState extends State<RegisterPage> {
         phone.isEmpty ||
         password.isEmpty) {
       _showSnackBar(
-        'Vui lòng điền đầy đủ các thông tin bắt buộc',
+        S.of(context).registerRequiredFields,
         AppColors.error,
       );
       return;
     }
 
     if (password != confirmPassword) {
-      _showSnackBar('Mật khẩu xác nhận không khớp', AppColors.error);
+      _showSnackBar(S.of(context).passwordMismatch, AppColors.error);
       return;
     }
 
     if (!_agreeToTerms) {
       _showSnackBar(
-        'Bạn cần đồng ý với điều khoản dịch vụ để tiếp tục',
+        S.of(context).agreeToTermsError,
         Colors.orange.shade800,
       );
       return;
@@ -68,7 +71,7 @@ class _RegisterPageState extends State<RegisterPage> {
         phone: phone,
       );
       if (!mounted) return;
-      _showSnackBar('Đăng ký tài khoản thành công', AppColors.success);
+      _showSnackBar(S.of(context).registerSuccess, AppColors.success);
       context.go('/login');
     } catch (e) {
       if (!mounted) return;
@@ -220,10 +223,10 @@ class _RegisterPageState extends State<RegisterPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              const Text(
-                                'Đăng ký tài khoản',
+                              Text(
+                                S.of(context).registerTitle,
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w800,
                                   color: AppColors.textPrimary,
@@ -236,7 +239,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                 controller: _emailController,
                                 keyboardType: TextInputType.emailAddress,
                                 decoration: InputDecoration(
-                                  labelText: 'Email',
+                                  labelText: S.of(context).email,
                                   labelStyle: TextStyle(
                                     color: Colors.grey.shade400,
                                     fontSize: 14,
@@ -279,7 +282,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                       textCapitalization:
                                           TextCapitalization.words,
                                       decoration: InputDecoration(
-                                        labelText: 'Họ',
+                                        labelText: S.of(context).lastNameHint,
                                         labelStyle: TextStyle(
                                           color: Colors.grey.shade400,
                                           fontSize: 14,
@@ -319,7 +322,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                       textCapitalization:
                                           TextCapitalization.words,
                                       decoration: InputDecoration(
-                                        labelText: 'Tên',
+                                        labelText: S.of(context).firstNameHint,
                                         labelStyle: TextStyle(
                                           color: Colors.grey.shade400,
                                           fontSize: 14,
@@ -361,7 +364,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                 controller: _phoneController,
                                 keyboardType: TextInputType.phone,
                                 decoration: InputDecoration(
-                                  labelText: 'Số điện thoại',
+                                  labelText: S.of(context).phoneNumber,
                                   labelStyle: TextStyle(
                                     color: Colors.grey.shade400,
                                     fontSize: 14,
@@ -400,7 +403,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                 controller: _passwordController,
                                 obscureText: _obscurePassword,
                                 decoration: InputDecoration(
-                                  labelText: 'Mật khẩu',
+                                  labelText: S.of(context).password,
                                   labelStyle: TextStyle(
                                     color: Colors.grey.shade400,
                                     fontSize: 14,
@@ -452,7 +455,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                 controller: _confirmPasswordController,
                                 obscureText: _obscureConfirmPassword,
                                 decoration: InputDecoration(
-                                  labelText: 'Xác nhận mật khẩu',
+                                  labelText: S.of(context).confirmPasswordHint,
                                   labelStyle: TextStyle(
                                     color: Colors.grey.shade400,
                                     fontSize: 14,
@@ -518,7 +521,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                   const SizedBox(width: 10),
                                   Expanded(
                                     child: Text(
-                                      'Tôi đồng ý với các điều khoản dịch vụ',
+                                      S.of(context).agreeToTermsText,
                                       style: TextStyle(
                                         color: Colors.grey.shade600,
                                         fontSize: 12.5,
@@ -565,9 +568,9 @@ class _RegisterPageState extends State<RegisterPage> {
                                             color: Colors.white,
                                           ),
                                         )
-                                      : const Text(
-                                          'ĐĂNG KÝ NGAY',
-                                          style: TextStyle(
+                                      : Text(
+                                          S.of(context).registerNow.toUpperCase(),
+                                          style: const TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.bold,
                                             color: Colors.white,
@@ -583,7 +586,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    'Bạn đã có tài khoản? ',
+                                    S.of(context).alreadyHaveAccount,
                                     style: TextStyle(
                                       color: Colors.grey.shade600,
                                       fontSize: 13,
@@ -591,9 +594,9 @@ class _RegisterPageState extends State<RegisterPage> {
                                   ),
                                   GestureDetector(
                                     onTap: () => context.pop(),
-                                    child: const Text(
-                                      'Đăng nhập',
-                                      style: TextStyle(
+                                    child: Text(
+                                      S.of(context).login,
+                                      style: const TextStyle(
                                         color: AppColors.primary,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 13,
@@ -609,6 +612,76 @@ class _RegisterPageState extends State<RegisterPage> {
                         ),
                       ],
                     ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 16,
+                left: 16,
+                child: SafeArea(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+                      color: AppColors.primaryDark,
+                      onPressed: () {
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go('/');
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 16,
+                right: 16,
+                child: SafeArea(
+                  child: Consumer<LocaleService>(
+                    builder: (context, localeService, _) {
+                      final isVi = localeService.currentLocale.languageCode == 'vi';
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: TextButton(
+                          onPressed: () => localeService.toggleLocale(),
+                          style: TextButton.styleFrom(
+                            minimumSize: const Size(40, 40),
+                            padding: EdgeInsets.zero,
+                            shape: const CircleBorder(),
+                          ),
+                          child: Text(
+                            isVi ? 'EN' : 'VI',
+                            style: const TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),

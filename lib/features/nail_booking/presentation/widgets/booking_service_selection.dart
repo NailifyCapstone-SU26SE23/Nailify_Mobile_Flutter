@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../../../core/utils/duration_formatter.dart';
+import '../../../../generated/l10n.dart';
 
 class BookingServiceSelection extends StatelessWidget {
   final Map<String, dynamic>? nailData;
@@ -92,9 +93,9 @@ class BookingServiceSelection extends StatelessWidget {
       children: [
         // ── 1. Warranty items / main service ─────────────────────────────
         if (isWarranty && warrantyBookingItems.isNotEmpty) ...[
-          const Text(
-            'Chọn dịch vụ cần bảo hành',
-            style: TextStyle(
+          Text(
+            S.of(context).bookingWarrantyService,
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
@@ -111,7 +112,7 @@ class BookingServiceSelection extends StatelessWidget {
               item['customerNailName']?.toString().trim() ?? '',
               item['serviceName']?.toString().trim() ?? '',
             ].where((name) => name.isNotEmpty).toList();
-            final name = names.isEmpty ? 'Dịch vụ bảo hành' : names.join(' & ');
+            final name = names.isEmpty ? S.of(context).bookingWarrantyDefault : names.join(' & ');
 
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
@@ -139,7 +140,7 @@ class BookingServiceSelection extends StatelessWidget {
                   ),
                 ),
                 subtitle: Text(
-                  'Bảo hành miễn phí • Số lượng: ${item['quantity'] ?? 1}',
+                  S.of(context).bookingWarrantyFree((item['quantity'] ?? 1).toString()),
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
                 onChanged: (val) {
@@ -158,9 +159,9 @@ class BookingServiceSelection extends StatelessWidget {
           }),
           const SizedBox(height: 24),
         ] else if (nailData != null) ...[
-          const Text(
-            'Dịch vụ chính',
-            style: TextStyle(
+          Text(
+            S.of(context).bookingMainService,
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
@@ -175,9 +176,9 @@ class BookingServiceSelection extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Dịch vụ đi kèm',
-              style: TextStyle(
+            Text(
+              S.of(context).bookingAddonServices,
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
@@ -185,7 +186,7 @@ class BookingServiceSelection extends StatelessWidget {
             ),
             if (totalSelectedCount > 0)
               Text(
-                'Đã chọn $totalSelectedCount',
+                S.of(context).bookingSelectedCount(totalSelectedCount.toString()),
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
@@ -209,17 +210,17 @@ class BookingServiceSelection extends StatelessWidget {
               }
             }
             if (service == null) return const SizedBox.shrink();
-            return _buildServiceCard(service, count, serviceId);
+            return _buildServiceCard(context, service, count, serviceId);
           }),
           const SizedBox(height: 6),
           _buildAddButton(context, availableServices),
         ] else
-          const Center(
+          Center(
             child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
+              padding: const EdgeInsets.symmetric(vertical: 24),
               child: Text(
-                'Hiện không có dịch vụ phụ trợ nào.',
-                style: TextStyle(
+                S.of(context).bookingNoAddon,
+                style: const TextStyle(
                   color: AppColors.textSecondary,
                   fontStyle: FontStyle.italic,
                   fontSize: 14,
@@ -234,6 +235,7 @@ class BookingServiceSelection extends StatelessWidget {
   // ── Service quantity card ─────────────────────────────────────────────────
 
   Widget _buildServiceCard(
+    BuildContext context,
     Map<String, dynamic> service,
     int count,
     String serviceId,
@@ -315,8 +317,8 @@ class BookingServiceSelection extends StatelessWidget {
                             ),
                           ),
                           if (count > 1)
-                            Text(
-                              '${PriceFormatter.format(unitPrice)} / cái',
+                           Text(
+                              S.of(context).bookingUnitPrice(PriceFormatter.format(unitPrice)),
                               style: TextStyle(
                                 fontSize: 11,
                                 color: Colors.grey.shade500,
@@ -335,7 +337,7 @@ class BookingServiceSelection extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          'Số lượng',
+                          S.of(context).bookingQtyLabel,
                           style: TextStyle(
                             fontSize: 12.5,
                             color: Colors.grey.shade600,
@@ -427,73 +429,144 @@ class BookingServiceSelection extends StatelessWidget {
 
   // ── "Thêm dịch vụ" picker ────────────────────────────────────────────────
 
+  void _showServicesBottomSheet(
+    BuildContext context,
+    List<Map<String, dynamic>> availableServices,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
+          ),
+          padding: const EdgeInsets.only(bottom: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: Text(
+                  S.of(context).bookingAddServiceTitle,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primaryDark,
+                  ),
+                ),
+              ),
+              const Divider(color: Color(0xFFFFF0F5)),
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.5,
+                ),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  itemCount: availableServices.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFFFF5F8)),
+                  itemBuilder: (context, index) {
+                    final s = availableServices[index];
+                    final serviceId = _serviceId(s);
+                    return ListTile(
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                      title: Text(
+                        _serviceName(s),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      subtitle: Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          DurationFormatter.format(_serviceDuration(s)),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            PriceFormatter.format(_servicePrice(s)),
+                            style: const TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFFFF5F8),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.add_rounded,
+                              size: 18,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _addService(serviceId);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildAddButton(
     BuildContext context,
     List<Map<String, dynamic>> availableServices,
   ) {
-    return PopupMenuButton<String>(
-      onSelected: _addService,
-      offset: const Offset(0, 48),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 4,
-      itemBuilder: (context) => availableServices
-          .map(
-            (s) => PopupMenuItem<String>(
-              value: _serviceId(s),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _serviceName(s),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13.5,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          DurationFormatter.format(_serviceDuration(s)),
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey.shade500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    PriceFormatter.format(_servicePrice(s)),
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          )
-          .toList(),
+    return InkWell(
+      onTap: () => _showServicesBottomSheet(context, availableServices),
+      borderRadius: BorderRadius.circular(24),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
-          border: Border.all(color: AppColors.primary, width: 1.2),
-          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.primary, width: 1.5),
+          borderRadius: BorderRadius.circular(24),
         ),
-        child: const Row(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.add, size: 16, color: AppColors.primary),
-            SizedBox(width: 8),
+            const Icon(Icons.add_rounded, size: 18, color: AppColors.primary),
+            const SizedBox(width: 8),
             Text(
-              'Thêm dịch vụ',
-              style: TextStyle(
+              S.of(context).bookingAddService,
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 color: AppColors.primary,
                 fontSize: 14,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../generated/l10n.dart';
 import '../../data/datasources/payment_api_service.dart';
 
 class RefundBankInfoPage extends StatefulWidget {
@@ -65,14 +66,15 @@ class _RefundBankInfoPageState extends State<RefundBankInfoPage> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, size: 20),
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.primaryDark, size: 20),
           onPressed: () => context.pop(),
         ),
-        title: const Text(
-          'Thong tin hoan tien',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+        title: Text(
+          S.of(context).refundInfo,
+          style: const TextStyle(
+            color: AppColors.primaryDark,
+            fontWeight: FontWeight.w800,
+            fontFamily: 'Georgia',
           ),
         ),
         centerTitle: true,

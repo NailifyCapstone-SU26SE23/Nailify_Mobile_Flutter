@@ -12,6 +12,7 @@ import '../constants/app_constants.dart';
 import '../di/injection.dart';
 import '../network/api_client.dart';
 import '../../features/quiz/data/datasources/quiz_repository.dart';
+import '../../generated/l10n.dart';
 
 class MainShell extends StatefulWidget {
   final Widget child;
@@ -36,6 +37,7 @@ class _MainShellState extends State<MainShell> {
   bool _hasRecommendations = false;
   String? _lastCheckedToken;
   bool _isCheckingRecommendations = false;
+  bool _showNewNotificationTip = false;
 
   bool _signalRSubscribed = false;
 
@@ -54,6 +56,19 @@ class _MainShellState extends State<MainShell> {
     }
   }
 
+  void _triggerNotificationTip() {
+    setState(() {
+      _showNewNotificationTip = true;
+    });
+    Future.delayed(const Duration(seconds: 4), () {
+      if (mounted) {
+        setState(() {
+          _showNewNotificationTip = false;
+        });
+      }
+    });
+  }
+
   void _checkAuthAndRecommendations() {
     final token = getIt<SharedPreferences>().getString(
       AppConstants.authTokenKey,
@@ -64,6 +79,9 @@ class _MainShellState extends State<MainShell> {
     if (token != _lastCheckedToken) {
       _lastCheckedToken = token;
       _checkRecommendations();
+      if (token != null && token.isNotEmpty) {
+        _triggerNotificationTip();
+      }
     } else if (localQuizCompleted != _hasRecommendations) {
       setState(() {
         _hasRecommendations = localQuizCompleted;
@@ -448,95 +466,317 @@ class _MainShellState extends State<MainShell> {
     );
   }
 
+  Widget _buildAnimatedBody(BuildContext context, Widget child) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      switchInCurve: Curves.easeInOut,
+      switchOutCurve: Curves.easeInOut,
+      transitionBuilder: (Widget child, Animation<double> animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.015, 0.0),
+              end: Offset.zero,
+            ).animate(animation),
+            child: child,
+          ),
+        );
+      },
+      child: KeyedSubtree(
+        key: ValueKey(GoRouterState.of(context).matchedLocation),
+        child: child,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     _checkAuthAndRecommendations();
-    return Scaffold(
-      backgroundColor: AppColors.background,
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: AppColors.background,
 
-      // Conditional AppBar - only show header if showHeader is true
-      appBar: widget.showHeader
-          ? AppBar(
-              backgroundColor: AppColors.background,
-              surfaceTintColor: Colors.transparent,
-              elevation: 0,
-              toolbarHeight: 80,
-              title: GestureDetector(
-                onTap: () => context.go('/'),
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 8.0),
-                  child: Image.asset(
-                    'assets/images/pink.png',
-                    height: 40,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) => const Text(
-                      'Nailify',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
+          // Conditional AppBar - only show header if showHeader is true
+          appBar: widget.showHeader
+              ? AppBar(
+                  backgroundColor: AppColors.background,
+                  surfaceTintColor: Colors.transparent,
+                  elevation: 0,
+                  toolbarHeight: 80,
+                  title: GestureDetector(
+                    onTap: () => context.go('/'),
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 8.0),
+                      child: Image.asset(
+                        'assets/images/pink.png',
+                        height: 40,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Text(
+                              'Nailify',
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                       ),
                     ),
                   ),
+                  actions: _isLoggedIn
+                      ? [
+                          PopupMenuButton<void>(
+                            offset: const Offset(0, 48),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: const BorderSide(
+                                color: Color(0xFFFFF0F5),
+                                width: 1,
+                              ),
+                            ),
+                            color: Colors.white,
+                            elevation: 4,
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              alignment: Alignment.center,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Icon(
+                                    _hasRecommendations
+                                        ? Icons.notifications_active_outlined
+                                        : Icons.notifications_outlined,
+                                    color: AppColors.primaryDark,
+                                    size: 26,
+                                  ),
+                                ),
+                                if (_hasRecommendations)
+                                  Positioned(
+                                    right: 6,
+                                    top: 6,
+                                    child: Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.red,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            itemBuilder: (context) => [
+                              PopupMenuItem<void>(
+                                enabled: false,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      S.of(context).notifications,
+                                      style: TextStyle(
+                                        fontFamily: 'Georgia',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.primaryDark,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    const Divider(
+                                      height: 1,
+                                      color: Color(0xFFFFF0F5),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (_hasRecommendations)
+                                PopupMenuItem<void>(
+                                  onTap: () {
+                                    Future.delayed(
+                                      const Duration(milliseconds: 100),
+                                      () {
+                                        if (context.mounted) {
+                                          context.go('/perfect-match');
+                                        }
+                                      },
+                                    );
+                                  },
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(6),
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFFFFF5F8),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.auto_awesome_rounded,
+                                          size: 16,
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              S.of(context).nailRecommendation,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12.5,
+                                                color: AppColors.textPrimary,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              S.of(context).viewDetail,
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                color: AppColors.primary,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              else
+                                const PopupMenuItem<void>(
+                                  enabled: false,
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      vertical: 8.0,
+                                    ),
+                                    child: Text(
+                                      'Không có thông báo mới.',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(width: 12),
+                        ]
+                      : [
+                          // HIỂN THỊ NÚT ĐĂNG NHẬP/ĐĂNG KÝ KHI CHƯA CÓ TOKEN
+                          OutlinedButton(
+                            onPressed: () => context.push('/login'),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(
+                                color: AppColors.primary,
+                                width: 1.2,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                              ),
+                            ),
+                            child: Text(
+                              S.of(context).login,
+                              style: const TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: () => context.push('/register'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                              ),
+                            ),
+                            child: Text(
+                              S.of(context).register,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w500,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                        ],
+                )
+              : null, // No AppBar when showHeader is false
+          // Wrap the body with SafeArea when header is hidden
+          body: widget.showHeader
+              ? _buildAnimatedBody(context, widget.child)
+              : SafeArea(child: _buildAnimatedBody(context, widget.child)),
+
+          bottomNavigationBar: _buildCustomBottomBar(context),
+        ),
+        if (_showNewNotificationTip)
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 68,
+            right: 16,
+            child: Material(
+              color: Colors.transparent,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF5F8),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFFFFD1E3),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      S.of(context).newNotification,
+                      style: const TextStyle(
+                        color: Color(0xFFC44569),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              actions: _isLoggedIn
-                  ? [
-                      if (_hasRecommendations) ...[
-                        const BlinkingPerfectMatchButton(),
-                        const SizedBox(width: 12),
-                      ],
-                    ]
-                  : [
-                      // HIỂN THỊ NÚT ĐĂNG NHẬP/ĐĂNG KÝ KHI CHƯA CÓ TOKEN
-                      OutlinedButton(
-                        onPressed: () => context.push('/login'),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(
-                            color: AppColors.primary,
-                            width: 1.2,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                        ),
-                        child: const Text(
-                          'Sign in',
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: () => context.push('/register'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                        ),
-                        child: const Text(
-                          'Register',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                    ],
-            )
-          : null, // No AppBar when showHeader is false
-      // Wrap the body with SafeArea when header is hidden
-      body: widget.showHeader ? widget.child : SafeArea(child: widget.child),
-
-      bottomNavigationBar: _buildCustomBottomBar(context),
+            ),
+          ),
+      ],
     );
   }
 
@@ -544,125 +784,119 @@ class _MainShellState extends State<MainShell> {
     final currentIndex = _calculateCurrentIndex(context);
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    return Container(
-      height: 64 + bottomPadding,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned.fill(
-            bottom: bottomPadding,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildBarItem(
-                  context,
-                  index: 0,
-                  icon: Icons.home_outlined,
-                  activeIcon: Icons.home,
-                  label: 'Trang chủ',
-                  isSelected: currentIndex == 0,
-                ),
-                _buildBarItem(
-                  context,
-                  index: 1,
-                  icon: Icons.calendar_month_outlined,
-                  activeIcon: Icons.calendar_month,
-                  label: 'Lịch hẹn',
-                  isSelected: currentIndex == 1,
-                ),
-                const SizedBox(width: 56), // Chừa chỗ cho nút nhô lên
-                _buildBarItem(
-                  context,
-                  index: 2,
-                  icon: Icons.palette_outlined,
-                  activeIcon: Icons.palette,
-                  label: 'My Studio',
-                  isSelected: currentIndex == 2,
-                ),
-                _buildBarItem(
-                  context,
-                  index: 3,
-                  icon: Icons.person_outline,
-                  activeIcon: Icons.person,
-                  label: 'Tài khoản',
-                  isSelected: currentIndex == 3,
-                ),
-              ],
+    return CustomPaint(
+      size: Size(double.infinity, 64 + bottomPadding),
+      painter: BottomNavPainter(bottomPadding: bottomPadding),
+      child: Container(
+        height: 64 + bottomPadding,
+        color: Colors.transparent,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned.fill(
+              bottom: bottomPadding,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildBarItem(
+                    context,
+                    index: 0,
+                    icon: Icons.home_outlined,
+                    activeIcon: Icons.home,
+                    label: S.of(context).home,
+                    isSelected: currentIndex == 0,
+                  ),
+                  _buildBarItem(
+                    context,
+                    index: 1,
+                    icon: Icons.calendar_month_outlined,
+                    activeIcon: Icons.calendar_month,
+                    label: S.of(context).myBooking,
+                    isSelected: currentIndex == 1,
+                  ),
+                  const SizedBox(width: 56), // Chừa chỗ cho nút nhô lên
+                  _buildBarItem(
+                    context,
+                    index: 2,
+                    icon: Icons.palette_outlined,
+                    activeIcon: Icons.palette,
+                    label: S.of(context).myStudio,
+                    isSelected: currentIndex == 2,
+                  ),
+                  _buildBarItem(
+                    context,
+                    index: 3,
+                    icon: Icons.person_outline,
+                    activeIcon: Icons.person,
+                    label: S.of(context).account,
+                    isSelected: currentIndex == 3,
+                  ),
+                ],
+              ),
             ),
-          ),
 
-          // Nút tròn nhô lên ở giữa (Shortcut đi tới màn hình đặt lịch mới /nail-booking)
-          Positioned(
-            top: -24, // Nhô lên 24px để tạo đường cong nhô lên đẹp mắt
-            left: 0,
-            right: 0,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    AuthGuard.check(context, () {
-                      context.push('/nail-booking');
-                    });
-                  },
-                  child: Container(
-                    width: 54,
-                    height: 54,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: const LinearGradient(
-                        colors: [AppColors.primary, AppColors.secondary],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.4),
-                          blurRadius: 12,
-                          offset: const Offset(0, 5),
+            // Nút tròn nhô lên ở giữa (Shortcut đi tới màn hình đặt lịch mới /nail-booking)
+            Positioned(
+              top: -24, // Nhô lên 24px để tạo đường cong nhô lên đẹp mắt
+              left: 0,
+              right: 0,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      AuthGuard.check(context, () {
+                        context.push('/nail-booking');
+                      });
+                    },
+                    child: Container(
+                      width: 54,
+                      height: 54,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                          colors: [AppColors.primary, AppColors.secondary],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.calendar_today_outlined,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                GestureDetector(
-                  onTap: () {
-                    AuthGuard.check(context, () {
-                      context.push('/nail-booking');
-                    });
-                  },
-                  child: const Text(
-                    'Đặt lịch',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Color(
-                        0xFFFF66C4,
-                      ), // Luôn hiển thị màu hồng chủ đạo
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.4),
+                            blurRadius: 12,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.calendar_today_outlined,
+                        color: Colors.white,
+                        size: 24,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  GestureDetector(
+                    onTap: () {
+                      AuthGuard.check(context, () {
+                        context.push('/nail-booking');
+                      });
+                    },
+                    child: Text(
+                      S.of(context).bookAppointment,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Color(
+                          0xFFFF66C4,
+                        ), // Luôn hiển thị màu hồng chủ đạo
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -782,4 +1016,84 @@ class _BlinkingPerfectMatchButtonState extends State<BlinkingPerfectMatchButton>
       ),
     );
   }
+}
+
+// ────────────────────────────────────────────────
+// PAINTER: Vẽ nền và viền cong của thanh Bottom Bar
+// ────────────────────────────────────────────────
+class BottomNavPainter extends CustomPainter {
+  final double bottomPadding;
+  BottomNavPainter({required this.bottomPadding});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+
+    final path = Path();
+    final width = size.width;
+    final height = size.height;
+
+    final cx = width / 2;
+    // Điểm cao nhất của đường cong là -20px (hướng lên trên, nằm gọn dưới đỉnh nút đặt lịch ở -24px)
+    // Khoảng cách bắt đầu lượn cong từ cx - 36 đến cx + 36 (Clearance 72px bao trùm nút đặt lịch 54px)
+    const radiusX = 36.0;
+    const radiusY = -20.0;
+
+    path.moveTo(0, 0);
+    // Vẽ đường thẳng đến điểm bắt đầu cong
+    path.lineTo(cx - radiusX, 0);
+
+    // Tạo đường cong mái vòm hình chữ U ngược (dome) lồi lên bao quanh nút Đặt lịch
+    path.cubicTo(
+      cx - 20,
+      0, // Điểm kiểm soát 1
+      cx - 18,
+      radiusY, // Điểm kiểm soát 2
+      cx,
+      radiusY, // Điểm cực đại phía trên cùng
+    );
+    path.cubicTo(
+      cx + 18,
+      radiusY, // Điểm kiểm soát 1
+      cx + 20,
+      0, // Điểm kiểm soát 2
+      cx + radiusX,
+      0, // Điểm kết thúc cong
+    );
+
+    path.lineTo(width, 0);
+    path.lineTo(width, height);
+    path.lineTo(0, height);
+    path.close();
+
+    // Vẽ bóng mờ bên ngoài
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = Colors.black.withValues(alpha: 0.03)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.outer, 8),
+    );
+
+    // Tô nền màu trắng
+    canvas.drawPath(path, paint);
+
+    // Vẽ viền mảnh màu xám nhạt chạy theo đường cong
+    final borderPaint = Paint()
+      ..color = Colors.grey.shade200
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    final borderPath = Path();
+    borderPath.moveTo(0, 0);
+    borderPath.lineTo(cx - radiusX, 0);
+    borderPath.cubicTo(cx - 20, 0, cx - 18, radiusY, cx, radiusY);
+    borderPath.cubicTo(cx + 18, radiusY, cx + 20, 0, cx + radiusX, 0);
+    borderPath.lineTo(width, 0);
+    canvas.drawPath(borderPath, borderPaint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

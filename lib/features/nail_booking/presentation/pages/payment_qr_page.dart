@@ -8,6 +8,8 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../data/datasources/payment_api_service.dart';
 
+import '../../../../generated/l10n.dart';
+
 class PaymentQrPage extends StatefulWidget {
   final Map<String, dynamic> paymentData;
 
@@ -110,10 +112,21 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Thanh Toán'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: AppColors.primaryDark),
+          onPressed: () => context.pop(),
+        ),
+        title: Text(
+          S.of(context).paymentTitle,
+          style: const TextStyle(
+            fontWeight: FontWeight.w800,
+            fontFamily: 'Georgia',
+            color: AppColors.primaryDark,
+          ),
+        ),
         backgroundColor: Colors.white,
-        foregroundColor: AppColors.textPrimary,
         elevation: 0,
+        centerTitle: true,
       ),
       body: SafeArea(
         child: SingleChildScrollView(

@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../generated/l10n.dart';
 import '../../data/datasources/my_booking_api_service.dart';
 import '../utils/booking_status_utils.dart';
 
@@ -38,19 +39,18 @@ class _RescheduleTabState extends State<RescheduleTab> {
       if (!mounted) return;
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Đã chấp nhận dời lịch hẹn thành công'),
+          SnackBar(
+            content: Text(S.of(context).rescheduleAcceptSuccess),
             backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
         widget.onRefreshBookings();
-        // Chuyển về tab Lịch đặt sau khi thành công
         widget.onActionSuccess?.call();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Chấp nhận dời lịch hẹn thất bại'),
+          SnackBar(
+            content: Text(S.of(context).rescheduleAcceptFail),
             backgroundColor: Colors.red,
           ),
         );
@@ -58,7 +58,7 @@ class _RescheduleTabState extends State<RescheduleTab> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+        SnackBar(content: Text(S.of(context).error), backgroundColor: Colors.red),
       );
     } finally {
       if (mounted) setState(() => _isActionLoading = false);
@@ -72,19 +72,18 @@ class _RescheduleTabState extends State<RescheduleTab> {
       if (!mounted) return;
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Đã từ chối dời lịch hẹn thành công'),
+          SnackBar(
+            content: Text(S.of(context).rescheduleDeclineSuccess),
             backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
         widget.onRefreshBookings();
-        // Chuyển về tab Lịch đặt sau khi thành công
         widget.onActionSuccess?.call();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Từ chối dời lịch hẹn thất bại'),
+          SnackBar(
+            content: Text(S.of(context).rescheduleDeclineFail),
             backgroundColor: Colors.red,
           ),
         );
@@ -92,7 +91,7 @@ class _RescheduleTabState extends State<RescheduleTab> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+        SnackBar(content: Text(S.of(context).error), backgroundColor: Colors.red),
       );
     } finally {
       if (mounted) setState(() => _isActionLoading = false);
@@ -146,8 +145,9 @@ class _RescheduleTabState extends State<RescheduleTab> {
   Widget _buildDateFilterBar() {
     final hasFilter = _selectedFilterDate != null;
     final textDisplay = hasFilter
-        ? 'Ngày: ${_selectedFilterDate!.day}/${_selectedFilterDate!.month}/${_selectedFilterDate!.year}'
-        : 'Lọc theo ngày';
+        ? S.of(context).rescheduleFilterDate(
+            '${_selectedFilterDate!.day}/${_selectedFilterDate!.month}/${_selectedFilterDate!.year}')
+        : S.of(context).rescheduleFilterByDate;
 
     return Container(
       color: Colors.white,
@@ -209,7 +209,7 @@ class _RescheduleTabState extends State<RescheduleTab> {
                 color: Colors.grey,
                 size: 24,
               ),
-              tooltip: 'Xóa lọc ngày',
+              tooltip: S.of(context).rescheduleClearFilter,
             ),
           ],
         ],
@@ -254,22 +254,24 @@ class _RescheduleTabState extends State<RescheduleTab> {
               if (_isActionLoading)
                 Container(
                   color: Colors.black.withValues(alpha: 0.3),
-                  child: const Center(
+                  child: Center(
                     child: Card(
-                      shape: RoundedRectangleBorder(
+                      shape: const RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(Radius.circular(12)),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.symmetric(
+                        padding: const EdgeInsets.symmetric(
                           horizontal: 32,
                           vertical: 24,
                         ),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            CircularProgressIndicator(),
-                            SizedBox(height: 12),
-                            Text('Đang xử lý...'),
+                            const CircularProgressIndicator(),
+                            const SizedBox(height: 12),
+                            Text(
+                              S.of(context).rescheduleProcessing,
+                            ),
                           ],
                         ),
                       ),
@@ -297,7 +299,7 @@ class _RescheduleTabState extends State<RescheduleTab> {
     final newBookingDate = DateTime.tryParse(newDateStr) ?? bookingDate;
 
     final items = booking['bookingItems'] as List<dynamic>? ?? [];
-    var nailName = 'Dịch vụ làm móng';
+    var nailName = S.of(context).nailServiceDefault;
 
     if (items.isNotEmpty && items.first is Map) {
       final firstItem = items.first as Map;
@@ -324,7 +326,7 @@ class _RescheduleTabState extends State<RescheduleTab> {
         timeStr;
     if (newTimeStr.length >= 5) newTimeStr = newTimeStr.substring(0, 5);
 
-    final artistName = booking['artistName']?.toString() ?? 'Bất kỳ';
+    final artistName = booking['artistName']?.toString() ?? S.of(context).anyArtist;
     final salonName = booking['salonName']?.toString() ?? 'Nailify Salon';
     final salonAddress = booking['salonAddress']?.toString() ?? '';
     final reason =
@@ -333,7 +335,7 @@ class _RescheduleTabState extends State<RescheduleTab> {
         '';
 
     final rawStatus = booking['status']?.toString();
-    final statusView = bookingStatusView(rawStatus);
+    final statusView = bookingStatusView(rawStatus, context);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -393,7 +395,7 @@ class _RescheduleTabState extends State<RescheduleTab> {
                   ),
                 ),
                 Text(
-                  'Mới',
+                  S.of(context).rescheduleNew,
                   style: TextStyle(
                     fontSize: 11,
                     color: statusView.textColor,
@@ -471,8 +473,8 @@ class _RescheduleTabState extends State<RescheduleTab> {
                       const SizedBox(width: 6),
                       Text(
                         rawStatus == 'RescheduleSuggested'
-                            ? 'Giờ hẹn đề xuất mới từ salon:'
-                            : 'Khung giờ bạn yêu cầu dời:',
+                            ? S.of(context).rescheduleSuggestedTime
+                            : S.of(context).rescheduleRequestedTime,
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -493,7 +495,7 @@ class _RescheduleTabState extends State<RescheduleTab> {
                   if (timeStr.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(
-                      'Lịch cũ: $timeStr • ${bookingDate.day}/${bookingDate.month}/${bookingDate.year}',
+                      '${S.of(context).rescheduleOldSchedule}$timeStr • ${bookingDate.day}/${bookingDate.month}/${bookingDate.year}',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey.shade600,
@@ -557,9 +559,9 @@ class _RescheduleTabState extends State<RescheduleTab> {
                           height: 1.4,
                         ),
                         children: [
-                          const TextSpan(
-                            text: 'Lý do dời: ',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                          TextSpan(
+                            text: S.of(context).rescheduleReason,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           TextSpan(text: reason),
                         ],
@@ -589,9 +591,9 @@ class _RescheduleTabState extends State<RescheduleTab> {
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 11),
                         ),
-                        child: const Text(
-                          'Từ chối',
-                          style: TextStyle(fontWeight: FontWeight.w600),
+                        child: Text(
+                          S.of(context).rescheduleDeclineBtn,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ),
                     ),
@@ -611,9 +613,9 @@ class _RescheduleTabState extends State<RescheduleTab> {
                           padding: const EdgeInsets.symmetric(vertical: 11),
                           elevation: 0,
                         ),
-                        child: const Text(
-                          'Chấp nhận dời lịch',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                        child: Text(
+                          S.of(context).rescheduleAcceptBtn,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
@@ -647,7 +649,7 @@ class _RescheduleTabState extends State<RescheduleTab> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Đang chờ salon phản hồi yêu cầu dời lịch của bạn',
+                          S.of(context).reschedulePendingMsg,
                           style: TextStyle(
                             fontSize: 12,
                             color: statusView.textColor,
@@ -688,8 +690,8 @@ class _RescheduleTabState extends State<RescheduleTab> {
           const SizedBox(height: 20),
           Text(
             isFiltered
-                ? 'Không có yêu cầu dời lịch trong ngày này'
-                : 'Không có yêu cầu dời lịch nào',
+                ? S.of(context).rescheduleEmptyFiltered
+                : S.of(context).rescheduleEmptyAll,
             style: const TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.bold,
@@ -699,8 +701,8 @@ class _RescheduleTabState extends State<RescheduleTab> {
           const SizedBox(height: 8),
           Text(
             isFiltered
-                ? 'Thử chọn ngày khác hoặc xóa bộ lọc ngày.'
-                : 'Khi có yêu cầu dời lịch từ Salon hoặc\nyêu cầu dời lịch của bạn đang được xử lý,\nbản ghi sẽ được hiển thị tại đây.',
+                ? S.of(context).rescheduleEmptyFilteredDesc
+                : S.of(context).rescheduleEmptyAllDesc,
             style: TextStyle(color: Colors.grey.shade500, height: 1.5),
             textAlign: TextAlign.center,
           ),

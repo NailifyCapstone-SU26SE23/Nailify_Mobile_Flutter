@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../generated/l10n.dart';
 import '../../data/datasources/waitlist_api_service.dart';
 import '../../data/models/waitlist_model.dart';
 import 'waitlist_card.dart';
@@ -67,7 +68,7 @@ class _WaitlistTabState extends State<WaitlistTab> {
         setState(() => _waitlist.removeWhere((e) => e.id == id));
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Đã hủy chờ thành công.'),
+            content: Text(S.of(context).waitlistCancelSuccess),
             backgroundColor: Colors.grey.shade800,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -80,7 +81,7 @@ class _WaitlistTabState extends State<WaitlistTab> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Lỗi hủy chờ: $e')));
+      ).showSnackBar(SnackBar(content: Text(S.of(context).waitlistCancelError(e.toString()))));
     }
   }
 
@@ -92,11 +93,11 @@ class _WaitlistTabState extends State<WaitlistTab> {
         setState(() => _waitlist.removeWhere((e) => e.id == id));
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Row(
+            content: Row(
               children: [
-                Icon(Icons.check_circle, color: Colors.white, size: 18),
-                SizedBox(width: 8),
-                Text('Xác nhận đặt lịch thành công!'),
+                const Icon(Icons.check_circle, color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                Text(S.of(context).waitlistConfirmSuccess),
               ],
             ),
             backgroundColor: AppColors.primary,
@@ -111,7 +112,7 @@ class _WaitlistTabState extends State<WaitlistTab> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Lỗi xác nhận: $e')));
+      ).showSnackBar(SnackBar(content: Text(S.of(context).waitlistConfirmError(e.toString()))));
     }
   }
 
@@ -134,14 +135,14 @@ class _WaitlistTabState extends State<WaitlistTab> {
             Icon(Icons.error_outline, size: 52, color: Colors.red.shade300),
             const SizedBox(height: 12),
             Text(
-              'Không thể tải lịch chờ',
+              S.of(context).waitlistLoadError,
               style: TextStyle(color: Colors.grey.shade700),
             ),
             const SizedBox(height: 12),
             TextButton.icon(
               onPressed: _fetchWaitlists,
               icon: const Icon(Icons.refresh),
-              label: const Text('Thử lại'),
+              label: Text(S.of(context).retry),
             ),
           ],
         ),
@@ -192,9 +193,9 @@ class _WaitlistTabState extends State<WaitlistTab> {
             ),
           ),
           const SizedBox(height: 20),
-          const Text(
-            'Không có lịch chờ nào',
-            style: TextStyle(
+          Text(
+            S.of(context).waitlistEmpty,
+            style: const TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
@@ -202,7 +203,7 @@ class _WaitlistTabState extends State<WaitlistTab> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Khi khung giờ bạn đăng ký chờ có chỗ trống,\nbản ghi sẽ được hiển thị tại đây.',
+            S.of(context).waitlistEmptyDesc,
             style: TextStyle(color: Colors.grey.shade500, height: 1.5),
             textAlign: TextAlign.center,
           ),

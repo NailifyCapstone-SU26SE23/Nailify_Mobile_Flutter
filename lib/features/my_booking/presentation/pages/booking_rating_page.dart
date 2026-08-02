@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../generated/l10n.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../data/datasources/my_booking_api_service.dart';
@@ -227,7 +228,7 @@ class _BookingRatingPageState extends State<BookingRatingPage> {
           onPressed: () => context.pop(),
         ),
         title: Text(
-          isNewRating ? 'Đánh giá dịch vụ' : 'Chỉnh sửa đánh giá',
+          isNewRating ? S.of(context).rateService : S.of(context).editRating,
           style: const TextStyle(
             fontWeight: FontWeight.w800,
             fontFamily: 'Georgia',

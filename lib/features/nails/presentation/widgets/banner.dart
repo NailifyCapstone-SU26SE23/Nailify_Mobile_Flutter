@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../generated/l10n.dart';
 
 class QuizBanner extends StatefulWidget {
   const QuizBanner({super.key});
@@ -44,8 +45,8 @@ class _QuizBannerState extends State<QuizBanner>
         getIt<SharedPreferences>().getBool('has_completed_quiz') ?? false;
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         gradient: LinearGradient(
@@ -62,25 +63,26 @@ class _QuizBannerState extends State<QuizBanner>
         ],
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.auto_awesome, color: AppColors.surface, size: 32),
-          const SizedBox(height: 12),
+          const Icon(Icons.auto_awesome, color: AppColors.surface, size: 28),
+          const SizedBox(height: 8),
           Text(
             _hasCompletedQuiz
-                ? "✨ Bloom đã tìm thấy các mẫu móng Perfect Match hoàn hảo dành riêng cho bạn!"
-                : "If you haven't found a nail design that suits you yet, Bloom can help.",
+                ? S.of(context).quizBannerFound
+                : S.of(context).quizBannerNotFound,
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: AppColors.surface,
-              fontSize: 14.5,
+              fontSize: 14,
               fontWeight: FontWeight.bold,
-              height: 1.4,
+              height: 1.3,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           if (_hasCompletedQuiz) ...[
-            FadeTransition(
-              opacity: _animation,
+            SizedBox(
+              width: double.infinity,
               child: ElevatedButton(
                 onPressed: () => context.push('/perfect-match'),
                 style: ElevatedButton.styleFrom(
@@ -88,79 +90,108 @@ class _QuizBannerState extends State<QuizBanner>
                   foregroundColor: AppColors.primary,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 14,
-                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
-                child: const Text(
-                  'XEM KẾT QUẢ PERFECT MATCH',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                child: Text(
+                  S.of(context).quizBannerViewResults,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                 ),
               ),
             ),
             const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () => context.push('/quiz'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white.withOpacity(0.15),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                side: const BorderSide(color: Colors.white, width: 1.2),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => context.push('/quiz'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white.withOpacity(0.15),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      side: const BorderSide(color: Colors.white, width: 1.2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                    child: Text(
+                      S.of(context).quizBannerRetake,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                 ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => context.push('/custom-nail'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white.withOpacity(0.15),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      side: const BorderSide(color: Colors.white, width: 1.2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                    child: Text(
+                      S.of(context).quizBannerDesign,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                 ),
-              ),
-              child: const Text(
-                'Làm lại trắc nghiệm cá tính',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+              ],
             ),
           ] else ...[
-            ElevatedButton(
-              onPressed: () => context.push('/quiz'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.surface,
-                foregroundColor: AppColors.primary,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => context.push('/quiz'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.surface,
+                      foregroundColor: AppColors.primary,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: Text(
+                      S.of(context).quizBannerTake,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                 ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => context.push('/custom-nail'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white.withOpacity(0.15),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      side: const BorderSide(color: Colors.white, width: 1.2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: Text(
+                      S.of(context).quizBannerDesign,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                 ),
-              ),
-              child: const Text(
-                'Take personality test',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+              ],
             ),
           ],
-          const SizedBox(height: 8),
-          ElevatedButton(
-            onPressed: () => context.push('/custom-nail'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white.withOpacity(0.15),
-              foregroundColor: Colors.white,
-              elevation: 0,
-              side: const BorderSide(color: Colors.white, width: 1.2),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            ),
-            child: const Text(
-              'Customize your Nail',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
         ],
       ),
     );

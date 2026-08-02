@@ -813,7 +813,9 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                       height: 2,
                       color: index == 0
                           ? Colors.transparent
-                          : (isCompleted || isActive ? AppColors.primary : Colors.grey.shade300),
+                          : (isCompleted || isActive
+                                ? AppColors.primary
+                                : Colors.grey.shade300),
                     ),
                   ),
                 ),
@@ -829,7 +831,9 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                         shape: BoxShape.circle,
                         color: isActive
                             ? Colors.white
-                            : (isCompleted ? AppColors.primary : Colors.grey.shade50),
+                            : (isCompleted
+                                  ? AppColors.primary
+                                  : Colors.grey.shade50),
                         border: Border.all(
                           color: (isActive || isCompleted)
                               ? AppColors.primary
@@ -842,7 +846,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                                   color: AppColors.primary.withOpacity(0.25),
                                   blurRadius: 8,
                                   spreadRadius: 1,
-                                )
+                                ),
                               ]
                             : null,
                       ),
@@ -852,7 +856,9 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                           size: 16,
                           color: isCompleted
                               ? Colors.white
-                              : (isActive ? AppColors.primary : Colors.grey.shade400),
+                              : (isActive
+                                    ? AppColors.primary
+                                    : Colors.grey.shade400),
                         ),
                       ),
                     ),
@@ -860,10 +866,18 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                     Text(
                       () {
                         final rawTitle = step['title'] as String;
-                        if (rawTitle == 'Chọn tiệm') return S.of(context).selectSalon;
-                        if (rawTitle == 'Dịch vụ') return S.of(context).servicesLabel;
-                        if (rawTitle == 'Đặt lịch') return S.of(context).bookAppointment;
-                        if (rawTitle == 'Hoàn tất') return S.of(context).completedLabel;
+                        if (rawTitle == 'Chọn tiệm') {
+                          return S.of(context).selectSalon;
+                        }
+                        if (rawTitle == 'Dịch vụ') {
+                          return S.of(context).servicesLabel;
+                        }
+                        if (rawTitle == 'Đặt lịch') {
+                          return S.of(context).bookAppointment;
+                        }
+                        if (rawTitle == 'Hoàn tất') {
+                          return S.of(context).completedLabel;
+                        }
                         return rawTitle;
                       }(),
                       style: TextStyle(
@@ -886,7 +900,9 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                       height: 2,
                       color: index == _bookingSteps.length - 1
                           ? Colors.transparent
-                          : (isCompleted ? AppColors.primary : Colors.grey.shade300),
+                          : (isCompleted
+                                ? AppColors.primary
+                                : Colors.grey.shade300),
                     ),
                   ),
                 ),
@@ -919,9 +935,9 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
               onPressed: state.isSubmitting
                   ? null
                   : () => _pageController.previousPage(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      ),
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    ),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,

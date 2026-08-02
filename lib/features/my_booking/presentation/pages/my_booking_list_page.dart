@@ -290,8 +290,9 @@ class _MyBookingListPageState extends State<MyBookingListPage>
                     hint: S.of(context).monthHint,
                     value: _selectedMonth,
                     items: [null, ...List.generate(12, (i) => i + 1)],
-                    itemLabel: (val) =>
-                        val == null ? S.of(context).allMonths : S.of(context).monthFormat(val),
+                    itemLabel: (val) => val == null
+                        ? S.of(context).allMonths
+                        : S.of(context).monthFormat(val),
                     onChanged: (val) => setState(() => _selectedMonth = val),
                   ),
                 ),
@@ -301,7 +302,9 @@ class _MyBookingListPageState extends State<MyBookingListPage>
                     hint: S.of(context).yearHint,
                     value: _selectedYear,
                     items: [null, ..._availableYears],
-                    itemLabel: (val) => val == null ? S.of(context).allYears : S.of(context).yearFormat(val),
+                    itemLabel: (val) => val == null
+                        ? S.of(context).allYears
+                        : S.of(context).yearFormat(val),
                     onChanged: (val) => setState(() => _selectedYear = val),
                   ),
                 ),
@@ -472,7 +475,8 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     String timeStr = booking['startTime']?.toString() ?? '';
     if (timeStr.length >= 5) timeStr = timeStr.substring(0, 5);
 
-    final artistName = booking['artistName']?.toString() ?? S.of(context).anyArtist;
+    final artistName =
+        booking['artistName']?.toString() ?? S.of(context).anyArtist;
     final bookingIdStr = booking['bookingId']?.toString() ?? '';
     final canRate =
         (rawStatus == 'Completed' || rawStatus == 'ServiceCompleted') &&
@@ -484,9 +488,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
           context.push('/my-bookings/detail', extra: bookingIdStr);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(S.of(context).bookingMissingId),
-            ),
+            SnackBar(content: Text(S.of(context).bookingMissingId)),
           );
         }
       },
@@ -606,7 +608,9 @@ class _MyBookingListPageState extends State<MyBookingListPage>
             // Check & render Warranty button
             if (rawStatus == 'Completed' &&
                 bookingIdStr.isNotEmpty &&
-                !_readBool(booking['isWarrantied'] ?? booking['IsWarrantied']) &&
+                !_readBool(
+                  booking['isWarrantied'] ?? booking['IsWarrantied'],
+                ) &&
                 !_hasWarranty(bookingIdStr)) ...[
               Padding(
                 padding: const EdgeInsets.only(top: 12),

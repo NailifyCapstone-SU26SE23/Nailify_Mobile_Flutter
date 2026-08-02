@@ -56,9 +56,9 @@ class _ForgotPasswordEmailPageState extends State<ForgotPasswordEmailPage> {
   }
 
   void _showSnackBar(String message, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: color),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
   }
 
   @override
@@ -127,9 +127,9 @@ class _ForgotPasswordCodePageState extends State<ForgotPasswordCodePage> {
   }
 
   void _showSnackBar(String message, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: color),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
   }
 
   @override
@@ -216,9 +216,9 @@ class _ForgotPasswordResetPageState extends State<ForgotPasswordResetPage> {
   }
 
   void _showSnackBar(String message, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: color),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
   }
 
   @override
@@ -259,7 +259,7 @@ class _ForgotPasswordResetPageState extends State<ForgotPasswordResetPage> {
               ),
               onPressed: () {
                 setState(
-                      () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                  () => _obscureConfirmPassword = !_obscureConfirmPassword,
                 );
               },
             ),
@@ -419,10 +419,7 @@ class _ResetButton extends StatelessWidget {
                   color: Colors.white,
                 ),
               )
-            : Text(
-                label,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
+            : Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
     );
   }

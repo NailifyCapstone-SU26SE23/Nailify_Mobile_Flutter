@@ -71,8 +71,9 @@ class _NailListViewState extends State<_NailListView> {
 
   // Calculate highest matching score percentage for a given nail design
   int? _getMatchPercentage(NailDesignModel design) {
-    if (widget.matchedResults == null || widget.matchedResults!.isEmpty)
+    if (widget.matchedResults == null || widget.matchedResults!.isEmpty) {
       return null;
+    }
 
     double maxScore = -1.0;
 
@@ -195,8 +196,9 @@ class _NailListViewState extends State<_NailListView> {
 
                       if (aPct != null && bPct == null) return -1;
                       if (aPct == null && bPct != null) return 1;
-                      if (aPct != null && bPct != null)
+                      if (aPct != null && bPct != null) {
                         return bPct.compareTo(aPct); // Sort descending
+                      }
                       return 0;
                     });
                   }

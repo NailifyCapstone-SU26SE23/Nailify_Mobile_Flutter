@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/di/injection.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../../nails/data/models/shape_method_config_model.dart';
-import '../../../nails/data/repositories/nail_variant_repository.dart';
 import '../cubit/studio_cubit.dart';
 import '../../data/models/customer_nail_model.dart';
 import '../../../../core/utils/duration_formatter.dart';
@@ -21,22 +19,7 @@ class CustomerNailDetailPage extends StatefulWidget {
 }
 
 class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
-  Future<List<ShapeMethodConfigModel>>? _shapeMethodsFuture;
-  int? _shapeMethodsShapeId;
   ShapeMethodConfigModel? _selectedShapeMethod;
-
-  Future<List<ShapeMethodConfigModel>> _shapeMethodsFor(
-    CustomerNailModel nail,
-  ) {
-    final shapeId = nail.nailShapeId ?? 0;
-    if (_shapeMethodsFuture == null || _shapeMethodsShapeId != shapeId) {
-      _shapeMethodsShapeId = shapeId;
-      _selectedShapeMethod = null;
-      _shapeMethodsFuture = getIt<NailVariantRepository>()
-          .getShapeMethodConfigsByNailShape(shapeId);
-    }
-    return _shapeMethodsFuture!;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +29,11 @@ class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
         backgroundColor: AppColors.background,
         appBar: AppBar(
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios, color: AppColors.primaryDark, size: 20),
+            icon: const Icon(
+              Icons.arrow_back_ios,
+              color: AppColors.primaryDark,
+              size: 20,
+            ),
             onPressed: () => context.pop(),
           ),
           title: Text(

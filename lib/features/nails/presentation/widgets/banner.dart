@@ -96,7 +96,10 @@ class _QuizBannerState extends State<QuizBanner>
                 ),
                 child: Text(
                   S.of(context).quizBannerViewResults,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
                 ),
               ),
             ),
@@ -118,7 +121,10 @@ class _QuizBannerState extends State<QuizBanner>
                     ),
                     child: Text(
                       S.of(context).quizBannerRetake,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11.5,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -139,7 +145,10 @@ class _QuizBannerState extends State<QuizBanner>
                     ),
                     child: Text(
                       S.of(context).quizBannerDesign,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11.5,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -163,7 +172,10 @@ class _QuizBannerState extends State<QuizBanner>
                     ),
                     child: Text(
                       S.of(context).quizBannerTake,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -184,7 +196,10 @@ class _QuizBannerState extends State<QuizBanner>
                     ),
                     child: Text(
                       S.of(context).quizBannerDesign,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ),

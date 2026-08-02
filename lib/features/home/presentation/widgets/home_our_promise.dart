@@ -21,7 +21,11 @@ class OurPromisePage extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.star_rounded, color: AppColors.primary, size: 16),
+              const Icon(
+                Icons.star_rounded,
+                color: AppColors.primary,
+                size: 16,
+              ),
               const SizedBox(width: 6),
               Text(
                 S.of(context).ourPromiseTitle,

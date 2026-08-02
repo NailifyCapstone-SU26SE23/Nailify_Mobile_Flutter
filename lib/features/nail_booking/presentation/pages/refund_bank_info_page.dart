@@ -66,7 +66,11 @@ class _RefundBankInfoPageState extends State<RefundBankInfoPage> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AppColors.primaryDark, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios,
+            color: AppColors.primaryDark,
+            size: 20,
+          ),
           onPressed: () => context.pop(),
         ),
         title: Text(

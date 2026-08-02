@@ -68,12 +68,17 @@ class CustomerNailModel {
     final rawPrice = json['price'] ?? json['Price'];
     final fallbackPrice = customerNail['price'] ?? customerNail['Price'];
     final parsedPrice = (rawPrice as num?)?.toInt() ?? 0;
-    final finalPrice = parsedPrice > 0 ? parsedPrice : ((fallbackPrice as num?)?.toInt() ?? 0);
+    final finalPrice = parsedPrice > 0
+        ? parsedPrice
+        : ((fallbackPrice as num?)?.toInt() ?? 0);
 
     final rawDuration = json['duration'] ?? json['Duration'];
-    final fallbackDuration = customerNail['duration'] ?? customerNail['Duration'];
+    final fallbackDuration =
+        customerNail['duration'] ?? customerNail['Duration'];
     final parsedDuration = (rawDuration as num?)?.toInt() ?? 0;
-    final finalDuration = parsedDuration > 0 ? parsedDuration : ((fallbackDuration as num?)?.toInt() ?? 0);
+    final finalDuration = parsedDuration > 0
+        ? parsedDuration
+        : ((fallbackDuration as num?)?.toInt() ?? 0);
 
     return CustomerNailModel(
       customerNailRequestId: json['customerNailRequestId']?.toString() ?? '',

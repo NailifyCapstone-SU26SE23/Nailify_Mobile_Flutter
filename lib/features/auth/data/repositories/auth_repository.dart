@@ -74,17 +74,11 @@ class AuthRepository {
   }
 
   Future<void> forgotPassword({required String email}) async {
-    await _postBooleanResult(
-      '/Auth/forgot-password',
-      data: {'email': email},
-    );
+    await _postBooleanResult('/Auth/forgot-password', data: {'email': email});
   }
 
   Future<void> checkResetToken({required String token}) async {
-    await _postBooleanResult(
-      '/Auth/check-reset-token',
-      data: {'token': token},
-    );
+    await _postBooleanResult('/Auth/check-reset-token', data: {'token': token});
   }
 
   Future<void> resetPassword({

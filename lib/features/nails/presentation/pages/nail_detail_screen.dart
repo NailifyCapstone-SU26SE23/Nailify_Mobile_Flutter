@@ -181,7 +181,7 @@ class _DesignDetailContent extends StatelessWidget {
         const SizedBox(height: 28),
         Row(
           children: [
-             Text(
+            Text(
               S.of(context).nailVariantsLabel,
               style: const TextStyle(
                 fontSize: 18,

@@ -40,7 +40,11 @@ class NailSurfaceSelector extends StatelessWidget {
   }
 
   String _formatPrice(BuildContext context, double price) {
-    if (price == 0) return Localizations.localeOf(context).languageCode == 'en' ? 'Free' : 'Miễn phí';
+    if (price == 0) {
+      return Localizations.localeOf(context).languageCode == 'en'
+          ? 'Free'
+          : 'Miễn phí';
+    }
     final isEn = Localizations.localeOf(context).languageCode == 'en';
     if (isEn) {
       final formatter = NumberFormat.currency(
@@ -64,7 +68,10 @@ class NailSurfaceSelector extends StatelessWidget {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(16.0),
-          child: Text('Không có bề mặt móng nào khả dụng', style: TextStyle(color: Colors.grey)),
+          child: Text(
+            'Không có bề mặt móng nào khả dụng',
+            style: TextStyle(color: Colors.grey),
+          ),
         ),
       );
     }
@@ -77,7 +84,8 @@ class NailSurfaceSelector extends StatelessWidget {
         itemCount: surfaces.length,
         itemBuilder: (context, index) {
           final surface = surfaces[index];
-          final isSelected = selectedSurface?.nailSurfaceId == surface.nailSurfaceId;
+          final isSelected =
+              selectedSurface?.nailSurfaceId == surface.nailSurfaceId;
 
           return GestureDetector(
             onTap: () => onSelected(surface),
@@ -87,12 +95,17 @@ class NailSurfaceSelector extends StatelessWidget {
                 Container(
                   width: 105,
                   margin: const EdgeInsets.only(right: 12),
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 10,
+                    horizontal: 8,
+                  ),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
                     color: Colors.white,
                     border: Border.all(
-                      color: isSelected ? const Color(0xFFE91E63) : Colors.grey.shade200,
+                      color: isSelected
+                          ? const Color(0xFFE91E63)
+                          : Colors.grey.shade200,
                       width: isSelected ? 2 : 1,
                     ),
                     boxShadow: [
@@ -110,16 +123,22 @@ class NailSurfaceSelector extends StatelessWidget {
                     children: [
                       Icon(
                         _getSurfaceIcon(surface.shaderParam),
-                        color: isSelected ? const Color(0xFFE91E63) : Colors.grey.shade500,
+                        color: isSelected
+                            ? const Color(0xFFE91E63)
+                            : Colors.grey.shade500,
                         size: 24,
                       ),
                       const SizedBox(height: 6),
                       Text(
                         _translateName(context, surface.name),
                         style: TextStyle(
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.w500,
                           fontSize: 12,
-                          color: isSelected ? const Color(0xFFE91E63) : Colors.black87,
+                          color: isSelected
+                              ? const Color(0xFFE91E63)
+                              : Colors.black87,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -130,7 +149,9 @@ class NailSurfaceSelector extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.w600,
-                          color: isSelected ? const Color(0xFFC2185B) : Colors.grey.shade500,
+                          color: isSelected
+                              ? const Color(0xFFC2185B)
+                              : Colors.grey.shade500,
                         ),
                       ),
                     ],

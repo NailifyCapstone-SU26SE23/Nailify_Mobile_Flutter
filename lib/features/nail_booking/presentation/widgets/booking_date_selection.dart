@@ -37,7 +37,8 @@ class _BookingDateSelectionState extends State<BookingDateSelection> {
     );
   }
 
-  List<String> get _weekDays => Localizations.localeOf(context).languageCode == 'vi'
+  List<String> get _weekDays =>
+      Localizations.localeOf(context).languageCode == 'vi'
       ? ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
       : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -84,7 +85,12 @@ class _BookingDateSelectionState extends State<BookingDateSelection> {
                     (monthDate) => DropdownMenuItem(
                       value: monthDate,
                       child: Text(
-                        S.of(context).bookingMonthYear(monthDate.month.toString(), monthDate.year.toString()),
+                        S
+                            .of(context)
+                            .bookingMonthYear(
+                              monthDate.month.toString(),
+                              monthDate.year.toString(),
+                            ),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

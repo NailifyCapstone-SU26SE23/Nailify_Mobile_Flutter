@@ -58,10 +58,19 @@ class _NailBookingPageState extends State<NailBookingPage> {
   bool _noArtistSelected = false;
 
   List<Map<String, dynamic>> get _bookingSteps => [
-    {'title': S.of(context).bookingStepSelectSalon, 'icon': Icons.storefront_rounded},
+    {
+      'title': S.of(context).bookingStepSelectSalon,
+      'icon': Icons.storefront_rounded,
+    },
     {'title': S.of(context).bookingStepServices, 'icon': Icons.spa_rounded},
-    {'title': S.of(context).bookingStepBook, 'icon': Icons.calendar_month_rounded},
-    {'title': S.of(context).bookingStepCompleted, 'icon': Icons.check_circle_rounded},
+    {
+      'title': S.of(context).bookingStepBook,
+      'icon': Icons.calendar_month_rounded,
+    },
+    {
+      'title': S.of(context).bookingStepCompleted,
+      'icon': Icons.check_circle_rounded,
+    },
   ];
 
   @override
@@ -536,7 +545,11 @@ class _NailBookingPageState extends State<NailBookingPage> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: AppColors.primaryDark),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            size: 20,
+            color: AppColors.primaryDark,
+          ),
           onPressed: _handleBackAction,
         ),
         title: Text(
@@ -733,7 +746,10 @@ class _NailBookingPageState extends State<NailBookingPage> {
               Expanded(
                 child: Text(
                   S.of(context).bookingPaymentDetails,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
               ),
               if (_isReviewingPrice)
@@ -775,7 +791,8 @@ class _NailBookingPageState extends State<NailBookingPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildPaymentRow(
-            widget.nailData!['name']?.toString() ?? S.of(context).bookingNailVariantDefault,
+            widget.nailData!['name']?.toString() ??
+                S.of(context).bookingNailVariantDefault,
             _nailVariantPrice + _shapeMethodPrice.round(),
           ),
           if (variant != null) ...[
@@ -785,7 +802,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
               _buildVariantDetailLine(_shapeMethodName!, _shapeMethodPrice),
             ...variant.nailComponents.map((component) {
               final detail = component.component;
-                return _buildVariantDetailLine(
+              return _buildVariantDetailLine(
                 detail?.name ?? S.of(context).bookingComponentDefault,
                 detail?.price ?? 0,
               );
@@ -1072,7 +1089,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
                       height: 2,
                       color: index == 0
                           ? Colors.transparent
-                          : (isCompleted || isActive ? AppColors.primary : Colors.grey.shade300),
+                          : (isCompleted || isActive
+                                ? AppColors.primary
+                                : Colors.grey.shade300),
                     ),
                   ),
                 ),
@@ -1088,7 +1107,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
                         shape: BoxShape.circle,
                         color: isActive
                             ? Colors.white
-                            : (isCompleted ? AppColors.primary : Colors.grey.shade50),
+                            : (isCompleted
+                                  ? AppColors.primary
+                                  : Colors.grey.shade50),
                         border: Border.all(
                           color: (isActive || isCompleted)
                               ? AppColors.primary
@@ -1101,7 +1122,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                                   color: AppColors.primary.withOpacity(0.25),
                                   blurRadius: 8,
                                   spreadRadius: 1,
-                                )
+                                ),
                               ]
                             : null,
                       ),
@@ -1111,7 +1132,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
                           size: 16,
                           color: isCompleted
                               ? Colors.white
-                              : (isActive ? AppColors.primary : Colors.grey.shade400),
+                              : (isActive
+                                    ? AppColors.primary
+                                    : Colors.grey.shade400),
                         ),
                       ),
                     ),
@@ -1139,7 +1162,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
                       height: 2,
                       color: index == _bookingSteps.length - 1
                           ? Colors.transparent
-                          : (isCompleted ? AppColors.primary : Colors.grey.shade300),
+                          : (isCompleted
+                                ? AppColors.primary
+                                : Colors.grey.shade300),
                     ),
                   ),
                 ),

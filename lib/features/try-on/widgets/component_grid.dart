@@ -32,9 +32,9 @@ class _ComponentGridState extends State<ComponentGrid> {
           Text(
             widget.title,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: Colors.grey.shade800,
-                ),
+              fontWeight: FontWeight.w700,
+              color: Colors.grey.shade800,
+            ),
           ),
           const SizedBox(height: 8),
         ],
@@ -51,7 +51,8 @@ class _ComponentGridState extends State<ComponentGrid> {
                 width: 90,
                 child: _ComponentCard(
                   component: component,
-                  isSelected: widget.selectedComponent?.id == component.id &&
+                  isSelected:
+                      widget.selectedComponent?.id == component.id &&
                       widget.selectedComponent?.isCustomerComponent ==
                           component.isCustomerComponent,
                   onTap: () => widget.onSelected(component),
@@ -87,7 +88,9 @@ class _ComponentCard extends StatelessWidget {
             width: 90,
             decoration: BoxDecoration(
               border: Border.all(
-                color: isSelected ? const Color(0xFFE91E63) : Colors.grey.shade200,
+                color: isSelected
+                    ? const Color(0xFFE91E63)
+                    : Colors.grey.shade200,
                 width: isSelected ? 2 : 1,
               ),
               borderRadius: BorderRadius.circular(12),
@@ -118,17 +121,21 @@ class _ComponentCard extends StatelessWidget {
                               component.imageUrl,
                               fit: BoxFit.contain,
                               width: double.infinity,
-                              errorBuilder: (_, _, _) => const _FallbackGridIcon(),
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return const Center(
-                                  child: SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(strokeWidth: 1.5),
-                                  ),
-                                );
-                              },
+                              errorBuilder: (_, _, _) =>
+                                  const _FallbackGridIcon(),
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return const Center(
+                                      child: SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 1.5,
+                                        ),
+                                      ),
+                                    );
+                                  },
                             )
                           : const _FallbackGridIcon(),
                     ),
@@ -137,16 +144,23 @@ class _ComponentCard extends StatelessWidget {
 
                 // Metadata
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 6,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         component.name,
                         style: TextStyle(
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.w500,
                           fontSize: 10,
-                          color: isSelected ? const Color(0xFFE91E63) : Colors.black87,
+                          color: isSelected
+                              ? const Color(0xFFE91E63)
+                              : Colors.black87,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -162,7 +176,9 @@ class _ComponentCard extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 9,
                                 fontWeight: FontWeight.bold,
-                                color: isSelected ? const Color(0xFFC2185B) : Colors.grey.shade700,
+                                color: isSelected
+                                    ? const Color(0xFFC2185B)
+                                    : Colors.grey.shade700,
                               ),
                             ),
                         ],
@@ -183,11 +199,7 @@ class _ComponentCard extends StatelessWidget {
                   color: Color(0xFFE91E63),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.check,
-                  color: Colors.white,
-                  size: 8,
-                ),
+                child: const Icon(Icons.check, color: Colors.white, size: 8),
               ),
             ),
         ],
@@ -226,7 +238,11 @@ class _TypeBadge extends StatelessWidget {
       ),
       child: Text(
         type.name.toUpperCase(),
-        style: TextStyle(fontSize: 7, color: badgeColor, fontWeight: FontWeight.w800),
+        style: TextStyle(
+          fontSize: 7,
+          color: badgeColor,
+          fontWeight: FontWeight.w800,
+        ),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
@@ -241,7 +257,11 @@ class _FallbackGridIcon extends StatelessWidget {
     return Container(
       color: Colors.grey.shade50,
       width: double.infinity,
-      child: Icon(Icons.auto_awesome_outlined, size: 20, color: Colors.grey.shade300),
+      child: Icon(
+        Icons.auto_awesome_outlined,
+        size: 20,
+        color: Colors.grey.shade300,
+      ),
     );
   }
 }

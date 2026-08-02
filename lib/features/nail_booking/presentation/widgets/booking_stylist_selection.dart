@@ -115,7 +115,10 @@ class _BookingStylistSelectionState extends State<BookingStylistSelection>
                       children: widget.artists.map((artist) {
                         final bool isSelected =
                             artist['nailArtistId'] == widget.selectedStylistId;
-                        final String displayName = _getArtistName(artist, context);
+                        final String displayName = _getArtistName(
+                          artist,
+                          context,
+                        );
                         return ListTile(
                           leading: CircleAvatar(
                             backgroundColor: Colors.grey.shade200,

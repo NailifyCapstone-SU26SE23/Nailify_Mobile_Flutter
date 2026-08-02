@@ -58,7 +58,10 @@ class _RescheduleTabState extends State<RescheduleTab> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(S.of(context).error), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text(S.of(context).error),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       if (mounted) setState(() => _isActionLoading = false);
@@ -91,7 +94,10 @@ class _RescheduleTabState extends State<RescheduleTab> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(S.of(context).error), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text(S.of(context).error),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       if (mounted) setState(() => _isActionLoading = false);
@@ -145,8 +151,11 @@ class _RescheduleTabState extends State<RescheduleTab> {
   Widget _buildDateFilterBar() {
     final hasFilter = _selectedFilterDate != null;
     final textDisplay = hasFilter
-        ? S.of(context).rescheduleFilterDate(
-            '${_selectedFilterDate!.day}/${_selectedFilterDate!.month}/${_selectedFilterDate!.year}')
+        ? S
+              .of(context)
+              .rescheduleFilterDate(
+                '${_selectedFilterDate!.day}/${_selectedFilterDate!.month}/${_selectedFilterDate!.year}',
+              )
         : S.of(context).rescheduleFilterByDate;
 
     return Container(
@@ -269,9 +278,7 @@ class _RescheduleTabState extends State<RescheduleTab> {
                           children: [
                             const CircularProgressIndicator(),
                             const SizedBox(height: 12),
-                            Text(
-                              S.of(context).rescheduleProcessing,
-                            ),
+                            Text(S.of(context).rescheduleProcessing),
                           ],
                         ),
                       ),
@@ -326,7 +333,8 @@ class _RescheduleTabState extends State<RescheduleTab> {
         timeStr;
     if (newTimeStr.length >= 5) newTimeStr = newTimeStr.substring(0, 5);
 
-    final artistName = booking['artistName']?.toString() ?? S.of(context).anyArtist;
+    final artistName =
+        booking['artistName']?.toString() ?? S.of(context).anyArtist;
     final salonName = booking['salonName']?.toString() ?? 'Nailify Salon';
     final salonAddress = booking['salonAddress']?.toString() ?? '';
     final reason =

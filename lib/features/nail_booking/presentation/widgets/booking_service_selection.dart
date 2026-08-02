@@ -112,7 +112,9 @@ class BookingServiceSelection extends StatelessWidget {
               item['customerNailName']?.toString().trim() ?? '',
               item['serviceName']?.toString().trim() ?? '',
             ].where((name) => name.isNotEmpty).toList();
-            final name = names.isEmpty ? S.of(context).bookingWarrantyDefault : names.join(' & ');
+            final name = names.isEmpty
+                ? S.of(context).bookingWarrantyDefault
+                : names.join(' & ');
 
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
@@ -140,7 +142,9 @@ class BookingServiceSelection extends StatelessWidget {
                   ),
                 ),
                 subtitle: Text(
-                  S.of(context).bookingWarrantyFree((item['quantity'] ?? 1).toString()),
+                  S
+                      .of(context)
+                      .bookingWarrantyFree((item['quantity'] ?? 1).toString()),
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
                 onChanged: (val) {
@@ -186,7 +190,9 @@ class BookingServiceSelection extends StatelessWidget {
             ),
             if (totalSelectedCount > 0)
               Text(
-                S.of(context).bookingSelectedCount(totalSelectedCount.toString()),
+                S
+                    .of(context)
+                    .bookingSelectedCount(totalSelectedCount.toString()),
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
@@ -317,8 +323,12 @@ class BookingServiceSelection extends StatelessWidget {
                             ),
                           ),
                           if (count > 1)
-                           Text(
-                              S.of(context).bookingUnitPrice(PriceFormatter.format(unitPrice)),
+                            Text(
+                              S
+                                  .of(context)
+                                  .bookingUnitPrice(
+                                    PriceFormatter.format(unitPrice),
+                                  ),
                               style: TextStyle(
                                 fontSize: 11,
                                 color: Colors.grey.shade500,
@@ -462,7 +472,10 @@ class BookingServiceSelection extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 8,
+                ),
                 child: Text(
                   S.of(context).bookingAddServiceTitle,
                   style: const TextStyle(
@@ -479,9 +492,13 @@ class BookingServiceSelection extends StatelessWidget {
                 ),
                 child: ListView.separated(
                   shrinkWrap: true,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 8,
+                  ),
                   itemCount: availableServices.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFFFF5F8)),
+                  separatorBuilder: (_, _) =>
+                      const Divider(height: 1, color: Color(0xFFFFF5F8)),
                   itemBuilder: (context, index) {
                     final s = availableServices[index];
                     final serviceId = _serviceId(s);

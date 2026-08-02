@@ -276,7 +276,8 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     if (direct != null && direct.trim().isNotEmpty) return direct.trim();
     final nestedMap = booking['salon'];
     if (nestedMap is Map) {
-      final addr = (nestedMap['salonAddress'] ?? nestedMap['address'])?.toString();
+      final addr = (nestedMap['salonAddress'] ?? nestedMap['address'])
+          ?.toString();
       if (addr != null && addr.trim().isNotEmpty) return addr.trim();
     }
     final matched = _getMatchingSalon();
@@ -323,9 +324,11 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
 
   String _getBookingArtistName(Map<String, dynamic>? booking) {
     if (booking == null) return '';
-    final direct = booking['artistName']?.toString() ?? booking['nailArtistName']?.toString();
+    final direct =
+        booking['artistName']?.toString() ??
+        booking['nailArtistName']?.toString();
     if (direct != null && direct.trim().isNotEmpty) return direct.trim();
-    
+
     for (final key in const ['nailArtist', 'artist']) {
       final nestedMap = booking[key];
       if (nestedMap is Map) {
@@ -383,7 +386,11 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AppColors.primaryDark, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios,
+            color: AppColors.primaryDark,
+            size: 20,
+          ),
           onPressed: () => context.go('/my-bookings'),
           // context.pop(),
         ),
@@ -457,7 +464,9 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                     child: InkWell(
                       onTap: () {
                         final sName = _getBookingSalonName(_booking);
-                        final salonName = sName.isNotEmpty ? sName : 'Nailify Salon';
+                        final salonName = sName.isNotEmpty
+                            ? sName
+                            : 'Nailify Salon';
                         final address = _getBookingSalonAddress(_booking);
                         final latitude = _getBookingLatitude(_booking);
                         final longitude = _getBookingLongitude(_booking);
@@ -527,7 +536,9 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   ),
                   _buildRow(
                     S.of(context).bookingDurationLabel,
-                    S.of(context).bookingDurationValue(
+                    S
+                        .of(context)
+                        .bookingDurationValue(
                           booking['totalDuration']?.toString() ?? '0',
                         ),
                   ),
@@ -559,7 +570,10 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                     children: [
                       Text(
                         S.of(context).bookingOriginalPriceLabel,
-                        style: const TextStyle(color: Colors.grey, fontSize: 14),
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 14,
+                        ),
                       ),
                       Text(
                         PriceFormatter.format(booking['price'] ?? 0),
@@ -581,7 +595,10 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                       children: [
                         Text(
                           S.of(context).bookingDiscountLabel,
-                          style: const TextStyle(color: Colors.grey, fontSize: 14),
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 14,
+                          ),
                         ),
                         Text(
                           PriceFormatter.format(booking['discount'] ?? 0),
@@ -662,7 +679,10 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
             if (isRated) ...[
               Text(
                 S.of(context).bookingYourRating,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 12),
               _buildRatingCard(),
@@ -672,7 +692,10 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
             if (!isRated && rawQrString != null && rawQrString.isNotEmpty) ...[
               Text(
                 S.of(context).bookingCheckInCode,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 12),
               Container(
@@ -792,7 +815,10 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   ),
                   label: Text(
                     S.of(context).bookingRescheduleBtnLabel,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -817,14 +843,18 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                             if (success) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text(S.of(context).bookingCancelSuccess),
+                                  content: Text(
+                                    S.of(context).bookingCancelSuccess,
+                                  ),
                                 ),
                               );
                               _fetchBookingDetail(); // Load lại trang
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text(S.of(context).bookingCancelFail),
+                                  content: Text(
+                                    S.of(context).bookingCancelFail,
+                                  ),
                                 ),
                               );
                             }
@@ -848,7 +878,10 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   ),
                   child: Text(
                     S.of(context).bookingCancelBtnLabel,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -895,7 +928,9 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     final components = _bookingItemComponents(item);
     final variantDetails = _bookingItemVariantDetails(item);
     final detailLines = variantDetails.isNotEmpty ? variantDetails : components;
-    final name = names.isEmpty ? S.of(context).bookingInfoService : names.join(' & ');
+    final name = names.isEmpty
+        ? S.of(context).bookingInfoService
+        : names.join(' & ');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -926,7 +961,9 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
               Expanded(
                 flex: 5,
                 child: Text(
-                  S.of(context).bookingQuantityLabel(
+                  S
+                      .of(context)
+                      .bookingQuantityLabel(
                         _readInt(item['quantity'], fallback: 1).toString(),
                       ),
                   style: const TextStyle(color: Colors.grey, fontSize: 13),
@@ -1362,9 +1399,18 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
           ],
 
           _buildRatingRow(S.of(context).ratingOverall, rating['overallScore']),
-          _buildRatingRow(S.of(context).ratingServiceQuality, rating['serviceQuality']),
-          _buildRatingRow(S.of(context).ratingPunctuality, rating['punctuality']),
-          _buildRatingRow(S.of(context).ratingCleanliness, rating['cleanliness']),
+          _buildRatingRow(
+            S.of(context).ratingServiceQuality,
+            rating['serviceQuality'],
+          ),
+          _buildRatingRow(
+            S.of(context).ratingPunctuality,
+            rating['punctuality'],
+          ),
+          _buildRatingRow(
+            S.of(context).ratingCleanliness,
+            rating['cleanliness'],
+          ),
 
           if (comment.isNotEmpty) ...[
             const SizedBox(height: 12),

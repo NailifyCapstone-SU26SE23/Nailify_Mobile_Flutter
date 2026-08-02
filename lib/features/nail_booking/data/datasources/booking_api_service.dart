@@ -29,16 +29,10 @@ class BookingApiService {
       if (nailVariantId > 0)
         {
           'nailVariantId': nailVariantId,
-          if (shapeMethodConfigId != null)
-            'shapeMethodConfigId': shapeMethodConfigId,
+          'shapeMethodConfigId': ?shapeMethodConfigId,
           'quantity': 1,
         },
-      ...serviceIds.map(
-        (serviceId) => {
-          'serviceId': serviceId,
-          'quantity': 1,
-        },
-      ),
+      ...serviceIds.map((serviceId) => {'serviceId': serviceId, 'quantity': 1}),
     ];
   }
 
@@ -270,17 +264,13 @@ class BookingApiService {
     final bookingItems = <Map<String, dynamic>>[
       {
         'customerNailRequestId': customerNailRequestId,
-        if (shapeMethodConfigId != null)
-          'shapeMethodConfigId': shapeMethodConfigId,
+        'shapeMethodConfigId': ?shapeMethodConfigId,
         'quantity': 1,
       },
     ];
 
     groupedExtraServices.forEach((serviceId, quantity) {
-      bookingItems.add({
-        'serviceId': serviceId,
-        'quantity': quantity,
-      });
+      bookingItems.add({'serviceId': serviceId, 'quantity': quantity});
     });
 
     final response = await _apiClient.post(

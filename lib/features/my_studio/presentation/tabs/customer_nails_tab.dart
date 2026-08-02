@@ -195,7 +195,10 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
         icon: const Icon(Icons.add_rounded, size: 20),
         label: Text(
           S.of(context).createNewBtn,
-          style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
         ),
       ),
       body: Column(
@@ -286,9 +289,18 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
                         ),
                         isExpanded: true,
                         items: [
-                          DropdownMenuItem(value: null, child: Text(S.of(context).filterAll)),
-                          DropdownMenuItem(value: true, child: Text(S.of(context).filterPublic)),
-                          DropdownMenuItem(value: false, child: Text(S.of(context).filterPrivate)),
+                          DropdownMenuItem(
+                            value: null,
+                            child: Text(S.of(context).filterAll),
+                          ),
+                          DropdownMenuItem(
+                            value: true,
+                            child: Text(S.of(context).filterPublic),
+                          ),
+                          DropdownMenuItem(
+                            value: false,
+                            child: Text(S.of(context).filterPrivate),
+                          ),
                         ],
                         onChanged: (value) {
                           setState(() => _isPublicFilter = value);
@@ -323,7 +335,7 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
                         FilledButton.icon(
                           onPressed: () => _loadData(reset: true),
                           icon: const Icon(Icons.refresh),
-                        label: Text(S.of(context).retryBtn),
+                          label: Text(S.of(context).retryBtn),
                         ),
                       ],
                     ),

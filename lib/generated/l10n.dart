@@ -3197,12 +3197,7 @@ class S {
 
   /// `Language`
   String get languageLabel {
-    return Intl.message(
-      'Language',
-      name: 'languageLabel',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Language', name: 'languageLabel', desc: '', args: []);
   }
 
   /// `Forgot password?`
@@ -3327,12 +3322,7 @@ class S {
 
   /// `Last Name`
   String get lastNameHint {
-    return Intl.message(
-      'Last Name',
-      name: 'lastNameHint',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Last Name', name: 'lastNameHint', desc: '', args: []);
   }
 
   /// `Confirm Password`
@@ -3437,12 +3427,7 @@ class S {
 
   /// `Date`
   String get bookingDateLabel {
-    return Intl.message(
-      'Date',
-      name: 'bookingDateLabel',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Date', name: 'bookingDateLabel', desc: '', args: []);
   }
 
   /// `Start Time`
@@ -3547,12 +3532,7 @@ class S {
 
   /// `Overall`
   String get ratingOverall {
-    return Intl.message(
-      'Overall',
-      name: 'ratingOverall',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Overall', name: 'ratingOverall', desc: '', args: []);
   }
 
   /// `Service Quality`
@@ -3607,12 +3587,7 @@ class S {
 
   /// `Paid:`
   String get bookingPaidAmount {
-    return Intl.message(
-      'Paid:',
-      name: 'bookingPaidAmount',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Paid:', name: 'bookingPaidAmount', desc: '', args: []);
   }
 
   /// `Remaining:`

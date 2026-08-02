@@ -8,7 +8,6 @@ import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/localization/locale_service.dart';
-import '../../../../generated/l10n.dart';
 import '../../data/repositories/auth_repository.dart';
 
 class LoginPage extends StatefulWidget {
@@ -25,6 +24,7 @@ class _LoginPageState extends State<LoginPage> {
   bool _obscurePassword = true;
   bool _isSubmitting = false;
   bool _isGoogleSubmitting = false;
+  Future<void>? _googleSignInInitialization;
 
   Future<void> _handleLogin() async {
     final email = _emailController.text.trim();
@@ -65,24 +65,28 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _handleGoogleLogin() async {
     setState(() => _isGoogleSubmitting = true);
     try {
-      final googleSignIn = GoogleSignIn(
+      final googleSignIn = GoogleSignIn.instance;
+      _googleSignInInitialization ??= googleSignIn.initialize(
         serverClientId: await _loadGoogleServerClientId(),
-        scopes: ['email', 'profile'],
       );
-      final googleUser = await googleSignIn.signIn();
-      if (googleUser == null) return;
+      await _googleSignInInitialization;
 
-      final googleAuth = await googleUser.authentication;
+      final googleUser = await googleSignIn.authenticate(
+        scopeHint: const ['email', 'profile'],
+      );
+      final googleAuth = googleUser.authentication;
       final idToken = googleAuth.idToken;
 
       if (idToken == null || idToken.isEmpty) {
-        throw const FormatException('Google sign-in did not return an ID token.');
+        throw const FormatException(
+          'Google sign-in did not return an ID token.',
+        );
       }
 
       await getIt<AuthRepository>().loginWithGoogle(idToken: idToken);
 
       if (!mounted) return;
-      _showSnackBar('Google login successful', AppColors.success);
+      _showSnackBar('Đăng nhập Google thành công', AppColors.success);
       context.go('/');
     } catch (e) {
       if (!mounted) return;
@@ -106,7 +110,9 @@ class _LoginPageState extends State<LoginPage> {
 
     final clientId = config['server_client_id']?.toString();
     if (clientId == null || clientId.isEmpty) {
-      throw const FormatException('google-login.json missing server_client_id.');
+      throw const FormatException(
+        'google-login.json missing server_client_id.',
+      );
     }
 
     return clientId;
@@ -415,9 +421,13 @@ class _LoginPageState extends State<LoginPage> {
                               const SizedBox(height: 16),
                               Row(
                                 children: [
-                                  Expanded(child: Divider(color: Colors.grey.shade300)),
+                                  Expanded(
+                                    child: Divider(color: Colors.grey.shade300),
+                                  ),
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                    ),
                                     child: Text(
                                       'hoặc',
                                       style: TextStyle(
@@ -426,7 +436,9 @@ class _LoginPageState extends State<LoginPage> {
                                       ),
                                     ),
                                   ),
-                                  Expanded(child: Divider(color: Colors.grey.shade300)),
+                                  Expanded(
+                                    child: Divider(color: Colors.grey.shade300),
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 16),
@@ -444,7 +456,10 @@ class _LoginPageState extends State<LoginPage> {
                                             strokeWidth: 2,
                                           ),
                                         )
-                                      : const Icon(Icons.g_mobiledata, size: 28),
+                                      : const Icon(
+                                          Icons.g_mobiledata,
+                                          size: 28,
+                                        ),
                                   label: const Text(
                                     'Đăng nhập với Google',
                                     style: TextStyle(
@@ -516,7 +531,10 @@ class _LoginPageState extends State<LoginPage> {
                       ],
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 20,
+                      ),
                       color: AppColors.primaryDark,
                       onPressed: () {
                         if (context.canPop()) {
@@ -535,7 +553,8 @@ class _LoginPageState extends State<LoginPage> {
                 child: SafeArea(
                   child: Consumer<LocaleService>(
                     builder: (context, localeService, _) {
-                      final isVi = localeService.currentLocale.languageCode == 'vi';
+                      final isVi =
+                          localeService.currentLocale.languageCode == 'vi';
                       return Container(
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.9),

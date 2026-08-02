@@ -70,7 +70,6 @@ class BookingTimeSlotWaitlist extends StatefulWidget {
 
 class _BookingTimeSlotWaitlistState extends State<BookingTimeSlotWaitlist> {
   late List<TimeSlotItem> _slots;
-  String? _selectedTime;
 
   @override
   void initState() {
@@ -179,7 +178,6 @@ class _BookingTimeSlotWaitlistState extends State<BookingTimeSlotWaitlist> {
             }
           }
           slot.state = TimeSlotState.selected;
-          _selectedTime = slot.time;
         });
         widget.onTimeSelected?.call(slot.time);
         break;
@@ -188,7 +186,6 @@ class _BookingTimeSlotWaitlistState extends State<BookingTimeSlotWaitlist> {
         // Bỏ chọn
         setState(() {
           slot.state = TimeSlotState.available;
-          _selectedTime = null;
         });
         break;
 

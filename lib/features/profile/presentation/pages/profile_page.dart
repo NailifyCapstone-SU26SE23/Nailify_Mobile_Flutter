@@ -198,26 +198,24 @@ class _ProfilePageState extends State<ProfilePage> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              S.of(context).updateSuccess,
-            ),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(S.of(context).updateSuccess)));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(S.of(context).updateFailure(e))),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(S.of(context).updateFailure(e))));
       }
       rethrow;
     }
   }
 
   Future<void> _fetchProfile() async {
-    final token = getIt<SharedPreferences>().getString(AppConstants.authTokenKey);
+    final token = getIt<SharedPreferences>().getString(
+      AppConstants.authTokenKey,
+    );
     if (token == null || token.isEmpty) {
       if (mounted) {
         setState(() {
@@ -286,9 +284,9 @@ class _ProfilePageState extends State<ProfilePage> {
       return true;
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(S.of(context).updateProfileError(e))));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).updateProfileError(e))),
+        );
       }
       return false;
     }
@@ -349,7 +347,10 @@ class _ProfilePageState extends State<ProfilePage> {
           ? const Center(child: CircularProgressIndicator())
           : _profileData == null
           ? Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 40.0,
+              ),
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -437,9 +438,13 @@ class _ProfilePageState extends State<ProfilePage> {
                     // --- Language Toggle widget ---
                     Consumer<LocaleService>(
                       builder: (ctx, localeService, _) {
-                        final isVi = localeService.currentLocale.languageCode == 'vi';
+                        final isVi =
+                            localeService.currentLocale.languageCode == 'vi';
                         return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(16),
@@ -458,7 +463,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                 width: 40,
                                 height: 40,
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(alpha: 0.1),
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.1,
+                                  ),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: const Icon(
@@ -503,8 +510,14 @@ class _ProfilePageState extends State<ProfilePage> {
                                     borderRadius: BorderRadius.circular(20),
                                     gradient: LinearGradient(
                                       colors: isVi
-                                          ? [AppColors.primary, AppColors.secondary]
-                                          : [Colors.grey.shade300, Colors.grey.shade400],
+                                          ? [
+                                              AppColors.primary,
+                                              AppColors.secondary,
+                                            ]
+                                          : [
+                                              Colors.grey.shade300,
+                                              Colors.grey.shade400,
+                                            ],
                                       begin: Alignment.topLeft,
                                       end: Alignment.bottomRight,
                                     ),
@@ -513,36 +526,49 @@ class _ProfilePageState extends State<ProfilePage> {
                                     alignment: Alignment.center,
                                     children: [
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
                                         children: [
                                           Padding(
-                                            padding: const EdgeInsets.only(left: 6),
+                                            padding: const EdgeInsets.only(
+                                              left: 6,
+                                            ),
                                             child: Text(
                                               'VI',
                                               style: TextStyle(
                                                 fontSize: 10,
                                                 fontWeight: FontWeight.bold,
-                                                color: isVi ? Colors.white : Colors.white60,
+                                                color: isVi
+                                                    ? Colors.white
+                                                    : Colors.white60,
                                               ),
                                             ),
                                           ),
                                           Padding(
-                                            padding: const EdgeInsets.only(right: 6),
+                                            padding: const EdgeInsets.only(
+                                              right: 6,
+                                            ),
                                             child: Text(
                                               'EN',
                                               style: TextStyle(
                                                 fontSize: 10,
                                                 fontWeight: FontWeight.bold,
-                                                color: !isVi ? Colors.white : Colors.white60,
+                                                color: !isVi
+                                                    ? Colors.white
+                                                    : Colors.white60,
                                               ),
                                             ),
                                           ),
                                         ],
                                       ),
                                       AnimatedAlign(
-                                        duration: const Duration(milliseconds: 250),
+                                        duration: const Duration(
+                                          milliseconds: 250,
+                                        ),
                                         curve: Curves.easeInOut,
-                                        alignment: isVi ? Alignment.centerLeft : Alignment.centerRight,
+                                        alignment: isVi
+                                            ? Alignment.centerLeft
+                                            : Alignment.centerRight,
                                         child: Container(
                                           width: 28,
                                           height: 28,
@@ -643,10 +669,14 @@ class _ProfilePageState extends State<ProfilePage> {
                   // --- Language Toggle ---
                   Consumer<LocaleService>(
                     builder: (ctx, localeService, _) {
-                      final isVi = localeService.currentLocale.languageCode == 'vi';
+                      final isVi =
+                          localeService.currentLocale.languageCode == 'vi';
                       return Container(
                         margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
@@ -711,8 +741,14 @@ class _ProfilePageState extends State<ProfilePage> {
                                   borderRadius: BorderRadius.circular(20),
                                   gradient: LinearGradient(
                                     colors: isVi
-                                        ? [AppColors.primary, AppColors.secondary]
-                                        : [Colors.grey.shade300, Colors.grey.shade400],
+                                        ? [
+                                            AppColors.primary,
+                                            AppColors.secondary,
+                                          ]
+                                        : [
+                                            Colors.grey.shade300,
+                                            Colors.grey.shade400,
+                                          ],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
@@ -721,36 +757,49 @@ class _ProfilePageState extends State<ProfilePage> {
                                   alignment: Alignment.center,
                                   children: [
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
                                         Padding(
-                                          padding: const EdgeInsets.only(left: 6),
+                                          padding: const EdgeInsets.only(
+                                            left: 6,
+                                          ),
                                           child: Text(
                                             'VI',
                                             style: TextStyle(
                                               fontSize: 10,
                                               fontWeight: FontWeight.bold,
-                                              color: isVi ? Colors.white : Colors.white60,
+                                              color: isVi
+                                                  ? Colors.white
+                                                  : Colors.white60,
                                             ),
                                           ),
                                         ),
                                         Padding(
-                                          padding: const EdgeInsets.only(right: 6),
+                                          padding: const EdgeInsets.only(
+                                            right: 6,
+                                          ),
                                           child: Text(
                                             'EN',
                                             style: TextStyle(
                                               fontSize: 10,
                                               fontWeight: FontWeight.bold,
-                                              color: !isVi ? Colors.white : Colors.white60,
+                                              color: !isVi
+                                                  ? Colors.white
+                                                  : Colors.white60,
                                             ),
                                           ),
                                         ),
                                       ],
                                     ),
                                     AnimatedAlign(
-                                      duration: const Duration(milliseconds: 250),
+                                      duration: const Duration(
+                                        milliseconds: 250,
+                                      ),
                                       curve: Curves.easeInOut,
-                                      alignment: isVi ? Alignment.centerLeft : Alignment.centerRight,
+                                      alignment: isVi
+                                          ? Alignment.centerLeft
+                                          : Alignment.centerRight,
                                       child: Container(
                                         width: 28,
                                         height: 28,

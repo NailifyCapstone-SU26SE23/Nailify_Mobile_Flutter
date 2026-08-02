@@ -40,10 +40,7 @@ class _RegisterPageState extends State<RegisterPage> {
         lastName.isEmpty ||
         phone.isEmpty ||
         password.isEmpty) {
-      _showSnackBar(
-        S.of(context).registerRequiredFields,
-        AppColors.error,
-      );
+      _showSnackBar(S.of(context).registerRequiredFields, AppColors.error);
       return;
     }
 
@@ -53,10 +50,7 @@ class _RegisterPageState extends State<RegisterPage> {
     }
 
     if (!_agreeToTerms) {
-      _showSnackBar(
-        S.of(context).agreeToTermsError,
-        Colors.orange.shade800,
-      );
+      _showSnackBar(S.of(context).agreeToTermsError, Colors.orange.shade800);
       return;
     }
 
@@ -569,7 +563,10 @@ class _RegisterPageState extends State<RegisterPage> {
                                           ),
                                         )
                                       : Text(
-                                          S.of(context).registerNow.toUpperCase(),
+                                          S
+                                              .of(context)
+                                              .registerNow
+                                              .toUpperCase(),
                                           style: const TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.bold,
@@ -632,7 +629,10 @@ class _RegisterPageState extends State<RegisterPage> {
                       ],
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 20,
+                      ),
                       color: AppColors.primaryDark,
                       onPressed: () {
                         if (context.canPop()) {
@@ -651,7 +651,8 @@ class _RegisterPageState extends State<RegisterPage> {
                 child: SafeArea(
                   child: Consumer<LocaleService>(
                     builder: (context, localeService, _) {
-                      final isVi = localeService.currentLocale.languageCode == 'vi';
+                      final isVi =
+                          localeService.currentLocale.languageCode == 'vi';
                       return Container(
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.9),

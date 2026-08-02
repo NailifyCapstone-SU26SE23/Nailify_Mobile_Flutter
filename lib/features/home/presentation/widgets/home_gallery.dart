@@ -61,7 +61,11 @@ class HomeGallery extends StatelessWidget {
             // Tiêu đề sang trọng
             Row(
               children: [
-                const Icon(Icons.auto_awesome, color: AppColors.primary, size: 20),
+                const Icon(
+                  Icons.auto_awesome,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   S.of(context).nailGalleryTitle,

@@ -27,10 +27,16 @@ class HomeServices extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final services = [
-      {'title': S.of(context).serviceCare, 'image': 'assets/images/image 1.png'},
+      {
+        'title': S.of(context).serviceCare,
+        'image': 'assets/images/image 1.png',
+      },
       {'title': S.of(context).serviceGel, 'image': 'assets/images/image 2.png'},
       {'title': S.of(context).serviceArt, 'image': 'assets/images/image 3.png'},
-      {'title': S.of(context).serviceAcrylic, 'image': 'assets/images/image 4.png'},
+      {
+        'title': S.of(context).serviceAcrylic,
+        'image': 'assets/images/image 4.png',
+      },
     ];
 
     return Padding(

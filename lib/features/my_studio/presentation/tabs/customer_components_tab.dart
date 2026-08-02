@@ -167,7 +167,10 @@ class _CustomerComponentsTabState extends State<CustomerComponentsTab> {
         icon: const Icon(Icons.add_rounded, size: 20),
         label: Text(
           S.of(context).createNewBtn,
-          style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
         ),
       ),
       body: Column(
@@ -258,11 +261,26 @@ class _CustomerComponentsTabState extends State<CustomerComponentsTab> {
                         ),
                         isExpanded: true,
                         items: [
-                          DropdownMenuItem(value: null, child: Text(S.of(context).filterAll)),
-                          const DropdownMenuItem(value: 0, child: Text('💎 Gem')),
-                          const DropdownMenuItem(value: 1, child: Text('📝 Sticker')),
-                          const DropdownMenuItem(value: 2, child: Text('🔗 Charm')),
-                          const DropdownMenuItem(value: 3, child: Text('🎨 Art')),
+                          DropdownMenuItem(
+                            value: null,
+                            child: Text(S.of(context).filterAll),
+                          ),
+                          const DropdownMenuItem(
+                            value: 0,
+                            child: Text('💎 Gem'),
+                          ),
+                          const DropdownMenuItem(
+                            value: 1,
+                            child: Text('📝 Sticker'),
+                          ),
+                          const DropdownMenuItem(
+                            value: 2,
+                            child: Text('🔗 Charm'),
+                          ),
+                          const DropdownMenuItem(
+                            value: 3,
+                            child: Text('🎨 Art'),
+                          ),
                         ],
                         onChanged: (value) {
                           setState(() => _componentTypeFilter = value);
@@ -297,7 +315,7 @@ class _CustomerComponentsTabState extends State<CustomerComponentsTab> {
                         FilledButton.icon(
                           onPressed: () => _loadData(reset: true),
                           icon: const Icon(Icons.refresh),
-                        label: Text(S.of(context).retryBtn),
+                          label: Text(S.of(context).retryBtn),
                         ),
                       ],
                     ),

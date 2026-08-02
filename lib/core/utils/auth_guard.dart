@@ -37,7 +37,10 @@ class AuthGuard {
               elevation: 8,
               backgroundColor: Colors.white,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 28.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24.0,
+                  vertical: 28.0,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -164,7 +167,10 @@ class AuthGuard {
                           onTap: () => localeService.toggleLocale(),
                           borderRadius: BorderRadius.circular(12),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             child: Row(
                               children: [
                                 const Icon(

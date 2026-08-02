@@ -33,7 +33,8 @@ import '../../features/quiz/presentation/pages/analyze_page.dart';
 import '../../features/quiz/presentation/pages/quiz_page.dart';
 import '../../features/services/presentation/pages/service_detail_page.dart';
 import '../../features/services/presentation/pages/service_list_page.dart';
-import '../../features/nails/data/models/customer_nail_models.dart' as nails_models;
+import '../../features/nails/data/models/customer_nail_models.dart'
+    as nails_models;
 import '../../features/try-on/presentation/try_on_setup_screen.dart';
 import '../widgets/main_shell.dart';
 
@@ -264,9 +265,7 @@ class AppRouter {
             path: '/try-on',
             builder: (context, state) {
               final extra = state.extra;
-              if (extra is Map<String, dynamic>) {
-                return TryOnSetupScreen(recommendedData: extra);
-              } else if (extra is nails_models.CustomerNailModel) {
+              if (extra is nails_models.CustomerNailModel) {
                 return TryOnSetupScreen(customerNail: extra);
               }
               return const TryOnSetupScreen();

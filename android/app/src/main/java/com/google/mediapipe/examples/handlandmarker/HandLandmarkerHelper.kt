@@ -31,6 +31,10 @@ import com.google.mediapipe.tasks.core.Delegate
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarker
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
 
 class HandLandmarkerHelper(
     var minHandDetectionConfidence: Float = DEFAULT_HAND_DETECTION_CONFIDENCE,
@@ -47,6 +51,13 @@ class HandLandmarkerHelper(
     // For this example this needs to be a var so it can be reset on changes.
     // If the Hand Landmarker will not change, a lazy val would be preferable.
     private var handLandmarker: HandLandmarker? = null
+    private var nailRecognizer: YoloNailOnnxRecognizer? = null
+    private val liveNailDetections = ConcurrentHashMap<Long, List<YoloNailOnnxRecognizer.NailDetection>>()
+    private val liveNailExecutor: ExecutorService = Executors.newSingleThreadExecutor()
+    private val liveNailDetectionRunning = AtomicBoolean(false)
+    private var lastLiveNailDetectionTimeMs = 0L
+    @Volatile
+    private var lastLiveNailDetections: List<YoloNailOnnxRecognizer.NailDetection> = emptyList()
 
     init {
         setupHandLandmarker()
@@ -55,6 +66,17 @@ class HandLandmarkerHelper(
     fun clearHandLandmarker() {
         handLandmarker?.close()
         handLandmarker = null
+        nailRecognizer?.close()
+        nailRecognizer = null
+        liveNailDetections.clear()
+        liveNailDetectionRunning.set(false)
+        lastLiveNailDetectionTimeMs = 0L
+        lastLiveNailDetections = emptyList()
+    }
+
+    fun close() {
+        clearHandLandmarker()
+        liveNailExecutor.shutdownNow()
     }
 
     // Return running status of HandLandmarkerHelper
@@ -120,6 +142,7 @@ class HandLandmarkerHelper(
             val options = optionsBuilder.build()
             handLandmarker =
                 HandLandmarker.createFromOptions(context, options)
+            nailRecognizer = YoloNailOnnxRecognizer(context)
         } catch (e: IllegalStateException) {
             handLandmarkerHelperListener?.onError(
                 "Hand Landmarker failed to initialize. See error logs for " +
@@ -155,22 +178,21 @@ class HandLandmarkerHelper(
         }
         val frameTime = SystemClock.uptimeMillis()
 
-        // Safely convert ImageProxy to Bitmap, guarding against corrupt/empty
-        // frames that the emulator virtual camera sometimes delivers.
-        val bitmapBuffer = try {
-            convertImageProxyToBitmap(imageProxy)
-        } catch (e: Exception) {
-            Log.w(TAG, "Skipping corrupt camera frame: ${e.message}")
-            imageProxy.close()
-            return
-        } ?: run {
-            imageProxy.close()
-            return
-        }
+        // Copy out RGB bits from the frame to a bitmap buffer
+        val bitmapBuffer =
+            Bitmap.createBitmap(
+                imageProxy.width,
+                imageProxy.height,
+                Bitmap.Config.ARGB_8888
+            )
+        imageProxy.use { bitmapBuffer.copyPixelsFromBuffer(imageProxy.planes[0].buffer) }
         imageProxy.close()
 
         val matrix = Matrix().apply {
+            // Rotate the frame received from the camera to be in the same direction as it'll be shown
             postRotate(imageProxy.imageInfo.rotationDegrees.toFloat())
+
+            // flip image if user use front camera
             if (isFrontCamera) {
                 postScale(
                     -1f,
@@ -185,47 +207,12 @@ class HandLandmarkerHelper(
             matrix, true
         )
 
+        liveNailDetections[frameTime] = detectLiveNails(rotatedBitmap, frameTime)
+
+        // Convert the input Bitmap object to an MPImage object to run inference
         val mpImage = BitmapImageBuilder(rotatedBitmap).build()
+
         detectAsync(mpImage, frameTime)
-    }
-
-    /**
-     * Converts an [ImageProxy] (RGBA_8888 from CameraX ImageAnalysis) to a [Bitmap].
-     * Returns null if the frame appears to be empty/corrupt (all-zero buffer or
-     * incorrect plane count — a known emulator virtual camera issue).
-     */
-    private fun convertImageProxyToBitmap(imageProxy: ImageProxy): Bitmap? {
-        val planes = imageProxy.planes
-        if (planes.isEmpty()) return null
-
-        val buffer = planes[0].buffer
-        val remaining = buffer.remaining()
-        val expectedSize = imageProxy.width * imageProxy.height * 4 // RGBA_8888: 4 bytes/pixel
-
-        // Guard: emulator sometimes returns a buffer with 0 bytes or wrong size
-        if (remaining <= 0 || remaining < expectedSize) {
-            Log.w(TAG, "Invalid frame buffer: remaining=$remaining expected=$expectedSize")
-            return null
-        }
-
-        val bitmap = Bitmap.createBitmap(
-            imageProxy.width,
-            imageProxy.height,
-            Bitmap.Config.ARGB_8888
-        )
-        bitmap.copyPixelsFromBuffer(buffer)
-
-        // Quick sanity-check: if the entire bitmap is one solid color
-        // (e.g. green = 0xFF00FF00), it is a corrupt frame from the virtual camera.
-        val pixel = bitmap.getPixel(imageProxy.width / 2, imageProxy.height / 2)
-        val pixel2 = bitmap.getPixel(0, 0)
-        val pixel3 = bitmap.getPixel(imageProxy.width - 1, imageProxy.height - 1)
-        if (pixel == pixel2 && pixel2 == pixel3 && pixel == android.graphics.Color.GREEN) {
-            Log.w(TAG, "Solid green frame detected — skipping corrupt virtual camera frame.")
-            return null
-        }
-
-        return bitmap
     }
 
     // Run hand hand landmark using MediaPipe Hand Landmarker API
@@ -276,6 +263,7 @@ class HandLandmarkerHelper(
 
         // Next, we'll get one frame every frameInterval ms, then run detection on these frames.
         val resultList = mutableListOf<HandLandmarkerResult>()
+        val nailDetectionList = mutableListOf<List<YoloNailOnnxRecognizer.NailDetection>>()
         val numberOfFrameToRead = videoLengthMs.div(inferenceIntervalMs)
 
         for (i in 0..numberOfFrameToRead) {
@@ -294,11 +282,13 @@ class HandLandmarkerHelper(
 
                     // Convert the input Bitmap object to an MPImage object to run inference
                     val mpImage = BitmapImageBuilder(argb8888Frame).build()
+                    val nailDetections = detectNails(argb8888Frame)
 
                     // Run hand landmarker using MediaPipe Hand Landmarker API
                     handLandmarker?.detectForVideo(mpImage, timestampMs)
                         ?.let { detectionResult ->
                             resultList.add(detectionResult)
+                            nailDetectionList.add(nailDetections)
                         } ?: run{
                             didErrorOccurred = true
                             handLandmarkerHelperListener?.onError(
@@ -324,7 +314,7 @@ class HandLandmarkerHelper(
         return if (didErrorOccurred) {
             null
         } else {
-            ResultBundle(resultList, inferenceTimePerFrameMs, height, width)
+            ResultBundle(resultList, nailDetectionList, inferenceTimePerFrameMs, height, width)
         }
     }
 
@@ -345,12 +335,14 @@ class HandLandmarkerHelper(
 
         // Convert the input Bitmap object to an MPImage object to run inference
         val mpImage = BitmapImageBuilder(image).build()
+        val nailDetections = detectNails(image)
 
         // Run hand landmarker using MediaPipe Hand Landmarker API
         handLandmarker?.detect(mpImage)?.also { landmarkResult ->
             val inferenceTimeMs = SystemClock.uptimeMillis() - startTime
             return ResultBundle(
                 listOf(landmarkResult),
+                listOf(nailDetections),
                 inferenceTimeMs,
                 image.height,
                 image.width
@@ -372,10 +364,12 @@ class HandLandmarkerHelper(
     ) {
         val finishTimeMs = SystemClock.uptimeMillis()
         val inferenceTime = finishTimeMs - result.timestampMs()
+        val nailDetections = liveNailDetections.remove(result.timestampMs()).orEmpty()
 
         handLandmarkerHelperListener?.onResults(
             ResultBundle(
                 listOf(result),
+                listOf(nailDetections),
                 inferenceTime,
                 input.height,
                 input.width
@@ -391,9 +385,42 @@ class HandLandmarkerHelper(
         )
     }
 
+    private fun detectNails(bitmap: Bitmap): List<YoloNailOnnxRecognizer.NailDetection> {
+        return try {
+            nailRecognizer?.recognizeNails(bitmap).orEmpty()
+        } catch (error: RuntimeException) {
+            Log.e(TAG, "ONNX nail detection failed with error: ${error.message}")
+            emptyList()
+        }
+    }
+
+    private fun detectLiveNails(
+        bitmap: Bitmap,
+        frameTime: Long
+    ): List<YoloNailOnnxRecognizer.NailDetection> {
+        if (frameTime - lastLiveNailDetectionTimeMs < LIVE_NAIL_DETECTION_INTERVAL_MS) {
+            return lastLiveNailDetections
+        }
+
+        lastLiveNailDetectionTimeMs = frameTime
+        if (liveNailDetectionRunning.compareAndSet(false, true)) {
+            val detectionBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, false)
+            liveNailExecutor.execute {
+                try {
+                    lastLiveNailDetections = detectNails(detectionBitmap)
+                } finally {
+                    detectionBitmap.recycle()
+                    liveNailDetectionRunning.set(false)
+                }
+            }
+        }
+        return lastLiveNailDetections
+    }
+
     companion object {
         const val TAG = "HandLandmarkerHelper"
         private const val MP_HAND_LANDMARKER_TASK = "hand_landmarker.task"
+        private const val LIVE_NAIL_DETECTION_INTERVAL_MS = 200L
 
         const val DELEGATE_CPU = 0
         const val DELEGATE_GPU = 1
@@ -407,6 +434,7 @@ class HandLandmarkerHelper(
 
     data class ResultBundle(
         val results: List<HandLandmarkerResult>,
+        val nailDetections: List<List<YoloNailOnnxRecognizer.NailDetection>>,
         val inferenceTime: Long,
         val inputImageHeight: Int,
         val inputImageWidth: Int,

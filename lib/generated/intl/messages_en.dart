@@ -510,18 +510,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "pleaseLoginToViewProfile": MessageLookupByLibrary.simpleMessage(
       "Please sign in to view your personal profile",
     ),
-    "languageLabel": MessageLookupByLibrary.simpleMessage(
-      "Language",
-    ),
-    "forgotPassword": MessageLookupByLibrary.simpleMessage(
-      "Forgot password?",
-    ),
+    "languageLabel": MessageLookupByLibrary.simpleMessage("Language"),
+    "forgotPassword": MessageLookupByLibrary.simpleMessage("Forgot password?"),
     "dontHaveAccount": MessageLookupByLibrary.simpleMessage(
       "Don't have an account? ",
     ),
-    "registerNow": MessageLookupByLibrary.simpleMessage(
-      "Register now",
-    ),
+    "registerNow": MessageLookupByLibrary.simpleMessage("Register now"),
     "loginRequiredFields": MessageLookupByLibrary.simpleMessage(
       "Please enter both Email and Password",
     ),
@@ -543,24 +537,16 @@ class MessageLookup extends MessageLookupByLibrary {
     "registerSuccess": MessageLookupByLibrary.simpleMessage(
       "Account registered successfully",
     ),
-    "registerTitle": MessageLookupByLibrary.simpleMessage(
-      "Register Account",
-    ),
-    "firstNameHint": MessageLookupByLibrary.simpleMessage(
-      "First Name",
-    ),
-    "lastNameHint": MessageLookupByLibrary.simpleMessage(
-      "Last Name",
-    ),
+    "registerTitle": MessageLookupByLibrary.simpleMessage("Register Account"),
+    "firstNameHint": MessageLookupByLibrary.simpleMessage("First Name"),
+    "lastNameHint": MessageLookupByLibrary.simpleMessage("Last Name"),
     "confirmPasswordHint": MessageLookupByLibrary.simpleMessage(
       "Confirm Password",
     ),
     "agreeToTermsText": MessageLookupByLibrary.simpleMessage(
       "I agree to the terms of service",
     ),
-    "bookingArtistDefault": MessageLookupByLibrary.simpleMessage(
-      "Artist",
-    ),
+    "bookingArtistDefault": MessageLookupByLibrary.simpleMessage("Artist"),
     "bookingLoadingArtists": MessageLookupByLibrary.simpleMessage(
       "Loading artist list...",
     ),
@@ -576,21 +562,11 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingGeneralInfo": MessageLookupByLibrary.simpleMessage(
       "General Information",
     ),
-    "bookingBranchLabel": MessageLookupByLibrary.simpleMessage(
-      "Branch",
-    ),
-    "bookingStylistLabel": MessageLookupByLibrary.simpleMessage(
-      "Stylist",
-    ),
-    "bookingDateLabel": MessageLookupByLibrary.simpleMessage(
-      "Date",
-    ),
-    "bookingStartTimeLabel": MessageLookupByLibrary.simpleMessage(
-      "Start Time",
-    ),
-    "bookingDurationLabel": MessageLookupByLibrary.simpleMessage(
-      "Duration",
-    ),
+    "bookingBranchLabel": MessageLookupByLibrary.simpleMessage("Branch"),
+    "bookingStylistLabel": MessageLookupByLibrary.simpleMessage("Stylist"),
+    "bookingDateLabel": MessageLookupByLibrary.simpleMessage("Date"),
+    "bookingStartTimeLabel": MessageLookupByLibrary.simpleMessage("Start Time"),
+    "bookingDurationLabel": MessageLookupByLibrary.simpleMessage("Duration"),
     "bookingDurationValue": m29,
     "bookingServicesBooked": MessageLookupByLibrary.simpleMessage(
       "Services Booked",
@@ -599,48 +575,32 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingOriginalPriceLabel": MessageLookupByLibrary.simpleMessage(
       "Original Price:",
     ),
-    "bookingDiscountLabel": MessageLookupByLibrary.simpleMessage(
-      "Discount:",
-    ),
+    "bookingDiscountLabel": MessageLookupByLibrary.simpleMessage("Discount:"),
     "bookingTotalPaymentLabel": MessageLookupByLibrary.simpleMessage(
       "Total Payment:",
     ),
-    "bookingReviewTitle": MessageLookupByLibrary.simpleMessage(
-      "Review",
-    ),
+    "bookingReviewTitle": MessageLookupByLibrary.simpleMessage("Review"),
     "bookingRatingDetails": MessageLookupByLibrary.simpleMessage(
       "Rating Details",
     ),
-    "ratingOverall": MessageLookupByLibrary.simpleMessage(
-      "Overall",
-    ),
+    "ratingOverall": MessageLookupByLibrary.simpleMessage("Overall"),
     "ratingServiceQuality": MessageLookupByLibrary.simpleMessage(
       "Service Quality",
     ),
-    "ratingPunctuality": MessageLookupByLibrary.simpleMessage(
-      "Punctuality",
-    ),
-    "ratingCleanliness": MessageLookupByLibrary.simpleMessage(
-      "Cleanliness",
-    ),
+    "ratingPunctuality": MessageLookupByLibrary.simpleMessage("Punctuality"),
+    "ratingCleanliness": MessageLookupByLibrary.simpleMessage("Cleanliness"),
     "ratingLoadError": MessageLookupByLibrary.simpleMessage(
       "Could not load rating information.",
     ),
     "bookingNotFound": MessageLookupByLibrary.simpleMessage(
       "Booking information not found.",
     ),
-    "bookingPaidAmount": MessageLookupByLibrary.simpleMessage(
-      "Paid:",
-    ),
+    "bookingPaidAmount": MessageLookupByLibrary.simpleMessage("Paid:"),
     "bookingRemainingAmount": MessageLookupByLibrary.simpleMessage(
       "Remaining:",
     ),
-    "bookingYourRating": MessageLookupByLibrary.simpleMessage(
-      "Your Rating",
-    ),
-    "bookingCheckInCode": MessageLookupByLibrary.simpleMessage(
-      "Check-in Code",
-    ),
+    "bookingYourRating": MessageLookupByLibrary.simpleMessage("Your Rating"),
+    "bookingCheckInCode": MessageLookupByLibrary.simpleMessage("Check-in Code"),
     "bookingCheckInInstruction": MessageLookupByLibrary.simpleMessage(
       "Show this code to the receptionist",
     ),
@@ -665,9 +625,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingQrError": MessageLookupByLibrary.simpleMessage(
       "Error displaying QR code",
     ),
-    "bookingFingersLabel": MessageLookupByLibrary.simpleMessage(
-      "fingers",
-    ),
+    "bookingFingersLabel": MessageLookupByLibrary.simpleMessage("fingers"),
     "requestsTab": MessageLookupByLibrary.simpleMessage("Requests"),
     "rescheduleAcceptBtn": MessageLookupByLibrary.simpleMessage(
       "Accept Reschedule",

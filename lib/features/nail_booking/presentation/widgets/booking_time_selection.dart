@@ -77,7 +77,11 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
           } catch (e) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(S.of(context).bookingWaitlistError(e.toString()))),
+                SnackBar(
+                  content: Text(
+                    S.of(context).bookingWaitlistError(e.toString()),
+                  ),
+                ),
               );
             }
           } finally {
@@ -102,7 +106,10 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
         if (!widget.canSelect)
           Text(
             S.of(context).bookingSelectArtistFirst,
-            style: const TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+            style: const TextStyle(
+              color: Colors.grey,
+              fontStyle: FontStyle.italic,
+            ),
           )
         else if (widget.isLoading)
           const CircularProgressIndicator()
@@ -264,7 +271,9 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              S.of(context).bookingWaitlistJoined(time.substring(0, 5)),
+                              S
+                                  .of(context)
+                                  .bookingWaitlistJoined(time.substring(0, 5)),
                             ),
                           ],
                         ),

@@ -52,8 +52,12 @@ class _WaitlistPendingCard extends StatelessWidget {
 
   String _timeSince(BuildContext context, DateTime from) {
     final diff = DateTime.now().difference(from);
-    if (diff.inMinutes < 60) return S.of(context).waitlistMinutesAgo(diff.inMinutes.toString());
-    if (diff.inHours < 24) return S.of(context).waitlistHoursAgo(diff.inHours.toString());
+    if (diff.inMinutes < 60) {
+      return S.of(context).waitlistMinutesAgo(diff.inMinutes.toString());
+    }
+    if (diff.inHours < 24) {
+      return S.of(context).waitlistHoursAgo(diff.inHours.toString());
+    }
     return S.of(context).waitlistDaysAgo(diff.inDays.toString());
   }
 
@@ -306,9 +310,7 @@ class _WaitlistOpenedCardState extends State<_WaitlistOpenedCard> {
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 11),
                 ),
-                child: Text(
-                  S.of(context).waitlistDeclineBtn,
-                ),
+                child: Text(S.of(context).waitlistDeclineBtn),
               ),
             ),
             const SizedBox(width: 10),

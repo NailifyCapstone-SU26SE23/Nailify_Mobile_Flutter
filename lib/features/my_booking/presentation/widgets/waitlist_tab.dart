@@ -44,11 +44,13 @@ class _WaitlistTabState extends State<WaitlistTab> {
       final models = apiItems.map((e) => WaitlistModel.fromApi(e)).toList();
       models.sort((a, b) {
         if (a.status == WaitlistStatus.opened &&
-            b.status != WaitlistStatus.opened)
+            b.status != WaitlistStatus.opened) {
           return -1;
+        }
         if (a.status != WaitlistStatus.opened &&
-            b.status == WaitlistStatus.opened)
+            b.status == WaitlistStatus.opened) {
           return 1;
+        }
         return 0;
       });
       if (mounted) setState(() => _waitlist = models);
@@ -79,9 +81,11 @@ class _WaitlistTabState extends State<WaitlistTab> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(S.of(context).waitlistCancelError(e.toString()))));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(S.of(context).waitlistCancelError(e.toString())),
+        ),
+      );
     }
   }
 
@@ -110,9 +114,11 @@ class _WaitlistTabState extends State<WaitlistTab> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(S.of(context).waitlistConfirmError(e.toString()))));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(S.of(context).waitlistConfirmError(e.toString())),
+        ),
+      );
     }
   }
 

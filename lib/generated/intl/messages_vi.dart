@@ -527,18 +527,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "pleaseLoginToViewProfile": MessageLookupByLibrary.simpleMessage(
       "Vui lòng đăng nhập để xem thông tin cá nhân",
     ),
-    "languageLabel": MessageLookupByLibrary.simpleMessage(
-      "Ngôn ngữ",
-    ),
-    "forgotPassword": MessageLookupByLibrary.simpleMessage(
-      "Quên mật khẩu?",
-    ),
+    "languageLabel": MessageLookupByLibrary.simpleMessage("Ngôn ngữ"),
+    "forgotPassword": MessageLookupByLibrary.simpleMessage("Quên mật khẩu?"),
     "dontHaveAccount": MessageLookupByLibrary.simpleMessage(
       "Bạn chưa có tài khoản? ",
     ),
-    "registerNow": MessageLookupByLibrary.simpleMessage(
-      "Đăng ký ngay",
-    ),
+    "registerNow": MessageLookupByLibrary.simpleMessage("Đăng ký ngay"),
     "loginRequiredFields": MessageLookupByLibrary.simpleMessage(
       "Vui lòng nhập đầy đủ Email và Mật khẩu",
     ),
@@ -560,24 +554,16 @@ class MessageLookup extends MessageLookupByLibrary {
     "registerSuccess": MessageLookupByLibrary.simpleMessage(
       "Đăng ký tài khoản thành công",
     ),
-    "registerTitle": MessageLookupByLibrary.simpleMessage(
-      "Đăng ký tài khoản",
-    ),
-    "firstNameHint": MessageLookupByLibrary.simpleMessage(
-      "Tên",
-    ),
-    "lastNameHint": MessageLookupByLibrary.simpleMessage(
-      "Họ",
-    ),
+    "registerTitle": MessageLookupByLibrary.simpleMessage("Đăng ký tài khoản"),
+    "firstNameHint": MessageLookupByLibrary.simpleMessage("Tên"),
+    "lastNameHint": MessageLookupByLibrary.simpleMessage("Họ"),
     "confirmPasswordHint": MessageLookupByLibrary.simpleMessage(
       "Xác nhận mật khẩu",
     ),
     "agreeToTermsText": MessageLookupByLibrary.simpleMessage(
       "Tôi đồng ý với các điều khoản dịch vụ",
     ),
-    "bookingArtistDefault": MessageLookupByLibrary.simpleMessage(
-      "Thợ",
-    ),
+    "bookingArtistDefault": MessageLookupByLibrary.simpleMessage("Thợ"),
     "bookingLoadingArtists": MessageLookupByLibrary.simpleMessage(
       "Đang tải danh sách thợ...",
     ),
@@ -593,21 +579,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingGeneralInfo": MessageLookupByLibrary.simpleMessage(
       "Thông tin chung",
     ),
-    "bookingBranchLabel": MessageLookupByLibrary.simpleMessage(
-      "Chi nhánh",
-    ),
+    "bookingBranchLabel": MessageLookupByLibrary.simpleMessage("Chi nhánh"),
     "bookingStylistLabel": MessageLookupByLibrary.simpleMessage(
       "Kỹ thuật viên",
     ),
-    "bookingDateLabel": MessageLookupByLibrary.simpleMessage(
-      "Ngày hẹn",
-    ),
+    "bookingDateLabel": MessageLookupByLibrary.simpleMessage("Ngày hẹn"),
     "bookingStartTimeLabel": MessageLookupByLibrary.simpleMessage(
       "Giờ bắt đầu",
     ),
-    "bookingDurationLabel": MessageLookupByLibrary.simpleMessage(
-      "Thời lượng",
-    ),
+    "bookingDurationLabel": MessageLookupByLibrary.simpleMessage("Thời lượng"),
     "bookingDurationValue": m29,
     "bookingServicesBooked": MessageLookupByLibrary.simpleMessage(
       "Dịch vụ đã đặt",
@@ -616,48 +596,32 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingOriginalPriceLabel": MessageLookupByLibrary.simpleMessage(
       "Giá gốc:",
     ),
-    "bookingDiscountLabel": MessageLookupByLibrary.simpleMessage(
-      "Khuyến mãi:",
-    ),
+    "bookingDiscountLabel": MessageLookupByLibrary.simpleMessage("Khuyến mãi:"),
     "bookingTotalPaymentLabel": MessageLookupByLibrary.simpleMessage(
       "Tổng thanh toán:",
     ),
-    "bookingReviewTitle": MessageLookupByLibrary.simpleMessage(
-      "Nhận xét",
-    ),
+    "bookingReviewTitle": MessageLookupByLibrary.simpleMessage("Nhận xét"),
     "bookingRatingDetails": MessageLookupByLibrary.simpleMessage(
       "Chi tiết đánh giá",
     ),
-    "ratingOverall": MessageLookupByLibrary.simpleMessage(
-      "Tổng thể",
-    ),
+    "ratingOverall": MessageLookupByLibrary.simpleMessage("Tổng thể"),
     "ratingServiceQuality": MessageLookupByLibrary.simpleMessage(
       "Chất lượng dịch vụ",
     ),
-    "ratingPunctuality": MessageLookupByLibrary.simpleMessage(
-      "Đúng giờ",
-    ),
-    "ratingCleanliness": MessageLookupByLibrary.simpleMessage(
-      "Sạch sẽ",
-    ),
+    "ratingPunctuality": MessageLookupByLibrary.simpleMessage("Đúng giờ"),
+    "ratingCleanliness": MessageLookupByLibrary.simpleMessage("Sạch sẽ"),
     "ratingLoadError": MessageLookupByLibrary.simpleMessage(
       "Chưa tải được thông tin đánh giá.",
     ),
     "bookingNotFound": MessageLookupByLibrary.simpleMessage(
       "Không tìm thấy thông tin lịch hẹn.",
     ),
-    "bookingPaidAmount": MessageLookupByLibrary.simpleMessage(
-      "Đã thanh toán:",
-    ),
-    "bookingRemainingAmount": MessageLookupByLibrary.simpleMessage(
-      "Còn lại:",
-    ),
+    "bookingPaidAmount": MessageLookupByLibrary.simpleMessage("Đã thanh toán:"),
+    "bookingRemainingAmount": MessageLookupByLibrary.simpleMessage("Còn lại:"),
     "bookingYourRating": MessageLookupByLibrary.simpleMessage(
       "Đánh giá của bạn",
     ),
-    "bookingCheckInCode": MessageLookupByLibrary.simpleMessage(
-      "Mã Check-in",
-    ),
+    "bookingCheckInCode": MessageLookupByLibrary.simpleMessage("Mã Check-in"),
     "bookingCheckInInstruction": MessageLookupByLibrary.simpleMessage(
       "Đưa mã này cho nhân viên tại quầy",
     ),
@@ -682,9 +646,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingQrError": MessageLookupByLibrary.simpleMessage(
       "Lỗi hiển thị mã QR",
     ),
-    "bookingFingersLabel": MessageLookupByLibrary.simpleMessage(
-      "ngón",
-    ),
+    "bookingFingersLabel": MessageLookupByLibrary.simpleMessage("ngón"),
     "requestsTab": MessageLookupByLibrary.simpleMessage("Yêu cầu"),
     "rescheduleAcceptBtn": MessageLookupByLibrary.simpleMessage(
       "Chấp nhận dời lịch",

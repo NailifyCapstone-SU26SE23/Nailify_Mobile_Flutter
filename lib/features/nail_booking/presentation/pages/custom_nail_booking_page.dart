@@ -354,7 +354,11 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: AppColors.primaryDark),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            size: 20,
+            color: AppColors.primaryDark,
+          ),
           onPressed: _handleBackAction,
         ),
         title: Text(
@@ -559,7 +563,11 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
               children: [
                 const Text(
                   'Thợ đã duyệt',
-                  style: TextStyle(color: Color(0xFFC44569), fontSize: 12, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: Color(0xFFC44569),
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 Text(
                   widget.nail.stylistName,
@@ -617,7 +625,8 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   }
 
   Widget _buildPaymentDetails() {
-    final double customPrice = (widget.nail.customerNailPrice + widget.nail.price).toDouble();
+    final double customPrice =
+        (widget.nail.customerNailPrice + widget.nail.price).toDouble();
     final double shapePrice = _shapeMethodPrice.toDouble();
     final double servicesTotal = _groupedServicesMap.entries.fold<double>(
       0.0,
@@ -683,7 +692,10 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                   ),
                   Text(
                     '-${PriceFormatter.format(discount)}',
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                    ),
                   ),
                 ],
               ),
@@ -694,7 +706,11 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
             children: [
               const Text(
                 'Tổng cộng',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
               ),
               Text(
                 PriceFormatter.format(finalPrice),
@@ -965,7 +981,9 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                       height: 2,
                       color: index == 0
                           ? Colors.transparent
-                          : (isCompleted || isActive ? AppColors.primary : Colors.grey.shade300),
+                          : (isCompleted || isActive
+                                ? AppColors.primary
+                                : Colors.grey.shade300),
                     ),
                   ),
                 ),
@@ -981,7 +999,9 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                         shape: BoxShape.circle,
                         color: isActive
                             ? Colors.white
-                            : (isCompleted ? AppColors.primary : Colors.grey.shade50),
+                            : (isCompleted
+                                  ? AppColors.primary
+                                  : Colors.grey.shade50),
                         border: Border.all(
                           color: (isActive || isCompleted)
                               ? AppColors.primary
@@ -994,7 +1014,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                                   color: AppColors.primary.withOpacity(0.25),
                                   blurRadius: 8,
                                   spreadRadius: 1,
-                                )
+                                ),
                               ]
                             : null,
                       ),
@@ -1004,7 +1024,9 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                           size: 16,
                           color: isCompleted
                               ? Colors.white
-                              : (isActive ? AppColors.primary : Colors.grey.shade400),
+                              : (isActive
+                                    ? AppColors.primary
+                                    : Colors.grey.shade400),
                         ),
                       ),
                     ),
@@ -1012,10 +1034,18 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                     Text(
                       () {
                         final rawTitle = step['title'] as String;
-                        if (rawTitle == 'Chọn tiệm') return S.of(context).selectSalon;
-                        if (rawTitle == 'Dịch vụ') return S.of(context).servicesLabel;
-                        if (rawTitle == 'Đặt lịch') return S.of(context).bookAppointment;
-                        if (rawTitle == 'Hoàn tất') return S.of(context).completedLabel;
+                        if (rawTitle == 'Chọn tiệm') {
+                          return S.of(context).selectSalon;
+                        }
+                        if (rawTitle == 'Dịch vụ') {
+                          return S.of(context).servicesLabel;
+                        }
+                        if (rawTitle == 'Đặt lịch') {
+                          return S.of(context).bookAppointment;
+                        }
+                        if (rawTitle == 'Hoàn tất') {
+                          return S.of(context).completedLabel;
+                        }
                         return rawTitle;
                       }(),
                       style: TextStyle(
@@ -1038,7 +1068,9 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                       height: 2,
                       color: index == _bookingSteps.length - 1
                           ? Colors.transparent
-                          : (isCompleted ? AppColors.primary : Colors.grey.shade300),
+                          : (isCompleted
+                                ? AppColors.primary
+                                : Colors.grey.shade300),
                     ),
                   ),
                 ),

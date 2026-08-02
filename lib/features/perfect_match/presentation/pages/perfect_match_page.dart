@@ -115,8 +115,12 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
       var result = val;
 
       // Match pattern "Tông màu [Color] khớp với màu bạn thích."
-      if (result.startsWith('Tông màu ') && result.endsWith(' khớp với màu bạn thích.')) {
-        var colorName = result.substring('Tông màu '.length, result.length - ' khớp với màu bạn thích.'.length);
+      if (result.startsWith('Tông màu ') &&
+          result.endsWith(' khớp với màu bạn thích.')) {
+        var colorName = result.substring(
+          'Tông màu '.length,
+          result.length - ' khớp với màu bạn thích.'.length,
+        );
         colorName = colorName.replaceAll('Hồng đậm', 'Deep Pink');
         colorName = colorName.replaceAll('Nude', 'Nude');
         colorName = colorName.replaceAll('Đỏ', 'Red');
@@ -135,17 +139,25 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
       }
 
       // Match pattern "Mang phong cách [Style] yêu thích của bạn."
-      if (result.startsWith('Mang phong cách ') && result.endsWith(' yêu thích của bạn.')) {
-        final styleName = result.substring('Mang phong cách '.length, result.length - ' yêu thích của bạn.'.length);
+      if (result.startsWith('Mang phong cách ') &&
+          result.endsWith(' yêu thích của bạn.')) {
+        final styleName = result.substring(
+          'Mang phong cách '.length,
+          result.length - ' yêu thích của bạn.'.length,
+        );
         return 'Matches your favorite $styleName style.';
       }
-      
+
       // Match pattern "Mẫu móng dáng [Shape] theo sở thích."
-      if (result.startsWith('Mẫu móng dáng ') && result.endsWith(' theo sở thích.')) {
-        final shapeName = result.substring('Mẫu móng dáng '.length, result.length - ' theo sở thích.'.length);
+      if (result.startsWith('Mẫu móng dáng ') &&
+          result.endsWith(' theo sở thích.')) {
+        final shapeName = result.substring(
+          'Mẫu móng dáng '.length,
+          result.length - ' theo sở thích.'.length,
+        );
         return 'Matches your preferred $shapeName nail shape.';
       }
-      
+
       result = result.replaceAll('Màu Đỏ', 'Red');
       result = result.replaceAll('Màu Nude', 'Nude');
       result = result.replaceAll('Màu Hồng đậm', 'Deep Pink');
@@ -392,7 +404,8 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
                           fontFamily: 'Georgia',
                           height: 1.25,
                         ),
-                        children: Localizations.localeOf(context).languageCode == 'en'
+                        children:
+                            Localizations.localeOf(context).languageCode == 'en'
                             ? [
                                 const TextSpan(text: 'Your '),
                                 const TextSpan(
@@ -481,9 +494,11 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
                                 color: Colors.black87,
                               ),
                               children: [
-                                 TextSpan(
+                                TextSpan(
                                   text: S.of(context).yourPersonalStyle,
-                                  style: const TextStyle(fontWeight: FontWeight.w500),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                                 TextSpan(
                                   text: styleChar.label,

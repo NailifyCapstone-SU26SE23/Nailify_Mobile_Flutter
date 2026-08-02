@@ -355,15 +355,22 @@ class _StyleProfileFormDialogState extends State<StyleProfileFormDialog> {
                                   fillColor: Colors.grey.shade50,
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: Colors.grey.shade200),
+                                    borderSide: BorderSide(
+                                      color: Colors.grey.shade200,
+                                    ),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: Colors.grey.shade200),
+                                    borderSide: BorderSide(
+                                      color: Colors.grey.shade200,
+                                    ),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                                    borderSide: const BorderSide(
+                                      color: AppColors.primary,
+                                      width: 1.5,
+                                    ),
                                   ),
                                   contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 16,
@@ -424,15 +431,22 @@ class _StyleProfileFormDialogState extends State<StyleProfileFormDialog> {
                                   fillColor: Colors.grey.shade50,
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: Colors.grey.shade200),
+                                    borderSide: BorderSide(
+                                      color: Colors.grey.shade200,
+                                    ),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: Colors.grey.shade200),
+                                    borderSide: BorderSide(
+                                      color: Colors.grey.shade200,
+                                    ),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                                    borderSide: const BorderSide(
+                                      color: AppColors.primary,
+                                      width: 1.5,
+                                    ),
                                   ),
                                   contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 16,
@@ -464,7 +478,9 @@ class _StyleProfileFormDialogState extends State<StyleProfileFormDialog> {
                               opt.id,
                             );
                             return FilterChip(
-                              label: Text(_personalityIdToTitleVi[opt.id] ?? opt.title),
+                              label: Text(
+                                _personalityIdToTitleVi[opt.id] ?? opt.title,
+                              ),
                               selected: isSelected,
                               selectedColor: AppColors.primary.withValues(
                                 alpha: 0.15,
@@ -514,15 +530,22 @@ class _StyleProfileFormDialogState extends State<StyleProfileFormDialog> {
                             fillColor: Colors.grey.shade50,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.grey.shade200),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade200,
+                              ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.grey.shade200),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade200,
+                              ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                              borderSide: const BorderSide(
+                                color: AppColors.primary,
+                                width: 1.5,
+                              ),
                             ),
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 16,
@@ -615,7 +638,9 @@ class _StyleProfileFormDialogState extends State<StyleProfileFormDialog> {
                               opt.id,
                             );
                             return FilterChip(
-                              label: Text(_occasionIdToLabelVi[opt.id] ?? opt.label),
+                              label: Text(
+                                _occasionIdToLabelVi[opt.id] ?? opt.label,
+                              ),
                               selected: isSelected,
                               selectedColor: AppColors.primary.withValues(
                                 alpha: 0.15,
@@ -778,7 +803,10 @@ class _StyleProfileFormDialogState extends State<StyleProfileFormDialog> {
       items: items.map((item) {
         return DropdownMenuItem<String>(
           value: item,
-          child: Text(translations[item] ?? item, style: const TextStyle(fontSize: 14)),
+          child: Text(
+            translations[item] ?? item,
+            style: const TextStyle(fontSize: 14),
+          ),
         );
       }).toList(),
       onChanged: onChanged,

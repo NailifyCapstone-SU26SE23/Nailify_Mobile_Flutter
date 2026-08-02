@@ -74,7 +74,10 @@ class _CancelBookingDialogState extends State<CancelBookingDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(S.of(context).cancelBtn, style: const TextStyle(color: Colors.grey)),
+          child: Text(
+            S.of(context).cancelBtn,
+            style: const TextStyle(color: Colors.grey),
+          ),
         ),
         ElevatedButton(
           onPressed: () {
@@ -89,7 +92,10 @@ class _CancelBookingDialogState extends State<CancelBookingDialog> {
               borderRadius: BorderRadius.circular(8),
             ),
           ),
-          child: Text(S.of(context).confirmBtn, style: const TextStyle(color: Colors.white)),
+          child: Text(
+            S.of(context).confirmBtn,
+            style: const TextStyle(color: Colors.white),
+          ),
         ),
       ],
     );

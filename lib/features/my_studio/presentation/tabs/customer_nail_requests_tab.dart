@@ -468,7 +468,11 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                 } catch (e) {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(S.of(context).sendRequestFail(e.toString()))),
+                      SnackBar(
+                        content: Text(
+                          S.of(context).sendRequestFail(e.toString()),
+                        ),
+                      ),
                     );
                   }
                 } finally {
@@ -804,9 +808,9 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(S.of(context).loadFormFail(e.toString()))));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).loadFormFail(e.toString()))),
+        );
       }
     }
   }
@@ -823,7 +827,10 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
         icon: const Icon(Icons.send_rounded, size: 18),
         label: Text(
           S.of(context).sendRequestBtn,
-          style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
         ),
       ),
       body: Column(

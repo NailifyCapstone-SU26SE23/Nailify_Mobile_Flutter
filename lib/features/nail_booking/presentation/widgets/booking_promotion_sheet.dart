@@ -232,7 +232,11 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
                       child: Text(
                         _tempSelected.isEmpty
                             ? S.of(context).bookingNoPromotion
-                            : S.of(context).bookingApplyPromotion(_tempSelected.length.toString()),
+                            : S
+                                  .of(context)
+                                  .bookingApplyPromotion(
+                                    _tempSelected.length.toString(),
+                                  ),
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,

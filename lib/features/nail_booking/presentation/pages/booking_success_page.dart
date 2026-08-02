@@ -30,9 +30,11 @@ class _BookingSuccessPageState extends State<BookingSuccessPage> {
       context.go('/payment-qr', extra: paymentData);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(S.of(context).bookingPaymentError(e.toString()))));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(S.of(context).bookingPaymentError(e.toString())),
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isCreatingPayment = false);
     }
@@ -125,19 +127,13 @@ class _BookingSuccessPageState extends State<BookingSuccessPage> {
                             S.of(context).bookingInfoService,
                             bookingDetails['serviceName']?.toString() ?? '',
                           ),
-                          const Divider(
-                            height: 24,
-                            color: Color(0xFFFFF0F5),
-                          ),
+                          const Divider(height: 24, color: Color(0xFFFFF0F5)),
                           _buildInfoRow(
                             Icons.calendar_month_rounded,
                             S.of(context).bookingInfoDate,
                             dateString,
                           ),
-                          const Divider(
-                            height: 24,
-                            color: Color(0xFFFFF0F5),
-                          ),
+                          const Divider(height: 24, color: Color(0xFFFFF0F5)),
                           _buildInfoRow(
                             Icons.access_time_rounded,
                             S.of(context).bookingInfoTime,
@@ -147,26 +143,20 @@ class _BookingSuccessPageState extends State<BookingSuccessPage> {
                                 ) ??
                                 '',
                           ),
-                          const Divider(
-                            height: 24,
-                            color: Color(0xFFFFF0F5),
-                          ),
+                          const Divider(height: 24, color: Color(0xFFFFF0F5)),
                           _buildInfoRow(
                             Icons.face_3_rounded,
                             S.of(context).bookingInfoStaff,
                             bookingDetails['stylistName']?.toString() ?? '',
                           ),
                           if (discounts.isNotEmpty || hasPrice) ...[
-                            const Divider(
-                              height: 24,
-                              color: Color(0xFFFFF0F5),
-                            ),
-                             if (bookingDetails['price'] != null)
+                            const Divider(height: 24, color: Color(0xFFFFF0F5)),
+                            if (bookingDetails['price'] != null)
                               _buildAmountRow(
                                 S.of(context).bookingInfoOriginalPrice,
                                 bookingDetails['price'],
                               ),
-                             ...discounts.map(_buildDiscountRow),
+                            ...discounts.map(_buildDiscountRow),
                             _buildAmountRow(
                               S.of(context).bookingInfoTotal,
                               bookingDetails['totalPrice'],
@@ -243,7 +233,10 @@ class _BookingSuccessPageState extends State<BookingSuccessPage> {
                             backgroundColor: const Color(0xFFFFF5F8),
                             foregroundColor: const Color(0xFFC44569),
                             elevation: 0,
-                            side: const BorderSide(color: Color(0xFFFFD1E3), width: 1),
+                            side: const BorderSide(
+                              color: Color(0xFFFFD1E3),
+                              width: 1,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(25),
                             ),
@@ -263,7 +256,10 @@ class _BookingSuccessPageState extends State<BookingSuccessPage> {
                       onPressed: () => context.go('/'),
                       style: TextButton.styleFrom(
                         foregroundColor: const Color(0xFFC44569),
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 24,
+                        ),
                       ),
                       icon: const Icon(Icons.home_rounded, size: 18),
                       label: Text(

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/another_design/presentation/pages/another_design_page.dart';
 import '../../features/auth/presentation/pages/customer_login_page.dart';
 import '../../features/auth/presentation/pages/customer_register_page.dart';
+import '../../features/auth/presentation/pages/forgot_password_pages.dart';
 import '../../features/auth/presentation/pages/profile_update_pages.dart';
 import '../../features/catalog/presentation/pages/catalog_page.dart';
 import '../../features/catalog/presentation/pages/nail_details_page.dart';
@@ -40,6 +41,39 @@ class AppRouter {
     initialLocation: '/',
     routes: [
       GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
+      GoRoute(
+        path: '/forgot-password',
+        builder: (context, state) {
+          final extra = state.extra is Map
+              ? Map<String, dynamic>.from(state.extra as Map)
+              : const <String, dynamic>{};
+          return ForgotPasswordEmailPage(
+            initialEmail: extra['email']?.toString() ?? '',
+          );
+        },
+      ),
+      GoRoute(
+        path: '/forgot-password/code',
+        builder: (context, state) {
+          final extra = state.extra is Map
+              ? Map<String, dynamic>.from(state.extra as Map)
+              : const <String, dynamic>{};
+          return ForgotPasswordCodePage(
+            email: extra['email']?.toString() ?? '',
+          );
+        },
+      ),
+      GoRoute(
+        path: '/forgot-password/reset',
+        builder: (context, state) {
+          final extra = state.extra is Map
+              ? Map<String, dynamic>.from(state.extra as Map)
+              : const <String, dynamic>{};
+          return ForgotPasswordResetPage(
+            token: extra['token']?.toString() ?? '',
+          );
+        },
+      ),
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterPage(),

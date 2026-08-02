@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -15,19 +18,10 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    serverClientId:
-        '216610420038-sb3eobmcpee4gi5or82a4c7d359bq8h2.apps.googleusercontent.com',
-    scopes: ['email', 'profile'],
-  );
 
   bool _obscurePassword = true;
   bool _isSubmitting = false;
   bool _isGoogleSubmitting = false;
-  int _resetStep = 0;
-  bool _isResetSubmitting = false;
-  bool _obscureResetPassword = true;
-  bool _obscureConfirmResetPassword = true;
 
   Future<void> _handleLogin() async {
     final email = _emailController.text.trim();
@@ -68,7 +62,11 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _handleGoogleLogin() async {
     setState(() => _isGoogleSubmitting = true);
     try {
-      final googleUser = await _googleSignIn.signIn();
+      final googleSignIn = GoogleSignIn(
+        serverClientId: await _loadGoogleServerClientId(),
+        scopes: ['email', 'profile'],
+      );
+      final googleUser = await googleSignIn.signIn();
       if (googleUser == null) return;
 
       final googleAuth = await googleUser.authentication;
@@ -93,247 +91,22 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  Future<void> _showForgotPasswordDialog() async {
-    final emailController = TextEditingController(text: _emailController.text);
-    final tokenController = TextEditingController();
-    final newPasswordController = TextEditingController();
-    final confirmPasswordController = TextEditingController();
-    _resetStep = 0;
-    _isResetSubmitting = false;
-    _obscureResetPassword = true;
-    _obscureConfirmResetPassword = true;
-
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: !_isResetSubmitting,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            Future<void> submitEmail() async {
-              final email = emailController.text.trim();
-              if (email.isEmpty) {
-                _showSnackBar('Please enter your email', AppColors.error);
-                return;
-              }
-
-              setStateDialog(() => _isResetSubmitting = true);
-              try {
-                await getIt<AuthRepository>().forgotPassword(email: email);
-                setStateDialog(() {
-                  _resetStep = 1;
-                  _isResetSubmitting = false;
-                });
-                _showSnackBar(
-                  'If the email exists, a reset code was sent.',
-                  AppColors.success,
-                );
-              } catch (e) {
-                setStateDialog(() => _isResetSubmitting = false);
-                _showSnackBar(e.toString(), AppColors.error);
-              }
-            }
-
-            Future<void> submitToken() async {
-              final token = tokenController.text.trim();
-              if (token.isEmpty) {
-                _showSnackBar('Please enter the reset code', AppColors.error);
-                return;
-              }
-
-              setStateDialog(() => _isResetSubmitting = true);
-              try {
-                await getIt<AuthRepository>().checkResetToken(token: token);
-                setStateDialog(() {
-                  _resetStep = 2;
-                  _isResetSubmitting = false;
-                });
-              } catch (e) {
-                setStateDialog(() => _isResetSubmitting = false);
-                _showSnackBar(e.toString(), AppColors.error);
-              }
-            }
-
-            Future<void> submitPassword() async {
-              final token = tokenController.text.trim();
-              final newPassword = newPasswordController.text;
-              final confirmPassword = confirmPasswordController.text;
-
-              if (newPassword.isEmpty || confirmPassword.isEmpty) {
-                _showSnackBar('Please enter the new password', AppColors.error);
-                return;
-              }
-
-              if (newPassword != confirmPassword) {
-                _showSnackBar(
-                  'Password confirmation does not match',
-                  AppColors.error,
-                );
-                return;
-              }
-
-              setStateDialog(() => _isResetSubmitting = true);
-              try {
-                await getIt<AuthRepository>().resetPassword(
-                  token: token,
-                  newPassword: newPassword,
-                  confirmPassword: confirmPassword,
-                );
-                if (dialogContext.mounted) {
-                  Navigator.pop(dialogContext);
-                }
-                _showSnackBar('Password reset successfully', AppColors.success);
-              } catch (e) {
-                setStateDialog(() => _isResetSubmitting = false);
-                _showSnackBar(e.toString(), AppColors.error);
-              }
-            }
-
-            final title = switch (_resetStep) {
-              0 => 'Forgot password',
-              1 => 'Enter reset code',
-              _ => 'Reset password',
-            };
-            final actionLabel = switch (_resetStep) {
-              0 => 'Send code',
-              1 => 'Verify code',
-              _ => 'Reset password',
-            };
-            final submit = switch (_resetStep) {
-              0 => submitEmail,
-              1 => submitToken,
-              _ => submitPassword,
-            };
-
-            return AlertDialog(
-              backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              title: Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (_resetStep == 0)
-                      _buildDialogTextField(
-                        controller: emailController,
-                        label: 'Email',
-                        icon: Icons.email_outlined,
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                    if (_resetStep == 1)
-                      _buildDialogTextField(
-                        controller: tokenController,
-                        label: 'Reset code',
-                        icon: Icons.pin_outlined,
-                      ),
-                    if (_resetStep == 2) ...[
-                      _buildDialogTextField(
-                        controller: newPasswordController,
-                        label: 'New password',
-                        icon: Icons.lock_reset,
-                        obscureText: _obscureResetPassword,
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscureResetPassword
-                                ? Icons.visibility_off_outlined
-                                : Icons.visibility_outlined,
-                          ),
-                          onPressed: () => setStateDialog(
-                            () => _obscureResetPassword =
-                                !_obscureResetPassword,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildDialogTextField(
-                        controller: confirmPasswordController,
-                        label: 'Confirm password',
-                        icon: Icons.verified_user_outlined,
-                        obscureText: _obscureConfirmResetPassword,
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscureConfirmResetPassword
-                                ? Icons.visibility_off_outlined
-                                : Icons.visibility_outlined,
-                          ),
-                          onPressed: () => setStateDialog(
-                            () => _obscureConfirmResetPassword =
-                                !_obscureConfirmResetPassword,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: _isResetSubmitting
-                      ? null
-                      : () => Navigator.pop(dialogContext),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: _isResetSubmitting ? null : submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: _isResetSubmitting
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(actionLabel),
-                ),
-              ],
-            );
-          },
-        );
-      },
+  Future<String> _loadGoogleServerClientId() async {
+    final jsonString = await rootBundle.loadString(
+      'android/app/google-login.json',
     );
+    final jsonMap = jsonDecode(jsonString) as Map<String, dynamic>;
+    final config = jsonMap['web'];
+    if (config is! Map) {
+      throw const FormatException('google-login.json missing OAuth config.');
+    }
 
-    emailController.dispose();
-    tokenController.dispose();
-    newPasswordController.dispose();
-    confirmPasswordController.dispose();
-  }
+    final clientId = config['server_client_id']?.toString();
+    if (clientId == null || clientId.isEmpty) {
+      throw const FormatException('google-login.json missing server_client_id.');
+    }
 
-  Widget _buildDialogTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    TextInputType keyboardType = TextInputType.text,
-    bool obscureText = false,
-    Widget? suffixIcon,
-  }) {
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      obscureText: obscureText,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon, color: AppColors.primary),
-        suffixIcon: suffixIcon,
-        filled: true,
-        fillColor: const Color(0xFFFCFAF6),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-      ),
-    );
+    return clientId;
   }
 
   @override
@@ -578,7 +351,14 @@ class _LoginPageState extends State<LoginPage> {
                               Align(
                                 alignment: Alignment.centerRight,
                                 child: TextButton(
-                                  onPressed: _showForgotPasswordDialog,
+                                  onPressed: () {
+                                    context.push(
+                                      '/forgot-password',
+                                      extra: {
+                                        'email': _emailController.text.trim(),
+                                      },
+                                    );
+                                  },
                                   child: const Text(
                                     'Quên mật khẩu?',
                                     style: TextStyle(

@@ -1,6 +1,7 @@
 package com.google.mediapipe.examples.handlandmarker.fragment
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.res.Configuration
 import android.os.Bundle
 import android.util.Log
@@ -66,11 +67,14 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
 
     override fun onResume() {
         super.onResume()
+        val context = context ?: return
+        val activity = activity ?: return
+
         // Make sure that all permissions are still present, since the
         // user could have removed them while the app was in paused state.
-        if (!PermissionsFragment.hasPermissions(requireContext())) {
+        if (!PermissionsFragment.hasPermissions(context)) {
             Navigation.findNavController(
-                requireActivity(), R.id.fragment_container
+                activity, R.id.fragment_container
             ).navigate(R.id.action_camera_to_permissions)
         }
 
@@ -128,10 +132,12 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
 
         // Initialize our background executor
         backgroundExecutor = Executors.newSingleThreadExecutor()
-        nailVisibilityModel = loadNailVisibilityModel()
+        val appContext = view.context.applicationContext
+        nailVisibilityModel = loadNailVisibilityModel(appContext)
 
         // Wait for the views to be properly laid out
         fragmentCameraBinding.viewFinder.post {
+            if (_fragmentCameraBinding == null || !isAdded) return@post
             // Set up the camera and its use cases
             setUpCamera()
         }
@@ -139,7 +145,7 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
         // Create the HandLandmarkerHelper that will handle the inference
         backgroundExecutor.execute {
             handLandmarkerHelper = HandLandmarkerHelper(
-                context = requireContext(),
+                context = appContext,
                 runningMode = RunningMode.LIVE_STREAM,
                 minHandDetectionConfidence = viewModel.currentMinHandDetectionConfidence,
                 minHandTrackingConfidence = viewModel.currentMinHandTrackingConfidence,
@@ -152,7 +158,7 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
 
         // Attach listeners to UI control widgets
         fragmentCameraBinding.btnBack.setOnClickListener {
-            requireActivity().finish()
+            activity?.finish()
         }
 
         initBottomSheetControls()
@@ -300,22 +306,26 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
 
     // Initialize CameraX, and prepare to bind the camera use cases
     private fun setUpCamera() {
+        val context = context ?: return
         val cameraProviderFuture =
-            ProcessCameraProvider.getInstance(requireContext())
+            ProcessCameraProvider.getInstance(context)
         cameraProviderFuture.addListener(
             {
+                if (_fragmentCameraBinding == null || !isAdded) return@addListener
                 // CameraProvider
                 cameraProvider = cameraProviderFuture.get()
 
                 // Build and bind the camera use cases
                 bindCameraUseCases()
-            }, ContextCompat.getMainExecutor(requireContext())
+            }, ContextCompat.getMainExecutor(context)
         )
     }
 
     // Declare and bind preview, capture and analysis use cases
     @SuppressLint("UnsafeOptInUsageError")
     private fun bindCameraUseCases() {
+        val binding = _fragmentCameraBinding ?: return
+        if (!isAdded) return
 
         // CameraProvider
         val cameraProvider = cameraProvider
@@ -326,14 +336,14 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
 
         // Preview. Only using the 4:3 ratio because this is the closest to our models
         preview = Preview.Builder().setTargetAspectRatio(AspectRatio.RATIO_4_3)
-            .setTargetRotation(fragmentCameraBinding.viewFinder.display.rotation)
+            .setTargetRotation(binding.viewFinder.display.rotation)
             .build()
 
         // ImageAnalysis. Using RGBA 8888 to match how our models work
         imageAnalyzer =
             ImageAnalysis.Builder()
                 .setTargetResolution(Size(LIVE_ANALYSIS_WIDTH, LIVE_ANALYSIS_HEIGHT))
-                .setTargetRotation(fragmentCameraBinding.viewFinder.display.rotation)
+                .setTargetRotation(binding.viewFinder.display.rotation)
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
                 .build()
@@ -355,7 +365,7 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
             )
 
             // Attach the viewfinder's surface provider to preview use case
-            preview?.setSurfaceProvider(fragmentCameraBinding.viewFinder.surfaceProvider)
+            preview?.setSurfaceProvider(binding.viewFinder.surfaceProvider)
         } catch (exc: Exception) {
             Log.e(TAG, "Use case binding failed", exc)
         }
@@ -374,8 +384,9 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
+        val binding = _fragmentCameraBinding ?: return
         imageAnalyzer?.targetRotation =
-            fragmentCameraBinding.viewFinder.display.rotation
+            binding.viewFinder.display.rotation
     }
 
     // Update UI after hand have been detected. Extracts original
@@ -385,35 +396,35 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
         resultBundle: HandLandmarkerHelper.ResultBundle
     ) {
         activity?.runOnUiThread {
-            if (_fragmentCameraBinding != null) {
-                fragmentCameraBinding.bottomSheetLayout.inferenceTimeVal.text =
-                    String.format("%d ms", resultBundle.inferenceTime)
+            val binding = _fragmentCameraBinding ?: return@runOnUiThread
 
-                val result = resultBundle.results.first()
-                val nailsVisible = isNailVisible(result.landmarks().firstOrNull())
-                val shouldShowOverlay = shouldShowOverlay(nailsVisible)
-                fragmentCameraBinding.nailVisibilityPrompt.visibility =
-                    if (shouldShowOverlay) View.GONE else View.VISIBLE
-                fragmentCameraBinding.overlay.visibility =
-                    if (shouldShowOverlay) View.VISIBLE else View.GONE
+            binding.bottomSheetLayout.inferenceTimeVal.text =
+                String.format("%d ms", resultBundle.inferenceTime)
 
-                if (shouldShowOverlay) {
-                    // Pass necessary information to OverlayView for drawing on the canvas
-                    fragmentCameraBinding.overlay.setFullDesign(viewModel.nailSetConfig.value)
+            val result = resultBundle.results.first()
+            val nailsVisible = isNailVisible(result.landmarks().firstOrNull())
+            val shouldShowOverlay = shouldShowOverlay(nailsVisible)
+            binding.nailVisibilityPrompt.visibility =
+                if (shouldShowOverlay) View.GONE else View.VISIBLE
+            binding.overlay.visibility =
+                if (shouldShowOverlay) View.VISIBLE else View.GONE
 
-                    fragmentCameraBinding.overlay.setResults(
-                        result,
-                        resultBundle.inputImageHeight,
-                        resultBundle.inputImageWidth,
-                        RunningMode.LIVE_STREAM
-                    )
-                } else {
-                    fragmentCameraBinding.overlay.clear()
-                }
+            if (shouldShowOverlay) {
+                // Pass necessary information to OverlayView for drawing on the canvas
+                binding.overlay.setFullDesign(viewModel.nailSetConfig.value)
 
-                // Force a redraw
-                fragmentCameraBinding.overlay.invalidate()
+                binding.overlay.setResults(
+                    result,
+                    resultBundle.inputImageHeight,
+                    resultBundle.inputImageWidth,
+                    RunningMode.LIVE_STREAM
+                )
+            } else {
+                binding.overlay.clear()
             }
+
+            // Force a redraw
+            binding.overlay.invalidate()
         }
     }
 
@@ -430,9 +441,9 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
         return now - falseStartMs < NAIL_VISIBILITY_FALSE_CONFIRMATION_MS
     }
 
-    private fun loadNailVisibilityModel(): NailVisibilityModel? {
+    private fun loadNailVisibilityModel(context: Context): NailVisibilityModel? {
         return try {
-            val json = requireContext().assets.open(NAIL_VISIBILITY_MODEL_ASSET)
+            val json = context.assets.open(NAIL_VISIBILITY_MODEL_ASSET)
                 .bufferedReader()
                 .use { it.readText() }
             NailVisibilityModel.fromJson(JSONObject(json))
@@ -569,9 +580,12 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
 
     override fun onError(error: String, errorCode: Int) {
         activity?.runOnUiThread {
-            Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show()
+            val context = context ?: return@runOnUiThread
+            val binding = _fragmentCameraBinding ?: return@runOnUiThread
+
+            Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
             if (errorCode == HandLandmarkerHelper.GPU_ERROR) {
-                fragmentCameraBinding.bottomSheetLayout.spinnerDelegate.setSelection(
+                binding.bottomSheetLayout.spinnerDelegate.setSelection(
                     HandLandmarkerHelper.DELEGATE_CPU, false
                 )
             }

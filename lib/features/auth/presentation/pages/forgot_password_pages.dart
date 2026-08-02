@@ -34,7 +34,7 @@ class _ForgotPasswordEmailPageState extends State<ForgotPasswordEmailPage> {
   Future<void> _submit() async {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
-      _showSnackBar('Please enter your email', AppColors.error);
+      _showSnackBar('Vui lòng nhập email của bạn', AppColors.error);
       return;
     }
 
@@ -43,7 +43,7 @@ class _ForgotPasswordEmailPageState extends State<ForgotPasswordEmailPage> {
       await getIt<AuthRepository>().forgotPassword(email: email);
       if (!mounted) return;
       _showSnackBar(
-        'If the email exists, a reset code was sent.',
+        'Nếu email tồn tại, mã đặt lại đã được gửi.',
         AppColors.success,
       );
       context.push('/forgot-password/code', extra: {'email': email});
@@ -64,8 +64,8 @@ class _ForgotPasswordEmailPageState extends State<ForgotPasswordEmailPage> {
   @override
   Widget build(BuildContext context) {
     return _ResetPasswordShell(
-      title: 'Forgot password',
-      subtitle: 'Enter your email to receive a reset code.',
+      title: 'Quên mật khẩu',
+      subtitle: 'Nhập email của bạn để nhận mã đặt lại.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -77,7 +77,7 @@ class _ForgotPasswordEmailPageState extends State<ForgotPasswordEmailPage> {
           ),
           const SizedBox(height: 24),
           _ResetButton(
-            label: 'Send code',
+            label: 'Gửi mã',
             isSubmitting: _isSubmitting,
             onPressed: _submit,
           ),
@@ -109,7 +109,7 @@ class _ForgotPasswordCodePageState extends State<ForgotPasswordCodePage> {
   Future<void> _submit() async {
     final token = _tokenController.text.trim();
     if (token.isEmpty) {
-      _showSnackBar('Please enter the reset code', AppColors.error);
+      _showSnackBar('Vui lòng nhập mã đặt lại mật khẩu', AppColors.error);
       return;
     }
 
@@ -135,21 +135,21 @@ class _ForgotPasswordCodePageState extends State<ForgotPasswordCodePage> {
   @override
   Widget build(BuildContext context) {
     return _ResetPasswordShell(
-      title: 'Enter reset code',
+      title: 'Nhập mã đặt lại mật khẩu',
       subtitle: widget.email.isEmpty
-          ? 'Enter the code from your email.'
-          : 'Enter the code sent to ${widget.email}.',
+          ? 'Nhập mã từ email của bạn.'
+          : 'Nhập mã được gửi đến ${widget.email}.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _ResetTextField(
             controller: _tokenController,
-            label: 'Reset code',
+            label: 'Mã đặt lại mật khẩu',
             icon: Icons.pin_outlined,
           ),
           const SizedBox(height: 24),
           _ResetButton(
-            label: 'Verify code',
+            label: 'Xác minh mã',
             isSubmitting: _isSubmitting,
             onPressed: _submit,
           ),
@@ -188,12 +188,12 @@ class _ForgotPasswordResetPageState extends State<ForgotPasswordResetPage> {
     final confirmPassword = _confirmPasswordController.text;
 
     if (newPassword.isEmpty || confirmPassword.isEmpty) {
-      _showSnackBar('Please enter the new password', AppColors.error);
+      _showSnackBar('Vui lòng nhập mật khẩu mới', AppColors.error);
       return;
     }
 
     if (newPassword != confirmPassword) {
-      _showSnackBar('Password confirmation does not match', AppColors.error);
+      _showSnackBar('Xác nhận mật khẩu không khớp', AppColors.error);
       return;
     }
 
@@ -205,7 +205,7 @@ class _ForgotPasswordResetPageState extends State<ForgotPasswordResetPage> {
         confirmPassword: confirmPassword,
       );
       if (!mounted) return;
-      _showSnackBar('Password reset successfully', AppColors.success);
+      _showSnackBar('Đặt lại mật khẩu thành công', AppColors.success);
       context.go('/login');
     } catch (e) {
       if (!mounted) return;
@@ -224,14 +224,14 @@ class _ForgotPasswordResetPageState extends State<ForgotPasswordResetPage> {
   @override
   Widget build(BuildContext context) {
     return _ResetPasswordShell(
-      title: 'Reset password',
-      subtitle: 'Create a new password for your account.',
+      title: 'Đặt lại mật khẩu',
+      subtitle: 'Tạo mật khẩu mới cho tài khoản của bạn.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _ResetTextField(
             controller: _newPasswordController,
-            label: 'New password',
+            label: 'Mật khẩu mới',
             icon: Icons.lock_reset,
             obscureText: _obscurePassword,
             suffixIcon: IconButton(
@@ -248,7 +248,7 @@ class _ForgotPasswordResetPageState extends State<ForgotPasswordResetPage> {
           const SizedBox(height: 16),
           _ResetTextField(
             controller: _confirmPasswordController,
-            label: 'Confirm password',
+            label: 'Xác nhận mật khẩu',
             icon: Icons.verified_user_outlined,
             obscureText: _obscureConfirmPassword,
             suffixIcon: IconButton(
@@ -259,14 +259,14 @@ class _ForgotPasswordResetPageState extends State<ForgotPasswordResetPage> {
               ),
               onPressed: () {
                 setState(
-                  () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                      () => _obscureConfirmPassword = !_obscureConfirmPassword,
                 );
               },
             ),
           ),
           const SizedBox(height: 24),
           _ResetButton(
-            label: 'Reset password',
+            label: 'Đặt lại mật khẩu',
             isSubmitting: _isSubmitting,
             onPressed: _submit,
           ),

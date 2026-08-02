@@ -214,16 +214,6 @@ class _LoginPageState extends State<LoginPage> {
                             color: AppColors.primaryDark,
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Exquisite Nail Artistry',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.grey.shade500,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
                         const SizedBox(height: 36),
 
                         // Login Form Container
@@ -429,7 +419,7 @@ class _LoginPageState extends State<LoginPage> {
                                   Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 12),
                                     child: Text(
-                                      'or',
+                                      'hoặc',
                                       style: TextStyle(
                                         color: Colors.grey.shade500,
                                         fontSize: 12,
@@ -456,7 +446,7 @@ class _LoginPageState extends State<LoginPage> {
                                         )
                                       : const Icon(Icons.g_mobiledata, size: 28),
                                   label: const Text(
-                                    'Continue with Google',
+                                    'Đăng nhập với Google',
                                     style: TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.bold,

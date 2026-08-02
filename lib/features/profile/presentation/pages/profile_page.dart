@@ -1139,7 +1139,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               _showUpdatePasswordPopup();
                             },
                       icon: const Icon(Icons.lock_reset),
-                      label: const Text('Change password'),
+                      label: const Text('Đổi mật khẩu'),
                     ),
                   ],
                 ),
@@ -1274,7 +1274,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 if (mounted) {
                   messenger.showSnackBar(
                     const SnackBar(
-                      content: Text('Password updated successfully!'),
+                      content: Text('Cập nhật mật khẩu thành công!'),
                     ),
                   );
                 }
@@ -1289,7 +1289,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 borderRadius: BorderRadius.circular(20),
               ),
               title: const Text(
-                'Change password',
+                'Đổi mật khẩu',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
               ),
               content: SingleChildScrollView(
@@ -1298,21 +1298,21 @@ class _ProfilePageState extends State<ProfilePage> {
                   children: [
                     _buildTextField(
                       oldPasswordController,
-                      'Old password',
+                      'Mật khẩu cũ',
                       Icons.lock_outline,
                       isPassword: true,
                     ),
                     const SizedBox(height: 16),
                     _buildTextField(
                       newPasswordController,
-                      'New password',
+                      'Mật khẩu mới',
                       Icons.lock_reset,
                       isPassword: true,
                     ),
                     const SizedBox(height: 16),
                     _buildTextField(
                       confirmPasswordController,
-                      'Confirm password',
+                      'Xác nhận mật khẩu',
                       Icons.verified_user_outlined,
                       isPassword: true,
                     ),
@@ -1325,7 +1325,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       ? null
                       : () => Navigator.pop(dialogContext),
                   child: const Text(
-                    'Cancel',
+                    'Hủy',
                     style: TextStyle(
                       color: Colors.grey,
                       fontWeight: FontWeight.bold,
@@ -1350,7 +1350,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                         )
                       : const Text(
-                          'Update',
+                          'Cập nhật',
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,

@@ -43,7 +43,7 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
         private const val LIVE_ANALYSIS_WIDTH = 640
         private const val LIVE_ANALYSIS_HEIGHT = 480
         private const val NAIL_VISIBILITY_MODEL_ASSET = "nail_visibility_model.json"
-        private const val NAIL_VISIBILITY_FALSE_CONFIRMATION_MS = 5_000L
+        private const val NAIL_VISIBILITY_FALSE_CONFIRMATION_MS = 3_000L
     }
 
     private var _fragmentCameraBinding: FragmentCameraBinding? = null

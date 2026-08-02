@@ -26,8 +26,10 @@ import androidx.core.graphics.withTranslation
 import org.json.JSONObject
 import java.net.URL
 import kotlin.math.atan2
+import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.roundToInt
+import kotlin.math.sin
 
 class OverlayView(context: Context?, attrs: AttributeSet?) :
     View(context, attrs) {
@@ -107,15 +109,17 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                     val jy = joint.y() * imageHeight * scaleFactor
                     val tx = tip.x() * imageWidth * scaleFactor
                     val ty = tip.y() * imageHeight * scaleFactor
-                    val px = nailDetection.centerXNormalized * imageWidth * scaleFactor
-                    val py = nailDetection.centerYNormalized * imageHeight * scaleFactor
+                    val px = (nailDetection.maskBounds?.centerX ?: nailDetection.centerX) * scaleFactor
+                    val py = (nailDetection.maskBounds?.centerY ?: (nailDetection.centerYNormalized * imageHeight)) * scaleFactor
 
                     val angle = Math.toDegrees(atan2((ty - jy).toDouble(), (tx - jx).toDouble())).toFloat()
 
                     val fingerLength = hypot((tx - jx).toDouble(), (ty - jy).toDouble()).toFloat()
+                    val rotationAngle = angle + 90f
+                    val maskLocalBounds = projectedMaskBounds(nailDetection, px, py, rotationAngle)
 
                     canvas.withTranslation(px, py) {
-                        rotate(angle + 90f) // Rotate to match finger direction
+                        rotate(rotationAngle) // Rotate to match finger direction
 
                         val customShapeBitmap = loadBitmapFromUri(design.customShapeSrc)
                         val shapeImageBitmap = loadBitmapFromUri(nailSetConfig.shapeImageSrc)
@@ -126,10 +130,13 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                         nailBitmap?.let { bitmap ->
                             val detectedWidth = nailDetection.normalizedWidth * imageWidth * scaleFactor
                             val detectedHeight = nailDetection.normalizedHeight * imageHeight * scaleFactor
-                            val nailWidth = max(detectedWidth * NAIL_SEGMENT_WIDTH_SCALE, fingerLength * 2f)
-                            val nailHeight = max(detectedHeight, fingerLength * 1.2f) * nailSetConfig.length
+                            val fitWidth = maskLocalBounds?.width()?.coerceAtLeast(1f) ?: detectedWidth
+                            val fitHeight = maskLocalBounds?.height()?.coerceAtLeast(1f) ?: detectedHeight
+                            val nailWidth = max(fitWidth * NAIL_MASK_WIDTH_SCALE, fingerLength * 1.2f)
+                            val nailHeight = max(fitHeight, fingerLength * 1.2f) * nailSetConfig.length
 
-                            val nailBottom = fingerLength * 0.75f // Fixed base position relative to tip
+                            val nailBottom = (maskLocalBounds?.bottom ?: (fingerLength * 0.75f)) +
+                                    fingerLength * NAIL_BOTTOM_OFFSET_SCALE
                             val totalHeight = nailHeight * 1.5f    // Total height expands with multiplier
 
                             val destRect = RectF(
@@ -207,6 +214,43 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
             .filter { (_, distance) -> distance <= maxDistance }
             .minByOrNull { (_, distance) -> distance }
             ?.first
+    }
+
+    private fun projectedMaskBounds(
+        detection: YoloNailOnnxRecognizer.NailDetection,
+        originX: Float,
+        originY: Float,
+        rotationDegrees: Float
+    ): RectF? {
+        val bounds = detection.maskBounds ?: return null
+        val radians = Math.toRadians(rotationDegrees.toDouble())
+        val cosAngle = cos(radians).toFloat()
+        val sinAngle = sin(radians).toFloat()
+        val corners = arrayOf(
+            bounds.left to bounds.top,
+            bounds.right to bounds.top,
+            bounds.right to bounds.bottom,
+            bounds.left to bounds.bottom
+        )
+
+        var minX = Float.POSITIVE_INFINITY
+        var minY = Float.POSITIVE_INFINITY
+        var maxX = Float.NEGATIVE_INFINITY
+        var maxY = Float.NEGATIVE_INFINITY
+
+        corners.forEach { (imageX, imageY) ->
+            val dx = imageX * scaleFactor - originX
+            val dy = imageY * scaleFactor - originY
+            val localX = dx * cosAngle + dy * sinAngle
+            val localY = -dx * sinAngle + dy * cosAngle
+            minX = min(minX, localX)
+            minY = min(minY, localY)
+            maxX = max(maxX, localX)
+            maxY = max(maxY, localY)
+        }
+
+        if (maxX <= minX || maxY <= minY) return null
+        return RectF(minX, minY, maxX, maxY)
     }
 
     fun setFullDesign(config: NailSetConfig) {
@@ -594,7 +638,8 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         private const val PROMPT_TEXT_SIZE = 32F // Now treated as SP/DP
         private const val PROMPT_VERTICAL_POSITION = 0.18F
         private const val MAX_TIP_TO_NAIL_DISTANCE = 0.16F
-        private const val NAIL_SEGMENT_WIDTH_SCALE = 1.45F
+        private const val NAIL_MASK_WIDTH_SCALE = 3F
+        private const val NAIL_BOTTOM_OFFSET_SCALE = 0.4F
         private val fingerClassIds = listOf(4, 0, 1, 3, 2)
     }
 }

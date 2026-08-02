@@ -4,10 +4,12 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.RectF
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import kotlin.math.exp
 import kotlin.math.max
 import kotlin.math.min
 
@@ -27,7 +29,18 @@ class YoloNailOnnxRecognizer(private val context: Context) : AutoCloseable {
             arrayOf(input.tensor),
             mapOf(0 to outputBoxes, 1 to outputMasks)
         )
-        return nonMaxSuppression(decodeBoxes(outputBoxes, input, bitmap.width, bitmap.height))
+        return nonMaxSuppression(decodeBoxes(outputBoxes, input, bitmap.width, bitmap.height)).map { candidate ->
+            candidate.toDetection(
+                buildMaskBounds(
+                    candidate.maskCoefficients,
+                    outputMasks[0],
+                    input,
+                    RectF(candidate.left, candidate.top, candidate.right, candidate.bottom),
+                    bitmap.width,
+                    bitmap.height
+                )
+            )
+        }
     }
 
     override fun close() {
@@ -93,13 +106,13 @@ class YoloNailOnnxRecognizer(private val context: Context) : AutoCloseable {
         input: PreparedInput,
         imageWidth: Int,
         imageHeight: Int
-    ): List<NailDetection> {
+    ): List<NailDetectionCandidate> {
         val channels = output[0]
         require(channels.size >= BOX_CHANNELS + CLASS_LABELS.size) {
             "Unexpected YOLO output channels: ${channels.size}"
         }
         val count = channels[0].size
-        val boxes = mutableListOf<NailDetection>()
+        val boxes = mutableListOf<NailDetectionCandidate>()
         for (i in 0 until count) {
             var classId = 0
             var confidence = channels[BOX_CHANNELS][i]
@@ -123,8 +136,11 @@ class YoloNailOnnxRecognizer(private val context: Context) : AutoCloseable {
             val bottom = ((centerY + height / 2f - input.padY) / input.scale).coerceIn(0f, imageHeight.toFloat())
 
             if (right > left && bottom > top) {
+                val maskCoefficients = FloatArray(MASK_CHANNELS) { channel ->
+                    channels[BOX_CHANNELS + CLASS_LABELS.size + channel][i]
+                }
                 boxes.add(
-                    NailDetection(
+                    NailDetectionCandidate(
                         left,
                         top,
                         right,
@@ -133,7 +149,8 @@ class YoloNailOnnxRecognizer(private val context: Context) : AutoCloseable {
                         classId,
                         CLASS_LABELS[classId],
                         imageWidth,
-                        imageHeight
+                        imageHeight,
+                        maskCoefficients
                     )
                 )
             }
@@ -142,8 +159,59 @@ class YoloNailOnnxRecognizer(private val context: Context) : AutoCloseable {
         return boxes.sortedByDescending { it.confidence }.take(MAX_CANDIDATES)
     }
 
-    private fun nonMaxSuppression(detections: List<NailDetection>): List<NailDetection> {
-        val selected = mutableListOf<NailDetection>()
+    private fun buildMaskBounds(
+        coefficients: FloatArray,
+        prototypes: Array<Array<FloatArray>>,
+        input: PreparedInput,
+        detectionRect: RectF,
+        imageWidth: Int,
+        imageHeight: Int
+    ): NailMaskBounds? {
+        var minX = imageWidth.toFloat()
+        var minY = imageHeight.toFloat()
+        var maxX = 0f
+        var maxY = 0f
+        var hitCount = 0
+
+        for (maskY in 0 until MASK_SIZE) {
+            val modelY = (maskY + 0.5f) * MODEL_SIZE / MASK_SIZE
+            val imageY = ((modelY - input.padY) / input.scale).coerceIn(0f, imageHeight.toFloat())
+            if (imageY < detectionRect.top || imageY > detectionRect.bottom) continue
+
+            for (maskX in 0 until MASK_SIZE) {
+                val modelX = (maskX + 0.5f) * MODEL_SIZE / MASK_SIZE
+                val imageX = ((modelX - input.padX) / input.scale).coerceIn(0f, imageWidth.toFloat())
+                if (imageX < detectionRect.left || imageX > detectionRect.right) continue
+
+                var logit = 0f
+                for (channel in 0 until MASK_CHANNELS) {
+                    logit += coefficients[channel] * prototypes[channel][maskY][maskX]
+                }
+                if (sigmoid(logit) < MASK_THRESHOLD) continue
+
+                minX = min(minX, imageX)
+                minY = min(minY, imageY)
+                maxX = max(maxX, imageX)
+                maxY = max(maxY, imageY)
+                hitCount++
+            }
+        }
+
+        if (hitCount < MIN_MASK_PIXELS || maxX <= minX || maxY <= minY) return null
+        return NailMaskBounds(
+            minX.coerceIn(detectionRect.left, detectionRect.right),
+            minY.coerceIn(detectionRect.top, detectionRect.bottom),
+            maxX.coerceIn(detectionRect.left, detectionRect.right),
+            maxY.coerceIn(detectionRect.top, detectionRect.bottom)
+        )
+    }
+
+    private fun sigmoid(value: Float): Float {
+        return (1.0 / (1.0 + exp(-value.toDouble()))).toFloat()
+    }
+
+    private fun nonMaxSuppression(detections: List<NailDetectionCandidate>): List<NailDetectionCandidate> {
+        val selected = mutableListOf<NailDetectionCandidate>()
         detections.forEach { candidate ->
             if (selected.none { it.classId == candidate.classId && iou(candidate, it) > IOU_THRESHOLD }) {
                 selected.add(candidate)
@@ -168,7 +236,7 @@ class YoloNailOnnxRecognizer(private val context: Context) : AutoCloseable {
         return HandRecognitionResult(listOf(landmarks))
     }
 
-    private fun iou(a: NailDetection, b: NailDetection): Float {
+    private fun iou(a: NailDetectionCandidate, b: NailDetectionCandidate): Float {
         val left = max(a.left, b.left)
         val top = max(a.top, b.top)
         val right = min(a.right, b.right)
@@ -189,6 +257,36 @@ class YoloNailOnnxRecognizer(private val context: Context) : AutoCloseable {
         val padY: Float
     )
 
+    private data class NailDetectionCandidate(
+        val left: Float,
+        val top: Float,
+        val right: Float,
+        val bottom: Float,
+        val confidence: Float,
+        val classId: Int,
+        val className: String,
+        val imageWidth: Int,
+        val imageHeight: Int,
+        val maskCoefficients: FloatArray
+    ) {
+        val area: Float = (right - left) * (bottom - top)
+
+        fun toDetection(maskBounds: NailMaskBounds?): NailDetection {
+            return NailDetection(
+                left,
+                top,
+                right,
+                bottom,
+                confidence,
+                classId,
+                className,
+                imageWidth,
+                imageHeight,
+                maskBounds
+            )
+        }
+    }
+
     data class NailDetection(
         val left: Float,
         val top: Float,
@@ -198,7 +296,8 @@ class YoloNailOnnxRecognizer(private val context: Context) : AutoCloseable {
         val classId: Int,
         val className: String,
         val imageWidth: Int,
-        val imageHeight: Int
+        val imageHeight: Int,
+        val maskBounds: NailMaskBounds? = null
     ) {
         val area: Float = (right - left) * (bottom - top)
         val centerX: Float = (left + right) / 2f
@@ -206,6 +305,18 @@ class YoloNailOnnxRecognizer(private val context: Context) : AutoCloseable {
         val centerYNormalized: Float = ((top + bottom) / 2f) / imageHeight
         val normalizedHeight: Float = (bottom - top) / imageHeight
         val normalizedWidth: Float = (right - left) / imageWidth
+    }
+
+    data class NailMaskBounds(
+        val left: Float,
+        val top: Float,
+        val right: Float,
+        val bottom: Float
+    ) {
+        val width: Float = right - left
+        val height: Float = bottom - top
+        val centerX: Float = (left + right) / 2f
+        val centerY: Float = (top + bottom) / 2f
     }
 
     companion object {
@@ -219,6 +330,8 @@ class YoloNailOnnxRecognizer(private val context: Context) : AutoCloseable {
         private const val TFLITE_NUM_THREADS = 4
         private const val NORMALIZED_COORDINATE_MAX = 1.5f
         private const val CONFIDENCE_THRESHOLD = 0.1f
+        private const val MASK_THRESHOLD = 0.5f
+        private const val MIN_MASK_PIXELS = 3
         private const val IOU_THRESHOLD = 0.45f
         private const val MAX_CANDIDATES = 80
         private const val MAX_NAILS = 5

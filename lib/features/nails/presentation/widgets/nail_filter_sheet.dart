@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import '../../../../core/constants/app_colors.dart';
 import '../../data/models/category_type_model.dart';
 import '../../data/models/nail_filters.dart';
 
@@ -56,42 +56,77 @@ class _NailFilterSheetState extends State<NailFilterSheet> {
                 children: [
                   const Expanded(
                     child: Text(
-                      'Filter designs',
+                      'Bộ lọc thiết kế',
                       style: TextStyle(
                         fontSize: 20,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                        letterSpacing: -0.5,
                       ),
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Close',
+                    tooltip: 'Đóng',
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close),
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               TextField(
                 controller: _nameController,
-                autofocus: true,
-                decoration: const InputDecoration(
-                  labelText: 'Design name',
-                  prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(),
+                autofocus: false,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textPrimary,
+                ),
+                decoration: InputDecoration(
+                  labelText: 'Tên thiết kế',
+                  labelStyle: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.search_rounded,
+                    color: AppColors.textSecondary,
+                    size: 20,
+                  ),
+                  filled: true,
+                  fillColor: const Color(0xFFF5F5F7),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               const Text(
-                'Categories',
-                style: TextStyle(fontWeight: FontWeight.w800),
+                'Danh mục',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: AppColors.textPrimary,
+                ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Expanded(
                 child: widget.categoryTypes.isEmpty
-                    ? const Center(child: Text('No categories available.'))
+                    ? const Center(
+                        child: Text(
+                          'Không có danh mục nào.',
+                          style: TextStyle(color: AppColors.textSecondary),
+                        ),
+                      )
                     : ListView.separated(
                         itemCount: widget.categoryTypes.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 14),
+                        separatorBuilder: (_, _) => const SizedBox(height: 18),
                         itemBuilder: (context, index) {
                           final type = widget.categoryTypes[index];
                           final activeCategories = type.categories
@@ -109,7 +144,9 @@ class _NailFilterSheetState extends State<NailFilterSheet> {
                               Text(
                                 type.name,
                                 style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: AppColors.textSecondary,
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -135,6 +172,36 @@ class _NailFilterSheetState extends State<NailFilterSheet> {
                                         }
                                       });
                                     },
+                                    selectedColor: AppColors.primary.withValues(
+                                      alpha: 0.12,
+                                    ),
+                                    checkmarkColor: AppColors.primary,
+                                    backgroundColor: const Color(0xFFF5F5F7),
+                                    labelStyle: TextStyle(
+                                      color: selected
+                                          ? AppColors.primary
+                                          : AppColors.textPrimary,
+                                      fontWeight: selected
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                      fontSize: 13,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(30),
+                                      side: BorderSide(
+                                        color: selected
+                                            ? AppColors.primary
+                                            : Colors.transparent,
+                                        width: 1.2,
+                                      ),
+                                    ),
+                                    showCheckmark: false,
+                                    materialTapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                      vertical: 4,
+                                    ),
                                   );
                                 }).toList(),
                               ),
@@ -148,14 +215,39 @@ class _NailFilterSheetState extends State<NailFilterSheet> {
                 children: [
                   Expanded(
                     child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        side: const BorderSide(
+                          color: Color(0xFFE0E0E0),
+                          width: 1.2,
+                        ),
+                      ),
                       onPressed: () =>
                           Navigator.pop(context, const NailFilters()),
-                      child: const Text('Reset'),
+                      child: const Text(
+                        'Đặt lại',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                      ),
                       onPressed: () {
                         Navigator.pop(
                           context,
@@ -165,7 +257,13 @@ class _NailFilterSheetState extends State<NailFilterSheet> {
                           ),
                         );
                       },
-                      child: const Text('Apply'),
+                      child: const Text(
+                        'Áp dụng',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
                     ),
                   ),
                 ],

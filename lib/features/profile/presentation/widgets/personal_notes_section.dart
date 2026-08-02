@@ -6,11 +6,13 @@ import 'profile_section_card.dart';
 class PersonalNotesSection extends StatelessWidget {
   final List<PersonalNoteItem> notes;
   final Map<String, TextEditingController> controllers;
+  final bool readOnly;
 
   const PersonalNotesSection({
     super.key,
     required this.notes,
     required this.controllers,
+    this.readOnly = false,
   });
 
   @override
@@ -37,6 +39,7 @@ class PersonalNotesSection extends StatelessWidget {
                 const SizedBox(height: 8),
                 TextField(
                   controller: controller,
+                  enabled: !readOnly,
                   maxLines: note.isMultiline ? 3 : null,
                   decoration: InputDecoration(
                     hintText: note.placeholder,

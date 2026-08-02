@@ -1,9 +1,8 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../models/placed_component_draft.dart';
 
-class TryOnPlacementControls extends StatefulWidget {
+class TryOnPlacementControls extends StatelessWidget {
   final PlacedComponentDraft? selectedPlacement;
   final VoidCallback onMoveLeft;
   final VoidCallback onMoveRight;
@@ -30,45 +29,25 @@ class TryOnPlacementControls extends StatefulWidget {
   });
 
   @override
-  State<TryOnPlacementControls> createState() => _TryOnPlacementControlsState();
-}
-
-class _TryOnPlacementControlsState extends State<TryOnPlacementControls> {
-  Timer? _throttleTimer;
-  bool _canEmit = true;
-
-  void _handleAction(VoidCallback action) {
-    if (!_canEmit) return;
-    
-    action();
-    _canEmit = false;
-    _throttleTimer?.cancel();
-    _throttleTimer = Timer(const Duration(milliseconds: 66), () {
-      if (mounted) {
-        _canEmit = true;
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _throttleTimer?.cancel();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final enabled = widget.selectedPlacement != null;
+    final enabled = selectedPlacement != null;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant, width: 1),
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           // Bên trái: Thu phóng
           Column(
@@ -76,20 +55,20 @@ class _TryOnPlacementControlsState extends State<TryOnPlacementControls> {
             children: [
               _RemoteBtn(
                 icon: Icons.add,
-                onPressed: enabled ? () => _handleAction(widget.onScaleUp) : null,
+                onPressed: enabled ? onScaleUp : null,
               ),
               const SizedBox(height: 16),
               _RemoteBtn(
                 icon: Icons.remove,
-                onPressed: enabled ? () => _handleAction(widget.onScaleDown) : null,
+                onPressed: enabled ? onScaleDown : null,
               ),
             ],
           ),
-          
+
           // Ở giữa: D-Pad
           SizedBox(
-            width: 160,
-            height: 160,
+            width: 140,
+            height: 140,
             child: Stack(
               alignment: Alignment.center,
               children: [
@@ -97,35 +76,35 @@ class _TryOnPlacementControlsState extends State<TryOnPlacementControls> {
                   top: 0,
                   child: _RemoteBtn(
                     icon: Icons.keyboard_arrow_up,
-                    onPressed: enabled ? () => _handleAction(widget.onMoveUp) : null,
+                    onPressed: enabled ? onMoveUp : null,
                   ),
                 ),
                 Positioned(
                   bottom: 0,
                   child: _RemoteBtn(
                     icon: Icons.keyboard_arrow_down,
-                    onPressed: enabled ? () => _handleAction(widget.onMoveDown) : null,
+                    onPressed: enabled ? onMoveDown : null,
                   ),
                 ),
                 Positioned(
                   left: 0,
                   child: _RemoteBtn(
                     icon: Icons.keyboard_arrow_left,
-                    onPressed: enabled ? () => _handleAction(widget.onMoveLeft) : null,
+                    onPressed: enabled ? onMoveLeft : null,
                   ),
                 ),
                 Positioned(
                   right: 0,
                   child: _RemoteBtn(
                     icon: Icons.keyboard_arrow_right,
-                    onPressed: enabled ? () => _handleAction(widget.onMoveRight) : null,
+                    onPressed: enabled ? onMoveRight : null,
                   ),
                 ),
                 _RemoteBtn(
                   icon: Icons.delete_outline,
-                  color: Theme.of(context).colorScheme.errorContainer,
-                  iconColor: Theme.of(context).colorScheme.onErrorContainer,
-                  onPressed: enabled ? widget.onRemove : null,
+                  color: Colors.red.shade50,
+                  iconColor: Colors.red.shade400,
+                  onPressed: enabled ? onRemove : null,
                 ),
               ],
             ),
@@ -137,12 +116,12 @@ class _TryOnPlacementControlsState extends State<TryOnPlacementControls> {
             children: [
               _RemoteBtn(
                 icon: Icons.rotate_right,
-                onPressed: enabled ? () => _handleAction(widget.onRotateRight) : null,
+                onPressed: enabled ? onRotateRight : null,
               ),
               const SizedBox(height: 16),
               _RemoteBtn(
                 icon: Icons.rotate_left,
-                onPressed: enabled ? () => _handleAction(widget.onRotateLeft) : null,
+                onPressed: enabled ? onRotateLeft : null,
               ),
             ],
           ),
@@ -174,9 +153,12 @@ class _RemoteBtn extends StatelessWidget {
         onPressed: onPressed,
         style: FilledButton.styleFrom(
           padding: EdgeInsets.zero,
-          backgroundColor: color ?? Theme.of(context).colorScheme.primaryContainer,
+          backgroundColor:
+              color ?? Theme.of(context).colorScheme.primaryContainer,
           foregroundColor: iconColor ?? Theme.of(context).colorScheme.primary,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
         child: Icon(icon, size: 24),
       ),

@@ -14,27 +14,37 @@ class WaitlistApiService {
     int estimatedDuration = 60,
     List<Map<String, dynamic>> waitlistItems = const [],
   }) async {
-    final response = await _apiClient.post('/Waitlists/join', data: {
-      'salonId': salonId,
-      if (preferredNailArtistId != null)
-        'preferredNailArtistId': preferredNailArtistId,
-      'requestedDate': requestedDate.toIso8601String(),
-      'requestedStartTime': requestedStartTime,
-      'estimatedDuration': estimatedDuration,
-      'waitlistItems': waitlistItems,
-    });
-    return WaitlistApiModel.fromJson(response.data['data'] as Map<String, dynamic>);
+    final response = await _apiClient.post(
+      '/Waitlists/join',
+      data: {
+        'salonId': salonId,
+        'preferredNailArtistId': ?preferredNailArtistId,
+        'requestedDate': requestedDate.toIso8601String(),
+        'requestedStartTime': requestedStartTime,
+        'estimatedDuration': estimatedDuration,
+        'waitlistItems': waitlistItems,
+      },
+    );
+    return WaitlistApiModel.fromJson(
+      response.data['data'] as Map<String, dynamic>,
+    );
   }
 
   // POST /api/Waitlists/{id}/confirm
   Future<bool> confirmWaitlist(String waitlistId) async {
-    final response = await _apiClient.post('/Waitlists/$waitlistId/confirm', data: {});
+    final response = await _apiClient.post(
+      '/Waitlists/$waitlistId/confirm',
+      data: {},
+    );
     return response.statusCode == 200;
   }
 
   // POST /api/Waitlists/{id}/cancel
   Future<bool> cancelWaitlist(String waitlistId) async {
-    final response = await _apiClient.post('/Waitlists/$waitlistId/cancel', data: {});
+    final response = await _apiClient.post(
+      '/Waitlists/$waitlistId/cancel',
+      data: {},
+    );
     return response.statusCode == 200;
   }
 

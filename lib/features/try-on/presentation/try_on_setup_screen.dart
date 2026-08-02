@@ -16,10 +16,10 @@ import '../utils/try_on_setup_helpers.dart';
 import '../widgets/component_grid.dart';
 import '../widgets/nail_shape_selector.dart';
 import '../widgets/nail_surface_selector.dart';
+import '../widgets/try_on_action_bar.dart';
 import '../widgets/try_on_color_selector.dart';
 import '../widgets/try_on_placement_controls.dart';
 import '../widgets/try_on_preview_board.dart';
-import 'try_on_method_selection_screen.dart';
 
 class TryOnSetupScreen extends StatefulWidget {
   final CustomerNailModel? customerNail;
@@ -30,7 +30,8 @@ class TryOnSetupScreen extends StatefulWidget {
   State<TryOnSetupScreen> createState() => _TryOnSetupScreenState();
 }
 
-class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
+class _TryOnSetupScreenState extends State<TryOnSetupScreen>
+    with SingleTickerProviderStateMixin {
   late final TryOnSetupService _setupService;
   late final NailComponentRepository _componentRepository;
   late final CustomerNailRepository _customerNailRepository;
@@ -70,14 +71,28 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
   int? _selectedPlacementId;
   final List<PlacedComponentDraft> _placements = [];
   final Set<int> _deletedPlacementIds = {};
+  late final TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 4, vsync: this);
+    _tabController.addListener(_handleTabChange);
     _setupService = getIt<TryOnSetupService>();
     _componentRepository = getIt<NailComponentRepository>();
     _customerNailRepository = getIt<CustomerNailRepository>();
     _fetchData();
+  }
+
+  void _handleTabChange() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _tabController.removeListener(_handleTabChange);
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchData() async {
@@ -299,17 +314,32 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
     });
   }
 
-  void _navigateToMethodSelection() {
+  Future<void> _launchTryOn({required bool photo}) async {
     final preview = _buildPreviewNail();
     if (preview == null) {
       _showMessage('Vui lòng chọn dáng móng.');
       return;
     }
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => TryOnMethodSelectionScreen(previewNail: preview),
-      ),
-    );
+
+    setState(() => _launching = true);
+    try {
+      final service = getIt<ArTryOnService>();
+      final available = await service.isAvailable();
+      if (!available) {
+        throw UnsupportedError(
+          'Virtual try-on is not available on this build.',
+        );
+      }
+      if (photo) {
+        await service.launchCustomerPhoto(preview);
+      } else {
+        await service.launchCustomerLive(preview);
+      }
+    } catch (error) {
+      _showMessage(error.toString());
+    } finally {
+      if (mounted) setState(() => _launching = false);
+    }
   }
 
   String _buildColorJson() {
@@ -439,9 +469,13 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+      backgroundColor: Theme.of(
+        context,
+      ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       appBar: AppBar(
-        title: Text(_customerNail == null ? 'Thiết kế móng' : _customerNail!.name),
+        title: Text(
+          _customerNail == null ? 'Thiết kế móng' : _customerNail!.name,
+        ),
         backgroundColor: Colors.transparent,
       ),
       body: Stack(
@@ -456,46 +490,13 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
             ),
         ],
       ),
-      bottomNavigationBar: SafeArea(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, -5),
-              )
-            ],
-          ),
-          child: Row(
-            children: [
-              IconButton.filledTonal(
-                onPressed: _launching ? null : _navigateToMethodSelection,
-                icon: const Icon(Icons.camera_alt, size: 28),
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.pink.shade50,
-                  foregroundColor: Colors.pink,
-                  padding: const EdgeInsets.all(16),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: (_customerNail != null && _selectedNailShape != null && !_isSaving) ? _save : null,
-                  icon: _isSaving 
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) 
-                      : const Icon(Icons.save),
-                  label: const Text('Lưu thiết kế'),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+      bottomNavigationBar: TryOnActionBar(
+        canSave: _customerNail != null && _selectedNailShape != null,
+        isSaving: _isSaving,
+        isLaunching: _launching,
+        onSave: _save,
+        onLiveTryOn: () => _launchTryOn(photo: false),
+        onPhotoTryOn: () => _launchTryOn(photo: true),
       ),
     );
   }
@@ -506,97 +507,102 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
     final data = _tryOnData;
     if (data == null) return const Center(child: Text('No data available'));
 
-    return DefaultTabController(
-      length: 4,
-      child: Column(
-        children: [
-          // Phần trên: Bảng Preview cố định
-          SizedBox(
-            height: MediaQuery.of(context).size.height * 0.35,
-            child: Padding(
-              padding: const EdgeInsets.only(top: 16.0, left: 16.0, right: 16.0, bottom: 8.0),
-              child: TryOnPreviewBoard(
-                nail: _customerNail,
-                selectedShape: _selectedNailShape,
-                selectedSurface: _selectedNailSurface,
-                selectedColor: _activeFingerColor,
-                gradientStops: _activeFingerGradient,
-                fingerColors: _fingerColors,
-                fingerGradients: _fingerGradients,
-                selectedFingerIndex: _selectedFingerIndex,
-                detailFingerIndex: _previewDetailFingerIndex,
-                placements: _placements,
-                selectedPlacementId: _selectedPlacementId,
-                onSelectPlacement: (id) => setState(() => _selectedPlacementId = id),
-                onToggleDetailFinger: _togglePreviewDetailFinger,
-              ),
+    return Column(
+      children: [
+        // Phần trên: Bảng Preview cố định
+        SizedBox(
+          height: MediaQuery.of(context).size.height * 0.35,
+          child: Padding(
+            padding: const EdgeInsets.only(
+              top: 16.0,
+              left: 16.0,
+              right: 16.0,
+              bottom: 8.0,
+            ),
+            child: TryOnPreviewBoard(
+              nail: _customerNail,
+              selectedShape: _selectedNailShape,
+              selectedSurface: _selectedNailSurface,
+              selectedColor: _activeFingerColor,
+              gradientStops: _activeFingerGradient,
+              fingerColors: _fingerColors,
+              fingerGradients: _fingerGradients,
+              selectedFingerIndex: _selectedFingerIndex,
+              detailFingerIndex: _previewDetailFingerIndex,
+              placements: _placements,
+              selectedPlacementId: _selectedPlacementId,
+              onSelectPlacement: (id) =>
+                  setState(() => _selectedPlacementId = id),
+              onToggleDetailFinger: _togglePreviewDetailFinger,
             ),
           ),
-          
-          // Phần dưới: Điều khiển công cụ (Scrollable)
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, -5),
-                  )
-                ],
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+
+        // Phần dưới: Điều khiển công cụ (Scrollable)
+        Expanded(
+          child: Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, -5),
+                ),
+              ],
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
               ),
+            ),
+            child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // 1. TabBar
-                  const TabBar(
+                  TabBar(
+                    controller: _tabController,
                     labelColor: Colors.pink,
                     unselectedLabelColor: Colors.grey,
                     indicatorColor: Colors.pink,
                     isScrollable: true,
                     tabAlignment: TabAlignment.start,
-                    labelStyle: TextStyle(fontWeight: FontWeight.bold),
-                    tabs: [
+                    labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+                    tabs: const [
                       Tab(text: "Dáng móng"),
                       Tab(text: "Bề mặt"),
                       Tab(text: "Màu sắc"),
                       Tab(text: "Phụ kiện"),
                     ],
                   ),
-                  
-                  // 2. Nội dung Tab
-                  Expanded(
-                    child: TabBarView(
-                      children: [
-                        SingleChildScrollView(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          child: _buildShapeTool(data),
-                        ),
-                        SingleChildScrollView(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          child: _buildSurfaceTool(data),
-                        ),
-                        SingleChildScrollView(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          child: _buildColorTool(),
-                        ),
-                        SingleChildScrollView(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          child: _buildComponentsTab(data),
-                        ),
-                      ],
-                    ),
+
+                  // 2. Nội dung Tab (thay đổi theo index)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: _buildActiveTabContent(data),
                   ),
                 ],
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
+  }
+
+  Widget _buildActiveTabContent(TryOnData data) {
+    switch (_tabController.index) {
+      case 0:
+        return _buildShapeTool(data);
+      case 1:
+        return _buildSurfaceTool(data);
+      case 2:
+        return _buildColorTool();
+      case 3:
+        return _buildComponentsTab(data);
+      default:
+        return const SizedBox.shrink();
+    }
   }
 
   Widget _buildComponentsTab(TryOnData data) {
@@ -615,48 +621,60 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
   }
 
   Widget _buildPlacementTool() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  _selectedPlacement?.name ?? 'Chưa chọn phụ kiện trên móng',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 8.0,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    _selectedPlacement?.name ?? 'Chưa chọn phụ kiện trên móng',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
-              FilledButton.icon(
-                onPressed: _selectedComponent == null ? null : _addSelectedComponent,
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text('Thêm vào móng'),
-                style: FilledButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  backgroundColor: Colors.pink,
+                FilledButton.icon(
+                  onPressed: _selectedComponent == null
+                      ? null
+                      : _addSelectedComponent,
+                  icon: const Icon(Icons.add, size: 16),
+                  label: const Text('Thêm vào móng'),
+                  style: FilledButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    backgroundColor: Colors.pink,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        TryOnPlacementControls(
-          selectedPlacement: _selectedPlacement,
-          onMoveLeft: () => _nudge(dx: -0.04),
-          onMoveRight: () => _nudge(dx: 0.04),
-          onMoveUp: () => _nudge(dy: -0.04),
-          onMoveDown: () => _nudge(dy: 0.04),
-          onScaleDown: () => _nudge(scale: -0.05),
-          onScaleUp: () => _nudge(scale: 0.05),
-          onRotateLeft: () => _nudge(rotation: -10),
-          onRotateRight: () => _nudge(rotation: 10),
-          onRemove: _removeSelectedPlacement,
-        ),
-      ],
+          TryOnPlacementControls(
+            selectedPlacement: _selectedPlacement,
+            onMoveLeft: () => _nudge(dx: -0.04),
+            onMoveRight: () => _nudge(dx: 0.04),
+            onMoveUp: () => _nudge(dy: -0.04),
+            onMoveDown: () => _nudge(dy: 0.04),
+            onScaleDown: () => _nudge(scale: -0.05),
+            onScaleUp: () => _nudge(scale: 0.05),
+            onRotateLeft: () => _nudge(rotation: -10),
+            onRotateRight: () => _nudge(rotation: 10),
+            onRemove: _removeSelectedPlacement,
+          ),
+        ],
+      ),
     );
   }
 
@@ -705,7 +723,9 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
               _fingerGradients[i] = gradient == null ? null : [...gradient];
             }
           } else {
-            _fingerGradients[_selectedFingerIndex] = gradient == null ? null : [...gradient];
+            _fingerGradients[_selectedFingerIndex] = gradient == null
+                ? null
+                : [...gradient];
           }
         }),
       ),
@@ -735,15 +755,21 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
               children: [
                 ComponentGrid(
                   title: '',
-                  components: data.combinedComponents.where((item) => !item.isCustomerComponent).toList(),
+                  components: data.combinedComponents
+                      .where((item) => !item.isCustomerComponent)
+                      .toList(),
                   selectedComponent: _selectedComponent,
-                  onSelected: (component) => setState(() => _selectedComponent = component),
+                  onSelected: (component) =>
+                      setState(() => _selectedComponent = component),
                 ),
                 ComponentGrid(
                   title: '',
-                  components: data.combinedComponents.where((item) => item.isCustomerComponent).toList(),
+                  components: data.combinedComponents
+                      .where((item) => item.isCustomerComponent)
+                      .toList(),
                   selectedComponent: _selectedComponent,
-                  onSelected: (component) => setState(() => _selectedComponent = component),
+                  onSelected: (component) =>
+                      setState(() => _selectedComponent = component),
                 ),
               ],
             ),
@@ -781,7 +807,8 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
 
   void _showMessage(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
-

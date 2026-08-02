@@ -11,7 +11,9 @@ import '../../data/models/waitlist_model.dart';
 import 'waitlist_card.dart';
 
 class WaitlistTab extends StatefulWidget {
-  const WaitlistTab({super.key});
+  final VoidCallback onRefreshBookings;
+
+  const WaitlistTab({super.key, required this.onRefreshBookings});
 
   @override
   State<WaitlistTab> createState() => _WaitlistTabState();
@@ -40,8 +42,12 @@ class _WaitlistTabState extends State<WaitlistTab> {
       // Map API models sang WaitlistModel và sort: opened trước
       final models = apiItems.map((e) => WaitlistModel.fromApi(e)).toList();
       models.sort((a, b) {
-        if (a.status == WaitlistStatus.opened && b.status != WaitlistStatus.opened) return -1;
-        if (a.status != WaitlistStatus.opened && b.status == WaitlistStatus.opened) return 1;
+        if (a.status == WaitlistStatus.opened &&
+            b.status != WaitlistStatus.opened)
+          return -1;
+        if (a.status != WaitlistStatus.opened &&
+            b.status == WaitlistStatus.opened)
+          return 1;
         return 0;
       });
       if (mounted) setState(() => _waitlist = models);
@@ -64,15 +70,17 @@ class _WaitlistTabState extends State<WaitlistTab> {
             content: const Text('Đã hủy chờ thành công.'),
             backgroundColor: Colors.grey.shade800,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi hủy chờ: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Lỗi hủy chờ: $e')));
     }
   }
 
@@ -93,19 +101,26 @@ class _WaitlistTabState extends State<WaitlistTab> {
             ),
             backgroundColor: AppColors.primary,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi xác nhận: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Lỗi xác nhận: $e')));
     }
   }
 
   void _declineOpened(String id) => _cancelWaitlist(id);
+
+  Future<void> _handleRefresh() async {
+    widget.onRefreshBookings();
+    await _fetchWaitlists();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -118,7 +133,10 @@ class _WaitlistTabState extends State<WaitlistTab> {
           children: [
             Icon(Icons.error_outline, size: 52, color: Colors.red.shade300),
             const SizedBox(height: 12),
-            Text('Không thể tải lịch chờ', style: TextStyle(color: Colors.grey.shade700)),
+            Text(
+              'Không thể tải lịch chờ',
+              style: TextStyle(color: Colors.grey.shade700),
+            ),
             const SizedBox(height: 12),
             TextButton.icon(
               onPressed: _fetchWaitlists,
@@ -130,13 +148,17 @@ class _WaitlistTabState extends State<WaitlistTab> {
       );
     }
 
-    if (_waitlist.isEmpty) return _buildEmptyState();
+    final hasWaitlist = _waitlist.isNotEmpty;
+
+    if (!hasWaitlist) return _buildEmptyState();
 
     return RefreshIndicator(
-      onRefresh: _fetchWaitlists,
+      onRefresh: _handleRefresh,
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        physics: const BouncingScrollPhysics(),
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
         itemCount: _waitlist.length,
         itemBuilder: (context, index) {
           final item = _waitlist[index];
@@ -180,7 +202,7 @@ class _WaitlistTabState extends State<WaitlistTab> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Khi khung giờ bạn chờ có chỗ trống,\nbạn sẽ nhận được thông báo tại đây.',
+            'Khi khung giờ bạn đăng ký chờ có chỗ trống,\nbản ghi sẽ được hiển thị tại đây.',
             style: TextStyle(color: Colors.grey.shade500, height: 1.5),
             textAlign: TextAlign.center,
           ),

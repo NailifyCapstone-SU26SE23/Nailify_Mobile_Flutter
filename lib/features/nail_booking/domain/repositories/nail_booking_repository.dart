@@ -59,6 +59,8 @@ abstract class NailBookingRepository {
     List<int>? selectedPromotionIds,
     String? holdToken,
     int? shapeMethodConfigId,
+    String? warrantyForBookingId,
+    List<Map<String, dynamic>>? warrantyBookingItems,
   });
 
   /// Tạo booking từ luồng Service độc lập.
@@ -82,5 +84,5 @@ abstract class NailBookingRepository {
   });
 
   /// Lấy danh sách khuyến mãi.
-  Future<List<PromotionModel>> getPromotions();
+  Future<List<PromotionModel>> getTodayPromotions();
 }

@@ -249,6 +249,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // trả về bool để xử lý đóng popup
   Future<bool> _updateProfile(
+    String email,
     String firstName,
     String lastName,
     String phone,
@@ -256,6 +257,7 @@ class _ProfilePageState extends State<ProfilePage> {
   ) async {
     try {
       final formData = FormData.fromMap({
+        'Email': email,
         'FirstName': firstName,
         'LastName': lastName,
         'Phone': phone,
@@ -273,6 +275,39 @@ class _ProfilePageState extends State<ProfilePage> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Lỗi cập nhật: $e')));
+      }
+      return false;
+    }
+  }
+
+  Future<bool> _updatePassword({
+    required String oldPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    try {
+      final response = await _apiClient.put(
+        '/Profile/password',
+        data: {
+          'oldPassword': oldPassword,
+          'newPassword': newPassword,
+          'confirmPassword': confirmPassword,
+        },
+      );
+
+      final responseData = response.data;
+      if (responseData is Map && responseData['isSucceeded'] == false) {
+        throw Exception(
+          responseData['message']?.toString() ?? 'Password update failed',
+        );
+      }
+
+      return true;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Password update failed: $e')));
       }
       return false;
     }
@@ -650,6 +685,9 @@ class _ProfilePageState extends State<ProfilePage> {
   // popup cập nhật profile
 
   void _showUpdatePopup() {
+    final emailController = TextEditingController(
+      text: _profileData?['email']?.toString() ?? '',
+    );
     final firstNameController = TextEditingController(
       text: _profileData?['firstName']?.toString() ?? '',
     );
@@ -737,6 +775,12 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     const SizedBox(height: 24),
                     _buildTextField(
+                      emailController,
+                      'Email',
+                      Icons.email_outlined,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildTextField(
                       firstNameController,
                       'Tên (First Name)',
                       Icons.person_outline,
@@ -753,6 +797,17 @@ class _ProfilePageState extends State<ProfilePage> {
                       'Số điện thoại',
                       Icons.phone_outlined,
                       isNumber: true,
+                    ),
+                    const SizedBox(height: 16),
+                    OutlinedButton.icon(
+                      onPressed: isSubmitting
+                          ? null
+                          : () {
+                              Navigator.pop(dialogContext);
+                              _showUpdatePasswordPopup();
+                            },
+                      icon: const Icon(Icons.lock_reset),
+                      label: const Text('Change password'),
                     ),
                   ],
                 ),
@@ -777,6 +832,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           setStateDialog(() => isSubmitting = true);
 
                           final success = await _updateProfile(
+                            emailController.text.trim(),
                             firstNameController.text.trim(),
                             lastNameController.text.trim(),
                             phoneController.text.trim(),
@@ -819,6 +875,150 @@ class _ProfilePageState extends State<ProfilePage> {
                         )
                       : const Text(
                           'Lưu thay đổi',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showUpdatePasswordPopup() {
+    final oldPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    bool isSubmitting = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            Future<void> submit() async {
+              final messenger = ScaffoldMessenger.of(context);
+              final oldPassword = oldPasswordController.text;
+              final newPassword = newPasswordController.text;
+              final confirmPassword = confirmPasswordController.text;
+
+              if (oldPassword.isEmpty ||
+                  newPassword.isEmpty ||
+                  confirmPassword.isEmpty) {
+                messenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Please fill in all password fields'),
+                  ),
+                );
+                return;
+              }
+
+              if (newPassword != confirmPassword) {
+                messenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Password confirmation does not match'),
+                  ),
+                );
+                return;
+              }
+
+              setStateDialog(() => isSubmitting = true);
+
+              final success = await _updatePassword(
+                oldPassword: oldPassword,
+                newPassword: newPassword,
+                confirmPassword: confirmPassword,
+              );
+
+              if (success) {
+                if (dialogContext.mounted) {
+                  Navigator.pop(dialogContext);
+                }
+                if (mounted) {
+                  messenger.showSnackBar(
+                    const SnackBar(
+                      content: Text('Password updated successfully!'),
+                    ),
+                  );
+                }
+              } else if (dialogContext.mounted) {
+                setStateDialog(() => isSubmitting = false);
+              }
+            }
+
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: const Text(
+                'Change password',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildTextField(
+                      oldPasswordController,
+                      'Old password',
+                      Icons.lock_outline,
+                      isPassword: true,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildTextField(
+                      newPasswordController,
+                      'New password',
+                      Icons.lock_reset,
+                      isPassword: true,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildTextField(
+                      confirmPasswordController,
+                      'Confirm password',
+                      Icons.verified_user_outlined,
+                      isPassword: true,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSubmitting
+                      ? null
+                      : () => Navigator.pop(dialogContext),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: isSubmitting ? null : submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: isSubmitting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Update',
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -1227,10 +1427,12 @@ class _ProfilePageState extends State<ProfilePage> {
     String label,
     IconData icon, {
     bool isNumber = false,
+    bool isPassword = false,
   }) {
     return TextField(
       controller: controller,
       keyboardType: isNumber ? TextInputType.phone : TextInputType.text,
+      obscureText: isPassword,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, color: Colors.grey),

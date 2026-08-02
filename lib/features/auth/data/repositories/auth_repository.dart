@@ -17,7 +17,20 @@ class AuthRepository {
       data: {'email': email, 'password': password},
     );
 
-    final data = ApiResponseParser.unwrapMap(response.data);
+    _handleAuthTokenResponse(response.data);
+  }
+
+  Future<void> loginWithGoogle({required String idToken}) async {
+    final response = await _apiClient.post<dynamic>(
+      '/Auth/google',
+      data: {'idToken': idToken},
+    );
+
+    _handleAuthTokenResponse(response.data);
+  }
+
+  void _handleAuthTokenResponse(dynamic responseData) {
+    final data = ApiResponseParser.unwrapMap(responseData);
     final tokenContainer = data['data'] ?? data['Data'];
     final tokenData = tokenContainer is Map
         ? Map<String, dynamic>.from(tokenContainer)
@@ -58,6 +71,35 @@ class AuthRepository {
       },
     );
     return UserProfile.fromJson(_unwrapData(response.data));
+  }
+
+  Future<void> forgotPassword({required String email}) async {
+    await _postBooleanResult(
+      '/Auth/forgot-password',
+      data: {'email': email},
+    );
+  }
+
+  Future<void> checkResetToken({required String token}) async {
+    await _postBooleanResult(
+      '/Auth/check-reset-token',
+      data: {'token': token},
+    );
+  }
+
+  Future<void> resetPassword({
+    required String token,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    await _postBooleanResult(
+      '/Auth/reset-password',
+      data: {
+        'token': token,
+        'newPassword': newPassword,
+        'confirmPassword': confirmPassword,
+      },
+    );
   }
 
   Future<UserProfile> getCurrentUser() async {
@@ -128,5 +170,17 @@ class AuthRepository {
     if (data is Map<String, dynamic>) return data;
     if (data is Map) return Map<String, dynamic>.from(data);
     return map;
+  }
+
+  Future<void> _postBooleanResult(
+    String path, {
+    required Map<String, dynamic> data,
+  }) async {
+    final response = await _apiClient.post<dynamic>(path, data: data);
+    final map = ApiResponseParser.unwrapMap(response.data);
+
+    if (map['isSucceeded'] == false || map['data'] == false) {
+      throw Exception(map['message']?.toString() ?? 'Request failed');
+    }
   }
 }

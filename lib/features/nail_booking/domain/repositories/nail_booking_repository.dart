@@ -27,10 +27,24 @@ abstract class NailBookingRepository {
     required String bookingDate,
   });
 
+  /// Lấy danh sách slot giờ rảnh của salon (không chọn thợ).
+  Future<List<Map<String, dynamic>>> getSalonAvailableSlots({
+    required String salonId,
+    required String bookingDate,
+    required List<Map<String, dynamic>> bookingItems,
+  });
+
   /// Tạo danh sách slot từ lịch hoạt động của salon (khi không chọn thợ).
   List<Map<String, dynamic>> getSalonOperatingSlots({
     required Map<String, dynamic> salon,
     required DateTime date,
+  });
+
+  /// Lọc danh sách slot theo lịch hoạt động của salon.
+  List<Map<String, dynamic>> filterSlotsByOperatingHours({
+    required List<dynamic> slots,
+    required Map<String, dynamic>? salon,
+    required DateTime? date,
   });
 
   /// Giữ chỗ slot 5 phút. Server trả về holdToken và expiresAt (UTC).

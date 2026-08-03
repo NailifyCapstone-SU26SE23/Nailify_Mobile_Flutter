@@ -242,9 +242,14 @@ class NailBookingCubit extends Cubit<NailBookingState> {
         artistId: stylist['nailArtistId'],
         bookingDate: _formatDate(date),
       );
+      final filteredSlots = _repository.filterSlotsByOperatingHours(
+        slots: slots,
+        salon: state.selectedBranch,
+        date: date,
+      );
       emit(
         state.copyWith(
-          timeSlots: slots,
+          timeSlots: filteredSlots,
           timeSlotsStatus: NailBookingLoadStatus.loaded,
         ),
       );
@@ -263,14 +268,53 @@ class NailBookingCubit extends Cubit<NailBookingState> {
     final date = state.selectedDate;
     if (branch == null || date == null) return;
 
-    final slots = _repository.getSalonOperatingSlots(salon: branch, date: date);
-    emit(
-      state.copyWith(
-        timeSlots: slots,
-        timeSlotsStatus: NailBookingLoadStatus.loaded,
-        clearTime: true,
-      ),
-    );
+    emit(state.copyWith(timeSlotsStatus: NailBookingLoadStatus.loading));
+
+    try {
+      final salonId = branch['salonId']?.toString() ?? '';
+
+      // Build booking items
+      final List<Map<String, dynamic>> bookingItems = [];
+      
+      // Group extra services by ID and count duplicates for correct quantity
+      final extraCounts = <String, int>{};
+      for (final id in state.selectedExtraServices.whereType<String>()) {
+        extraCounts[id] = (extraCounts[id] ?? 0) + 1;
+      }
+      
+      bookingItems.addAll(
+        extraCounts.entries
+            .map((e) => {'serviceId': e.key, 'quantity': e.value})
+            .toList(),
+      );
+
+      final slots = await _repository.getSalonAvailableSlots(
+        salonId: salonId,
+        bookingDate: _formatDate(date),
+        bookingItems: bookingItems,
+      );
+
+      final filteredSlots = _repository.filterSlotsByOperatingHours(
+        slots: slots,
+        salon: branch,
+        date: date,
+      );
+
+      emit(
+        state.copyWith(
+          timeSlots: filteredSlots,
+          timeSlotsStatus: NailBookingLoadStatus.loaded,
+          clearTime: true,
+        ),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          timeSlotsStatus: NailBookingLoadStatus.error,
+          errorMessage: 'Lỗi tải khung giờ salon: $e',
+        ),
+      );
+    }
   }
 
   /// Reload danh sách khung giờ từ bên ngoài (VD: từ widget khi detect isHeld).

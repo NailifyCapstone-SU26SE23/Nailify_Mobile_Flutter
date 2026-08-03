@@ -22,19 +22,19 @@ class _BookingDateSelectionState extends State<BookingDateSelection> {
     DateTime.now().month,
     DateTime.now().day,
   );
-  late DateTime _currentMonth;
+  late int _selectedMonth;
+  late int _selectedYear;
 
   @override
   void initState() {
     super.initState();
-    _currentMonth = DateTime(_today.year, _today.month, 1);
+    _selectedMonth = _today.month;
+    _selectedYear = _today.year;
   }
 
-  List<DateTime> _getUpcomingMonths() {
-    return List.generate(
-      12,
-      (index) => DateTime(_today.year, _today.month + index, 1),
-    );
+  String _getMonthName(int month) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return months[month - 1];
   }
 
   List<String> get _weekDays => Localizations.localeOf(context).languageCode == 'vi'
@@ -43,17 +43,18 @@ class _BookingDateSelectionState extends State<BookingDateSelection> {
 
   @override
   Widget build(BuildContext context) {
+    DateTime currentMonthDate = DateTime(_selectedYear, _selectedMonth, 1);
+
     int daysInMonth = DateTime(
-      _currentMonth.year,
-      _currentMonth.month + 1,
+      currentMonthDate.year,
+      currentMonthDate.month + 1,
       0,
     ).day;
     int firstWeekday = DateTime(
-      _currentMonth.year,
-      _currentMonth.month,
+      currentMonthDate.year,
+      currentMonthDate.month,
       1,
     ).weekday;
-    final upcomingMonths = _getUpcomingMonths();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -67,37 +68,147 @@ class _BookingDateSelectionState extends State<BookingDateSelection> {
           ),
         ),
         const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.borderLight),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<DateTime>(
-              value: _currentMonth,
-              isExpanded: true,
-              icon: const Icon(Icons.calendar_month, color: AppColors.primary),
-              items: upcomingMonths
-                  .map(
-                    (monthDate) => DropdownMenuItem(
-                      value: monthDate,
-                      child: Text(
-                        S.of(context).bookingMonthYear(monthDate.month.toString(), monthDate.year.toString()),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+        Row(
+          children: [
+            // Dropdown chọn Tháng
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    S.of(context).monthHint,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.borderLight),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.02),
+                          blurRadius: 6,
+                          offset: const Offset(0, 3),
                         ),
+                      ],
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<int>(
+                        value: _selectedMonth,
+                        isExpanded: true,
+                        borderRadius: BorderRadius.circular(16), // Bo góc cho menu popup
+                        dropdownColor: Colors.white, // Màu nền trắng đồng bộ
+                        elevation: 4, // Độ bóng mịn màng hơn
+                        menuMaxHeight: 250, // Giới hạn chiều cao menu để có thể kéo lên xuống mượt mà
+                        icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.primary, size: 22),
+                        items: List.generate(
+                          12 - (_selectedYear == _today.year ? _today.month - 1 : 0),
+                          (index) {
+                            final month = (_selectedYear == _today.year ? _today.month : 1) + index;
+                            return DropdownMenuItem<int>(
+                              value: month,
+                              child: Text(
+                                '$month',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        onChanged: (newMonth) {
+                          if (newMonth != null) {
+                            setState(() {
+                              _selectedMonth = newMonth;
+                            });
+                          }
+                        },
                       ),
                     ),
-                  )
-                  .toList(),
-              onChanged: (newMonth) {
-                if (newMonth != null) setState(() => _currentMonth = newMonth);
-              },
+                  ),
+                ],
+              ),
             ),
-          ),
+            const SizedBox(width: 12),
+            // Dropdown chọn Năm
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    S.of(context).yearHint,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.borderLight),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.02),
+                          blurRadius: 6,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<int>(
+                        value: _selectedYear,
+                        isExpanded: true,
+                        borderRadius: BorderRadius.circular(16), // Bo góc cho menu popup
+                        dropdownColor: Colors.white, // Màu nền trắng đồng bộ
+                        elevation: 4, // Độ bóng mịn màng hơn
+                        menuMaxHeight: 250, // Giới hạn chiều cao menu để có thể kéo lên xuống mượt mà
+                        icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.primary, size: 22),
+                        items: [2026, 2027, 2028, 2029, 2030].map((year) {
+                          return DropdownMenuItem<int>(
+                            value: year,
+                            child: Text(
+                              '$year',
+                              style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (newYear) {
+                          if (newYear != null && newYear != _selectedYear) {
+                            setState(() {
+                              _selectedYear = newYear;
+                              if (_selectedYear == _today.year) {
+                                if (_selectedMonth < _today.month) {
+                                  _selectedMonth = _today.month;
+                                }
+                              } else {
+                                _selectedMonth = 1;
+                              }
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 24),
         Row(
@@ -134,8 +245,8 @@ class _BookingDateSelectionState extends State<BookingDateSelection> {
             if (index < firstWeekday - 1) return const SizedBox.shrink();
             int day = index - firstWeekday + 2;
             DateTime thisDay = DateTime(
-              _currentMonth.year,
-              _currentMonth.month,
+              currentMonthDate.year,
+              currentMonthDate.month,
               day,
             );
             bool isSelected =

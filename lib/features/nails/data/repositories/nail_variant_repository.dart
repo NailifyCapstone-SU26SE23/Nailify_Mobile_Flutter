@@ -67,4 +67,39 @@ class NailVariantRepository {
     final data = ApiResponseParser.unwrapMap(response.data);
     return ShapeMethodConfigModel.fromJson(data);
   }
+
+  Future<Map<String, dynamic>> getRatingStatsForVariants(List<int> variantIds) async {
+    if (variantIds.isEmpty) {
+      return {'rating': 0.0, 'reviewsCount': 0};
+    }
+
+    try {
+      final futures = variantIds.map((id) {
+        return _apiClient.get<dynamic>('/BookingRatings/by-nail-variant/$id');
+      }).toList();
+
+      final responses = await Future.wait(futures);
+
+      double totalScoreSum = 0;
+      int totalRatingCount = 0;
+
+      for (final response in responses) {
+        final data = ApiResponseParser.unwrapMap(response.data);
+        final items = data['items'] as List<dynamic>? ?? [];
+        for (final item in items) {
+          final score = ApiResponseParser.asInt(item['overallScore'] ?? item['OverallScore']);
+          totalScoreSum += score;
+          totalRatingCount++;
+        }
+      }
+
+      final averageRating = totalRatingCount == 0 ? 0.0 : totalScoreSum / totalRatingCount;
+      return {
+        'rating': averageRating,
+        'reviewsCount': totalRatingCount,
+      };
+    } catch (e) {
+      return {'rating': 0.0, 'reviewsCount': 0};
+    }
+  }
 }

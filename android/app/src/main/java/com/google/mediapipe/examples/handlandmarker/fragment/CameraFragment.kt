@@ -13,6 +13,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import java.util.concurrent.ExecutionException
+import android.net.Uri
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.Preview
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
@@ -77,6 +79,13 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
     private var isSnapshotMode = false
 
     private lateinit var backgroundExecutor: ExecutorService
+
+    // Launcher để chọn ảnh từ thư viện
+    private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let {
+            processPickedImage(it)
+        }
+    }
 
     override fun onResume() {
         super.onResume()
@@ -201,6 +210,30 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
         fragmentCameraBinding.btnTakePhoto.setOnClickListener {
             takeSnapshotAndAnalyze()
         }
+
+        // Nút chọn ảnh từ Thư viện
+        fragmentCameraBinding.btnGallery.setOnClickListener {
+            pickImageLauncher.launch("image/*")
+        }
+
+        // Nút xoay camera trước/sau
+        fragmentCameraBinding.btnFlipCamera.setOnClickListener {
+            cameraFacing = if (cameraFacing == CameraSelector.LENS_FACING_BACK) {
+                CameraSelector.LENS_FACING_FRONT
+            } else {
+                CameraSelector.LENS_FACING_BACK
+            }
+            setUpCamera()
+        }
+
+        // Nút xác nhận hình ảnh hiện tại
+        fragmentCameraBinding.btnConfirmLook.setOnClickListener {
+            if (isSnapshotMode) {
+                fragmentCameraBinding.btnTakePhoto.performClick()
+            } else {
+                fragmentCameraBinding.btnCapture.performClick()
+            }
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -320,14 +353,8 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
                     try {
                         if (hasHand) {
                             fragmentCameraBinding.overlay.setFullDesign(currentConfig)
-
-                            // Render móng lên ảnh gốc (luôn dùng kích thước gốc — không xoay)
-                            fragmentCameraBinding.overlay.renderOnBitmap(
-                                targetBitmap = mutableBitmap,
-                                result  = resultBundle!!.results.first(),
-                                imgW    = mutableBitmap.width,
-                                imgH    = mutableBitmap.height
-                            )
+                            // Bỏ vẽ đè móng trực tiếp lên ảnh của Snapshot để Flutter tự vẽ động
+                            // fragmentCameraBinding.overlay.renderOnBitmap(...)
                         }
 
                         // Bước 4: Lưu ảnh (có hoặc không có móng) vào cache
@@ -342,8 +369,12 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
                                     mutableBitmap.compress(Bitmap.CompressFormat.JPEG, 92, out)
                                 }
 
-                                // Bước 5: Trả kết quả về Flutter (Activity finish → freeze frame tự dismiss)
-                                val landmarksJson = if (hasHand) "[{\"finger\":\"detected\"}]" else "[]"
+                                 // Bước 5: Trả kết quả về Flutter với landmarks JSON đầy đủ
+                                 val landmarksJson = if (hasHand) {
+                                     buildLandmarksJson(resultBundle, mutableBitmap.width, mutableBitmap.height)
+                                 } else {
+                                     "[]"
+                                 }
 
                                 activity?.runOnUiThread {
                                     val resultIntent = Intent().apply {
@@ -624,4 +655,63 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
             Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show()
         }
     }
+
+    private fun processPickedImage(uri: Uri) {
+        backgroundExecutor.execute {
+            try {
+                val inputStream = requireContext().contentResolver.openInputStream(uri)
+                val bitmap = BitmapFactory.decodeStream(inputStream)
+                inputStream?.close()
+                if (bitmap == null) {
+                    activity?.runOnUiThread {
+                        Toast.makeText(requireContext(), "Không thể tải ảnh", Toast.LENGTH_SHORT).show()
+                    }
+                    return@execute
+                }
+
+                // Chạy nhận diện xương tay trên ảnh đã chọn
+                val mutableBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true)
+                val imageHelper = HandLandmarkerHelper(
+                    context = requireContext(),
+                    runningMode = RunningMode.IMAGE,
+                    minHandDetectionConfidence = 0.15f,
+                    minHandTrackingConfidence  = 0.15f,
+                    minHandPresenceConfidence  = 0.15f,
+                    maxNumHands = 2,
+                    currentDelegate = HandLandmarkerHelper.DELEGATE_CPU
+                )
+                val bundle = imageHelper.detectImage(mutableBitmap)
+                val found = bundle != null && bundle.results.isNotEmpty() && bundle.results.first().landmarks().isNotEmpty()
+                imageHelper.clearHandLandmarker()
+
+                // Lưu ảnh sạch vào cache
+                val cacheDir = requireContext().cacheDir
+                val cacheFile = File(cacheDir, "hand_snapshot_${System.currentTimeMillis()}.jpg")
+                FileOutputStream(cacheFile).use { out ->
+                    mutableBitmap.compress(Bitmap.CompressFormat.JPEG, 92, out)
+                }
+
+                val landmarksJson = if (found) {
+                    buildLandmarksJson(bundle, mutableBitmap.width, mutableBitmap.height)
+                } else {
+                    "[]"
+                }
+
+                activity?.runOnUiThread {
+                    val resultIntent = Intent().apply {
+                        putExtra(RESULT_IMAGE_PATH, cacheFile.absolutePath)
+                        putExtra(RESULT_LANDMARKS_JSON, landmarksJson)
+                    }
+                    requireActivity().setResult(Activity.RESULT_OK, resultIntent)
+                    requireActivity().finish()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Process picked image failed", e)
+                activity?.runOnUiThread {
+                    Toast.makeText(requireContext(), "Lỗi xử lý ảnh: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
 }
+

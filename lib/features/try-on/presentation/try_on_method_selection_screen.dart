@@ -6,10 +6,30 @@ import '../../nails/data/models/customer_nail_models.dart';
 import '../../nails/services/ar_try_on_service.dart';
 import 'snapshot_preview_screen.dart';
 
+import '../models/try_on_data.dart';
+import '../../nails/data/models/nail_shape_model.dart';
+import '../../nails/data/models/nail_surface_model.dart';
+import '../models/placed_component_draft.dart';
+
 class TryOnMethodSelectionScreen extends StatefulWidget {
   final CustomerNailModel previewNail;
+  final TryOnData tryOnData;
+  final NailShapeModel? selectedShape;
+  final NailSurfaceModel? selectedSurface;
+  final Map<int, String> fingerColors;
+  final Map<int, List<String>?> fingerGradients;
+  final List<PlacedComponentDraft> placements;
 
-  const TryOnMethodSelectionScreen({super.key, required this.previewNail});
+  const TryOnMethodSelectionScreen({
+    super.key,
+    required this.previewNail,
+    required this.tryOnData,
+    required this.selectedShape,
+    required this.selectedSurface,
+    required this.fingerColors,
+    required this.fingerGradients,
+    required this.placements,
+  });
 
   @override
   State<TryOnMethodSelectionScreen> createState() =>
@@ -56,17 +76,25 @@ class _TryOnMethodSelectionScreenState
         if (!mounted) return;
 
         // Push màn hình Preview và chờ kết quả
-        final action = await Navigator.of(context).push<String>(
+        final action = await Navigator.of(context, rootNavigator: true).push<dynamic>(
           MaterialPageRoute(
             builder: (_) => SnapshotPreviewScreen(
               snapshot: result,
               nail: widget.previewNail,
+              tryOnData: widget.tryOnData,
+              selectedShape: widget.selectedShape,
+              selectedSurface: widget.selectedSurface,
+              fingerColors: widget.fingerColors,
+              fingerGradients: widget.fingerGradients,
+              placements: widget.placements,
             ),
           ),
         );
 
-        // 'retake' → quay lại camera chụp tiếp (vòng lặp tiếp tục)
-        // null/khác  → người dùng bấm Back → thoát
+        if (action is SnapshotEditorResult) {
+          if (mounted) Navigator.of(context).pop(action);
+          break;
+        }
         if (action != 'retake') break;
       }
     } catch (error) {

@@ -75,6 +75,36 @@ class BookingApiService {
     return response.data['data']['timeSlots'] ?? [];
   }
 
+  Future<List<dynamic>> getSalonAvailableSlots({
+    required String salonId,
+    required String bookingDate,
+    required List<Map<String, dynamic>> bookingItems,
+  }) async {
+    final response = await _apiClient.post(
+      '/Bookings/salon-available-slots',
+      data: {
+        'salonId': salonId,
+        'bookingDate': bookingDate,
+        'bookingItems': bookingItems,
+      },
+    );
+    final List<dynamic> list = response.data['data']['timeSlots'] ?? response.data['data'] ?? [];
+    return list.map((slot) {
+      final map = Map<String, dynamic>.from(slot);
+      final rawTime = map['startTime'] ?? map['time'] ?? '';
+      // Chuẩn hóa thời gian sang định dạng HH:mm:ss nếu chỉ có HH:mm
+      String formattedTime = rawTime.toString();
+      if (formattedTime.isNotEmpty && formattedTime.split(':').length == 2) {
+        formattedTime = '$formattedTime:00';
+      }
+      return {
+        'startTime': formattedTime,
+        'isAvailable': map['isAvailable'] == true,
+        'isHeld': map['isHeld'] == true,
+      };
+    }).toList();
+  }
+
   /// Tạo danh sách khung giờ từ lịch hoạt động của salon (không cần chọn thợ).
   /// Trả về cùng định dạng với [getArtistAvailableSlots] để widget dùng chung.
   List<dynamic> getSalonOperatingSlots(
@@ -84,13 +114,15 @@ class BookingApiService {
     final List<dynamic> hours = salon['operatingHours'] ?? [];
     final int dayOfWeek =
         date.weekday % 7; // Dart: Mon=1..Sun=7 → 0=Sun,1=Mon,...6=Sat
-    final Map<String, dynamic>? todayHours = hours
-        .cast<Map<String, dynamic>?>()
-        .firstWhere((h) => h?['dayOfWeek'] == dayOfWeek, orElse: () => null);
-    if (todayHours == null || todayHours['isClosed'] == true) return [];
 
-    final String openStr = todayHours['openTime'] ?? '08:00:00';
-    final String closeStr = todayHours['closeTime'] ?? '19:00:00';
+    // Lọc tất cả các khung giờ hoạt động cho thứ này mà không bị đóng cửa
+    final List<Map<String, dynamic>> activeSegments = hours
+        .whereType<Map>()
+        .map((h) => Map<String, dynamic>.from(h))
+        .where((h) => h['dayOfWeek'] == dayOfWeek && h['isClosed'] != true)
+        .toList();
+
+    if (activeSegments.isEmpty) return [];
 
     int toMinutes(String t) {
       final parts = t.split(':');
@@ -103,18 +135,85 @@ class BookingApiService {
       return '$h:$min:00';
     }
 
-    final int openMin = toMinutes(openStr);
-    final int closeMin = toMinutes(closeStr);
     final List<Map<String, dynamic>> slots = [];
-    for (int m = openMin; m + 30 <= closeMin; m += 30) {
-      slots.add({
-        'startTime': fromMinutes(m),
-        'endTime': fromMinutes(m + 30),
-        'isAvailable': true,
-        'isHeld': false,
-      });
+    for (final segment in activeSegments) {
+      final String openStr = segment['openTime'] ?? '08:00:00';
+      final String closeStr = segment['closeTime'] ?? '19:00:00';
+      final int openMin = toMinutes(openStr);
+      final int closeMin = toMinutes(closeStr);
+
+      for (int m = openMin; m <= closeMin; m += 30) {
+        slots.add({
+          'startTime': fromMinutes(m),
+          'endTime': fromMinutes(m + 30),
+          'isAvailable': true,
+          'isHeld': false,
+        });
+      }
     }
-    return slots;
+
+    // Loại bỏ các slot trùng startTime và sắp xếp theo thứ tự thời gian tăng dần
+    final Map<String, Map<String, dynamic>> uniqueSlots = {};
+    for (final slot in slots) {
+      uniqueSlots[slot['startTime']] = slot;
+    }
+
+    final List<Map<String, dynamic>> sortedSlots = uniqueSlots.values.toList()
+      ..sort((a, b) => a['startTime'].compareTo(b['startTime']));
+
+    return sortedSlots;
+  }
+
+  /// Lọc bất kỳ danh sách slot nào theo lịch hoạt động của salon.
+  List<dynamic> filterSlotsByOperatingHours({
+    required List<dynamic> slots,
+    required Map<String, dynamic>? salon,
+    required DateTime? date,
+  }) {
+    if (salon == null || date == null || slots.isEmpty) return slots;
+
+    final List<dynamic>? hours = salon['operatingHours'];
+    if (hours == null || hours.isEmpty) return slots;
+
+    final int dayOfWeek =
+        date.weekday % 7; // Dart: Mon=1..Sun=7 → 0=Sun,1=Mon,...6=Sat
+
+    // Lọc tất cả các khung giờ hoạt động cho thứ này mà không bị đóng cửa
+    final List<Map<String, dynamic>> activeSegments = hours
+        .whereType<Map>()
+        .map((h) => Map<String, dynamic>.from(h))
+        .where((h) => h['dayOfWeek'] == dayOfWeek && h['isClosed'] != true)
+        .toList();
+
+    if (activeSegments.isEmpty) return [];
+
+    int toMinutes(String t) {
+      final parts = t.split(':');
+      return int.parse(parts[0]) * 60 + int.parse(parts[1]);
+    }
+
+    return slots.where((slot) {
+      final String? startTimeStr = slot['startTime'] as String?;
+      final String? endTimeStr = slot['endTime'] as String?;
+      if (startTimeStr == null) return false;
+
+      final int slotStartMin = toMinutes(startTimeStr);
+      final int slotEndMin = endTimeStr != null
+          ? toMinutes(endTimeStr)
+          : slotStartMin + 30;
+
+      for (final segment in activeSegments) {
+        final String openStr = segment['openTime'] ?? '08:00:00';
+        final String closeStr = segment['closeTime'] ?? '19:00:00';
+        final int openMin = toMinutes(openStr);
+        final int closeMin = toMinutes(closeStr);
+
+        if (slotStartMin >= openMin && slotStartMin <= closeMin) {
+          return true;
+        }
+      }
+      return false;
+    }).toList();
   }
 
   // =================================================================

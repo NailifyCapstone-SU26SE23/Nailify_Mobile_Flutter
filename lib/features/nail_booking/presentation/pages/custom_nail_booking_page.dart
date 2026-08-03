@@ -192,7 +192,11 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
       );
       if (!mounted) return;
       setState(() {
-        _timeSlots = times;
+        _timeSlots = _apiService.filterSlotsByOperatingHours(
+          slots: times,
+          salon: widget.nail.salonData,
+          date: _selectedDate,
+        );
         _isLoadingTimes = false;
       });
     } catch (e) {

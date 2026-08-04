@@ -65,7 +65,7 @@ class TransactionDetailPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      status.isEmpty ? 'Giao dich' : status,
+                      status.isEmpty ? 'Giao dịch' : status,
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -94,14 +94,11 @@ class TransactionDetailPage extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    _buildRow('Ma giao dich', transaction['transactionId']),
-                    _buildRow('Ma booking', bookingId),
-                    _buildRow('Order code', transaction['orderCode']),
-                    _buildRow('Reference', transaction['reference']),
-                    _buildRow('Khach hang', transaction['customerName']),
-                    _buildRow('Salon', transaction['salonName']),
-                    _buildRow('Ngay tao', transaction['createdAt']),
-                    _buildRow('Ngay thanh toan', transaction['paidAt']),
+                    _buildRow('Mã giao dịch', transaction['transactionId']),
+                    _buildRow('Khách hàng', transaction['customerName']),
+                    _buildRow('Cửa hàng', transaction['salonName']),
+                    _buildRow('Ngày tạo', transaction['createdAt']),
+                    _buildRow('Ngày thanh toán', transaction['paidAt']),
                   ],
                 ),
               ),
@@ -139,7 +136,7 @@ class TransactionDetailPage extends StatelessWidget {
                   ),
                 ),
                 child: const Text(
-                  'Xem lich hen',
+                  'Xem lịch hẹn',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),

@@ -864,5 +864,55 @@ class MessageLookup extends MessageLookupByLibrary {
     "yourPersonalStyle": MessageLookupByLibrary.simpleMessage(
       "Your personal style: ",
     ),
+    "clearFilter": MessageLookupByLibrary.simpleMessage("Clear filter"),
+    "nailLoadError": MessageLookupByLibrary.simpleMessage(
+      "Cannot load nail designs.",
+    ),
+    "recommended": MessageLookupByLibrary.simpleMessage("Recommended"),
+    "nailDesignFallback": MessageLookupByLibrary.simpleMessage("Nail design"),
+    "introduction": MessageLookupByLibrary.simpleMessage("Introduction"),
+    "nailDescriptionDefault": MessageLookupByLibrary.simpleMessage(
+      "Premium artistic nail designs meticulously crafted by top nail artists, bringing a glamorous, attractive, and personal look for women.",
+    ),
+    "availableVariants": MessageLookupByLibrary.simpleMessage(
+      "Available variants",
+    ),
+    "noVariantsAvailable": MessageLookupByLibrary.simpleMessage(
+      "There are currently no variants available for this design.",
+    ),
+    "bookBtn": MessageLookupByLibrary.simpleMessage("Book"),
+    "nailShapeLabel": MessageLookupByLibrary.simpleMessage("Shape"),
+    "nailSurfaceLabel": MessageLookupByLibrary.simpleMessage("Surface"),
+    "noneLabel": MessageLookupByLibrary.simpleMessage("None"),
+    "priceFromTo": (min, max) => "Price from ${min} - ${max}",
+    "variantsCount": (count) => "${count} variants",
+    "availableForTryOn": MessageLookupByLibrary.simpleMessage(
+      "Available for try-on",
+    ),
+    "loadDataError": (error) => "Error loading data: ${error}",
+    "variantDetailsTitle": MessageLookupByLibrary.simpleMessage(
+      "Variant Details",
+    ),
+    "collectionLabel": (name) => "Collection: ${name}",
+    "nailFormLabel": MessageLookupByLibrary.simpleMessage("Nail form"),
+    "minutesLabel": (minutes) => "${minutes} mins",
+    "colorLabel": MessageLookupByLibrary.simpleMessage("Colors"),
+    "designComponentsLabel": MessageLookupByLibrary.simpleMessage(
+      "Design components",
+    ),
+    "sharedLabel": MessageLookupByLibrary.simpleMessage("Shared"),
+    "bookAppointmentNow": MessageLookupByLibrary.simpleMessage("Book now"),
+    "shapeMethodLabel": MessageLookupByLibrary.simpleMessage(
+      "Form shaping method",
+    ),
+    "decorationLabel": MessageLookupByLibrary.simpleMessage("Decoration"),
+    "componentNameFallback": (id) => "Component ${id}",
+    "fingerThumb": MessageLookupByLibrary.simpleMessage("Thumb"),
+    "fingerIndex": MessageLookupByLibrary.simpleMessage("Index"),
+    "fingerMiddle": MessageLookupByLibrary.simpleMessage("Middle"),
+    "fingerRing": MessageLookupByLibrary.simpleMessage("Ring"),
+    "fingerPinky": MessageLookupByLibrary.simpleMessage("Pinky"),
+    "fingerOther": (index) => "Finger ${index}",
+    "seasonalTitle": MessageLookupByLibrary.simpleMessage("Seasonal"),
   };
 }

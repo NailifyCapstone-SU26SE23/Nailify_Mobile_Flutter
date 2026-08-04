@@ -79,28 +79,7 @@ class CustomerNailCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: [
-                      if (nail.isPublic)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.purple[100],
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: const Text(
-                            'Công khai',
-                            style: TextStyle(fontSize: 10),
-                          ),
-                        ),
-                    ],
-                  ),
+
                   const SizedBox(height: 6),
 
                   // Color preview
@@ -121,17 +100,6 @@ class CustomerNailCard extends StatelessWidget {
                   onPressed: onDelete,
                   tooltip: 'Xóa',
                   color: Colors.red,
-                ),
-                IconButton(
-                  icon: Icon(
-                    nail.isPublic ? Icons.public : Icons.public_off,
-                    size: 20,
-                  ),
-                  onPressed: onTogglePublic,
-                  tooltip: nail.isPublic
-                      ? 'Chuyển thành riêng tư'
-                      : 'Chuyển thành công khai',
-                  color: nail.isPublic ? Colors.blue : Colors.grey,
                 ),
                 const SizedBox(height: 4),
                 ElevatedButton.icon(

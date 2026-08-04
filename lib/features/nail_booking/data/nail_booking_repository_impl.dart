@@ -79,11 +79,45 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
   }
 
   @override
+  Future<List<Map<String, dynamic>>> getSalonAvailableSlots({
+    required String salonId,
+    required String bookingDate,
+    required List<Map<String, dynamic>> bookingItems,
+  }) async {
+    final list = await _bookingApi.getSalonAvailableSlots(
+      salonId: salonId,
+      bookingDate: bookingDate,
+      bookingItems: bookingItems,
+    );
+    return list
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+  }
+
+  @override
   List<Map<String, dynamic>> getSalonOperatingSlots({
     required Map<String, dynamic> salon,
     required DateTime date,
   }) {
     final list = _bookingApi.getSalonOperatingSlots(salon, date);
+    return list
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+  }
+
+  @override
+  List<Map<String, dynamic>> filterSlotsByOperatingHours({
+    required List<dynamic> slots,
+    required Map<String, dynamic>? salon,
+    required DateTime? date,
+  }) {
+    final list = _bookingApi.filterSlotsByOperatingHours(
+      slots: slots,
+      salon: salon,
+      date: date,
+    );
     return list
         .whereType<Map>()
         .map((e) => Map<String, dynamic>.from(e))

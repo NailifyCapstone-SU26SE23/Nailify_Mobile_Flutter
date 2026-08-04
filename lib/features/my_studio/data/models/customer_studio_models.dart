@@ -11,7 +11,6 @@ class CustomerNailModel {
   final double? price;
   final String? customColor;
   final int? duration;
-  final bool isPublic;
   final NailShapeModel? nailShape;
   final NailSurfaceModel? nailSurface;
   final List<CustomerNailComponentModel> customerNailComponents;
@@ -25,7 +24,6 @@ class CustomerNailModel {
     this.price,
     this.customColor,
     this.duration,
-    required this.isPublic,
     this.nailShape,
     this.nailSurface,
     this.customerNailComponents = const [],
@@ -48,7 +46,6 @@ class CustomerNailModel {
       price: _asNullableDouble(json['price'] ?? json['Price']),
       customColor: _asString(json['customColor'] ?? json['CustomColor']),
       duration: _asNullableInt(json['duration'] ?? json['Duration']),
-      isPublic: _asBool(json['isPublic'] ?? json['IsPublic']),
       nailShape: shapeJson is Map
           ? NailShapeModel.fromJson(Map<String, dynamic>.from(shapeJson))
           : null,
@@ -132,7 +129,6 @@ class CustomerComponentModel {
   final String componentType;
   final double price;
   final String customDataJson;
-  final bool isPublic;
 
   const CustomerComponentModel({
     required this.customerComponentId,
@@ -141,7 +137,6 @@ class CustomerComponentModel {
     required this.componentType,
     required this.price,
     required this.customDataJson,
-    required this.isPublic,
   });
 
   factory CustomerComponentModel.fromJson(Map<String, dynamic> json) {
@@ -156,7 +151,6 @@ class CustomerComponentModel {
       price: _asDouble(json['price'] ?? json['Price']),
       customDataJson: (json['customDataJson'] ?? json['CustomDataJson'] ?? '')
           .toString(),
-      isPublic: _asBool(json['isPublic'] ?? json['IsPublic']),
     );
   }
 }

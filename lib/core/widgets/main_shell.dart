@@ -221,7 +221,7 @@ class _MainShellState extends State<MainShell> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.palette_outlined),
-            label: 'My Studio',
+            label: 'Studio',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),

@@ -269,7 +269,11 @@ class _NailBookingPageState extends State<NailBookingPage> {
       );
       if (!mounted) return;
       setState(() {
-        _timeSlots = data;
+        _timeSlots = _apiService.filterSlotsByOperatingHours(
+          slots: data,
+          salon: _selectedBranch,
+          date: _selectedDate,
+        );
         _isLoadingTimes = false;
       });
     } catch (e) {
@@ -279,16 +283,50 @@ class _NailBookingPageState extends State<NailBookingPage> {
     }
   }
 
-  void _loadSalonSlots() {
+  Future<void> _loadSalonSlots() async {
     if (_selectedBranch == null || _selectedDate == null) return;
     setState(() {
-      _timeSlots = _apiService.getSalonOperatingSlots(
-        _selectedBranch!,
-        _selectedDate!,
-      );
+      _isLoadingTimes = true;
+      _timeSlots = [];
       _selectedTime = null;
-      _isLoadingTimes = false;
     });
+
+    try {
+      // Build booking items
+      final List<Map<String, dynamic>> bookingItems = [];
+      final int variantId = _nailVariantId;
+      if (variantId > 0) {
+        bookingItems.add({
+          'nailVariantId': variantId,
+          if (_shapeMethodConfigId != null)
+            'shapeMethodConfigId': _shapeMethodConfigId,
+          'quantity': 1,
+        });
+      }
+      for (final sId in _selectedExtraServices.whereType<String>()) {
+        bookingItems.add({'serviceId': sId, 'quantity': 1});
+      }
+
+      final data = await _apiService.getSalonAvailableSlots(
+        salonId: _selectedBranch!['salonId'],
+        bookingDate: _formatBookingDate(_selectedDate!),
+        bookingItems: bookingItems,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _timeSlots = _apiService.filterSlotsByOperatingHours(
+          slots: data,
+          salon: _selectedBranch,
+          date: _selectedDate,
+        );
+        _isLoadingTimes = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoadingTimes = false);
+      _showSnackBar('Lỗi tải khung giờ salon: $e');
+    }
   }
 
   Future<void> _reviewPrice() async {

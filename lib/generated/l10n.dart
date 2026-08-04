@@ -3709,6 +3709,281 @@ class S {
       args: [],
     );
   }
+
+  /// `Clear filter`
+  String get clearFilter {
+    return Intl.message(
+      'Clear filter',
+      name: 'clearFilter',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cannot load nail designs.`
+  String get nailLoadError {
+    return Intl.message(
+      'Cannot load nail designs.',
+      name: 'nailLoadError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Recommended`
+  String get recommended {
+    return Intl.message('Recommended', name: 'recommended', desc: '', args: []);
+  }
+
+  /// `Nail design`
+  String get nailDesignFallback {
+    return Intl.message(
+      'Nail design',
+      name: 'nailDesignFallback',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Introduction`
+  String get introduction {
+    return Intl.message(
+      'Introduction',
+      name: 'introduction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Premium artistic nail designs...`
+  String get nailDescriptionDefault {
+    return Intl.message(
+      'Premium artistic nail designs meticulously crafted by top nail artists, bringing a glamorous, attractive, and personal look for women.',
+      name: 'nailDescriptionDefault',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Available variants`
+  String get availableVariants {
+    return Intl.message(
+      'Available variants',
+      name: 'availableVariants',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `There are currently no variants available for this design.`
+  String get noVariantsAvailable {
+    return Intl.message(
+      'There are currently no variants available for this design.',
+      name: 'noVariantsAvailable',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Book`
+  String get bookBtn {
+    return Intl.message('Book', name: 'bookBtn', desc: '', args: []);
+  }
+
+  /// `Shape`
+  String get nailShapeLabel {
+    return Intl.message('Shape', name: 'nailShapeLabel', desc: '', args: []);
+  }
+
+  /// `Surface`
+  String get nailSurfaceLabel {
+    return Intl.message(
+      'Surface',
+      name: 'nailSurfaceLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `None`
+  String get noneLabel {
+    return Intl.message('None', name: 'noneLabel', desc: '', args: []);
+  }
+
+  /// `Price from {min} - {max}`
+  String priceFromTo(Object min, Object max) {
+    return Intl.message(
+      'Price from $min - $max',
+      name: 'priceFromTo',
+      desc: '',
+      args: [min, max],
+    );
+  }
+
+  /// `{count} variants`
+  String variantsCount(Object count) {
+    return Intl.message(
+      '$count variants',
+      name: 'variantsCount',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `Available for try-on`
+  String get availableForTryOn {
+    return Intl.message(
+      'Available for try-on',
+      name: 'availableForTryOn',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Error loading data: {error}`
+  String loadDataError(Object error) {
+    return Intl.message(
+      'Error loading data: $error',
+      name: 'loadDataError',
+      desc: '',
+      args: [error],
+    );
+  }
+
+  /// `Variant Details`
+  String get variantDetailsTitle {
+    return Intl.message(
+      'Variant Details',
+      name: 'variantDetailsTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Collection: {name}`
+  String collectionLabel(Object name) {
+    return Intl.message(
+      'Collection: $name',
+      name: 'collectionLabel',
+      desc: '',
+      args: [name],
+    );
+  }
+
+  /// `Nail form`
+  String get nailFormLabel {
+    return Intl.message('Nail form', name: 'nailFormLabel', desc: '', args: []);
+  }
+
+  /// `{minutes} mins`
+  String minutesLabel(Object minutes) {
+    return Intl.message(
+      '$minutes mins',
+      name: 'minutesLabel',
+      desc: '',
+      args: [minutes],
+    );
+  }
+
+  /// `Colors`
+  String get colorLabel {
+    return Intl.message('Colors', name: 'colorLabel', desc: '', args: []);
+  }
+
+  /// `Design components`
+  String get designComponentsLabel {
+    return Intl.message(
+      'Design components',
+      name: 'designComponentsLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Shared`
+  String get sharedLabel {
+    return Intl.message('Shared', name: 'sharedLabel', desc: '', args: []);
+  }
+
+  /// `Book now`
+  String get bookAppointmentNow {
+    return Intl.message(
+      'Book now',
+      name: 'bookAppointmentNow',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Form shaping method`
+  String get shapeMethodLabel {
+    return Intl.message(
+      'Form shaping method',
+      name: 'shapeMethodLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Decoration`
+  String get decorationLabel {
+    return Intl.message(
+      'Decoration',
+      name: 'decorationLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Component {id}`
+  String componentNameFallback(Object id) {
+    return Intl.message(
+      'Component $id',
+      name: 'componentNameFallback',
+      desc: '',
+      args: [id],
+    );
+  }
+
+  /// `Thumb`
+  String get fingerThumb {
+    return Intl.message('Thumb', name: 'fingerThumb', desc: '', args: []);
+  }
+
+  /// `Index`
+  String get fingerIndex {
+    return Intl.message('Index', name: 'fingerIndex', desc: '', args: []);
+  }
+
+  /// `Middle`
+  String get fingerMiddle {
+    return Intl.message('Middle', name: 'fingerMiddle', desc: '', args: []);
+  }
+
+  /// `Ring`
+  String get fingerRing {
+    return Intl.message('Ring', name: 'fingerRing', desc: '', args: []);
+  }
+
+  /// `Pinky`
+  String get fingerPinky {
+    return Intl.message('Pinky', name: 'fingerPinky', desc: '', args: []);
+  }
+
+  /// `Finger {index}`
+  String fingerOther(Object index) {
+    return Intl.message(
+      'Finger $index',
+      name: 'fingerOther',
+      desc: '',
+      args: [index],
+    );
+  }
+
+  /// `Seasonal`
+  String get seasonalTitle {
+    return Intl.message('Seasonal', name: 'seasonalTitle', desc: '', args: []);
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

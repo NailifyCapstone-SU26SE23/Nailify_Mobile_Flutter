@@ -1008,6 +1008,37 @@ class CachedNailImage {
   CachedNailImage(this.image, this.contentRect, this.byteData);
 }
 
+class NailOverlayPreview extends StatelessWidget {
+  final NailShapeModel? selectedShape;
+  final NailSurfaceModel? selectedSurface;
+  final String color;
+  final List<String>? gradientStops;
+  final List<PlacedComponentDraft> placements;
+  final bool showShadow;
+
+  const NailOverlayPreview({
+    super.key,
+    required this.selectedShape,
+    required this.selectedSurface,
+    required this.color,
+    required this.gradientStops,
+    required this.placements,
+    this.showShadow = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _NailOverlayPreview(
+      selectedShape: selectedShape,
+      selectedSurface: selectedSurface,
+      color: color,
+      gradientStops: gradientStops,
+      placements: placements,
+      showShadow: showShadow,
+    );
+  }
+}
+
 class _NailImageCache {
   static final Map<String, CachedNailImage> _resolved = {};
   static final Map<String, Future<CachedNailImage>> _pending = {};

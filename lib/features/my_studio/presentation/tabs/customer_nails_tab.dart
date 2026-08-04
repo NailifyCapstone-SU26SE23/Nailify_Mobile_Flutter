@@ -32,8 +32,6 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
   bool _hasMore = true;
   String? _error;
 
-  bool? _isPublicFilter;
-
   @override
   void initState() {
     super.initState();
@@ -74,7 +72,6 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
         page: _page,
         pageSize: 10,
         name: _searchController.text.isNotEmpty ? _searchController.text : null,
-        isPublic: _isPublicFilter,
       );
 
       if (mounted) {
@@ -158,7 +155,6 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
     await widget.repository.updateCustomerNail(
       customerNailId: nail.customerNailId,
       name: nail.name,
-      isPublic: nail.isPublic,
       imagePath: null,
     );
     _reload();
@@ -168,7 +164,6 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
     await widget.repository.updateCustomerNail(
       customerNailId: nail.customerNailId,
       name: nail.name,
-      isPublic: !nail.isPublic,
       imagePath: null,
     );
     _reload();
@@ -263,51 +258,6 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
                       border: Border.all(color: Colors.grey.shade100, width: 1),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<bool?>(
-                        value: _isPublicFilter,
-                        dropdownColor: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        icon: const Icon(
-                          Icons.keyboard_arrow_down_rounded,
-                          color: AppColors.textSecondary,
-                          size: 22,
-                        ),
-                        hint: Text(
-                          S.of(context).filterAll,
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        isExpanded: true,
-                        items: [
-                          DropdownMenuItem(
-                            value: null,
-                            child: Text(S.of(context).filterAll),
-                          ),
-                          DropdownMenuItem(
-                            value: true,
-                            child: Text(S.of(context).filterPublic),
-                          ),
-                          DropdownMenuItem(
-                            value: false,
-                            child: Text(S.of(context).filterPrivate),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          setState(() => _isPublicFilter = value);
-                          _loadData(reset: true);
-                        },
-                      ),
-                    ),
                   ),
                 ),
               ],

@@ -24,7 +24,6 @@ class CustomerNailsTab extends StatefulWidget {
 class _CustomerNailsTabState extends State<CustomerNailsTab> {
   final _searchController = TextEditingController();
   int _page = 1;
-  bool? _isPublicFilter;
   late Future<PaginatedResponse<CustomerNailModel>> _future;
 
   @override
@@ -45,7 +44,6 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
         page: _page,
         pageSize: 10,
         name: _searchController.text.isNotEmpty ? _searchController.text : null,
-        isPublic: _isPublicFilter,
       );
     });
   }
@@ -100,7 +98,6 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
     await widget.repository.updateCustomerNail(
       customerNailId: nail.customerNailId,
       name: nail.name,
-      isPublic: nail.isPublic,
       imagePath: null,
     );
     _reload();
@@ -110,7 +107,6 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
     await widget.repository.updateCustomerNail(
       customerNailId: nail.customerNailId,
       name: nail.name,
-      isPublic: !nail.isPublic,
       imagePath: null,
     );
     _reload();
@@ -169,22 +165,6 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
                 ],
               ),
               const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: [
-                  FilterChip(
-                    label: const Text('Công khai'),
-                    selected: _isPublicFilter == true,
-                    onSelected: (selected) {
-                      setState(() {
-                        _isPublicFilter = selected ? true : null;
-                        _page = 1;
-                      });
-                      _load();
-                    },
-                  ),
-                ],
-              ),
             ],
           ),
         ),

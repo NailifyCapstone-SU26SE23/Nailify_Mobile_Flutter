@@ -251,6 +251,28 @@ class TryOnColorSelector extends StatelessWidget {
   }
 }
 
+class ColorSpectrumSlider extends StatelessWidget {
+  final String selectedColor;
+  final ValueChanged<String> onColorSelected;
+
+  const ColorSpectrumSlider({
+    super.key,
+    required this.selectedColor,
+    required this.onColorSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TryOnColorSelector(
+      selectedColor: selectedColor,
+      onColorSelected: onColorSelected,
+      gradientStops: null,
+      onGradientChanged: (_) {},
+      showTitle: false,
+    );
+  }
+}
+
 class _CustomSegmentedControl extends StatelessWidget {
   final bool gradientEnabled;
   final ValueChanged<bool> onChanged;

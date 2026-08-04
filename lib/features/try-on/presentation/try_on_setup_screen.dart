@@ -393,7 +393,6 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
         nailShapeId: shape.nailShapeId,
         nailSurfaceId: _selectedNailSurface?.nailSurfaceId,
         customColor: _buildColorJson(),
-        isPublic: nail.isPublic,
       );
 
       for (final id in _deletedPlacementIds) {
@@ -454,7 +453,6 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
       price: nail?.price,
       customColor: _buildColorJson(),
       duration: nail?.duration,
-      isPublic: nail?.isPublic ?? false,
       nailShape: shape,
       nailSurface: _selectedNailSurface ?? nail?.nailSurface,
       customerNailComponents: _placements

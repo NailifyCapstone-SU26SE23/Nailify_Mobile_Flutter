@@ -107,21 +107,6 @@ class CustomerComponentCard extends StatelessWidget {
                             color: Colors.green,
                           ),
                         ),
-                      if (component.isPublic)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.purple[100],
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: const Text(
-                            'Công khai',
-                            style: TextStyle(fontSize: 11),
-                          ),
-                        ),
                     ],
                   ),
                 ],

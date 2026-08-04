@@ -113,7 +113,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookCustomNailTitle": MessageLookupByLibrary.simpleMessage(
       "Đặt lịch Custom Nail",
     ),
-    "bookNow": MessageLookupByLibrary.simpleMessage("Đặt Lịch Ngay"),
+    "bookNow": MessageLookupByLibrary.simpleMessage("Đặt ngay"),
     "bookNowButton": MessageLookupByLibrary.simpleMessage("Đặt Lịch Ngay"),
     "bookNowHint": MessageLookupByLibrary.simpleMessage(
       "Hãy đặt ngay một lịch làm móng để trải nghiệm!",
@@ -312,7 +312,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "TỰ THIẾT KẾ MẪU MÓNG",
     ),
     "doQuizButton": MessageLookupByLibrary.simpleMessage(
-      "LÀM KHẢO SÁT PHONG CÁCH NGAY",
+      "KHẢO SÁT PHONG CÁCH",
     ),
     "done": MessageLookupByLibrary.simpleMessage("Hoàn thành"),
     "editRating": MessageLookupByLibrary.simpleMessage("Chỉnh sửa đánh giá"),
@@ -332,8 +332,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "filterAllStatus": MessageLookupByLibrary.simpleMessage(
       "Tất cả trạng thái",
     ),
-    "filterPrivate": MessageLookupByLibrary.simpleMessage("Riêng tư"),
-    "filterPublic": MessageLookupByLibrary.simpleMessage("Công khai"),
     "filterType": MessageLookupByLibrary.simpleMessage("Loại"),
     "findNearbySalons": MessageLookupByLibrary.simpleMessage(
       "Tìm kiếm salon gần đây (Xem Bản đồ)",
@@ -341,7 +339,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "forYouTitle": MessageLookupByLibrary.simpleMessage("DÀNH RIÊNG CHO BẠN"),
     "fullName": MessageLookupByLibrary.simpleMessage("Họ và Tên"),
     "generateDesignButton": MessageLookupByLibrary.simpleMessage(
-      "GENERATE THIẾT KẾ",
+      "TẠO THIẾT KẾ",
     ),
     "generatingPersonalizedDesign": MessageLookupByLibrary.simpleMessage(
       "ĐANG TẠO THIẾT KẾ THÍCH HỢP",
@@ -351,7 +349,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Khám phá sự kiêu sa tự nhiên qua từng cái chạm",
     ),
     "homeBannerTitle": MessageLookupByLibrary.simpleMessage(
-      "Vẻ đẹp nơi đầu\nngón tay",
+      "Vẻ đẹp nơi đầu ngón",
     ),
     "homeCtaButton": MessageLookupByLibrary.simpleMessage("ĐẶT LỊCH HỆN NGAY"),
     "homeCtaSubtitle": MessageLookupByLibrary.simpleMessage(
@@ -754,7 +752,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "serviceAcrylic": MessageLookupByLibrary.simpleMessage("Úp Móng Acrylic"),
     "serviceArt": MessageLookupByLibrary.simpleMessage("Vẽ Nghệ Thuật"),
-    "serviceCare": MessageLookupByLibrary.simpleMessage("Chăm sóc & Nhặt da"),
+    "serviceCare": MessageLookupByLibrary.simpleMessage("Chăm sóc tay"),
     "serviceGel": MessageLookupByLibrary.simpleMessage("Sơn Gel"),
     "servicesLabel": MessageLookupByLibrary.simpleMessage("Dịch vụ"),
     "servicesSubtitle": MessageLookupByLibrary.simpleMessage(
@@ -885,5 +883,57 @@ class MessageLookup extends MessageLookupByLibrary {
     "yourPersonalStyle": MessageLookupByLibrary.simpleMessage(
       "Phong cách cá nhân của bạn: ",
     ),
+    "clearFilter": MessageLookupByLibrary.simpleMessage("Xoá lọc"),
+    "nailLoadError": MessageLookupByLibrary.simpleMessage(
+      "Không thể tải danh sách móng.",
+    ),
+    "recommended": MessageLookupByLibrary.simpleMessage("Được đề xuất"),
+    "nailDesignFallback": MessageLookupByLibrary.simpleMessage(
+      "Mẫu thiết kế móng",
+    ),
+    "introduction": MessageLookupByLibrary.simpleMessage("Giới thiệu"),
+    "nailDescriptionDefault": MessageLookupByLibrary.simpleMessage(
+      "Mẫu thiết kế nghệ thuật cao cấp được chăm chút tỉ mỉ từ các chuyên viên làm móng hàng đầu, mang lại vẻ ngoài kiêu sa, cuốn hút và cá tính cho phái nữ.",
+    ),
+    "availableVariants": MessageLookupByLibrary.simpleMessage(
+      "Phiên bản khả dụng",
+    ),
+    "noVariantsAvailable": MessageLookupByLibrary.simpleMessage(
+      "Hiện chưa có phiên bản nào cho thiết kế này.",
+    ),
+    "bookBtn": MessageLookupByLibrary.simpleMessage("Đặt"),
+    "nailShapeLabel": MessageLookupByLibrary.simpleMessage("Dáng"),
+    "nailSurfaceLabel": MessageLookupByLibrary.simpleMessage("Bề mặt"),
+    "noneLabel": MessageLookupByLibrary.simpleMessage("Không"),
+    "priceFromTo": (min, max) => "Giá từ ${min} - ${max}",
+    "variantsCount": (count) => "${count} phiên bản",
+    "availableForTryOn": MessageLookupByLibrary.simpleMessage(
+      "Khả dụng để trải nghiệm",
+    ),
+    "loadDataError": (error) => "Lỗi khi tải dữ liệu: ${error}",
+    "variantDetailsTitle": MessageLookupByLibrary.simpleMessage(
+      "Chi tiết phiên bản",
+    ),
+    "collectionLabel": (name) => "Bộ sưu tập: {name}",
+    "nailFormLabel": MessageLookupByLibrary.simpleMessage("Form móng"),
+    "minutesLabel": (minutes) => "${minutes} phút",
+    "colorLabel": MessageLookupByLibrary.simpleMessage("Màu sắc"),
+    "designComponentsLabel": MessageLookupByLibrary.simpleMessage(
+      "Thành phần thiết kế",
+    ),
+    "sharedLabel": MessageLookupByLibrary.simpleMessage("Dùng chung"),
+    "bookAppointmentNow": MessageLookupByLibrary.simpleMessage("Đặt lịch ngay"),
+    "shapeMethodLabel": MessageLookupByLibrary.simpleMessage(
+      "Phương pháp tạo form",
+    ),
+    "decorationLabel": MessageLookupByLibrary.simpleMessage("Trang trí"),
+    "componentNameFallback": (id) => "Thành phần ${id}",
+    "fingerThumb": MessageLookupByLibrary.simpleMessage("Ngón cái"),
+    "fingerIndex": MessageLookupByLibrary.simpleMessage("Ngón trỏ"),
+    "fingerMiddle": MessageLookupByLibrary.simpleMessage("Ngón giữa"),
+    "fingerRing": MessageLookupByLibrary.simpleMessage("Ngón áp út"),
+    "fingerPinky": MessageLookupByLibrary.simpleMessage("Ngón út"),
+    "fingerOther": (index) => "Ngón ${index}",
+    "seasonalTitle": MessageLookupByLibrary.simpleMessage("Theo mùa"),
   };
 }

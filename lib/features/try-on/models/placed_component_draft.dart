@@ -108,7 +108,6 @@ class PlacedComponentDraft {
       componentType: component?.type.stringValue ?? 'gem',
       price: component?.price ?? 0,
       customDataJson: '',
-      isPublic: false,
     );
   }
 

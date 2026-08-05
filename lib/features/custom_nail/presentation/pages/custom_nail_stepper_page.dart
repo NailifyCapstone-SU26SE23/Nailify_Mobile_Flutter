@@ -91,7 +91,7 @@ class _CustomNailStepperPageState extends State<CustomNailStepperPage> {
               context.go('/my-studio');
             },
             child: const Text(
-              'Quay về My Studio',
+              'Quay về Studio',
               style: TextStyle(
                 color: AppColors.primary,
                 fontWeight: FontWeight.bold,

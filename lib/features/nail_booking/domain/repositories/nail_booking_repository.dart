@@ -27,11 +27,40 @@ abstract class NailBookingRepository {
     required String bookingDate,
   });
 
+  /// Lấy danh sách slot giờ rảnh của salon (không chọn thợ).
+  Future<List<Map<String, dynamic>>> getSalonAvailableSlots({
+    required String salonId,
+    required String bookingDate,
+    required List<Map<String, dynamic>> bookingItems,
+  });
+
   /// Tạo danh sách slot từ lịch hoạt động của salon (khi không chọn thợ).
   List<Map<String, dynamic>> getSalonOperatingSlots({
     required Map<String, dynamic> salon,
     required DateTime date,
   });
+
+  /// Lọc danh sách slot theo lịch hoạt động của salon.
+  List<Map<String, dynamic>> filterSlotsByOperatingHours({
+    required List<dynamic> slots,
+    required Map<String, dynamic>? salon,
+    required DateTime? date,
+  });
+
+  /// Giữ chỗ slot 5 phút. Server trả về holdToken và expiresAt (UTC).
+  Future<Map<String, dynamic>> holdSlot({
+    required String salonId,
+    required String nailArtistId,
+    required String bookingDate,
+    required String startTime,
+    required List<Map<String, dynamic>> bookingItems,
+  });
+
+  /// Huỷ giữ chỗ (fire-and-forget).
+  Future<void> cancelHoldSlot(String holdToken);
+
+  /// Kiểm tra trạng thái giữ chỗ.
+  Future<Map<String, dynamic>> checkHoldStatus(String holdToken);
 
   /// Tạo booking từ luồng Nail Variant.
   Future<Map<String, dynamic>> createBooking({
@@ -42,13 +71,17 @@ abstract class NailBookingRepository {
     required int nailVariantId,
     required List<String> serviceIds,
     List<int>? selectedPromotionIds,
+    String? holdToken,
     int? shapeMethodConfigId,
+    String? warrantyForBookingId,
+    List<Map<String, dynamic>>? warrantyBookingItems,
   });
 
   /// Tạo booking từ luồng Service độc lập.
   Future<Map<String, dynamic>> createServiceBooking(
     Map<String, dynamic> bookingData, {
     List<int>? selectedPromotionIds,
+    String? holdToken,
   });
 
   /// Tạo booking từ luồng Custom Nail.
@@ -61,8 +94,9 @@ abstract class NailBookingRepository {
     required Map<String, int> groupedExtraServices,
     int? shapeMethodConfigId,
     List<int>? selectedPromotionIds,
+    String? holdToken,
   });
 
   /// Lấy danh sách khuyến mãi.
-  Future<List<PromotionModel>> getPromotions();
+  Future<List<PromotionModel>> getTodayPromotions();
 }

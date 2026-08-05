@@ -1,11 +1,12 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../generated/l10n.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../data/datasources/my_booking_api_service.dart';
+import '../widgets/booking_rating_widgets.dart';
 
 class BookingRatingPage extends StatefulWidget {
   final String bookingId;
@@ -24,11 +25,15 @@ class _BookingRatingPageState extends State<BookingRatingPage> {
   bool _isLoading = true;
   bool _isSubmitting = false;
   Map<String, dynamic>? _existingRating;
-  XFile? _image;
+  File? _localImage;
+  String? _existingImageUrl;
+
   int _overallScore = 5;
   int _serviceQuality = 5;
   int _punctuality = 5;
   int _cleanliness = 5;
+  bool _canEdit = true;
+  String _disableReason = '';
 
   @override
   void initState() {
@@ -46,10 +51,42 @@ class _BookingRatingPageState extends State<BookingRatingPage> {
     try {
       final rating = await _apiService.getRatingByBooking(widget.bookingId);
       if (!mounted) return;
-      setState(() {
-        _existingRating = rating;
-        _isLoading = false;
-      });
+
+      if (rating != null) {
+        // Calculate editability (48 hours limit)
+        final dateStr =
+            rating['createdDate'] ??
+            rating['createdAt'] ??
+            rating['creationDate'] ??
+            rating['created'] ??
+            '';
+        final createdTime =
+            DateTime.tryParse(dateStr.toString()) ?? DateTime.now();
+        final difference = DateTime.now().difference(createdTime);
+
+        setState(() {
+          _existingRating = rating;
+          _overallScore = rating['overallScore'] ?? 5;
+          _serviceQuality = rating['serviceQuality'] ?? 5;
+          _punctuality = rating['punctuality'] ?? 5;
+          _cleanliness = rating['cleanliness'] ?? 5;
+          _commentController.text = rating['comment'] ?? '';
+          _existingImageUrl = rating['imageUrl'] ?? rating['image'];
+
+          if (difference.inHours > 48) {
+            _canEdit = false;
+            _disableReason = 'Chỉ có thể chỉnh sửa trong 48h sau khi đánh giá';
+          } else {
+            _canEdit = true;
+          }
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _canEdit = true;
+          _isLoading = false;
+        });
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() => _isLoading = false);
@@ -57,276 +94,320 @@ class _BookingRatingPageState extends State<BookingRatingPage> {
   }
 
   Future<void> _pickImage() async {
+    if (!_canEdit) return;
     final image = await _imagePicker.pickImage(
       source: ImageSource.gallery,
       imageQuality: 85,
     );
     if (image == null || !mounted) return;
-    setState(() => _image = image);
+    setState(() {
+      _localImage = File(image.path);
+      _existingImageUrl = null; // Overwrite network image if local image chosen
+    });
   }
 
-  Future<void> _submitRating() async {
-    if (_isSubmitting) return;
-    setState(() => _isSubmitting = true);
+  void _removeImage() {
+    if (!_canEdit) return;
+    setState(() {
+      _localImage = null;
+      _existingImageUrl = null;
+    });
+  }
 
+  Future<void> _deleteRating() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Xóa đánh giá',
+          style: TextStyle(fontFamily: 'Georgia', fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          'Bạn có chắc chắn muốn xóa đánh giá này không? Hành động này không thể hoàn tác.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text(
+              'Hủy',
+              style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Xóa',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    setState(() => _isSubmitting = true);
     try {
-      await _apiService.createBookingRating(
-        bookingId: widget.bookingId,
-        overallScore: _overallScore,
-        comment: _commentController.text.trim(),
-        serviceQuality: _serviceQuality,
-        punctuality: _punctuality,
-        cleanliness: _cleanliness,
-        imagePath: _image?.path,
-      );
+      final ratingId =
+          _existingRating!['bookingRatingId'] ?? _existingRating!['id'] ?? '';
+      await _apiService.deleteBookingRating(ratingId.toString());
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Rating submitted successfully.')),
+        const SnackBar(content: Text('Đã xóa đánh giá thành công!')),
       );
-      context.go('/my-bookings/detail', extra: widget.bookingId);
+      context.pop(true);
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Submit rating failed: $e')));
+      ).showSnackBar(SnackBar(content: Text('Xóa đánh giá thất bại: $e')));
+    }
+  }
+
+  Future<void> _submitRating() async {
+    if (_isSubmitting || !_canEdit) return;
+    setState(() => _isSubmitting = true);
+
+    try {
+      if (_existingRating == null) {
+        await _apiService.createBookingRating(
+          bookingId: widget.bookingId,
+          overallScore: _overallScore,
+          comment: _commentController.text.trim(),
+          serviceQuality: _serviceQuality,
+          punctuality: _punctuality,
+          cleanliness: _cleanliness,
+          imagePath: _localImage?.path,
+        );
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã gửi đánh giá thành công!')),
+        );
+      } else {
+        final ratingId =
+            _existingRating!['bookingRatingId'] ?? _existingRating!['id'] ?? '';
+        await _apiService.updateBookingRating(
+          ratingId: ratingId.toString(),
+          overallScore: _overallScore,
+          comment: _commentController.text.trim(),
+          serviceQuality: _serviceQuality,
+          punctuality: _punctuality,
+          cleanliness: _cleanliness,
+          imagePath: _localImage?.path,
+        );
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã cập nhật đánh giá thành công!')),
+        );
+      }
+      context.pop(true); // Return true to indicate reload needed
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gặp lỗi: $e')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isNewRating = _existingRating == null;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFFDFBF7),
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            size: 20,
+            color: AppColors.primaryDark,
+          ),
           onPressed: () => context.pop(),
         ),
-        title: const Text(
-          'Rate booking',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+        title: Text(
+          isNewRating ? S.of(context).rateService : S.of(context).editRating,
+          style: const TextStyle(
+            fontWeight: FontWeight.w800,
+            fontFamily: 'Georgia',
+            color: AppColors.primaryDark,
           ),
         ),
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFFDFBF7),
         elevation: 0,
+        scrolledUnderElevation: 0,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               physics: const BouncingScrollPhysics(),
-              child: _existingRating == null
-                  ? _buildRatingForm()
-                  : _buildExistingRating(),
-            ),
-    );
-  }
-
-  Widget _buildRatingForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildScoreCard('Overall score', _overallScore, (value) {
-          setState(() => _overallScore = value);
-        }),
-        const SizedBox(height: 12),
-        _buildScoreCard('Service quality', _serviceQuality, (value) {
-          setState(() => _serviceQuality = value);
-        }),
-        const SizedBox(height: 12),
-        _buildScoreCard('Punctuality', _punctuality, (value) {
-          setState(() => _punctuality = value);
-        }),
-        const SizedBox(height: 12),
-        _buildScoreCard('Cleanliness', _cleanliness, (value) {
-          setState(() => _cleanliness = value);
-        }),
-        const SizedBox(height: 20),
-        TextField(
-          controller: _commentController,
-          minLines: 4,
-          maxLines: 6,
-          decoration: InputDecoration(
-            labelText: 'Comment',
-            hintText: 'Share your experience',
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-        const SizedBox(height: 16),
-        OutlinedButton.icon(
-          onPressed: _isSubmitting ? null : _pickImage,
-          icon: const Icon(Icons.image_outlined),
-          label: Text(_image == null ? 'Add image' : 'Change image'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.primary,
-            side: const BorderSide(color: AppColors.primary),
-            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-        if (_image != null) ...[
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.file(
-              File(_image!.path),
-              width: double.infinity,
-              height: 180,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => Container(
-                height: 120,
-                width: double.infinity,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.borderLight),
-                ),
-                child: const Text(
-                  'Unable to preview image',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              const Icon(Icons.image_outlined, size: 16, color: Colors.grey),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  _image!.name,
-                  style: const TextStyle(color: Colors.grey, fontSize: 13),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              TextButton(
-                onPressed: _isSubmitting
-                    ? null
-                    : () => setState(() => _image = null),
-                child: const Text('Remove'),
-              ),
-            ],
-          ),
-        ],
-        const SizedBox(height: 24),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: _isSubmitting ? null : _submitRating,
-            icon: _isSubmitting
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Warning Banner if cannot edit
+                  if (!_canEdit) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      margin: const EdgeInsets.only(bottom: 20),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.amber.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline_rounded,
+                            color: Colors.amber.shade800,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _disableReason,
+                              style: TextStyle(
+                                color: Colors.amber.shade900,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  )
-                : const Icon(Icons.star, color: Colors.white),
-            label: Text(_isSubmitting ? 'Submitting...' : 'Submit rating'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                  ],
+
+                  // Scorecards block
+                  ScoreCard(
+                    label: 'Đánh giá chung',
+                    value: _overallScore,
+                    onChanged: (val) => setState(() => _overallScore = val),
+                    enabled: _canEdit,
+                  ),
+                  const SizedBox(height: 12),
+                  ScoreCard(
+                    label: 'Chất lượng dịch vụ',
+                    value: _serviceQuality,
+                    onChanged: (val) => setState(() => _serviceQuality = val),
+                    enabled: _canEdit,
+                  ),
+                  const SizedBox(height: 12),
+                  ScoreCard(
+                    label: 'Đúng giờ',
+                    value: _punctuality,
+                    onChanged: (val) => setState(() => _punctuality = val),
+                    enabled: _canEdit,
+                  ),
+                  const SizedBox(height: 12),
+                  ScoreCard(
+                    label: 'Vệ sinh sạch sẽ',
+                    value: _cleanliness,
+                    onChanged: (val) => setState(() => _cleanliness = val),
+                    enabled: _canEdit,
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Comment Input Box
+                  RatingCommentInput(
+                    controller: _commentController,
+                    enabled: _canEdit,
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Image Upload/Preview
+                  RatingImagePicker(
+                    existingImageUrl: _existingImageUrl,
+                    localImage: _localImage,
+                    onPickImage: _pickImage,
+                    onRemoveImage: _removeImage,
+                    enabled: _canEdit,
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Bottom Action Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: Tooltip(
+                      message: _canEdit ? '' : _disableReason,
+                      child: ElevatedButton(
+                        onPressed: _canEdit && !_isSubmitting
+                            ? _submitRating
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor: Colors.grey.shade300,
+                          disabledForegroundColor: Colors.grey.shade500,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(26),
+                          ),
+                        ),
+                        child: _isSubmitting
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(
+                                isNewRating ? 'Gửi đánh giá' : 'Cập nhật',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ),
+                  if (!isNewRating) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: Tooltip(
+                        message: _canEdit ? '' : _disableReason,
+                        child: OutlinedButton(
+                          onPressed: _canEdit && !_isSubmitting
+                              ? _deleteRating
+                              : null,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            side: BorderSide(
+                              color: _canEdit
+                                  ? Colors.red
+                                  : Colors.grey.shade300,
+                              width: 1.2,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(26),
+                            ),
+                          ),
+                          child: const Text(
+                            'Xóa đánh giá',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 40),
+                ],
               ),
             ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildExistingRating() {
-    final rating = _existingRating!;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderLight),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'You already rated this booking.',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-          const SizedBox(height: 12),
-          _buildReadOnlyScore('Overall', rating['overallScore']),
-          _buildReadOnlyScore('Service quality', rating['serviceQuality']),
-          _buildReadOnlyScore('Punctuality', rating['punctuality']),
-          _buildReadOnlyScore('Cleanliness', rating['cleanliness']),
-          if ((rating['comment']?.toString() ?? '').isNotEmpty) ...[
-            const Divider(height: 24),
-            Text(rating['comment'].toString()),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildScoreCard(String label, int value, ValueChanged<int> onChanged) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderLight),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-          Row(
-            children: List.generate(5, (index) {
-              final score = index + 1;
-              return IconButton(
-                onPressed: _isSubmitting ? null : () => onChanged(score),
-                icon: Icon(
-                  score <= value ? Icons.star : Icons.star_border,
-                  color: Colors.amber.shade700,
-                ),
-                tooltip: '$score',
-                constraints: const BoxConstraints.tightFor(
-                  width: 36,
-                  height: 36,
-                ),
-              );
-            }),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildReadOnlyScore(String label, dynamic value) {
-    final score = (value as num?)?.toInt() ?? 0;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          Expanded(child: Text(label)),
-          Text('$score/5', style: const TextStyle(fontWeight: FontWeight.bold)),
-        ],
-      ),
     );
   }
 }

@@ -20,7 +20,6 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
   final _nameController = TextEditingController();
   final _picker = ImagePicker();
 
-  bool _isPublic = false;
   XFile? _imageFile;
   bool _isLoading = false;
 
@@ -29,7 +28,6 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
     super.initState();
     final nail = widget.nail;
     _nameController.text = nail?.name ?? '';
-    _isPublic = nail?.isPublic ?? false;
   }
 
   @override
@@ -59,7 +57,6 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
         // CREATE
         await repository.createCustomerNail(
           name: _nameController.text.trim(),
-          isPublic: _isPublic,
           imagePath: _imageFile?.path,
         );
       } else {
@@ -67,7 +64,6 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
         await repository.updateCustomerNail(
           customerNailId: widget.nail!.customerNailId,
           name: _nameController.text.trim(),
-          isPublic: _isPublic,
           imagePath: _imageFile?.path,
         );
       }
@@ -218,16 +214,6 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
                   ],
                 ),
                 const SizedBox(height: 12),
-
-                if (widget.nail != null) ...[
-                  SwitchListTile(
-                    title: const Text('Công khai'),
-                    subtitle: const Text('Mọi người có thể nhìn thấy mẫu này'),
-                    value: _isPublic,
-                    onChanged: (value) => setState(() => _isPublic = value),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ],
               ],
             ),
           ),

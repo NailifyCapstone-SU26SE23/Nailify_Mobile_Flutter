@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../generated/l10n.dart';
 import '../../../my_booking/data/datasources/waitlist_api_service.dart';
 
 class BookingTimeSelection extends StatefulWidget {
@@ -13,6 +14,9 @@ class BookingTimeSelection extends StatefulWidget {
   final String? artistId; // Dùng cho Waitlist join API (nullable = bất kỳ)
   final Function(String) onTimeChanged;
 
+  /// Callback để trang cha reload lại danh sách giờ khi phát hiện isHeld.
+  final VoidCallback? onRefreshSlots;
+
   const BookingTimeSelection({
     super.key,
     required this.timeSlots,
@@ -23,6 +27,7 @@ class BookingTimeSelection extends StatefulWidget {
     required this.onTimeChanged,
     this.salonId,
     this.artistId,
+    this.onRefreshSlots,
   });
 
   @override
@@ -72,7 +77,11 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
           } catch (e) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Lỗi tham gia hàng chờ: $e')),
+                SnackBar(
+                  content: Text(
+                    S.of(context).bookingWaitlistError(e.toString()),
+                  ),
+                ),
               );
             }
           } finally {
@@ -89,20 +98,23 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Khung giờ rảnh',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        Text(
+          S.of(context).bookingAvailableSlots,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         if (!widget.canSelect)
-          const Text(
-            'Vui lòng chọn Thợ (hoặc "Không chọn thợ") để xem giờ rảnh.',
-            style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+          Text(
+            S.of(context).bookingSelectArtistFirst,
+            style: const TextStyle(
+              color: Colors.grey,
+              fontStyle: FontStyle.italic,
+            ),
           )
         else if (widget.isLoading)
           const CircularProgressIndicator()
         else if (widget.timeSlots.isEmpty)
-          const Text('Thợ không có lịch làm việc vào ngày này.')
+          Text(S.of(context).bookingNoSchedule)
         else
           GridView.builder(
             shrinkWrap: true,
@@ -118,6 +130,7 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
               final slot = widget.timeSlots[index];
               final String time = slot['startTime']; // "09:30:00"
               final bool isAvailableApi = slot['isAvailable'] == true;
+              final bool isHeld = slot['isHeld'] == true;
               final bool isSelected = widget.selectedTime == time;
               final bool isWaitlisted = _waitlistedTimes.contains(time);
 
@@ -128,12 +141,20 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
               // ==========================================
               if (widget.selectedDate != null) {
                 final now = DateTime.now();
-                final bool isToday =
-                    widget.selectedDate!.year == now.year &&
-                    widget.selectedDate!.month == now.month &&
-                    widget.selectedDate!.day == now.day;
+                final DateTime todayStart = DateTime(
+                  now.year,
+                  now.month,
+                  now.day,
+                );
+                final DateTime selectedDateStart = DateTime(
+                  widget.selectedDate!.year,
+                  widget.selectedDate!.month,
+                  widget.selectedDate!.day,
+                );
 
-                if (isToday) {
+                if (selectedDateStart.isBefore(todayStart)) {
+                  isPast = true;
+                } else if (selectedDateStart.isAtSameMomentAs(todayStart)) {
                   final List<String> timeParts = time.split(':');
                   final int slotHour = int.tryParse(timeParts[0]) ?? 0;
                   final int slotMinute = int.tryParse(timeParts[1]) ?? 0;
@@ -146,8 +167,12 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
               }
               // ==========================================
 
-              final bool isAvail = isAvailableApi && !isPast;
-              final bool isFull = !isAvailableApi && !isPast;
+              // isAvail: chỉ khi isAvailable: true VÀ isHeld: false → có thể chọn
+              final bool isAvail = isAvailableApi && !isHeld && !isPast;
+              // isHeldOnly: đang bị giữ tạm (5 phút) bởi ai đó → mờ, cho vào waitlist
+              final bool isHeldOnly = isHeld && !isPast;
+              // isFull: đã đặt hẳn (isAvailable: false) và KHÔNG đang held → mờ, waitlist
+              final bool isFull = !isAvailableApi && !isHeld && !isPast;
 
               // Xác định style cho ô
               Color bgColor;
@@ -169,6 +194,7 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
                 fontWeight = FontWeight.bold;
                 showBell = true;
               } else if (isAvail) {
+                // Còn trống, không bị giữ
                 bgColor = Colors.white;
                 borderColor = Colors.grey.shade300;
                 textColor = Colors.black;
@@ -179,7 +205,7 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
                 textColor = Colors.grey.shade300;
                 lineThrough = true;
               } else {
-                // isFull (hết chỗ)
+                // isHeldOnly hoặc isFull → đều hiện mờ giống nhau
                 bgColor = Colors.grey.shade100;
                 borderColor = Colors.grey.shade200;
                 textColor = Colors.grey.shade400;
@@ -187,7 +213,51 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
 
               return GestureDetector(
                 onTap: () {
+                  // Kiểm tra lại tại thời điểm tap (người dùng gửi request)
+                  bool isCurrentlyPast = false;
+                  if (widget.selectedDate != null) {
+                    final currentNow = DateTime.now();
+                    final currentTodayStart = DateTime(
+                      currentNow.year,
+                      currentNow.month,
+                      currentNow.day,
+                    );
+                    final selDateStart = DateTime(
+                      widget.selectedDate!.year,
+                      widget.selectedDate!.month,
+                      widget.selectedDate!.day,
+                    );
+
+                    if (selDateStart.isBefore(currentTodayStart)) {
+                      isCurrentlyPast = true;
+                    } else if (selDateStart.isAtSameMomentAs(
+                      currentTodayStart,
+                    )) {
+                      final List<String> timeParts = time.split(':');
+                      final int slotHour = int.tryParse(timeParts[0]) ?? 0;
+                      final int slotMinute = int.tryParse(timeParts[1]) ?? 0;
+
+                      if (slotHour < currentNow.hour ||
+                          (slotHour == currentNow.hour &&
+                              slotMinute <= currentNow.minute)) {
+                        isCurrentlyPast = true;
+                      }
+                    }
+                  }
+
+                  if (isCurrentlyPast) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(S.of(context).bookingSlotPast),
+                        backgroundColor: Colors.redAccent,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                    return;
+                  }
+
                   if (isAvail) {
+                    // isHeld: false, isAvailable: true → tạo holdToken bình thường
                     widget.onTimeChanged(time);
                   } else if (isWaitlisted) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -201,7 +271,9 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'Bạn đã đăng ký chờ cho giờ ${time.substring(0, 5)}',
+                              S
+                                  .of(context)
+                                  .bookingWaitlistJoined(time.substring(0, 5)),
                             ),
                           ],
                         ),
@@ -212,7 +284,26 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
                         ),
                       ),
                     );
+                  } else if (isHeldOnly) {
+                    // isHeld: true → hiện thông báo, reload slot, cho vào waitlist
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text(
+                          'Khung giờ này đang được giữ chỗ tạm thời. Bạn có thể đăng ký hàng chờ.',
+                        ),
+                        backgroundColor: Colors.orange.shade700,
+                        behavior: SnackBarBehavior.floating,
+                        duration: const Duration(seconds: 3),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    );
+                    // Reload để cập nhật trạng thái mới nhất
+                    widget.onRefreshSlots?.call();
+                    _showWaitlistBottomSheet(time);
                   } else if (isFull) {
+                    // isAvailable: false, isHeld: false → đã đặt hẳn → cho vào waitlist
                     _showWaitlistBottomSheet(time);
                   }
                 },

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../generated/l10n.dart';
 
 class BookingDateSelection extends StatefulWidget {
   final DateTime? selectedDate;
@@ -36,7 +37,10 @@ class _BookingDateSelectionState extends State<BookingDateSelection> {
     );
   }
 
-  final List<String> _weekDays = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+  List<String> get _weekDays =>
+      Localizations.localeOf(context).languageCode == 'vi'
+      ? ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
+      : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   @override
   Widget build(BuildContext context) {
@@ -55,9 +59,9 @@ class _BookingDateSelectionState extends State<BookingDateSelection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Chọn ngày hẹn',
-          style: TextStyle(
+        Text(
+          S.of(context).bookingSelectDateTitle,
+          style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
             color: AppColors.textPrimary,
@@ -81,7 +85,12 @@ class _BookingDateSelectionState extends State<BookingDateSelection> {
                     (monthDate) => DropdownMenuItem(
                       value: monthDate,
                       child: Text(
-                        'Tháng ${monthDate.month} năm ${monthDate.year}',
+                        S
+                            .of(context)
+                            .bookingMonthYear(
+                              monthDate.month.toString(),
+                              monthDate.year.toString(),
+                            ),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

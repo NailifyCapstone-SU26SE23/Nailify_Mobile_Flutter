@@ -25,7 +25,6 @@ class _CustomerComponentFormDialogState
   final _picker = ImagePicker();
 
   int _componentType = 0;
-  bool _isPublic = true;
   XFile? _imageFile;
   bool _isLoading = false;
 
@@ -40,7 +39,6 @@ class _CustomerComponentFormDialogState
           : '';
       _customDataController.text = component.customDataJson;
       _componentType = int.tryParse(component.componentType) ?? 0;
-      _isPublic = component.isPublic;
     }
   }
 
@@ -75,7 +73,6 @@ class _CustomerComponentFormDialogState
           componentType: _componentType,
           price: double.tryParse(_priceController.text.trim()),
           customDataJson: _customDataController.text.trim(),
-          isPublic: _isPublic,
           imagePath: _imageFile?.path,
         );
       } else {
@@ -85,7 +82,6 @@ class _CustomerComponentFormDialogState
           componentType: _componentType,
           price: double.tryParse(_priceController.text.trim()),
           customDataJson: _customDataController.text.trim(),
-          isPublic: _isPublic,
           imagePath: _imageFile?.path,
         );
       }
@@ -254,17 +250,6 @@ class _CustomerComponentFormDialogState
                   ],
                 ),
                 const SizedBox(height: 12),
-
-                // Public switch
-                SwitchListTile(
-                  title: const Text('Công khai'),
-                  subtitle: const Text(
-                    'Mọi người có thể sử dụng thành phần này',
-                  ),
-                  value: _isPublic,
-                  onChanged: (value) => setState(() => _isPublic = value),
-                  contentPadding: EdgeInsets.zero,
-                ),
               ],
             ),
           ),

@@ -269,11 +269,29 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
   void _removeSelectedPlacement() {
     final selected = _selectedPlacement;
     if (selected == null) return;
+    _deletePlacement(selected.localId);
+  }
+
+  void _updatePlacement(PlacedComponentDraft placement) {
+    final index = _placements.indexWhere(
+      (item) => item.localId == placement.localId,
+    );
+    if (index == -1) return;
+    setState(() {
+      _placements[index] = placement;
+      _selectedPlacementId = placement.localId;
+    });
+  }
+
+  void _deletePlacement(int localId) {
+    final index = _placements.indexWhere((item) => item.localId == localId);
+    if (index == -1) return;
+    final selected = _placements[index];
     setState(() {
       if (selected.customerNailComponentId != null) {
         _deletedPlacementIds.add(selected.customerNailComponentId!);
       }
-      _placements.removeWhere((item) => item.localId == selected.localId);
+      _placements.removeAt(index);
       _selectedPlacementId = _placements.isEmpty
           ? null
           : _placements.last.localId;
@@ -375,7 +393,6 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
         nailShapeId: shape.nailShapeId,
         nailSurfaceId: _selectedNailSurface?.nailSurfaceId,
         customColor: _buildColorJson(),
-        isPublic: nail.isPublic,
       );
 
       for (final id in _deletedPlacementIds) {
@@ -436,7 +453,6 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
       price: nail?.price,
       customColor: _buildColorJson(),
       duration: nail?.duration,
-      isPublic: nail?.isPublic ?? false,
       nailShape: shape,
       nailSurface: _selectedNailSurface ?? nail?.nailSurface,
       customerNailComponents: _placements
@@ -527,6 +543,8 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
               selectedPlacementId: _selectedPlacementId,
               onSelectPlacement: (id) =>
                   setState(() => _selectedPlacementId = id),
+              onUpdatePlacement: _updatePlacement,
+              onDeletePlacement: _deletePlacement,
               onToggleDetailFinger: _togglePreviewDetailFinger,
             ),
           ),

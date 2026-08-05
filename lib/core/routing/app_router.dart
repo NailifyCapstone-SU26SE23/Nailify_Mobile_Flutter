@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-
 import '../../features/another_design/presentation/pages/another_design_page.dart';
 import '../../features/auth/presentation/pages/customer_login_page.dart';
 import '../../features/auth/presentation/pages/customer_register_page.dart';
+import '../../features/auth/presentation/pages/forgot_password_pages.dart';
 import '../../features/auth/presentation/pages/profile_update_pages.dart';
-import '../../features/catalog/presentation/pages/catalog_page.dart';
-import '../../features/catalog/presentation/pages/nail_details_page.dart';
 import '../../features/custom_nail/presentation/pages/custom_nail_stepper_page.dart';
 import '../../features/discover/presentation/pages/discover_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
@@ -28,11 +26,15 @@ import '../../features/nails/presentation/pages/nail_detail_screen.dart';
 import '../../features/nails/presentation/pages/nail_list_screen.dart';
 import '../../features/nails/presentation/pages/nail_variant_detail_screen.dart';
 import '../../features/perfect_match/presentation/pages/perfect_match_page.dart';
+import '../../features/perfect_match/presentation/pages/nail_composition_design_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/quiz/data/models/quiz_result_model.dart';
 import '../../features/quiz/presentation/pages/analyze_page.dart';
 import '../../features/quiz/presentation/pages/quiz_page.dart';
 import '../../features/services/presentation/pages/service_detail_page.dart';
 import '../../features/services/presentation/pages/service_list_page.dart';
+import '../../features/nails/data/models/customer_nail_models.dart'
+    as nails_models;
 import '../../features/try-on/presentation/try_on_setup_screen.dart';
 import '../widgets/main_shell.dart';
 
@@ -41,6 +43,39 @@ class AppRouter {
     initialLocation: '/',
     routes: [
       GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
+      GoRoute(
+        path: '/forgot-password',
+        builder: (context, state) {
+          final extra = state.extra is Map
+              ? Map<String, dynamic>.from(state.extra as Map)
+              : const <String, dynamic>{};
+          return ForgotPasswordEmailPage(
+            initialEmail: extra['email']?.toString() ?? '',
+          );
+        },
+      ),
+      GoRoute(
+        path: '/forgot-password/code',
+        builder: (context, state) {
+          final extra = state.extra is Map
+              ? Map<String, dynamic>.from(state.extra as Map)
+              : const <String, dynamic>{};
+          return ForgotPasswordCodePage(
+            email: extra['email']?.toString() ?? '',
+          );
+        },
+      ),
+      GoRoute(
+        path: '/forgot-password/reset',
+        builder: (context, state) {
+          final extra = state.extra is Map
+              ? Map<String, dynamic>.from(state.extra as Map)
+              : const <String, dynamic>{};
+          return ForgotPasswordResetPage(
+            token: extra['token']?.toString() ?? '',
+          );
+        },
+      ),
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterPage(),
@@ -62,19 +97,7 @@ class AppRouter {
       GoRoute(
         path: '/custom-nail-booking',
         builder: (context, state) {
-          final extra = state.extra;
-          if (extra is Map<String, dynamic>) {
-            return CustomNailBookingPage(
-              nail: extra['nail'] as CustomerNailModel,
-              shapeMethodConfigId: (extra['shapeMethodConfigId'] as num?)
-                  ?.toInt(),
-              shapeMethodName: extra['shapeMethodName']?.toString(),
-              shapeMethodPrice: extra['shapeMethodPrice'] as num?,
-              shapeMethodDuration: (extra['shapeMethodDuration'] as num?)
-                  ?.toInt(),
-            );
-          }
-          final nail = extra as CustomerNailModel;
+          final nail = state.extra as CustomerNailModel;
           return CustomNailBookingPage(nail: nail);
         },
       ),
@@ -121,7 +144,8 @@ class AppRouter {
         },
       ),
       ShellRoute(
-        builder: (context, state, child) => MainShell(child: child),
+        builder: (context, state, child) =>
+            MainShell(showHeader: state.matchedLocation == '/', child: child),
         routes: [
           GoRoute(path: '/', builder: (context, state) => const HomePage()),
           GoRoute(
@@ -162,17 +186,6 @@ class AppRouter {
                       );
                     },
               );
-            },
-          ),
-          GoRoute(
-            path: '/catalog',
-            builder: (context, state) => const CatalogPage(),
-          ),
-          GoRoute(
-            path: '/catalog/details',
-            builder: (context, state) {
-              final nailData = state.extra as Map<String, dynamic>;
-              return NailDetailsPage(nailData: nailData);
             },
           ),
           GoRoute(
@@ -219,15 +232,33 @@ class AppRouter {
           GoRoute(
             path: '/quiz/analyze',
             builder: (context, state) {
-              final answers = state.extra as List<int>? ?? [];
-              return AnalyzePage(answers: answers);
+              final selectedOptionIds =
+                  (state.extra as List?)
+                      ?.map((item) => item.toString())
+                      .toList() ??
+                  const <String>[];
+              return AnalyzePage(selectedOptionIds: selectedOptionIds);
             },
           ),
           GoRoute(
             path: '/perfect-match',
             builder: (context, state) {
-              final answers = state.extra as List<int>? ?? [];
-              return PerfectMatchPage(answers: answers);
+              final results = state.extra is List
+                  ? List<QuizResultModel>.from(state.extra as List)
+                  : const <QuizResultModel>[];
+              return PerfectMatchPage(results: results);
+            },
+          ),
+          GoRoute(
+            path: '/perfect-match/composition',
+            builder: (context, state) {
+              final matchedCharacteristics =
+                  state.extra is List<MatchedCharacteristic>
+                  ? state.extra as List<MatchedCharacteristic>
+                  : const <MatchedCharacteristic>[];
+              return NailCompositionDesignPage(
+                matchedCharacteristics: matchedCharacteristics,
+              );
             },
           ),
           GoRoute(
@@ -236,7 +267,13 @@ class AppRouter {
           ),
           GoRoute(
             path: '/try-on',
-            builder: (context, state) => const TryOnSetupScreen(),
+            builder: (context, state) {
+              final extra = state.extra;
+              if (extra is nails_models.CustomerNailModel) {
+                return TryOnSetupScreen(customerNail: extra);
+              }
+              return const TryOnSetupScreen();
+            },
           ),
           GoRoute(
             path: '/profile',

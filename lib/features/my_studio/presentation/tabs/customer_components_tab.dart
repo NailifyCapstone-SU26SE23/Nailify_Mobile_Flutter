@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../generated/l10n.dart';
 import '../../../nails/data/models/customer_nail_models.dart';
 import '../../../nails/data/repositories/customer_component_repository.dart';
 import '../widgets/customer_component_card.dart';
@@ -120,17 +121,17 @@ class _CustomerComponentsTabState extends State<CustomerComponentsTab> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Xóa thành phần',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          S.of(context).deleteComponentTitle,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        content: Text('Bạn có chắc muốn xóa "${component.name}"?'),
+        content: Text(S.of(context).deleteComponentConfirm(component.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text(
-              'Hủy',
-              style: TextStyle(color: AppColors.textSecondary),
+            child: Text(
+              S.of(context).cancelBtn,
+              style: const TextStyle(color: AppColors.textSecondary),
             ),
           ),
           FilledButton(
@@ -141,7 +142,7 @@ class _CustomerComponentsTabState extends State<CustomerComponentsTab> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text('Xóa'),
+            child: Text(S.of(context).deleteBtn),
           ),
         ],
       ),
@@ -158,12 +159,19 @@ class _CustomerComponentsTabState extends State<CustomerComponentsTab> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: _create,
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        elevation: 4,
-        child: const Icon(Icons.add),
+        elevation: 6,
+        icon: const Icon(Icons.add_rounded, size: 20),
+        label: Text(
+          S.of(context).createNewBtn,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
+        ),
       ),
       body: Column(
         children: [
@@ -176,17 +184,23 @@ class _CustomerComponentsTabState extends State<CustomerComponentsTab> {
                   flex: 5,
                   child: TextField(
                     controller: _searchController,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textPrimary,
+                    ),
                     decoration: InputDecoration(
-                      hintText: 'Tìm theo tên...',
+                      hintText: S.of(context).searchComponentHint,
                       prefixIcon: const Icon(
-                        Icons.search,
+                        Icons.search_rounded,
                         color: AppColors.textSecondary,
+                        size: 20,
                       ),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
                               icon: const Icon(
-                                Icons.clear,
+                                Icons.clear_rounded,
                                 color: AppColors.textSecondary,
+                                size: 18,
                               ),
                               onPressed: () {
                                 _searchController.clear();
@@ -195,9 +209,9 @@ class _CustomerComponentsTabState extends State<CustomerComponentsTab> {
                             )
                           : null,
                       filled: true,
-                      fillColor: Colors.grey.shade50,
+                      fillColor: const Color(0xFFF5F5F7),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
                         borderSide: BorderSide.none,
                       ),
                       contentPadding: const EdgeInsets.symmetric(
@@ -216,25 +230,57 @@ class _CustomerComponentsTabState extends State<CustomerComponentsTab> {
                     height: 48,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(12),
+                      color: const Color(0xFFF5F5F7),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey.shade100, width: 1),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<int>(
                         value: _componentTypeFilter,
-                        hint: const Text(
-                          'Loại',
+                        dropdownColor: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        icon: const Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: AppColors.textSecondary,
+                          size: 22,
+                        ),
+                        hint: Text(
+                          S.of(context).filterType,
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
-                        icon: const Icon(Icons.filter_list, size: 20),
                         isExpanded: true,
-                        items: const [
-                          DropdownMenuItem(value: null, child: Text('Tất cả')),
-                          DropdownMenuItem(value: 0, child: Text('💎 Gem')),
-                          DropdownMenuItem(value: 1, child: Text('📝 Sticker')),
-                          DropdownMenuItem(value: 2, child: Text('🔗 Charm')),
-                          DropdownMenuItem(value: 3, child: Text('🎨 Art')),
+                        items: [
+                          DropdownMenuItem(
+                            value: null,
+                            child: Text(S.of(context).filterAll),
+                          ),
+                          const DropdownMenuItem(
+                            value: 0,
+                            child: Text('💎 Gem'),
+                          ),
+                          const DropdownMenuItem(
+                            value: 1,
+                            child: Text('📝 Sticker'),
+                          ),
+                          const DropdownMenuItem(
+                            value: 2,
+                            child: Text('🔗 Charm'),
+                          ),
+                          const DropdownMenuItem(
+                            value: 3,
+                            child: Text('🎨 Art'),
+                          ),
                         ],
                         onChanged: (value) {
                           setState(() => _componentTypeFilter = value);
@@ -269,7 +315,7 @@ class _CustomerComponentsTabState extends State<CustomerComponentsTab> {
                         FilledButton.icon(
                           onPressed: () => _loadData(reset: true),
                           icon: const Icon(Icons.refresh),
-                          label: const Text('Thử lại'),
+                          label: Text(S.of(context).retryBtn),
                         ),
                       ],
                     ),
@@ -286,23 +332,14 @@ class _CustomerComponentsTabState extends State<CustomerComponentsTab> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Chưa có thành phần nào',
+                          S.of(context).noComponents,
                           style: TextStyle(
                             color: Colors.grey.shade600,
                             fontSize: 16,
                           ),
                         ),
                         const SizedBox(height: 16),
-                        FilledButton.icon(
-                          style: FilledButton.styleFrom(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          onPressed: _create,
-                          icon: const Icon(Icons.add),
-                          label: const Text('Tạo thành phần mới'),
-                        ),
+                        const SizedBox(height: 0),
                       ],
                     ),
                   )

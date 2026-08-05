@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../generated/l10n.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/price_formatter.dart';
@@ -43,6 +44,13 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
   final PageController _pageController = PageController();
   int _currentStep = 0;
 
+  final List<Map<String, dynamic>> _bookingSteps = [
+    {'title': 'Chọn tiệm', 'icon': Icons.storefront_rounded},
+    {'title': 'Dịch vụ', 'icon': Icons.spa_rounded},
+    {'title': 'Đặt lịch', 'icon': Icons.calendar_month_rounded},
+    {'title': 'Hoàn tất', 'icon': Icons.check_circle_rounded},
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -78,16 +86,14 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
   }
 
   // ── Navigation ────────────────────────────────────────────────────────────
-  void _handleNextAction(NailBookingState state, NailBookingCubit cubit) {
+  Future<void> _handleNextAction(
+    NailBookingState state,
+    NailBookingCubit cubit,
+  ) async {
     if (_currentStep == 0 && state.selectedBranch == null) {
       _showSnackBar('Vui lòng chọn 1 chi nhánh!');
       return;
     }
-    // Tạm ẩn bước chọn ghế
-    // if (_currentStep == 1 && state.selectedSeatId == null) {
-    //   _showSnackBar('Vui lòng chọn ghế ngồi!');
-    //   return;
-    // }
     if (_currentStep == 1 && state.selectedExtraServices.contains(null)) {
       _showSnackBar('Có ô dịch vụ đang bị bỏ trống!');
       return;
@@ -104,6 +110,13 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
       if (state.selectedTime == null) {
         _showSnackBar('Vui lòng chọn khung giờ!');
         return;
+      }
+      // Chỉ tạo hold mới nếu chưa có token (tránh reset timer khi back/forward)
+      if (!state.noArtistSelected) {
+        if (state.holdToken == null || !state.isHolding) {
+          final held = await cubit.holdSelectedSlot();
+          if (!held || !mounted) return;
+        }
       }
     }
 
@@ -175,8 +188,16 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
     }
   }
 
-  void _showSnackBar(String msg) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  void _showSnackBar(String msg) {
+    final isError =
+        msg.contains('chọn') || msg.contains('Lỗi') || msg.contains('hết');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? Colors.red : null,
+      ),
+    );
+  }
 
   // ── Price helpers ─────────────────────────────────────────────────────────
   int _totalPrice(NailBookingState state, NailBookingCubit cubit) {
@@ -208,7 +229,11 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            size: 20,
+            color: AppColors.primaryDark,
+          ),
           onPressed: () => _currentStep > 0
               ? _pageController.previousPage(
                   duration: const Duration(milliseconds: 300),
@@ -216,15 +241,17 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                 )
               : context.pop(),
         ),
-        title: const Text(
-          'Đặt Lịch Dịch Vụ',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+        title: Text(
+          S.of(context).bookServiceTitle,
+          style: const TextStyle(
+            fontWeight: FontWeight.w800,
+            fontFamily: 'Georgia',
+            color: AppColors.primaryDark,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFFDFBF7),
         elevation: 0,
+        scrolledUnderElevation: 0,
         centerTitle: true,
       ),
       body: BlocConsumer<NailBookingCubit, NailBookingState>(
@@ -232,6 +259,13 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
             curr.errorMessage != null && prev.errorMessage != curr.errorMessage,
         listener: (context, state) {
           _showSnackBar(state.errorMessage!);
+          if (state.errorMessage!.contains('hết') && _currentStep > 1) {
+            _pageController.animateToPage(
+              2,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          }
           context.read<NailBookingCubit>().clearError();
         },
         builder: (context, state) {
@@ -239,6 +273,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
           return Column(
             children: [
               _buildStepIndicator(),
+              _buildHoldCountdownBanner(state),
               Expanded(
                 child: PageView(
                   controller: _pageController,
@@ -348,7 +383,14 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                                     selectedTime: state.selectedTime,
                                     canSelect: true,
                                     selectedDate: state.selectedDate,
+                                    salonId: state.selectedBranch?['salonId']
+                                        ?.toString(),
+                                    artistId: state.noArtistSelected
+                                        ? null
+                                        : state.selectedStylist?['nailArtistId']
+                                              ?.toString(),
                                     onTimeChanged: cubit.selectTime,
+                                    onRefreshSlots: cubit.refreshTimeSlots,
                                   )
                                 : const SizedBox(key: ValueKey('time-hidden')),
                           ),
@@ -401,36 +443,37 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.borderLight),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade100),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             children: [
               _buildSummaryRow(
-                Icons.storefront,
+                Icons.storefront_rounded,
                 'Chi nhánh',
                 state.selectedBranch?['name'] ?? '',
               ),
-              // _buildSummaryRow(
-              //     Icons.chair,
-              //     'Ghế',
-              //     state.selectedSeatId != null
-              //         ? 'Ghế ${state.selectedSeatId!.split('_').last}'
-              //         : ''),
               _buildSummaryRow(
-                Icons.calendar_month,
+                Icons.calendar_month_rounded,
                 'Ngày hẹn',
                 state.selectedDate != null
                     ? '${state.selectedDate!.day}/${state.selectedDate!.month}/${state.selectedDate!.year}'
                     : '',
               ),
               _buildSummaryRow(
-                Icons.access_time,
+                Icons.access_time_rounded,
                 'Thời gian',
                 state.selectedTime ?? '',
               ),
               _buildSummaryRow(
-                Icons.face,
+                Icons.face_3_rounded,
                 'Thợ thực hiện',
                 state.noArtistSelected
                     ? 'Tự động phân công'
@@ -444,8 +487,15 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.borderLight),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade100),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -487,7 +537,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
               }),
               const Divider(height: 24),
               _buildPromotionSelector(context, state, cubit),
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -698,35 +748,166 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
     );
   }
 
+  Widget _buildHoldCountdownBanner(NailBookingState state) {
+    if (!state.isHolding) return const SizedBox.shrink();
+    final secs = state.holdRemainingSeconds;
+    final min = (secs ~/ 60).toString().padLeft(2, '0');
+    final sec = (secs % 60).toString().padLeft(2, '0');
+    final isUrgent = secs <= 60;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      color: isUrgent ? Colors.red.shade600 : Colors.orange.shade700,
+      child: Row(
+        children: [
+          const Icon(Icons.lock_clock, color: Colors.white, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              isUrgent
+                  ? 'Chỗ có thể bị hủy sau $min:$sec giây!'
+                  : 'Slot đang được giữ chỗ cho bạn – còn $min:$sec để hoàn tất',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildStepIndicator() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      color: Colors.white,
+      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(4, (index) {
-          final isCompleted = index <= _currentStep;
-          return Row(
-            children: [
-              CircleAvatar(
-                radius: 12,
-                backgroundColor: isCompleted
-                    ? AppColors.primary
-                    : Colors.grey.shade300,
-                child: Text(
-                  '${index + 1}',
-                  style: const TextStyle(color: Colors.white, fontSize: 11),
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: List.generate(_bookingSteps.length, (index) {
+          final step = _bookingSteps[index];
+          final isCompleted = index < _currentStep;
+          final isActive = index == _currentStep;
+
+          return Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Left connector line
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 17),
+                    child: Container(
+                      height: 2,
+                      color: index == 0
+                          ? Colors.transparent
+                          : (isCompleted || isActive
+                                ? AppColors.primary
+                                : Colors.grey.shade300),
+                    ),
+                  ),
                 ),
-              ),
-              if (index < 3)
-                Container(
-                  width: 30,
-                  height: 2,
-                  color: index < _currentStep
-                      ? AppColors.primary
-                      : Colors.grey.shade300,
+                // Step Circle
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isActive
+                            ? Colors.white
+                            : (isCompleted
+                                  ? AppColors.primary
+                                  : Colors.grey.shade50),
+                        border: Border.all(
+                          color: (isActive || isCompleted)
+                              ? AppColors.primary
+                              : Colors.grey.shade300,
+                          width: isActive ? 2.5 : 1.5,
+                        ),
+                        boxShadow: isActive
+                            ? [
+                                BoxShadow(
+                                  color: AppColors.primary.withOpacity(0.25),
+                                  blurRadius: 8,
+                                  spreadRadius: 1,
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Center(
+                        child: Icon(
+                          step['icon'] as IconData,
+                          size: 16,
+                          color: isCompleted
+                              ? Colors.white
+                              : (isActive
+                                    ? AppColors.primary
+                                    : Colors.grey.shade400),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      () {
+                        final rawTitle = step['title'] as String;
+                        if (rawTitle == 'Chọn tiệm') {
+                          return S.of(context).selectSalon;
+                        }
+                        if (rawTitle == 'Dịch vụ') {
+                          return S.of(context).servicesLabel;
+                        }
+                        if (rawTitle == 'Đặt lịch') {
+                          return S.of(context).bookAppointment;
+                        }
+                        if (rawTitle == 'Hoàn tất') {
+                          return S.of(context).completedLabel;
+                        }
+                        return rawTitle;
+                      }(),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: (isActive || isCompleted)
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: (isActive || isCompleted)
+                            ? AppColors.primaryDark
+                            : Colors.grey.shade500,
+                      ),
+                    ),
+                  ],
                 ),
-            ],
+                // Right connector line
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 17),
+                    child: Container(
+                      height: 2,
+                      color: index == _bookingSteps.length - 1
+                          ? Colors.transparent
+                          : (isCompleted
+                                ? AppColors.primary
+                                : Colors.grey.shade300),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           );
         }),
       ),
@@ -747,33 +928,89 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
         ],
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          ElevatedButton(
-            onPressed: state.isSubmitting
-                ? null
-                : () => _handleNextAction(state, cubit),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 15),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+          if (_currentStep > 0)
+            OutlinedButton(
+              onPressed: state.isSubmitting
+                  ? null
+                  : () => _pageController.previousPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    ),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 14,
+                ),
+                side: const BorderSide(color: AppColors.primary, width: 1.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25),
+                ),
+              ),
+              child: const Text(
+                'Quay lại',
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            )
+          else
+            const SizedBox.shrink(),
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Container(
+                height: 48,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  gradient: LinearGradient(
+                    colors: state.isSubmitting
+                        ? [Colors.grey.shade400, Colors.grey.shade500]
+                        : [AppColors.primary, const Color(0xFFFF80AB)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    if (!state.isSubmitting)
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                  ],
+                ),
+                child: ElevatedButton(
+                  onPressed: state.isSubmitting
+                      ? null
+                      : () => _handleNextAction(state, cubit),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    foregroundColor: Colors.white,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    elevation: 0,
+                  ),
+                  child: state.isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2.5,
+                          ),
+                        )
+                      : Text(
+                          _currentStep == 3 ? 'Xác nhận đặt lịch' : 'Tiếp tục',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                ),
               ),
             ),
-            child: state.isSubmitting
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  )
-                : Text(
-                    _currentStep == 3 ? 'Xác nhận Đặt lịch' : 'Tiếp tục',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
           ),
         ],
       ),

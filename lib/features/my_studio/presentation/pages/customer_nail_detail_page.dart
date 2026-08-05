@@ -7,6 +7,7 @@ import '../../../nails/data/models/shape_method_config_model.dart';
 import '../cubit/studio_cubit.dart';
 import '../../data/models/customer_nail_model.dart';
 import '../../../../core/utils/duration_formatter.dart';
+import '../../../../generated/l10n.dart';
 
 class CustomerNailDetailPage extends StatefulWidget {
   final String id; // customerNailRequestId
@@ -28,14 +29,19 @@ class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
         backgroundColor: AppColors.background,
         appBar: AppBar(
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios, size: 20),
+            icon: const Icon(
+              Icons.arrow_back_ios,
+              color: AppColors.primaryDark,
+              size: 20,
+            ),
             onPressed: () => context.pop(),
           ),
-          title: const Text(
-            'Chi tiết yêu cầu duyệt',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+          title: Text(
+            S.of(context).requestDetailTitle,
+            style: const TextStyle(
+              color: AppColors.primaryDark,
+              fontWeight: FontWeight.w800,
+              fontFamily: 'Georgia',
             ),
           ),
           centerTitle: true,

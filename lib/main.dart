@@ -6,9 +6,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/constants/app_constants.dart';
 import 'core/di/injection.dart';
+import 'core/network/signalr_service.dart';
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
-import 'core/localization/app_localizations.dart';
+import 'generated/l10n.dart';
 import 'core/localization/locale_service.dart';
 import 'core/utils/token_utils.dart';
 
@@ -34,7 +35,16 @@ void main() async {
 
   // Kiểm tra token khi mở app: nếu hết hạn thì tự động xóa
   final prefs = await SharedPreferences.getInstance();
-  TokenUtils.validateAndCleanToken(prefs);
+  final tokenValid = TokenUtils.validateAndCleanToken(prefs);
+
+  // Nếu token còn hiệu lực -> kết nối SignalR ngay khi mở app
+  if (tokenValid) {
+    final token = prefs.getString(AppConstants.authTokenKey) ?? '';
+    // Không await — kết nối ngầm, không chặn UI
+    getIt<SignalRService>().connect(token).catchError((e) {
+      debugPrint('[Main] SignalR auto-connect failed: $e');
+    });
+  }
 
   // Khởi tạo dịch vụ ngôn ngữ dựa trên SharedPreferences
   final localeService = LocaleService(prefs);
@@ -62,12 +72,12 @@ class CoreApp extends StatelessWidget {
 
           // Đa ngôn ngữ cơ bản, chưa cần dùng
           localizationsDelegates: const [
-            AppLocalizations.delegate,
+            S.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: AppLocalizations.supportedLocales,
+          supportedLocales: S.delegate.supportedLocales,
           locale: localeService.currentLocale,
 
           // Cấu hình định tuyến trung tâm GoRouter

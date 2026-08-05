@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../generated/l10n.dart';
 
 /// Kết quả chọn thợ: null = không chọn thợ (để hệ thống tự phân công).
 typedef StylistSelectedCallback = void Function(Map<String, dynamic>? artist);
@@ -64,8 +65,8 @@ class _BookingStylistSelectionState extends State<BookingStylistSelection>
     super.dispose();
   }
 
-  String _getArtistName(dynamic artist) {
-    if (artist == null) return 'Thợ';
+  String _getArtistName(dynamic artist, BuildContext context) {
+    if (artist == null) return S.of(context).bookingArtistDefault;
     if (artist['fullName'] != null &&
         artist['fullName'].toString().isNotEmpty) {
       return artist['fullName'];
@@ -73,7 +74,7 @@ class _BookingStylistSelectionState extends State<BookingStylistSelection>
     final firstName = artist['firstName']?.toString() ?? '';
     final lastName = artist['lastName']?.toString() ?? '';
     final combined = '$firstName $lastName'.trim();
-    return combined.isNotEmpty ? combined : 'Thợ';
+    return combined.isNotEmpty ? combined : S.of(context).bookingArtistDefault;
   }
 
   void _showArtistPicker(BuildContext context) {
@@ -88,9 +89,9 @@ class _BookingStylistSelectionState extends State<BookingStylistSelection>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Chọn thợ làm móng',
-                style: TextStyle(
+              Text(
+                S.of(context).bookingSelectArtistTitle,
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
@@ -103,9 +104,9 @@ class _BookingStylistSelectionState extends State<BookingStylistSelection>
                   child: CircularProgressIndicator(),
                 )
               else if (widget.artists.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Text('Không có thợ nào khả dụng cho ngày này.'),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Text(S.of(context).bookingNoArtistAvailable),
                 )
               else
                 Flexible(
@@ -114,7 +115,10 @@ class _BookingStylistSelectionState extends State<BookingStylistSelection>
                       children: widget.artists.map((artist) {
                         final bool isSelected =
                             artist['nailArtistId'] == widget.selectedStylistId;
-                        final String displayName = _getArtistName(artist);
+                        final String displayName = _getArtistName(
+                          artist,
+                          context,
+                        );
                         return ListTile(
                           leading: CircleAvatar(
                             backgroundColor: Colors.grey.shade200,
@@ -167,9 +171,9 @@ class _BookingStylistSelectionState extends State<BookingStylistSelection>
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Thợ thực hiện',
-            style: TextStyle(
+          Text(
+            S.of(context).bookingSummaryArtist,
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
@@ -192,7 +196,7 @@ class _BookingStylistSelectionState extends State<BookingStylistSelection>
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Vui lòng chọn ngày hẹn trước',
+                  S.of(context).bookingArtistNoDate,
                   style: TextStyle(
                     color: Colors.grey.shade500,
                     fontSize: 14,
@@ -220,9 +224,9 @@ class _BookingStylistSelectionState extends State<BookingStylistSelection>
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Thợ thực hiện',
-              style: TextStyle(
+            Text(
+              S.of(context).bookingSummaryArtist,
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
@@ -259,9 +263,9 @@ class _BookingStylistSelectionState extends State<BookingStylistSelection>
                     }
                   }
                 },
-                tabs: const [
-                  Tab(text: 'Chọn thợ'),
-                  Tab(text: 'Không chọn thợ'),
+                tabs: [
+                  Tab(text: S.of(context).bookingArtistTab),
+                  Tab(text: S.of(context).bookingNoArtistTab),
                 ],
               ),
             ),
@@ -303,7 +307,7 @@ class _BookingStylistSelectionState extends State<BookingStylistSelection>
             ),
             const SizedBox(width: 12),
             Text(
-              'Đang tải danh sách thợ...',
+              S.of(context).bookingLoadingArtists,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey.shade500,
@@ -338,8 +342,8 @@ class _BookingStylistSelectionState extends State<BookingStylistSelection>
                 const SizedBox(width: 12),
                 Text(
                   currentArtist != null
-                      ? _getArtistName(currentArtist)
-                      : 'Bấm để chọn thợ thực hiện',
+                      ? _getArtistName(currentArtist, context)
+                      : S.of(context).bookingClickToSelectArtist,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: currentArtist != null
@@ -382,22 +386,22 @@ class _BookingStylistSelectionState extends State<BookingStylistSelection>
             ),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Để hệ thống tự phân công',
-                  style: TextStyle(
+                  S.of(context).bookingAutoAssignTitle,
+                  style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
                     fontSize: 14,
                   ),
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 2),
                 Text(
-                  'Giờ hiển thị theo lịch salon, thợ sẽ được phân công tự động',
-                  style: TextStyle(fontSize: 11, color: Colors.grey),
+                  S.of(context).bookingAutoAssignDesc,
+                  style: const TextStyle(fontSize: 11, color: Colors.grey),
                 ),
               ],
             ),

@@ -1,12 +1,15 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/network/signalr_service.dart';
 import '../../../../core/utils/api_response_parser.dart';
 import '../models/user_profile.dart';
 
 class AuthRepository {
   final ApiClient _apiClient;
+  final SignalRService _signalR;
 
-  AuthRepository(this._apiClient);
+  AuthRepository(this._apiClient, this._signalR);
 
   Future<void> login({required String email, required String password}) async {
     final response = await _apiClient.post<dynamic>(
@@ -14,7 +17,20 @@ class AuthRepository {
       data: {'email': email, 'password': password},
     );
 
-    final data = ApiResponseParser.unwrapMap(response.data);
+    _handleAuthTokenResponse(response.data);
+  }
+
+  Future<void> loginWithGoogle({required String idToken}) async {
+    final response = await _apiClient.post<dynamic>(
+      '/Auth/google',
+      data: {'idToken': idToken},
+    );
+
+    _handleAuthTokenResponse(response.data);
+  }
+
+  void _handleAuthTokenResponse(dynamic responseData) {
+    final data = ApiResponseParser.unwrapMap(responseData);
     final tokenContainer = data['data'] ?? data['Data'];
     final tokenData = tokenContainer is Map
         ? Map<String, dynamic>.from(tokenContainer)
@@ -27,6 +43,12 @@ class AuthRepository {
 
     // Set token in ApiClient for future requests
     _apiClient.setAuthToken(token);
+
+    // Kết nối SignalR Hub ngay sau khi đăng nhập thành công
+    _signalR.connect(token).catchError((e) {
+      // Không crash app nếu SignalR lỗi, chỉ log
+      debugPrint('[Auth] Không thể kết nối SignalR: $e');
+    });
   }
 
   Future<UserProfile> register({
@@ -49,6 +71,29 @@ class AuthRepository {
       },
     );
     return UserProfile.fromJson(_unwrapData(response.data));
+  }
+
+  Future<void> forgotPassword({required String email}) async {
+    await _postBooleanResult('/Auth/forgot-password', data: {'email': email});
+  }
+
+  Future<void> checkResetToken({required String token}) async {
+    await _postBooleanResult('/Auth/check-reset-token', data: {'token': token});
+  }
+
+  Future<void> resetPassword({
+    required String token,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    await _postBooleanResult(
+      '/Auth/reset-password',
+      data: {
+        'token': token,
+        'newPassword': newPassword,
+        'confirmPassword': confirmPassword,
+      },
+    );
   }
 
   Future<UserProfile> getCurrentUser() async {
@@ -106,7 +151,11 @@ class AuthRepository {
     );
   }
 
-  void logout() => _apiClient.removeAuthToken();
+  void logout() {
+    // Ngắt kết nối SignalR trước khi xóa token
+    _signalR.disconnect();
+    _apiClient.removeAuthToken();
+  }
 
   // Private helper methods (or use ApiResponseParser)
   Map<String, dynamic> _unwrapData(dynamic json) {
@@ -115,5 +164,17 @@ class AuthRepository {
     if (data is Map<String, dynamic>) return data;
     if (data is Map) return Map<String, dynamic>.from(data);
     return map;
+  }
+
+  Future<void> _postBooleanResult(
+    String path, {
+    required Map<String, dynamic> data,
+  }) async {
+    final response = await _apiClient.post<dynamic>(path, data: data);
+    final map = ApiResponseParser.unwrapMap(response.data);
+
+    if (map['isSucceeded'] == false || map['data'] == false) {
+      throw Exception(map['message']?.toString() ?? 'Request failed');
+    }
   }
 }

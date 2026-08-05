@@ -12,6 +12,13 @@ class BookingApiService {
     return response.data['data']['items'] ?? [];
   }
 
+  Future<Map<String, dynamic>?> getSalonDetail(String salonId) async {
+    if (salonId.isEmpty) return null;
+    final response = await _apiClient.get('/Salons/$salonId');
+    final data = response.data['data'] ?? response.data;
+    return data is Map ? Map<String, dynamic>.from(data) : null;
+  }
+
   Future<List<dynamic>> getServices() async {
     final response = await _apiClient.get(
       '/Services',
@@ -29,19 +36,10 @@ class BookingApiService {
       if (nailVariantId > 0)
         {
           'nailVariantId': nailVariantId,
-          'serviceId': null,
-          'customerNailId': null,
           'shapeMethodConfigId': ?shapeMethodConfigId,
           'quantity': 1,
         },
-      ...serviceIds.map(
-        (serviceId) => {
-          'nailVariantId': null,
-          'serviceId': serviceId,
-          'customerNailId': null,
-          'quantity': 1,
-        },
-      ),
+      ...serviceIds.map((serviceId) => {'serviceId': serviceId, 'quantity': 1}),
     ];
   }
 
@@ -78,6 +76,37 @@ class BookingApiService {
     return response.data['data']['timeSlots'] ?? [];
   }
 
+  Future<List<dynamic>> getSalonAvailableSlots({
+    required String salonId,
+    required String bookingDate,
+    required List<Map<String, dynamic>> bookingItems,
+  }) async {
+    final response = await _apiClient.post(
+      '/Bookings/salon-available-slots',
+      data: {
+        'salonId': salonId,
+        'bookingDate': bookingDate,
+        'bookingItems': bookingItems,
+      },
+    );
+    final List<dynamic> list =
+        response.data['data']['timeSlots'] ?? response.data['data'] ?? [];
+    return list.map((slot) {
+      final map = Map<String, dynamic>.from(slot);
+      final rawTime = map['startTime'] ?? map['time'] ?? '';
+      // Chuẩn hóa thời gian sang định dạng HH:mm:ss nếu chỉ có HH:mm
+      String formattedTime = rawTime.toString();
+      if (formattedTime.isNotEmpty && formattedTime.split(':').length == 2) {
+        formattedTime = '$formattedTime:00';
+      }
+      return {
+        'startTime': formattedTime,
+        'isAvailable': map['isAvailable'] == true,
+        'isHeld': map['isHeld'] == true,
+      };
+    }).toList();
+  }
+
   /// Tạo danh sách khung giờ từ lịch hoạt động của salon (không cần chọn thợ).
   /// Trả về cùng định dạng với [getArtistAvailableSlots] để widget dùng chung.
   List<dynamic> getSalonOperatingSlots(
@@ -87,13 +116,15 @@ class BookingApiService {
     final List<dynamic> hours = salon['operatingHours'] ?? [];
     final int dayOfWeek =
         date.weekday % 7; // Dart: Mon=1..Sun=7 → 0=Sun,1=Mon,...6=Sat
-    final Map<String, dynamic>? todayHours = hours
-        .cast<Map<String, dynamic>?>()
-        .firstWhere((h) => h?['dayOfWeek'] == dayOfWeek, orElse: () => null);
-    if (todayHours == null || todayHours['isClosed'] == true) return [];
 
-    final String openStr = todayHours['openTime'] ?? '08:00:00';
-    final String closeStr = todayHours['closeTime'] ?? '19:00:00';
+    // Lọc tất cả các khung giờ hoạt động cho thứ này mà không bị đóng cửa
+    final List<Map<String, dynamic>> activeSegments = hours
+        .whereType<Map>()
+        .map((h) => Map<String, dynamic>.from(h))
+        .where((h) => h['dayOfWeek'] == dayOfWeek && h['isClosed'] != true)
+        .toList();
+
+    if (activeSegments.isEmpty) return [];
 
     int toMinutes(String t) {
       final parts = t.split(':');
@@ -106,19 +137,128 @@ class BookingApiService {
       return '$h:$min:00';
     }
 
-    final int openMin = toMinutes(openStr);
-    final int closeMin = toMinutes(closeStr);
     final List<Map<String, dynamic>> slots = [];
-    for (int m = openMin; m + 30 <= closeMin; m += 30) {
-      slots.add({
-        'startTime': fromMinutes(m),
-        'endTime': fromMinutes(m + 30),
-        'isAvailable': true,
-        'isHeld': false,
-      });
+    for (final segment in activeSegments) {
+      final String openStr = segment['openTime'] ?? '08:00:00';
+      final String closeStr = segment['closeTime'] ?? '19:00:00';
+      final int openMin = toMinutes(openStr);
+      final int closeMin = toMinutes(closeStr);
+
+      for (int m = openMin; m <= closeMin; m += 30) {
+        slots.add({
+          'startTime': fromMinutes(m),
+          'endTime': fromMinutes(m + 30),
+          'isAvailable': true,
+          'isHeld': false,
+        });
+      }
     }
-    return slots;
+
+    // Loại bỏ các slot trùng startTime và sắp xếp theo thứ tự thời gian tăng dần
+    final Map<String, Map<String, dynamic>> uniqueSlots = {};
+    for (final slot in slots) {
+      uniqueSlots[slot['startTime']] = slot;
+    }
+
+    final List<Map<String, dynamic>> sortedSlots = uniqueSlots.values.toList()
+      ..sort((a, b) => a['startTime'].compareTo(b['startTime']));
+
+    return sortedSlots;
   }
+
+  /// Lọc bất kỳ danh sách slot nào theo lịch hoạt động của salon.
+  List<dynamic> filterSlotsByOperatingHours({
+    required List<dynamic> slots,
+    required Map<String, dynamic>? salon,
+    required DateTime? date,
+  }) {
+    if (salon == null || date == null || slots.isEmpty) return slots;
+
+    final List<dynamic>? hours = salon['operatingHours'];
+    if (hours == null || hours.isEmpty) return slots;
+
+    final int dayOfWeek =
+        date.weekday % 7; // Dart: Mon=1..Sun=7 → 0=Sun,1=Mon,...6=Sat
+
+    // Lọc tất cả các khung giờ hoạt động cho thứ này mà không bị đóng cửa
+    final List<Map<String, dynamic>> activeSegments = hours
+        .whereType<Map>()
+        .map((h) => Map<String, dynamic>.from(h))
+        .where((h) => h['dayOfWeek'] == dayOfWeek && h['isClosed'] != true)
+        .toList();
+
+    if (activeSegments.isEmpty) return [];
+
+    int toMinutes(String t) {
+      final parts = t.split(':');
+      return int.parse(parts[0]) * 60 + int.parse(parts[1]);
+    }
+
+    return slots.where((slot) {
+      final String? startTimeStr = slot['startTime'] as String?;
+      if (startTimeStr == null) return false;
+
+      final int slotStartMin = toMinutes(startTimeStr);
+
+      for (final segment in activeSegments) {
+        final String openStr = segment['openTime'] ?? '08:00:00';
+        final String closeStr = segment['closeTime'] ?? '19:00:00';
+        final int openMin = toMinutes(openStr);
+        final int closeMin = toMinutes(closeStr);
+
+        if (slotStartMin >= openMin && slotStartMin <= closeMin) {
+          return true;
+        }
+      }
+      return false;
+    }).toList();
+  }
+
+  // =================================================================
+  // HOLD SLOT APIs
+  // =================================================================
+
+  /// Giữ chỗ slot 5 phút để tránh race condition.
+  /// Dùng [expiresAt] (UTC) để tính toán thời gian còn lại chính xác,
+  /// tránh sai lệch đồng hồ giữa app và server.
+  Future<Map<String, dynamic>> holdSlot({
+    required String salonId,
+    required String nailArtistId,
+    required String bookingDate,
+    required String startTime,
+    required List<Map<String, dynamic>> bookingItems,
+  }) async {
+    final response = await _apiClient.post(
+      '/Bookings/hold-slot',
+      data: {
+        'salonId': salonId,
+        'nailArtistId': nailArtistId,
+        'bookingDate': bookingDate,
+        'startTime': startTime,
+        'bookingItems': bookingItems,
+      },
+    );
+    return response.data['data'] ?? {};
+  }
+
+  /// Huỷ giữ chỗ thủ công (khi user đổi ý hoặc thoát màn hình đặt lịch).
+  Future<void> cancelHoldSlot(String holdToken) async {
+    try {
+      await _apiClient.delete('/Bookings/hold-slot/$holdToken');
+    } catch (_) {
+      // Fire-and-forget: không throw để không ảnh hưởng UX
+    }
+  }
+
+  /// Kiểm tra trạng thái giữ chỗ (còn hiệu lực không, còn bao nhiêu giây).
+  Future<Map<String, dynamic>> checkHoldStatus(String holdToken) async {
+    final response = await _apiClient.get(
+      '/Bookings/hold-slot/$holdToken/status',
+    );
+    return response.data['data'] ?? {};
+  }
+
+  // =================================================================
 
   Future<Map<String, dynamic>> createBooking(
     String salonId,
@@ -128,7 +268,10 @@ class BookingApiService {
     int nailVariantId,
     List<String> serviceIds, {
     List<int>? selectedPromotionIds,
+    String? holdToken,
     int? shapeMethodConfigId,
+    String? warrantyForBookingId,
+    List<Map<String, dynamic>>? warrantyBookingItems,
   }) async {
     final response = await _apiClient.post(
       '/Bookings',
@@ -137,13 +280,12 @@ class BookingApiService {
         'bookingDate': bookingDate,
         'startTime': startTime,
         'nailArtistId': artistId?.isEmpty == true ? null : artistId,
-        'holdToken': null,
-        'bookingItems': _buildBookingItems(
-          nailVariantId,
-          serviceIds,
-          shapeMethodConfigId,
-        ),
+        'holdToken': holdToken,
+        'bookingItems':
+            warrantyBookingItems ??
+            _buildBookingItems(nailVariantId, serviceIds, shapeMethodConfigId),
         'selectedPromotionIds': selectedPromotionIds,
+        'warrantyForBookingId': ?warrantyForBookingId,
       },
     );
     return response.data['data'] ?? {};
@@ -199,12 +341,15 @@ class BookingApiService {
   Future<Map<String, dynamic>> createServiceBooking(
     Map<String, dynamic> bookingData, {
     List<int>? selectedPromotionIds,
+    String? holdToken,
   }) async {
-    final data = Map<String, dynamic>.from(bookingData);
-    if (selectedPromotionIds != null && selectedPromotionIds.isNotEmpty) {
-      data['selectedPromotionIds'] = selectedPromotionIds;
-    }
-    final response = await _apiClient.post('/Bookings', data: data);
+    final payload = {
+      ...bookingData,
+      'holdToken': holdToken,
+      if (selectedPromotionIds != null && selectedPromotionIds.isNotEmpty)
+        'selectedPromotionIds': selectedPromotionIds,
+    };
+    final response = await _apiClient.post('/Bookings', data: payload);
     return response.data['data'] ?? {};
   }
 
@@ -212,16 +357,15 @@ class BookingApiService {
     String salonId,
     String bookingDate,
     String startTime,
-    String artistId,
+    String? artistId,
     String customerNailRequestId,
     Map<String, int> groupedExtraServices, {
     int? shapeMethodConfigId,
     List<int>? selectedPromotionIds,
+    String? holdToken,
   }) async {
     final bookingItems = <Map<String, dynamic>>[
       {
-        'nailVariantId': null,
-        'serviceId': null,
         'customerNailRequestId': customerNailRequestId,
         'shapeMethodConfigId': ?shapeMethodConfigId,
         'quantity': 1,
@@ -229,12 +373,7 @@ class BookingApiService {
     ];
 
     groupedExtraServices.forEach((serviceId, quantity) {
-      bookingItems.add({
-        'nailVariantId': null,
-        'serviceId': serviceId,
-        'customerNailId': null,
-        'quantity': quantity,
-      });
+      bookingItems.add({'serviceId': serviceId, 'quantity': quantity});
     });
 
     final response = await _apiClient.post(
@@ -243,8 +382,8 @@ class BookingApiService {
         'salonId': salonId,
         'bookingDate': bookingDate,
         'startTime': startTime,
-        'nailArtistId': artistId,
-        'holdToken': '',
+        if (artistId != null && artistId.isNotEmpty) 'nailArtistId': artistId,
+        if (holdToken != null && holdToken.isNotEmpty) 'holdToken': holdToken,
         'bookingItems': bookingItems,
         if (selectedPromotionIds != null && selectedPromotionIds.isNotEmpty)
           'selectedPromotionIds': selectedPromotionIds,

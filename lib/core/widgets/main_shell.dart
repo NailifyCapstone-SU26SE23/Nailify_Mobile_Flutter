@@ -48,7 +48,6 @@ class _MainShellState extends State<MainShell> {
         AuthGuard.check(context, () => context.go('/my-bookings'));
         break;
       case 2:
-        //_showPopupNotification(context, 'Chatbot');
         AuthGuard.check(context, () => context.go('/my-studio'));
         break;
       case 3:
@@ -104,7 +103,7 @@ class _MainShellState extends State<MainShell> {
                           padding: const EdgeInsets.symmetric(horizontal: 20),
                         ),
                         child: const Text(
-                          'Sign in',
+                          'Đăng nhập',
                           style: TextStyle(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w500,
@@ -125,7 +124,7 @@ class _MainShellState extends State<MainShell> {
                           padding: const EdgeInsets.symmetric(horizontal: 20),
                         ),
                         child: const Text(
-                          'Register',
+                          'Đăng ký',
                           style: TextStyle(
                             fontWeight: FontWeight.w500,
                             fontSize: 14,
@@ -154,7 +153,7 @@ class _MainShellState extends State<MainShell> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.palette_outlined),
-            label: 'My Studio',
+            label: 'Studio',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),

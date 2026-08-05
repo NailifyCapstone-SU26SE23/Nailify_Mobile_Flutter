@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/price_formatter.dart';
 
+import '../../../../generated/l10n.dart';
+
 class TransactionDetailPage extends StatelessWidget {
   final Map<String, dynamic> transaction;
 
@@ -17,11 +19,20 @@ class TransactionDetailPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
-          'Chi tiet giao dich',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.primaryDark,
+            size: 20,
+          ),
+          onPressed: () => context.pop(),
+        ),
+        title: Text(
+          S.of(context).transactionDetails,
+          style: const TextStyle(
+            color: AppColors.primaryDark,
+            fontWeight: FontWeight.w800,
+            fontFamily: 'Georgia',
           ),
         ),
         centerTitle: true,
@@ -54,7 +65,7 @@ class TransactionDetailPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      status.isEmpty ? 'Giao dich' : status,
+                      'Đã hoàn tiền',
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -83,14 +94,11 @@ class TransactionDetailPage extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    _buildRow('Ma giao dich', transaction['transactionId']),
-                    _buildRow('Ma booking', bookingId),
-                    _buildRow('Order code', transaction['orderCode']),
-                    _buildRow('Reference', transaction['reference']),
-                    _buildRow('Khach hang', transaction['customerName']),
-                    _buildRow('Salon', transaction['salonName']),
-                    _buildRow('Ngay tao', transaction['createdAt']),
-                    _buildRow('Ngay thanh toan', transaction['paidAt']),
+                    _buildRow('Mã giao dịch', transaction['transactionId']),
+                    _buildRow('Khách hàng', transaction['customerName']),
+                    _buildRow('Cửa hàng', transaction['salonName']),
+                    _buildRow('Ngày tạo', transaction['createdAt']),
+                    _buildRow('Ngày thanh toán', transaction['paidAt']),
                   ],
                 ),
               ),
@@ -128,7 +136,7 @@ class TransactionDetailPage extends StatelessWidget {
                   ),
                 ),
                 child: const Text(
-                  'Xem lich hen',
+                  'Xem lịch hẹn',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),

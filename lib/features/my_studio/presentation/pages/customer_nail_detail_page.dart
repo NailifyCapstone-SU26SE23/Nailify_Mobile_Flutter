@@ -345,35 +345,38 @@ class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
             ),
           ],
         ),
-        child: ElevatedButton.icon(
-          onPressed: () {
-            // Forward data cần thiết sang trang đặt lịch custom nail
-            context.push(
-              '/custom-nail-booking',
-              extra: {
-                'nail': nail,
-                'shapeMethodConfigId':
-                    _selectedShapeMethod?.shapeMethodConfigId,
-                'shapeMethodName': _selectedShapeMethod?.name,
-                'shapeMethodPrice': _selectedShapeMethod?.price,
-                'shapeMethodDuration': _selectedShapeMethod?.duration,
-              },
-            );
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+        child: SafeArea(
+          top: false,
+          child: ElevatedButton.icon(
+            onPressed: () {
+              // Forward data cần thiết sang trang đặt lịch custom nail
+              context.push(
+                '/custom-nail-booking',
+                extra: {
+                  'nail': nail,
+                  'shapeMethodConfigId':
+                      _selectedShapeMethod?.shapeMethodConfigId,
+                  'shapeMethodName': _selectedShapeMethod?.name,
+                  'shapeMethodPrice': _selectedShapeMethod?.price,
+                  'shapeMethodDuration': _selectedShapeMethod?.duration,
+                },
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-          ),
-          icon: const Icon(Icons.calendar_month, color: Colors.white),
-          label: const Text(
-            'Đặt lịch ngay',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
+            icon: const Icon(Icons.calendar_month, color: Colors.white),
+            label: const Text(
+              'Đặt lịch ngay',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
             ),
           ),
         ),

@@ -11,6 +11,8 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.MotionEvent
+import android.view.ScaleGestureDetector
 import android.widget.Toast
 import java.util.concurrent.ExecutionException
 import android.net.Uri
@@ -79,6 +81,7 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
     private var isSnapshotMode = false
 
     private lateinit var backgroundExecutor: ExecutorService
+    private lateinit var scaleGestureDetector: ScaleGestureDetector
 
     // Launcher để chọn ảnh từ thư viện
     private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
@@ -131,7 +134,7 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
         return fragmentCameraBinding.root
     }
 
-    @SuppressLint("MissingPermission")
+    @SuppressLint("MissingPermission", "ClickableViewAccessibility")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -147,6 +150,28 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
         applyModeUi()
 
         fragmentCameraBinding.viewFinder.post { setUpCamera() }
+
+        val listener = object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            override fun onScale(detector: ScaleGestureDetector): Boolean {
+                camera?.let {
+                    val zoomState = it.cameraInfo.zoomState.value ?: return true
+                    val currentZoomRatio = zoomState.zoomRatio
+                    val delta = detector.scaleFactor
+                    val newRatio = (currentZoomRatio * delta).coerceIn(zoomState.minZoomRatio, zoomState.maxZoomRatio)
+                    it.cameraControl.setZoomRatio(newRatio)
+                }
+                return true
+            }
+        }
+        scaleGestureDetector = ScaleGestureDetector(requireContext(), listener)
+
+        fragmentCameraBinding.viewFinder.setOnTouchListener { v, event ->
+            scaleGestureDetector.onTouchEvent(event)
+            if (event.action == MotionEvent.ACTION_DOWN) {
+                v.performClick()
+            }
+            true
+        }
 
         // HandLandmarkerHelper cho Live mode (LIVE_STREAM)
         backgroundExecutor.execute {

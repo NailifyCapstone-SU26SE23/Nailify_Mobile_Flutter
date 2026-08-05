@@ -68,7 +68,7 @@ class CoreApp extends StatelessWidget {
           // Cấu hình Theme hệ thống
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
-          themeMode: ThemeMode.system,
+          themeMode: ThemeMode.light,
 
           // Đa ngôn ngữ cơ bản, chưa cần dùng
           localizationsDelegates: const [

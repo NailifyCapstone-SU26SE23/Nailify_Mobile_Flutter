@@ -207,6 +207,7 @@ class _LoginPageState extends State<LoginPage> {
                               TextField(
                                 controller: _emailController,
                                 keyboardType: TextInputType.emailAddress,
+                                style: const TextStyle(color: AppColors.textPrimary),
                                 decoration: InputDecoration(
                                   labelText: S.of(context).email,
                                   labelStyle: TextStyle(
@@ -246,6 +247,7 @@ class _LoginPageState extends State<LoginPage> {
                               TextField(
                                 controller: _passwordController,
                                 obscureText: _obscurePassword,
+                                style: const TextStyle(color: AppColors.textPrimary),
                                 decoration: InputDecoration(
                                   labelText: S.of(context).password,
                                   labelStyle: TextStyle(

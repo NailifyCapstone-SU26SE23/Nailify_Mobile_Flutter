@@ -116,6 +116,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:layout_marginEnd="16dp"
+        android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent">
@@ -269,6 +270,7 @@
             android:layout_marginTop="20dp"
             android:layout_marginStart="36dp"
             android:layout_marginEnd="36dp"
+            android:visibility="gone"
             app:cardCornerRadius="25dp"
             app:cardBackgroundColor="@android:color/white"
             app:cardElevation="4dp"

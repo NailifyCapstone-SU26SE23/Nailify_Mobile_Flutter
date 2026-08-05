@@ -6,14 +6,21 @@ import '../../../../core/utils/auth_guard.dart';
 import '../../../../core/utils/price_formatter.dart';
 
 import '../../../../core/di/injection.dart';
-import '../../data/models/component_model.dart';
 import '../../data/models/customer_nail_models.dart' as nails_model;
-import '../../data/models/nail_component_model.dart';
 import '../../data/models/nail_variant_model.dart';
+import '../../data/models/nail_component_model.dart';
+import '../../data/models/nail_shape_model.dart';
+import '../../data/models/nail_surface_model.dart';
 import '../../data/models/shape_method_config_model.dart';
 import '../../data/repositories/nail_variant_repository.dart';
 import '../../services/ar_try_on_service.dart';
 import '../../../../generated/l10n.dart';
+
+import '../../../try-on/presentation/try_on_method_selection_screen.dart';
+import '../../../try-on/services/try_on_setup_service.dart';
+import '../../../try-on/utils/try_on_setup_helpers.dart';
+import '../../../try-on/models/try_on_data.dart';
+import '../../../try-on/models/placed_component_draft.dart';
 
 class NailVariantDetailScreen extends StatefulWidget {
   final int nailVariantId;
@@ -56,19 +63,157 @@ class _NailVariantDetailScreenState extends State<NailVariantDetailScreen> {
           'Virtual try-on is not available on this build.',
         );
       }
-      await service.launchCustomerLive(customerNail);
+
+      // Fetch general try-on data (shapes, surfaces, components)
+      final tryOnData = await getIt<TryOnSetupService>().fetchTryOnData();
+
+      // Parse colors and gradients from customerNail
+      final decodedColors = _parseCustomerColor(customerNail.customColor);
+      final Map<int, String> fingerColors = Map<int, String>.from(decodedColors['colors']);
+      final Map<int, List<String>?> fingerGradients = Map<int, List<String>?>.from(decodedColors['gradients']);
+
+      // Parse placements
+      final placements = _buildDrafts(customerNail, tryOnData.combinedComponents);
+
+      NailShapeModel? selectedShape;
+      for (final s in tryOnData.nailShapes) {
+        if (s.nailShapeId == customerNail.nailShapeId) {
+          selectedShape = s;
+          break;
+        }
+      }
+      selectedShape ??= customerNail.nailShape;
+
+      NailSurfaceModel? selectedSurface;
+      for (final s in tryOnData.nailSurfaces) {
+        if (s.nailSurfaceId == customerNail.nailSurfaceId) {
+          selectedSurface = s;
+          break;
+        }
+      }
+      selectedSurface ??= customerNail.nailSurface;
+
+      setState(() => _launching = false);
+
+      if (!mounted) return;
+
+      // Navigate to TryOnMethodSelectionScreen to let user choose method!
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => TryOnMethodSelectionScreen(
+            previewNail: customerNail,
+            tryOnData: tryOnData,
+            selectedShape: selectedShape,
+            selectedSurface: selectedSurface,
+            fingerColors: fingerColors,
+            fingerGradients: fingerGradients,
+            placements: placements,
+          ),
+        ),
+      );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(Localizations.localeOf(context).languageCode == 'vi' ? 'Lỗi khi mở AR: $e' : 'Error opening AR: $e')));
-      }
-    } finally {
-      if (mounted) {
         setState(() => _launching = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              Localizations.localeOf(context).languageCode == 'vi'
+                  ? 'Lỗi khi mở AR: $e'
+                  : 'Error opening AR: $e',
+            ),
+          ),
+        );
       }
     }
   }
+
+  Map<String, dynamic> _parseCustomerColor(String? customColorJson) {
+    final Map<int, String> initialColors = {
+      1: '#FF4081',
+      2: '#FF4081',
+      3: '#FF4081',
+      4: '#FF4081',
+      5: '#FF4081',
+    };
+    final Map<int, List<String>?> initialGradients = {
+      1: null,
+      2: null,
+      3: null,
+      4: null,
+      5: null,
+    };
+    if (customColorJson != null && customColorJson.isNotEmpty) {
+      final decoded = decodeTryOnConfig(customColorJson);
+      if (decoded['mode'] == 'perFinger' || decoded['Mode'] == 'perFinger') {
+        final fingers = decoded['fingers'] ?? decoded['Fingers'];
+        if (fingers is List) {
+          for (final finger in fingers) {
+            if (finger is Map) {
+              final fIdx = asTryOnInt(
+                finger['fingerIndex'] ?? finger['FingerIndex'],
+              );
+              final color = finger['color'] ?? finger['Color'];
+              if (fIdx >= 1 && fIdx <= 5 && color is String) {
+                initialColors[fIdx] = color;
+              }
+              final gradient = finger['gradient'] ?? finger['Gradient'];
+              if (fIdx >= 1 &&
+                  fIdx <= 5 &&
+                  gradient is Map &&
+                  gradient['enabled'] == true) {
+                final stops = gradient['stops'];
+                if (stops is List) {
+                  initialGradients[fIdx] = stops
+                      .map((item) => item.toString())
+                      .take(3)
+                      .toList();
+                }
+              }
+            }
+          }
+        }
+      } else {
+        final singleColor = decoded['color'] ?? decoded['Color'] ?? '#FF4081';
+        for (var i = 1; i <= 5; i++) {
+          initialColors[i] = singleColor;
+        }
+      }
+    }
+    return {
+      'colors': initialColors,
+      'gradients': initialGradients,
+    };
+  }
+
+  List<PlacedComponentDraft> _buildDrafts(
+    nails_model.CustomerNailModel? nail,
+    List<CombinedComponent> components,
+  ) {
+    if (nail == null) return const [];
+    return nail.customerNailComponents.map((item) {
+      CombinedComponent? component;
+      for (final comp in components) {
+        if (item.customerComponentId != null) {
+          if (comp.isCustomerComponent &&
+              comp.customerComponentId == item.customerComponentId) {
+            component = comp;
+            break;
+          }
+        } else if (item.componentId != null) {
+          if (!comp.isCustomerComponent &&
+              comp.componentId == item.componentId) {
+            component = comp;
+            break;
+          }
+        }
+      }
+      return PlacedComponentDraft.fromCustomerNailComponent(
+        item,
+        component: component,
+      );
+    }).toList();
+  }
+
 
   @override
   Widget build(BuildContext context) {

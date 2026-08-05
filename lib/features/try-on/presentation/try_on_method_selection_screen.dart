@@ -76,20 +76,21 @@ class _TryOnMethodSelectionScreenState
         if (!mounted) return;
 
         // Push màn hình Preview và chờ kết quả
-        final action = await Navigator.of(context, rootNavigator: true).push<dynamic>(
-          MaterialPageRoute(
-            builder: (_) => SnapshotPreviewScreen(
-              snapshot: result,
-              nail: widget.previewNail,
-              tryOnData: widget.tryOnData,
-              selectedShape: widget.selectedShape,
-              selectedSurface: widget.selectedSurface,
-              fingerColors: widget.fingerColors,
-              fingerGradients: widget.fingerGradients,
-              placements: widget.placements,
-            ),
-          ),
-        );
+        final action = await Navigator.of(context, rootNavigator: true)
+            .push<dynamic>(
+              MaterialPageRoute(
+                builder: (_) => SnapshotPreviewScreen(
+                  snapshot: result,
+                  nail: widget.previewNail,
+                  tryOnData: widget.tryOnData,
+                  selectedShape: widget.selectedShape,
+                  selectedSurface: widget.selectedSurface,
+                  fingerColors: widget.fingerColors,
+                  fingerGradients: widget.fingerGradients,
+                  placements: widget.placements,
+                ),
+              ),
+            );
 
         if (action is SnapshotEditorResult) {
           if (mounted) Navigator.of(context).pop(action);

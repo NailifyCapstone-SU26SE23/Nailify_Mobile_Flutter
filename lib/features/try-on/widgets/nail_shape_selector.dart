@@ -79,7 +79,9 @@ class _NailShapeCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               color: Colors.white,
               border: Border.all(
-                color: isSelected ? const Color(0xFFE91E63) : Colors.grey.shade200,
+                color: isSelected
+                    ? const Color(0xFFE91E63)
+                    : Colors.grey.shade200,
                 width: isSelected ? 2 : 1,
               ),
               boxShadow: [
@@ -109,16 +111,19 @@ class _NailShapeCard extends StatelessWidget {
                               fit: BoxFit.contain,
                               width: double.infinity,
                               errorBuilder: (_, _, _) => const _FallbackIcon(),
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return const Center(
-                                  child: SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(strokeWidth: 1.5),
-                                  ),
-                                );
-                              },
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return const Center(
+                                      child: SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 1.5,
+                                        ),
+                                      ),
+                                    );
+                                  },
                             )
                           : const _FallbackIcon(),
                     ),
@@ -127,16 +132,23 @@ class _NailShapeCard extends StatelessWidget {
 
                 // Metadata Section (Name & Price)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         _translateName(context, shape.name),
                         style: TextStyle(
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.w500,
                           fontSize: 12,
-                          color: isSelected ? const Color(0xFFE91E63) : Colors.black87,
+                          color: isSelected
+                              ? const Color(0xFFE91E63)
+                              : Colors.black87,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -147,7 +159,9 @@ class _NailShapeCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
-                          color: isSelected ? const Color(0xFFC2185B) : Colors.grey.shade600,
+                          color: isSelected
+                              ? const Color(0xFFC2185B)
+                              : Colors.grey.shade600,
                         ),
                       ),
                     ],
@@ -166,11 +180,7 @@ class _NailShapeCard extends StatelessWidget {
                   color: Color(0xFFE91E63),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.check,
-                  color: Colors.white,
-                  size: 10,
-                ),
+                child: const Icon(Icons.check, color: Colors.white, size: 10),
               ),
             ),
         ],
@@ -190,8 +200,16 @@ class _NailShapeCard extends StatelessWidget {
   }
 
   String _formatPrice(BuildContext context, double? price) {
-    if (price == null) return Localizations.localeOf(context).languageCode == 'en' ? 'Contact' : 'Liên hệ';
-    if (price == 0) return Localizations.localeOf(context).languageCode == 'en' ? 'Free' : 'Miễn phí';
+    if (price == null) {
+      return Localizations.localeOf(context).languageCode == 'en'
+          ? 'Contact'
+          : 'Liên hệ';
+    }
+    if (price == 0) {
+      return Localizations.localeOf(context).languageCode == 'en'
+          ? 'Free'
+          : 'Miễn phí';
+    }
     final isEn = Localizations.localeOf(context).languageCode == 'en';
     if (isEn) {
       final formatter = NumberFormat.currency(

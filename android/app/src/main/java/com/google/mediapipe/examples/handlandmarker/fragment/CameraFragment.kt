@@ -266,17 +266,17 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
     // -------------------------------------------------------------------------
 
     private fun applyModeUi() {
+        fragmentCameraBinding.imgHandGuide.visibility = View.VISIBLE
+
         if (isSnapshotMode) {
             // Snapshot mode: ẩn live overlay & nút live, hiện nút snapshot + hand guide
             fragmentCameraBinding.overlay.visibility = View.INVISIBLE
             fragmentCameraBinding.cardCapture.visibility = View.GONE
-            fragmentCameraBinding.imgHandGuide.visibility = View.VISIBLE
             fragmentCameraBinding.cardTakePhoto.visibility = View.VISIBLE
         } else {
             // Live mode: hiện live overlay & nút live, ẩn snapshot elements
             fragmentCameraBinding.overlay.visibility = View.VISIBLE
             fragmentCameraBinding.cardCapture.visibility = View.VISIBLE
-            fragmentCameraBinding.imgHandGuide.visibility = View.GONE
             fragmentCameraBinding.cardTakePhoto.visibility = View.GONE
         }
     }
@@ -660,17 +660,22 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
     // -------------------------------------------------------------------------
 
     override fun onResults(resultBundle: HandLandmarkerHelper.ResultBundle) {
-        if (isSnapshotMode) return
         activity?.runOnUiThread {
             if (_fragmentCameraBinding != null) {
-                fragmentCameraBinding.overlay.setFullDesign(viewModel.nailSetConfig.value)
-                fragmentCameraBinding.overlay.setResults(
-                    resultBundle.results.first(),
-                    resultBundle.inputImageHeight,
-                    resultBundle.inputImageWidth,
-                    RunningMode.LIVE_STREAM
-                )
-                fragmentCameraBinding.overlay.invalidate()
+                if (!isSnapshotMode) {
+                    fragmentCameraBinding.overlay.setFullDesign(viewModel.nailSetConfig.value)
+                    fragmentCameraBinding.overlay.setResults(
+                        resultBundle.results.first(),
+                        resultBundle.inputImageHeight,
+                        resultBundle.inputImageWidth,
+                        RunningMode.LIVE_STREAM
+                    )
+                    fragmentCameraBinding.overlay.invalidate()
+                }
+
+                // Ẩn khung hướng dẫn nếu phát hiện tay
+                val hasHand = resultBundle.results.firstOrNull()?.landmarks()?.isNotEmpty() == true
+                fragmentCameraBinding.imgHandGuide.visibility = if (hasHand) View.GONE else View.VISIBLE
             }
         }
     }

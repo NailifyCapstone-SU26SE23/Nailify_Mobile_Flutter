@@ -11,8 +11,6 @@ import '../../nails/data/models/nail_shape_model.dart';
 import '../../nails/data/models/nail_surface_model.dart';
 import '../models/placed_component_draft.dart';
 import '../utils/try_on_setup_helpers.dart';
-import 'dart:io';
-import '../../nails/services/ar_try_on_service.dart';
 
 class TryOnPreviewBoard extends StatefulWidget {
   final CustomerNailModel? nail;
@@ -32,7 +30,6 @@ class TryOnPreviewBoard extends StatefulWidget {
 
   final ValueChanged<PlacedComponentDraft> onUpdatePlacement;
   final ValueChanged<int> onDeletePlacement;
-  final SnapshotResult? snapshotResult;
 
   const TryOnPreviewBoard({
     super.key,
@@ -52,15 +49,13 @@ class TryOnPreviewBoard extends StatefulWidget {
     required this.onDeletePlacement,
     this.onToggleDetailFinger,
     this.onApplyToAll,
-    this.snapshotResult,
   });
 
   @override
   State<TryOnPreviewBoard> createState() => _TryOnPreviewBoardState();
 }
 
-class _TryOnPreviewBoardState extends State<TryOnPreviewBoard>
-    with SingleTickerProviderStateMixin {
+class _TryOnPreviewBoardState extends State<TryOnPreviewBoard> with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _animation;
 
@@ -78,10 +73,7 @@ class _TryOnPreviewBoardState extends State<TryOnPreviewBoard>
       curve: Curves.easeInOutCubic,
     );
 
-    final initialFinger = _getEffectiveFingerIndex(
-      widget.selectedFingerIndex,
-      widget.detailFingerIndex,
-    );
+    final initialFinger = _getEffectiveFingerIndex(widget.selectedFingerIndex, widget.detailFingerIndex);
     if (initialFinger != -1) {
       _animatingFingerIndex = initialFinger;
       _controller.value = 1.0;
@@ -107,14 +99,8 @@ class _TryOnPreviewBoardState extends State<TryOnPreviewBoard>
   @override
   void didUpdateWidget(TryOnPreviewBoard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final oldFinger = _getEffectiveFingerIndex(
-      oldWidget.selectedFingerIndex,
-      oldWidget.detailFingerIndex,
-    );
-    final newFinger = _getEffectiveFingerIndex(
-      widget.selectedFingerIndex,
-      widget.detailFingerIndex,
-    );
+    final oldFinger = _getEffectiveFingerIndex(oldWidget.selectedFingerIndex, oldWidget.detailFingerIndex);
+    final newFinger = _getEffectiveFingerIndex(widget.selectedFingerIndex, widget.detailFingerIndex);
 
     if (oldFinger != newFinger) {
       if (newFinger != -1) {
@@ -143,472 +129,349 @@ class _TryOnPreviewBoardState extends State<TryOnPreviewBoard>
           widget.onSelectPlacement(-1);
         },
         child: AspectRatio(
-          aspectRatio:
-              1.0, // Fixed 1.0 Aspect Ratio for perfectly aligned and smooth transitions
+          aspectRatio: 1.0, // Fixed 1.0 Aspect Ratio for perfectly aligned and smooth transitions
           child: Container(
             decoration: BoxDecoration(
               color: Colors.white,
               border: Border.all(color: Colors.black12),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final double width = constraints.maxWidth;
-                final double height = constraints.maxHeight;
-                if (width <= 0 || height <= 0) return const SizedBox.expand();
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final double width = constraints.maxWidth;
+              final double height = constraints.maxHeight;
+              if (width <= 0 || height <= 0) return const SizedBox.expand();
 
-                final t = _animation.value;
+              final t = _animation.value;
 
-                // Calculate dynamic zoom size based on nail shape aspect ratio to prevent screen overflow
-                final cached = widget.selectedShape?.imageUrl.isNotEmpty == true
-                    ? _NailImageCache._resolved[widget.selectedShape!.imageUrl]
-                    : null;
-                final double nailAspectRatio = cached != null
-                    ? cached.contentRect.width / cached.contentRect.height
-                    : 0.35;
+              // Calculate dynamic zoom size based on nail shape aspect ratio to prevent screen overflow
+              final cached = widget.selectedShape?.imageUrl.isNotEmpty == true
+                  ? _NailImageCache._resolved[widget.selectedShape!.imageUrl]
+                  : null;
+              final double nailAspectRatio = cached != null
+                  ? cached.contentRect.width / cached.contentRect.height
+                  : 0.35;
 
-                final double maxZoomWidth =
-                    width * 0.42; // Up to 42% of preview board width
-                final double maxZoomHeight =
-                    height * 0.72; // Up to 72% of preview board height
+              final double maxZoomWidth = width * 0.42; // Up to 42% of preview board width
+              final double maxZoomHeight = height * 0.72; // Up to 72% of preview board height
 
-                double detailWidth = maxZoomWidth;
-                double detailHeight = detailWidth / nailAspectRatio;
+              double detailWidth = maxZoomWidth;
+              double detailHeight = detailWidth / nailAspectRatio;
 
-                if (detailHeight > maxZoomHeight) {
-                  detailHeight = maxZoomHeight;
-                  detailWidth = detailHeight * nailAspectRatio;
-                }
+              if (detailHeight > maxZoomHeight) {
+                detailHeight = maxZoomHeight;
+                detailWidth = detailHeight * nailAspectRatio;
+              }
 
-                final double detailLeft = (width - detailWidth) / 2;
-                final double detailTop = (height - detailHeight) / 2;
+              final double detailLeft = (width - detailWidth) / 2;
+              final double detailTop = (height - detailHeight) / 2;
 
-                // Calibrated finger config bounds on 1024x1024 template
-                // Positioned mathematically using cuticle center (cx, cy) and rotation angle
-                final List<Map<String, dynamic>> fingerConfigs;
-                if (widget.snapshotResult != null && widget.snapshotResult!.landmarks.isNotEmpty) {
-                  final landmarks = widget.snapshotResult!.landmarks;
-                  fingerConfigs = landmarks.map((lm) {
-                    final finger = lm.fingerIndex + 1;
-                    final angleDegrees = lm.baseRotation * 180 / math.pi;
-                    
-                    final scaleX = width / lm.imageWidth;
-                    final scaleY = height / lm.imageHeight;
-                    
-                    final cx = lm.baseX * scaleX;
-                    final cy = lm.baseY * scaleY;
-                    
-                    final fingerLength = lm.baseScale * scaleY;
-                    const nailLengthFactor = 1.0;
-                     
-                    final w = fingerLength * 2.0;
-                    final h = fingerLength * 1.5 * nailLengthFactor;
-                    
-                    final rad = lm.baseRotation;
-                    
-                    final double left = cx - w / 2 + (h / 2) * math.sin(rad);
-                    final double top = cy - h / 2 - (h / 2) * math.cos(rad);
-                    
-                    return {
-                      'finger': finger,
-                      'left': left,
-                      'top': top,
-                      'width': w,
-                      'height': h,
-                      'angle': angleDegrees + 90,
-                    };
-                  }).toList();
-                } else {
-                  fingerConfigs = [
-                    {
-                      'finger': 1, // Ngón cái
-                      'cx': 0.242,
-                      'cy': 0.485,
-                      'w': 0.0781,
-                      'h': 0.1074,
-                      'angle': -30.0,
-                    },
-                    {
-                      'finger': 2, // Ngón trỏ
-                      'cx': 0.374,
-                      'cy': 0.2497,
-                      'w': 0.0664,
-                      'h': 0.0928,
-                      'angle': -6.0,
-                    },
-                    {
-                      'finger': 3, // Ngón giữa
-                      'cx': 0.5087,
-                      'cy': 0.2061,
-                      'w': 0.0703,
-                      'h': 0.0928,
-                      'angle': 0.0,
-                    },
-                    {
-                      'finger': 4, // Ngón áp út
-                      'cx': 0.6352,
-                      'cy': 0.2645,
-                      'w': 0.0635,
-                      'h': 0.0928,
-                      'angle': 5.0,
-                    },
-                    {
-                      'finger': 5, // Ngón út
-                      'cx': 0.7460,
-                      'cy': 0.4021,
-                      'w': 0.0605,
-                      'h': 0.0977,
-                      'angle': 13.0,
-                    },
-                  ].map((cfg) {
-                    final angle = cfg['angle'] as double;
-                    final rad = angle * math.pi / 180;
-                    final cx = cfg['cx'] as double;
-                    final cy = cfg['cy'] as double;
-                    final w = cfg['w'] as double;
-                    final h = cfg['h'] as double;
+              // Calibrated finger config bounds on 1024x1024 template
+              // Positioned mathematically using cuticle center (cx, cy) and rotation angle
+              final List<Map<String, dynamic>> fingerConfigs = [
+                {
+                  'finger': 1, // Ngón cái
+                  'cx': 0.242,
+                  'cy': 0.485,
+                  'w': 0.0781,
+                  'h': 0.1074,
+                  'angle': -30.0,
+                },
+                {
+                  'finger': 2, // Ngón trỏ
+                  'cx': 0.374,
+                  'cy': 0.2497,
+                  'w': 0.0664,
+                  'h': 0.0928,
+                  'angle': -6.0,
+                },
+                {
+                  'finger': 3, // Ngón giữa
+                  'cx': 0.5087,
+                  'cy': 0.2061,
+                  'w': 0.0703,
+                  'h': 0.0928,
+                  'angle': 0.0,
+                },
+                {
+                  'finger': 4, // Ngón áp út
+                  'cx': 0.6352,
+                  'cy': 0.2645,
+                  'w': 0.0635,
+                  'h': 0.0928,
+                  'angle': 5.0,
+                },
+                {
+                  'finger': 5, // Ngón út
+                  'cx': 0.7460,
+                  'cy': 0.4021,
+                  'w': 0.0605,
+                  'h': 0.0977,
+                  'angle': 13.0,
+                },
+              ].map((cfg) {
+                final angle = cfg['angle'] as double;
+                final rad = angle * math.pi / 180;
+                final cx = cfg['cx'] as double;
+                final cy = cfg['cy'] as double;
+                final w = cfg['w'] as double;
+                final h = cfg['h'] as double;
 
-                    // Rotated bottom-center math to find top-left:
-                    // L = cx - w/2 + (h/2) * sin(theta)
-                    // T = cy - h/2 - (h/2) * math.cos(rad)
-                    final leftRatio = cx - w / 2 + (h / 2) * math.sin(rad);
-                    final topRatio = cy - h / 2 - (h / 2) * math.cos(rad);
+                // Rotated bottom-center math to find top-left:
+                // L = cx - w/2 + (h/2) * sin(theta)
+                // T = cy - h/2 - (h/2) * cos(theta)
+                final leftRatio = cx - w / 2 + (h / 2) * math.sin(rad);
+                final topRatio = cy - h / 2 - (h / 2) * math.cos(rad);
 
-                    return {
-                      'finger': cfg['finger'],
-                      'left': width * leftRatio,
-                      'top': height * topRatio,
-                      'width': width * w,
-                      'height': height * h,
-                      'angle': angle,
-                    };
-                  }).toList();
-                }
+                return {
+                  'finger': cfg['finger'],
+                  'left': width * leftRatio,
+                  'top': height * topRatio,
+                  'width': width * w,
+                  'height': height * h,
+                  'angle': angle,
+                };
+              }).toList();
 
-                return Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    // 1. Hand Template Background or Captured Hand Image
-                    if (t < 1.0)
-                      Positioned.fill(
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  // 1. Hand Template Background
+                  if (t < 1.0)
+                    Positioned.fill(
+                      child: Opacity(
+                        opacity: (1.0 - t).clamp(0.0, 1.0),
+                        child: RepaintBoundary(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Image.asset(
+                              'assets/images/try_on_hand_template.png',
+                              fit: BoxFit.contain,
+                              errorBuilder: (ctx, err, st) => Container(
+                                color: const Color(0xFFFDE8F0),
+                                child: const Center(
+                                  child: Icon(Icons.pan_tool_outlined, color: Color(0xFFFFB6C1), size: 80),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  // 2. Inactive Fingers
+                  for (final cfg in fingerConfigs) ...[
+                    if (cfg['finger'] != _animatingFingerIndex)
+                      Positioned(
+                        left: cfg['left'] as double,
+                        top: cfg['top'] as double,
+                        width: cfg['width'] as double,
+                        height: cfg['height'] as double,
                         child: Opacity(
                           opacity: (1.0 - t).clamp(0.0, 1.0),
-                          child: RepaintBoundary(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: widget.snapshotResult != null
-                                  ? Image.file(
-                                      File(widget.snapshotResult!.imagePath),
-                                      fit: BoxFit.fill,
-                                    )
-                                  : Image.asset(
-                                      'assets/images/try_on_hand_template.png',
-                                      fit: BoxFit.contain,
-                                      errorBuilder: (ctx, err, st) => Container(
-                                        color: const Color(0xFFFDE8F0),
-                                        child: const Center(
-                                          child: Icon(
-                                            Icons.pan_tool_outlined,
-                                            color: Color(0xFFFFB6C1),
-                                            size: 80,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                    // 2. Inactive Fingers
-                    for (final cfg in fingerConfigs) ...[
-                      if (cfg['finger'] != _animatingFingerIndex)
-                        Positioned(
-                          left: cfg['left'] as double,
-                          top: cfg['top'] as double,
-                          width: cfg['width'] as double,
-                          height: cfg['height'] as double,
-                          child: Opacity(
-                            opacity: (1.0 - t).clamp(0.0, 1.0),
-                            child: _FingerSlot(
-                              width: cfg['width'] as double,
-                              height: cfg['height'] as double,
-                              angle: cfg['angle'] as double,
-                              fingerIndex: cfg['finger'] as int,
-                              selectedShape: widget.selectedShape,
-                              selectedSurface: widget.selectedSurface,
-                              color:
-                                  widget.fingerColors[cfg['finger']] ??
-                                  '#FF4081',
-                              gradientStops:
-                                  widget.fingerGradients[cfg['finger']],
-                              placements: widget.placements
-                                  .where(
-                                    (p) => placementMatchesFinger(
-                                      p.fingerIndex,
-                                      cfg['finger'] as int,
-                                    ),
-                                  )
-                                  .toList(),
-                              onToggleDetailFinger: t > 0.1
-                                  ? null
-                                  : widget.onToggleDetailFinger,
-                              onUpdatePlacement: widget.onUpdatePlacement,
-                              onDeletePlacement: widget.onDeletePlacement,
-                            ),
-                          ),
-                        ),
-                    ],
-
-                    // 3. Zooming/Interpolating Active Finger
-                    if (_animatingFingerIndex != -1)
-                      Positioned(
-                        left: ui.lerpDouble(
-                          fingerConfigs.firstWhere(
-                                (c) => c['finger'] == _animatingFingerIndex,
-                              )['left']
-                              as double,
-                          detailLeft,
-                          t,
-                        )!,
-                        top: ui.lerpDouble(
-                          fingerConfigs.firstWhere(
-                                (c) => c['finger'] == _animatingFingerIndex,
-                              )['top']
-                              as double,
-                          detailTop,
-                          t,
-                        )!,
-                        width: ui.lerpDouble(
-                          fingerConfigs.firstWhere(
-                                (c) => c['finger'] == _animatingFingerIndex,
-                              )['width']
-                              as double,
-                          detailWidth,
-                          t,
-                        )!,
-                        height: ui.lerpDouble(
-                          fingerConfigs.firstWhere(
-                                (c) => c['finger'] == _animatingFingerIndex,
-                              )['height']
-                              as double,
-                          detailHeight,
-                          t,
-                        )!,
-                        child: _FingerSlot(
-                          width: ui.lerpDouble(
-                            fingerConfigs.firstWhere(
-                                  (c) => c['finger'] == _animatingFingerIndex,
-                                )['width']
-                                as double,
-                            detailWidth,
-                            t,
-                          )!,
-                          height: ui.lerpDouble(
-                            fingerConfigs.firstWhere(
-                                  (c) => c['finger'] == _animatingFingerIndex,
-                                )['height']
-                                as double,
-                            detailHeight,
-                            t,
-                          )!,
-                          angle: ui.lerpDouble(
-                            fingerConfigs.firstWhere(
-                                  (c) => c['finger'] == _animatingFingerIndex,
-                                )['angle']
-                                as double,
-                            0.0,
-                            t,
-                          )!,
-                          fingerIndex: _animatingFingerIndex,
-                          selectedShape: widget.selectedShape,
-                          selectedSurface: widget.selectedSurface,
-                          color:
-                              widget.fingerColors[_animatingFingerIndex] ??
-                              '#FF4081',
-                          gradientStops:
-                              widget.fingerGradients[_animatingFingerIndex],
-                          placements: widget.placements
-                              .where(
-                                (p) => placementMatchesFinger(
-                                  p.fingerIndex,
-                                  _animatingFingerIndex,
-                                ),
-                              )
-                              .toList(),
-                          isZoomed: t > 0.9,
-                          selectedPlacementId: widget.selectedPlacementId,
-                          onSelectPlacement: widget.onSelectPlacement,
-                          onToggleDetailFinger: t > 0.9
-                              ? widget.onToggleDetailFinger
-                              : null,
-                          onUpdatePlacement: widget.onUpdatePlacement,
-                          onDeletePlacement: widget.onDeletePlacement,
-                        ),
-                      ),
-
-                    // 4. Zoomed Active Finger Placements (Rendered in the main Stack of TryOnPreviewBoard to avoid hit-test boundary clipping!)
-                    if (_animatingFingerIndex != -1 &&
-                        t > 0.9 &&
-                        widget.selectedShape?.imageUrl.isNotEmpty == true)
-                      ...widget.placements
-                          .where(
-                            (p) => placementMatchesFinger(
-                              p.fingerIndex,
-                              _animatingFingerIndex,
-                            ),
-                          )
-                          .map((placement) {
-                            final size =
-                                (detailWidth * placement.scale.clamp(0.1, 2.5))
-                                    .clamp(4.0, double.infinity);
-                            final centerX =
-                                detailLeft +
-                                detailWidth / 2 +
-                                placement.posX * detailWidth;
-                            final centerY =
-                                detailTop +
-                                detailHeight / 2 +
-                                placement.posY * detailHeight;
-
-                            return _PlacedComponentPreview(
-                              placement: placement,
-                              selected:
-                                  widget.selectedPlacementId ==
-                                  placement.localId,
-                              size: size,
-                              left: centerX - size / 2 - 12.0,
-                              top: centerY - size / 2 - 12.0,
-                              nailWidth: detailWidth,
-                              nailHeight: detailHeight,
-                              compact: false,
-                              onSelectPlacement: widget.onSelectPlacement,
-                              onUpdate: widget.onUpdatePlacement,
-                              onDelete: () =>
-                                  widget.onDeletePlacement(placement.localId),
-                              selectedShape: widget.selectedShape,
-                            );
-                          }),
-
-                    // 5. Detail UI Back Button (Left side)
-                    if (t > 0.0)
-                      Positioned(
-                        top: 12,
-                        left: 12,
-                        child: Opacity(
-                          opacity: t,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.06),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Material(
-                              color: Colors.white.withValues(alpha: 0.9),
-                              borderRadius: BorderRadius.circular(20),
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(20),
-                                onTap: t > 0.9
-                                    ? () =>
-                                          widget.onToggleDetailFinger?.call(-1)
-                                    : null,
-                                child: const Padding(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 8,
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.arrow_back_rounded,
-                                        size: 16,
-                                        color: Color(0xFFE91E63),
-                                      ),
-                                      SizedBox(width: 6),
-                                      Text(
-                                        'Bàn tay',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12,
-                                          color: Color(0xFFE91E63),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                    // 6. Detail UI Apply to All Button (Right side)
-                    if (t > 0.0)
-                      Positioned(
-                        top: 12,
-                        right: 12,
-                        child: Opacity(
-                          opacity: t,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.06),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Material(
-                              color: Colors.white.withValues(alpha: 0.9),
-                              borderRadius: BorderRadius.circular(20),
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(20),
-                                onTap: t > 0.9 ? widget.onApplyToAll : null,
-                                child: const Padding(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 8,
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.copy_all_rounded,
-                                        size: 16,
-                                        color: Color(0xFFE91E63),
-                                      ),
-                                      SizedBox(width: 6),
-                                      Text(
-                                        'Áp dụng tất cả',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12,
-                                          color: Color(0xFFE91E63),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
+                          child: _FingerSlot(
+                            width: cfg['width'] as double,
+                            height: cfg['height'] as double,
+                            angle: cfg['angle'] as double,
+                            fingerIndex: cfg['finger'] as int,
+                            selectedShape: widget.selectedShape,
+                            selectedSurface: widget.selectedSurface,
+                            color: widget.fingerColors[cfg['finger']] ?? '#FF4081',
+                            gradientStops: widget.fingerGradients[cfg['finger']],
+                            placements: widget.placements
+                                .where((p) => placementMatchesFinger(p.fingerIndex, cfg['finger'] as int))
+                                .toList(),
+                            onToggleDetailFinger: t > 0.1 ? null : widget.onToggleDetailFinger,
+                            onUpdatePlacement: widget.onUpdatePlacement,
+                            onDeletePlacement: widget.onDeletePlacement,
                           ),
                         ),
                       ),
                   ],
-                );
-              },
-            ),
+
+                  // 3. Zooming/Interpolating Active Finger
+                  if (_animatingFingerIndex != -1)
+                    Positioned(
+                      left: ui.lerpDouble(
+                        fingerConfigs.firstWhere((c) => c['finger'] == _animatingFingerIndex)['left'] as double,
+                        detailLeft,
+                        t,
+                      )!,
+                      top: ui.lerpDouble(
+                        fingerConfigs.firstWhere((c) => c['finger'] == _animatingFingerIndex)['top'] as double,
+                        detailTop,
+                        t,
+                      )!,
+                      width: ui.lerpDouble(
+                        fingerConfigs.firstWhere((c) => c['finger'] == _animatingFingerIndex)['width'] as double,
+                        detailWidth,
+                        t,
+                      )!,
+                      height: ui.lerpDouble(
+                        fingerConfigs.firstWhere((c) => c['finger'] == _animatingFingerIndex)['height'] as double,
+                        detailHeight,
+                        t,
+                      )!,
+                      child: _FingerSlot(
+                        width: ui.lerpDouble(
+                          fingerConfigs.firstWhere((c) => c['finger'] == _animatingFingerIndex)['width'] as double,
+                          detailWidth,
+                          t,
+                        )!,
+                        height: ui.lerpDouble(
+                          fingerConfigs.firstWhere((c) => c['finger'] == _animatingFingerIndex)['height'] as double,
+                          detailHeight,
+                          t,
+                        )!,
+                        angle: ui.lerpDouble(
+                          fingerConfigs.firstWhere((c) => c['finger'] == _animatingFingerIndex)['angle'] as double,
+                          0.0,
+                          t,
+                        )!,
+                        fingerIndex: _animatingFingerIndex,
+                        selectedShape: widget.selectedShape,
+                        selectedSurface: widget.selectedSurface,
+                        color: widget.fingerColors[_animatingFingerIndex] ?? '#FF4081',
+                        gradientStops: widget.fingerGradients[_animatingFingerIndex],
+                        placements: widget.placements
+                            .where((p) => placementMatchesFinger(p.fingerIndex, _animatingFingerIndex))
+                            .toList(),
+                        isZoomed: t > 0.9,
+                        selectedPlacementId: widget.selectedPlacementId,
+                        onSelectPlacement: widget.onSelectPlacement,
+                        onToggleDetailFinger: t > 0.9 ? widget.onToggleDetailFinger : null,
+                        onUpdatePlacement: widget.onUpdatePlacement,
+                        onDeletePlacement: widget.onDeletePlacement,
+                      ),
+                    ),
+
+                  // 4. Zoomed Active Finger Placements (Rendered in the main Stack of TryOnPreviewBoard to avoid hit-test boundary clipping!)
+                  if (_animatingFingerIndex != -1 && t > 0.9 && widget.selectedShape?.imageUrl.isNotEmpty == true)
+                    ...widget.placements
+                        .where((p) => placementMatchesFinger(p.fingerIndex, _animatingFingerIndex))
+                        .map((placement) {
+                      final size = (detailWidth * placement.scale.clamp(0.1, 2.5)).clamp(4.0, double.infinity);
+                      final centerX = detailLeft + detailWidth / 2 + placement.posX * detailWidth;
+                      final centerY = detailTop + detailHeight / 2 + placement.posY * detailHeight;
+                      
+                      return _PlacedComponentPreview(
+                        placement: placement,
+                        selected: widget.selectedPlacementId == placement.localId,
+                        size: size,
+                        left: centerX - size / 2 - 12.0,
+                        top: centerY - size / 2 - 12.0,
+                        nailWidth: detailWidth,
+                        nailHeight: detailHeight,
+                        compact: false,
+                        onSelectPlacement: widget.onSelectPlacement,
+                        onUpdate: widget.onUpdatePlacement,
+                        onDelete: () => widget.onDeletePlacement(placement.localId),
+                        selectedShape: widget.selectedShape,
+                      );
+                    }),
+
+                  // 5. Detail UI Back Button (Left side)
+                  if (t > 0.0)
+                    Positioned(
+                      top: 12,
+                      left: 12,
+                      child: Opacity(
+                        opacity: t,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.06),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            borderRadius: BorderRadius.circular(20),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(20),
+                              onTap: t > 0.9 ? () => widget.onToggleDetailFinger?.call(-1) : null,
+                              child: const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.arrow_back_rounded, size: 16, color: Color(0xFFE91E63)),
+                                    SizedBox(width: 6),
+                                    Text(
+                                      'Bàn tay',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                        color: Color(0xFFE91E63),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  // 6. Detail UI Apply to All Button (Right side)
+                  if (t > 0.0)
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: Opacity(
+                        opacity: t,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.06),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            borderRadius: BorderRadius.circular(20),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(20),
+                              onTap: t > 0.9 ? widget.onApplyToAll : null,
+                              child: const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.copy_all_rounded, size: 16, color: Color(0xFFE91E63)),
+                                    SizedBox(width: 6),
+                                    Text(
+                                      'Áp dụng tất cả',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                        color: Color(0xFFE91E63),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _FingerSlot extends StatelessWidget {
@@ -672,17 +535,16 @@ class _FingerSlot extends StatelessWidget {
         Positioned.fill(
           child: IgnorePointer(
             ignoring: isZoomed,
-            child: RepaintBoundary(child: overlay),
+            child: RepaintBoundary(
+              child: overlay,
+            ),
           ),
         ),
         if (!isZoomed && selectedShape?.imageUrl.isNotEmpty == true)
           ...placements.map((placement) {
             final nailWidth = width;
             final nailHeight = height;
-            final size = (nailWidth * placement.scale.clamp(0.1, 2.5)).clamp(
-              4.0,
-              double.infinity,
-            );
+            final size = (nailWidth * placement.scale.clamp(0.1, 2.5)).clamp(4.0, double.infinity);
             final centerX = nailWidth / 2 + placement.posX * nailWidth;
             final centerY = nailHeight / 2 + placement.posY * nailHeight;
 
@@ -693,8 +555,7 @@ class _FingerSlot extends StatelessWidget {
                     fit: BoxFit.contain,
                     cacheWidth: 100,
                     cacheHeight: 100,
-                    errorBuilder: (context, error, stackTrace) =>
-                        const SizedBox(),
+                    errorBuilder: (context, error, stackTrace) => const SizedBox(),
                   );
 
             if (placement.rotation != 0) {
@@ -723,7 +584,10 @@ class _FingerSlot extends StatelessWidget {
     );
 
     if (angle != 0) {
-      slot = Transform.rotate(angle: angle * 3.14159265359 / 180, child: slot);
+      slot = Transform.rotate(
+        angle: angle * 3.14159265359 / 180,
+        child: slot,
+      );
     }
 
     return slot;
@@ -760,8 +624,7 @@ class _PlacedComponentPreview extends StatefulWidget {
   });
 
   @override
-  State<_PlacedComponentPreview> createState() =>
-      _PlacedComponentPreviewState();
+  State<_PlacedComponentPreview> createState() => _PlacedComponentPreviewState();
 }
 
 class _PlacedComponentPreviewState extends State<_PlacedComponentPreview> {
@@ -793,7 +656,7 @@ class _PlacedComponentPreviewState extends State<_PlacedComponentPreview> {
 
     final int offset = (y * img.width + x) * 4;
     if (offset + 3 >= byteData.lengthInBytes) return false;
-
+    
     final int alpha = byteData.getUint8(offset + 3);
     return alpha > 10; // Non-transparent pixel (threshold > 10)
   }
@@ -840,12 +703,8 @@ class _PlacedComponentPreviewState extends State<_PlacedComponentPreview> {
             },
             onPanUpdate: (details) {
               if (_startGlobalPosition == null) return;
-              final double dx =
-                  (details.globalPosition.dx - _startGlobalPosition!.dx) /
-                  widget.nailWidth;
-              final double dy =
-                  (details.globalPosition.dy - _startGlobalPosition!.dy) /
-                  widget.nailHeight;
+              final double dx = (details.globalPosition.dx - _startGlobalPosition!.dx) / widget.nailWidth;
+              final double dy = (details.globalPosition.dy - _startGlobalPosition!.dy) / widget.nailHeight;
 
               final double targetPosX = (_startPosX + dx).clamp(-0.8, 0.8);
               final double targetPosY = (_startPosY + dy).clamp(-0.8, 0.8);
@@ -864,31 +723,22 @@ class _PlacedComponentPreviewState extends State<_PlacedComponentPreview> {
                   );
                 } else {
                   // Sliding collision check: Try updating only X or only Y axis for smooth edge sliding
-                  final bool xValid = _isPlacementOnNail(
-                    targetPosX,
-                    widget.placement.posY,
-                    cached,
-                  );
-                  final bool yValid = _isPlacementOnNail(
-                    widget.placement.posX,
-                    targetPosY,
-                    cached,
-                  );
+                  final bool xValid = _isPlacementOnNail(targetPosX, widget.placement.posY, cached);
+                  final bool yValid = _isPlacementOnNail(widget.placement.posX, targetPosY, cached);
 
                   if (xValid) {
-                    widget.onUpdate(
-                      widget.placement.copyWith(posX: targetPosX),
-                    );
+                    widget.onUpdate(widget.placement.copyWith(posX: targetPosX));
                   } else if (yValid) {
-                    widget.onUpdate(
-                      widget.placement.copyWith(posY: targetPosY),
-                    );
+                    widget.onUpdate(widget.placement.copyWith(posY: targetPosY));
                   }
                 }
               } else {
                 // Fallback if image cache is not ready
                 widget.onUpdate(
-                  widget.placement.copyWith(posX: targetPosX, posY: targetPosY),
+                  widget.placement.copyWith(
+                    posX: targetPosX,
+                    posY: targetPosY,
+                  ),
                 );
               }
             },
@@ -897,9 +747,7 @@ class _PlacedComponentPreviewState extends State<_PlacedComponentPreview> {
               decoration: BoxDecoration(
                 color: Colors.transparent,
                 border: Border.all(
-                  color: widget.selected
-                      ? const Color(0xFFE91E63)
-                      : Colors.transparent,
+                  color: widget.selected ? const Color(0xFFE91E63) : Colors.transparent,
                   width: widget.selected ? 1.5 : 0,
                 ),
                 borderRadius: BorderRadius.circular(widget.compact ? 3 : 6),
@@ -941,11 +789,7 @@ class _PlacedComponentPreviewState extends State<_PlacedComponentPreview> {
                   color: Color(0xFFE91E63),
                   shape: BoxShape.circle,
                   boxShadow: [
-                    BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 3,
-                      offset: Offset(0, 1),
-                    ),
+                    BoxShadow(color: Colors.black26, blurRadius: 3, offset: Offset(0, 1)),
                   ],
                 ),
                 child: const Icon(
@@ -972,7 +816,7 @@ class _PlacedComponentPreviewState extends State<_PlacedComponentPreview> {
                 final localPos = box.globalToLocal(details.globalPosition);
                 final center = Offset(widgetSize / 2, widgetSize / 2);
                 final vector = localPos - center;
-
+                
                 _initialDistance = vector.distance;
                 _initialAngle = math.atan2(vector.dy, vector.dx);
                 _initialScale = widget.placement.scale;
@@ -983,15 +827,13 @@ class _PlacedComponentPreviewState extends State<_PlacedComponentPreview> {
                 final localPos = box.globalToLocal(details.globalPosition);
                 final center = Offset(widgetSize / 2, widgetSize / 2);
                 final vector = localPos - center;
-
+                
                 final currentDistance = vector.distance;
                 final currentAngle = math.atan2(vector.dy, vector.dx);
-
-                final scaleFactor = _initialDistance > 0
-                    ? (currentDistance / _initialDistance)
-                    : 1.0;
+                
+                final scaleFactor = _initialDistance > 0 ? (currentDistance / _initialDistance) : 1.0;
                 final newScale = (_initialScale * scaleFactor).clamp(0.15, 2.5);
-
+                
                 final angleDiffRad = currentAngle - _initialAngle;
                 final angleDiffDeg = angleDiffRad * 180 / math.pi;
                 final newRotation = (_initialRotation + angleDiffDeg) % 360;
@@ -1009,11 +851,7 @@ class _PlacedComponentPreviewState extends State<_PlacedComponentPreview> {
                   color: Color(0xFFE91E63),
                   shape: BoxShape.circle,
                   boxShadow: [
-                    BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 3,
-                      offset: Offset(0, 1),
-                    ),
+                    BoxShadow(color: Colors.black26, blurRadius: 3, offset: Offset(0, 1)),
                   ],
                 ),
                 child: const Icon(
@@ -1069,9 +907,7 @@ class _NailImageCache {
       (info, synchronousCall) async {
         try {
           final img = info.image;
-          final byteData = await img.toByteData(
-            format: ui.ImageByteFormat.rawRgba,
-          );
+          final byteData = await img.toByteData(format: ui.ImageByteFormat.rawRgba);
           if (byteData == null) {
             throw Exception("Failed to get byte data from image");
           }
@@ -1151,12 +987,9 @@ class _NailColorPreview extends StatelessWidget {
     final stops = gradientStops;
     final adjustedStops = (stops != null && stops.length >= 2)
         ? stops
-              .take(3)
-              .map(
-                (item) =>
-                    _applySurfaceOffsets(parseTryOnHexColor(item), surface),
-              )
-              .toList()
+            .take(3)
+            .map((item) => _applySurfaceOffsets(parseTryOnHexColor(item), surface))
+            .toList()
         : null;
     final shaderParams = _SurfaceShader.fromSurface(surface);
 
@@ -1203,8 +1036,7 @@ class _NailPainter extends CustomPainter {
     if (size.width <= 0 || size.height <= 0) return;
 
     final double destWidth = size.width;
-    final double destHeight =
-        contentRect.height * (size.width / contentRect.width);
+    final double destHeight = contentRect.height * (size.width / contentRect.width);
 
     final srcRect = contentRect;
     final destRect = Rect.fromLTWH(
@@ -1217,10 +1049,7 @@ class _NailPainter extends CustomPainter {
     // Draw a custom blurred drop shadow matching the nail shape boundaries (only when showShadow is true)
     if (showShadow) {
       final shadowPaint = Paint()
-        ..colorFilter = ColorFilter.mode(
-          Colors.black.withValues(alpha: 0.12),
-          BlendMode.srcIn,
-        )
+        ..colorFilter = ColorFilter.mode(Colors.black.withValues(alpha: 0.12), BlendMode.srcIn)
         ..imageFilter = ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5);
       canvas.drawImageRect(
         image,
@@ -1246,10 +1075,7 @@ class _NailPainter extends CustomPainter {
       final colors = gradientColors!;
       final colorStops = colors.length == 2
           ? null
-          : List<double>.generate(
-              colors.length,
-              (i) => i / (colors.length - 1),
-            );
+          : List<double>.generate(colors.length, (i) => i / (colors.length - 1));
       canvas.drawRect(
         destRect,
         Paint()
@@ -1268,12 +1094,12 @@ class _NailPainter extends CustomPainter {
         ..color = Colors.black.withValues(alpha: shader.matteOpacity)
         ..blendMode = BlendMode.srcATop;
       if (shader.matteBlur > 0) {
-        paint.imageFilter = ui.ImageFilter.blur(
-          sigmaX: shader.matteBlur,
-          sigmaY: shader.matteBlur,
-        );
+        paint.imageFilter = ui.ImageFilter.blur(sigmaX: shader.matteBlur, sigmaY: shader.matteBlur);
       }
-      canvas.drawRect(destRect, paint);
+      canvas.drawRect(
+        destRect,
+        paint,
+      );
     }
 
     if (shader.gradient) {
@@ -1283,7 +1109,11 @@ class _NailPainter extends CustomPainter {
           ..shader = ui.Gradient.linear(
             destRect.centerLeft,
             destRect.centerRight,
-            const [Color(0x2E000000), Colors.transparent, Color(0x38FFFFFF)],
+            const [
+              Color(0x2E000000),
+              Colors.transparent,
+              Color(0x38FFFFFF),
+            ],
             const [0.0, 0.5, 1.0],
           )
           ..blendMode = BlendMode.srcATop,
@@ -1457,32 +1287,27 @@ class _SurfaceShader {
 
     final iridescenceMap = _asMap(params['iridescence']);
 
-    final isMatte =
-        name.contains('matte') ||
+    final isMatte = name.contains('matte') ||
         _asMap(params['texture'])?['type'] == 'matte' ||
         params.containsKey('opacity') ||
         params.containsKey('blur');
 
-    final isShine =
-        name.contains('glossy') ||
+    final isShine = name.contains('glossy') ||
         name.contains('shine') ||
         shineValue != null ||
         _asEnabled(shineMap);
 
-    final isMetallic =
-        name.contains('chrome') ||
+    final isMetallic = name.contains('chrome') ||
         name.contains('metallic') ||
         (metallicFlat is num && metallicFlat > 0) ||
         _asEnabled(metalnessMap);
 
-    final isStripe =
-        name.contains('cat') ||
+    final isStripe = name.contains('cat') ||
         name.contains('stripe') ||
         (streakFlat is num && streakFlat > 0) ||
         _asEnabled(stripeMap);
 
-    final isRainbow =
-        name.contains('holo') ||
+    final isRainbow = name.contains('holo') ||
         name.contains('rainbow') ||
         rainbowFlat ||
         _asEnabled(prismMap) ||
@@ -1490,8 +1315,8 @@ class _SurfaceShader {
         _asEnabled(iridescenceMap);
 
     // Resolve shine opacity: flat numeric value takes priority over nested map
-    final resolvedShineOpacity =
-        shineValue ?? _asDouble(shineMap?['opacity'], fallback: 0.55);
+    final resolvedShineOpacity = shineValue ??
+        _asDouble(shineMap?['opacity'], fallback: 0.55);
 
     // Resolve metallic reflectivity for shine size scaling
     final reflectivity = _asDouble(params['reflectivity'], fallback: 0.75);
@@ -1501,10 +1326,7 @@ class _SurfaceShader {
 
     return _SurfaceShader(
       matte: isMatte,
-      matteOpacity: _asDouble(
-        params['opacity'],
-        fallback: 0.08,
-      ).clamp(0.0, 1.0),
+      matteOpacity: _asDouble(params['opacity'], fallback: 0.08).clamp(0.0, 1.0),
       matteBlur: _asDouble(params['blur'], fallback: 0.0).clamp(0.0, 20.0),
       shine: isShine,
       metallic: isMetallic,
@@ -1512,10 +1334,8 @@ class _SurfaceShader {
       gradient: _asEnabled(gradientMap),
       rainbow: isRainbow,
       shineAlignment: _alignmentFromPosition(shineMap?['position']?.toString()),
-      shineSize: (_asDouble(shineMap?['size'], fallback: 0.42) * boostedShine)
-          .clamp(0.18, 0.9),
-      shineOpacity: (resolvedShineOpacity * (isMetallic ? reflectivity : 1.0))
-          .clamp(0.0, 1.0),
+      shineSize: (_asDouble(shineMap?['size'], fallback: 0.42) * boostedShine).clamp(0.18, 0.9),
+      shineOpacity: (resolvedShineOpacity * (isMetallic ? reflectivity : 1.0)).clamp(0.0, 1.0),
     );
   }
 
@@ -1537,18 +1357,18 @@ class _SurfaceShader {
 
   @override
   int get hashCode => Object.hash(
-    matte,
-    matteOpacity,
-    matteBlur,
-    shine,
-    metallic,
-    stripe,
-    gradient,
-    rainbow,
-    shineAlignment,
-    shineSize,
-    shineOpacity,
-  );
+        matte,
+        matteOpacity,
+        matteBlur,
+        shine,
+        metallic,
+        stripe,
+        gradient,
+        rainbow,
+        shineAlignment,
+        shineSize,
+        shineOpacity,
+      );
 }
 
 Map<String, dynamic> _decodeShaderParams(String? value) {
@@ -1626,43 +1446,25 @@ class NailOverlayPreview extends StatelessWidget {
                   showShadow: showShadow,
                 ),
               ),
-            if (selectedShape?.imageUrl.isNotEmpty == true &&
-                placements.isNotEmpty)
+            if (selectedShape?.imageUrl.isNotEmpty == true && placements.isNotEmpty)
               Positioned.fill(
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: placements.map((placement) {
-                    final size = (nailWidth * placement.scale.clamp(0.1, 1.5))
-                        .clamp(2.0, nailWidth);
-                    final centerX = (nailWidth / 2 + placement.posX * nailWidth)
-                        .clamp(0.0, nailWidth);
-                    final centerY =
-                        (nailHeight / 2 + placement.posY * nailHeight).clamp(
-                          0.0,
-                          nailHeight,
-                        );
-                    final left = (centerX - size / 2).clamp(
-                      -size / 2,
-                      nailWidth,
-                    );
-                    final top = (centerY - size / 2).clamp(
-                      -size / 2,
-                      nailHeight,
-                    );
+                    final size = (nailWidth * placement.scale.clamp(0.1, 1.5)).clamp(2.0, nailWidth);
+                    final centerX = (nailWidth / 2 + placement.posX * nailWidth).clamp(0.0, nailWidth);
+                    final centerY = (nailHeight / 2 + placement.posY * nailHeight).clamp(0.0, nailHeight);
+                    final left = (centerX - size / 2).clamp(-size / 2, nailWidth);
+                    final top = (centerY - size / 2).clamp(-size / 2, nailHeight);
 
                     Widget icon = placement.imageUrl.isEmpty
-                        ? const Icon(
-                            Icons.auto_awesome,
-                            color: Colors.purple,
-                            size: 10,
-                          )
+                        ? const Icon(Icons.auto_awesome, color: Colors.purple, size: 10)
                         : Image.network(
                             placement.imageUrl,
                             fit: BoxFit.contain,
                             cacheWidth: 100,
                             cacheHeight: 100,
-                            errorBuilder: (context, error, stackTrace) =>
-                                const SizedBox(),
+                            errorBuilder: (context, error, stackTrace) => const SizedBox(),
                           );
 
                     if (placement.rotation != 0) {

@@ -102,11 +102,17 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="32dp"
             android:gravity="center"
-            android:text="Place your hand inside the frame for best results"
+            android:text="Show your nails"
             android:textColor="@android:color/white"
-            android:textSize="14sp" />
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:shadowColor="#80000000"
+            android:shadowDx="2"
+            android:shadowDy="2"
+            android:shadowRadius="4" />
     </FrameLayout>
 
     <!-- Zoom controls (floating on right) -->

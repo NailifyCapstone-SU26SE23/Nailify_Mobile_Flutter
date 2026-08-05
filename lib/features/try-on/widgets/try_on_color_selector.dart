@@ -83,11 +83,10 @@ class TryOnColorSelector extends StatelessWidget {
             border: Border.all(color: Colors.white, width: 2.5),
             boxShadow: [
               BoxShadow(
-                color:
-                    (gradientEnabled
-                            ? parseTryOnHexColor(displayedColors.first)
-                            : parseTryOnHexColor(selectedColor))
-                        .withOpacity(0.18),
+                color: (gradientEnabled
+                        ? parseTryOnHexColor(displayedColors.first)
+                        : parseTryOnHexColor(selectedColor))
+                    .withOpacity(0.18),
                 blurRadius: 14,
                 spreadRadius: 1,
                 offset: const Offset(0, 6),
@@ -117,10 +116,7 @@ class TryOnColorSelector extends StatelessWidget {
                 // Text overlay display
                 Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 6,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.black.withOpacity(0.25),
                       borderRadius: BorderRadius.circular(20),
@@ -195,11 +191,7 @@ class TryOnColorSelector extends StatelessWidget {
                       ...gradientStops!,
                       gradientStops!.last,
                     ]),
-                    icon: const Icon(
-                      Icons.add_rounded,
-                      size: 16,
-                      color: AppColors.primary,
-                    ),
+                    icon: const Icon(Icons.add_rounded, size: 16, color: AppColors.primary),
                     label: const Text(
                       'Thêm màu',
                       style: TextStyle(
@@ -210,17 +202,11 @@ class TryOnColorSelector extends StatelessWidget {
                     ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.primary,
-                      side: const BorderSide(
-                        color: AppColors.primaryLight,
-                        width: 1.5,
-                      ),
+                      side: const BorderSide(color: AppColors.primaryLight, width: 1.5),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
                   ),
                 ),
@@ -229,19 +215,11 @@ class TryOnColorSelector extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              Icon(
-                Icons.info_outline_rounded,
-                size: 14,
-                color: Colors.grey.shade400,
-              ),
+              Icon(Icons.info_outline_rounded, size: 14, color: Colors.grey.shade400),
               const SizedBox(width: 6),
               Text(
                 'Chọn từ 2 đến 3 tông màu để chuyển sắc.',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey.shade500,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w500),
               ),
             ],
           ),
@@ -380,7 +358,7 @@ class _ColorCircle extends StatelessWidget {
                       color: AppColors.primary.withOpacity(0.3),
                       blurRadius: 6,
                       spreadRadius: 1,
-                    ),
+                    )
                   ]
                 : null,
           ),
@@ -397,7 +375,10 @@ class _ColorCircle extends StatelessWidget {
                   offset: const Offset(0, 2),
                 ),
               ],
-              border: Border.all(color: Colors.white, width: 2),
+              border: Border.all(
+                color: Colors.white,
+                width: 2,
+              ),
             ),
             child: selected
                 ? Icon(
@@ -593,7 +574,9 @@ Future<void> _showColorPicker(
       builder: (context, setDialogState) => AlertDialog(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(28),
+        ),
         titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
         contentPadding: const EdgeInsets.symmetric(horizontal: 24),
         actionsPadding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
@@ -685,10 +668,7 @@ Future<void> _showColorPicker(
               const SizedBox(height: 8),
               // Spec Code Preview Box
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade50,
                   borderRadius: BorderRadius.circular(16),
@@ -835,12 +815,12 @@ class _SaturationValuePainter extends CustomPainter {
           colors: [Colors.transparent, Colors.black],
         ).createShader(rect),
     );
-
+    
     final indicator = Offset(
       color.saturation * size.width,
       (1 - color.value) * size.height,
     );
-
+    
     // Outer white glow for selector reticle
     canvas.drawCircle(
       indicator,
@@ -849,9 +829,13 @@ class _SaturationValuePainter extends CustomPainter {
         ..color = Colors.black.withOpacity(0.12)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2),
     );
-
+    
     canvas.drawCircle(indicator, 9, Paint()..color = Colors.white);
-    canvas.drawCircle(indicator, 7, Paint()..color = color.toColor());
+    canvas.drawCircle(
+      indicator,
+      7,
+      Paint()..color = color.toColor(),
+    );
     canvas.drawCircle(
       indicator,
       9,
@@ -982,5 +966,4 @@ class _ColorSpectrumSliderState extends State<ColorSpectrumSlider> {
       );
     });
   }
-}
-
+}

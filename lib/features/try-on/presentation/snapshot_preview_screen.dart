@@ -109,14 +109,20 @@ class _SnapshotPreviewScreenState extends State<SnapshotPreviewScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.pan_tool_outlined,
-                    color: Colors.white70, size: 64),
+                const Icon(
+                  Icons.pan_tool_outlined,
+                  color: Colors.white70,
+                  size: 64,
+                ),
                 const SizedBox(height: 16),
-                const Text('Không phát hiện bàn tay trong ảnh.',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold)),
+                const Text(
+                  'Không phát hiện bàn tay trong ảnh.',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 const Text(
                   'Đảm bảo bàn tay nằm trong khung và thử chụp lại.',
@@ -129,7 +135,8 @@ class _SnapshotPreviewScreenState extends State<SnapshotPreviewScreen> {
                   icon: const Icon(Icons.refresh_rounded),
                   label: const Text('Chụp lại'),
                   style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFFFF69B4)),
+                    backgroundColor: const Color(0xFFFF69B4),
+                  ),
                 ),
               ],
             ),
@@ -160,13 +167,17 @@ class _SnapshotPreviewScreenState extends State<SnapshotPreviewScreen> {
                 ),
 
                 // Overlay móng từ landmarks
-                LayoutBuilder(builder: (ctx, box) {
-                  return _buildNailOverlay(box.maxWidth, box.maxHeight);
-                }),
+                LayoutBuilder(
+                  builder: (ctx, box) {
+                    return _buildNailOverlay(box.maxWidth, box.maxHeight);
+                  },
+                ),
 
                 // Gradient trên cho dễ đọc tiêu đề
                 Positioned(
-                  top: 0, left: 0, right: 0,
+                  top: 0,
+                  left: 0,
+                  right: 0,
                   height: topPad + 68,
                   child: IgnorePointer(
                     child: Container(
@@ -193,8 +204,11 @@ class _SnapshotPreviewScreenState extends State<SnapshotPreviewScreen> {
                       onTap: _goBack,
                       child: const Padding(
                         padding: EdgeInsets.all(10),
-                        child: Icon(Icons.arrow_back_rounded,
-                            color: Colors.white, size: 24),
+                        child: Icon(
+                          Icons.arrow_back_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
                       ),
                     ),
                   ),
@@ -203,7 +217,8 @@ class _SnapshotPreviewScreenState extends State<SnapshotPreviewScreen> {
                 // Tiêu đề
                 Positioned(
                   top: topPad + 14,
-                  left: 56, right: 56,
+                  left: 56,
+                  right: 56,
                   child: const IgnorePointer(
                     child: Center(
                       child: Text(
@@ -236,7 +251,9 @@ class _SnapshotPreviewScreenState extends State<SnapshotPreviewScreen> {
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 10),
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
                       child: _buildTabContent(),
                     ),
                   ),
@@ -327,10 +344,13 @@ class _SnapshotPreviewScreenState extends State<SnapshotPreviewScreen> {
 
     // Top-left của khung móng (đồng bộ với góc `rad` đã cộng offset ở trên)
     final left = cx - nailW / 2 + (nailH / 2) * math.sin(rad);
-    final top  = cy - nailH / 2 - (nailH / 2) * math.cos(rad);
+    final top = cy - nailH / 2 - (nailH / 2) * math.cos(rad);
 
     // Bỏ qua ngón tay nằm ngoài vùng hiển thị thực tế
-    if (left + nailW < -20 || left > sw + 20 || top + nailH < -20 || top > sh + 20) {
+    if (left + nailW < -20 ||
+        left > sw + 20 ||
+        top + nailH < -20 ||
+        top > sh + 20) {
       return const SizedBox.shrink();
     }
 
@@ -410,8 +430,11 @@ class _SnapshotPreviewScreenState extends State<SnapshotPreviewScreen> {
         final shapes = widget.tryOnData.nailShapes;
         if (shapes.isEmpty) {
           return const Center(
-              child: Text('Không có dáng móng.',
-                  style: TextStyle(color: Colors.white54)));
+            child: Text(
+              'Không có dáng móng.',
+              style: TextStyle(color: Colors.white54),
+            ),
+          );
         }
         return ListView.builder(
           scrollDirection: Axis.horizontal,
@@ -442,9 +465,10 @@ class _SnapshotPreviewScreenState extends State<SnapshotPreviewScreen> {
                     if (shape.imageUrl.isNotEmpty)
                       Image.network(
                         shape.imageUrl,
-                        width: 40, height: 40,
+                        width: 40,
+                        height: 40,
                         fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) =>
+                        errorBuilder: (_, _, _) =>
                             const Icon(Icons.gesture, color: Colors.white54),
                       )
                     else
@@ -453,9 +477,10 @@ class _SnapshotPreviewScreenState extends State<SnapshotPreviewScreen> {
                     Text(
                       shape.name,
                       style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold),
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
                       textAlign: TextAlign.center,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -504,8 +529,11 @@ class _SnapshotPreviewScreenState extends State<SnapshotPreviewScreen> {
         final comps = widget.tryOnData.combinedComponents;
         if (comps.isEmpty) {
           return const Center(
-              child: Text('Chưa có phụ kiện.',
-                  style: TextStyle(color: Colors.white54)));
+            child: Text(
+              'Chưa có phụ kiện.',
+              style: TextStyle(color: Colors.white54),
+            ),
+          );
         }
         return ListView.builder(
           scrollDirection: Axis.horizontal,
@@ -515,28 +543,34 @@ class _SnapshotPreviewScreenState extends State<SnapshotPreviewScreen> {
             final comp = comps[i];
             return GestureDetector(
               onTap: () {
-                final finger =
-                    _selectedFingerIndex == -1 ? 2 : _selectedFingerIndex;
-                final count =
-                    _placements.where((p) => p.fingerIndex == finger).length;
+                final finger = _selectedFingerIndex == -1
+                    ? 2
+                    : _selectedFingerIndex;
+                final count = _placements
+                    .where((p) => p.fingerIndex == finger)
+                    .length;
                 setState(() {
-                  _placements.add(PlacedComponentDraft(
-                    localId: DateTime.now().millisecondsSinceEpoch,
-                    componentId: comp.componentId,
-                    name: comp.name,
-                    imageUrl: comp.imageUrl,
-                    posX: 0.0,
-                    posY: -0.1 - count * 0.06,
-                    scale: 0.35,
-                    rotation: 0.0,
-                    fingerIndex: finger,
-                  ));
+                  _placements.add(
+                    PlacedComponentDraft(
+                      localId: DateTime.now().millisecondsSinceEpoch,
+                      componentId: comp.componentId,
+                      name: comp.name,
+                      imageUrl: comp.imageUrl,
+                      posX: 0.0,
+                      posY: -0.1 - count * 0.06,
+                      scale: 0.35,
+                      rotation: 0.0,
+                      fingerIndex: finger,
+                    ),
+                  );
                 });
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text('Đã thêm ${comp.name} vào ngón $finger'),
-                  duration: const Duration(seconds: 1),
-                  backgroundColor: const Color(0xFFFF4081),
-                ));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Đã thêm ${comp.name} vào ngón $finger'),
+                    duration: const Duration(seconds: 1),
+                    backgroundColor: const Color(0xFFFF4081),
+                  ),
+                );
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
@@ -552,20 +586,22 @@ class _SnapshotPreviewScreenState extends State<SnapshotPreviewScreen> {
                     if (comp.imageUrl.isNotEmpty)
                       Image.network(
                         comp.imageUrl,
-                        width: 40, height: 40,
+                        width: 40,
+                        height: 40,
                         fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) =>
+                        errorBuilder: (_, _, _) =>
                             const Icon(Icons.star, color: Colors.white54),
                       )
                     else
                       const Icon(Icons.star, color: Colors.white54),
                     const SizedBox(height: 6),
-                    Text(comp.name,
-                        style: const TextStyle(
-                            color: Colors.white, fontSize: 10),
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis),
+                    Text(
+                      comp.name,
+                      style: const TextStyle(color: Colors.white, fontSize: 10),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
                 ),
               ),

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/di/injection.dart';
 import '../../nails/data/models/customer_nail_models.dart';
@@ -98,7 +99,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
     try {
       final results = await Future.wait([
         _setupService.fetchTryOnData(),
-        if (widget.customerNail != null)
+        if ((widget.customerNail?.customerNailId ?? 0) > 0)
           _customerNailRepository.getCustomerNailById(
             widget.customerNail!.customerNailId,
           ),
@@ -380,16 +381,28 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
   Future<void> _save() async {
     final nail = _customerNail;
     final shape = _selectedNailShape;
-    if (nail == null || shape == null) {
+    if (shape == null) {
       _showMessage('Vui lòng tạo mẫu móng và chọn dáng móng.');
       return;
     }
 
     setState(() => _isSaving = true);
     try {
+      var customerNailId = nail?.customerNailId ?? 0;
+      final isNewCustomerNail = customerNailId <= 0;
+      final nailName = nail?.name.trim().isNotEmpty == true
+          ? nail!.name
+          : 'Custom Nail';
+
+      if (customerNailId <= 0) {
+        customerNailId = await _customerNailRepository.createCustomerNail(
+          name: nailName,
+        );
+      }
+
       await _customerNailRepository.updateCustomerNail(
-        customerNailId: nail.customerNailId,
-        name: nail.name,
+        customerNailId: customerNailId,
+        name: nailName,
         nailShapeId: shape.nailShapeId,
         nailSurfaceId: _selectedNailSurface?.nailSurfaceId,
         customColor: _buildColorJson(),
@@ -400,7 +413,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
       }
 
       for (final placement in _placements) {
-        final payload = placement.toPayload(nail.customerNailId);
+        final payload = placement.toPayload(customerNailId);
         if (placement.customerNailComponentId == null) {
           await _componentRepository.createCustomerNailComponent(
             customerNailId: payload.customerNailId,
@@ -427,12 +440,20 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
 
       _deletedPlacementIds.clear();
       final fresh = await _customerNailRepository.getCustomerNailById(
-        nail.customerNailId,
+        customerNailId,
       );
       setState(() => _customerNail = fresh);
       _showMessage('Đã lưu thiết lập thử móng.');
-      await _fetchData();
-      if (mounted) Navigator.of(context).pop(true);
+      if ((widget.customerNail?.customerNailId ?? 0) > 0) {
+        await _fetchData();
+      }
+      if (mounted) {
+        if (isNewCustomerNail) {
+          context.go('/my-studio');
+        } else {
+          Navigator.of(context).pop(true);
+        }
+      }
     } catch (error) {
       _showMessage(error.toString());
     } finally {

@@ -57,6 +57,10 @@ class TryOnPreviewBoard extends StatefulWidget {
 
 class _TryOnPreviewBoardState extends State<TryOnPreviewBoard>
     with SingleTickerProviderStateMixin {
+  // Width multipliers for the available preview areas.
+  static const double _focusedPreviewScale = 0.92;
+  static const double _rowPreviewScale = 1.0;
+
   late final AnimationController _controller;
   late final Animation<double> _animation;
 
@@ -168,7 +172,7 @@ class _TryOnPreviewBoardState extends State<TryOnPreviewBoard>
                     ? cached.image.width / cached.image.height
                     : 0.35;
 
-                final double visualBoxWidth = width * 0.72;
+                final double visualBoxWidth = width * _focusedPreviewScale;
                 final double visualBoxHeight = height * 0.9;
                 final double visualBoxAspect = visualBoxWidth / visualBoxHeight;
 
@@ -190,7 +194,7 @@ class _TryOnPreviewBoardState extends State<TryOnPreviewBoard>
                 final double columnWidth =
                     (width - rowPadding * 2 - columnGap * 4) / 5;
                 final double columnHeight = height - rowPadding * 2;
-                final double nailSlotWidth = columnWidth * 0.86;
+                final double nailSlotWidth = columnWidth * _rowPreviewScale;
                 final double nailSlotHeight = columnHeight * 0.9;
                 final double rowTop =
                     rowPadding + (columnHeight - nailSlotHeight) / 2;

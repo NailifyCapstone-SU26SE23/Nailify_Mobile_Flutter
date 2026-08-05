@@ -143,6 +143,37 @@ class AppRouter {
           return TransactionDetailPage(transaction: transaction);
         },
       ),
+      GoRoute(path: '/quiz', builder: (context, state) => const QuizPage()),
+      GoRoute(
+        path: '/quiz/analyze',
+        builder: (context, state) {
+          final selectedOptionIds =
+              (state.extra as List?)?.map((item) => item.toString()).toList() ??
+              const <String>[];
+          return AnalyzePage(selectedOptionIds: selectedOptionIds);
+        },
+      ),
+      GoRoute(
+        path: '/perfect-match',
+        builder: (context, state) {
+          final results = state.extra is List
+              ? List<QuizResultModel>.from(state.extra as List)
+              : const <QuizResultModel>[];
+          return PerfectMatchPage(results: results);
+        },
+      ),
+      GoRoute(
+        path: '/perfect-match/composition',
+        builder: (context, state) {
+          final matchedCharacteristics =
+              state.extra is List<MatchedCharacteristic>
+              ? state.extra as List<MatchedCharacteristic>
+              : const <MatchedCharacteristic>[];
+          return NailCompositionDesignPage(
+            matchedCharacteristics: matchedCharacteristics,
+          );
+        },
+      ),
       ShellRoute(
         builder: (context, state, child) =>
             MainShell(showHeader: state.matchedLocation == '/', child: child),
@@ -226,39 +257,6 @@ class AppRouter {
             builder: (context, state) {
               final id = state.pathParameters['id'] ?? '';
               return CustomerNailDetailPage(id: id);
-            },
-          ),
-          GoRoute(path: '/quiz', builder: (context, state) => const QuizPage()),
-          GoRoute(
-            path: '/quiz/analyze',
-            builder: (context, state) {
-              final selectedOptionIds =
-                  (state.extra as List?)
-                      ?.map((item) => item.toString())
-                      .toList() ??
-                  const <String>[];
-              return AnalyzePage(selectedOptionIds: selectedOptionIds);
-            },
-          ),
-          GoRoute(
-            path: '/perfect-match',
-            builder: (context, state) {
-              final results = state.extra is List
-                  ? List<QuizResultModel>.from(state.extra as List)
-                  : const <QuizResultModel>[];
-              return PerfectMatchPage(results: results);
-            },
-          ),
-          GoRoute(
-            path: '/perfect-match/composition',
-            builder: (context, state) {
-              final matchedCharacteristics =
-                  state.extra is List<MatchedCharacteristic>
-                  ? state.extra as List<MatchedCharacteristic>
-                  : const <MatchedCharacteristic>[];
-              return NailCompositionDesignPage(
-                matchedCharacteristics: matchedCharacteristics,
-              );
             },
           ),
           GoRoute(

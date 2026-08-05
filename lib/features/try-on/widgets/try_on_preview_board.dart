@@ -179,104 +179,65 @@ class _TryOnPreviewBoardState extends State<TryOnPreviewBoard>
                 final double detailLeft = (width - detailWidth) / 2;
                 final double detailTop = (height - detailHeight) / 2;
 
-                // Calibrated finger config bounds on 1024x1024 template
-                // Positioned mathematically using cuticle center (cx, cy) and rotation angle
-                final List<Map<String, dynamic>> fingerConfigs =
-                    [
-                      {
-                        'finger': 1, // Ngón cái
-                        'cx': 0.242,
-                        'cy': 0.485,
-                        'w': 0.0781,
-                        'h': 0.1074,
-                        'angle': -30.0,
-                      },
-                      {
-                        'finger': 2, // Ngón trỏ
-                        'cx': 0.374,
-                        'cy': 0.2497,
-                        'w': 0.0664,
-                        'h': 0.0928,
-                        'angle': -6.0,
-                      },
-                      {
-                        'finger': 3, // Ngón giữa
-                        'cx': 0.5087,
-                        'cy': 0.2061,
-                        'w': 0.0703,
-                        'h': 0.0928,
-                        'angle': 0.0,
-                      },
-                      {
-                        'finger': 4, // Ngón áp út
-                        'cx': 0.6352,
-                        'cy': 0.2645,
-                        'w': 0.0635,
-                        'h': 0.0928,
-                        'angle': 5.0,
-                      },
-                      {
-                        'finger': 5, // Ngón út
-                        'cx': 0.7460,
-                        'cy': 0.4021,
-                        'w': 0.0605,
-                        'h': 0.0977,
-                        'angle': 13.0,
-                      },
-                    ].map((cfg) {
-                      final angle = cfg['angle'] as double;
-                      final rad = angle * math.pi / 180;
-                      final cx = cfg['cx'] as double;
-                      final cy = cfg['cy'] as double;
-                      final w = cfg['w'] as double;
-                      final h = cfg['h'] as double;
-
-                      // Rotated bottom-center math to find top-left:
-                      // L = cx - w/2 + (h/2) * sin(theta)
-                      // T = cy - h/2 - (h/2) * cos(theta)
-                      final leftRatio = cx - w / 2 + (h / 2) * math.sin(rad);
-                      final topRatio = cy - h / 2 - (h / 2) * math.cos(rad);
-
-                      return {
-                        'finger': cfg['finger'],
-                        'left': width * leftRatio,
-                        'top': height * topRatio,
-                        'width': width * w,
-                        'height': height * h,
-                        'angle': angle,
-                      };
-                    }).toList();
+                final double rowHorizontalPadding = width * 0.07;
+                final double columnGap = width * 0.018;
+                final double columnWidth =
+                    (width - rowHorizontalPadding * 2 - columnGap * 4) / 5;
+                final double nailSlotHeight = (height * 0.58).clamp(
+                  90.0,
+                  height * 0.78,
+                );
+                final double nailSlotWidth = (nailSlotHeight * nailAspectRatio)
+                    .clamp(28.0, columnWidth * 0.72);
+                final double rowTop = (height - nailSlotHeight) / 2;
+                final List<Map<String, dynamic>> fingerConfigs = List.generate(
+                  5,
+                  (index) {
+                    final columnLeft =
+                        rowHorizontalPadding +
+                        index * (columnWidth + columnGap);
+                    return {
+                      'finger': index + 1,
+                      'columnLeft': columnLeft,
+                      'columnWidth': columnWidth,
+                      'left': columnLeft + (columnWidth - nailSlotWidth) / 2,
+                      'top': rowTop,
+                      'width': nailSlotWidth,
+                      'height': nailSlotHeight,
+                      'angle': 0.0,
+                    };
+                  },
+                );
 
                 return Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    // 1. Hand Template Background
+                    // 1. Five nail columns
                     if (t < 1.0)
-                      Positioned.fill(
-                        child: Opacity(
-                          opacity: (1.0 - t).clamp(0.0, 1.0),
-                          child: RepaintBoundary(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: Image.asset(
-                                'assets/images/try_on_hand_template.png',
-                                fit: BoxFit.contain,
-                                errorBuilder: (ctx, err, st) => Container(
-                                  color: const Color(0xFFFDE8F0),
-                                  child: const Center(
-                                    child: Icon(
-                                      Icons.pan_tool_outlined,
-                                      color: Color(0xFFFFB6C1),
-                                      size: 80,
-                                    ),
-                                  ),
+                      ...fingerConfigs.map(
+                        (cfg) => Positioned(
+                          left: cfg['columnLeft'] as double,
+                          top: height * 0.12,
+                          width: cfg['columnWidth'] as double,
+                          height: height * 0.76,
+                          child: Opacity(
+                            opacity: (1.0 - t).clamp(0.0, 1.0),
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: const Color(
+                                  0xFFFF4081,
+                                ).withValues(alpha: 0.025),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: const Color(
+                                    0xFFFF4081,
+                                  ).withValues(alpha: 0.08),
                                 ),
                               ),
                             ),
                           ),
                         ),
                       ),
-
                     // 2. Inactive Fingers
                     for (final cfg in fingerConfigs) ...[
                       if (cfg['finger'] != _animatingFingerIndex)
@@ -488,7 +449,7 @@ class _TryOnPreviewBoardState extends State<TryOnPreviewBoard>
                                       ),
                                       SizedBox(width: 6),
                                       Text(
-                                        'Bàn tay',
+                                        'Tất cả',
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 12,

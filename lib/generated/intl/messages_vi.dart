@@ -311,9 +311,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "designYourOwnNail": MessageLookupByLibrary.simpleMessage(
       "TỰ THIẾT KẾ MẪU MÓNG",
     ),
-    "doQuizButton": MessageLookupByLibrary.simpleMessage(
-      "KHẢO SÁT PHONG CÁCH",
-    ),
+    "doQuizButton": MessageLookupByLibrary.simpleMessage("KHẢO SÁT PHONG CÁCH"),
     "done": MessageLookupByLibrary.simpleMessage("Hoàn thành"),
     "editRating": MessageLookupByLibrary.simpleMessage("Chỉnh sửa đánh giá"),
     "email": MessageLookupByLibrary.simpleMessage("Email"),

@@ -75,6 +75,38 @@ class _NailVariantDetailScreenState extends State<NailVariantDetailScreen> {
     }
   }
 
+  Future<void> _openPhotoTryOn(
+    nails_model.CustomerNailModel customerNail,
+  ) async {
+    setState(() => _launching = true);
+    try {
+      final service = getIt<ArTryOnService>();
+      if (!await service.isAvailable()) {
+        throw UnsupportedError(
+          'Virtual try-on is not available on this build.',
+        );
+      }
+
+      await service.launchCustomerPhoto(customerNail);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              Localizations.localeOf(context).languageCode == 'vi'
+                  ? 'Lỗi khi mở AR: $e'
+                  : 'Error opening AR: $e',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _launching = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -126,6 +158,7 @@ class _NailVariantDetailScreenState extends State<NailVariantDetailScreen> {
             designName: widget.designName,
             launching: _launching,
             onTryOn: _openTryOn,
+            onPhotoTryOn: _openPhotoTryOn,
             isFavorited: _isFavorited,
             onFavoriteToggle: () {
               setState(() => _isFavorited = !_isFavorited);
@@ -143,6 +176,8 @@ class _DetailContent extends StatefulWidget {
   final bool launching;
   final Future<void> Function(nails_model.CustomerNailModel customerNail)
   onTryOn;
+  final Future<void> Function(nails_model.CustomerNailModel customerNail)
+  onPhotoTryOn;
   final bool isFavorited;
   final VoidCallback onFavoriteToggle;
 
@@ -151,6 +186,7 @@ class _DetailContent extends StatefulWidget {
     this.designName,
     required this.launching,
     required this.onTryOn,
+    required this.onPhotoTryOn,
     required this.isFavorited,
     required this.onFavoriteToggle,
   });
@@ -526,7 +562,7 @@ class _DetailContentState extends State<_DetailContent> {
             child: SafeArea(
               child: Row(
                 children: [
-                  // AR Try-On Button
+                  // Live camera try-on
                   Expanded(
                     flex: 1,
                     child: SizedBox(
@@ -556,7 +592,34 @@ class _DetailContentState extends State<_DetailContent> {
                                   color: AppColors.primary,
                                 ),
                               )
-                            : const Icon(Icons.view_in_ar_rounded, size: 24),
+                            : const Icon(Icons.fiber_manual_record, size: 24),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+
+                  // Photo try-on
+                  Expanded(
+                    flex: 1,
+                    child: SizedBox(
+                      height: 50,
+                      child: OutlinedButton(
+                        onPressed: widget.launching
+                            ? null
+                            : () {
+                                widget.onPhotoTryOn(_toCustomerNail(variant));
+                              },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(
+                            color: AppColors.primary,
+                            width: 1.5,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Icon(Icons.camera_alt_outlined, size: 24),
                       ),
                     ),
                   ),

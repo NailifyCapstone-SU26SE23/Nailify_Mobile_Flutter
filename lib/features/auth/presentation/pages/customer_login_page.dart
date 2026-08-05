@@ -261,7 +261,7 @@ class _LoginPageState extends State<LoginPage> {
                                 decoration: InputDecoration(
                                   labelText: 'Email',
                                   labelStyle: TextStyle(
-                                    color: Colors.grey.shade400,
+                                    color: Colors.black,
                                     fontSize: 14,
                                   ),
                                   prefixIcon: const Icon(
@@ -300,7 +300,7 @@ class _LoginPageState extends State<LoginPage> {
                                 decoration: InputDecoration(
                                   labelText: 'Mật khẩu',
                                   labelStyle: TextStyle(
-                                    color: Colors.grey.shade400,
+                                    color: Colors.black,
                                     fontSize: 14,
                                   ),
                                   prefixIcon: const Icon(

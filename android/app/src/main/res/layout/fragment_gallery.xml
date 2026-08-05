@@ -21,8 +21,7 @@
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginBottom="@dimen/bottom_sheet_peek_height">
+        android:layout_height="match_parent">
 
         <TextView
             android:id="@+id/tvPlaceholder"
@@ -34,8 +33,7 @@
 
         <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_marginBottom="@dimen/bottom_sheet_peek_height">
+            android:layout_height="match_parent">
 
             <ImageView
                 android:id="@+id/imageResult"
@@ -96,5 +94,6 @@
 
     <include
         android:id="@+id/bottom_sheet_layout"
-        layout="@layout/info_bottom_sheet" />
+        layout="@layout/info_bottom_sheet"
+        android:visibility="gone" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

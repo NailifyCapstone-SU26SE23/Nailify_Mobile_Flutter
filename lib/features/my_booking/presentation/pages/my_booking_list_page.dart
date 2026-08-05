@@ -594,7 +594,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
                   onPressed: () =>
                       context.push('/my-bookings/rate', extra: bookingIdStr),
                   icon: const Icon(Icons.star_border, size: 18),
-                  label: const Text('Rate'),
+                  label: const Text('Đánh giá'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
                     side: const BorderSide(color: AppColors.primary),

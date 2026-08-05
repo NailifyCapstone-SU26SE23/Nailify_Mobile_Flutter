@@ -12,6 +12,13 @@ class BookingApiService {
     return response.data['data']['items'] ?? [];
   }
 
+  Future<Map<String, dynamic>?> getSalonDetail(String salonId) async {
+    if (salonId.isEmpty) return null;
+    final response = await _apiClient.get('/Salons/$salonId');
+    final data = response.data['data'] ?? response.data;
+    return data is Map ? Map<String, dynamic>.from(data) : null;
+  }
+
   Future<List<dynamic>> getServices() async {
     final response = await _apiClient.get(
       '/Services',

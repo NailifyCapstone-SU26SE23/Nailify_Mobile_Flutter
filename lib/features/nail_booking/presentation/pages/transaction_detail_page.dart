@@ -65,7 +65,7 @@ class TransactionDetailPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      status.isEmpty ? 'Giao dịch' : status,
+                      'Đã hoàn tiền',
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,

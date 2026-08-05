@@ -12,6 +12,7 @@ import '../../../nails/data/models/nail_variant_model.dart';
 import '../../../nails/data/models/shape_method_config_model.dart';
 import '../../../nails/data/repositories/nail_variant_repository.dart';
 import '../../../nail_booking/data/datasources/booking_api_service.dart';
+import '../../../nail_booking/data/datasources/payment_api_service.dart';
 import '../../data/datasources/my_booking_api_service.dart';
 import '../utils/booking_status_utils.dart';
 import '../widgets/cancel_booking_dialog.dart';
@@ -29,12 +30,14 @@ class MyBookingDetailPage extends StatefulWidget {
 class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
   final MyBookingApiService _apiService = MyBookingApiService();
   final BookingApiService _bookingApiService = BookingApiService();
+  final PaymentApiService _paymentApiService = PaymentApiService();
   final NailVariantRepository _nailVariantRepository =
       getIt<NailVariantRepository>();
   bool _isLoading = true;
+  bool _isCreatingPayment = false;
   Map<String, dynamic>? _booking;
   Map<String, dynamic>? _rating;
-  List<dynamic> _salons = [];
+  Map<String, dynamic>? _salon;
   final Map<int, NailVariantModel> _nailVariantsById = {};
   final Map<int, ShapeMethodConfigModel> _shapeMethodsById = {};
 
@@ -49,11 +52,13 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
       final data = await _apiService.getBookingDetails(widget.bookingId);
       await _fetchNailVariants(data);
 
-      List<dynamic> salons = [];
+      Map<String, dynamic>? salon;
       try {
-        salons = await _bookingApiService.getSalons();
+        salon = await _bookingApiService.getSalonDetail(
+          data['salonId']?.toString() ?? '',
+        );
       } catch (e) {
-        debugPrint('==== Lỗi tải danh sách salon: $e ====');
+        debugPrint('==== Failed to load salon detail: $e ====');
       }
 
       Map<String, dynamic>? rating;
@@ -68,7 +73,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
       setState(() {
         _booking = data;
         _rating = rating;
-        _salons = salons;
+        _salon = salon;
         _isLoading = false;
       });
     } catch (e) {
@@ -235,15 +240,36 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     return double.tryParse(value.toString());
   }
 
-  Map<String, dynamic>? _getMatchingSalon() {
-    final salonId = _booking?['salonId']?.toString();
-    if (salonId == null || salonId.isEmpty) return null;
-    for (var s in _salons) {
-      if (s is Map && s['salonId']?.toString() == salonId) {
-        return Map<String, dynamic>.from(s);
-      }
+  bool _hasPaidAmount(Map<String, dynamic> booking) {
+    return booking['amountPaid'] != null;
+  }
+
+  bool _isRefunded(Map<String, dynamic> booking) {
+    return booking['isRefunded'] == true ||
+        booking['isRefunded']?.toString().toLowerCase() == 'true';
+  }
+
+  Future<void> _createPayment(String bookingId) async {
+    if (_isCreatingPayment || bookingId.isEmpty) return;
+    setState(() => _isCreatingPayment = true);
+    try {
+      final paymentData = await _paymentApiService.createPayment(bookingId);
+      if (!mounted) return;
+      context.go('/payment-qr', extra: paymentData);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(S.of(context).bookingPaymentError(e.toString())),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isCreatingPayment = false);
     }
-    return null;
+  }
+
+  Map<String, dynamic>? _getMatchingSalon() {
+    return _salon;
   }
 
   String _getBookingSalonName(Map<String, dynamic>? booking) {
@@ -371,6 +397,11 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
         rawStatus == 'Assigned';
     final canReschedule = rawStatus == 'Approved';
     final canRate = rawStatus == 'Completed' && !isRated;
+    final canPay = rawStatus == 'Pending' && !_hasPaidAmount(booking);
+    final canRequestRefund =
+        rawStatus == 'Cancelled' &&
+        _hasPaidAmount(booking) &&
+        !_isRefunded(booking);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -729,6 +760,43 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                 ),
               ),
             ],
+            if (canPay) ...[
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _isCreatingPayment
+                      ? null
+                      : () => _createPayment(widget.bookingId),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                  ),
+                  icon: _isCreatingPayment
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Icon(Icons.payments_rounded, color: Colors.white),
+                  label: Text(
+                    S.of(context).bookingPayBtn,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
             if (canReschedule) ...[
               const SizedBox(height: 24),
               SizedBox(
@@ -821,7 +889,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   onPressed: () {
                     showDialog(
                       context: context,
-                      builder: (context) => CancelBookingDialog(
+                      builder: (dialogContext) => CancelBookingDialog(
                         bookingId: widget.bookingId,
                         onConfirm: (reason) async {
                           try {
@@ -838,7 +906,14 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                                   ),
                                 ),
                               );
-                              _fetchBookingDetail(); // Load lại trang
+                              if (_hasPaidAmount(booking)) {
+                                context.go(
+                                  '/refund-bank-info',
+                                  extra: widget.bookingId,
+                                );
+                              } else {
+                                await _fetchBookingDetail();
+                              }
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
@@ -876,6 +951,31 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                 ),
               ),
             ],
+            if (canRequestRefund) ...[
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => context.go(
+                    '/refund-bank-info',
+                    extra: widget.bookingId,
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  icon: const Icon(Icons.receipt_long, color: Colors.white),
+                  label: const Text(
+                    'Hoàn tiền',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
             if (canRate) ...[
               const SizedBox(height: 24),
               SizedBox(
@@ -895,7 +995,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   ),
                   icon: const Icon(Icons.star, color: Colors.white),
                   label: const Text(
-                    'Rate',
+                    'Đánh giá',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),

@@ -823,6 +823,11 @@ class _NailBookingPageState extends State<NailBookingPage> {
 
   Widget _buildNailVariantPaymentItem() {
     final variant = _nailVariantDetail;
+    final shapeMethodName = _shapeMethodName ?? S.of(context).shapeMethodLabel;
+    final shouldShowShapeMethod =
+        variant?.nailShape != null &&
+        (_shapeMethodName != null || _shapeMethodPrice > 0);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Column(
@@ -836,8 +841,8 @@ class _NailBookingPageState extends State<NailBookingPage> {
           if (variant != null) ...[
             const SizedBox(height: 4),
 
-            if (variant.nailShape != null)
-              _buildVariantDetailLine(_shapeMethodName!, _shapeMethodPrice),
+            if (shouldShowShapeMethod)
+              _buildVariantDetailLine(shapeMethodName, _shapeMethodPrice),
             ...variant.nailComponents.map((component) {
               final detail = component.component;
               return _buildVariantDetailLine(

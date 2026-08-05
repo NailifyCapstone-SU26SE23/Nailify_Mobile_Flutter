@@ -189,16 +189,6 @@ class BranchSelectionList extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    isSelected
-                        ? Icons.radio_button_checked_rounded
-                        : Icons.radio_button_off_rounded,
-                    color: isSelected
-                        ? AppColors.primary
-                        : Colors.grey.shade300,
-                    size: 22,
-                  ),
                 ],
               ),
             ),

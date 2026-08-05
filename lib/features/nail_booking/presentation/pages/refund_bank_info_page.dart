@@ -104,19 +104,19 @@ class _RefundBankInfoPageState extends State<RefundBankInfoPage> {
                     children: [
                       _buildTextField(
                         controller: _accountNumberController,
-                        label: 'So tai khoan',
+                        label: 'Số tài khoản',
                         keyboardType: TextInputType.number,
                       ),
                       const SizedBox(height: 16),
                       _buildTextField(
                         controller: _accountNameController,
-                        label: 'Ten chu tai khoan',
+                        label: 'Tên tài khoản',
                         textCapitalization: TextCapitalization.characters,
                       ),
                       const SizedBox(height: 16),
                       _buildTextField(
                         controller: _bankCodeController,
-                        label: 'Ma ngan hang',
+                        label: 'Mã ngân hàng',
                         hintText: 'VD: VCB',
                         textCapitalization: TextCapitalization.characters,
                       ),
@@ -144,7 +144,7 @@ class _RefundBankInfoPageState extends State<RefundBankInfoPage> {
                           ),
                         )
                       : const Text(
-                          'Gui yeu cau hoan tien',
+                          'Hoàn tiền',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,

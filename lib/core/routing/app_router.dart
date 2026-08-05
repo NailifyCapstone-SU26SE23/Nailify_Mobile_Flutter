@@ -275,6 +275,7 @@ class AppRouter {
               return const TryOnSetupScreen();
             },
           ),
+
           GoRoute(
             path: '/profile',
             builder: (context, state) => const ProfilePage(),

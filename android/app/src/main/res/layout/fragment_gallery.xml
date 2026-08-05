@@ -92,8 +92,4 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <include
-        android:id="@+id/bottom_sheet_layout"
-        layout="@layout/info_bottom_sheet"
-        android:visibility="gone" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

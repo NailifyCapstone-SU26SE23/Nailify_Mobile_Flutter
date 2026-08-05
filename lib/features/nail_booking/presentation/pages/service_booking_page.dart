@@ -813,9 +813,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                       height: 2,
                       color: index == 0
                           ? Colors.transparent
-                          : (isCompleted || isActive
-                                ? AppColors.primary
-                                : Colors.grey.shade300),
+                          : (isCompleted || isActive ? AppColors.primary : Colors.grey.shade300),
                     ),
                   ),
                 ),
@@ -831,9 +829,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                         shape: BoxShape.circle,
                         color: isActive
                             ? Colors.white
-                            : (isCompleted
-                                  ? AppColors.primary
-                                  : Colors.grey.shade50),
+                            : (isCompleted ? AppColors.primary : Colors.grey.shade50),
                         border: Border.all(
                           color: (isActive || isCompleted)
                               ? AppColors.primary
@@ -846,7 +842,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                                   color: AppColors.primary.withOpacity(0.25),
                                   blurRadius: 8,
                                   spreadRadius: 1,
-                                ),
+                                )
                               ]
                             : null,
                       ),
@@ -856,9 +852,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                           size: 16,
                           color: isCompleted
                               ? Colors.white
-                              : (isActive
-                                    ? AppColors.primary
-                                    : Colors.grey.shade400),
+                              : (isActive ? AppColors.primary : Colors.grey.shade400),
                         ),
                       ),
                     ),
@@ -866,18 +860,10 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                     Text(
                       () {
                         final rawTitle = step['title'] as String;
-                        if (rawTitle == 'Chọn tiệm') {
-                          return S.of(context).selectSalon;
-                        }
-                        if (rawTitle == 'Dịch vụ') {
-                          return S.of(context).servicesLabel;
-                        }
-                        if (rawTitle == 'Đặt lịch') {
-                          return S.of(context).bookAppointment;
-                        }
-                        if (rawTitle == 'Hoàn tất') {
-                          return S.of(context).completedLabel;
-                        }
+                        if (rawTitle == 'Chọn tiệm') return S.of(context).selectSalon;
+                        if (rawTitle == 'Dịch vụ') return S.of(context).servicesLabel;
+                        if (rawTitle == 'Đặt lịch') return S.of(context).bookAppointment;
+                        if (rawTitle == 'Hoàn tất') return S.of(context).completedLabel;
                         return rawTitle;
                       }(),
                       style: TextStyle(
@@ -900,9 +886,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                       height: 2,
                       color: index == _bookingSteps.length - 1
                           ? Colors.transparent
-                          : (isCompleted
-                                ? AppColors.primary
-                                : Colors.grey.shade300),
+                          : (isCompleted ? AppColors.primary : Colors.grey.shade300),
                     ),
                   ),
                 ),
@@ -927,92 +911,95 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          if (_currentStep > 0)
-            OutlinedButton(
-              onPressed: state.isSubmitting
-                  ? null
-                  : () => _pageController.previousPage(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    ),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 14,
-                ),
-                side: const BorderSide(color: AppColors.primary, width: 1.5),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
-                ),
-              ),
-              child: const Text(
-                'Quay lại',
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            )
-          else
-            const SizedBox.shrink(),
-          Expanded(
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: Container(
-                height: 48,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  gradient: LinearGradient(
-                    colors: state.isSubmitting
-                        ? [Colors.grey.shade400, Colors.grey.shade500]
-                        : [AppColors.primary, const Color(0xFFFF80AB)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  boxShadow: [
-                    if (!state.isSubmitting)
-                      BoxShadow(
-                        color: AppColors.primary.withOpacity(0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                  ],
-                ),
-                child: ElevatedButton(
-                  onPressed: state.isSubmitting
-                      ? null
-                      : () => _handleNextAction(state, cubit),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    foregroundColor: Colors.white,
-                    shadowColor: Colors.transparent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    elevation: 0,
-                  ),
-                  child: state.isSubmitting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2.5,
-                          ),
-                        )
-                      : Text(
-                          _currentStep == 3 ? 'Xác nhận đặt lịch' : 'Tiếp tục',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            if (_currentStep > 0)
+              OutlinedButton(
+                onPressed: state.isSubmitting
+                    ? null
+                    : () => _pageController.previousPage(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
                         ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 14,
+                  ),
+                  side: const BorderSide(color: AppColors.primary, width: 1.5),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                ),
+                child: const Text(
+                  'Quay lại',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              )
+            else
+              const SizedBox.shrink(),
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Container(
+                  height: 48,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                    gradient: LinearGradient(
+                      colors: state.isSubmitting
+                          ? [Colors.grey.shade400, Colors.grey.shade500]
+                          : [AppColors.primary, const Color(0xFFFF80AB)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    boxShadow: [
+                      if (!state.isSubmitting)
+                        BoxShadow(
+                          color: AppColors.primary.withOpacity(0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                    ],
+                  ),
+                  child: ElevatedButton(
+                    onPressed: state.isSubmitting
+                        ? null
+                        : () => _handleNextAction(state, cubit),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      foregroundColor: Colors.white,
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      elevation: 0,
+                    ),
+                    child: state.isSubmitting
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2.5,
+                            ),
+                          )
+                        : Text(
+                            _currentStep == 3 ? 'Xác nhận đặt lịch' : 'Tiếp tục',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

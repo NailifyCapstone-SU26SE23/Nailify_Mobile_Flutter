@@ -258,6 +258,7 @@ class _LoginPageState extends State<LoginPage> {
                               TextField(
                                 controller: _emailController,
                                 keyboardType: TextInputType.emailAddress,
+                                style: const TextStyle(color: AppColors.textPrimary),
                                 decoration: InputDecoration(
                                   labelText: 'Email',
                                   labelStyle: TextStyle(
@@ -297,6 +298,7 @@ class _LoginPageState extends State<LoginPage> {
                               TextField(
                                 controller: _passwordController,
                                 obscureText: _obscurePassword,
+                                style: const TextStyle(color: AppColors.textPrimary),
                                 decoration: InputDecoration(
                                   labelText: 'Mật khẩu',
                                   labelStyle: TextStyle(

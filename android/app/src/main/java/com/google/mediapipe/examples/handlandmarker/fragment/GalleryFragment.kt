@@ -26,7 +26,6 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
@@ -36,7 +35,6 @@ import com.google.mediapipe.examples.handlandmarker.MainViewModel
 import com.google.mediapipe.examples.handlandmarker.R
 import com.google.mediapipe.examples.handlandmarker.databinding.FragmentGalleryBinding
 import com.google.mediapipe.tasks.vision.core.RunningMode
-import java.util.Locale
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -98,8 +96,6 @@ class GalleryFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
             requireActivity().finish()
         }
 
-        initBottomSheetControls()
-
         if (savedInstanceState == null && arguments?.getBoolean(ARG_AUTO_OPEN_PICKER) == true) {
             getContent.launch(arrayOf("image/*", "video/*"))
         }
@@ -112,147 +108,6 @@ class GalleryFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
         }
         fragmentGalleryBinding.videoView.visibility = View.GONE
         super.onPause()
-    }
-
-    private fun initBottomSheetControls() {
-        // init bottom sheet settings
-        fragmentGalleryBinding.bottomSheetLayout.maxHandsValue.text =
-            viewModel.currentMaxHands.toString()
-        fragmentGalleryBinding.bottomSheetLayout.detectionThresholdValue.text =
-            String.format(
-                Locale.US, "%.2f", viewModel.currentMinHandDetectionConfidence
-            )
-        fragmentGalleryBinding.bottomSheetLayout.trackingThresholdValue.text =
-            String.format(
-                Locale.US, "%.2f", viewModel.currentMinHandTrackingConfidence
-            )
-        fragmentGalleryBinding.bottomSheetLayout.presenceThresholdValue.text =
-            String.format(
-                Locale.US, "%.2f", viewModel.currentMinHandPresenceConfidence
-            )
-
-        // When clicked, lower detection score threshold floor
-        fragmentGalleryBinding.bottomSheetLayout.detectionThresholdMinus.setOnClickListener {
-            if (viewModel.currentMinHandDetectionConfidence >= 0.2) {
-                viewModel.setMinHandDetectionConfidence(viewModel.currentMinHandDetectionConfidence - 0.1f)
-                updateControlsUi()
-            }
-        }
-
-        // When clicked, raise detection score threshold floor
-        fragmentGalleryBinding.bottomSheetLayout.detectionThresholdPlus.setOnClickListener {
-            if (viewModel.currentMinHandDetectionConfidence <= 0.8) {
-                viewModel.setMinHandDetectionConfidence(viewModel.currentMinHandDetectionConfidence + 0.1f)
-                updateControlsUi()
-            }
-        }
-
-        // When clicked, lower hand tracking score threshold floor
-        fragmentGalleryBinding.bottomSheetLayout.trackingThresholdMinus.setOnClickListener {
-            if (viewModel.currentMinHandTrackingConfidence >= 0.2) {
-                viewModel.setMinHandTrackingConfidence(
-                    viewModel.currentMinHandTrackingConfidence - 0.1f
-                )
-                updateControlsUi()
-            }
-        }
-
-        // When clicked, raise hand tracking score threshold floor
-        fragmentGalleryBinding.bottomSheetLayout.trackingThresholdPlus.setOnClickListener {
-            if (viewModel.currentMinHandTrackingConfidence <= 0.8) {
-                viewModel.setMinHandTrackingConfidence(
-                    viewModel.currentMinHandTrackingConfidence + 0.1f
-                )
-                updateControlsUi()
-            }
-        }
-
-        // When clicked, lower hand presence score threshold floor
-        fragmentGalleryBinding.bottomSheetLayout.presenceThresholdMinus.setOnClickListener {
-            if (viewModel.currentMinHandPresenceConfidence >= 0.2) {
-                viewModel.setMinHandPresenceConfidence(
-                    viewModel.currentMinHandPresenceConfidence - 0.1f
-                )
-                updateControlsUi()
-            }
-        }
-
-        // When clicked, raise hand presence score threshold floor
-        fragmentGalleryBinding.bottomSheetLayout.presenceThresholdPlus.setOnClickListener {
-            if (viewModel.currentMinHandPresenceConfidence <= 0.8) {
-                viewModel.setMinHandPresenceConfidence(
-                    viewModel.currentMinHandPresenceConfidence + 0.1f
-                )
-                updateControlsUi()
-            }
-        }
-
-        // When clicked, reduce the number of objects that can be detected at a time
-        fragmentGalleryBinding.bottomSheetLayout.maxHandsMinus.setOnClickListener {
-            if (viewModel.currentMaxHands > 1) {
-                viewModel.setMaxHands(viewModel.currentMaxHands - 1)
-                updateControlsUi()
-            }
-        }
-
-        // When clicked, increase the number of objects that can be detected at a time
-        fragmentGalleryBinding.bottomSheetLayout.maxHandsPlus.setOnClickListener {
-            if (viewModel.currentMaxHands < 2) {
-                viewModel.setMaxHands(viewModel.currentMaxHands + 1)
-                updateControlsUi()
-            }
-        }
-
-        // When clicked, change the underlying hardware used for inference. Current options are CPU
-        // GPU, and NNAPI
-        fragmentGalleryBinding.bottomSheetLayout.spinnerDelegate.setSelection(
-            viewModel.currentDelegate,
-            false
-        )
-        fragmentGalleryBinding.bottomSheetLayout.spinnerDelegate.onItemSelectedListener =
-            object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(
-                    p0: AdapterView<*>?,
-                    p1: View?,
-                    p2: Int,
-                    p3: Long
-                ) {
-
-                    viewModel.setDelegate(p2)
-                    updateControlsUi()
-                }
-
-                override fun onNothingSelected(p0: AdapterView<*>?) {
-                    /* no op */
-                }
-            }
-    }
-
-    // Update the values displayed in the bottom sheet. Reset detector.
-    private fun updateControlsUi() {
-        if (fragmentGalleryBinding.videoView.isPlaying) {
-            fragmentGalleryBinding.videoView.stopPlayback()
-        }
-        fragmentGalleryBinding.videoView.visibility = View.GONE
-        fragmentGalleryBinding.imageResult.visibility = View.GONE
-        fragmentGalleryBinding.overlay.clear()
-        fragmentGalleryBinding.bottomSheetLayout.maxHandsValue.text =
-            viewModel.currentMaxHands.toString()
-        fragmentGalleryBinding.bottomSheetLayout.detectionThresholdValue.text =
-            String.format(
-                Locale.US, "%.2f", viewModel.currentMinHandDetectionConfidence
-            )
-        fragmentGalleryBinding.bottomSheetLayout.trackingThresholdValue.text =
-            String.format(
-                Locale.US, "%.2f", viewModel.currentMinHandTrackingConfidence
-            )
-        fragmentGalleryBinding.bottomSheetLayout.presenceThresholdValue.text =
-            String.format(
-                Locale.US, "%.2f", viewModel.currentMinHandPresenceConfidence
-            )
-
-        fragmentGalleryBinding.overlay.clear()
-        fragmentGalleryBinding.tvPlaceholder.visibility = View.VISIBLE
     }
 
     // Load and display the image.
@@ -301,8 +156,6 @@ class GalleryFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
                             )
 
                             setUiEnabled(true)
-                            fragmentGalleryBinding.bottomSheetLayout.inferenceTimeVal.text =
-                                String.format(Locale.US, "%d ms", result.inferenceTime)
                         }
                     } ?: run { Log.e(TAG, "Error running hand landmarker.") }
 
@@ -381,9 +234,6 @@ class GalleryFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
                         )
 
                         setUiEnabled(true)
-
-                        fragmentGalleryBinding.bottomSheetLayout.inferenceTimeVal.text =
-                            String.format(Locale.US, "%d ms", result.inferenceTime)
                     }
                 }
             },
@@ -415,24 +265,6 @@ class GalleryFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
 
     private fun setUiEnabled(enabled: Boolean) {
         fragmentGalleryBinding.fabGetContent.isEnabled = enabled
-        fragmentGalleryBinding.bottomSheetLayout.detectionThresholdMinus.isEnabled =
-            enabled
-        fragmentGalleryBinding.bottomSheetLayout.detectionThresholdPlus.isEnabled =
-            enabled
-        fragmentGalleryBinding.bottomSheetLayout.trackingThresholdMinus.isEnabled =
-            enabled
-        fragmentGalleryBinding.bottomSheetLayout.trackingThresholdPlus.isEnabled =
-            enabled
-        fragmentGalleryBinding.bottomSheetLayout.presenceThresholdMinus.isEnabled =
-            enabled
-        fragmentGalleryBinding.bottomSheetLayout.presenceThresholdPlus.isEnabled =
-            enabled
-        fragmentGalleryBinding.bottomSheetLayout.maxHandsPlus.isEnabled =
-            enabled
-        fragmentGalleryBinding.bottomSheetLayout.maxHandsMinus.isEnabled =
-            enabled
-        fragmentGalleryBinding.bottomSheetLayout.spinnerDelegate.isEnabled =
-            enabled
     }
 
     private fun classifyingError() {
@@ -447,12 +279,6 @@ class GalleryFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
         classifyingError()
         activity?.runOnUiThread {
             Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show()
-            if (errorCode == HandLandmarkerHelper.GPU_ERROR) {
-                fragmentGalleryBinding.bottomSheetLayout.spinnerDelegate.setSelection(
-                    HandLandmarkerHelper.DELEGATE_CPU,
-                    false
-                )
-            }
         }
     }
 

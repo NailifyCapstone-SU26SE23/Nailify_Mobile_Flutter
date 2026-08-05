@@ -45,6 +45,7 @@ class SnapshotPreviewScreen extends StatefulWidget {
   final Map<int, String> fingerColors;
   final Map<int, List<String>?> fingerGradients;
   final List<PlacedComponentDraft> placements;
+  final bool isFromGallery;
 
   const SnapshotPreviewScreen({
     super.key,
@@ -56,6 +57,7 @@ class SnapshotPreviewScreen extends StatefulWidget {
     required this.fingerColors,
     required this.fingerGradients,
     required this.placements,
+    this.isFromGallery = false,
   });
 
   @override
@@ -124,16 +126,18 @@ class _SnapshotPreviewScreenState extends State<SnapshotPreviewScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Đảm bảo bàn tay nằm trong khung và thử chụp lại.',
-                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                Text(
+                  widget.isFromGallery
+                      ? 'Chọn một ảnh khác rõ ràng hơn để AI phân tích.'
+                      : 'Đảm bảo bàn tay nằm trong khung và thử chụp lại.',
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
                 FilledButton.icon(
                   onPressed: () => Navigator.of(context).pop('retake'),
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: const Text('Chụp lại'),
+                  icon: Icon(widget.isFromGallery ? Icons.photo_library_rounded : Icons.refresh_rounded),
+                  label: Text(widget.isFromGallery ? 'Chọn ảnh khác' : 'Chụp lại'),
                   style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFFFF69B4),
                   ),
@@ -219,11 +223,13 @@ class _SnapshotPreviewScreenState extends State<SnapshotPreviewScreen> {
                   top: topPad + 14,
                   left: 56,
                   right: 56,
-                  child: const IgnorePointer(
+                  child: IgnorePointer(
                     child: Center(
                       child: Text(
-                        'Tùy chỉnh trên ảnh chụp 📸',
-                        style: TextStyle(
+                        widget.isFromGallery
+                            ? 'Tùy chỉnh trên ảnh đã chọn 🖼️'
+                            : 'Tùy chỉnh trên ảnh chụp 📸',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 15,
                           fontWeight: FontWeight.bold,

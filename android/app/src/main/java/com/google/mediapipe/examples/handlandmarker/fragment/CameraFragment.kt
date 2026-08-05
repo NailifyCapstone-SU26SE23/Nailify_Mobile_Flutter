@@ -85,17 +85,27 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
 
     // Launcher để chọn ảnh từ thư viện
     private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-        uri?.let {
-            processPickedImage(it)
+        if (uri != null) {
+            processPickedImage(uri)
+        } else {
+            // Nếu user hủy chọn ảnh khi được mở trực tiếp từ mode gallery
+            val entryMode = requireActivity().intent.getStringExtra("try_on_entry")
+            if (entryMode == "gallery") {
+                requireActivity().setResult(Activity.RESULT_CANCELED)
+                requireActivity().finish()
+            }
         }
     }
 
     override fun onResume() {
         super.onResume()
-        if (!PermissionsFragment.hasPermissions(requireContext())) {
-            Navigation.findNavController(
-                requireActivity(), R.id.fragment_container
-            ).navigate(R.id.action_camera_to_permissions)
+        val entryMode = requireActivity().intent.getStringExtra("try_on_entry")
+        if (entryMode != "gallery") {
+            if (!PermissionsFragment.hasPermissions(requireContext())) {
+                Navigation.findNavController(
+                    requireActivity(), R.id.fragment_container
+                ).navigate(R.id.action_camera_to_permissions)
+            }
         }
         backgroundExecutor.execute {
             if (handLandmarkerHelper.isClose()) {
@@ -149,7 +159,12 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
         // Cấu hình UI theo mode
         applyModeUi()
 
-        fragmentCameraBinding.viewFinder.post { setUpCamera() }
+        val entryMode = requireActivity().intent.getStringExtra("try_on_entry")
+        if (entryMode == "gallery") {
+            pickImageLauncher.launch("image/*")
+        } else {
+            fragmentCameraBinding.viewFinder.post { setUpCamera() }
+        }
 
         val listener = object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
             override fun onScale(detector: ScaleGestureDetector): Boolean {

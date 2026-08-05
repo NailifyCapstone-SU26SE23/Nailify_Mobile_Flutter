@@ -29,6 +29,10 @@ class MainActivity : FlutterActivity() {
                         call.argument<Map<*, *>>("config"),
                         result
                     )
+                    "launchGallerySnapshot" -> launchGallerySnapshot(
+                        call.argument<Map<*, *>>("config"),
+                        result
+                    )
                     else             -> result.notImplemented()
                 }
             }
@@ -89,6 +93,30 @@ class MainActivity : FlutterActivity() {
             }
             putExtra("camera_mode", "snapshot")
             putExtra("try_on_entry", "camera")  // navigate tới CameraFragment
+        }
+        startActivityForResult(intent, requestCodeSnapshot)
+    }
+
+    private fun launchGallerySnapshot(config: Map<*, *>?, result: MethodChannel.Result) {
+        val activityClass = findArActivityClass()
+        if (activityClass == null) {
+            result.error(
+                "AR_ACTIVITY_NOT_FOUND",
+                "AR module not found.",
+                null
+            )
+            return
+        }
+
+        // Lưu result để dùng khi onActivityResult được gọi
+        pendingSnapshotResult = result
+
+        val intent = Intent(this, activityClass).apply {
+            if (config != null) {
+                putExtra("nail_set_config_json", JSONObject(config.toStringKeyMap()).toString())
+            }
+            putExtra("camera_mode", "snapshot")
+            putExtra("try_on_entry", "gallery")  // navigate tới Gallery picker thay vì camera
         }
         startActivityForResult(intent, requestCodeSnapshot)
     }

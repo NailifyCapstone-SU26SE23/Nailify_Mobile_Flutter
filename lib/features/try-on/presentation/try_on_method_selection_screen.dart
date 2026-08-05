@@ -105,6 +105,53 @@ class _TryOnMethodSelectionScreenState
     }
   }
 
+  // ---- Gallery Snapshot Try-on ----
+  Future<void> _launchGallery() async {
+    setState(() => _launching = true);
+    try {
+      final service = getIt<ArTryOnService>();
+      if (!await service.isAvailable()) {
+        throw UnsupportedError(
+          'Virtual try-on is not available on this build.',
+        );
+      }
+
+      // Vòng lặp: mở gallery → nếu user bấm "Chọn ảnh khác" thì mở gallery lại
+      while (true) {
+        final result = await service.launchCustomerGallery(widget.previewNail);
+        if (!mounted) return;
+
+        // Push màn hình Preview và chờ kết quả
+        final action = await Navigator.of(context, rootNavigator: true)
+            .push<dynamic>(
+              MaterialPageRoute(
+                builder: (_) => SnapshotPreviewScreen(
+                  snapshot: result,
+                  nail: widget.previewNail,
+                  tryOnData: widget.tryOnData,
+                  selectedShape: widget.selectedShape,
+                  selectedSurface: widget.selectedSurface,
+                  fingerColors: widget.fingerColors,
+                  fingerGradients: widget.fingerGradients,
+                  placements: widget.placements,
+                  isFromGallery: true,
+                ),
+              ),
+            );
+
+        if (action is SnapshotEditorResult) {
+          if (mounted) Navigator.of(context).pop(action);
+          break;
+        }
+        if (action != 'retake') break;
+      }
+    } catch (error) {
+      if (mounted) _showError(error.toString());
+    } finally {
+      if (mounted) setState(() => _launching = false);
+    }
+  }
+
   void _showError(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
@@ -152,7 +199,33 @@ class _TryOnMethodSelectionScreenState
                   ),
                 ),
 
-                const SizedBox(height: 28),
+                const SizedBox(height: 24),
+
+                // Upload ảnh
+                SizedBox(
+                  width: 260,
+                  child: FilledButton.tonalIcon(
+                    onPressed: _launching ? null : _launchGallery,
+                    icon: const Icon(Icons.photo_library_outlined),
+                    label: const Text('Upload ảnh'),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 40),
+                  child: Text(
+                    'Chọn ảnh bàn tay từ thư viện để AI phân tích rồi ghép móng.',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+
+                const SizedBox(height: 24),
 
                 // Live Try-on
                 SizedBox(

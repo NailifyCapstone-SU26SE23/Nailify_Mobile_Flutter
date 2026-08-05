@@ -132,6 +132,12 @@ class _TryOnPreviewBoardState extends State<TryOnPreviewBoard>
 
   @override
   Widget build(BuildContext context) {
+    final activeFinger = _getEffectiveFingerIndex(
+      widget.selectedFingerIndex,
+      widget.detailFingerIndex,
+    );
+    final showingRow = activeFinger == -1 && _animatingFingerIndex == -1;
+
     return Center(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -139,13 +145,12 @@ class _TryOnPreviewBoardState extends State<TryOnPreviewBoard>
           widget.onSelectPlacement(-1);
         },
         child: AspectRatio(
-          aspectRatio:
-              1.0, // Fixed 1.0 Aspect Ratio for perfectly aligned and smooth transitions
+          aspectRatio: showingRow ? 2.25 : 1.1,
           child: Container(
             decoration: BoxDecoration(
               color: Colors.white,
               border: Border.all(color: Colors.black12),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -163,10 +168,8 @@ class _TryOnPreviewBoardState extends State<TryOnPreviewBoard>
                     ? cached.contentRect.width / cached.contentRect.height
                     : 0.35;
 
-                final double maxZoomWidth =
-                    width * 0.42; // Up to 42% of preview board width
-                final double maxZoomHeight =
-                    height * 0.72; // Up to 72% of preview board height
+                final double maxZoomWidth = width * 0.72;
+                final double maxZoomHeight = height * 0.9;
 
                 double detailWidth = maxZoomWidth;
                 double detailHeight = detailWidth / nailAspectRatio;
@@ -179,23 +182,20 @@ class _TryOnPreviewBoardState extends State<TryOnPreviewBoard>
                 final double detailLeft = (width - detailWidth) / 2;
                 final double detailTop = (height - detailHeight) / 2;
 
-                final double rowHorizontalPadding = width * 0.07;
-                final double columnGap = width * 0.018;
+                const double rowPadding = 8.0;
+                const double columnGap = 6.0;
                 final double columnWidth =
-                    (width - rowHorizontalPadding * 2 - columnGap * 4) / 5;
-                final double nailSlotHeight = (height * 0.58).clamp(
-                  90.0,
-                  height * 0.78,
-                );
-                final double nailSlotWidth = (nailSlotHeight * nailAspectRatio)
-                    .clamp(28.0, columnWidth * 0.72);
-                final double rowTop = (height - nailSlotHeight) / 2;
+                    (width - rowPadding * 2 - columnGap * 4) / 5;
+                final double columnHeight = height - rowPadding * 2;
+                final double nailSlotWidth = columnWidth * 0.86;
+                final double nailSlotHeight = columnHeight * 0.9;
+                final double rowTop =
+                    rowPadding + (columnHeight - nailSlotHeight) / 2;
                 final List<Map<String, dynamic>> fingerConfigs = List.generate(
                   5,
                   (index) {
                     final columnLeft =
-                        rowHorizontalPadding +
-                        index * (columnWidth + columnGap);
+                        rowPadding + index * (columnWidth + columnGap);
                     return {
                       'finger': index + 1,
                       'columnLeft': columnLeft,
@@ -217,22 +217,16 @@ class _TryOnPreviewBoardState extends State<TryOnPreviewBoard>
                       ...fingerConfigs.map(
                         (cfg) => Positioned(
                           left: cfg['columnLeft'] as double,
-                          top: height * 0.12,
+                          top: rowPadding,
                           width: cfg['columnWidth'] as double,
-                          height: height * 0.76,
+                          height: columnHeight,
                           child: Opacity(
                             opacity: (1.0 - t).clamp(0.0, 1.0),
                             child: DecoratedBox(
                               decoration: BoxDecoration(
-                                color: const Color(
-                                  0xFFFF4081,
-                                ).withValues(alpha: 0.025),
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: const Color(
-                                    0xFFFF4081,
-                                  ).withValues(alpha: 0.08),
-                                ),
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.black12),
                               ),
                             ),
                           ),

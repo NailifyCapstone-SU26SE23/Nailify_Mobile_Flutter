@@ -592,7 +592,8 @@ class _DetailContentState extends State<_DetailContent> {
                                   color: AppColors.primary,
                                 ),
                               )
-                            : const Icon(Icons.fiber_manual_record, size: 24),
+                            : const Icon(Icons.videocam_outlined, size: 24),
+
                       ),
                     ),
                   ),
@@ -619,7 +620,7 @@ class _DetailContentState extends State<_DetailContent> {
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        child: const Icon(Icons.camera_alt_outlined, size: 24),
+                        child: const Icon(Icons.photo_camera_outlined, size: 24),
                       ),
                     ),
                   ),

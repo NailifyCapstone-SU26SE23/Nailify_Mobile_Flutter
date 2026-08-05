@@ -31,19 +31,6 @@ class _MainShellState extends State<MainShell> {
     return token != null && token.isNotEmpty;
   }
 
-  // Hàm xử lý Đăng xuất
-  Future<void> _logout() async {
-    await getIt<SharedPreferences>().remove(AppConstants.authTokenKey);
-    await getIt<SharedPreferences>().remove('has_completed_quiz');
-    if (mounted) {
-      setState(() {}); // Làm mới UI để thanh AppBar vẽ lại nút
-      context.go('/'); // Đưa người dùng về trang chủ
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Đã đăng xuất thành công!')));
-    }
-  }
-
   int _calculateCurrentIndex(BuildContext context) {
     final String location = GoRouterState.of(context).matchedLocation;
     if (location.startsWith('/my-bookings')) return 1;
@@ -67,61 +54,6 @@ class _MainShellState extends State<MainShell> {
         context.go('/profile');
         break;
     }
-  }
-
-  void _showPopupNotification(BuildContext context, String actionName) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.construction, color: Colors.amber),
-            SizedBox(width: 8),
-            Text('Thông báo'),
-          ],
-        ),
-        content: Text(
-          'Tính năng "$actionName" đang được xử lý. Trang mục tiêu hiện tại chưa được khởi tạo.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text(
-              'Đóng',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAnimatedBody(BuildContext context, Widget child) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
-      switchInCurve: Curves.easeInOut,
-      switchOutCurve: Curves.easeInOut,
-      transitionBuilder: (Widget child, Animation<double> animation) {
-        return FadeTransition(
-          opacity: animation,
-          child: SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0.015, 0.0),
-              end: Offset.zero,
-            ).animate(animation),
-            child: child,
-          ),
-        );
-      },
-      child: KeyedSubtree(
-        key: ValueKey(GoRouterState.of(context).matchedLocation),
-        child: child,
-      ),
-    );
   }
 
   @override

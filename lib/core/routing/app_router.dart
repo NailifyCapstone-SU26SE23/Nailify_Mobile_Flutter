@@ -5,8 +5,6 @@ import '../../features/auth/presentation/pages/customer_login_page.dart';
 import '../../features/auth/presentation/pages/customer_register_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_pages.dart';
 import '../../features/auth/presentation/pages/profile_update_pages.dart';
-import '../../features/catalog/presentation/pages/catalog_page.dart';
-import '../../features/catalog/presentation/pages/nail_details_page.dart';
 import '../../features/custom_nail/presentation/pages/custom_nail_stepper_page.dart';
 import '../../features/discover/presentation/pages/discover_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
@@ -172,17 +170,6 @@ class AppRouter {
                       );
                     },
               );
-            },
-          ),
-          GoRoute(
-            path: '/catalog',
-            builder: (context, state) => const CatalogPage(),
-          ),
-          GoRoute(
-            path: '/catalog/details',
-            builder: (context, state) {
-              final nailData = state.extra as Map<String, dynamic>;
-              return NailDetailsPage(nailData: nailData);
             },
           ),
           GoRoute(

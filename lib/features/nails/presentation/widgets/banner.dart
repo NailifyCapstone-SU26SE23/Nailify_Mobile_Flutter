@@ -15,7 +15,6 @@ class QuizBanner extends StatefulWidget {
 class _QuizBannerState extends State<QuizBanner>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _animation;
   bool _hasCompletedQuiz = false;
 
   @override
@@ -27,10 +26,6 @@ class _QuizBannerState extends State<QuizBanner>
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     )..repeat(reverse: true);
-    _animation = Tween<double>(
-      begin: 0.3,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override

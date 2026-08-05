@@ -181,11 +181,6 @@ double _asDouble(dynamic value) {
   return double.tryParse(value?.toString() ?? '') ?? 0;
 }
 
-bool _asBool(dynamic value) {
-  if (value is bool) return value;
-  return value?.toString().toLowerCase() == 'true';
-}
-
 String _asString(dynamic value, {String fallback = ''}) {
   if (value == null) return fallback;
   return value.toString();

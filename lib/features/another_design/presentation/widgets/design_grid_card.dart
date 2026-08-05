@@ -11,7 +11,7 @@ class DesignGridCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push('/catalog/details', extra: design.toNailData()),
+      onTap: () => context.push('/nails'),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,

@@ -189,13 +189,9 @@ class BookingApiService {
 
     return slots.where((slot) {
       final String? startTimeStr = slot['startTime'] as String?;
-      final String? endTimeStr = slot['endTime'] as String?;
       if (startTimeStr == null) return false;
 
       final int slotStartMin = toMinutes(startTimeStr);
-      final int slotEndMin = endTimeStr != null
-          ? toMinutes(endTimeStr)
-          : slotStartMin + 30;
 
       for (final segment in activeSegments) {
         final String openStr = segment['openTime'] ?? '08:00:00';

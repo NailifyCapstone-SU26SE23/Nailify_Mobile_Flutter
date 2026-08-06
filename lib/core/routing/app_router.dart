@@ -21,7 +21,9 @@ import '../../features/nail_booking/presentation/pages/payment_result_page.dart'
 import '../../features/nail_booking/presentation/pages/refund_bank_info_page.dart';
 import '../../features/nail_booking/presentation/pages/service_booking_page.dart';
 import '../../features/nail_booking/presentation/pages/transaction_detail_page.dart';
+import '../../features/nail_booking/presentation/pages/transaction_list_page.dart';
 import '../../features/my_studio/presentation/pages/my_studio_tab_page.dart';
+import '../../features/nails/presentation/pages/favorite_nails_page.dart';
 import '../../features/nails/presentation/pages/nail_detail_screen.dart';
 import '../../features/nails/presentation/pages/nail_list_screen.dart';
 import '../../features/nails/presentation/pages/nail_variant_detail_screen.dart';
@@ -141,6 +143,13 @@ class AppRouter {
         builder: (context, state) {
           final transaction = state.extra as Map<String, dynamic>? ?? {};
           return TransactionDetailPage(transaction: transaction);
+        },
+      ),
+      GoRoute(
+        path: '/booking-transactions',
+        builder: (context, state) {
+          final bookingId = state.extra?.toString() ?? '';
+          return TransactionListPage(bookingId: bookingId);
         },
       ),
       GoRoute(path: '/quiz', builder: (context, state) => const QuizPage()),
@@ -285,6 +294,14 @@ class AppRouter {
           GoRoute(
             path: '/profile/update-preferences',
             builder: (context, state) => const UpdatePreferencesPage(),
+          ),
+          GoRoute(
+            path: '/profile/transactions',
+            builder: (context, state) => const TransactionListPage(),
+          ),
+          GoRoute(
+            path: '/profile/favorite-nails-list',
+            builder: (context, state) => const FavoriteNailsPage(),
           ),
           GoRoute(
             path: '/profile/booking-history',

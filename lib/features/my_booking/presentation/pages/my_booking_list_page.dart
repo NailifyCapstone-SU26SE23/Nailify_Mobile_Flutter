@@ -22,6 +22,7 @@ class MyBookingListPage extends StatefulWidget {
 class _MyBookingListPageState extends State<MyBookingListPage>
     with SingleTickerProviderStateMixin {
   final MyBookingApiService _apiService = MyBookingApiService();
+  final ScrollController _bookingScrollController = ScrollController();
 
   late TabController _tabController;
   StreamSubscription? _rescheduleSub;
@@ -29,6 +30,9 @@ class _MyBookingListPageState extends State<MyBookingListPage>
   // Dữ liệu lịch hẹn
   List<Map<String, dynamic>> _allBookings = [];
   bool _isLoading = true;
+  bool _isLoadingMore = false;
+  int _page = 1;
+  bool _hasNextPage = false;
 
   // Cấu hình Bộ lọc (Filter State)
   int? _selectedMonth;
@@ -59,7 +63,8 @@ class _MyBookingListPageState extends State<MyBookingListPage>
       initialIndex: widget.initialTab.clamp(0, 2),
     );
 
-    _fetchBookings();
+    _bookingScrollController.addListener(_onBookingScroll);
+    _fetchBookings(refresh: true);
 
     _rescheduleSub = getIt<SignalRService>().onBookingRescheduled.listen((
       event,
@@ -68,7 +73,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
         '[RescheduleTab] ⚡ Nhận sự kiện status=${event.status}, bookingId=${event.bookingId}, message=${event.message}',
       );
       if (mounted) {
-        _fetchBookings();
+        _fetchBookings(refresh: true);
       }
     });
   }
@@ -76,6 +81,8 @@ class _MyBookingListPageState extends State<MyBookingListPage>
   @override
   void dispose() {
     _rescheduleSub?.cancel();
+    _bookingScrollController.removeListener(_onBookingScroll);
+    _bookingScrollController.dispose();
     _tabController.dispose();
     super.dispose();
   }
@@ -91,9 +98,36 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     }
   }
 
-  Future<void> _fetchBookings() async {
+  void _onBookingScroll() {
+    if (_tabController.index != 0) return;
+    if (_bookingScrollController.position.extentAfter < 400) {
+      _loadMoreBookings();
+    }
+  }
+
+  Future<void> _loadMoreBookings() async {
+    if (!_hasNextPage || _isLoadingMore || _isLoading) return;
+    await _fetchBookings(refresh: false);
+  }
+
+  Future<void> _fetchBookings({bool refresh = true}) async {
+    if (refresh) {
+      setState(() {
+        _allBookings = [];
+        _isLoading = true;
+        _page = 1;
+        _hasNextPage = false;
+      });
+    } else {
+      setState(() => _isLoadingMore = true);
+    }
+
     try {
-      final data = await _apiService.getMyBookings();
+      final result = await _apiService.getMyBookingsPage(
+        pageNumber: refresh ? 1 : _page + 1,
+        pageSize: 5,
+      );
+      final data = result.items;
 
       final List<Map<String, dynamic>> validBookings = [];
       for (var item in data) {
@@ -121,12 +155,20 @@ class _MyBookingListPageState extends State<MyBookingListPage>
 
       if (!mounted) return;
       setState(() {
-        _allBookings = validBookings;
+        _allBookings = refresh
+            ? validBookings
+            : [..._allBookings, ...validBookings];
+        _page = result.page;
+        _hasNextPage = result.hasNextPage;
         _isLoading = false;
+        _isLoadingMore = false;
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+        _isLoadingMore = false;
+      });
       debugPrint('==== LỖI API MY BOOKINGS: $e ====');
       ScaffoldMessenger.of(
         context,
@@ -246,25 +288,39 @@ class _MyBookingListPageState extends State<MyBookingListPage>
                               hasDataButFilteredOut: _allBookings.isNotEmpty,
                             )
                           : ListView.builder(
+                              controller: _bookingScrollController,
                               padding: const EdgeInsets.all(20),
                               physics: const BouncingScrollPhysics(),
-                              itemCount: _filteredBookings.length,
-                              itemBuilder: (context, index) =>
-                                  _buildBookingCard(_filteredBookings[index]),
+                              itemCount:
+                                  _filteredBookings.length +
+                                  (_isLoadingMore ? 1 : 0),
+                              itemBuilder: (context, index) {
+                                if (index >= _filteredBookings.length) {
+                                  return const Padding(
+                                    padding: EdgeInsets.all(16),
+                                    child: Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  );
+                                }
+                                return _buildBookingCard(
+                                  _filteredBookings[index],
+                                );
+                              },
                             ),
                     ),
                   ],
                 ),
 
           // ─── TAB 2: Lịch chờ ───
-          WaitlistTab(onRefreshBookings: _fetchBookings),
+          WaitlistTab(onRefreshBookings: () => _fetchBookings(refresh: true)),
 
           // ─── TAB 3: Dời lịch ───
           _isLoading
               ? const Center(child: CircularProgressIndicator())
               : RescheduleTab(
                   rescheduleBookings: _rescheduleRelatedBookings,
-                  onRefreshBookings: _fetchBookings,
+                  onRefreshBookings: () => _fetchBookings(refresh: true),
                   // Sau khi accept/decline thành công → chuyển về tab Lịch đặt
                   onActionSuccess: () {
                     _tabController.animateTo(0);

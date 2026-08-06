@@ -270,9 +270,7 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
                             ),
                           ),
                           child: Text(
-                            _isCancelling
-                                ? 'Dang huy...'
-                                : 'Huy thanh toan',
+                            _isCancelling ? 'Dang huy...' : 'Huy thanh toan',
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),

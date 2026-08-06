@@ -10,6 +10,7 @@ import '../../data/models/customer_nail_models.dart' as nails_model;
 import '../../data/models/nail_component_model.dart';
 import '../../data/models/nail_variant_model.dart';
 import '../../data/models/shape_method_config_model.dart';
+import '../../data/repositories/favorite_nail_repository.dart';
 import '../../data/repositories/nail_variant_repository.dart';
 import '../../services/ar_try_on_service.dart';
 import '../../../../generated/l10n.dart';
@@ -33,6 +34,8 @@ class _NailVariantDetailScreenState extends State<NailVariantDetailScreen> {
   late Future<NailVariantModel> _future;
   bool _launching = false;
   bool _isFavorited = false;
+  int? _favoriteNailId;
+  bool _favoriteInitialized = false;
 
   @override
   void initState() {
@@ -153,20 +156,66 @@ class _NailVariantDetailScreenState extends State<NailVariantDetailScreen> {
               ),
             );
           }
+          final variant = snapshot.data!;
+          if (!_favoriteInitialized) {
+            _isFavorited = variant.isFavorited;
+            _favoriteNailId = variant.favoriteNailId;
+            _favoriteInitialized = true;
+          }
           return _DetailContent(
-            variant: snapshot.data!,
+            variant: variant,
             designName: widget.designName,
             launching: _launching,
             onTryOn: _openTryOn,
             onPhotoTryOn: _openPhotoTryOn,
             isFavorited: _isFavorited,
-            onFavoriteToggle: () {
-              setState(() => _isFavorited = !_isFavorited);
-            },
+            onFavoriteToggle: _toggleFavorite,
           );
         },
       ),
     );
+  }
+
+  Future<void> _toggleFavorite() async {
+    AuthGuard.check(context, () {
+      _toggleFavoriteAfterAuth();
+    });
+  }
+
+  Future<void> _toggleFavoriteAfterAuth() async {
+    final previousIsFavorited = _isFavorited;
+    final previousFavoriteNailId = _favoriteNailId;
+    final shouldFavorite = !_isFavorited;
+    setState(() {
+      _isFavorited = shouldFavorite;
+      if (!shouldFavorite) _favoriteNailId = null;
+    });
+    try {
+      if (shouldFavorite) {
+        final favoriteNailId = await getIt<FavoriteNailRepository>()
+            .favoriteVariant(widget.nailVariantId);
+        if (mounted) {
+          setState(() => _favoriteNailId = favoriteNailId);
+        }
+      } else {
+        if (previousFavoriteNailId == null) {
+          throw StateError('Missing favoriteNailId');
+        }
+        await getIt<FavoriteNailRepository>().unfavorite(
+          previousFavoriteNailId,
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _isFavorited = previousIsFavorited;
+          _favoriteNailId = previousFavoriteNailId;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Khong the cap nhat yeu thich: $error')),
+        );
+      }
+    }
   }
 }
 
@@ -593,7 +642,6 @@ class _DetailContentState extends State<_DetailContent> {
                                 ),
                               )
                             : const Icon(Icons.videocam_outlined, size: 24),
-
                       ),
                     ),
                   ),
@@ -620,7 +668,10 @@ class _DetailContentState extends State<_DetailContent> {
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        child: const Icon(Icons.photo_camera_outlined, size: 24),
+                        child: const Icon(
+                          Icons.photo_camera_outlined,
+                          size: 24,
+                        ),
                       ),
                     ),
                   ),

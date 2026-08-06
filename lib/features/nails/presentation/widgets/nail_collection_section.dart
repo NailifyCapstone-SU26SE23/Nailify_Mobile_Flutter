@@ -116,6 +116,7 @@ class NailCollectionSection extends StatelessWidget {
                   width: _cardWidth,
                   child: NailDesignCard(
                     design: design,
+                    isFavorited: design.isFavorited,
                     matchPercentage: matchPercentages[design.nailDesignId],
                     onTap: () => onDesignTap(design),
                   ),

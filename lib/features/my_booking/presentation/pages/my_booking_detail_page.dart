@@ -797,6 +797,31 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                 ),
               ),
             ],
+            if (_hasPaidAmount(booking)) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => context.push(
+                    '/booking-transactions',
+                    extra: widget.bookingId,
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  icon: const Icon(Icons.receipt_long),
+                  label: const Text(
+                    'Xem giao dịch',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
             if (canReschedule) ...[
               const SizedBox(height: 24),
               SizedBox(
@@ -956,10 +981,8 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () => context.go(
-                    '/refund-bank-info',
-                    extra: widget.bookingId,
-                  ),
+                  onPressed: () =>
+                      context.go('/refund-bank-info', extra: widget.bookingId),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,

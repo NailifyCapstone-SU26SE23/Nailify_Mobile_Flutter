@@ -232,7 +232,9 @@ class _RegisterPageState extends State<RegisterPage> {
                               TextField(
                                 controller: _emailController,
                                 keyboardType: TextInputType.emailAddress,
-                                style: const TextStyle(color: AppColors.textPrimary),
+                                style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                ),
                                 decoration: InputDecoration(
                                   labelText: S.of(context).email,
                                   labelStyle: TextStyle(
@@ -276,7 +278,9 @@ class _RegisterPageState extends State<RegisterPage> {
                                       controller: _firstNameController,
                                       textCapitalization:
                                           TextCapitalization.words,
-                                      style: const TextStyle(color: AppColors.textPrimary),
+                                      style: const TextStyle(
+                                        color: AppColors.textPrimary,
+                                      ),
                                       decoration: InputDecoration(
                                         labelText: S.of(context).lastNameHint,
                                         labelStyle: TextStyle(
@@ -317,7 +321,9 @@ class _RegisterPageState extends State<RegisterPage> {
                                       controller: _lastNameController,
                                       textCapitalization:
                                           TextCapitalization.words,
-                                      style: const TextStyle(color: AppColors.textPrimary),
+                                      style: const TextStyle(
+                                        color: AppColors.textPrimary,
+                                      ),
                                       decoration: InputDecoration(
                                         labelText: S.of(context).firstNameHint,
                                         labelStyle: TextStyle(
@@ -360,7 +366,9 @@ class _RegisterPageState extends State<RegisterPage> {
                               TextField(
                                 controller: _phoneController,
                                 keyboardType: TextInputType.phone,
-                                style: const TextStyle(color: AppColors.textPrimary),
+                                style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                ),
                                 decoration: InputDecoration(
                                   labelText: S.of(context).phoneNumber,
                                   labelStyle: TextStyle(
@@ -400,7 +408,9 @@ class _RegisterPageState extends State<RegisterPage> {
                               TextField(
                                 controller: _passwordController,
                                 obscureText: _obscurePassword,
-                                style: const TextStyle(color: AppColors.textPrimary),
+                                style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                ),
                                 decoration: InputDecoration(
                                   labelText: S.of(context).password,
                                   labelStyle: TextStyle(
@@ -453,7 +463,9 @@ class _RegisterPageState extends State<RegisterPage> {
                               TextField(
                                 controller: _confirmPasswordController,
                                 obscureText: _obscureConfirmPassword,
-                                style: const TextStyle(color: AppColors.textPrimary),
+                                style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                ),
                                 decoration: InputDecoration(
                                   labelText: S.of(context).confirmPasswordHint,
                                   labelStyle: TextStyle(

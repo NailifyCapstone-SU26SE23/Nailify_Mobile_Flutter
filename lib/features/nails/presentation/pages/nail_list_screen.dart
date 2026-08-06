@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/utils/auth_guard.dart';
 import '../../data/repositories/nail_design_repository.dart';
+import '../../data/repositories/favorite_nail_repository.dart';
 import '../../data/models/nail_design_model.dart';
 import '../../data/models/nail_filters.dart';
 import '../cubit/nail_catalog_cubit.dart';
@@ -219,7 +221,10 @@ class _NailListViewState extends State<_NailListView> {
                         final matchPct = _getMatchPercentage(design);
                         return NailDesignCard(
                           design: design,
+                          isFavorited: design.isFavorited,
                           matchPercentage: matchPct,
+                          onFavoriteToggle: (isFavorited) =>
+                              _toggleFavorite(context, design, isFavorited),
                           onTap: () =>
                               context.go('/nails/${design.nailDesignId}'),
                         );
@@ -259,8 +264,65 @@ class _NailListViewState extends State<_NailListView> {
         categoryTypes: state.categoryTypes,
       ),
     );
-    if (filters != null && mounted) {
+    if (filters != null && context.mounted) {
       await context.read<NailCatalogCubit>().applyFilters(filters);
+    }
+  }
+
+  Future<void> _toggleFavorite(
+    BuildContext context,
+    NailDesignModel design,
+    bool isFavorited,
+  ) async {
+    AuthGuard.check(context, () {
+      _toggleFavoriteAfterAuth(context, design, isFavorited);
+    });
+  }
+
+  Future<void> _toggleFavoriteAfterAuth(
+    BuildContext context,
+    NailDesignModel design,
+    bool isFavorited,
+  ) async {
+    final cubit = context.read<NailCatalogCubit>();
+    final previousFavoriteNailId = design.favoriteNailId;
+    cubit.updateFavoriteDesign(
+      nailDesignId: design.nailDesignId,
+      isFavorited: isFavorited,
+      favoriteNailId: previousFavoriteNailId,
+    );
+    try {
+      if (isFavorited) {
+        final favoriteNailId = await getIt<FavoriteNailRepository>()
+            .favoriteDesign(design.nailDesignId);
+        cubit.updateFavoriteDesign(
+          nailDesignId: design.nailDesignId,
+          isFavorited: true,
+          favoriteNailId: favoriteNailId,
+        );
+      } else {
+        if (previousFavoriteNailId == null) {
+          throw StateError('Missing favoriteNailId');
+        }
+        await getIt<FavoriteNailRepository>().unfavorite(
+          previousFavoriteNailId,
+        );
+        cubit.updateFavoriteDesign(
+          nailDesignId: design.nailDesignId,
+          isFavorited: false,
+        );
+      }
+    } catch (error) {
+      cubit.updateFavoriteDesign(
+        nailDesignId: design.nailDesignId,
+        isFavorited: design.isFavorited,
+        favoriteNailId: previousFavoriteNailId,
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Khong the cap nhat yeu thich: $error')),
+        );
+      }
     }
   }
 }

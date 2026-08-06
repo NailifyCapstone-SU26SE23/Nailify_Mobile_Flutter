@@ -5,6 +5,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/price_formatter.dart';
 
 import '../../../../generated/l10n.dart';
+import '../utils/transaction_status_utils.dart';
 
 class TransactionDetailPage extends StatelessWidget {
   final Map<String, dynamic> transaction;
@@ -15,6 +16,7 @@ class TransactionDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final bookingId = transaction['bookingId']?.toString() ?? '';
     final status = transaction['status']?.toString() ?? '';
+    final statusView = transactionStatusView(status);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -54,18 +56,8 @@ class TransactionDetailPage extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    Icon(
-                      status.toLowerCase() == 'refunded'
-                          ? Icons.check_circle
-                          : Icons.receipt_long,
-                      color: status.toLowerCase() == 'refunded'
-                          ? Colors.green
-                          : AppColors.primary,
-                      size: 72,
-                    ),
-                    const SizedBox(height: 12),
                     Text(
-                      'Đã hoàn tiền',
+                      statusView.label,
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -94,11 +86,11 @@ class TransactionDetailPage extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    _buildRow('Mã giao dịch', transaction['transactionId']),
-                    _buildRow('Khách hàng', transaction['customerName']),
-                    _buildRow('Cửa hàng', transaction['salonName']),
-                    _buildRow('Ngày tạo', transaction['createdAt']),
-                    _buildRow('Ngày thanh toán', transaction['paidAt']),
+                    _buildRow('Mã đơn hàng', transaction['orderCode']),
+                    _buildRow('Khách hàng', transaction['customerName']),
+                    _buildRow('Cửa hàng', transaction['salonName']),
+                    _buildRow('Ngày tạo', transaction['createdAt']),
+                    _buildRow('Ngày thanh toán', transaction['paidAt']),
                   ],
                 ),
               ),
@@ -136,7 +128,7 @@ class TransactionDetailPage extends StatelessWidget {
                   ),
                 ),
                 child: const Text(
-                  'Xem lịch hẹn',
+                  'Xem lịch hẹn',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),

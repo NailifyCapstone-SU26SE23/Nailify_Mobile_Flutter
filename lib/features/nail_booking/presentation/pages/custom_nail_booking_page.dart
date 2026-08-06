@@ -1172,7 +1172,9 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                             ),
                           )
                         : Text(
-                            _currentStep == 2 ? 'Xác nhận đặt lịch' : 'Tiếp tục',
+                            _currentStep == 2
+                                ? 'Xác nhận đặt lịch'
+                                : 'Tiếp tục',
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                   ),

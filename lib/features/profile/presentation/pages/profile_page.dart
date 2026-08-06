@@ -825,7 +825,28 @@ class _ProfilePageState extends State<ProfilePage> {
                       );
                     },
                   ),
-
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildProfileNavButton(
+                          icon: Icons.receipt_long_rounded,
+                          label: 'Giao dịch',
+                          onTap: () => context.push('/profile/transactions'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildProfileNavButton(
+                          icon: Icons.favorite_rounded,
+                          label: 'Yêu thích',
+                          onTap: () =>
+                              context.push('/profile/favorite-nails-list'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 100),
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
@@ -870,6 +891,52 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   // thẻ hiển thị thông tin
+  Widget _buildProfileNavButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade100),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: AppColors.primary, size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildProfileCard() {
     final String rawAvatar = _profileData?['avatarUrl']?.toString() ?? '';
     final String avatarUrl = rawAvatar.replaceAll(RegExp(r'\s+'), '');

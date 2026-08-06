@@ -3,10 +3,12 @@ import 'package:go_router/go_router.dart';
 import '../../../../generated/l10n.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/auth_guard.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../../../core/di/injection.dart';
 import '../../data/models/nail_design_model.dart';
 import '../../data/models/nail_variant_model.dart';
+import '../../data/repositories/favorite_nail_repository.dart';
 import '../../data/repositories/nail_design_repository.dart';
 
 class NailDetailScreen extends StatefulWidget {
@@ -108,17 +110,113 @@ class _NailDetailScreenState extends State<NailDetailScreen> {
   }
 }
 
-class _DesignDetailContent extends StatelessWidget {
+class _DesignDetailContent extends StatefulWidget {
   final NailDesignModel design;
 
   const _DesignDetailContent({required this.design});
 
   @override
+  State<_DesignDetailContent> createState() => _DesignDetailContentState();
+}
+
+class _DesignDetailContentState extends State<_DesignDetailContent> {
+  late NailDesignModel _design;
+
+  @override
+  void initState() {
+    super.initState();
+    _design = widget.design;
+  }
+
+  @override
+  void didUpdateWidget(covariant _DesignDetailContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.design.nailDesignId != widget.design.nailDesignId) {
+      _design = widget.design;
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    AuthGuard.check(context, () {
+      _toggleFavoriteAfterAuth();
+    });
+  }
+
+  Future<void> _toggleFavoriteAfterAuth() async {
+    final previousDesign = _design;
+    final shouldFavorite = !_design.isFavorited;
+    setState(() {
+      _design = _design.copyWith(
+        isFavorited: shouldFavorite,
+        clearFavoriteNailId: !shouldFavorite,
+      );
+    });
+    try {
+      if (shouldFavorite) {
+        final favoriteNailId = await getIt<FavoriteNailRepository>()
+            .favoriteDesign(_design.nailDesignId);
+        if (mounted) {
+          setState(() {
+            _design = _design.copyWith(
+              isFavorited: true,
+              favoriteNailId: favoriteNailId,
+            );
+          });
+        }
+      } else {
+        final favoriteNailId = previousDesign.favoriteNailId;
+        if (favoriteNailId == null) throw StateError('Missing favoriteNailId');
+        await getIt<FavoriteNailRepository>().unfavorite(favoriteNailId);
+        if (mounted) {
+          setState(() {
+            _design = _design.copyWith(
+              isFavorited: false,
+              clearFavoriteNailId: true,
+            );
+          });
+        }
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() => _design = previousDesign);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Khong the cap nhat yeu thich: $error')),
+        );
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final design = _design;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
       children: [
-        _ImageGallery(imageUrls: design.imageUrls),
+        Stack(
+          children: [
+            _ImageGallery(imageUrls: design.imageUrls),
+            Positioned(
+              top: 12,
+              right: 12,
+              child: GestureDetector(
+                onTap: _toggleFavorite,
+                child: CircleAvatar(
+                  backgroundColor: Colors.white.withValues(alpha: 0.92),
+                  radius: 20,
+                  child: Icon(
+                    design.isFavorited
+                        ? Icons.favorite_rounded
+                        : Icons.favorite_border_rounded,
+                    size: 20,
+                    color: design.isFavorited
+                        ? const Color(0xFFFF4081)
+                        : Colors.grey.shade500,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 20),
         Text(
           design.name,

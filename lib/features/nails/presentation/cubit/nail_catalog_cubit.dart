@@ -144,4 +144,20 @@ class NailCatalogCubit extends Cubit<NailCatalogState> {
   }
 
   Future<void> refresh() => loadDesigns();
+
+  void updateFavoriteDesign({
+    required int nailDesignId,
+    required bool isFavorited,
+    int? favoriteNailId,
+  }) {
+    final updatedDesigns = state.designs.map((design) {
+      if (design.nailDesignId != nailDesignId) return design;
+      return design.copyWith(
+        isFavorited: isFavorited,
+        favoriteNailId: favoriteNailId,
+        clearFavoriteNailId: !isFavorited,
+      );
+    }).toList();
+    emit(state.copyWith(designs: updatedDesigns));
+  }
 }

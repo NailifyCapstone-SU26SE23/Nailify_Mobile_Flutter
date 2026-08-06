@@ -37,14 +37,15 @@ class _NailDesignCardState extends State<NailDesignCard> {
   @override
   void initState() {
     super.initState();
-    _isFavorited = widget.isFavorited;
+    _isFavorited = widget.isFavorited || widget.design.isFavorited;
   }
 
   @override
   void didUpdateWidget(covariant NailDesignCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.isFavorited != widget.isFavorited) {
-      _isFavorited = widget.isFavorited;
+    if (oldWidget.isFavorited != widget.isFavorited ||
+        oldWidget.design.isFavorited != widget.design.isFavorited) {
+      _isFavorited = widget.isFavorited || widget.design.isFavorited;
     }
   }
 
@@ -53,10 +54,8 @@ class _NailDesignCardState extends State<NailDesignCard> {
   void _handleTapCancel() => setState(() => _scale = 1.0);
 
   void _toggleFavorite() {
-    setState(() {
-      _isFavorited = !_isFavorited;
-    });
-    widget.onFavoriteToggle?.call(_isFavorited);
+    if (widget.onFavoriteToggle == null) return;
+    widget.onFavoriteToggle!.call(!_isFavorited);
   }
 
   @override

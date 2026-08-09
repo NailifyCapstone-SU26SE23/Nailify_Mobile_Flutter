@@ -322,6 +322,25 @@ class BookingApiService {
     );
   }
 
+  Future<Map<String, dynamic>> reviewNailVariantPrice({
+    required int nailVariantId,
+    int? shapeMethodConfigId,
+  }) async {
+    final response = await _apiClient.post(
+      '/Bookings/price',
+      data: {
+        'bookingItems': _buildBookingItems(
+          nailVariantId,
+          const [],
+          shapeMethodConfigId,
+        ),
+      },
+    );
+    return Map<String, dynamic>.from(
+      response.data['data'] ?? response.data ?? {},
+    );
+  }
+
   // =================================================================
   // CÁC HÀM BỔ SUNG CHO LUỒNG ĐẶT DỊCH VỤ ĐỘC LẬP
   // =================================================================
@@ -391,5 +410,36 @@ class BookingApiService {
     );
 
     return response.data['data'] ?? {};
+  }
+
+  Future<Map<String, dynamic>> reviewCustomNailBookingPrice({
+    required String customerNailRequestId,
+    required Map<String, int> groupedExtraServices,
+    int? shapeMethodConfigId,
+    List<int>? selectedPromotionIds,
+  }) async {
+    final bookingItems = <Map<String, dynamic>>[
+      {
+        'customerNailRequestId': customerNailRequestId,
+        'shapeMethodConfigId': ?shapeMethodConfigId,
+        'quantity': 1,
+      },
+    ];
+
+    groupedExtraServices.forEach((serviceId, quantity) {
+      bookingItems.add({'serviceId': serviceId, 'quantity': quantity});
+    });
+
+    final response = await _apiClient.post(
+      '/Bookings/price',
+      data: {
+        'bookingItems': bookingItems,
+        if (selectedPromotionIds != null && selectedPromotionIds.isNotEmpty)
+          'selectedPromotionIds': selectedPromotionIds,
+      },
+    );
+    return Map<String, dynamic>.from(
+      response.data['data'] ?? response.data ?? {},
+    );
   }
 }

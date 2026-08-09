@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/price_formatter.dart';
-import '../../../nails/data/models/shape_method_config_model.dart';
 import '../cubit/studio_cubit.dart';
 import '../../data/models/customer_nail_model.dart';
 import '../../../../core/utils/duration_formatter.dart';
@@ -19,8 +18,6 @@ class CustomerNailDetailPage extends StatefulWidget {
 }
 
 class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
-  ShapeMethodConfigModel? _selectedShapeMethod;
-
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
@@ -163,9 +160,16 @@ class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
                             const Divider(color: Colors.green),
                             const SizedBox(height: 8),
                             _buildPriceDurationRow(
-                              'Báo giá dự kiến:',
-                              PriceFormatter.format(nail.price),
+                              'Giá:',
+                              PriceFormatter.format(nail.customerNailPrice),
                             ),
+                            if (nail.price > 0) ...[
+                              const SizedBox(height: 8),
+                              _buildPriceDurationRow(
+                                'Phí custom:',
+                                PriceFormatter.format(nail.price),
+                              ),
+                            ],
                             const SizedBox(height: 8),
                             _buildPriceDurationRow(
                               'Thời gian dự kiến:',
@@ -335,20 +339,7 @@ class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
         child: SafeArea(
           top: false,
           child: ElevatedButton.icon(
-            onPressed: () {
-              // Forward data cần thiết sang trang đặt lịch custom nail
-              context.push(
-                '/custom-nail-booking',
-                extra: {
-                  'nail': nail,
-                  'shapeMethodConfigId':
-                      _selectedShapeMethod?.shapeMethodConfigId,
-                  'shapeMethodName': _selectedShapeMethod?.name,
-                  'shapeMethodPrice': _selectedShapeMethod?.price,
-                  'shapeMethodDuration': _selectedShapeMethod?.duration,
-                },
-              );
-            },
+            onPressed: () => _openCustomNailBooking(context, nail),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -370,5 +361,9 @@ class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
       );
     }
     return null;
+  }
+
+  void _openCustomNailBooking(BuildContext context, CustomerNailModel nail) {
+    context.push('/custom-nail-booking', extra: {'nail': nail});
   }
 }

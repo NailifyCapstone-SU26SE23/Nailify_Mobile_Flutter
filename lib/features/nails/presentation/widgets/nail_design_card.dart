@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../data/models/nail_design_model.dart';
-import '../../../../core/utils/price_formatter.dart';
 
 class NailDesignCard extends StatefulWidget {
   final NailDesignModel design;
@@ -274,21 +273,6 @@ class _NailDesignCardState extends State<NailDesignCard> {
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey.shade500,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      design.minPrice == design.maxPrice
-                          ? PriceFormatter.format(
-                              design.minPrice,
-                            ).replaceAll(' VNĐ', 'đ')
-                          : '${PriceFormatter.format(design.minPrice).replaceAll(' VNĐ', '')} - ${PriceFormatter.format(design.maxPrice).replaceAll(' VNĐ', 'đ')}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFFFF4081),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
                       ),
                     ),
                   ],

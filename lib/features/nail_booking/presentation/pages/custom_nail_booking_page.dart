@@ -46,9 +46,11 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   bool _isLoadingTimes = false;
   bool _isLoadingPromotions = false;
   bool _isPromotionExpanded = false;
+  bool _isReviewingPrice = false;
 
   Future<List<ShapeMethodConfigModel>>? _shapeMethodsFuture;
   ShapeMethodConfigModel? _selectedShapeMethod;
+  Map<String, dynamic>? _priceReview;
   List<dynamic> _services = [];
   List<dynamic> _timeSlots = [];
   List<PromotionModel> _promotions = [];
@@ -115,9 +117,22 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
         .toList();
   }
 
+  List<Map<String, dynamic>> get _discountBreakdown {
+    final raw =
+        _priceReview?['discountBreakdown'] ?? _priceReview?['discounts'];
+    if (raw is! List) return [];
+    return raw
+        .whereType<Map>()
+        .map((discount) => Map<String, dynamic>.from(discount))
+        .toList();
+  }
+
   Future<List<ShapeMethodConfigModel>> _loadShapeMethods() async {
     final shapeId = widget.nail.nailShapeId;
-    if (shapeId == null || shapeId <= 0) return const [];
+    if (shapeId == null || shapeId <= 0) {
+      _reviewPrice();
+      return const [];
+    }
     final methods = await getIt<NailVariantRepository>()
         .getShapeMethodConfigsByNailShape(shapeId);
     final activeMethods = methods
@@ -133,6 +148,8 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
             ))) {
       setState(() => _selectedShapeMethod = activeMethods.first);
     }
+
+    if (mounted) _reviewPrice();
 
     return activeMethods;
   }
@@ -167,6 +184,27 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
       if (!mounted) return;
       setState(() => _isLoadingPromotions = false);
       _showSnackBar('Loi tai khuyen mai: $e');
+    }
+  }
+
+  Future<void> _reviewPrice() async {
+    final customerNailRequestId = widget.nail.customerNailRequestId;
+    if (customerNailRequestId.isEmpty) return;
+
+    setState(() => _isReviewingPrice = true);
+    try {
+      final review = await _apiService.reviewCustomNailBookingPrice(
+        customerNailRequestId: customerNailRequestId,
+        groupedExtraServices: _groupedServicesMap,
+        shapeMethodConfigId: _selectedShapeMethodConfigId,
+        selectedPromotionIds: _selectedPromotionIds,
+      );
+      if (!mounted) return;
+      setState(() => _priceReview = review);
+    } catch (e) {
+      debugPrint('Failed to review custom nail booking price: $e');
+    } finally {
+      if (mounted) setState(() => _isReviewingPrice = false);
     }
   }
 
@@ -306,7 +344,9 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
       _selectedExtraServices = services;
       _selectedTime = null;
       _timeSlots = [];
+      _priceReview = null;
     });
+    _reviewPrice();
     if (_selectedDate != null) _fetchTimeSlots();
   }
 
@@ -332,6 +372,10 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
     }
 
     if (_currentStep < 2) {
+      if (_currentStep == 1) {
+        setState(() => _priceReview = null);
+        _reviewPrice();
+      }
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -351,7 +395,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   Widget build(BuildContext context) {
     final customNailMappedData = {
       'name': widget.nail.name,
-      'price': widget.nail.customerNailPrice + widget.nail.price,
+      'price': widget.nail.customerNailPrice,
     };
 
     return Scaffold(
@@ -386,7 +430,12 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                   child: PageView(
                     controller: _pageController,
                     physics: const NeverScrollableScrollPhysics(),
-                    onPageChanged: (idx) => setState(() => _currentStep = idx),
+                    onPageChanged: (idx) {
+                      setState(() => _currentStep = idx);
+                      if (idx == 2 && _priceReview == null) {
+                        _reviewPrice();
+                      }
+                    },
                     children: [
                       _buildServiceStep(customNailMappedData),
                       _buildScheduleStep(),
@@ -473,7 +522,11 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                   value: method.shapeMethodConfigId,
                   groupValue: _selectedShapeMethodConfigId,
                   onChanged: (_) {
-                    setState(() => _selectedShapeMethod = method);
+                    setState(() {
+                      _selectedShapeMethod = method;
+                      _priceReview = null;
+                    });
+                    _reviewPrice();
                   },
                   title: Text(
                     method.name,
@@ -630,23 +683,21 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
 
   Widget _buildPaymentDetails() {
     final double customPrice =
-        (widget.nail.customerNailPrice + widget.nail.price).toDouble();
-    final double shapePrice = _shapeMethodPrice.toDouble();
+        (widget.nail.customerNailPrice + widget.nail.surfacePrice).toDouble();
+    final double customFee = widget.nail.price.toDouble();
     final double servicesTotal = _groupedServicesMap.entries.fold<double>(
       0.0,
       (sum, entry) => sum + (_servicePriceById(entry.key) * entry.value),
     );
-    final double subtotal = customPrice + shapePrice + servicesTotal;
-
-    double discount = 0.0;
-    for (final promo in _selectedPromotions) {
-      if (promo.discountType == 'Percentage') {
-        discount += subtotal * (promo.discountValue / 100);
-      } else {
-        discount += promo.discountValue;
-      }
-    }
-    final double finalPrice = (subtotal - discount).clamp(0, double.maxFinite);
+    final double subtotal = customPrice + customFee + servicesTotal;
+    final reviewPrice = _priceReview?['price'];
+    final price = reviewPrice is num
+        ? reviewPrice.round()
+        : int.tryParse(reviewPrice?.toString() ?? '') ?? subtotal.round();
+    final reviewTotal = _priceReview?['totalPrice'];
+    final totalPrice = reviewTotal is num
+        ? reviewTotal.round()
+        : int.tryParse(reviewTotal?.toString() ?? '') ?? subtotal.round();
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -665,16 +716,28 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Chi tiết thanh toán',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Chi tiết thanh toán',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ),
+              if (_isReviewingPrice)
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+            ],
           ),
           const SizedBox(height: 12),
           _buildCustomerNailPaymentItem(),
-          if (widget.nail.price > 0)
-            _buildPaymentLine('Phí xử lý custom', widget.nail.price),
-          if (_shapeMethodPrice > 0)
-            _buildPaymentLine(_shapeMethodName, _shapeMethodPrice),
+          if (widget.nail.price > 0) ...[
+            const SizedBox(height: 8),
+            _buildPaymentLine('Phí custom', widget.nail.price),
+          ],
           ..._groupedServicesMap.entries.map((entry) {
             return _buildPaymentLine(
               '${entry.value}x ${_serviceNameById(entry.key)}',
@@ -683,27 +746,8 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
             );
           }),
           const Divider(height: 16),
-          _buildPaymentLine('Tạm tính', subtotal, muted: true),
-          if (discount > 0)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Khuyến mại giảm giá',
-                    style: TextStyle(fontSize: 14, color: Colors.green),
-                  ),
-                  Text(
-                    '-${PriceFormatter.format(discount)}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          _buildPaymentLine('Tạm tính', price, muted: true),
+          ..._discountBreakdown.map(_buildDiscountRow),
           const Divider(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -717,7 +761,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                 ),
               ),
               Text(
-                PriceFormatter.format(finalPrice),
+                PriceFormatter.format(totalPrice),
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -732,36 +776,137 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   }
 
   Widget _buildCustomerNailPaymentItem() {
+    final detailRows = <Map<String, dynamic>>[];
+    if (widget.nail.surfaceName.isNotEmpty) {
+      detailRows.add({
+        'name': widget.nail.surfaceName,
+        'price': widget.nail.surfacePrice,
+        'quantity': 1,
+      });
+    }
+    if (_shapeMethodPrice > 0) {
+      detailRows.add({
+        'name': _shapeMethodName,
+        'price': _shapeMethodPrice,
+        'quantity': 1,
+      });
+    }
+    detailRows.addAll(_customerComponentRows());
+
     return Column(
       children: [
         _buildPaymentLine(
           'Thiết kế móng: ${widget.nail.name}',
-          widget.nail.customerNailPrice,
+          widget.nail.customerNailPrice + _shapeMethodPrice,
         ),
-        if (widget.nail.shapeName.isNotEmpty)
-          _buildPaymentLine(
-            'Dáng móng: ${widget.nail.shapeName}',
-            0,
-            muted: true,
-          ),
-        if (widget.nail.surfaceName.isNotEmpty)
-          _buildPaymentLine(
-            'Bề mặt: ${widget.nail.surfaceName}',
-            0,
-            muted: true,
-          ),
-        ...widget.nail.customerNailComponents
-            .whereType<Map>()
-            .map((component) => Map<String, dynamic>.from(component))
-            .map(
-              (component) => _buildPaymentLine(
-                _customerComponentName(component),
-                _customerComponentPrice(component),
-                muted: true,
-              ),
-            ),
+        if (detailRows.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          const _PriceTableHeader(),
+          const SizedBox(height: 2),
+          ...detailRows.map(_buildDetailPriceLine),
+        ],
       ],
     );
+  }
+
+  List<Map<String, dynamic>> _customerComponentRows() {
+    final rowsByKey = <String, Map<String, dynamic>>{};
+    final components = widget.nail.customerNailComponents.whereType<Map>().map(
+      (component) => Map<String, dynamic>.from(component),
+    );
+
+    for (final component in components) {
+      final label = _customerComponentLabel(component);
+      final price = _customerComponentPrice(component);
+      final quantity = _customerComponentFingerIndex(component) == -1 ? 5 : 1;
+      final key = '${_customerComponentId(component)}|$label|$price';
+      final existing = rowsByKey[key];
+      if (existing == null) {
+        rowsByKey[key] = {'name': label, 'price': price, 'quantity': quantity};
+      } else {
+        existing['quantity'] = (existing['quantity'] as int) + quantity;
+      }
+    }
+
+    return rowsByKey.values.toList();
+  }
+
+  Widget _buildDetailPriceLine(Map<String, dynamic> row) {
+    final label = row['name']?.toString() ?? '';
+    final price = row['price'] as num? ?? 0;
+    final quantity = row['quantity'] as int? ?? 1;
+    return Padding(
+      padding: const EdgeInsets.only(top: 6, left: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            flex: 5,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: Text(
+                label,
+                style: const TextStyle(fontSize: 13, color: Colors.grey),
+              ),
+            ),
+          ),
+          SizedBox(
+            width: 38,
+            child: Text(
+              'x$quantity',
+              style: const TextStyle(
+                fontSize: 13,
+                color: Colors.grey,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 92,
+            child: Text(
+              price > 0 ? PriceFormatter.format(price * quantity) : '-',
+              style: const TextStyle(
+                fontSize: 13,
+                color: Colors.grey,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.right,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _customerComponentLabel(Map<String, dynamic> component) {
+    final nested = component['component'] ?? component['customerComponent'];
+    String? type;
+    if (nested is Map) {
+      type = nested['componentType']?.toString().trim();
+    }
+    type ??= component['componentType']?.toString().trim();
+    final name = _customerComponentName(component);
+    return type == null || type.isEmpty ? name : '$type: $name';
+  }
+
+  Object? _customerComponentId(Map<String, dynamic> component) {
+    final nested = component['component'] ?? component['customerComponent'];
+    if (nested is Map) {
+      return nested['componentId'] ??
+          nested['customerComponentId'] ??
+          component['componentId'] ??
+          component['customerComponentId'];
+    }
+    return component['componentId'] ?? component['customerComponentId'];
+  }
+
+  int? _customerComponentFingerIndex(Map<String, dynamic> component) {
+    final value = component['fingerIndex'] ?? component['FingerIndex'];
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '');
   }
 
   String _customerComponentName(Map<String, dynamic> component) {
@@ -823,6 +968,43 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
         ],
       ),
     );
+  }
+
+  Widget _buildDiscountRow(Map<String, dynamic> discount) {
+    final name = discount['name']?.toString() ?? 'Giam gia';
+    final amount = discount['amount'] ?? 0;
+    final amountDisplay = discount['amountDisplay']?.toString();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text(
+              name,
+              style: const TextStyle(fontSize: 14, color: Colors.green),
+            ),
+          ),
+          Text(
+            amountDisplay?.isNotEmpty == true
+                ? _formatDiscountDisplay(amountDisplay!)
+                : '-${PriceFormatter.format(amount)}',
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.green,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDiscountDisplay(String value) {
+    final text = value.trim();
+    if (text.isEmpty) return text;
+    final lower = text.toLowerCase();
+    if (lower.contains('đ') || lower.contains('vnd')) return text;
+    return '$text VNĐ';
   }
 
   Widget _buildPromotionSelector() {
@@ -902,7 +1084,9 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                           )
                           .toList();
                     }
+                    _priceReview = null;
                   });
+                  _reviewPrice();
                 },
                 title: Text(promotion.name),
                 subtitle: Text(
@@ -1183,6 +1367,36 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _PriceTableHeader extends StatelessWidget {
+  const _PriceTableHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    const style = TextStyle(
+      color: AppColors.textSecondary,
+      fontSize: 12,
+      fontWeight: FontWeight.bold,
+    );
+    return const Padding(
+      padding: EdgeInsets.only(left: 12, top: 4),
+      child: Row(
+        children: [
+          Expanded(flex: 5, child: Text('Thành phần', style: style)),
+          SizedBox(
+            width: 38,
+            child: Text('SL', style: style, textAlign: TextAlign.center),
+          ),
+          SizedBox(width: 10),
+          SizedBox(
+            width: 92,
+            child: Text('Giá', style: style, textAlign: TextAlign.right),
+          ),
+        ],
       ),
     );
   }

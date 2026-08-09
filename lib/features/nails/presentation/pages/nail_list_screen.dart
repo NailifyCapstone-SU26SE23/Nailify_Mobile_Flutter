@@ -214,7 +214,7 @@ class _NailListViewState extends State<_NailListView> {
                             crossAxisCount: 2,
                             mainAxisSpacing: 12,
                             crossAxisSpacing: 12,
-                            childAspectRatio: 0.55,
+                            childAspectRatio: 1,
                           ),
                       itemBuilder: (context, index) {
                         final design = sortedDesigns[index];

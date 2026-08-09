@@ -73,12 +73,6 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         pointPaint.color = Color.YELLOW
         pointPaint.strokeWidth = LANDMARK_STROKE_WIDTH * density
         pointPaint.style = Paint.Style.FILL
-
-        promptPaint.color = Color.RED
-        promptPaint.textAlign = Paint.Align.CENTER
-        promptPaint.textSize = PROMPT_TEXT_SIZE * density
-        promptPaint.typeface = android.graphics.Typeface.DEFAULT_BOLD
-        promptPaint.style = Paint.Style.FILL
     }
 
         override fun draw(canvas: Canvas) {
@@ -560,10 +554,7 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
     companion object {
         private const val LANDMARK_STROKE_WIDTH = 3F // Now treated as DP
         private const val FingerColorFallback = "#FF4081"
-        private const val PROMPT_TEXT = "Please show your nails"
-        private const val PROMPT_TEXT_SIZE = 32F // Now treated as SP/DP
-        private const val PROMPT_VERTICAL_POSITION = 0.18F
-        private const val NAIL_LANDMARK_WIDTH_SCALE = 2.0F
-        private const val NAIL_LANDMARK_HEIGHT_SCALE = 1.2F
+        private const val NAIL_LANDMARK_WIDTH_SCALE = 2.5F
+        private const val NAIL_LANDMARK_HEIGHT_SCALE = 1F
     }
 }

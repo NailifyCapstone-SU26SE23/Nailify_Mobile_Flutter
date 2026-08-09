@@ -188,13 +188,13 @@ class MessageLookup extends MessageLookupByLibrary {
       "Không có chi nhánh nào.",
     ),
     "bookingNoPromotion": MessageLookupByLibrary.simpleMessage(
-      "Không áp dụng khuyến mại",
+      "Không áp dụng khuyến mãi",
     ),
     "bookingNoPromotionAvailable": MessageLookupByLibrary.simpleMessage(
-      "Không có khuyến mại khả dụng.",
+      "Không có khuyến mãi khả dụng.",
     ),
     "bookingNoPromotions": MessageLookupByLibrary.simpleMessage(
-      "Không có khuyến mại nào",
+      "Không có khuyến mãi nào",
     ),
     "bookingNoSchedule": MessageLookupByLibrary.simpleMessage(
       "Thợ không có lịch làm việc vào ngày này.",
@@ -204,7 +204,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Chi tiết thanh toán",
     ),
     "bookingPaymentError": m5,
-    "bookingPromotion": MessageLookupByLibrary.simpleMessage("Khuyến mại"),
+    "bookingPromotion": MessageLookupByLibrary.simpleMessage("Khuyến mãi"),
     "bookingQtyLabel": MessageLookupByLibrary.simpleMessage("Số lượng"),
     "bookingRetry": MessageLookupByLibrary.simpleMessage("Thử lại"),
     "bookingSelectArtistFirst": MessageLookupByLibrary.simpleMessage(
@@ -217,7 +217,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Chọn ngày hẹn",
     ),
     "bookingSelectPromotion": MessageLookupByLibrary.simpleMessage(
-      "Chọn khuyến mại",
+      "Chọn khuyến mãi",
     ),
     "bookingSelectedCount": m6,
     "bookingSlotPast": MessageLookupByLibrary.simpleMessage(

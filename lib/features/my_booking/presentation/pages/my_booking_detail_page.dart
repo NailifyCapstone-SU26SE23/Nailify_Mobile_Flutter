@@ -11,8 +11,9 @@ import '../../../../core/utils/price_formatter.dart';
 import '../../../nails/data/models/nail_variant_model.dart';
 import '../../../nails/data/models/shape_method_config_model.dart';
 import '../../../nails/data/repositories/nail_variant_repository.dart';
-import '../../../nail_booking/data/datasources/booking_api_service.dart';
 import '../../../nail_booking/data/datasources/payment_api_service.dart';
+import '../../../my_studio/data/datasources/studio_api_service.dart';
+import '../../../my_studio/data/models/customer_nail_model.dart' as studio;
 import '../../data/datasources/my_booking_api_service.dart';
 import '../utils/booking_status_utils.dart';
 import '../widgets/cancel_booking_dialog.dart';
@@ -29,17 +30,17 @@ class MyBookingDetailPage extends StatefulWidget {
 
 class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
   final MyBookingApiService _apiService = MyBookingApiService();
-  final BookingApiService _bookingApiService = BookingApiService();
   final PaymentApiService _paymentApiService = PaymentApiService();
+  final StudioApiService _studioApiService = StudioApiService();
   final NailVariantRepository _nailVariantRepository =
       getIt<NailVariantRepository>();
   bool _isLoading = true;
   bool _isCreatingPayment = false;
   Map<String, dynamic>? _booking;
   Map<String, dynamic>? _rating;
-  Map<String, dynamic>? _salon;
   final Map<int, NailVariantModel> _nailVariantsById = {};
   final Map<int, ShapeMethodConfigModel> _shapeMethodsById = {};
+  final Map<String, studio.CustomerNailModel> _customerNailRequestsById = {};
 
   @override
   void initState() {
@@ -51,15 +52,6 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     try {
       final data = await _apiService.getBookingDetails(widget.bookingId);
       await _fetchNailVariants(data);
-
-      Map<String, dynamic>? salon;
-      try {
-        salon = await _bookingApiService.getSalonDetail(
-          data['salonId']?.toString() ?? '',
-        );
-      } catch (e) {
-        debugPrint('==== Failed to load salon detail: $e ====');
-      }
 
       Map<String, dynamic>? rating;
       if (bookingIsRated(data)) {
@@ -73,7 +65,6 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
       setState(() {
         _booking = data;
         _rating = rating;
-        _salon = salon;
         _isLoading = false;
       });
     } catch (e) {
@@ -104,6 +95,29 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
         );
       } catch (e) {
         debugPrint('==== Loi tai nail variant $id: $e ====');
+      }
+    }
+
+    final requestIds = items
+        .whereType<Map>()
+        .map(
+          (item) =>
+              (item['customerNailRequestId'] ?? item['CustomerNailRequestId'])
+                  ?.toString()
+                  .trim() ??
+              '',
+        )
+        .where(
+          (id) => id.isNotEmpty && !_customerNailRequestsById.containsKey(id),
+        )
+        .toSet();
+
+    for (final id in requestIds) {
+      try {
+        _customerNailRequestsById[id] = await _studioApiService
+            .getNailRequestDetail(id);
+      } catch (e) {
+        debugPrint('==== Loi tai customer nail request $id: $e ====');
       }
     }
 
@@ -268,10 +282,6 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     }
   }
 
-  Map<String, dynamic>? _getMatchingSalon() {
-    return _salon;
-  }
-
   String _getBookingSalonName(Map<String, dynamic>? booking) {
     if (booking == null) return '';
     final direct = booking['salonName']?.toString();
@@ -279,11 +289,6 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     final nestedMap = booking['salon'];
     if (nestedMap is Map) {
       final name = (nestedMap['salonName'] ?? nestedMap['name'])?.toString();
-      if (name != null && name.trim().isNotEmpty) return name.trim();
-    }
-    final matched = _getMatchingSalon();
-    if (matched != null) {
-      final name = (matched['salonName'] ?? matched['name'])?.toString();
       if (name != null && name.trim().isNotEmpty) return name.trim();
     }
     return '';
@@ -299,11 +304,6 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
           ?.toString();
       if (addr != null && addr.trim().isNotEmpty) return addr.trim();
     }
-    final matched = _getMatchingSalon();
-    if (matched != null) {
-      final addr = (matched['salonAddress'] ?? matched['address'])?.toString();
-      if (addr != null && addr.trim().isNotEmpty) return addr.trim();
-    }
     return '';
   }
 
@@ -316,11 +316,6 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
       final lat = nestedMap['latitude'];
       if (lat != null) return _toDouble(lat);
     }
-    final matched = _getMatchingSalon();
-    if (matched != null) {
-      final lat = matched['latitude'];
-      if (lat != null) return _toDouble(lat);
-    }
     return null;
   }
 
@@ -331,11 +326,6 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     final nestedMap = booking['salon'];
     if (nestedMap is Map) {
       final lng = nestedMap['longitude'];
-      if (lng != null) return _toDouble(lng);
-    }
-    final matched = _getMatchingSalon();
-    if (matched != null) {
-      final lng = matched['longitude'];
       if (lng != null) return _toDouble(lng);
     }
     return null;
@@ -1040,7 +1030,9 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     ].where((name) => name.isNotEmpty).toList();
     final components = _bookingItemComponents(item);
     final variantDetails = _bookingItemVariantDetails(item);
-    final detailLines = variantDetails.isNotEmpty ? variantDetails : components;
+    final detailLines = variantDetails.isNotEmpty
+        ? variantDetails
+        : _groupBookingComponents(components);
     final name = names.isEmpty
         ? S.of(context).bookingInfoService
         : names.join(' & ');
@@ -1122,6 +1114,8 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
             const SizedBox(height: 10),
             const Divider(height: 1),
             const SizedBox(height: 8),
+            const _PriceTableHeader(),
+            const SizedBox(height: 2),
             ...detailLines.map(_buildBookingComponentLine),
           ],
         ],
@@ -1138,35 +1132,50 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     final fingerIndex = _readNullableInt(
       component['fingerIndex'] ?? component['FingerIndex'],
     );
-    final count = _getItemCountFromFingerIndex(fingerIndex);
+    final count =
+        component['quantity'] as int? ??
+        _getItemCountFromFingerIndex(fingerIndex);
 
-    final name = componentData['name']?.toString() ?? _componentName(component);
+    final name = component['name']?.toString() ?? _componentName(component);
 
     return Padding(
-      padding: const EdgeInsets.only(top: 4, left: 8),
+      padding: const EdgeInsets.only(top: 6, left: 8),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Padding(
-            padding: EdgeInsets.only(top: 7),
-            child: Icon(Icons.circle, size: 5, color: Colors.grey),
-          ),
-          const SizedBox(width: 8),
           Expanded(
+            flex: 5,
             child: Text(
               name,
               style: const TextStyle(color: Colors.grey, fontSize: 13),
             ),
           ),
-          if (price > 0)
-            Text(
-              PriceFormatter.format(price * count),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 38,
+            child: Text(
+              'x$count',
+              style: const TextStyle(
+                color: Colors.grey,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 92,
+            child: Text(
+              price > 0 ? PriceFormatter.format(price * count) : '-',
               style: const TextStyle(
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
               ),
+              textAlign: TextAlign.right,
             ),
+          ),
         ],
       ),
     );
@@ -1182,6 +1191,9 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
   List<Map<String, dynamic>> _bookingItemVariantDetails(
     Map<String, dynamic> item,
   ) {
+    final request = _customerNailRequestForItem(item);
+    if (request != null) return _bookingItemCustomerNailDetails(item, request);
+
     final variantId = _readNullableInt(
       item['nailVariantId'] ?? item['NailVariantId'],
     );
@@ -1190,30 +1202,106 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     final details = <Map<String, dynamic>>[];
     if (variant?.nailSurface != null) {
       details.add({
-        'name': 'Be mat ${variant!.nailSurface!.name}',
+        'name': variant!.nailSurface!.name,
         'price': variant.nailSurface!.price,
+        'quantity': 1,
       });
     }
 
     final shapeMethodName = _shapeMethodName(item);
     if (shapeMethodName != null && shapeMethodName.trim().isNotEmpty) {
-      details.add({'name': shapeMethodName, 'price': _shapeMethodPrice(item)});
+      details.add({
+        'name': shapeMethodName,
+        'price': _shapeMethodPrice(item),
+        'quantity': 1,
+      });
     }
 
     if (variant != null) {
-      details.addAll(
-        variant.nailComponents.map((component) {
-          final detail = component.component;
-          return {
-            'name': detail?.name ?? 'Thanh phan nail',
-            'price': detail?.price ?? 0,
-            'fingerIndex': component.fingerIndex,
+      final componentRowsByKey = <String, Map<String, dynamic>>{};
+      for (final component in variant.nailComponents) {
+        final detail = component.component;
+        final name = detail?.name ?? 'Thanh phan nail';
+        final type = detail?.componentType.trim() ?? '';
+        final label = type.isEmpty ? name : '$type: $name';
+        final price = detail?.price ?? 0;
+        final quantity = component.fingerIndex == -1 ? 5 : 1;
+        final key =
+            '${detail?.componentId ?? component.componentId}|$label|$price';
+        final existing = componentRowsByKey[key];
+        if (existing == null) {
+          componentRowsByKey[key] = {
+            'name': label,
+            'price': price,
+            'quantity': quantity,
           };
-        }),
-      );
+        } else {
+          existing['quantity'] = (existing['quantity'] as int) + quantity;
+        }
+      }
+      details.addAll(componentRowsByKey.values);
     }
 
     return details;
+  }
+
+  studio.CustomerNailModel? _customerNailRequestForItem(
+    Map<String, dynamic> item,
+  ) {
+    final requestId =
+        (item['customerNailRequestId'] ?? item['CustomerNailRequestId'])
+            ?.toString()
+            .trim();
+    if (requestId == null || requestId.isEmpty) return null;
+    return _customerNailRequestsById[requestId];
+  }
+
+  List<Map<String, dynamic>> _bookingItemCustomerNailDetails(
+    Map<String, dynamic> item,
+    studio.CustomerNailModel request,
+  ) {
+    final details = <Map<String, dynamic>>[];
+
+    final surfaceName = request.nailSurface?['name']?.toString().trim();
+    if (surfaceName != null && surfaceName.isNotEmpty) {
+      details.add({
+        'name': surfaceName,
+        'price': request.surfacePrice,
+        'quantity': 1,
+      });
+    }
+
+    final shapeMethodName = _shapeMethodName(item);
+    if (shapeMethodName != null && shapeMethodName.trim().isNotEmpty) {
+      details.add({
+        'name': shapeMethodName,
+        'price': _shapeMethodPrice(item),
+        'quantity': 1,
+      });
+    }
+
+    details.addAll(
+      _groupBookingComponents(_requestCustomerNailComponents(request)),
+    );
+
+    if (request.price > 0) {
+      details.add({
+        'name': 'Phí Custom',
+        'price': request.price,
+        'quantity': 1,
+      });
+    }
+
+    return details;
+  }
+
+  List<Map<String, dynamic>> _requestCustomerNailComponents(
+    studio.CustomerNailModel request,
+  ) {
+    return request.customerNailComponents
+        .whereType<Map>()
+        .map((component) => Map<String, dynamic>.from(component))
+        .toList();
   }
 
   String? _shapeMethodName(Map<String, dynamic> item) {
@@ -1285,13 +1373,38 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
       final nested = item[key];
       if (nested is Map) {
         addFrom(nested['nailComponents'] ?? nested['NailComponents']);
-        addFrom(
-          nested['customerNailComponents'] ?? nested['CustomerNailComponents'],
-        );
+        addFrom(nested['Components'] ?? nested['CustomerNailComponents']);
       }
     }
 
     return components;
+  }
+
+  List<Map<String, dynamic>> _groupBookingComponents(
+    List<Map<String, dynamic>> components,
+  ) {
+    final rowsByKey = <String, Map<String, dynamic>>{};
+    for (final component in components) {
+      final componentData = component['component'] as Map? ?? component;
+      final name =
+          componentData['name']?.toString() ?? _componentName(component);
+      final type = componentData['componentType']?.toString().trim() ?? '';
+      final label = type.isEmpty ? name : '$type: $name';
+      final price = componentData['price'] as num? ?? 0;
+      final fingerIndex = _readNullableInt(
+        component['fingerIndex'] ?? component['FingerIndex'],
+      );
+      final quantity = fingerIndex == -1 ? 5 : 1;
+      final key =
+          '${componentData['componentId'] ?? component['componentId'] ?? component['ComponentId']}|$label|$price';
+      final existing = rowsByKey[key];
+      if (existing == null) {
+        rowsByKey[key] = {'name': label, 'price': price, 'quantity': quantity};
+      } else {
+        existing['quantity'] = (existing['quantity'] as int) + quantity;
+      }
+    }
+    return rowsByKey.values.toList();
   }
 
   String _componentName(Map<String, dynamic> component) {
@@ -1329,6 +1442,25 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
   }
 
   num _bookingItemUnitPrice(Map<String, dynamic> item) {
+    final request = _customerNailRequestForItem(item);
+    if (request != null) {
+      // Start with customer nail base price
+      num totalPrice = request.customerNailPrice;
+
+      // Add shape method price
+      final shapePrice = _shapeMethodPrice(item);
+      if (shapePrice > 0) {
+        totalPrice += shapePrice;
+      }
+
+      // Add custom fee (request.price is the custom fee)
+      if (request.price > 0) {
+        totalPrice += request.price;
+      }
+
+      return totalPrice;
+    }
+
     final direct = item['price'] ?? item['unitPrice'] ?? item['basePrice'];
     if (direct is num) return direct;
     final parsedDirect = num.tryParse(direct?.toString() ?? '');
@@ -1389,7 +1521,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
           ),
           Text(
             amountDisplay?.isNotEmpty == true
-                ? amountDisplay!
+                ? _formatDiscountDisplay(amountDisplay!)
                 : PriceFormatter.format(-(discount['amount'] ?? 0)),
             style: const TextStyle(
               fontWeight: FontWeight.bold,
@@ -1421,6 +1553,14 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
         ],
       ),
     );
+  }
+
+  String _formatDiscountDisplay(String value) {
+    final text = value.trim();
+    if (text.isEmpty) return text;
+    final lower = text.toLowerCase();
+    if (lower.contains('đ') || lower.contains('vnd')) return text;
+    return '$text VNĐ';
   }
 
   Widget _buildRatingCard() {
@@ -1542,6 +1682,36 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
           Text(
             '$normalizedValue/5',
             style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PriceTableHeader extends StatelessWidget {
+  const _PriceTableHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    const style = TextStyle(
+      color: AppColors.textSecondary,
+      fontSize: 12,
+      fontWeight: FontWeight.bold,
+    );
+    return const Padding(
+      padding: EdgeInsets.only(left: 8),
+      child: Row(
+        children: [
+          Expanded(flex: 5, child: Text('Thành phần', style: style)),
+          SizedBox(
+            width: 38,
+            child: Text('SL', style: style, textAlign: TextAlign.center),
+          ),
+          SizedBox(width: 10),
+          SizedBox(
+            width: 92,
+            child: Text('Giá', style: style, textAlign: TextAlign.right),
           ),
         ],
       ),

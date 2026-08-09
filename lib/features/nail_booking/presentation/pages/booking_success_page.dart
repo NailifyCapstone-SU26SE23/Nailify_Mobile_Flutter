@@ -359,7 +359,7 @@ class _BookingSuccessPageState extends State<BookingSuccessPage> {
           ),
           Text(
             amountDisplay?.isNotEmpty == true
-                ? amountDisplay!
+                ? _formatDiscountDisplay(amountDisplay!)
                 : PriceFormatter.format(-(discount['amount'] ?? 0)),
             style: const TextStyle(
               fontWeight: FontWeight.bold,
@@ -369,5 +369,13 @@ class _BookingSuccessPageState extends State<BookingSuccessPage> {
         ],
       ),
     );
+  }
+
+  String _formatDiscountDisplay(String value) {
+    final text = value.trim();
+    if (text.isEmpty) return text;
+    final lower = text.toLowerCase();
+    if (lower.contains('đ') || lower.contains('vnd')) return text;
+    return '$text VNĐ';
   }
 }

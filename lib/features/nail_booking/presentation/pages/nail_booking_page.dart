@@ -825,8 +825,26 @@ class _NailBookingPageState extends State<NailBookingPage> {
     final variant = _nailVariantDetail;
     final shapeMethodName = _shapeMethodName ?? S.of(context).shapeMethodLabel;
     final shouldShowShapeMethod =
-        variant?.nailShape != null &&
-        (_shapeMethodName != null || _shapeMethodPrice > 0);
+        _shapeMethodName != null || _shapeMethodPrice > 0;
+    final detailRows = <Map<String, dynamic>>[];
+
+    if (variant?.nailSurface != null) {
+      detailRows.add({
+        'name': variant!.nailSurface!.name,
+        'price': variant.nailSurface!.price,
+        'quantity': 1,
+      });
+    }
+    if (shouldShowShapeMethod) {
+      detailRows.add({
+        'name': shapeMethodName,
+        'price': _shapeMethodPrice,
+        'quantity': 1,
+      });
+    }
+    if (variant != null) {
+      detailRows.addAll(_variantComponentRows(variant));
+    }
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -838,22 +856,36 @@ class _NailBookingPageState extends State<NailBookingPage> {
                 S.of(context).bookingNailVariantDefault,
             _nailVariantPrice + _shapeMethodPrice.round(),
           ),
-          if (variant != null) ...[
+          if (detailRows.isNotEmpty) ...[
             const SizedBox(height: 4),
-
-            if (shouldShowShapeMethod)
-              _buildVariantDetailLine(shapeMethodName, _shapeMethodPrice),
-            ...variant.nailComponents.map((component) {
-              final detail = component.component;
-              return _buildVariantDetailLine(
-                detail?.name ?? S.of(context).bookingComponentDefault,
-                detail?.price ?? 0,
-              );
-            }),
+            const _PriceTableHeader(),
+            const SizedBox(height: 2),
+            ...detailRows.map(_buildVariantDetailLine),
           ],
         ],
       ),
     );
+  }
+
+  List<Map<String, dynamic>> _variantComponentRows(NailVariantModel variant) {
+    final rowsByKey = <String, Map<String, dynamic>>{};
+    for (final component in variant.nailComponents) {
+      final detail = component.component;
+      final name = detail?.name ?? S.of(context).bookingComponentDefault;
+      final type = detail?.componentType.trim() ?? '';
+      final label = type.isEmpty ? name : '$type: $name';
+      final price = detail?.price ?? 0;
+      final quantity = component.fingerIndex == -1 ? 5 : 1;
+      final key =
+          '${detail?.componentId ?? component.componentId}|$label|$price';
+      final existing = rowsByKey[key];
+      if (existing == null) {
+        rowsByKey[key] = {'name': label, 'price': price, 'quantity': quantity};
+      } else {
+        existing['quantity'] = (existing['quantity'] as int) + quantity;
+      }
+    }
+    return rowsByKey.values.toList();
   }
 
   Widget _buildPaymentRow(
@@ -895,28 +927,48 @@ class _NailBookingPageState extends State<NailBookingPage> {
     );
   }
 
-  Widget _buildVariantDetailLine(String label, num price) {
+  Widget _buildVariantDetailLine(Map<String, dynamic> row) {
+    final label = row['name']?.toString() ?? '';
+    final price = row['price'] as num? ?? 0;
+    final quantity = row['quantity'] as int? ?? 1;
     return Padding(
-      padding: const EdgeInsets.only(top: 4, left: 12),
+      padding: const EdgeInsets.only(top: 6, left: 12),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
+            flex: 5,
             child: Padding(
-              padding: const EdgeInsets.only(right: 12),
+              padding: const EdgeInsets.only(right: 10),
               child: Text(
                 label,
                 style: const TextStyle(fontSize: 13, color: Colors.grey),
               ),
             ),
           ),
-          Text(
-            PriceFormatter.format(price),
-            style: const TextStyle(
-              fontSize: 13,
-              color: Colors.grey,
-              fontWeight: FontWeight.w600,
+          SizedBox(
+            width: 38,
+            child: Text(
+              'x$quantity',
+              style: const TextStyle(
+                fontSize: 13,
+                color: Colors.grey,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 92,
+            child: Text(
+              price > 0 ? PriceFormatter.format(price * quantity) : '-',
+              style: const TextStyle(
+                fontSize: 13,
+                color: Colors.grey,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.right,
             ),
           ),
         ],
@@ -941,7 +993,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
           ),
           Text(
             amountDisplay?.isNotEmpty == true
-                ? amountDisplay!
+                ? _formatDiscountDisplay(amountDisplay!)
                 : '-${PriceFormatter.format(amount)}',
             style: const TextStyle(
               fontWeight: FontWeight.bold,
@@ -951,6 +1003,14 @@ class _NailBookingPageState extends State<NailBookingPage> {
         ],
       ),
     );
+  }
+
+  String _formatDiscountDisplay(String value) {
+    final text = value.trim();
+    if (text.isEmpty) return text;
+    final lower = text.toLowerCase();
+    if (lower.contains('đ') || lower.contains('vnd')) return text;
+    return '$text VNĐ';
   }
 
   Widget _buildPromotionSelector() {
@@ -1316,6 +1376,36 @@ class _NailBookingPageState extends State<NailBookingPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _PriceTableHeader extends StatelessWidget {
+  const _PriceTableHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    const style = TextStyle(
+      color: AppColors.textSecondary,
+      fontSize: 12,
+      fontWeight: FontWeight.bold,
+    );
+    return const Padding(
+      padding: EdgeInsets.only(left: 12, top: 4),
+      child: Row(
+        children: [
+          Expanded(flex: 5, child: Text('Thành phần', style: style)),
+          SizedBox(
+            width: 38,
+            child: Text('SL', style: style, textAlign: TextAlign.center),
+          ),
+          SizedBox(width: 10),
+          SizedBox(
+            width: 92,
+            child: Text('Giá', style: style, textAlign: TextAlign.right),
+          ),
+        ],
       ),
     );
   }

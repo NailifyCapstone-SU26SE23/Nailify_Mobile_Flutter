@@ -21,6 +21,8 @@ class MyBookingListPage extends StatefulWidget {
 
 class _MyBookingListPageState extends State<MyBookingListPage>
     with SingleTickerProviderStateMixin {
+  static const int _bookingPageSize = 5;
+
   final MyBookingApiService _apiService = MyBookingApiService();
   final ScrollController _bookingScrollController = ScrollController();
 
@@ -125,7 +127,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     try {
       final result = await _apiService.getMyBookingsPage(
         pageNumber: refresh ? 1 : _page + 1,
-        pageSize: 5,
+        pageSize: _bookingPageSize,
       );
       final data = result.items;
 

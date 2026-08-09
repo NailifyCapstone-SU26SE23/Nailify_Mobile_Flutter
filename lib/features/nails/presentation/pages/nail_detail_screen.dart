@@ -227,15 +227,7 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
             letterSpacing: -0.5,
           ),
         ),
-        const SizedBox(height: 6),
-        Text(
-          '${PriceFormatter.format(design.minPrice).replaceAll(' VNĐ', '')} - ${PriceFormatter.format(design.maxPrice)}',
-          style: const TextStyle(
-            color: Color(0xFFFF4081),
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+
         if (design.description.isNotEmpty) ...[
           const SizedBox(height: 14),
           Text(
@@ -483,8 +475,15 @@ class _VariantSection extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Text(
-                      PriceFormatter.format(variant.price),
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          const TextSpan(text: 'Giá tham khảo: '),
+                          TextSpan(
+                            text: PriceFormatter.format(variant.estimatedPrice),
+                          ),
+                        ],
+                      ),
                       style: const TextStyle(
                         color: Color(0xFFFF4081),
                         fontSize: 14,

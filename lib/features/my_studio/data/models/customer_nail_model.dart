@@ -66,11 +66,7 @@ class CustomerNailModel {
     final approvedArtist = json['approvedArtist'] as Map<String, dynamic>?;
 
     final rawPrice = json['price'] ?? json['Price'];
-    final fallbackPrice = customerNail['price'] ?? customerNail['Price'];
     final parsedPrice = (rawPrice as num?)?.toInt() ?? 0;
-    final finalPrice = parsedPrice > 0
-        ? parsedPrice
-        : ((fallbackPrice as num?)?.toInt() ?? 0);
 
     final rawDuration = json['duration'] ?? json['Duration'];
     final fallbackDuration =
@@ -87,7 +83,7 @@ class CustomerNailModel {
       status: json['status']?.toString() ?? 'Pending',
       rejectReason: json['rejectReason']?.toString(),
       approvedArtistId: json['approvedArtistId']?.toString(),
-      price: finalPrice,
+      price: parsedPrice,
       duration: finalDuration,
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'])
@@ -120,6 +116,12 @@ class CustomerNailModel {
   // --- Util getters cho UI ---
   String get shapeName => nailShape?['name']?.toString() ?? 'Mặc định';
   String get surfaceName => nailSurface?['name']?.toString() ?? 'Mặc định';
+
+  int get surfacePrice {
+    final value = nailSurface?['price'] ?? nailSurface?['Price'];
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
 
   /// Tên thợ đã duyệt (lấy từ field artistFullName hoặc nested approvedArtist)
   String get stylistName {

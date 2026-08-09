@@ -99,7 +99,22 @@ class AppRouter {
       GoRoute(
         path: '/custom-nail-booking',
         builder: (context, state) {
-          final nail = state.extra as CustomerNailModel;
+          final extra = state.extra;
+          if (extra is Map) {
+            final nail = _readCustomerNail(extra['nail']);
+            return CustomNailBookingPage(
+              nail: nail,
+              shapeMethodConfigId: _readNullableInt(
+                extra['shapeMethodConfigId'],
+              ),
+              shapeMethodName: extra['shapeMethodName']?.toString(),
+              shapeMethodPrice: _readNullableNum(extra['shapeMethodPrice']),
+              shapeMethodDuration: _readNullableInt(
+                extra['shapeMethodDuration'],
+              ),
+            );
+          }
+          final nail = extra as CustomerNailModel;
           return CustomNailBookingPage(nail: nail);
         },
       ),
@@ -329,4 +344,25 @@ class AppRouter {
       ),
     ],
   );
+}
+
+int? _readNullableInt(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return int.tryParse(value.toString());
+}
+
+num? _readNullableNum(dynamic value) {
+  if (value == null) return null;
+  if (value is num) return value;
+  return num.tryParse(value.toString());
+}
+
+CustomerNailModel _readCustomerNail(dynamic value) {
+  if (value is CustomerNailModel) return value;
+  if (value is Map) {
+    return CustomerNailModel.fromJson(Map<String, dynamic>.from(value));
+  }
+  return value as CustomerNailModel;
 }

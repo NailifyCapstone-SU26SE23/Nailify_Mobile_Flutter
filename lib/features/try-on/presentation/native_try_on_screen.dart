@@ -21,6 +21,8 @@ import 'package:flutter/services.dart';
 import '../../nails/widgets/native_camera_view.dart';
 import '../../nails/services/nail_try_on_client.dart';
 
+import 'package:permission_handler/permission_handler.dart';
+
 class NativeTryOnScreen extends StatefulWidget {
   /// Config được convert từ NailVariantModel / CustomerNailModel.
   final Map<String, dynamic> config;
@@ -44,8 +46,24 @@ class NativeTryOnScreen extends StatefulWidget {
 }
 
 class _NativeTryOnScreenState extends State<NativeTryOnScreen> {
-  // NativeCameraView gọi startSession() trong initState của nó — không gọi tại
-  // đây để tránh tạo 2 session liên tiếp (plugin sẽ xoá session cũ mỗi lần).
+  bool _hasPermission = false;
+  bool _isChecking = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPermission();
+  }
+
+  Future<void> _checkPermission() async {
+    final status = await Permission.camera.request();
+    if (mounted) {
+      setState(() {
+        _hasPermission = status.isGranted;
+        _isChecking = false;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -72,17 +90,31 @@ class _NativeTryOnScreenState extends State<NativeTryOnScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
-        child: Platform.isAndroid
-            ? NativeCameraView(
-                config: widget.config,
-                onCapture: _onCapture,
-                onClose: _onClose,
-              )
-            : _ErrorView(
-                message: 'Native AR Try-On chỉ hỗ trợ Android.',
-                onClose: _onClose,
-              ),
+        child: _buildBody(),
       ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (!Platform.isAndroid) {
+      return _ErrorView(
+        message: 'Native AR Try-On chỉ hỗ trợ Android.',
+        onClose: _onClose,
+      );
+    }
+    if (_isChecking) {
+      return const Center(child: CircularProgressIndicator(color: Colors.white));
+    }
+    if (!_hasPermission) {
+      return _ErrorView(
+        message: 'Bạn cần cấp quyền Camera để sử dụng AR Try-On.',
+        onClose: _onClose,
+      );
+    }
+    return NativeCameraView(
+      config: widget.config,
+      onCapture: _onCapture,
+      onClose: _onClose,
     );
   }
 }

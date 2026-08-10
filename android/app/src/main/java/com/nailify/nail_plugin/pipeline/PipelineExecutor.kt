@@ -65,7 +65,11 @@ class PipelineExecutor(
 
     private var eventSink: ((Map<String, Any?>) -> Unit)? = null
     private var surfaceProvider: ((Bitmap, List<NailDetection>) -> Unit)? = null
+    private var skeletonProvider: ((Array<FloatArray>?) -> Unit)? = null
     private var debugState: DebugState = debugProvider()
+
+    // Design asset paths per finger class (key = clsName, value = absolute file path)
+    var designPaths: Map<String, String?> = emptyMap()
 
     // Stats cho emit EventChannel (chỉ push mỗi 5 frame để tránh spam)
     private var frameCounter = 0
@@ -80,6 +84,10 @@ class PipelineExecutor(
 
     fun setSurfaceProvider(provider: (Bitmap, List<NailDetection>) -> Unit) {
         surfaceProvider = provider
+    }
+
+    fun setSkeletonProvider(provider: (Array<FloatArray>?) -> Unit) {
+        skeletonProvider = provider
     }
 
     fun setDebugProvider(provider: () -> DebugState) {
@@ -135,11 +143,34 @@ class PipelineExecutor(
         val tipPositions = mediaPipe.lastTipPositions
         val handDetected = fingerVectors.isNotEmpty()
         mediaPipe.submitFrame(bitmap, System.currentTimeMillis())
+        // Push skeleton lên renderer ngay sau frame để vẽ debug skeleton đồng bộ
+        skeletonProvider?.invoke(mediaPipe.lastSkeletonPoints)
         val mpMs = System.currentTimeMillis() - mpStart
 
         // 3. Geometry + tracker.
         val geoStart = System.currentTimeMillis()
         val processed = processDetections(rawDetections, fingerVectors, tipPositions)
+
+        // --- PCA Cluster Regularization (Chống xòe quạt) ---
+        // Port từ Desktop test_models.py: kéo hướng từng móng về hướng trung bình của cả bàn tay.
+        // Chỉ áp dụng cho những móng KHÔNG có MediaPipe vector (tức là đang dùng PCA Fallback).
+        val pcaNails = processed.filter { it.forwardVector == null }
+        if (pcaNails.size >= 2) {
+            var sumDx = 0f; var sumDy = 0f
+            for (d in pcaNails) { val dir = d.pcaDirection ?: continue; sumDx += dir.x; sumDy += dir.y }
+            val avgMag = kotlin.math.sqrt(sumDx * sumDx + sumDy * sumDy)
+            if (avgMag > 1e-9f) {
+                val avgDx = sumDx / avgMag; val avgDy = sumDy / avgMag
+                for (d in pcaNails) {
+                    val cur = d.pcaDirection ?: continue
+                    val bx = cur.x * 0.5f + avgDx * 0.5f
+                    val by = cur.y * 0.5f + avgDy * 0.5f
+                    val bm = kotlin.math.sqrt(bx * bx + by * by)
+                    if (bm > 1e-9f) d.pcaDirection = PointF(bx / bm, by / bm)
+                }
+            }
+        }
+
         val confirmed = polygonTracker.update(processed)
         val geoMs = System.currentTimeMillis() - geoStart
 
@@ -182,10 +213,13 @@ class PipelineExecutor(
             val scaledHint = rawHint?.let { PointF(it.x * diag, it.y * diag) }
             val direction = geometryEngine.getDirectionFromPolygonPca(det.polygon, scaledHint, det.clsId)
             val nailBed = geometryEngine.cutPolygonAtRatio(det.polygon, direction, 0.75f)
+            // Gắn đường dẫn texture móng nếu có trong config
+            val designPath = designPaths[det.clsName]
             det.copy(
                 forwardVector = scaledHint ?: det.forwardVector,
                 pcaDirection = direction,
                 nailBedPolygon = if (nailBed.size >= 3) nailBed else det.polygon,
+                designAssetPath = designPath,
             )
         }
     }

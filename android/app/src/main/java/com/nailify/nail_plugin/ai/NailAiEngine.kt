@@ -35,7 +35,6 @@ class NailAiEngine(
     private val inputSize: Int = 640,
     private val numClasses: Int = 5,
     private val numMaskCoeffs: Int = 32,
-    // DEBUG: bbox filter mở rộng để khảo sát 0-detection; tighten sau khi xác nhận model load đúng.
     private val confThreshold: Float = 0.20f,
     private val perClassThresholds: Map<String, Float> = mapOf(
         "thumb" to 0.30f, "index" to 0.25f, "middle" to 0.20f,
@@ -43,12 +42,10 @@ class NailAiEngine(
     ),
     private val iouThreshold: Float = 0.45f,
     private val maskThreshold: Float = 0.3f,
-    private val minArea: Float = 200f,
-    private val maxArea: Float = 20000f,
-    private val minBboxW: Float = 10f,
-    private val maxBboxW: Float = 200f,
-    private val minBboxH: Float = 5f,
-    private val maxBboxH: Float = 150f,
+    // Dùng diện tích pixel²  thay vì giới hạn w/h cứng nhắc.
+    // maxArea = 120000 ≈ ngón tay chiếm ~350×350px trên khung 640×640.
+    private val minArea: Float = 50f,
+    private val maxArea: Float = 120000f,
     private val maxAspectRatio: Float = 6.0f,
 ) {
     companion object {
@@ -194,17 +191,17 @@ class NailAiEngine(
         }
         val conf = FloatArray(numAnchors) { n -> obj[n] * cls[n] }
 
-        // Geometric filter.
+        // Geometric filter: chỉ dùng confidence + aspect ratio.
+        // Không giới hạn w/h tuyệt đối để tránh bỏ sót móng khi đưa tay sát camera.
         val keepIdx = ArrayList<Int>()
         for (n in 0 until numAnchors) {
             val clsName = FINGER_CLASS_NAMES.getOrNull(clsId[n])
             val perClassThresh = if (clsName != null) perClassThresholds[clsName] else null
             val requiredConf = perClassThresh ?: confThreshold
             if (conf[n] < requiredConf) continue
-            if (bw[n] < minBboxW || bw[n] > maxBboxW) continue
-            if (bh[n] < minBboxH || bh[n] > maxBboxH) continue
-            if (cx[n] < 4f || cx[n] > inputSize - 4f) continue
-            if (cy[n] < 4f || cy[n] > inputSize - 4f) continue
+            if (bw[n] < 4f || bh[n] < 4f) continue  // Loại bỏ anchor quá nhỏ (nhiễu)
+            if (cx[n] < 2f || cx[n] > inputSize - 2f) continue
+            if (cy[n] < 2f || cy[n] > inputSize - 2f) continue
             if (bh[n] > 0f && (bw[n] / bh[n]) > maxAspectRatio) continue
             keepIdx.add(n)
         }

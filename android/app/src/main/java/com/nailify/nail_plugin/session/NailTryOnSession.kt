@@ -60,9 +60,20 @@ class NailTryOnSession(
     // Lifecycle ----------------------------------------------------------------
 
     fun start() {
+        // Parse design asset paths từ config: {"nailImagePath": "/path/to/img.png"}
+        // Design này được áp dụng cho TẤT CẢ các ngón (chưa phân biệt per-finger).
+        val globalDesignPath = config["nailImagePath"] as? String
+        val designPaths: Map<String, String?> = if (globalDesignPath != null) {
+            mapOf("index" to globalDesignPath, "middle" to globalDesignPath,
+                  "ring"  to globalDesignPath, "pinky"  to globalDesignPath,
+                  "thumb" to globalDesignPath)
+        } else emptyMap()
+
         pipeline = PipelineExecutor(context, debugProvider = { DebugState(debugShowSkeleton, debugShowBbox, debugShowFps) }).also {
+            it.designPaths = designPaths
             it.setEventSink { stats -> emitEvent(stats) }
             it.setSurfaceProvider { bitmap, detections -> renderer?.renderFrame(bitmap, detections) }
+            it.setSkeletonProvider { skel -> renderer?.currentSkeletonPoints = skel }
         }
         camera = CameraController(context, activity).also {
             it.setAnalyzerExecutor(pipeline!!.cameraExecutor)
@@ -119,6 +130,7 @@ class NailTryOnSession(
         Log.i(TAG, "attachSurface: surface.isValid=${surface.surface?.isValid}, ${surface.surfaceFrame}")
         if (renderer == null) {
             renderer = NailSurfaceRenderer()
+            renderer?.setContext(context)
         }
         renderer?.attachHolder(surface)
     }

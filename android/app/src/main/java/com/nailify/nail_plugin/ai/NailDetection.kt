@@ -19,9 +19,9 @@ data class NailDetection(
     val clsName: String = "",
     val trackId: Int = -1,
     // PCA direction (base -> tip), set bởi NailGeometryEngine.
-    val pcaDirection: PointF? = null,
+    var pcaDirection: PointF? = null,
     // MediaPipe forward unit vector (scaled to pixel space). Dùng cho PCA flip.
-    val forwardVector: PointF? = null,
+    var forwardVector: PointF? = null,
     // Polygon đã slice ở bedRatio (chỉ giữ phần nail bed).
     val nailBedPolygon: List<PointF> = emptyList(),
     // Đường dẫn tới design asset (relative to assets/) cho renderer.

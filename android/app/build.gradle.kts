@@ -77,5 +77,9 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:34.15.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth")
+
+    // ONNX Runtime for YOLO-Seg nail detection (inference at 640x640)
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.19.2")
+
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

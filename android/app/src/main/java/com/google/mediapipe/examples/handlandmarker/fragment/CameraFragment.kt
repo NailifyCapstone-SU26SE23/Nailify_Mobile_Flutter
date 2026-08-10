@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.PointF
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -20,6 +21,9 @@ import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Camera
+import androidx.camera.core.resolutionselector.AspectRatioStrategy
+import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -29,6 +33,7 @@ import android.util.Size
 import com.google.mediapipe.examples.handlandmarker.HandLandmarkerHelper
 import com.google.mediapipe.examples.handlandmarker.MainViewModel
 import com.google.mediapipe.examples.handlandmarker.R
+import com.google.mediapipe.examples.handlandmarker.ai.BlendMode
 import com.google.mediapipe.examples.handlandmarker.databinding.FragmentCameraBinding
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import org.json.JSONArray
@@ -59,7 +64,15 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
         /** Keys cho Intent kết quả trả về Flutter */
         const val RESULT_IMAGE_PATH = "snapshot_image_path"
         const val RESULT_LANDMARKS_JSON = "snapshot_landmarks_json"
-    }
+
+    /** Intent extra: bật chế độ YOLO-Seg + Homography overlay cho Live mode. */
+    const val EXTRA_YOLO_OVERLAY = "yolo_overlay"
+
+    /** Default design asset (relative to `assets/`) used when no per-finger
+     *  design is associated with a detection (e.g. empty `customShapeSrc`).
+     *  Loaded lazily on the background thread. */
+    private const val DEFAULT_DESIGN_ASSET = "ballerina.png"
+}
 
     private var _fragmentCameraBinding: FragmentCameraBinding? = null
     private val fragmentCameraBinding get() = _fragmentCameraBinding!!
@@ -76,6 +89,26 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
     /** true khi Activity được mở ở chế độ Snapshot (không có Live Overlay) */
     private var isSnapshotMode = false
 
+    /**
+     * Khi true, mỗi Live frame sẽ chạy YOLO-Seg → NailOverlayEngine và hiển thị kết quả
+     * lên `imgYoloOverlay` (đồng thời ẩn Canvas-based `overlay` cũ).
+     * Bật/tắt qua intent extra [EXTRA_YOLO_OVERLAY].
+     */
+    private var useYoloOverlay = false
+
+    /** Bitmap mới nhất từ CameraX (cập nhật khi MediaPipe callback chạy). */
+    @Volatile private var latestFrame: Bitmap? = null
+
+    /**
+     * Per-finger vectors from the last frame where MediaPipe succeeded.
+     * Used as fallback when MediaPipe returns empty (e.g. palm flip at ~90° rotation).
+     * Only valid when hand tracking is stable; cleared on camera switch or mode change.
+     */
+    @Volatile private var lastGoodVectors: Map<Int, PointF>? = null
+
+    /** Per-finger TIP positions from the last successful MediaPipe frame (for frame dim). */
+    @Volatile private var lastGoodTipPositions: Map<Int, PointF> = emptyMap()
+
     private lateinit var backgroundExecutor: ExecutorService
 
     override fun onResume() {
@@ -85,8 +118,13 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
                 requireActivity(), R.id.fragment_container
             ).navigate(R.id.action_camera_to_permissions)
         }
+        // handLandmarkerHelper được init bất đồng bộ trong onViewCreated()
+        // (backgroundExecutor.execute { ... }). Với multi-thread pool, task
+        // init có thể CHƯA chạy xong khi onResume() được gọi → kiểm tra trước.
         backgroundExecutor.execute {
-            if (handLandmarkerHelper.isClose()) {
+            if (this::handLandmarkerHelper.isInitialized &&
+                !handLandmarkerHelper.isClose()
+            ) {
                 handLandmarkerHelper.setupHandLandmarker()
             }
         }
@@ -102,6 +140,9 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
             viewModel.setDelegate(handLandmarkerHelper.currentDelegate)
             backgroundExecutor.execute { handLandmarkerHelper.clearHandLandmarker() }
         }
+        // Reset temporal smoothing so the next session starts with a clean
+        // tracker state (avoids stale associations from the previous scene).
+        viewModel.resetPolygonTracker()
     }
 
     override fun onDestroyView() {
@@ -128,8 +169,16 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
 
         // Xác định mode từ Intent của Activity
         isSnapshotMode = requireActivity().intent.getStringExtra(EXTRA_MODE) == MODE_SNAPSHOT
+        // Mặc định bật pipeline YOLO-Seg cho Live mode (code mới: NailAiEngine +
+        // PolygonTracker + NailOverlayEngine). Cờ `yolo_overlay` có thể tắt
+        // từ Intent nếu cần fallback về Canvas OverlayView cũ.
+        useYoloOverlay = !isSnapshotMode &&
+            requireActivity().intent.getBooleanExtra(EXTRA_YOLO_OVERLAY, true)
 
-        backgroundExecutor = Executors.newSingleThreadExecutor()
+        // Multi-thread (3 workers): load ONNX model + design PNG + inference loop
+        // có thể chạy song song. Trước đây single-thread khiến load model (1-3s)
+        // block mọi frame camera gửi tới → màn trắng + queue đầy.
+        backgroundExecutor = Executors.newFixedThreadPool(3)
 
         fragmentCameraBinding.viewFinder.implementationMode =
             androidx.camera.view.PreviewView.ImplementationMode.COMPATIBLE
@@ -211,12 +260,42 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
         if (isSnapshotMode) {
             // Snapshot mode: ẩn live overlay & nút live, hiện nút snapshot + hand guide
             fragmentCameraBinding.overlay.visibility = View.INVISIBLE
+            fragmentCameraBinding.imgYoloOverlay.visibility = View.INVISIBLE
             fragmentCameraBinding.cardCapture.visibility = View.GONE
             fragmentCameraBinding.imgHandGuide.visibility = View.VISIBLE
             fragmentCameraBinding.cardTakePhoto.visibility = View.VISIBLE
+        } else if (useYoloOverlay) {
+            // Live mode + YOLO-Seg path: hiện ImageView bitmap, ẨN PreviewView để
+            // không xé hình do 2 layer chồng với scaleType khác nhau, ẩn Canvas overlay.
+            fragmentCameraBinding.overlay.visibility = View.INVISIBLE
+            fragmentCameraBinding.imgYoloOverlay.visibility = View.VISIBLE
+            // GIỮ viewFinder VISIBLE làm nền camera. Trước đây ẩn nó khiến màn
+            // trắng 1-3s trong khi ONNX model load. Sau khi YOLO overlay có frame
+            // đầu tiên, imgYoloOverlay sẽ vẽ đè lên viewFinder.
+            fragmentCameraBinding.viewFinder.visibility = View.VISIBLE
+            fragmentCameraBinding.cardCapture.visibility = View.VISIBLE
+            fragmentCameraBinding.imgHandGuide.visibility = View.GONE
+            fragmentCameraBinding.cardTakePhoto.visibility = View.GONE
+            // Khởi động lazy-load ONNX model + design PNG trên background thread.
+            backgroundExecutor.execute {
+                viewModel.nailAiEngine.load()
+                // Always preload the default fallback design.
+                viewModel.ensureDesignLoaded(DEFAULT_DESIGN_ASSET)
+                // Preload the global shape asset if Flutter provided one.
+                viewModel.nailSetConfig.value.shapeImageSrc
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { viewModel.ensureDesignLoaded(it) }
+                // Preload any per-finger customShapeSrc assets.
+                viewModel.nailSetConfig.value.nails.forEach { design ->
+                    design.customShapeSrc
+                        ?.takeIf { it.isNotBlank() }
+                        ?.let { viewModel.ensureDesignLoaded(it) }
+                }
+            }
         } else {
-            // Live mode: hiện live overlay & nút live, ẩn snapshot elements
+            // Legacy Live mode: Canvas OverlayView
             fragmentCameraBinding.overlay.visibility = View.VISIBLE
+            fragmentCameraBinding.imgYoloOverlay.visibility = View.INVISIBLE
             fragmentCameraBinding.cardCapture.visibility = View.VISIBLE
             fragmentCameraBinding.imgHandGuide.visibility = View.GONE
             fragmentCameraBinding.cardTakePhoto.visibility = View.GONE
@@ -230,17 +309,18 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
     private fun takeSnapshotAndAnalyze() {
         // ── BƯỚC 0: BẮT NGAY BITMAP NGAY KHI NÚT ĐƯỢC BẤM ──────────────────────
         // viewFinder.bitmap lấy frame hiện tại (synchronous) — PHẢI gọi trên main thread.
-        val bitmap = fragmentCameraBinding.viewFinder.bitmap
-        if (bitmap == null) {
+        // Ưu tiên latestFrame từ ImageAnalysis (đã được rotate + flip đúng hướng).
+        val rawBitmap = latestFrame ?: fragmentCameraBinding.viewFinder.bitmap
+        if (rawBitmap == null) {
             Toast.makeText(requireContext(), "Camera chưa sẵn sàng", Toast.LENGTH_SHORT).show()
             return
         }
 
         // Chuẩn bị bitmap mutable ARGB_8888 để vẽ lên (làm ngay trước khi hiệu ứng)
-        val mutableBitmap = if (bitmap.config == Bitmap.Config.ARGB_8888 && bitmap.isMutable) {
-            bitmap
+        val mutableBitmap = if (rawBitmap.config == Bitmap.Config.ARGB_8888 && rawBitmap.isMutable) {
+            rawBitmap
         } else {
-            bitmap.copy(Bitmap.Config.ARGB_8888, true)
+            rawBitmap.copy(Bitmap.Config.ARGB_8888, true)
         }
 
         // ── BƯỚC 1: PHẢN HỒI TRỰC QUAN NGAY LẬP TỨC ────────────────────────────
@@ -485,7 +565,7 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
     // -------------------------------------------------------------------------
 
     private fun captureAndSaveToGallery() {
-        val previewBitmap = fragmentCameraBinding.viewFinder.bitmap ?: run {
+        val previewBitmap = latestFrame ?: fragmentCameraBinding.viewFinder.bitmap ?: run {
             Toast.makeText(requireContext(), "Camera chưa sẵn sàng", Toast.LENGTH_SHORT).show()
             return
         }
@@ -553,15 +633,32 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
 
         val selector = CameraSelector.Builder().requireLensFacing(cameraFacing).build()
         val targetResolution = Size(640, 480)
+        // ResolutionSelector cứng để CameraX không tự ý chọn 1280x960 / 1920x1080
+        // (trên emulator Pixel 6 + một số thiết bị, CameraX bỏ qua targetResolution
+        // và trả về frame 1280x960 → aspect ratio 4:3 OK nhưng kích thước quá lớn cho YOLO).
+        // Dùng FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER + aspect ratio 4:3 để buộc
+        // camera xuống gần 640x480 hơn. Nếu không được sẽ fallback về 1280x960.
+        val resolutionSelector = ResolutionSelector.Builder()
+            .setResolutionStrategy(
+                ResolutionStrategy(
+                    targetResolution,
+                    ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
+                )
+            )
+            .setAspectRatioStrategy(AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)
+            .build()
 
         preview = Preview.Builder()
-            .setTargetResolution(targetResolution)
+            .setResolutionSelector(resolutionSelector)
             .setTargetRotation(fragmentCameraBinding.viewFinder.display.rotation)
             .build()
         preview?.setSurfaceProvider(fragmentCameraBinding.viewFinder.surfaceProvider)
 
         imageAnalyzer = ImageAnalysis.Builder()
-            .setTargetResolution(targetResolution)
+            // Lưu ý: KHÔNG gọi setTargetResolution ở đây — CameraX từ chối khi
+            // setTargetResolution/setTargetAspectRatio được dùng cùng
+            // setResolutionSelector. ResolutionSelector đã chứa target size.
+            .setResolutionSelector(resolutionSelector)
             .setTargetRotation(fragmentCameraBinding.viewFinder.display.rotation)
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
@@ -579,19 +676,139 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
     }
 
     private fun detectHand(imageProxy: ImageProxy) {
+        // Debug: log frame metadata để truy vết pipeline YOLO.
+        Log.d(
+            TAG,
+            "detectHand: ${imageProxy.width}x${imageProxy.height} " +
+                "format=${imageProxy.format} useYolo=$useYoloOverlay " +
+                "snapshotMode=$isSnapshotMode"
+        )
         if (!this::handLandmarkerHelper.isInitialized || handLandmarkerHelper.isClose()) {
             imageProxy.close()
             return
         }
         if (!isSnapshotMode) {
-            handLandmarkerHelper.detectLiveStream(
-                imageProxy = imageProxy,
-                isFrontCamera = cameraFacing == CameraSelector.LENS_FACING_FRONT
-            )
+            if (useYoloOverlay) {
+                // YOLO-Seg path: CHỈ đọc bitmap, KHÔNG gọi MediaPipe để tránh
+                // double-close ImageProxy. MediaPipe landmarks không cần thiết
+                // cho YOLO overlay — PCA tự suy ra direction từ polygon
+                // (anatomical prior trong NailGeometryEngine).
+                var capturedFrame: Bitmap? = null
+                try {
+                    val bitmapBuffer = imageProxyToBitmap(imageProxy)
+                    if (bitmapBuffer != null) {
+                        val rotation = imageProxy.imageInfo.rotationDegrees
+                        val isFront = cameraFacing == CameraSelector.LENS_FACING_FRONT
+                        val matrix = android.graphics.Matrix().apply {
+                            postRotate(rotation.toFloat())
+                            if (isFront) postScale(
+                                -1f, 1f,
+                                bitmapBuffer.width.toFloat(),
+                                bitmapBuffer.height.toFloat()
+                            )
+                        }
+                        val rotated = Bitmap.createBitmap(
+                            bitmapBuffer, 0, 0,
+                            bitmapBuffer.width, bitmapBuffer.height,
+                            matrix, true
+                        )
+                        if (rotated !== bitmapBuffer && !bitmapBuffer.isRecycled) {
+                            bitmapBuffer.recycle()
+                        }
+                        capturedFrame = rotated
+                    } else {
+                        Log.w(TAG, "imageProxyToBitmap returned null; skipping frame")
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "capture latestFrame failed: ${e.message}")
+                } finally {
+                    // Close ImageProxy đúng 1 LẦN DUY NHẤT ở đây.
+                    imageProxy.close()
+                }
+                if (capturedFrame != null) {
+                    runYoloPipeline(capturedFrame)
+                }
+            } else {
+                // Legacy path: Canvas OverlayView cũ, dùng MediaPipe landmarks.
+                handLandmarkerHelper.detectLiveStream(
+                    imageProxy = imageProxy,
+                    isFrontCamera = cameraFacing == CameraSelector.LENS_FACING_FRONT
+                )
+            }
         } else {
             // Snapshot mode: không cần live stream phân tích realtime
             imageProxy.close()
         }
+    }
+
+    /**
+     * YOLO-Seg + overlay pipeline (chạy off-main-thread).
+     * Được gọi trực tiếp từ detectHand() khi useYoloOverlay=true.
+     * Không phụ thuộc vào HandLandmarkerHelper.onResults() — vì YOLO path
+     * không gọi MediaPipe nên không có ResultBundle.
+     */
+    private fun runYoloPipeline(frame: Bitmap) {
+        // Lưu ý: detectHand() đã chạy trên backgroundExecutor của CameraX rồi, nên
+        // KHÔNG backgroundExecutor.execute {} lần nữa — sẽ gây double-queue và block
+        // bởi load model ONNX (1-3s) trên cùng single-thread executor trước đây.
+        // Giờ backgroundExecutor đã multi-thread (xem MainViewModel) → chạy trực tiếp.
+        try {
+            Log.d(TAG, "runYoloPipeline: ${frame.width}x${frame.height}")
+            // NailAiEngine.run() giờ tự letterbox nội bộ — không cần xử lý ở đây.
+            val raw = viewModel.nailAiEngine.run(frame)
+            Log.d(TAG, "YOLO inference returned ${raw.size} detections")
+
+            // YOLO-only path: không có MediaPipe vectors / tip positions.
+            // processDetections sẽ dùng empty maps — anatomical prior trong
+            // NailGeometryEngine.PCA sẽ tự suy ra direction.
+            val finalVectors: Map<Int, PointF> = emptyMap()
+            val finalTipPositions: Map<Int, PointF> = emptyMap()
+
+            val config = viewModel.nailSetConfig.value
+            val processed = viewModel.processDetections(
+                raw, finalVectors, finalTipPositions, config,
+            )
+            Log.d(TAG, "PolygonTracker confirmed ${processed.size} tracks")
+
+            // Ensure every per-finger design asset is loaded before rendering.
+            for (det in processed) {
+                det.designAssetPath?.let { viewModel.ensureDesignLoaded(it) }
+            }
+            viewModel.ensureDesignLoaded(DEFAULT_DESIGN_ASSET)
+
+            // LUÔN render frame gốc (kể cả 0 detections) để user thấy camera feed
+            // thay vì màn trắng — overlay chỉ vẽ thêm design lên trên.
+            val canvasBitmap = frame.copy(Bitmap.Config.ARGB_8888, true)
+            if (processed.isNotEmpty()) {
+                viewModel.nailOverlayEngine.render(
+                    frame = canvasBitmap,
+                    detections = processed,
+                    designs = viewModel.currentDesigns,
+                    defaultDesignAsset = DEFAULT_DESIGN_ASSET,
+                    blendMode = BlendMode.ALPHA,
+                )
+            }
+            activity?.runOnUiThread {
+                if (_fragmentCameraBinding != null && !canvasBitmap.isRecycled) {
+                    fragmentCameraBinding.imgYoloOverlay.setImageBitmap(canvasBitmap)
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "YOLO overlay pipeline failed: ${e.message}")
+        }
+    }
+
+    /** Convert an ImageProxy (RGBA_8888) to a Bitmap, returning null on corrupt frames. */
+    private fun imageProxyToBitmap(imageProxy: ImageProxy): Bitmap? {
+        val planes = imageProxy.planes
+        if (planes.isEmpty()) return null
+        val buffer = planes[0].buffer
+        val remaining = buffer.remaining()
+        val expectedSize = imageProxy.width * imageProxy.height * 4
+        if (remaining <= 0 || remaining < expectedSize) return null
+        val bitmap = Bitmap.createBitmap(imageProxy.width, imageProxy.height, Bitmap.Config.ARGB_8888)
+        bitmap.copyPixelsFromBuffer(buffer)
+        return bitmap
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -605,6 +822,12 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
 
     override fun onResults(resultBundle: HandLandmarkerHelper.ResultBundle) {
         if (isSnapshotMode) return
+        if (useYoloOverlay) {
+            // YOLO-Seg path: pipeline đã chạy trực tiếp trong detectHand().
+            // onResults() sẽ không bao giờ được gọi ở đây vì YOLO path không
+            // gọi MediaPipe (xem detectHand()). Giữ early-return làm safety net.
+            return
+        }
         activity?.runOnUiThread {
             if (_fragmentCameraBinding != null) {
                 fragmentCameraBinding.overlay.setFullDesign(viewModel.nailSetConfig.value)

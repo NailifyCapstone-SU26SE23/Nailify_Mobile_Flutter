@@ -10,7 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:implementationMode="compatible"
-        app:scaleType="fillStart" />
+        app:scaleType="fillCenter" />
 
     <!-- Freeze frame: hiển thị khi bấm chụp để user thấy ảnh đã bắt xong, có thể thả tay -->
     <ImageView
@@ -26,6 +26,18 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="#FFFFFFFF"
+        android:visibility="gone" />
+
+    <!--
+        Bitmap overlay rendered by YOLO-Seg + NailOverlayEngine.
+        Hides the legacy Canvas-based OverlayView (which still drives hand landmark dots)
+        while keeping its source visible to maintain backward compatibility.
+    -->
+    <ImageView
+        android:id="@+id/img_yolo_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
         android:visibility="gone" />
 
     <com.google.mediapipe.examples.handlandmarker.OverlayView

@@ -18,6 +18,7 @@ package com.nailify.nail_plugin.camera
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Matrix
 import android.util.Log
 import android.util.Size
@@ -31,6 +32,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.google.common.util.concurrent.ListenableFuture
+import com.nailify.nail_plugin.util.BitmapPool
 import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
 
@@ -42,13 +44,17 @@ class CameraController(
         private const val TAG = "CameraController"
     }
 
-    var onFrame: ((Bitmap, Int, Boolean) -> Unit)? = null
+    var onFrame: ((Bitmap, Int, Boolean, BitmapPool?) -> Unit)? = null
     var onError: ((String) -> Unit)? = null
 
     private var cameraProvider: ProcessCameraProvider? = null
     private var imageAnalyzer: ImageAnalysis? = null
 
     private var analyzerExecutor: Executor? = null
+    
+    private var rawBitmapPool: BitmapPool? = null
+    private var rotatedBitmapPool: BitmapPool? = null
+    private val rotateMatrix = Matrix()
 
     fun setAnalyzerExecutor(executor: Executor) {
         analyzerExecutor = executor
@@ -75,6 +81,10 @@ class CameraController(
         }
         cameraProvider = null
         imageAnalyzer = null
+        rawBitmapPool?.clear()
+        rawBitmapPool = null
+        rotatedBitmapPool?.clear()
+        rotatedBitmapPool = null
     }
 
     // ---------------------------------------------------------------- private
@@ -109,7 +119,6 @@ class CameraController(
             }
 
         // Dummy Preview: Ép camera hardware bật màn trập bằng cách tạo một Preview ảo.
-        // Một số dòng máy Android sẽ trả về ảnh đen thui cho ImageAnalysis nếu không có Preview.
         val preview = androidx.camera.core.Preview.Builder()
             .setResolutionSelector(resolutionSelector)
             .build()
@@ -142,38 +151,63 @@ class CameraController(
                 Log.w(TAG, "skip frame: remaining=${buffer.remaining()} expected=$expectedSize")
                 return
             }
-            val rawBitmap = Bitmap.createBitmap(
-                imageProxy.width,
-                imageProxy.height,
-                Bitmap.Config.ARGB_8888,
-            )
+            
+            // 1. Allocate / Reuse Raw Bitmap
+            var rawPool = rawBitmapPool
+            if (rawPool == null) {
+                rawPool = BitmapPool(imageProxy.width, imageProxy.height)
+                rawBitmapPool = rawPool
+            }
+            val rawBitmap = rawPool.obtain()
             rawBitmap.copyPixelsFromBuffer(buffer)
 
             val rotation = imageProxy.imageInfo.rotationDegrees
-            val isFront = false // TODO: cho phép switch camera khi cần
-            val finalBitmap = rotateAndFlip(rawBitmap, rotation, isFront)
-            if (finalBitmap !== rawBitmap) rawBitmap.recycle()
-            onFrame?.invoke(finalBitmap, rotation, isFront)
+            val isFront = false
+            
+            if (rotation == 0 && !isFront) {
+                // Không cần xoay
+                onFrame?.invoke(rawBitmap, 0, isFront, rawPool)
+                return
+            }
+
+            // 2. Allocate / Reuse Rotated Bitmap
+            val isRotated = (rotation == 90 || rotation == 270)
+            val rotW = if (isRotated) imageProxy.height else imageProxy.width
+            val rotH = if (isRotated) imageProxy.width else imageProxy.height
+            
+            var rotPool = rotatedBitmapPool
+            if (rotPool == null) {
+                rotPool = BitmapPool(rotW, rotH)
+                rotatedBitmapPool = rotPool
+            }
+            val rotatedBitmap = rotPool.obtain()
+            
+            // 3. Zero-Allocation Canvas Rotation
+            val canvas = Canvas(rotatedBitmap)
+            rotateMatrix.reset()
+            rotateMatrix.postRotate(rotation.toFloat())
+            if (rotation == 90) {
+                rotateMatrix.postTranslate(rotW.toFloat(), 0f)
+            } else if (rotation == 180) {
+                rotateMatrix.postTranslate(rotW.toFloat(), rotH.toFloat())
+            } else if (rotation == 270) {
+                rotateMatrix.postTranslate(0f, rotH.toFloat())
+            }
+            
+            if (isFront) {
+                rotateMatrix.postScale(-1f, 1f, rotW / 2f, rotH / 2f)
+            }
+            
+            canvas.drawBitmap(rawBitmap, rotateMatrix, null)
+            
+            // Xong với rawBitmap, trả về pool ngay lập tức
+            rawPool.recycle(rawBitmap)
+            
+            // 4. Gửi rotatedBitmap cho pipeline, Pipeline sẽ chịu trách nhiệm recycle rotatedBitmap
+            onFrame?.invoke(rotatedBitmap, 0, isFront, rotPool)
         } catch (e: Exception) {
             Log.w(TAG, "analyzeFrame failed: ${e.message}", e)
         } finally {
             imageProxy.close()
         }
-    }
-
-    private fun rotateAndFlip(bitmap: Bitmap, rotation: Int, isFront: Boolean): Bitmap {
-        if (rotation == 0 && !isFront) return bitmap
-        val matrix = Matrix().apply {
-            postRotate(rotation.toFloat())
-            if (isFront) postScale(-1f, 1f, bitmap.width.toFloat(), bitmap.height.toFloat())
-        }
-        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-    }
-}
-
-/**
- * Marker type alias để giữ tên cũ ở call sites; ContextCompat.getMainExecutor
- * đã được import trực tiếp trong file này.
- */
-@Suppress("unused")
-private typealias ContextCompat_MainExecutor = androidx.core.content.ContextCompat
+    }}

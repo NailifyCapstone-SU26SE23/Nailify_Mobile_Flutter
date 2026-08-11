@@ -38,6 +38,7 @@ import com.nailify.nail_plugin.ai.NailGeometryEngine
 import com.nailify.nail_plugin.ai.PolygonTracker
 import com.nailify.nail_plugin.session.DebugState
 import com.nailify.nail_plugin.mediapipe.MediaPipeRunner
+import com.nailify.nail_plugin.util.BitmapPool
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
@@ -132,7 +133,7 @@ class PipelineExecutor(
      *
      * Kết quả: Camera preview chạy ~15-25fps, AI overlay delay 1-2 giây.
      */
-    fun submit(bitmap: Bitmap, rotation: Int, isFront: Boolean) {
+    fun submit(bitmap: Bitmap, rotation: Int, isFront: Boolean, pool: BitmapPool?) {
         // ── Bước 1: Render NGAY với detection cũ (15-25 FPS) ──
         val currentDetections = cachedDetections.get()
         val currentSkeleton = cachedSkeleton.get()
@@ -158,26 +159,20 @@ class PipelineExecutor(
         // ── Bước 2: Gửi cho AI nếu thread đang rảnh ──
         // compareAndSet: chỉ set true nếu hiện là false (atomic, không race)
         if (!isAiRunning.compareAndSet(false, true)) {
-            // AI đang bận → bỏ frame này, không tích lại trong queue
+            // AI đang bận → bỏ frame này, trả bitmap về pool ngay lập tức
+            pool?.recycle(bitmap)
             return
         }
 
-        // Tạo bản sao bitmap để AI thread dùng an toàn (camera có thể recycle)
-        val bitmapForAi = try {
-            bitmap.copy(bitmap.config ?: android.graphics.Bitmap.Config.ARGB_8888, false)
-        } catch (e: Exception) {
-            Log.w(TAG, "bitmap.copy failed, skipping AI frame: ${e.message}")
-            isAiRunning.set(false)
-            return
-        }
-
+        // Trao quyền sở hữu bitmap cho AI thread. (Camera thread sẽ lấy bitmap khác từ pool).
         aiExecutor.execute {
             try {
-                runAiPipeline(bitmapForAi, rotation, isFront)
+                runAiPipeline(bitmap, rotation, isFront)
             } catch (e: Exception) {
                 Log.w(TAG, "AI pipeline failed: ${e.message}", e)
             } finally {
-                bitmapForAi.recycle()
+                // Trả bitmap về pool sau khi AI dùng xong
+                pool?.recycle(bitmap)
                 isAiRunning.set(false)   // Mở khóa cho frame tiếp theo
             }
         }

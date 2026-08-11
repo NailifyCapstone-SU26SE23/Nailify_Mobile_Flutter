@@ -202,7 +202,11 @@ class NailSurfaceRenderer {
             return
         }
         val canvas: Canvas = try {
-            holder.lockCanvas()
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                holder.lockHardwareCanvas()
+            } else {
+                holder.lockCanvas()
+            }
         } catch (e: Exception) {
             Log.w(TAG, "lockCanvas failed: ${e.message}")
             return

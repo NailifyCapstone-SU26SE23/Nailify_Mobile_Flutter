@@ -77,7 +77,7 @@ class NailTryOnSession(
         }
         camera = CameraController(context, activity).also {
             it.setAnalyzerExecutor(pipeline!!.cameraExecutor)
-            it.onFrame = { bitmap, rotation, isFront -> pipeline!!.submit(bitmap, rotation, isFront) }
+            it.onFrame = { bitmap, rotation, isFront, pool -> pipeline!!.submit(bitmap, rotation, isFront, pool) }
             it.onError = { msg -> Log.w(TAG, "Camera error: $msg") }
             it.start()
         }

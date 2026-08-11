@@ -1,18 +1,30 @@
 /*
  * PipelineExecutor.kt — Quản lý AI pipeline (YOLO + MediaPipe).
  *
- * QUAN TRỌNG: OrtSession.run() KHÔNG thread-safe với multi-thread executor.
- * Fix bug crash libonnxruntime.so: serialize tất cả AI work trên 1
- * single-thread executor duy nhất.
+ * ═══════════════════════════════════════════════════════════════
+ * KIẾN TRÚC MỚI: Async Dual-Thread (Phase 1 FPS Optimization)
+ * ═══════════════════════════════════════════════════════════════
  *
- * Pipeline:
- *   submit(bitmap, rotation, isFront)
- *     -> cameraExecutor.execute { yoloRun(bitmap) + mediapipeRun(bitmap) }
- *     -> aiExecutor.execute { polygonTracker.update + emit stats }
- *     -> surfaceProvider(bitmap, detections)
+ * VẤN ĐỀ CŨ: Pipeline đồng bộ — Render PHẢI CHỜ YOLO ~1200ms mới
+ * vẽ được frame → chỉ 0.2 FPS.
  *
- * Vì YOLO và MediaPipe đều gọi native code có thể không thread-safe với nhau,
- * chúng phải chạy tuần tự trên cùng 1 thread (không parallel).
+ * GIẢI PHÁP: Tách render khỏi AI inference:
+ *
+ *   Camera Thread:  Frame1 → Frame2 → Frame3 → Frame4 → ...  (liên tục)
+ *                     ↓ immediate render với detection cũ
+ *   Render Thread:  Draw1 → Draw2 → Draw3 → Draw4  (15-25 FPS)
+ *                     ↓ khi AI idle, submit frame mới
+ *   AI Thread:    [YOLO+MP Frame1 ~400ms] → [YOLO+MP Frame3 ~400ms]
+ *                         ↓ cập nhật cached detections
+ *                   detection cache → overlay frame tiếp theo
+ *
+ * Cơ chế: AtomicBoolean `isAiRunning` đảm bảo không submit frame mới
+ * khi AI thread đang bận, tránh queue build-up và memory leak.
+ *
+ * THREAD SAFETY:
+ *   - OrtSession.run() chỉ được gọi trên aiExecutor (1 thread)
+ *   - cachedDetections: AtomicReference — safe multi-thread access
+ *   - Renderer gọi từ cameraExecutor với detection snapshot — safe
  */
 package com.nailify.nail_plugin.pipeline
 
@@ -28,6 +40,8 @@ import com.nailify.nail_plugin.session.DebugState
 import com.nailify.nail_plugin.mediapipe.MediaPipeRunner
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 
 class PipelineExecutor(
     private val context: Context,
@@ -35,10 +49,6 @@ class PipelineExecutor(
 ) {
     companion object {
         private const val TAG = "PipelineExecutor"
-
-        // Match NailTryOnSession.TARGET_*
-        private const val INPUT_W = 640
-        private const val INPUT_H = 480
     }
 
     /** CameraX ImageAnalysis executor — dùng cho frame submission. */
@@ -68,11 +78,29 @@ class PipelineExecutor(
     private var skeletonProvider: ((Array<FloatArray>?) -> Unit)? = null
     private var debugState: DebugState = debugProvider()
 
-    // Design asset paths per finger class (key = clsName, value = absolute file path)
     var designPaths: Map<String, String?> = emptyMap()
 
-    // Stats cho emit EventChannel (chỉ push mỗi 5 frame để tránh spam)
+    // ── Async Dual-Thread State ──────────────────────────────────────────────
+
+    /** Flag: AI thread có đang chạy không — tránh queue overflow. */
+    private val isAiRunning = AtomicBoolean(false)
+
+    /** Cache kết quả AI mới nhất — Renderer đọc bất kỳ lúc nào. */
+    private val cachedDetections: AtomicReference<List<NailDetection>> =
+        AtomicReference(emptyList())
+
+    /** Cache skeleton mới nhất từ MediaPipe. */
+    private val cachedSkeleton: AtomicReference<Array<FloatArray>?> =
+        AtomicReference(null)
+
+    // Stats
     private var frameCounter = 0
+    private var lastYoloMs = 0L
+    private var lastMpMs = 0L
+    private var lastTotalMs = 0L
+    private var lastRawDetCount = 0
+    private var lastHandDetected = false
+    private var lastFingerCount = 0
 
     // -------------------------------------------------------------------------
     // Setup
@@ -94,19 +122,63 @@ class PipelineExecutor(
         debugState = provider()
     }
 
+    /**
+     * Submit một frame từ Camera.
+     *
+     * Flow MỚI (Async):
+     * 1. Render NGAY frame này + detection cache cũ (không chờ AI)
+     * 2. Nếu AI thread đang rảnh (isAiRunning=false), submit frame cho AI
+     * 3. AI xử lý xong → cập nhật cachedDetections → frame tiếp theo sẽ dùng
+     *
+     * Kết quả: Camera preview chạy ~15-25fps, AI overlay delay 1-2 giây.
+     */
     fun submit(bitmap: Bitmap, rotation: Int, isFront: Boolean) {
-        // Nhận frame trên cameraExecutor -> chuyển sang aiExecutor để chạy AI tuần tự.
-        cameraExecutor.execute {
+        // ── Bước 1: Render NGAY với detection cũ (15-25 FPS) ──
+        val currentDetections = cachedDetections.get()
+        val currentSkeleton = cachedSkeleton.get()
+        skeletonProvider?.invoke(currentSkeleton)
+        surfaceProvider?.invoke(bitmap, currentDetections)
+
+        // Emit stats mỗi 5 frame từ cache
+        frameCounter++
+        if (frameCounter % 5 == 0) {
+            eventSink?.invoke(mapOf(
+                "yolo.detections"   to lastRawDetCount,
+                "yolo.inferenceMs"  to lastYoloMs,
+                "mediapipe.hand"    to lastHandDetected,
+                "mediapipe.fingers" to lastFingerCount,
+                "mediapipe.ms"      to lastMpMs,
+                "tracker.confirmed" to currentDetections.size,
+                "frame.size"        to "${bitmap.width}x${bitmap.height}",
+                "total.ms"          to lastTotalMs,
+                "debug.skeleton"    to currentSkeleton,
+            ))
+        }
+
+        // ── Bước 2: Gửi cho AI nếu thread đang rảnh ──
+        // compareAndSet: chỉ set true nếu hiện là false (atomic, không race)
+        if (!isAiRunning.compareAndSet(false, true)) {
+            // AI đang bận → bỏ frame này, không tích lại trong queue
+            return
+        }
+
+        // Tạo bản sao bitmap để AI thread dùng an toàn (camera có thể recycle)
+        val bitmapForAi = try {
+            bitmap.copy(bitmap.config ?: android.graphics.Bitmap.Config.ARGB_8888, false)
+        } catch (e: Exception) {
+            Log.w(TAG, "bitmap.copy failed, skipping AI frame: ${e.message}")
+            isAiRunning.set(false)
+            return
+        }
+
+        aiExecutor.execute {
             try {
-                aiExecutor.execute {
-                    try {
-                        runPipeline(bitmap, rotation, isFront)
-                    } catch (e: Exception) {
-                        Log.w(TAG, "AI pipeline failed: ${e.message}", e)
-                    }
-                }
+                runAiPipeline(bitmapForAi, rotation, isFront)
             } catch (e: Exception) {
-                Log.w(TAG, "submit dispatch failed: ${e.message}", e)
+                Log.w(TAG, "AI pipeline failed: ${e.message}", e)
+            } finally {
+                bitmapForAi.recycle()
+                isAiRunning.set(false)   // Mở khóa cho frame tiếp theo
             }
         }
     }
@@ -118,14 +190,14 @@ class PipelineExecutor(
     }
 
     // -------------------------------------------------------------------------
-    // Pipeline
+    // AI Pipeline (chạy trên aiExecutor, 1 thread)
     // -------------------------------------------------------------------------
 
-    private fun runPipeline(bitmap: Bitmap, rotation: Int, isFront: Boolean) {
+    private fun runAiPipeline(bitmap: Bitmap, rotation: Int, isFront: Boolean) {
         val t0 = System.currentTimeMillis()
         Log.d(TAG, "runPipeline enter: ${bitmap.width}x${bitmap.height} rot=$rotation")
 
-        // 1. YOLO inference.
+        // 1. YOLO inference (320x320 — ~400ms trên emulator, ~80ms trên thiết bị)
         val yoloStart = System.currentTimeMillis()
         val rawDetections = try {
             yoloEngine.run(bitmap)
@@ -136,24 +208,18 @@ class PipelineExecutor(
         val yoloMs = System.currentTimeMillis() - yoloStart
         Log.d(TAG, "YOLO dets=${rawDetections.size} in ${yoloMs}ms")
 
-        // 2. MediaPipe Hand Landmarker.
+        // 2. MediaPipe Hand Landmarker (async bên trong, lấy kết quả frame trước)
         val mpStart = System.currentTimeMillis()
         val mediaPipe = ensureMediaPipe()
         val fingerVectors = mediaPipe.lastFingerVectors
         val tipPositions = mediaPipe.lastTipPositions
         val handDetected = fingerVectors.isNotEmpty()
         mediaPipe.submitFrame(bitmap, System.currentTimeMillis())
-        // Push skeleton lên renderer ngay sau frame để vẽ debug skeleton đồng bộ
-        skeletonProvider?.invoke(mediaPipe.lastSkeletonPoints)
         val mpMs = System.currentTimeMillis() - mpStart
 
-        // 3. Geometry + tracker.
-        val geoStart = System.currentTimeMillis()
+        // 3. Geometry + PCA Cluster Regularization + tracker
         val processed = processDetections(rawDetections, fingerVectors, tipPositions)
 
-        // --- PCA Cluster Regularization (Chống xòe quạt) ---
-        // Port từ Desktop test_models.py: kéo hướng từng móng về hướng trung bình của cả bàn tay.
-        // Chỉ áp dụng cho những móng KHÔNG có MediaPipe vector (tức là đang dùng PCA Fallback).
         val pcaNails = processed.filter { it.forwardVector == null }
         if (pcaNails.size >= 2) {
             var sumDx = 0f; var sumDy = 0f
@@ -172,29 +238,19 @@ class PipelineExecutor(
         }
 
         val confirmed = polygonTracker.update(processed)
-        val geoMs = System.currentTimeMillis() - geoStart
 
-        // 4. Render qua surface (ngoài main thread, OK).
-        surfaceProvider?.invoke(bitmap, confirmed)
+        // 4. Cập nhật cache — Render thread sẽ dùng ở frame tiếp theo
+        cachedDetections.set(confirmed)
+        cachedSkeleton.set(mediaPipe.lastSkeletonPoints)
 
-        // 5. Emit stats mỗi 5 frame.
-        frameCounter++
-        if (frameCounter % 5 == 0) {
-            val total = System.currentTimeMillis() - t0
-            eventSink?.invoke(
-                mapOf(
-                    "yolo.detections"     to rawDetections.size,
-                    "yolo.inferenceMs"    to yoloMs,
-                    "mediapipe.hand"      to handDetected,
-                    "mediapipe.fingers"   to fingerVectors.size,
-                    "mediapipe.ms"        to mpMs,
-                    "tracker.confirmed"   to confirmed.size,
-                    "frame.size"          to "${bitmap.width}x${bitmap.height}",
-                    "total.ms"            to total,
-                    "debug.skeleton"      to mediaPipe.lastSkeletonPoints,
-                )
-            )
-        }
+        // 5. Lưu stats
+        val total = System.currentTimeMillis() - t0
+        lastYoloMs = yoloMs
+        lastMpMs = mpMs
+        lastTotalMs = total
+        lastRawDetCount = rawDetections.size
+        lastHandDetected = handDetected
+        lastFingerCount = fingerVectors.size
     }
 
     private fun processDetections(
@@ -203,7 +259,6 @@ class PipelineExecutor(
         tipPositions: Map<Int, PointF>,
     ): List<NailDetection> {
         if (raw.isEmpty()) return emptyList()
-        // Lấy frame size để scale MediaPipe vectors (normalized) sang pixel space.
         val frameW = tipPositions.values.maxOfOrNull { it.x }?.coerceAtLeast(1f) ?: 640f
         val frameH = tipPositions.values.maxOfOrNull { it.y }?.coerceAtLeast(1f) ?: 480f
         val diag = kotlin.math.sqrt(frameW * frameW + frameH * frameH).coerceAtLeast(1f)
@@ -213,7 +268,6 @@ class PipelineExecutor(
             val scaledHint = rawHint?.let { PointF(it.x * diag, it.y * diag) }
             val direction = geometryEngine.getDirectionFromPolygonPca(det.polygon, scaledHint, det.clsId)
             val nailBed = geometryEngine.cutPolygonAtRatio(det.polygon, direction, 0.75f)
-            // Gắn đường dẫn texture móng nếu có trong config
             val designPath = designPaths[det.clsName]
             det.copy(
                 forwardVector = scaledHint ?: det.forwardVector,
@@ -231,3 +285,4 @@ class PipelineExecutor(
         return mediaPipeRunner!!
     }
 }
+

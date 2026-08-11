@@ -32,7 +32,7 @@ import kotlin.math.min
 class NailAiEngine(
     private val context: Context,
     private val modelAssetPath: String = "nail_seg_5class.onnx",
-    private val inputSize: Int = 640,
+    private val inputSize: Int = 320,
     private val numClasses: Int = 5,
     private val numMaskCoeffs: Int = 32,
     private val confThreshold: Float = 0.20f,

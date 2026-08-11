@@ -66,7 +66,15 @@ class NailAiEngine(
         if (loaded) return true
         return try {
             val bytes = context.assets.open(modelAssetPath).use { it.readBytes() }
-            session = ortEnv.createSession(bytes, OrtSession.SessionOptions())
+            val options = OrtSession.SessionOptions().apply {
+                // Tối ưu hóa đa luồng CPU (an toàn cho mọi thiết bị)
+                setIntraOpNumThreads(4)
+                setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
+                
+                // LƯU Ý: Đã tắt NNAPI vì driver NNAPI trên Android Emulator (x86_64) 
+                // bị lỗi C++ native (SIGFPE_INTDIV) khi load mô hình YOLO.
+            }
+            session = ortEnv.createSession(bytes, options)
             loaded = true
             Log.i(TAG, "Model loaded ($modelAssetPath), inputs=${session?.inputInfo?.keys}, outputs=${session?.outputInfo?.keys}")
             true

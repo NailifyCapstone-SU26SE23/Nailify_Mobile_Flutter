@@ -210,6 +210,8 @@ class NailTryOnPlugin : FlutterPlugin, ActivityAware {
     // -------------------------------------------------------------------------
 
     private fun startSession(activity: Activity, config: Map<*, *>?, mode: String) {
+        // Lưu pending holder TRƯỚC khi stopSession xóa nó.
+        val savedHolder = pendingHolder
         // Nếu session cũ vẫn còn thì giải phóng trước.
         stopSession()
         val lifecycleOwner = activity as? androidx.lifecycle.LifecycleOwner
@@ -228,10 +230,13 @@ class NailTryOnPlugin : FlutterPlugin, ActivityAware {
         newSession.start()
 
         // Bind pending holder (nếu surfaceCreated đã chạy trước khi session tạo).
-        pendingHolder?.let { holder ->
-            Log.i(TAG, "startSession: binding pending holder")
-            newSession.attachSurface(holder)
+        val holderToBind = savedHolder ?: pendingHolder
+        if (holderToBind != null) {
+            Log.i(TAG, "startSession: binding pending holder (isValid=${holderToBind.surface?.isValid})")
+            newSession.attachSurface(holderToBind)
             pendingHolder = null
+        } else {
+            Log.w(TAG, "startSession: NO pending holder — surface not ready yet")
         }
 
         Log.i(TAG, "Session started: mode=$mode")
@@ -243,6 +248,6 @@ class NailTryOnPlugin : FlutterPlugin, ActivityAware {
             Log.i(TAG, "Session stopped")
         }
         session = null
-        pendingHolder = null  // Clear pending nếu có
+        // KHÔNG xóa pendingHolder ở đây! startSession cần nó.
     }
 }

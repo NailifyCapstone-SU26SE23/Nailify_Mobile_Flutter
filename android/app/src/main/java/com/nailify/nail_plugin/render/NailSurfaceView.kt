@@ -38,8 +38,6 @@ class NailSurfaceView @JvmOverloads constructor(
     var userCallback: SurfaceCallback? = null
 
     init {
-        // Initialize app context cho renderer (snapshot path cần cacheDir).
-        NailSurfaceRenderer.HolderRef.appContext = context.applicationContext
         // Đăng ký callback ngay để không miss surfaceCreated khi userCallback
         // được set trễ (Flutter factory set callback sau init{}).
         holder.addCallback(this)

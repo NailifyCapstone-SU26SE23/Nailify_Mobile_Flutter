@@ -8,7 +8,7 @@ plugins {
 
 android {
     namespace = "com.google.mediapipe.examples.handlandmarker"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

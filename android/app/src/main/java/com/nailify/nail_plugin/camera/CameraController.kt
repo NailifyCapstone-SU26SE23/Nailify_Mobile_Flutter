@@ -108,11 +108,26 @@ class CameraController(
                 }
             }
 
+        // Dummy Preview: Ép camera hardware bật màn trập bằng cách tạo một Preview ảo.
+        // Một số dòng máy Android sẽ trả về ảnh đen thui cho ImageAnalysis nếu không có Preview.
+        val preview = androidx.camera.core.Preview.Builder()
+            .setResolutionSelector(resolutionSelector)
+            .build()
+        preview.setSurfaceProvider { request ->
+            val surfaceTexture = android.graphics.SurfaceTexture(0)
+            surfaceTexture.setDefaultBufferSize(request.resolution.width, request.resolution.height)
+            val surface = android.view.Surface(surfaceTexture)
+            request.provideSurface(surface, ContextCompat.getMainExecutor(context)) {
+                surface.release()
+                surfaceTexture.release()
+            }
+        }
+
         try {
             provider.unbindAll()
-            // CHỈ bind ImageAnalysis — không cần Preview vì ta render ra SurfaceView riêng.
-            provider.bindToLifecycle(activity, selector, imageAnalyzer!!)
-            Log.i(TAG, "Camera bound to lifecycle (ImageAnalysis 640x480 only)")
+            // Bind CẢ Preview ảo VÀ ImageAnalysis.
+            provider.bindToLifecycle(activity, selector, preview, imageAnalyzer!!)
+            Log.i(TAG, "Camera bound to lifecycle (ImageAnalysis + Dummy Preview)")
         } catch (e: Exception) {
             Log.e(TAG, "bindToLifecycle failed", e)
             onError?.invoke("bindToLifecycle failed: ${e.message}")

@@ -60,14 +60,19 @@ class NailTryOnSession(
     // Lifecycle ----------------------------------------------------------------
 
     fun start() {
-        // Parse design asset paths từ config: {"nailImagePath": "/path/to/img.png"}
-        // Design này được áp dụng cho TẤT CẢ các ngón (chưa phân biệt per-finger).
-        val globalDesignPath = config["nailImagePath"] as? String
-        val designPaths: Map<String, String?> = if (globalDesignPath != null) {
-            mapOf("index" to globalDesignPath, "middle" to globalDesignPath,
-                  "ring"  to globalDesignPath, "pinky"  to globalDesignPath,
-                  "thumb" to globalDesignPath)
+        val designPathsMap = config["designPaths"] as? Map<*, *>
+        Log.d(TAG, "designPathsMap received: $designPathsMap")
+        
+        val designPaths: Map<String, String?> = if (designPathsMap != null) {
+            mapOf(
+                "index" to designPathsMap["index"] as? String,
+                "middle" to designPathsMap["middle"] as? String,
+                "ring" to designPathsMap["ring"] as? String,
+                "pinky" to designPathsMap["pinky"] as? String,
+                "thumb" to designPathsMap["thumb"] as? String
+            )
         } else emptyMap()
+        Log.d(TAG, "Parsed designPaths: $designPaths")
 
         pipeline = PipelineExecutor(context, debugProvider = { DebugState(debugShowSkeleton, debugShowBbox, debugShowFps) }).also {
             it.designPaths = designPaths

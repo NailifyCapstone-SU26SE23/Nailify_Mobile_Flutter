@@ -140,41 +140,38 @@ class PipelineExecutor(
         skeletonProvider?.invoke(currentSkeleton)
         surfaceProvider?.invoke(bitmap, currentDetections)
 
-        // Emit stats mỗi 5 frame từ cache
+        // Phát sự kiện stats
         frameCounter++
         if (frameCounter % 5 == 0) {
-            eventSink?.invoke(mapOf(
-                "yolo.detections"   to lastRawDetCount,
-                "yolo.inferenceMs"  to lastYoloMs,
-                "mediapipe.hand"    to lastHandDetected,
-                "mediapipe.fingers" to lastFingerCount,
-                "mediapipe.ms"      to lastMpMs,
-                "tracker.confirmed" to currentDetections.size,
-                "frame.size"        to "${bitmap.width}x${bitmap.height}",
-                "total.ms"          to lastTotalMs,
-                "debug.skeleton"    to currentSkeleton,
-            ))
+            val stats = mapOf(
+                "yoloMs" to lastYoloMs,
+                "mpMs" to lastMpMs,
+                "totalMs" to lastTotalMs,
+                "yoloDets" to lastRawDetCount,
+                "tracks" to cachedDetections.get().size,
+                "hand" to lastHandDetected,
+                "fingers" to lastFingerCount,
+                // KHÔNG gửi array nhiều chiều qua event channel
+            )
+            eventSink?.invoke(stats)
         }
 
-        // ── Bước 2: Gửi cho AI nếu thread đang rảnh ──
-        // compareAndSet: chỉ set true nếu hiện là false (atomic, không race)
-        if (!isAiRunning.compareAndSet(false, true)) {
-            // AI đang bận → bỏ frame này, trả bitmap về pool ngay lập tức
+        // ── Bước 2: AI (Background) ──
+        if (isAiRunning.compareAndSet(false, true)) {
+            val aiBitmap = bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, true)
             pool?.recycle(bitmap)
-            return
-        }
-
-        // Trao quyền sở hữu bitmap cho AI thread. (Camera thread sẽ lấy bitmap khác từ pool).
-        aiExecutor.execute {
-            try {
-                runAiPipeline(bitmap, rotation, isFront)
-            } catch (e: Exception) {
-                Log.w(TAG, "AI pipeline failed: ${e.message}", e)
-            } finally {
-                // Trả bitmap về pool sau khi AI dùng xong
-                pool?.recycle(bitmap)
-                isAiRunning.set(false)   // Mở khóa cho frame tiếp theo
+            aiExecutor.execute {
+                try {
+                    runAiPipeline(aiBitmap, rotation, isFront)
+                } catch (e: Exception) {
+                    Log.w(TAG, "AI pipeline failed: ${e.message}", e)
+                } finally {
+                    aiBitmap.recycle()
+                    isAiRunning.set(false)
+                }
             }
+        } else {
+            pool?.recycle(bitmap)
         }
     }
 

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../try-on/presentation/native_try_on_screen.dart';
+import '../../try-on/services/nail_image_generator.dart';
 import '../data/models/customer_nail_models.dart';
 import '../data/models/nail_component_config.dart';
 import '../data/models/nail_component_model.dart';
@@ -52,9 +53,14 @@ class ArTryOnService {
   Future<void> launchCustomerLive(
     CustomerNailModel customerNail, {
     BuildContext? context,
-  }) {
+  }) async {
+    if (context == null) return;
+    final designPaths = await NailImageGenerator.generate(context, customerNail);
+    final config = _convertCustomerToArFormat(customerNail);
+    config['designPaths'] = designPaths;
+    
     return _pushLiveScreen(
-      _convertCustomerToArFormat(customerNail),
+      config,
       context: context,
     );
   }

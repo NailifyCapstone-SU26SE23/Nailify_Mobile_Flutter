@@ -14,7 +14,7 @@ class PolygonTracker(
     private val alpha: Float = 0.5f,
     private val distThreshold: Float = 150f,
     private val minConfirmFrames: Int = 1,
-    private val hysteresisFrames: Int = 8,
+    private val hysteresisFrames: Int = 2,
     private val reattachDistMultiplier: Float = 1.5f,
 ) {
     private data class Track(
@@ -28,6 +28,7 @@ class PolygonTracker(
         var bboxCy: Float,
         var bboxW: Float,
         var bboxH: Float,
+        var lastDet: NailDetection? = null,
     )
 
     private val tracks = ArrayList<Track>()
@@ -47,7 +48,8 @@ class PolygonTracker(
             return emptyList()
         }
 
-        val matched = BooleanArray(tracks.size)
+        val originalTrackCount = tracks.size
+        val matched = BooleanArray(originalTrackCount)
         val outDetections = ArrayList<NailDetection>(detections.size)
 
         for (det in detections) {
@@ -56,8 +58,9 @@ class PolygonTracker(
             // Tìm track cùng clsId gần nhất trong distThreshold.
             var bestIdx = -1
             var bestDist = Float.POSITIVE_INFINITY
-            for ((i, t) in tracks.withIndex()) {
+            for (i in 0 until originalTrackCount) {
                 if (matched[i]) continue
+                val t = tracks[i]
                 if (t.clsId != det.clsId) continue
                 val d = kotlin.math.hypot(
                     (centroidX - t.bboxCx).toDouble(),
@@ -91,6 +94,7 @@ class PolygonTracker(
                 track.confidence = alpha * det.confidence + (1 - alpha) * track.confidence
                 track.hitFrames++
                 track.missFrames = 0
+                track.lastDet = det
             } else {
                 val newId = nextId++
                 tracks.add(
@@ -105,35 +109,65 @@ class PolygonTracker(
                         bboxCy = det.bboxCy,
                         bboxW = det.bboxW,
                         bboxH = det.bboxH,
+                        lastDet = det,
                     )
                 )
             }
         }
 
         // Mark unmatched tracks missFrames++.
-        for ((i, t) in tracks.withIndex()) {
-            if (!matched[i]) t.missFrames++
+        for (i in 0 until originalTrackCount) {
+            if (!matched[i]) tracks[i].missFrames++
         }
         pruneOld()
 
         // Build output: confirmed tracks (hit >= minConfirmFrames) hoặc hysteresis.
+        // Group by clsId and select the best track for each class (lowest missFrames, highest confidence)
+        val bestTracks = HashMap<Int, Track>()
         for (t in tracks) {
-            val confirmed = t.hitFrames >= minConfirmFrames ||
-                t.missFrames <= hysteresisFrames
+            val confirmed = t.hitFrames >= minConfirmFrames || t.missFrames <= hysteresisFrames
             if (!confirmed) continue
-            outDetections.add(
-                NailDetection(
-                    bboxCx = t.bboxCx,
-                    bboxCy = t.bboxCy,
-                    bboxW = t.bboxW,
-                    bboxH = t.bboxH,
-                    polygon = t.polygon.toList(),
-                    confidence = t.confidence,
-                    clsId = t.clsId,
-                    clsName = FINGER_CLASS_NAMES.getOrElse(t.clsId) { "" },
-                    trackId = t.trackId,
+            
+            val existing = bestTracks[t.clsId]
+            if (existing == null) {
+                bestTracks[t.clsId] = t
+            } else {
+                if (t.missFrames < existing.missFrames || (t.missFrames == existing.missFrames && t.confidence > existing.confidence)) {
+                    bestTracks[t.clsId] = t
+                }
+            }
+        }
+        
+        for (t in bestTracks.values) {
+            val base = t.lastDet
+            if (base != null) {
+                outDetections.add(
+                    base.copy(
+                        bboxCx = t.bboxCx,
+                        bboxCy = t.bboxCy,
+                        bboxW = t.bboxW,
+                        bboxH = t.bboxH,
+                        polygon = t.polygon.toList(),
+                        confidence = t.confidence,
+                        trackId = t.trackId,
+                        clsName = FINGER_CLASS_NAMES.getOrElse(t.clsId) { "" }
+                    )
                 )
-            )
+            } else {
+                outDetections.add(
+                    NailDetection(
+                        bboxCx = t.bboxCx,
+                        bboxCy = t.bboxCy,
+                        bboxW = t.bboxW,
+                        bboxH = t.bboxH,
+                        polygon = t.polygon.toList(),
+                        confidence = t.confidence,
+                        clsId = t.clsId,
+                        clsName = FINGER_CLASS_NAMES.getOrElse(t.clsId) { "" },
+                        trackId = t.trackId,
+                    )
+                )
+            }
         }
         return outDetections
     }
@@ -142,7 +176,7 @@ class PolygonTracker(
         val it = tracks.iterator()
         while (it.hasNext()) {
             val t = it.next()
-            if (t.missFrames > hysteresisFrames * 2) it.remove()
+            if (t.missFrames > hysteresisFrames) it.remove()
         }
     }
 }

@@ -128,8 +128,9 @@ class NailSurfaceRenderer {
 
     private val skeletonLinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
-        strokeWidth = 3f
+        strokeWidth = 6f
         color = Color.GREEN
+        alpha = 255
     }
 
     private val skeletonPointPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -295,66 +296,159 @@ class NailSurfaceRenderer {
         scaleX: Float, scaleY: Float,
         padLeft: Float, padTop: Float,
     ) {
-        val polyRaw = det.nailBedPolygon.takeIf { it.size >= 3 } ?: det.polygon.takeIf { it.size >= 3 } ?: return
+        val polyRaw = det.polygon.takeIf { it.size >= 3 } ?: return
+        val bedPolyRaw = det.nailBedPolygon.takeIf { it.size >= 3 } ?: polyRaw
         val classColor = CLASS_COLORS[det.clsName] ?: Color.WHITE
 
-        // Scale polygon sang canvas coordinates
-        val poly = polyRaw.map { p ->
-            PointF(p.x * scaleX + padLeft, p.y * scaleY + padTop)
+        // 1. Calculate v_long and v_short
+        val dir = det.forwardVector ?: det.pcaDirection ?: PointF(0f, -1f)
+        var vLongX = dir.x
+        var vLongY = dir.y
+        val vLongMag = Math.hypot(vLongX.toDouble(), vLongY.toDouble()).toFloat()
+        if (vLongMag > 1e-9f) {
+            vLongX /= vLongMag
+            vLongY /= vLongMag
+        } else {
+            vLongX = 0f; vLongY = -1f
+        }
+        val vShortX = -vLongY
+        val vShortY = vLongX
+
+        // 2. Project bedPoly onto v_short to get w_bed
+        var minShort = Float.POSITIVE_INFINITY
+        var maxShort = Float.NEGATIVE_INFINITY
+        for (p in bedPolyRaw) {
+            val proj = p.x * vShortX + p.y * vShortY
+            if (proj < minShort) minShort = proj
+            if (proj > maxShort) maxShort = proj
+        }
+        val wBed = Math.max(1f, maxShort - minShort)
+
+        // 3. Project full polygon onto v_long to get min_long and max_long_natural
+        var minLong = Float.POSITIVE_INFINITY
+        var maxLongNatural = Float.NEGATIVE_INFINITY
+        for (p in polyRaw) {
+            val proj = p.x * vLongX + p.y * vLongY
+            if (proj < minLong) minLong = proj
+            if (proj > maxLongNatural) maxLongNatural = proj
         }
 
-        // Bounding box của polygon trên canvas
-        val minX = poly.minOf { it.x }; val maxX = poly.maxOf { it.x }
-        val minY = poly.minOf { it.y }; val maxY = poly.maxOf { it.y }
-        val polyW = maxX - minX
-        val polyH = maxY - minY
-        val polyCx = (minX + maxX) / 2f
-        val polyCy = (minY + maxY) / 2f
+        val design = loadDesignBitmap(det.designAssetPath)
 
-        if (polyW < 2f || polyH < 2f) return
+        // Build the basic YOLO polygon path for fallback and for the hybrid mask
+        val polyPath = Path()
+        var first = true
+        for (p in polyRaw) {
+            val cx = p.x * scaleX + padLeft
+            val cy = p.y * scaleY + padTop
+            if (first) { polyPath.moveTo(cx, cy); first = false }
+            else { polyPath.lineTo(cx, cy) }
+        }
+        polyPath.close()
 
-        // Build polygon Path
-        val path = Path()
-        path.moveTo(poly[0].x, poly[0].y)
-        for (i in 1 until poly.size) path.lineTo(poly[i].x, poly[i].y)
-        path.close()
+        if (design == null) {
+            // FALLBACK: Tô màu viền móng rực rỡ để dễ nhìn thấy móng
+            polygonFillPaint.color = classColor
+            polygonFillPaint.alpha = 180
+            canvas.drawPath(polyPath, polygonFillPaint)
+            
+            polygonPaint.color = classColor
+            canvas.drawPath(polyPath, polygonPaint)
+            return
+        }
 
-        // ── Polygon viền (luôn vẽ, không phụ thuộc texture) ────────────────────
-        polygonPaint.color = classColor
-        canvas.drawPath(path, polygonFillPaint)
-        canvas.drawPath(path, polygonPaint)
+        // 4. Calculate h_mapped preserving aspect ratio
+        val designW = Math.max(1, design.width).toFloat()
+        val designH = design.height.toFloat()
+        val aspectRatio = designH / designW
+        val hMapped = wBed * aspectRatio
+        // Phóng to một chút xíu (khoảng 3%) để đảm bảo ôm khít phần chân móng
+        val scaleFudge = 1.03f 
+        val maxLong = minLong + (hMapped * scaleFudge)
+        
+        // Mở rộng minShort/maxShort một chút xíu để ôm sát hai cạnh bên móng
+        val padW = (maxShort - minShort) * (scaleFudge - 1.0f) / 2f
+        val renderMinShort = minShort - padW
+        val renderMaxShort = maxShort + padW
 
-        // ── AR Texture overlay ─────────────────────────────────────────────────
-        val design = loadDesignBitmap(det.designAssetPath) ?: return
+        // 5. Build dstPts (4 corners) in raw coordinates, then scale to canvas
+        val cuticleL_x = minLong * vLongX + renderMinShort * vShortX
+        val cuticleL_y = minLong * vLongY + renderMinShort * vShortY
+        
+        val cuticleR_x = minLong * vLongX + renderMaxShort * vShortX
+        val cuticleR_y = minLong * vLongY + renderMaxShort * vShortY
+        
+        val tipR_x = maxLong * vLongX + renderMaxShort * vShortX
+        val tipR_y = maxLong * vLongY + renderMaxShort * vShortY
+        
+        val tipL_x = maxLong * vLongX + renderMinShort * vShortX
+        val tipL_y = maxLong * vLongY + renderMinShort * vShortY
 
-        // Tính góc xoay (radian → degree).
-        // Ưu tiên MediaPipe forwardVector, fallback về PCA.
-        val dir = det.forwardVector ?: det.pcaDirection
-        val angleDeg = if (dir != null) {
-            Math.toDegrees(atan2(dir.y.toDouble(), dir.x.toDouble())).toFloat() - 90f
-        } else 0f
+        val dstPts = floatArrayOf(
+            cuticleL_x * scaleX + padLeft, cuticleL_y * scaleY + padTop,
+            cuticleR_x * scaleX + padLeft, cuticleR_y * scaleY + padTop,
+            tipR_x * scaleX + padLeft, tipR_y * scaleY + padTop,
+            tipL_x * scaleX + padLeft, tipL_y * scaleY + padTop
+        )
 
-        // Canvas save/restore để clip polygon
+        // srcPts: BottomLeft, BottomRight, TopRight, TopLeft
+        // Image coordinates: Top is y=0, Bottom is y=height (cuticle)
+        val srcPts = floatArrayOf(
+            0f, designH,       // Bottom Left (cuticle_L)
+            designW, designH,  // Bottom Right (cuticle_R)
+            designW, 0f,       // Top Right (tip_R)
+            0f, 0f             // Top Left (tip_L)
+        )
+
+        val matrix = android.graphics.Matrix()
+        matrix.setPolyToPoly(srcPts, 0, dstPts, 0, 4)
+
+        // 6. Create Hybrid Mask (Clip at base, open at tip)
+        val hybridPath = Path()
+        
+        // 6b. Infinite Tip Rectangle (starts at 50% of natural nail length)
+        val startLong = minLong + (maxLongNatural - minLong) * 0.5f
+        
+        val rectBL_x = startLong * vLongX + renderMinShort * vShortX
+        val rectBL_y = startLong * vLongY + renderMinShort * vShortY
+        
+        val rectBR_x = startLong * vLongX + renderMaxShort * vShortX
+        val rectBR_y = startLong * vLongY + renderMaxShort * vShortY
+        
+        val rectTR_x = maxLong * vLongX + renderMaxShort * vShortX
+        val rectTR_y = maxLong * vLongY + renderMaxShort * vShortY
+        
+        val rectTL_x = maxLong * vLongX + renderMinShort * vShortX
+        val rectTL_y = maxLong * vLongY + renderMinShort * vShortY
+
+        val tipRectPath = Path()
+        tipRectPath.moveTo(rectBL_x * scaleX + padLeft, rectBL_y * scaleY + padTop)
+        tipRectPath.lineTo(rectBR_x * scaleX + padLeft, rectBR_y * scaleY + padTop)
+        tipRectPath.lineTo(rectTR_x * scaleX + padLeft, rectTR_y * scaleY + padTop)
+        tipRectPath.lineTo(rectTL_x * scaleX + padLeft, rectTL_y * scaleY + padTop)
+        tipRectPath.close()
+
+        // Merge paths using UNION
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
+            hybridPath.op(polyPath, tipRectPath, Path.Op.UNION)
+        } else {
+            hybridPath.addPath(polyPath)
+            hybridPath.addPath(tipRectPath)
+        }
+
+        // Tinh chỉnh độ sáng/blending tự nhiên nếu cần (bỏ qua, xài alpha blend cơ bản)
+        // 7. Vẽ móng
         canvas.save()
-        canvas.clipPath(path)
-
-        // Matrix: scale texture để lấp đầy bbox polygon, sau đó xoay quanh tâm
-        val texW = design.width.toFloat()
-        val texH = design.height.toFloat()
-        val sx = (polyW * 1.1f) / texW
-        val sy = (polyH * 1.1f) / texH
-
-        // Áp dụng manual offset từ Flutter sliders
-        val tx = polyCx + offsetX
-        val ty = polyCy + offsetY
-
-        val mat = Matrix()
-        mat.postScale(sx * scaleMul, sy * scaleMul)
-        mat.postRotate(angleDeg + rotationDeg, texW / 2f * sx * scaleMul, texH / 2f * sy * scaleMul)
-        mat.postTranslate(tx - texW / 2f * sx * scaleMul, ty - texH / 2f * sy * scaleMul)
-
-        canvas.drawBitmap(design, mat, overlayPaint)
+        canvas.clipPath(hybridPath)
+        
+        val renderPaint = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG or android.graphics.Paint.ANTI_ALIAS_FLAG)
+        canvas.drawBitmap(design, matrix, renderPaint)
+        
         canvas.restore()
+        
+        // Vẽ thêm một viền trắng mờ bao quanh viền da gốc để móng hòa hợp tự nhiên hơn
+        polygonPaint.color = Color.argb(40, 255, 255, 255)
+        canvas.drawPath(polyPath, polygonPaint)
     }
 
     // ── Skeleton ───────────────────────────────────────────────────────────────
@@ -371,7 +465,7 @@ class NailSurfaceRenderer {
             val b = pts.getOrNull(c[1]) ?: continue
             canvas.drawLine(a.x, a.y, b.x, b.y, skeletonLinePaint)
         }
-        for (p in pts) canvas.drawCircle(p.x, p.y, 5f, skeletonPointPaint)
+        for (p in pts) canvas.drawCircle(p.x, p.y, 8f, skeletonPointPaint)
     }
 
     // ── BBox debug ────────────────────────────────────────────────────────────
@@ -403,10 +497,26 @@ class NailSurfaceRenderer {
      * Kết quả được cache để tránh IO mỗi frame.
      */
     private fun loadDesignBitmap(path: String?): Bitmap? {
-        if (path == null) return null
+        if (path == null) {
+            Log.w(TAG, "loadDesignBitmap: path is null!")
+            return null
+        }
         designCache[path]?.let { return it }
+        
+        Log.d(TAG, "loadDesignBitmap: loading from '$path'")
+        val file = java.io.File(path)
+        if (!file.exists()) {
+            Log.w(TAG, "loadDesignBitmap: file does not exist at '$path'")
+            return null
+        }
+        
         return try {
             val bmp = BitmapFactory.decodeFile(path)
+            if (bmp == null) {
+                Log.w(TAG, "loadDesignBitmap: BitmapFactory.decodeFile returned null for '$path'")
+            } else {
+                Log.d(TAG, "loadDesignBitmap: loaded ${bmp.width}x${bmp.height} from '$path'")
+            }
             designCache[path] = bmp
             bmp
         } catch (e: Exception) {

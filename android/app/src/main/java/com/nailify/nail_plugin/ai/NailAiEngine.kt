@@ -35,16 +35,16 @@ class NailAiEngine(
     private val inputSize: Int = 320,
     private val numClasses: Int = 5,
     private val numMaskCoeffs: Int = 32,
-    private val confThreshold: Float = 0.20f,
+    private val confThreshold: Float = 0.45f,
     private val perClassThresholds: Map<String, Float> = mapOf(
-        "thumb" to 0.30f, "index" to 0.25f, "middle" to 0.20f,
-        "ring" to 0.25f, "pinky" to 0.30f,
+        "thumb" to 0.50f, "index" to 0.45f, "middle" to 0.45f,
+        "ring" to 0.45f, "pinky" to 0.45f,
     ),
     private val iouThreshold: Float = 0.45f,
     private val maskThreshold: Float = 0.3f,
     // Dùng diện tích pixel²  thay vì giới hạn w/h cứng nhắc.
     // maxArea = 120000 ≈ ngón tay chiếm ~350×350px trên khung 640×640.
-    private val minArea: Float = 50f,
+    private val minArea: Float = 800f,
     private val maxArea: Float = 120000f,
     private val maxAspectRatio: Float = 6.0f,
 ) {
@@ -148,15 +148,38 @@ class NailAiEngine(
 
         // 4. Parse.
         val outList = rawOutputs.toList()
+        
+        val tensor0 = outList.getOrNull(0)?.value as? OnnxTensor
+        val tensor1 = outList.getOrNull(1)?.value as? OnnxTensor
+        
+        val out0 = tensor0?.value as? Array<*>
+        
+        val protoFlatArray = if (tensor1 != null) {
+            val buf = tensor1.floatBuffer
+            val arr = FloatArray(buf.capacity())
+            buf.get(arr)
+            arr
+        } else null
+        
+        // Đã lấy xong data (java arrays), giờ mới được close tensor native
         rawOutputs.close()
 
-        val out0 = (outList.getOrNull(0)?.value as? Array<*>)
-            ?: return emptyList()
-        val out1 = (outList.getOrNull(1)?.value)
+        if (out0 == null) {
+            Log.d(TAG, "YOLO: Failed to get value from tensor0. Is it null? ${tensor0 == null}")
+            return emptyList()
+        }
+
         val out0Arr = out0 as Array<Array<FloatArray>>
         val rawBoxes = out0Arr[0]
         val numChannels = rawBoxes.size
         val numAnchors = rawBoxes[0].size
+
+        // ── DIAGNOSTIC: in ra model output shape thực tế ──────────────────────
+        // Expected for YOLOv11-seg nc=5: [1, 41, 8400] (4+5+32)
+        // Expected for YOLOv11-seg nc=1: [1, 37, 8400] (4+1+32)
+        Log.d(TAG, "YOLO output shape: numChannels=$numChannels numAnchors=$numAnchors (expected 4+nc+32)")
+        Log.d(TAG, "YOLO layout check: 4+5+32=${4+numClasses+numMaskCoeffs} == $numChannels? ${numChannels == 4+numClasses+numMaskCoeffs}")
+
         val preds = Array(numAnchors) { ArrayList<Float>(numChannels) }
         for (c in 0 until numChannels) {
             val ch = rawBoxes[c]
@@ -199,6 +222,13 @@ class NailAiEngine(
         }
         val conf = FloatArray(numAnchors) { n -> obj[n] * cls[n] }
 
+        // ── DIAGNOSTIC: max confidence và top-5 anchors ────────────────────────
+        val maxConf = conf.maxOrNull() ?: 0f
+        val top5 = conf.indices.sortedByDescending { conf[it] }.take(5)
+        Log.d(TAG, "YOLO maxConf=$maxConf confThresh=$confThreshold hasObjChannel=$hasObjChannel")
+        Log.d(TAG, "YOLO top5 anchors: ${top5.joinToString { "[${it}]conf=${conf[it]}cls=${clsId[it]}" }}")
+        // ─────────────────────────────────────────────────────────────────────
+
         // Geometric filter: chỉ dùng confidence + aspect ratio.
         // Không giới hạn w/h tuyệt đối để tránh bỏ sót móng khi đưa tay sát camera.
         val keepIdx = ArrayList<Int>()
@@ -213,7 +243,10 @@ class NailAiEngine(
             if (bh[n] > 0f && (bw[n] / bh[n]) > maxAspectRatio) continue
             keepIdx.add(n)
         }
-        if (keepIdx.isEmpty()) return emptyList()
+        if (keepIdx.isEmpty()) {
+            Log.d(TAG, "YOLO: keepIdx empty after filter — maxConf=$maxConf")
+            return emptyList()
+        }
 
         val x1 = FloatArray(keepIdx.size) { i -> cx[keepIdx[i]] - bw[keepIdx[i]] * 0.5f }
         val y1 = FloatArray(keepIdx.size) { i -> cy[keepIdx[i]] - bh[keepIdx[i]] * 0.5f }
@@ -224,22 +257,20 @@ class NailAiEngine(
 
         val invScale = 1f / scale
 
-        val protoArr = out1 as? Array<Array<Array<FloatArray>>>
         val protoResult: Triple<Array<FloatArray>?, Int, Int> = when {
-            protoArr == null -> Triple(null, 0, 0)
-            protoArr[0].isNotEmpty() && protoArr[0][0].isNotEmpty() &&
-                protoArr[0][0][0] is FloatArray -> {
-                val ph = protoArr[0][0].size
-                val pw = protoArr[0][0][0].size
+            protoFlatArray != null -> {
+                // YOLOv11 mask prototypes are typically 160x160 (inputSize / 2 for 320, or inputSize / 4?)
+                // Actually, let's calculate based on capacity.
+                // capacity = 1 * numMaskCoeffs * ph * pw
+                // ph * pw = capacity / numMaskCoeffs
+                // assuming ph == pw
+                val ph = kotlin.math.sqrt((protoFlatArray.size / numMaskCoeffs).toDouble()).toInt()
+                val pw = ph
                 val flat = Array(numMaskCoeffs) { FloatArray(ph * pw) }
                 for (k in 0 until numMaskCoeffs) {
-                    val plane = protoArr[0][k]
                     val arr = flat[k]
-                    for (i in 0 until ph) {
-                        val srcRow = plane[i]
-                        val dstOff = i * pw
-                        for (j in 0 until pw) arr[dstOff + j] = srcRow[j]
-                    }
+                    val planeOff = k * ph * pw
+                    System.arraycopy(protoFlatArray, planeOff, arr, 0, ph * pw)
                 }
                 Triple(flat, ph, pw)
             }
@@ -250,6 +281,8 @@ class NailAiEngine(
         val protoW = protoResult.third
 
         val detections = ArrayList<NailDetection>(nmsOrder.size)
+        val classCounts = IntArray(numClasses)
+
         for (orderIdx in nmsOrder) {
             val globalIdx = keepIdx[orderIdx]
             val detCx = cx[globalIdx]
@@ -258,6 +291,11 @@ class NailAiEngine(
             val detBh = bh[globalIdx]
             val detConf = conf[globalIdx]
             val detClsId = clsId[globalIdx].coerceIn(0, numClasses - 1)
+            
+            // Giữ tối đa 1 detection mỗi class (một bàn tay chỉ có 1 ngón mỗi loại)
+            if (classCounts[detClsId] >= 1) continue
+            classCounts[detClsId]++
+            
             val detClsName = FINGER_CLASS_NAMES.getOrElse(detClsId) { "class_$detClsId" }
 
             var polygonModel = polygonFromMask(

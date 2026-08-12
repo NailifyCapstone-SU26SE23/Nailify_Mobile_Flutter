@@ -159,10 +159,13 @@ class CameraController(
                 rawBitmapPool = rawPool
             }
             val rawBitmap = rawPool.obtain()
+            buffer.rewind()
             rawBitmap.copyPixelsFromBuffer(buffer)
 
             val rotation = imageProxy.imageInfo.rotationDegrees
             val isFront = false
+            
+            Log.d(TAG, "analyzeFrame: proxy=${imageProxy.width}x${imageProxy.height} rot=$rotation rawBmp=${rawBitmap.width}x${rawBitmap.height}")
             
             if (rotation == 0 && !isFront) {
                 // Không cần xoay
@@ -199,6 +202,8 @@ class CameraController(
             }
             
             canvas.drawBitmap(rawBitmap, rotateMatrix, null)
+            
+            Log.d(TAG, "analyzeFrame: rotated=${rotatedBitmap.width}x${rotatedBitmap.height} from ${rawBitmap.width}x${rawBitmap.height} rot=$rotation")
             
             // Xong với rawBitmap, trả về pool ngay lập tức
             rawPool.recycle(rawBitmap)

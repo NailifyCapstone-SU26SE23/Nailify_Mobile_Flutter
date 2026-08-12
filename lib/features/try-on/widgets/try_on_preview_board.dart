@@ -57,7 +57,7 @@ class TryOnPreviewBoard extends StatelessWidget {
               children: [
                 for (var finger = 1; finger <= 5; finger++) ...[
                   Expanded(
-                    child: _FingerPreviewTile(
+                    child: FingerPreviewTile(
                       selectedShape: selectedShape,
                       selectedSurface: selectedSurface,
                       color: fingerColors[finger] ?? selectedColor,
@@ -89,7 +89,7 @@ class TryOnPreviewBoard extends StatelessWidget {
 
     return AspectRatio(
       aspectRatio: 1.1,
-      child: _FingerPreviewTile(
+      child: FingerPreviewTile(
         selectedShape: selectedShape,
         selectedSurface: selectedSurface,
         color: selectedFingerIndex == -1
@@ -113,7 +113,7 @@ class TryOnPreviewBoard extends StatelessWidget {
   }
 }
 
-class _FingerPreviewTile extends StatelessWidget {
+class FingerPreviewTile extends StatelessWidget {
   final NailShapeModel? selectedShape;
   final NailSurfaceModel? selectedSurface;
   final String color;
@@ -124,7 +124,7 @@ class _FingerPreviewTile extends StatelessWidget {
   final VoidCallback? onTap;
   final bool compact;
 
-  const _FingerPreviewTile({
+  const FingerPreviewTile({
     required this.selectedShape,
     required this.selectedSurface,
     required this.color,

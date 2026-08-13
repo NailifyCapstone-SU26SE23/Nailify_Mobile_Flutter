@@ -123,6 +123,7 @@ class _FingerPreviewTile extends StatelessWidget {
   final ValueChanged<int> onSelectPlacement;
   final VoidCallback? onTap;
   final bool compact;
+  final bool transparentBackground;
 
   const _FingerPreviewTile({
     required this.selectedShape,
@@ -134,6 +135,7 @@ class _FingerPreviewTile extends StatelessWidget {
     required this.onSelectPlacement,
     this.onTap,
     this.compact = false,
+    this.transparentBackground = false,
   });
 
   @override
@@ -143,8 +145,8 @@ class _FingerPreviewTile extends StatelessWidget {
       onTap: onTap,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: Colors.black12),
+          color: transparentBackground ? Colors.transparent : Colors.white,
+          border: transparentBackground ? null : Border.all(color: Colors.black12),
           borderRadius: BorderRadius.circular(8),
         ),
         child: LayoutBuilder(
@@ -156,7 +158,7 @@ class _FingerPreviewTile extends StatelessWidget {
 
             return Stack(
               children: [
-                const Positioned.fill(child: _TryOnPreviewFallback()),
+                transparentBackground ? const SizedBox.shrink() : const Positioned.fill(child: _TryOnPreviewFallback()),
                 if (selectedShape?.imageUrl.isNotEmpty == true)
                   Positioned(
                     left: nailLeft,

@@ -144,7 +144,7 @@ class _GeneratorScreenState extends State<_GeneratorScreen> {
         .toList();
 
     return Material(
-      color: Colors.black,
+      color: Colors.transparent, // Changed to transparent for opaque_bbox
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -172,6 +172,7 @@ class _GeneratorScreenState extends State<_GeneratorScreen> {
                         selectedPlacementId: null,
                         onSelectPlacement: (_) {},
                         compact: false,
+                        transparentBackground: true,
                       ),
                     ),
                   );

@@ -22,6 +22,7 @@ import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.RectF
 import android.graphics.PointF
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
@@ -290,6 +291,37 @@ class NailSurfaceRenderer {
      *  3. Clip canvas bằng polygon path để ốp texture.
      *  4. Dùng Matrix scale+rotate để fit texture vào vùng móng.
      */
+
+    private fun findOpaqueBBox(bitmap: Bitmap): RectF {
+        val width = bitmap.width
+        val height = bitmap.height
+        val pixels = IntArray(width * height)
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+
+        var minX = width
+        var minY = height
+        var maxX = -1
+        var maxY = -1
+
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                val alpha = (pixels[y * width + x] ushr 24) and 0xFF
+                if (alpha > 10) {
+                    if (x < minX) minX = x
+                    if (x > maxX) maxX = x
+                    if (y < minY) minY = y
+                    if (y > maxY) maxY = y
+                }
+            }
+        }
+
+        return if (minX <= maxX && minY <= maxY) {
+            RectF(minX.toFloat(), minY.toFloat(), maxX.toFloat(), maxY.toFloat())
+        } else {
+            RectF(0f, 0f, width.toFloat(), height.toFloat()) // Fallback
+        }
+    }
+
     private fun drawNailOverlay(
         canvas: Canvas,
         det: NailDetection,
@@ -324,53 +356,74 @@ class NailSurfaceRenderer {
         }
         val wBed = Math.max(1f, maxShort - minShort)
 
-        // 3. Project full polygon onto v_long to get min_long and max_long_natural
+        // 3. Find precise cuticle center from polyRaw (lowest vLong projection)
         var minLong = Float.POSITIVE_INFINITY
         var maxLongNatural = Float.NEGATIVE_INFINITY
+        var pCuticleCenter = PointF()
         for (p in polyRaw) {
             val proj = p.x * vLongX + p.y * vLongY
-            if (proj < minLong) minLong = proj
+            if (proj < minLong) {
+                minLong = proj
+                pCuticleCenter = p
+            }
             if (proj > maxLongNatural) maxLongNatural = proj
         }
 
         val design = loadDesignBitmap(det.designAssetPath)
-
-        // Build the basic YOLO polygon path for fallback and for the hybrid mask
-        val polyPath = Path()
-        var first = true
-        for (p in polyRaw) {
-            val cx = p.x * scaleX + padLeft
-            val cy = p.y * scaleY + padTop
-            if (first) { polyPath.moveTo(cx, cy); first = false }
-            else { polyPath.lineTo(cx, cy) }
-        }
-        polyPath.close()
+        
+        // Build Procedural U-Curve Hybrid Mask
+        val scaleFudge = 1.03f 
+        val padW = (maxShort - minShort) * (scaleFudge - 1.0f) / 2f
+        val renderMinShort = minShort - padW
+        val renderMaxShort = maxShort + padW
+        
+        // Cuticle height limit (top of the U-curve on the sides)
+        // Usually about 25% of the natural nail length
+        val curveTopLong = minLong + (maxLongNatural - minLong) * 0.25f
+        
+        // Define the 5 keypoints for the U-Curve
+        val pLeft_x = curveTopLong * vLongX + renderMinShort * vShortX
+        val pLeft_y = curveTopLong * vLongY + renderMinShort * vShortY
+        
+        val pRight_x = curveTopLong * vLongX + renderMaxShort * vShortX
+        val pRight_y = curveTopLong * vLongY + renderMaxShort * vShortY
+        
+        // The actual lowest point of the natural nail
+        val pCenter_x = pCuticleCenter.x
+        val pCenter_y = pCuticleCenter.y
+        
+        // Control points for the Bezier curves (pulled to the corners of the bounding box)
+        val c1_x = minLong * vLongX + renderMinShort * vShortX
+        val c1_y = minLong * vLongY + renderMinShort * vShortY
+        
+        val c2_x = minLong * vLongX + renderMaxShort * vShortX
+        val c2_y = minLong * vLongY + renderMaxShort * vShortY
 
         if (design == null) {
-            // FALLBACK: Tô màu viền móng rực rỡ để dễ nhìn thấy móng
+            // FALLBACK: Draw the U-Curve explicitly so the user can see it!
+            val fallbackPath = Path()
+            fallbackPath.moveTo(pLeft_x * scaleX + padLeft, pLeft_y * scaleY + padTop)
+            fallbackPath.quadTo(c1_x * scaleX + padLeft, c1_y * scaleY + padTop, pCenter_x * scaleX + padLeft, pCenter_y * scaleY + padTop)
+            fallbackPath.quadTo(c2_x * scaleX + padLeft, c2_y * scaleY + padTop, pRight_x * scaleX + padLeft, pRight_y * scaleY + padTop)
+            fallbackPath.lineTo(pLeft_x * scaleX + padLeft, pLeft_y * scaleY + padTop) // Close the loop just to make it a polygon
+            
             polygonFillPaint.color = classColor
             polygonFillPaint.alpha = 180
-            canvas.drawPath(polyPath, polygonFillPaint)
+            canvas.drawPath(fallbackPath, polygonFillPaint)
             
             polygonPaint.color = classColor
-            canvas.drawPath(polyPath, polygonPaint)
+            canvas.drawPath(fallbackPath, polygonPaint)
             return
         }
 
         // 4. Calculate h_mapped preserving aspect ratio
-        val designW = Math.max(1, design.width).toFloat()
-        val designH = design.height.toFloat()
+        val bbox = findOpaqueBBox(design)
+        val designW = bbox.width().coerceAtLeast(1f)
+        val designH = bbox.height().coerceAtLeast(1f)
         val aspectRatio = designH / designW
         val hMapped = wBed * aspectRatio
-        // Phóng to một chút xíu (khoảng 3%) để đảm bảo ôm khít phần chân móng
-        val scaleFudge = 1.03f 
         val maxLong = minLong + (hMapped * scaleFudge)
         
-        // Mở rộng minShort/maxShort một chút xíu để ôm sát hai cạnh bên móng
-        val padW = (maxShort - minShort) * (scaleFudge - 1.0f) / 2f
-        val renderMinShort = minShort - padW
-        val renderMaxShort = maxShort + padW
-
         // 5. Build dstPts (4 corners) in raw coordinates, then scale to canvas
         val cuticleL_x = minLong * vLongX + renderMinShort * vShortX
         val cuticleL_y = minLong * vLongY + renderMinShort * vShortY
@@ -391,53 +444,28 @@ class NailSurfaceRenderer {
             tipL_x * scaleX + padLeft, tipL_y * scaleY + padTop
         )
 
-        // srcPts: BottomLeft, BottomRight, TopRight, TopLeft
         // Image coordinates: Top is y=0, Bottom is y=height (cuticle)
         val srcPts = floatArrayOf(
-            0f, designH,       // Bottom Left (cuticle_L)
-            designW, designH,  // Bottom Right (cuticle_R)
-            designW, 0f,       // Top Right (tip_R)
-            0f, 0f             // Top Left (tip_L)
+            bbox.left, bbox.bottom,       // Bottom Left (cuticle_L)
+            bbox.right, bbox.bottom,  // Bottom Right (cuticle_R)
+            bbox.right, bbox.top,       // Top Right (tip_R)
+            bbox.left, bbox.top             // Top Left (tip_L)
         )
 
         val matrix = android.graphics.Matrix()
         matrix.setPolyToPoly(srcPts, 0, dstPts, 0, 4)
 
-        // 6. Create Hybrid Mask (Clip at base, open at tip)
+        // 6. Build Hybrid Mask using Procedural U-Curve (NO UNION NEEDED!)
+        // Top-Left -> Bottom-Left (Cuticle Start) -> Center -> Bottom-Right (Cuticle End) -> Top-Right
         val hybridPath = Path()
-        
-        // 6b. Infinite Tip Rectangle (starts at 50% of natural nail length)
-        val startLong = minLong + (maxLongNatural - minLong) * 0.5f
-        
-        val rectBL_x = startLong * vLongX + renderMinShort * vShortX
-        val rectBL_y = startLong * vLongY + renderMinShort * vShortY
-        
-        val rectBR_x = startLong * vLongX + renderMaxShort * vShortX
-        val rectBR_y = startLong * vLongY + renderMaxShort * vShortY
-        
-        val rectTR_x = maxLong * vLongX + renderMaxShort * vShortX
-        val rectTR_y = maxLong * vLongY + renderMaxShort * vShortY
-        
-        val rectTL_x = maxLong * vLongX + renderMinShort * vShortX
-        val rectTL_y = maxLong * vLongY + renderMinShort * vShortY
+        hybridPath.moveTo(tipL_x * scaleX + padLeft, tipL_y * scaleY + padTop)
+        hybridPath.lineTo(pLeft_x * scaleX + padLeft, pLeft_y * scaleY + padTop)
+        hybridPath.quadTo(c1_x * scaleX + padLeft, c1_y * scaleY + padTop, pCenter_x * scaleX + padLeft, pCenter_y * scaleY + padTop)
+        hybridPath.quadTo(c2_x * scaleX + padLeft, c2_y * scaleY + padTop, pRight_x * scaleX + padLeft, pRight_y * scaleY + padTop)
+        hybridPath.lineTo(tipR_x * scaleX + padLeft, tipR_y * scaleY + padTop)
+        hybridPath.close()
 
-        val tipRectPath = Path()
-        tipRectPath.moveTo(rectBL_x * scaleX + padLeft, rectBL_y * scaleY + padTop)
-        tipRectPath.lineTo(rectBR_x * scaleX + padLeft, rectBR_y * scaleY + padTop)
-        tipRectPath.lineTo(rectTR_x * scaleX + padLeft, rectTR_y * scaleY + padTop)
-        tipRectPath.lineTo(rectTL_x * scaleX + padLeft, rectTL_y * scaleY + padTop)
-        tipRectPath.close()
-
-        // Merge paths using UNION
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
-            hybridPath.op(polyPath, tipRectPath, Path.Op.UNION)
-        } else {
-            hybridPath.addPath(polyPath)
-            hybridPath.addPath(tipRectPath)
-        }
-
-        // Tinh chỉnh độ sáng/blending tự nhiên nếu cần (bỏ qua, xài alpha blend cơ bản)
-        // 7. Vẽ móng
+        // 7. Render Nail (Clip with U-Curve)
         canvas.save()
         canvas.clipPath(hybridPath)
         
@@ -446,9 +474,20 @@ class NailSurfaceRenderer {
         
         canvas.restore()
         
-        // Vẽ thêm một viền trắng mờ bao quanh viền da gốc để móng hòa hợp tự nhiên hơn
-        polygonPaint.color = Color.argb(40, 255, 255, 255)
-        canvas.drawPath(polyPath, polygonPaint)
+        // 8. Draw the U-Curve Boundary for Visualization (Replacing the Square Box)
+        // Only draw the bottom part (the U-curve) to show how it fits the cuticle
+        val uCurveBoundary = Path()
+        uCurveBoundary.moveTo(pLeft_x * scaleX + padLeft, pLeft_y * scaleY + padTop)
+        uCurveBoundary.quadTo(c1_x * scaleX + padLeft, c1_y * scaleY + padTop, pCenter_x * scaleX + padLeft, pCenter_y * scaleY + padTop)
+        uCurveBoundary.quadTo(c2_x * scaleX + padLeft, c2_y * scaleY + padTop, pRight_x * scaleX + padLeft, pRight_y * scaleY + padTop)
+        
+        val boundaryPaint = android.graphics.Paint().apply {
+            color = Color.GREEN
+            style = android.graphics.Paint.Style.STROKE
+            strokeWidth = 3f
+            isAntiAlias = true
+        }
+        canvas.drawPath(uCurveBoundary, boundaryPaint)
     }
 
     // ── Skeleton ───────────────────────────────────────────────────────────────
@@ -483,10 +522,10 @@ class NailSurfaceRenderer {
             val h  = d.bboxH  * scaleY
             val color = CLASS_COLORS[d.clsName] ?: Color.CYAN
             bboxPaint.color = color
-            canvas.drawRect(cx - w / 2f, cy - h / 2f, cx + w / 2f, cy + h / 2f, bboxPaint)
+            // canvas.drawRect removed
             val label = "${d.clsName} ${(d.confidence * 100).toInt()}%"
-            canvas.drawRect(cx - w / 2f, cy - h / 2f - 32f, cx - w / 2f + label.length * 14f, cy - h / 2f, labelBgPaint)
-            canvas.drawText(label, cx - w / 2f + 6f, cy - h / 2f - 8f, labelTextPaint)
+            // canvas.drawRect removed
+            // canvas.drawText removed
         }
     }
 

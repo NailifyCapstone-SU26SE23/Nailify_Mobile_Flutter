@@ -354,7 +354,14 @@ class NailSurfaceRenderer {
             if (proj < minShort) minShort = proj
             if (proj > maxShort) maxShort = proj
         }
-        val wBed = Math.max(1f, maxShort - minShort)
+        var wBed = Math.max(1f, maxShort - minShort)
+        val maxWidth = 320f * 0.10f
+        if (wBed > maxWidth) {
+            val center = (maxShort + minShort) / 2f
+            minShort = center - maxWidth / 2f
+            maxShort = center + maxWidth / 2f
+            wBed = maxWidth
+        }
 
         // 3. Find precise cuticle center from polyRaw (lowest vLong projection)
         var minLong = Float.POSITIVE_INFINITY
@@ -421,7 +428,16 @@ class NailSurfaceRenderer {
         val designW = bbox.width().coerceAtLeast(1f)
         val designH = bbox.height().coerceAtLeast(1f)
         val aspectRatio = designH / designW
-        val hMapped = wBed * aspectRatio
+        val maxHeight = 320f * 0.25f
+          var hMapped = wBed * aspectRatio
+          if (hMapped > maxHeight) {
+              val scaleDown = maxHeight / hMapped
+              wBed = wBed * scaleDown
+              hMapped = maxHeight
+              val center = (maxShort + minShort) / 2f
+              minShort = center - wBed / 2f
+              maxShort = center + wBed / 2f
+          }
         val maxLong = minLong + (hMapped * scaleFudge)
         
         // 5. Build dstPts (4 corners) in raw coordinates, then scale to canvas
@@ -465,14 +481,13 @@ class NailSurfaceRenderer {
         hybridPath.lineTo(tipR_x * scaleX + padLeft, tipR_y * scaleY + padTop)
         hybridPath.close()
 
-        // 7. Render Nail (Clip with U-Curve)
-        canvas.save()
-        canvas.clipPath(hybridPath)
-        
+        // 7. Render Nail (Hardware Accelerated with BitmapShader)
         val renderPaint = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG or android.graphics.Paint.ANTI_ALIAS_FLAG)
-        canvas.drawBitmap(design, matrix, renderPaint)
+        val shader = android.graphics.BitmapShader(design, android.graphics.Shader.TileMode.CLAMP, android.graphics.Shader.TileMode.CLAMP)
+        shader.setLocalMatrix(matrix)
+        renderPaint.shader = shader
         
-        canvas.restore()
+        canvas.drawPath(hybridPath, renderPaint)
         
         // 8. Draw the U-Curve Boundary for Visualization (Replacing the Square Box)
         // Only draw the bottom part (the U-curve) to show how it fits the cuticle

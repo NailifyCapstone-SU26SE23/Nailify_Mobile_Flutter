@@ -46,8 +46,8 @@ class _NativeCameraViewState extends State<NativeCameraView> {
   double _scale = 1.0;
   double _rotation = 0;
 
-  bool _showSkeleton = true;
-  bool _showBbox = true;
+  bool _showSkeleton = false;
+  bool _showBbox = false;
   bool _showFps = true;
 
   @override
@@ -135,16 +135,12 @@ class _NativeCameraViewState extends State<NativeCameraView> {
           left: 12,
           child: _StatsCard(stats: _lastStats),
         ),
-        // Debug toggles.
+        // Debug toggles — chỉ hiển thị FPS (ẩn SK/BX cho UI sạch hơn).
         Positioned(
           top: 12,
           right: 12,
           child: Column(
             children: [
-              _DebugToggleButton(label: 'SK', on: _showSkeleton, onTap: () => setState(() => _onToggleDebug(0))),
-              const SizedBox(height: 6),
-              _DebugToggleButton(label: 'BX', on: _showBbox, onTap: () => setState(() => _onToggleDebug(1))),
-              const SizedBox(height: 6),
               _DebugToggleButton(label: 'FPS', on: _showFps, onTap: () => setState(() => _onToggleDebug(2))),
             ],
           ),

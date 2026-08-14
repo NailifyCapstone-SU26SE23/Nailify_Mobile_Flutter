@@ -4,8 +4,10 @@
  * Public API:
  *   submitFrame(bitmap, timestampMs) : feed 1 frame vào landmarker.
  *   lastFingerVectors                : per-finger forward unit vector (normalized)
- *   lastTipPositions                 : per-finger TIP landmark pixel coords
+ *   lastTipPositions                 : per-finger TIP landmark PIXEL coords
+ *   lastJointPositions               : per-finger PIP joint PIXEL coords (anchor)
  *   lastSkeletonPoints               : 21 (x, y) normalized landmarks, dùng để vẽ debug
+ *   lastImageWidth / lastImageHeight : Kích thước frame bitmap gần nhất.
  *
  * MediaPipe tự quản lý internal thread (background). Kết quả trả về qua
  * callback chạy trên MediaPipe thread; ta cập nhật @Volatile fields.
@@ -53,7 +55,10 @@ class MediaPipeRunner(private val context: Context) {
     // Public, đọc từ background thread.
     @Volatile var lastFingerVectors: Map<Int, PointF> = emptyMap()
     @Volatile var lastTipPositions: Map<Int, PointF> = emptyMap()
+    @Volatile var lastJointPositions: Map<Int, PointF> = emptyMap()
     @Volatile var lastSkeletonPoints: Array<FloatArray>? = null
+    @Volatile var lastImageWidth: Int = 0
+    @Volatile var lastImageHeight: Int = 0
 
     init {
         try {
@@ -108,35 +113,43 @@ class MediaPipeRunner(private val context: Context) {
         if (hands.isEmpty()) {
             lastFingerVectors = emptyMap()
             lastTipPositions = emptyMap()
+            lastJointPositions = emptyMap()
             lastSkeletonPoints = null
             return
         }
         val landmarks = hands[0]
         val n = landmarks.size
 
+        val w = lastImageWidth.toFloat().coerceAtLeast(1f)
+        val h = lastImageHeight.toFloat().coerceAtLeast(1f)
+
         val vectors = HashMap<Int, PointF>()
+        val tips = HashMap<Int, PointF>()
+        val joints = HashMap<Int, PointF>()
         for ((clsId, pipIdx) in FINGER_PIP_INDEX) {
             if (pipIdx >= n) continue
             val tipIdx = FINGER_TIP_INDEX[clsId] ?: continue
             if (tipIdx >= n) continue
             val pip = landmarks[pipIdx]
             val tip = landmarks[tipIdx]
-            val dx = tip.x() - pip.x()
-            val dy = tip.y() - pip.y()
-            val mag = hypot(dx.toDouble(), dy.toDouble())
-            if (mag > 1e-6) {
-                vectors[clsId] = PointF((dx / mag).toFloat(), (dy / mag).toFloat())
+
+            // Normalized direction vector (PIP → TIP).
+            val dxN = tip.x() - pip.x()
+            val dyN = tip.y() - pip.y()
+            val magN = hypot(dxN.toDouble(), dyN.toDouble())
+            if (magN > 1e-6) {
+                vectors[clsId] = PointF((dxN / magN).toFloat(), (dyN / magN).toFloat())
             }
+
+            // Pixel coords cho Tip và Joint (PIP) để state machine tính affine.
+            tips[clsId] = PointF(tip.x() * w, tip.y() * h)
+            joints[clsId] = PointF(pip.x() * w, pip.y() * h)
         }
         lastFingerVectors = vectors
+        lastTipPositions = tips
+        lastJointPositions = joints
 
-        // Tip positions ở pixel coords. Để scale sang pixel, cần frame size.
-        // Tạm thời lưu normalized, PipelineExecutor sẽ scale khi biết frame size.
-        // Ở đây ta chỉ tính vector; tip pixel pos cần frame size.
-        // Pipeline sẽ dùng normalized coords + frame size.
-        lastTipPositions = emptyMap() // để Pipeline scale vectors dùng diag.
-
-        // Skeleton points: 21 cặp (x, y) normalized.
+        // Skeleton points: 21 cặp (x, y) normalized — dùng cho debug.
         val skel = Array(n) { i ->
             floatArrayOf(landmarks[i].x(), landmarks[i].y())
         }

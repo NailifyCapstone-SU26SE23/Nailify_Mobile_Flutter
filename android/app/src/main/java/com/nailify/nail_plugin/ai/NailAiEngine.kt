@@ -35,10 +35,10 @@ class NailAiEngine(
     private val inputSize: Int = 320,
     private val numClasses: Int = 5,
     private val numMaskCoeffs: Int = 32,
-    private val confThreshold: Float = 0.45f,
+    private val confThreshold: Float = 0.75f,
     private val perClassThresholds: Map<String, Float> = mapOf(
-        "thumb" to 0.50f, "index" to 0.45f, "middle" to 0.45f,
-        "ring" to 0.45f, "pinky" to 0.45f,
+        "thumb" to 0.75f, "index" to 0.75f, "middle" to 0.75f,
+        "ring" to 0.75f, "pinky" to 0.75f
     ),
     private val iouThreshold: Float = 0.45f,
     private val maskThreshold: Float = 0.3f,
@@ -237,7 +237,8 @@ class NailAiEngine(
             val perClassThresh = if (clsName != null) perClassThresholds[clsName] else null
             val requiredConf = perClassThresh ?: confThreshold
             if (conf[n] < requiredConf) continue
-            if (bw[n] < 4f || bh[n] < 4f) continue  // Loại bỏ anchor quá nhỏ (nhiễu)
+            if (bw[n] < 4f || bh[n] < 4f) continue
+            // KHA'NG LOAI BO (NO DROP) - Giao nhiem vu bop kich thuoc lai cho Renderer // Loai bo mong tay khong lo
             if (cx[n] < 2f || cx[n] > inputSize - 2f) continue
             if (cy[n] < 2f || cy[n] > inputSize - 2f) continue
             if (bh[n] > 0f && (bw[n] / bh[n]) > maxAspectRatio) continue

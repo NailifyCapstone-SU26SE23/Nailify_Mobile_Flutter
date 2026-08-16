@@ -18,7 +18,6 @@ import '../widgets/nail_shape_selector.dart';
 import '../widgets/nail_surface_selector.dart';
 import '../widgets/try_on_action_bar.dart';
 import '../widgets/try_on_color_selector.dart';
-import '../widgets/try_on_placement_controls.dart';
 import '../widgets/try_on_preview_board.dart';
 
 class TryOnSetupScreen extends StatefulWidget {
@@ -269,39 +268,6 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
     setState(() {
       _placements.addAll(drafts);
       _selectedPlacementId = drafts.last.localId;
-    });
-  }
-
-  void _removeSelectedPlacement() {
-    final selected = _selectedPlacement;
-    if (selected == null) return;
-    setState(() {
-      if (selected.customerNailComponentId != null) {
-        _deletedPlacementIds.add(selected.customerNailComponentId!);
-      }
-      _placements.removeWhere((item) => item.localId == selected.localId);
-      _selectedPlacementId = _placements.isEmpty
-          ? null
-          : _placements.last.localId;
-    });
-  }
-
-  void _nudge({
-    double dx = 0,
-    double dy = 0,
-    double scale = 0,
-    double rotation = 0,
-  }) {
-    final index = _selectedPlacementIndex;
-    if (index == -1) return;
-    final current = _placements[index];
-    setState(() {
-      _placements[index] = current.copyWith(
-        posX: (current.posX + dx).clamp(-0.5, 0.5).toDouble(),
-        posY: (current.posY + dy).clamp(-0.5, 0.5).toDouble(),
-        scale: (current.scale + scale).clamp(0.1, 1.5).toDouble(),
-        rotation: current.rotation + rotation,
-      );
     });
   }
 
@@ -660,18 +626,6 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
                 ),
               ],
             ),
-          ),
-          TryOnPlacementControls(
-            selectedPlacement: _selectedPlacement,
-            onMoveLeft: () => _nudge(dx: -0.04),
-            onMoveRight: () => _nudge(dx: 0.04),
-            onMoveUp: () => _nudge(dy: -0.04),
-            onMoveDown: () => _nudge(dy: 0.04),
-            onScaleDown: () => _nudge(scale: -0.05),
-            onScaleUp: () => _nudge(scale: 0.05),
-            onRotateLeft: () => _nudge(rotation: -10),
-            onRotateRight: () => _nudge(rotation: 10),
-            onRemove: _removeSelectedPlacement,
           ),
         ],
       ),

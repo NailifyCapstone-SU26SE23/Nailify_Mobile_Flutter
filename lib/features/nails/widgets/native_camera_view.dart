@@ -4,7 +4,7 @@
  * Gồm:
  *   - AndroidView (viewType: 'nail_plugin/surface_view') — hiển thị frame + bbox.
  *   - Stats overlay (FPS, detection count) — subscribe từ NailTryOnClient.stats.
- *   - Back/Snapshot/Offset buttons.
+ *   - Back/Capture buttons.
  *
  * Sử dụng:
  *   final view = NativeCameraView(
@@ -40,14 +40,6 @@ class _NativeCameraViewState extends State<NativeCameraView> {
   StreamSubscription<NailTryOnStats>? _statsSub;
   NailTryOnStats? _lastStats;
 
-  // Manual offset controls (giống D-Pad cũ).
-  double _offsetX = 0;
-  double _offsetY = 0;
-  double _scale = 1.0;
-  double _rotation = 0;
-
-  bool _showSkeleton = false;
-  bool _showBbox = false;
   bool _showFps = true;
 
   @override
@@ -57,12 +49,11 @@ class _NativeCameraViewState extends State<NativeCameraView> {
       if (!mounted) return;
       setState(() => _lastStats = s);
     });
-    // Khởi động session sau khi widget mount (delay 1 frame để surface sẵn sàng).
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
         await NailTryOnClient.instance.setDebugFlags(
-          showSkeleton: _showSkeleton,
-          showBbox: _showBbox,
+          showSkeleton: false,
+          showBbox: false,
           showFps: _showFps,
         );
         await NailTryOnClient.instance.startSession(
@@ -82,17 +73,6 @@ class _NativeCameraViewState extends State<NativeCameraView> {
     super.dispose();
   }
 
-  Future<void> _onManualOffsetChanged() async {
-    try {
-      await NailTryOnClient.instance.updateManualOffset(
-        offsetX: _offsetX,
-        offsetY: _offsetY,
-        scale: _scale,
-        rotation: _rotation,
-      );
-    } catch (_) {}
-  }
-
   Future<void> _onCapture() async {
     try {
       final path = await NailTryOnClient.instance.captureSnapshot();
@@ -102,98 +82,72 @@ class _NativeCameraViewState extends State<NativeCameraView> {
     }
   }
 
-  Future<void> _onToggleDebug(int flag) async {
-    bool changed = false;
-    if (flag == 0 && _showSkeleton != !_showSkeleton) {
-      _showSkeleton = !_showSkeleton; changed = true;
-    } else if (flag == 1 && _showBbox != !_showBbox) {
-      _showBbox = !_showBbox; changed = true;
-    } else if (flag == 2 && _showFps != !_showFps) {
-      _showFps = !_showFps; changed = true;
-    }
-    if (changed) {
-      try {
-        await NailTryOnClient.instance.setDebugFlags(
-          showSkeleton: _showSkeleton,
-          showBbox: _showBbox,
-          showFps: _showFps,
-        );
-      } catch (_) {}
-    }
+  Future<void> _toggleFps() async {
+    setState(() => _showFps = !_showFps);
+    try {
+      await NailTryOnClient.instance.setDebugFlags(
+        showSkeleton: false,
+        showBbox: false,
+        showFps: _showFps,
+      );
+    } catch (_) {}
   }
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // Native SurfaceView.
-        const _NativeSurface(),
-        // Stats overlay.
-        Positioned(
-          top: 12,
-          left: 12,
-          child: _StatsCard(stats: _lastStats),
-        ),
-        // Debug toggles — chỉ hiển thị FPS (ẩn SK/BX cho UI sạch hơn).
-        Positioned(
-          top: 12,
-          right: 12,
-          child: Column(
-            children: [
-              _DebugToggleButton(label: 'FPS', on: _showFps, onTap: () => setState(() => _onToggleDebug(2))),
-            ],
+    // Camera fills ~85% of the screen height so users get a wide view of their hand.
+    final media = MediaQuery.of(context);
+    final cameraHeight = media.size.height * 0.85;
+
+    return SizedBox(
+      height: cameraHeight,
+      width: double.infinity,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          const _NativeSurface(),
+          Positioned(
+            top: 12,
+            left: 12,
+            child: _StatsCard(stats: _lastStats),
           ),
-        ),
-        // Manual offset controls (D-Pad).
-        Positioned(
-          left: 12,
-          right: 12,
-          bottom: 100,
-          child: _ManualOffsetPanel(
-            offsetX: _offsetX,
-            offsetY: _offsetY,
-            scale: _scale,
-            rotation: _rotation,
-            onChanged: (dx, dy, s, r) {
-              setState(() {
-                _offsetX = dx;
-                _offsetY = dy;
-                _scale = s;
-                _rotation = r;
-              });
-              _onManualOffsetChanged();
-            },
+          Positioned(
+            top: 12,
+            right: 12,
+            child: _DebugToggleButton(
+              label: 'FPS',
+              on: _showFps,
+              onTap: _toggleFps,
+            ),
           ),
-        ),
-        // Capture + back buttons.
-        Positioned(
-          bottom: 24,
-          left: 0,
-          right: 0,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                iconSize: 48,
-                onPressed: widget.onClose,
-                icon: const Icon(Icons.close, color: Colors.white),
-              ),
-              const SizedBox(width: 32),
-              ElevatedButton(
-                onPressed: _onCapture,
-                style: ElevatedButton.styleFrom(
-                  shape: const CircleBorder(),
-                  padding: const EdgeInsets.all(20),
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black,
+          Positioned(
+            bottom: 24,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  iconSize: 48,
+                  onPressed: widget.onClose,
+                  icon: const Icon(Icons.close, color: Colors.white),
                 ),
-                child: const Icon(Icons.camera_alt, size: 36),
-              ),
-            ],
+                const SizedBox(width: 32),
+                ElevatedButton(
+                  onPressed: _onCapture,
+                  style: ElevatedButton.styleFrom(
+                    shape: const CircleBorder(),
+                    padding: const EdgeInsets.all(20),
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black,
+                  ),
+                  child: const Icon(Icons.camera_alt, size: 36),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -263,86 +217,6 @@ class _DebugToggleButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(6),
         ),
         child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
-      ),
-    );
-  }
-}
-
-class _ManualOffsetPanel extends StatelessWidget {
-  final double offsetX;
-  final double offsetY;
-  final double scale;
-  final double rotation;
-  final void Function(double dx, double dy, double s, double r) onChanged;
-
-  const _ManualOffsetPanel({
-    required this.offsetX,
-    required this.offsetY,
-    required this.scale,
-    required this.rotation,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.black54,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              const Text('dx', style: TextStyle(color: Colors.white)),
-              Expanded(
-                child: Slider(
-                  value: offsetX,
-                  min: -50, max: 50,
-                  onChanged: (v) => onChanged(v, offsetY, scale, rotation),
-                ),
-              ),
-            ],
-          ),
-          Row(
-            children: [
-              const Text('dy', style: TextStyle(color: Colors.white)),
-              Expanded(
-                child: Slider(
-                  value: offsetY,
-                  min: -50, max: 50,
-                  onChanged: (v) => onChanged(offsetX, v, scale, rotation),
-                ),
-              ),
-            ],
-          ),
-          Row(
-            children: [
-              const Text('sc', style: TextStyle(color: Colors.white)),
-              Expanded(
-                child: Slider(
-                  value: scale,
-                  min: 0.5, max: 1.5,
-                  onChanged: (v) => onChanged(offsetX, offsetY, v, rotation),
-                ),
-              ),
-            ],
-          ),
-          Row(
-            children: [
-              const Text('rot', style: TextStyle(color: Colors.white)),
-              Expanded(
-                child: Slider(
-                  value: rotation,
-                  min: -1.0, max: 1.0,
-                  onChanged: (v) => onChanged(offsetX, offsetY, scale, v),
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }

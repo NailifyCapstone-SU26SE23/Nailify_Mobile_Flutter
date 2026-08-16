@@ -32,15 +32,27 @@ import kotlin.math.min
 class NailAiEngine(
     private val context: Context,
     private val modelAssetPath: String = "nail_seg_5class.onnx",
-    private val inputSize: Int = 320,
+    private val inputSize: Int = 640,
     private val numClasses: Int = 5,
     private val numMaskCoeffs: Int = 32,
-    private val confThreshold: Float = 0.75f,
+    // Fix A: ngưỡng confidence mặc định hạ từ 0.75 → 0.30.
+    // Máy ảo (ánh sáng thấp, motion blur, nén video) chỉ đạt conf 0.4-0.7 cho
+    // các nail ở góc; 0.75 chỉ giữ đúng 1 nail có conf cao nhất → tưởng như
+    // "chỉ 1 móng". YOLOv11-seg train ở conf=0.25 là default hợp lý.
+    private val confThreshold: Float = 0.30f,
+    // Fix A: per-class thresholds — ngón cái/áp út thường conf thấp hơn do
+    // góc nhìn xấu (che bởi ngón khác, xa camera hơn). Hạ riêng để không bị miss.
     private val perClassThresholds: Map<String, Float> = mapOf(
-        "thumb" to 0.75f, "index" to 0.75f, "middle" to 0.75f,
-        "ring" to 0.75f, "pinky" to 0.75f
+        "thumb" to 0.25f,
+        "index" to 0.30f,
+        "middle" to 0.30f,
+        "ring" to 0.25f,
+        "pinky" to 0.25f
     ),
-    private val iouThreshold: Float = 0.45f,
+    // Fix A: iouThreshold nới từ 0.45 → 0.55. 5 nail trên bàn tay đặt khá gần
+    // nhau (đặc biệt ring+pinky, middle+ring), NMS quá chặt sẽ suppress nail
+    // thật. 0.55 vẫn loại bỏ duplicate detection cùng vị trí.
+    private val iouThreshold: Float = 0.55f,
     private val maskThreshold: Float = 0.3f,
     // Dùng diện tích pixel²  thay vì giới hạn w/h cứng nhắc.
     // maxArea = 120000 ≈ ngón tay chiếm ~350×350px trên khung 640×640.
@@ -283,6 +295,21 @@ class NailAiEngine(
 
         val detections = ArrayList<NailDetection>(nmsOrder.size)
         val classCounts = IntArray(numClasses)
+
+        // Fix A: diagnostic log per-class — biết YOLO thực sự thấy bao nhiêu nail
+        // ở mỗi clsId để debug "chỉ nhận diện 1 móng".
+        val perClassBestConf = FloatArray(numClasses)
+        for (n in conf.indices) {
+            val c = clsId[n].coerceIn(0, numClasses - 1)
+            if (conf[n] > perClassBestConf[c]) perClassBestConf[c] = conf[n]
+        }
+        Log.d(
+            TAG,
+            "YOLO accepted=${nmsOrder.size}/5 perClass=[" +
+                FINGER_CLASS_NAMES.indices.joinToString { i ->
+                    "${FINGER_CLASS_NAMES.getOrNull(i) ?: i}:${"%.2f".format(perClassBestConf[i])}"
+                } + "]"
+        )
 
         for (orderIdx in nmsOrder) {
             val globalIdx = keepIdx[orderIdx]

@@ -70,6 +70,9 @@ class NailSurfaceRenderer {
     private var debugShowSkeleton = true
     private var debugShowBbox     = true
     private var debugShowFps      = true
+    // FIX #6: Visual compare overlay — vẽ polygon YOLO gốc (chưa affine) cạnh
+    // polygon đã ghép để thấy anchor lệch bao xa.
+    private var debugShowAnchorCompare = true
 
     // Manual offset (Flutter MethodChannel sliders)
     private var offsetX    = 0f
@@ -115,6 +118,19 @@ class NailSurfaceRenderer {
         style = Paint.Style.STROKE
         strokeWidth = 2f
         color = Color.CYAN
+    }
+
+    // FIX #6: paint cho polygon YOLO gốc (chưa affine) — màu đỏ dashed.
+    private val anchorComparePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 2.5f
+        color = Color.RED
+        pathEffect = android.graphics.DashPathEffect(floatArrayOf(8f, 6f), 0f)
+        alpha = 200
+    }
+    private val anchorCompareFillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        color = Color.argb(40, 255, 0, 0)
     }
 
     private val labelBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -542,6 +558,44 @@ class NailSurfaceRenderer {
             // canvas.drawRect removed
             // canvas.drawText removed
         }
+
+        // FIX #6: vẽ polygon YOLO gốc (chưa affine) bằng dashed red để so sánh
+        // với polygon đã ghép. Nếu 2 polygon lệch nhau → anchor sai.
+        if (debugShowAnchorCompare) {
+            for (d in detections) {
+                drawAnchorCompare(canvas, d, scaleX, scaleY, padLeft, padTop)
+            }
+        }
+    }
+
+    /**
+     * FIX #6: Vẽ polygonTemplate (YOLO gốc, chưa qua affine) bằng đường viền
+     * đỏ dashed. Vị trí "đúng" của móng sẽ là chỗ này — bên cạnh polygon đã ghép
+     * (màu xanh, do drawNailOverlay vẽ). Nếu thấy khoảng cách cố định giữa 2
+     * polygon → bug anchor (nailOffsetFromJoint sai).
+     */
+    private fun drawAnchorCompare(
+        canvas: Canvas,
+        det: NailDetection,
+        scaleX: Float, scaleY: Float,
+        padLeft: Float, padTop: Float,
+    ) {
+        val template = det.polygonTemplate
+        if (template.size < 3) return
+        val path = Path()
+        path.moveTo(template[0].x * scaleX + padLeft, template[0].y * scaleY + padTop)
+        for (i in 1 until template.size) {
+            path.lineTo(template[i].x * scaleX + padLeft, template[i].y * scaleY + padTop)
+        }
+        path.close()
+        // Vẽ fill mờ đỏ + viền dashed đỏ.
+        canvas.drawPath(path, anchorCompareFillPaint)
+        canvas.drawPath(path, anchorComparePaint)
+
+        // Vẽ thêm nailBedTemplate nếu có để đối chiếu.
+        // (Lấy từ polygonTemplate đã xử lý ở State Machine — đã affine qua
+        // trong synthesize, nhưng ta muốn bed polygon gốc để so sánh; hiện tại
+        // NailDetection chỉ lưu bed đã affine, nên so sánh polygon đủ là đủ.)
     }
 
     // ── Design Bitmap loader ──────────────────────────────────────────────────

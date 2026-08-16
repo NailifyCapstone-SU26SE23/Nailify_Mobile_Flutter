@@ -2,15 +2,43 @@
  * MediaPipeRunner.kt — Wrapper cho MediaPipe Hand Landmarker LIVE_STREAM mode.
  *
  * Public API:
- *   submitFrame(bitmap, timestampMs) : feed 1 frame vào landmarker.
+ *   submitFrame(bitmap)              : feed 1 frame vào landmarker.
  *   lastFingerVectors                : per-finger forward unit vector (normalized)
- *   lastTipPositions                 : per-finger TIP landmark PIXEL coords
- *   lastJointPositions               : per-finger PIP joint PIXEL coords (anchor)
- *   lastSkeletonPoints               : 21 (x, y) normalized landmarks, dùng để vẽ debug
+ *                                       — tính từ DIP → TIP (hướng của đốt ngón tay CUỐI,
+ *                                         nơi móng mọc). Chính là vector xoay trục chính
+ *                                         của móng.
+ *   lastTipPositions                 : per-finger TIP landmark PIXEL coords (đầu ngón tay)
+ *   lastJointPositions               : per-finger DIP landmark PIXEL coords (anchor)
+ *                                       — Đổt sát đầu ngón tay, khoảng cách tới móng
+ *                                         gần như cố định khi ngón tay gập. Anchor chính.
+ *   lastSkeletonPoints               : 21 (x, y) normalized landmarks (debug)
  *   lastImageWidth / lastImageHeight : Kích thước frame bitmap gần nhất.
+ *
+ * QUAN TRỌNG — TIMESTAMP:
+ *   MediaPipe yêu cầu timestamp STRICTLY INCREASING. Dùng System.currentTimeMillis()
+ *   là không đủ vì camera có thể đẩy 2 frame trong cùng 1 ms, dẫn đến MediaPipe
+ *   crash ngầm → callback ngừng gọi → fields kẹt giá trị cũ (móng đóng băng
+ *   dù tay đã ra khỏi camera). Fix: dùng System.nanoTime() / 1000 (microseconds)
+ *   — monotonic và luôn strictly increasing vì mỗi frame có ít nhất vài chục us.
  *
  * MediaPipe tự quản lý internal thread (background). Kết quả trả về qua
  * callback chạy trên MediaPipe thread; ta cập nhật @Volatile fields.
+ *
+ * ═══════════════════════════════════════════════════════════
+ * LANDMARK MAPPING (21 điểm của MediaPipe Hand):
+ * ═══════════════════════════════════════════════════════════
+ *       WRIST(0)
+ *          |
+ *    THUMB(1..4)   INDEX(5..8)    MIDDLE(9..12)   RING(13..16)   PINKY(17..20)
+ *      CMC  MCP    IP   TIP       MCP PIP DIP TIP  MCP PIP DIP TIP  MCP PIP DIP TIP
+ *       1   2      3    4         5    6   7   8    9   10 11 12   13  14 15 16
+ *                                              (note: thumb không có DIP đúng nghĩa —
+ *                                               landmark 3 là IP, ta dùng IP làm "DIP"
+ *                                               cho thumb để vector có địa chỉ rõ ràng)
+ *
+ * THAM KHẢO: Khi truyền anchor= PIP, móng trượt khi gập ngón — vì khoảng cách
+ * PIP↔nail center co giãn theo góc gập. Anchor= DIP là giải pháp tối ưu: DIP
+ * nằm rất gần móng, và vector DIP→TIP biểu thị chính xác hướng đốt ngón cuối.
  */
 package com.nailify.nail_plugin.mediapipe
 
@@ -33,20 +61,23 @@ class MediaPipeRunner(private val context: Context) {
         private const val TAG = "MediaPipeRunner"
         private const val MP_HAND_LANDMARKER_TASK = "hand_landmarker.task"
 
-        // 21-landmark skeleton mapping (matches getFingerTipPositions in legacy code).
+        // Landmark TIP — đầu ngón tay.
         private val FINGER_TIP_INDEX = mapOf(
-            0 to 8,    // Index
-            1 to 12,   // Middle
-            2 to 20,   // Pinky
-            3 to 16,   // Ring
-            4 to 4,    // Thumb
+            0 to 8,    // Index tip
+            1 to 12,   // Middle tip
+            2 to 20,   // Pinky tip
+            3 to 16,   // Ring tip
+            4 to 4,    // Thumb tip
         )
-        private val FINGER_PIP_INDEX = mapOf(
-            0 to 6,    // Index PIP
-            1 to 10,   // Middle PIP
-            2 to 18,   // Pinky PIP
-            3 to 14,   // Ring PIP
-            4 to 2,    // Thumb IP
+
+        // Landmark DIP — đốt sát đầu ngón tay (anchor chính).
+        // Khớp này nằm gần móng, khoảng cách DIP↔nail gần như cố định khi gập ngón.
+        private val FINGER_DIP_INDEX = mapOf(
+            0 to 7,    // Index DIP
+            1 to 11,   // Middle DIP
+            2 to 19,   // Pinky DIP
+            3 to 15,   // Ring DIP
+            4 to 3,    // Thumb IP (coi như DIP vì thumb không có DIP đúng nghĩa)
         )
     }
 
@@ -56,9 +87,21 @@ class MediaPipeRunner(private val context: Context) {
     @Volatile var lastFingerVectors: Map<Int, PointF> = emptyMap()
     @Volatile var lastTipPositions: Map<Int, PointF> = emptyMap()
     @Volatile var lastJointPositions: Map<Int, PointF> = emptyMap()
+    /**
+     * Fix #2 (TIP anchor): vị trí TIP (đầu ngón tay) PIXEL — dùng làm anchor
+     * cho nail. TIP là điểm "móng nằm ở đó" nên anchor trực quan hơn DIP.
+     * Backward-compatible: lastJointPositions (DIP) vẫn được giữ cho debug.
+     */
+    @Volatile var lastAnchorPositions: Map<Int, PointF> = emptyMap()
     @Volatile var lastSkeletonPoints: Array<FloatArray>? = null
     @Volatile var lastImageWidth: Int = 0
     @Volatile var lastImageHeight: Int = 0
+
+    /**
+     * Timestamp microseconds đã gửi lần trước — bảo đảm strictly increasing
+     * để MediaPipe không crash ngầm. MediaPipe Tasks yêu cầu Long.
+     */
+    @Volatile private var lastTimestampUs: Long = 0L
 
     init {
         try {
@@ -89,7 +132,7 @@ class MediaPipeRunner(private val context: Context) {
         handLandmarker = null
     }
 
-    fun submitFrame(bitmap: Bitmap, timestampMs: Long) {
+    fun submitFrame(bitmap: Bitmap) {
         val landmarker = handLandmarker ?: return
         val mpImage: MPImage = try {
             BitmapImageBuilder(bitmap).build()
@@ -97,8 +140,15 @@ class MediaPipeRunner(private val context: Context) {
             Log.w(TAG, "BitmapImageBuilder failed: ${e.message}")
             return
         }
+        // Strictly increasing microseconds. nanoTime() là monotonic clock (không
+        // bị lùi khi user chỉnh giờ). MediaPipe Tasks yêu cầu timestamp là Long
+        // microseconds và strictly increasing. Long.MAX_VALUE ≈ 292 năm nên
+        // không lo overflow trong 1 session camera.
+        val nowUs = System.nanoTime() / 1000L
+        val timestampUs = if (lastTimestampUs >= nowUs) lastTimestampUs + 1L else nowUs
+        lastTimestampUs = timestampUs
         try {
-            landmarker.detectAsync(mpImage, timestampMs)
+            landmarker.detectAsync(mpImage, timestampUs)
         } catch (e: Exception) {
             Log.w(TAG, "detectAsync failed: ${e.message}")
         }
@@ -123,31 +173,39 @@ class MediaPipeRunner(private val context: Context) {
         val w = lastImageWidth.toFloat().coerceAtLeast(1f)
         val h = lastImageHeight.toFloat().coerceAtLeast(1f)
 
+        // Forward vector = (TIP − DIP) normalized.
+        // Đây là vector chỉ hướng của đốt ngón tay CUỐI CÙNG (đốt có gắn móng).
+        // Ổn định hơn vector (PIP → TIP) cũ vì đốt ngoài cùng ít bị xoắn hơn khi gập.
         val vectors = HashMap<Int, PointF>()
         val tips = HashMap<Int, PointF>()
-        val joints = HashMap<Int, PointF>()
-        for ((clsId, pipIdx) in FINGER_PIP_INDEX) {
-            if (pipIdx >= n) continue
+        val anchors = HashMap<Int, PointF>()
+        for ((clsId, dipIdx) in FINGER_DIP_INDEX) {
+            if (dipIdx >= n) continue
             val tipIdx = FINGER_TIP_INDEX[clsId] ?: continue
             if (tipIdx >= n) continue
-            val pip = landmarks[pipIdx]
+            val dip = landmarks[dipIdx]
             val tip = landmarks[tipIdx]
 
-            // Normalized direction vector (PIP → TIP).
-            val dxN = tip.x() - pip.x()
-            val dyN = tip.y() - pip.y()
+            // Forward direction (DIP → TIP).
+            val dxN = tip.x() - dip.x()
+            val dyN = tip.y() - dip.y()
             val magN = hypot(dxN.toDouble(), dyN.toDouble())
             if (magN > 1e-6) {
                 vectors[clsId] = PointF((dxN / magN).toFloat(), (dyN / magN).toFloat())
             }
 
-            // Pixel coords cho Tip và Joint (PIP) để state machine tính affine.
+            // Pixel coords:
+            //  - TIP pixel: dùng để truyền cho renderer (đầu ngón).
+            //  - DIP pixel: dùng làm ANCHOR chính (neo nail khi gập ngón không trượt).
             tips[clsId] = PointF(tip.x() * w, tip.y() * h)
-            joints[clsId] = PointF(pip.x() * w, pip.y() * h)
+            anchors[clsId] = PointF(dip.x() * w, dip.y() * h)
         }
         lastFingerVectors = vectors
         lastTipPositions = tips
-        lastJointPositions = joints
+        lastJointPositions = anchors
+        // Fix #2: anchor chính cho nail = TIP (đầu ngón tay). Nail nằm ở TIP,
+        // anchor = TIP cho khoảng cách nail→TIP gần như không đổi khi gập.
+        lastAnchorPositions = HashMap(tips)
 
         // Skeleton points: 21 cặp (x, y) normalized — dùng cho debug.
         val skel = Array(n) { i ->

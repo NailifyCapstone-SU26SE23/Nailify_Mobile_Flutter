@@ -71,27 +71,32 @@ class PolygonTracker(
             val track = if (bestIdx >= 0 && bestDist <= distThreshold) tracks[bestIdx] else null
             if (track != null) {
                 matched[bestIdx] = true
+                // FIX #4: Hit đầu tiên sau khi re-attach (hitFrames == 0 trước khi ++,
+                // hoặc track vừa được prune rồi tạo lại) → KHÔNG EMA; giữ nguyên
+                // detection mới để anchor không bị "trôi" giữa polygon cũ (đã cached)
+                // và polygon mới (sai lệch do async). Từ hit thứ 2 trở đi mới EMA.
+                val effectiveAlpha = if (track.hitFrames == 0) 1.0f else alpha
                 // EMA smooth.
                 val smoothed = ArrayList<PointF>(det.polygon.size)
                 for ((i, p) in det.polygon.withIndex()) {
                     val prev = track.polygon.getOrNull(i)
-                    if (prev == null) {
+                    if (prev == null || effectiveAlpha >= 1.0f) {
                         smoothed.add(PointF(p.x, p.y))
                     } else {
                         smoothed.add(
                             PointF(
-                                alpha * p.x + (1 - alpha) * prev.x,
-                                alpha * p.y + (1 - alpha) * prev.y
+                                effectiveAlpha * p.x + (1 - effectiveAlpha) * prev.x,
+                                effectiveAlpha * p.y + (1 - effectiveAlpha) * prev.y
                             )
                         )
                     }
                 }
                 track.polygon = smoothed
-                track.bboxCx = alpha * det.bboxCx + (1 - alpha) * track.bboxCx
-                track.bboxCy = alpha * det.bboxCy + (1 - alpha) * track.bboxCy
-                track.bboxW  = alpha * det.bboxW  + (1 - alpha) * track.bboxW
-                track.bboxH  = alpha * det.bboxH  + (1 - alpha) * track.bboxH
-                track.confidence = alpha * det.confidence + (1 - alpha) * track.confidence
+                track.bboxCx = effectiveAlpha * det.bboxCx + (1 - effectiveAlpha) * track.bboxCx
+                track.bboxCy = effectiveAlpha * det.bboxCy + (1 - effectiveAlpha) * track.bboxCy
+                track.bboxW  = effectiveAlpha * det.bboxW  + (1 - effectiveAlpha) * track.bboxW
+                track.bboxH  = effectiveAlpha * det.bboxH  + (1 - effectiveAlpha) * track.bboxH
+                track.confidence = effectiveAlpha * det.confidence + (1 - effectiveAlpha) * track.confidence
                 track.hitFrames++
                 track.missFrames = 0
                 track.lastDet = det

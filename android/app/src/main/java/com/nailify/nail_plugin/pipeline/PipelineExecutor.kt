@@ -47,6 +47,7 @@ import com.nailify.nail_plugin.ai.NailTrackerStateMachine
 import com.nailify.nail_plugin.ai.PolygonTracker
 import com.nailify.nail_plugin.session.DebugState
 import com.nailify.nail_plugin.mediapipe.MediaPipeRunner
+import com.nailify.nail_plugin.ai.YoloResultPack
 import com.nailify.nail_plugin.util.BitmapPool
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
@@ -60,6 +61,27 @@ class PipelineExecutor(
 ) {
     companion object {
         private const val TAG = "PipelineExecutor"
+
+        /**
+         * FIX #2: Rate-limit YOLO re-anchor. YOLO chạy ~300ms/frame; trong khi đó
+         * có thể có ~9 camera frame (30fps) đi qua submit(). Không cần anchor lại
+         * mỗi frame; chỉ chạy mỗi 500ms là đủ (2 lần/giây). Giảm tải và tránh race.
+         */
+        private const val MIN_YOLO_INTERVAL_MS = 500L
+
+        /**
+         * Fix #1: Periodic re-scan interval. Mỗi 3s, ép State Machine về SEARCHING
+         * để YOLO chạy lại → refresh anchor constants. Tránh móng lệch tích lũy
+         * khi tay di chuyển xa so với anchor gốc.
+         */
+        private const val RE_SCAN_INTERVAL_MS = 3000L
+
+        /**
+         * Fix #1: Số frame YOLO chạy liên tục trong 1 burst khi re-scan. 5 frame
+         * × ~100ms/frame = ~500ms — đủ để bắt nail ở nhiều góc (1 frame có thể miss
+         * khi móng ở góc xấu). Áp dụng cả cho initial SEARCHING.
+         */
+        private const val YOLO_BURST_FRAMES = 5
     }
 
     /** CameraX ImageAnalysis executor — dùng cho frame submission. */
@@ -119,9 +141,28 @@ class PipelineExecutor(
     /** Frame ID để match YOLO request với bitmap hiện đang submit. */
     private val frameSeq = AtomicInteger(0)
 
+    /**
+     * FIX #2 (Rate-limit YOLO): thời điểm submit YOLO gần nhất. Dùng để skip
+     * submit nếu chưa đủ MIN_YOLO_INTERVAL_MS kể từ lần trước.
+     */
+    private var lastYoloSubmitMs: Long = 0L
+
+    /**
+     * Fix #1 (Periodic re-scan): thời điểm trigger re-scan gần nhất. Mỗi
+     * RE_SCAN_INTERVAL_MS (3s) ép State Machine về SEARCHING để YOLO refresh
+     * anchor constants — tránh móng lệch tích lũy.
+     */
+    private var lastReScanTriggerMs: Long = 0L
+
+    /**
+     * Fix #1 (Burst): số frame YOLO còn phải chạy trong burst hiện tại.
+     * Khi > 0 → submit YOLO ngay khi YOLO trước xong (không chờ camera frame).
+     * Reset về YOLO_BURST_FRAMES mỗi lần trigger re-scan hoặc vào SEARCHING.
+     */
+    @Volatile private var remainingBurstFrames: Int = YOLO_BURST_FRAMES
+
     /** Cache kết quả YOLO mới nhất — dùng bởi camera thread cho State Machine. */
-    private val cachedYoloDetections: AtomicReference<List<NailDetection>> =
-        AtomicReference(emptyList())
+    private val cachedYoloDetections: AtomicReference<YoloResultPack?> = AtomicReference(null)
 
     /** Cache skeleton mới nhất từ MediaPipe. */
     private val cachedSkeleton: AtomicReference<Array<FloatArray>?> =
@@ -183,7 +224,8 @@ class PipelineExecutor(
             mediaPipe.lastImageHeight = frameH
         }
         // Feed MediaPipe ngay (rất nhẹ ~10ms/frame, không phải nút cổ chai).
-        mediaPipe.submitFrame(bitmap, System.currentTimeMillis())
+        // MediaPipeRunner tự tính microseconds strictly-increasing để tránh crash.
+        mediaPipe.submitFrame(bitmap)
 
         // Đợi MediaPipe detect xong (synchronous ~10ms) — đây là điểm then chốt.
         // Ở LIVE_STREAM mode MediaPipe đã có sẵn last result từ các frame trước,
@@ -194,9 +236,9 @@ class PipelineExecutor(
         val skeleton = mediaPipe.lastSkeletonPoints
 
         // Đưa qua State Machine.
-        val yoloCached = cachedYoloDetections.get()
+        val yoloPack = cachedYoloDetections.getAndSet(null) // Consume it so we don't anchor twice!
         val (phase, finalDetections) = trackerStateMachine.update(
-            yoloDetections = yoloCached,
+            yoloPack = yoloPack,
             fingerVectors = fingerVectors,
             tipPositions = tipPositions,
             jointPositions = jointPositions,
@@ -228,19 +270,53 @@ class PipelineExecutor(
             eventSink?.invoke(stats)
         }
 
-        // Quyết định có cần YOLO không dựa trên phase.
+// Quyết định có cần YOLO không dựa trên phase.
         val needsYolo = phase == NailTrackerStateMachine.Phase.SEARCHING ||
-                         phase == NailTrackerStateMachine.Phase.LOST
-        if (needsYolo) {
+                        phase == NailTrackerStateMachine.Phase.LOST
+
+        // FIX #2 (Rate-limit YOLO): chỉ submit YOLO khi đủ interval. Tránh YOLO
+        // chạy mỗi SEARCHING frame (~10 lần/giây), chỉ chạy ~2 lần/giây để giảm
+        // tải và hạn chế race condition khi submit liên tục.
+        val nowMs = System.currentTimeMillis()
+        val yoloIntervalOk = nowMs - lastYoloSubmitMs >= MIN_YOLO_INTERVAL_MS
+
+        // Fix #1 (Periodic re-scan): mỗi RE_SCAN_INTERVAL_MS, ép State Machine
+        // về SEARCHING và reset burst counter. Burst chạy 5 frame YOLO liên tục
+        // để bắt nail ở nhiều góc (1 frame có thể miss khi móng ở góc xấu).
+        val reScanDue = nowMs - lastReScanTriggerMs >= RE_SCAN_INTERVAL_MS
+        if (reScanDue) {
+            lastReScanTriggerMs = nowMs
+            trackerStateMachine.forceReScan()
+            remainingBurstFrames = YOLO_BURST_FRAMES
+            Log.i(TAG, "forceReScan triggered (interval=${RE_SCAN_INTERVAL_MS}ms, burst=${YOLO_BURST_FRAMES} frames)")
+        }
+
+        // Fix #1 (Burst): nếu còn burst frame VÀ đủ YOLO interval → submit
+        // ngay (không chờ camera frame). Đảm bảo 5 frame YOLO chạy liên tục
+        // mỗi lần trigger.
+        val burstActive = remainingBurstFrames > 0
+        val shouldRunYolo = (needsYolo || burstActive) && yoloIntervalOk
+
+        if (shouldRunYolo) {
+            if (burstActive) remainingBurstFrames--
+            lastYoloSubmitMs = nowMs
             searchRequested.incrementAndGet()
         }
-        if (needsYolo && isAiRunning.compareAndSet(false, true)) {
+
+        if (shouldRunYolo && isAiRunning.compareAndSet(false, true)) {
             val aiBitmap = bitmap.copy(bitmap.config ?: Bitmap.Config.ARGB_8888, true)
             // Camera frame cũ đã dùng để render — recycle ngay khi an toàn.
             pool?.recycle(bitmap)
+            // FIX #1 (Time-Capsule): snapshot MP landmarks tại frame hiện tại để
+            // ~300ms sau khi YOLO xong, ta dùng ĐÚNG MP của frame này (không bị
+            // ghi đè bởi các frame trung gian). Đây là entry point cho anchor đồng bộ.
+            val jointsAtYoloStart = HashMap(mediaPipe.lastJointPositions)
+            val tipsAtYoloStart = HashMap(mediaPipe.lastTipPositions)
+            val anchorsAtYoloStart = HashMap(mediaPipe.lastAnchorPositions)
+            val vectorsAtYoloStart = HashMap(mediaPipe.lastFingerVectors)
             aiExecutor.execute {
                 try {
-                    runAiPipeline(aiBitmap, rotation, isFront, frameSeqFor = currentSeq)
+                    runAiPipeline(aiBitmap, rotation, isFront, currentSeq, jointsAtYoloStart, tipsAtYoloStart, anchorsAtYoloStart, vectorsAtYoloStart)
                 } catch (e: Exception) {
                     Log.w(TAG, "AI pipeline failed: ${e.message}", e)
                 } finally {
@@ -269,6 +345,10 @@ class PipelineExecutor(
         rotation: Int,
         isFront: Boolean,
         frameSeqFor: Int,
+        joints: Map<Int, PointF>,
+        tips: Map<Int, PointF>,
+        anchors: Map<Int, PointF>,
+        vectors: Map<Int, PointF>
     ) {
         val t0 = System.currentTimeMillis()
         Log.d(TAG, "runPipeline enter: ${bitmap.width}x${bitmap.height} rot=$rotation frameSeq=$frameSeqFor")
@@ -284,10 +364,11 @@ class PipelineExecutor(
         val yoloMs = System.currentTimeMillis() - yoloStart
         Log.d(TAG, "YOLO dets=${rawDetections.size} in ${yoloMs}ms")
 
-        // 2. PCA + nail-bed polygon slicing (giống flow cũ).
-        val mediaPipe = ensureMediaPipe()
-        val fingerVectors = mediaPipe.lastFingerVectors
-        val tipPositions = mediaPipe.lastTipPositions
+        // FIX #1 (Time-Capsule): dùng joints/tips/vectors từ thời điểm SUBMIT YOLO
+        // (parameter truyền vào), KHÔNG dùng mediaPipe.lastXxx (đã bị ghi đè bởi
+        // ~3-10 frame trung gian). Đây là fix async-desync bug chính.
+        val fingerVectors = vectors
+        val tipPositions = tips
         val handDetected = fingerVectors.isNotEmpty()
 
         val processed = processDetections(rawDetections, fingerVectors, tipPositions)
@@ -311,9 +392,22 @@ class PipelineExecutor(
 
         val confirmed = polygonTracker.update(processed)
 
-        // 3. Cập nhật cache YOLO — camera thread sẽ đẩy vào State Machine.
-        cachedYoloDetections.set(confirmed)
-        cachedSkeleton.set(mediaPipe.lastSkeletonPoints)
+        // FIX #1 (Time-Capsule): build pack với MP đồng bộ với YOLO bbox,
+        // anchor TRỰC TIẾP vào StateMachine trên aiExecutor thread (không qua
+        // cache + camera-thread anchor với MP sai).
+        val pack = YoloResultPack(
+            detections = confirmed,
+            jointPositions = joints,
+            tipPositions = tips,
+            anchorPositions = anchors,
+            fingerVectors = vectors,
+        )
+        // Anchor trực tiếp — pack mang MP cùng thời điểm với YOLO frame.
+        trackerStateMachine.anchorWithPairedSnapshot(pack, bitmap.width, bitmap.height)
+
+        // Vẫn cache để camera thread frame sau (TRACKING) có data để dùng nếu cần.
+        cachedYoloDetections.set(pack)
+        cachedSkeleton.set(ensureMediaPipe().lastSkeletonPoints)
 
         // 4. Lưu stats
         val total = System.currentTimeMillis() - t0
@@ -336,18 +430,18 @@ class PipelineExecutor(
         tipPositions: Map<Int, PointF>,
     ): List<NailDetection> {
         if (raw.isEmpty()) return emptyList()
-        val frameW = tipPositions.values.maxOfOrNull { it.x }?.coerceAtLeast(1f) ?: 640f
-        val frameH = tipPositions.values.maxOfOrNull { it.y }?.coerceAtLeast(1f) ?: 480f
-        val diag = kotlin.math.sqrt(frameW * frameW + frameH * frameH).coerceAtLeast(1f)
 
         return raw.map { det ->
             val rawHint = fingerVectors[det.clsId]
-            val scaledHint = rawHint?.let { PointF(it.x * diag, it.y * diag) }
-            val direction = geometryEngine.getDirectionFromPolygonPca(det.polygon, scaledHint, det.clsId)
+            // FIX #5: PCA disambig chỉ cần HƯỚNG (dấu dot), không cần độ lớn.
+            // Trước đây scaledHint = rawHint × diag (~800-1500 lần unit vector) gây
+            // giá trị khổng lồ không cần thiết; vẫn flip đúng (vì nhân hệ số > 0
+            // không đổi dấu) nhưng thừa computation và rủi ro FP. Dùng rawHint thẳng.
+            val direction = geometryEngine.getDirectionFromPolygonPca(det.polygon, rawHint, det.clsId)
             val nailBed = geometryEngine.cutPolygonAtRatio(det.polygon, direction, 0.75f)
             val designPath = designPaths[det.clsName]
             det.copy(
-                forwardVector = scaledHint ?: det.forwardVector,
+                forwardVector = rawHint ?: det.forwardVector,
                 pcaDirection = direction,
                 nailBedPolygon = if (nailBed.size >= 3) nailBed else det.polygon,
                 designAssetPath = designPath,

@@ -73,6 +73,25 @@ class AuthRepository {
     return UserProfile.fromJson(_unwrapData(response.data));
   }
 
+  Future<void> verifyOtp({required String email, required String otpCode}) async {
+    await _apiClient.post<dynamic>(
+      '/Auth/verify-otp',
+      data: {
+        'email': email,
+        'otpCode': otpCode,
+      },
+    );
+  }
+
+  Future<void> resendOtp({required String email}) async {
+    await _apiClient.post<dynamic>(
+      '/Auth/resend-otp',
+      data: {
+        'email': email,
+      },
+    );
+  }
+
   Future<void> forgotPassword({required String email}) async {
     await _postBooleanResult('/Auth/forgot-password', data: {'email': email});
   }

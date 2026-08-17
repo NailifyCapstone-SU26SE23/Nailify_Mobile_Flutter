@@ -66,7 +66,7 @@ class _RegisterPageState extends State<RegisterPage> {
       );
       if (!mounted) return;
       _showSnackBar(S.of(context).registerSuccess, AppColors.success);
-      context.go('/login');
+      context.push('/verify-email', extra: {'email': email});
     } catch (e) {
       if (!mounted) return;
       _showSnackBar(e.toString(), AppColors.error);

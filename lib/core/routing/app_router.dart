@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/another_design/presentation/pages/another_design_page.dart';
 import '../../features/auth/presentation/pages/customer_login_page.dart';
 import '../../features/auth/presentation/pages/customer_register_page.dart';
+import '../../features/auth/presentation/pages/email_verification_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_pages.dart';
 import '../../features/auth/presentation/pages/profile_update_pages.dart';
 import '../../features/custom_nail/presentation/pages/custom_nail_stepper_page.dart';
@@ -81,6 +82,16 @@ class AppRouter {
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterPage(),
+      ),
+      GoRoute(
+        path: '/verify-email',
+        builder: (context, state) {
+          final extra = state.extra is Map
+              ? Map<String, dynamic>.from(state.extra as Map)
+              : const <String, dynamic>{};
+          final email = extra['email']?.toString() ?? '';
+          return EmailVerificationPage(email: email);
+        },
       ),
       GoRoute(
         path: '/nail-booking',

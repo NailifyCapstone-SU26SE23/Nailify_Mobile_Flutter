@@ -9,6 +9,7 @@ import '../../../../core/utils/price_formatter.dart';
 import '../../../nails/data/models/nail_variant_model.dart';
 import '../../../nails/data/repositories/nail_variant_repository.dart';
 import '../../data/datasources/booking_api_service.dart';
+import '../../data/datasources/payment_api_service.dart';
 import '../../data/datasources/promotion_api_service.dart';
 import '../../data/models/booking_mock_data.dart';
 import '../../data/models/promotion_model.dart';
@@ -30,6 +31,7 @@ class NailBookingPage extends StatefulWidget {
 class _NailBookingPageState extends State<NailBookingPage> {
   final PageController _pageController = PageController();
   final BookingApiService _apiService = BookingApiService();
+  final PaymentApiService _paymentApiService = PaymentApiService();
   final PromotionApiService _promotionApiService = PromotionApiService();
 
   int _currentStep = 0;
@@ -365,46 +367,68 @@ class _NailBookingPageState extends State<NailBookingPage> {
       setState(() => _isSubmitting = true);
 
       try {
-        final booking = await _apiService.createBooking(
-          _selectedBranch!['salonId'],
-          _formatBookingDate(_selectedDate!),
-          _normalizedSelectedTime,
-          _noArtistSelected
-              ? null
-              : _selectedStylist?['nailArtistId'] as String?,
-          _nailVariantId,
-          _selectedExtraServices.whereType<String>().toList(),
-          selectedPromotionIds: _selectedPromotionIds,
-          shapeMethodConfigId: _shapeMethodConfigId,
+        final holdToken = await _createHoldToken();
+        final paymentData = await _paymentApiService.createPaymentForRequest(
+          _buildBookingRequestPayload(holdToken: holdToken),
         );
 
         if (!mounted) return;
-        context.go(
-          '/booking-success',
-          extra: {
-            'bookingId': booking['bookingId']?.toString() ?? '',
-            'serviceName': widget.nailData?['name'] ?? 'Lam mong',
-            'date': _selectedDate,
-            'time': _normalizedSelectedTime,
-            'price': booking['price'] ?? _priceReview?['price'],
-            'discount': booking['discount'] ?? _priceReview?['discount'],
-            'totalPrice': booking['totalPrice'] ?? _priceReview?['totalPrice'],
-            'discounts':
-                booking['discounts'] ??
-                booking['discountBreakdown'] ??
-                _priceReview?['discounts'] ??
-                _priceReview?['discountBreakdown'],
-            'stylistName': _noArtistSelected
-                ? 'Tu dong phan cong'
-                : (_selectedStylist?['fullName'] ?? 'Bat ky'),
-          },
-        );
+        context.go('/payment-qr', extra: paymentData);
       } catch (e) {
-        _showSnackBar('Loi dat lich: $e');
+        _showSnackBar(S.of(context).bookingPaymentError(e.toString()));
       } finally {
         if (mounted) setState(() => _isSubmitting = false);
       }
     });
+  }
+
+  Future<String?> _createHoldToken() async {
+    if (_noArtistSelected) return null;
+
+    final salonId = _selectedBranch?['salonId']?.toString() ?? '';
+    final artistId = _selectedStylist?['nailArtistId']?.toString() ?? '';
+    if (salonId.isEmpty || artistId.isEmpty || _selectedDate == null) {
+      return null;
+    }
+
+    final hold = await _apiService.holdSlot(
+      salonId: salonId,
+      nailArtistId: artistId,
+      bookingDate: _formatBookingDate(_selectedDate!),
+      startTime: _normalizedSelectedTime,
+      bookingItems: _buildBookingItems(),
+    );
+
+    return hold['holdToken']?.toString();
+  }
+
+  Map<String, dynamic> _buildBookingRequestPayload({String? holdToken}) {
+    return {
+      'salonId': _selectedBranch!['salonId'],
+      'bookingDate': _formatBookingDate(_selectedDate!),
+      'startTime': _normalizedSelectedTime,
+      'nailArtistId': _noArtistSelected
+          ? null
+          : _selectedStylist?['nailArtistId'] as String?,
+      'holdToken': holdToken,
+      'bookingItems': _buildBookingItems(),
+      'selectedPromotionIds': _selectedPromotionIds,
+    };
+  }
+
+  List<Map<String, dynamic>> _buildBookingItems() {
+    return [
+      if (_nailVariantId > 0)
+        {
+          'nailVariantId': _nailVariantId,
+          if (_shapeMethodConfigId != null)
+            'shapeMethodConfigId': _shapeMethodConfigId,
+          'quantity': 1,
+        },
+      ..._selectedExtraServices.whereType<String>().map(
+        (serviceId) => {'serviceId': serviceId, 'quantity': 1},
+      ),
+    ];
   }
 
   String get _normalizedSelectedTime {
@@ -1366,7 +1390,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                           )
                         : Text(
                             _currentStep == 3
-                                ? S.of(context).bookingConfirmBtn
+                                ? S.of(context).bookingPayBtn
                                 : S.of(context).bookingContinueBtn,
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),

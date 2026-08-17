@@ -9,6 +9,16 @@ class PaymentApiService {
     return Map<String, dynamic>.from(response.data['data'] ?? {});
   }
 
+  Future<Map<String, dynamic>> createPaymentForRequest(
+    Map<String, dynamic> bookingRequest,
+  ) async {
+    final response = await _apiClient.post(
+      '/payments/create-for-request',
+      data: bookingRequest,
+    );
+    return Map<String, dynamic>.from(response.data['data'] ?? {});
+  }
+
   Future<String> getPaymentStatus(int orderCode) async {
     final response = await _apiClient.get('/payments/status/$orderCode');
     final responseData = response.data;

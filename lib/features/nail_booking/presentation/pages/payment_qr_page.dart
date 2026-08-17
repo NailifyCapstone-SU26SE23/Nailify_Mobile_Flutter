@@ -158,7 +158,7 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               const Text(
-                                'Quet ma QR de thanh toan',
+                                'Quét mã QR để thanh toán',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 20,
@@ -222,7 +222,7 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: Text(
-                                        'Vui long thanh toan 20% tien coc truoc',
+                                        'Vui lòng thanh toán 20% tiền cọc trước',
                                         style: TextStyle(
                                           fontSize: 14,
                                           color: Colors.orange.shade800,
@@ -270,7 +270,7 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
                             ),
                           ),
                           child: Text(
-                            _isCancelling ? 'Dang huy...' : 'Huy thanh toan',
+                            _isCancelling ? 'Đang hủy...' : 'Hủy thanh toán',
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),

@@ -258,6 +258,17 @@ class BookingApiService {
     return response.data['data'] ?? {};
   }
 
+  Future<String> getBookingIdByOrderCode(int orderCode) async {
+    final response = await _apiClient.get(
+      '/Bookings/by-order-code/$orderCode/booking-id',
+    );
+    final data = response.data['data'];
+    if (data is Map<String, dynamic>) {
+      return data['bookingId']?.toString() ?? '';
+    }
+    return '';
+  }
+
   // =================================================================
 
   Future<Map<String, dynamic>> createBooking(

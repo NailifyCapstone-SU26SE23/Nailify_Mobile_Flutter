@@ -4,41 +4,11 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../../../generated/l10n.dart';
-import '../../data/datasources/payment_api_service.dart';
 
-class BookingSuccessPage extends StatefulWidget {
+class BookingSuccessPage extends StatelessWidget {
   final Map<String, dynamic> bookingDetails;
 
   const BookingSuccessPage({super.key, required this.bookingDetails});
-
-  @override
-  State<BookingSuccessPage> createState() => _BookingSuccessPageState();
-}
-
-class _BookingSuccessPageState extends State<BookingSuccessPage> {
-  final PaymentApiService _paymentApiService = PaymentApiService();
-  bool _isCreatingPayment = false;
-
-  Map<String, dynamic> get bookingDetails => widget.bookingDetails;
-
-  Future<void> _createPayment(String bookingId) async {
-    if (_isCreatingPayment) return;
-    setState(() => _isCreatingPayment = true);
-    try {
-      final paymentData = await _paymentApiService.createPayment(bookingId);
-      if (!mounted) return;
-      context.go('/payment-qr', extra: paymentData);
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(S.of(context).bookingPaymentError(e.toString())),
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _isCreatingPayment = false);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -156,7 +126,10 @@ class _BookingSuccessPageState extends State<BookingSuccessPage> {
                                 S.of(context).bookingInfoOriginalPrice,
                                 bookingDetails['price'],
                               ),
-                            ...discounts.map(_buildDiscountRow),
+                            ...discounts.map(
+                              (discount) =>
+                                  _buildDiscountRow(context, discount),
+                            ),
                             _buildAmountRow(
                               S.of(context).bookingInfoTotal,
                               bookingDetails['totalPrice'],
@@ -168,59 +141,6 @@ class _BookingSuccessPageState extends State<BookingSuccessPage> {
                     ),
                     const SizedBox(height: 40),
                     if (bookingId != null && bookingId.isNotEmpty) ...[
-                      Container(
-                        height: 50,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(25),
-                          gradient: LinearGradient(
-                            colors: _isCreatingPayment
-                                ? [Colors.grey.shade400, Colors.grey.shade500]
-                                : [AppColors.primary, const Color(0xFFFF80AB)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          boxShadow: [
-                            if (!_isCreatingPayment)
-                              BoxShadow(
-                                color: AppColors.primary.withOpacity(0.3),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                          ],
-                        ),
-                        child: ElevatedButton(
-                          onPressed: _isCreatingPayment
-                              ? null
-                              : () => _createPayment(bookingId),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            foregroundColor: Colors.white,
-                            shadowColor: Colors.transparent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(25),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: _isCreatingPayment
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : Text(
-                                  S.of(context).bookingPayBtn,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
                       SizedBox(
                         width: double.infinity,
                         height: 50,
@@ -343,7 +263,10 @@ class _BookingSuccessPageState extends State<BookingSuccessPage> {
     );
   }
 
-  Widget _buildDiscountRow(Map<String, dynamic> discount) {
+  Widget _buildDiscountRow(
+    BuildContext context,
+    Map<String, dynamic> discount,
+  ) {
     final name = discount['name']?.toString() ?? S.of(context).bookingDiscount;
     final amountDisplay = discount['amountDisplay']?.toString();
     return Padding(

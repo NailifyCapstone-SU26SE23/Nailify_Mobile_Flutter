@@ -2,11 +2,69 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../data/datasources/booking_api_service.dart';
 
-class PaymentSuccessPage extends StatelessWidget {
+class PaymentSuccessPage extends StatefulWidget {
   final Map<String, dynamic> paymentData;
 
   const PaymentSuccessPage({super.key, required this.paymentData});
+
+  @override
+  State<PaymentSuccessPage> createState() => _PaymentSuccessPageState();
+}
+
+class _PaymentSuccessPageState extends State<PaymentSuccessPage> {
+  final BookingApiService _bookingApiService = BookingApiService();
+  bool _isLoadingBooking = false;
+
+  Future<void> _openBookingDetail() async {
+    if (_isLoadingBooking) return;
+
+    final directBookingId = widget.paymentData['bookingId']?.toString() ?? '';
+    if (directBookingId.isNotEmpty) {
+      context.go('/my-bookings/detail', extra: directBookingId);
+      return;
+    }
+
+    final orderCode = _orderCode;
+    if (orderCode == null) {
+      _showError('Không tìm thấy mã thanh toán.');
+      return;
+    }
+
+    setState(() => _isLoadingBooking = true);
+    try {
+      final bookingId = await _bookingApiService.getBookingIdByOrderCode(
+        orderCode,
+      );
+      if (!mounted) return;
+
+      if (bookingId.isEmpty) {
+        _showError('Chưa tìm thấy lịch hẹn cho thanh toán này.');
+        return;
+      }
+
+      context.go('/my-bookings/detail', extra: bookingId);
+    } catch (e) {
+      if (!mounted) return;
+      _showError('Không thể lấy lịch hẹn: $e');
+    } finally {
+      if (mounted) setState(() => _isLoadingBooking = false);
+    }
+  }
+
+  int? get _orderCode {
+    final raw = widget.paymentData['orderCode'];
+    if (raw is int) return raw;
+    if (raw is num) return raw.toInt();
+    return int.tryParse(raw?.toString() ?? '');
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,10 +74,8 @@ class PaymentSuccessPage extends StatelessWidget {
       title: 'Thanh toán thành công',
       message: 'Giao dịch đã được xác nhận. Cảm ơn bạn đã thanh toán.',
       primaryLabel: 'Xem lịch hẹn',
-      onPrimaryPressed: () {
-        final bookingId = paymentData['bookingId']?.toString() ?? '';
-        context.go('/my-bookings/detail', extra: bookingId);
-      },
+      isLoading: _isLoadingBooking,
+      onPrimaryPressed: _openBookingDetail,
     );
   }
 }
@@ -37,6 +93,7 @@ class PaymentCancelledPage extends StatelessWidget {
       title: 'Thanh toán đã bị hủy',
       message: 'Giao dịch thanh toán không hoàn tất hoặc đã bị hủy.',
       primaryLabel: 'Về trang chủ',
+      isLoading: false,
       onPrimaryPressed: () => context.go('/'),
     );
   }
@@ -48,6 +105,7 @@ class _PaymentResultView extends StatelessWidget {
   final String title;
   final String message;
   final String primaryLabel;
+  final bool isLoading;
   final VoidCallback onPrimaryPressed;
 
   const _PaymentResultView({
@@ -56,6 +114,7 @@ class _PaymentResultView extends StatelessWidget {
     required this.title,
     required this.message,
     required this.primaryLabel,
+    required this.isLoading,
     required this.onPrimaryPressed,
   });
 
@@ -90,7 +149,7 @@ class _PaymentResultView extends StatelessWidget {
 
               const SizedBox(height: 36),
               ElevatedButton(
-                onPressed: onPrimaryPressed,
+                onPressed: isLoading ? null : onPrimaryPressed,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -99,10 +158,19 @@ class _PaymentResultView extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: Text(
-                  primaryLabel,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
+                child: isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Text(
+                        primaryLabel,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
               ),
             ],
           ),

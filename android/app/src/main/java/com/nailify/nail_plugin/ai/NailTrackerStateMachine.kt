@@ -120,6 +120,28 @@ class NailTrackerStateMachine {
          * đủ chắc chắn không phải MP estimate thoáng qua (vd: tay rung nhẹ).
          */
         private const val FIST_FRAMES_TO_REMOVE = 3
+
+        /**
+         * Fix Flex-detection: ngưỡng SOFT — ngón bắt đầu gập (DIP→TIP thu ngắn
+         * còn ~10% frameW). Dưới ngưỡng này → track không render nhưng KHÔNG bị
+         * xóa (giữ track để resume ngay khi duỗi lại, không cần YOLO re-anchor).
+         * 10% frameW ≈ ~30-60px trên 320-640 frame, tương ứng góc gập ~30-40°.
+         */
+        private const val FLEX_SOFT_RATIO = 0.10f
+
+        /**
+         * Grace period cho SOFT flex — số frame liên tiếp có flex trước khi
+         * skip render. Tránh flicker khi MP estimate thoáng qua (tay rung nhẹ).
+         */
+        private const val FLEX_SOFT_FRAMES = 2
+
+        /**
+         * Fix Flex-angle: ngưỡng góc gập ∠PIP-DIP-TIP. Khi ngón duỗi thẳng → góc ≈ 180°.
+         * Ngón gập > 50° → góc < 130°. Dùng kết hợp (OR) với distance nhánh
+         * SOFT — vì gập ngang (ngón xoay 90°) làm TIP-DIP distance không đổi
+         * → nhánh distance miss. Góc bắt được nhờ cả 2 vector đều ở mặt phẳng 2D.
+         */
+        private const val FLEX_ANGLE_THRESHOLD_DEG = 130f
     }
 
     enum class Phase { SEARCHING, TRACKING, LOST }
@@ -155,6 +177,10 @@ class NailTrackerStateMachine {
         // Fix #4: số frame liên tiếp có TIP-DIP distance < ngưỡng (nắm đấm).
         // Khi >= FIST_FRAMES_TO_REMOVE → remove track.
         var fistFrames: Int = 0,
+        // Fix Flex: đếm frame flex nhẹ (TIP-DIP distance < FLEX_SOFT_RATIO).
+        // Khi >= FLEX_SOFT_FRAMES → skip render (track vẫn tồn tại để resume
+        // ngay khi duỗi lại, không cần YOLO re-anchor). Reset về 0 khi duỗi.
+        var flexFrames: Int = 0,
     )
 
     private val tracks = HashMap<Int, NailTrack>()
@@ -186,6 +212,7 @@ class NailTrackerStateMachine {
         fingerVectors: Map<Int, PointF>,
         tipPositions: Map<Int, PointF>,
         jointPositions: Map<Int, PointF>,
+        pipPositions: Map<Int, PointF>,  // Fix Flex-angle: tính góc PIP-DIP-TIP
         frameW: Int,
         frameH: Int,
     ): Pair<Phase, List<NailDetection>> {
@@ -237,7 +264,12 @@ class NailTrackerStateMachine {
                     // Track theo clsId — reset miss cho tracks có joint; tăng cho track không có.
                     // Fix #4: thêm fist detection — nếu TIP-DIP distance nhỏ → đếm fistFrames,
                     // đủ ngưỡng thì remove track (coi như móng biến mất khi nắm đấm).
+                    // Fix Flex: thêm 3 nhánh — HARD flex (nắm đấm), SOFT flex (gập nhẹ),
+                    // duỗi (reset cả 2 đếm).
+                    // Fix Flex-angle: tính thêm góc ∠PIP-DIP-TIP để bắt gập ngang
+                    // (ngón xoay 90° làm TIP-DIP distance không đổi). OR với distance.
                     val fistThresholdPx = lastFrameWidth * FIST_THRESHOLD_RATIO
+                    val flexThresholdPx = lastFrameWidth * FLEX_SOFT_RATIO
                     val tracksToRemove = ArrayList<Int>()
                     for ((clsId, tr) in tracks) {
                         if (jointPositions.containsKey(clsId)) {
@@ -248,13 +280,49 @@ class NailTrackerStateMachine {
                                 val dx = tip.x - dip.x
                                 val dy = tip.y - dip.y
                                 val dist = sqrt(dx * dx + dy * dy)
-                                if (dist < fistThresholdPx) {
-                                    tr.fistFrames++
-                                    if (tr.fistFrames >= FIST_FRAMES_TO_REMOVE) {
-                                        tracksToRemove.add(clsId)
+                                // Fix Flex-angle: tính góc ∠PIP-DIP-TIP.
+                                // Vector v1 = DIP→TIP (đốt ngoài), v2 = DIP→PIP (đốt trong).
+                                // Góc giữa 2 vector = góc gập ngón tại DIP.
+                                val pip = pipPositions[clsId]
+                                val angleDeg: Float? = if (pip != null) {
+                                    val v1x = tip.x - dip.x
+                                    val v1y = tip.y - dip.y
+                                    val v2x = pip.x - dip.x
+                                    val v2y = pip.y - dip.y
+                                    val dot = v1x * v2x + v1y * v2y
+                                    val m1 = sqrt(v1x * v1x + v1y * v1y)
+                                    val m2 = sqrt(v2x * v2x + v2y * v2y)
+                                    if (m1 > 1e-3f && m2 > 1e-3f) {
+                                        val cosA = (dot / (m1 * m2)).coerceIn(-1f, 1f)
+                                        Math.toDegrees(kotlin.math.acos(cosA).toDouble()).toFloat()
+                                    } else null
+                                } else null
+                                val isAngleFlex = angleDeg != null && angleDeg < FLEX_ANGLE_THRESHOLD_DEG
+                                when {
+                                    dist < fistThresholdPx -> {
+                                        // HARD flex (nắm đấm) — tăng fistFrames, đủ ngưỡng thì remove.
+                                        tr.fistFrames++
+                                        if (tr.fistFrames >= FIST_FRAMES_TO_REMOVE) {
+                                            tracksToRemove.add(clsId)
+                                        }
+                                        // HARD flex cũng đồng thời là flex (skip render).
+                                        tr.flexFrames = tr.fistFrames
                                     }
-                                } else {
-                                    tr.fistFrames = 0
+                                    dist < flexThresholdPx || isAngleFlex -> {
+                                        // SOFT flex (gập nhẹ) — tăng flexFrames, KHÔNG remove.
+                                        // OR với góc để bắt gập ngang (distance miss).
+                                        tr.fistFrames = 0
+                                        tr.flexFrames++
+                                    }
+                                    else -> {
+                                        // Ngón duỗi — reset cả 2 đếm để resume render ngay.
+                                        tr.fistFrames = 0
+                                        tr.flexFrames = 0
+                                    }
+                                }
+                                // Log góc để debug (chỉ in mỗi ~30 frame để tránh spam).
+                                if (angleDeg != null && tr.trackId % 30 == 0) {
+                                    Log.d(TAG, "clsId=$clsId dist=${dist.toInt()} angle=${angleDeg.toInt()}°")
                                 }
                             }
                         } else {
@@ -290,10 +358,10 @@ class NailTrackerStateMachine {
         val outDetections: List<NailDetection> = when {
             tracks.isEmpty() -> emptyList()
             currentPhase == Phase.TRACKING && hasHand ->
-                synthesizeDetections(jointPositions, tipPositions)
+                synthesizeDetections(jointPositions, tipPositions, frameW, frameH)
             currentPhase == Phase.SEARCHING && tracks.isNotEmpty() && hasHand ->
                 // Vừa anchor xong ở frame này, dùng synthesis ngay.
-                synthesizeDetections(jointPositions, tipPositions)
+                synthesizeDetections(jointPositions, tipPositions, frameW, frameH)
             else -> emptyList()
         }
 
@@ -469,6 +537,39 @@ class NailTrackerStateMachine {
             )
 
             // Fix B: dùng matchedClsId làm key cho tracks map.
+            // Fix Anchor-update: nếu track đã tồn tại → chỉ update scale reference
+            // (lenRef, nailCenterRef) + reset flex/miss đếm. Giữ polygonTemplate cũ
+            // (đã được scale theo proportions thực của anchor YOLO trước). Tránh
+            // re-anchor toàn bộ gây giật "flash" nail khi YOLO chạy lại.
+            val existing = tracks[matchedClsId]
+            if (existing != null) {
+                // Update lenRef với EMA (0.5) để smooth thay đổi scale khi tay
+                // di chuyển xa/gần. Giữ polygonTemplate + nailBedTemplate cũ.
+                val updatedLenRef = (existing.lenRef * 0.5f) + (lenRef * 0.5f)
+                val scaleRatio = updatedLenRef / existing.lenRef.coerceAtLeast(1e-3f)
+                val scaledPoly = ArrayList<PointF>(existing.polygonTemplate.size)
+                val cx = existing.nailCenterRef.x
+                val cy = existing.nailCenterRef.y
+                for (p in existing.polygonTemplate) {
+                    scaledPoly.add(PointF(cx + (p.x - cx) * scaleRatio, cy + (p.y - cy) * scaleRatio))
+                }
+                tracks[matchedClsId] = existing.copy(
+                    nailCenterRef = nailCenterRef,
+                    anchorJointRef = effectiveAnchor,
+                    tipRef = effectiveAnchor,
+                    forwardRef = forwardRef,
+                    lenRef = updatedLenRef,
+                    polygonTemplate = scaledPoly,
+                    nailBedTemplate = scaledPoly,
+                    designPath = det.designAssetPath ?: existing.designPath,
+                    pcaDirection = det.pcaDirection?.let { PointF(it.x, it.y) } ?: existing.pcaDirection,
+                    missFrames = 0,
+                    fistFrames = 0,
+                    flexFrames = 0,
+                )
+                Log.d(TAG, "anchorFromYolo: updated existing clsId=$matchedClsId lenRef ${existing.lenRef.toInt()} → ${updatedLenRef.toInt()}")
+                continue
+            }
             tracks[matchedClsId] = NailTrack(
                 nailCenterRef = nailCenterRef,        // = TIP pixel
                 anchorJointRef = effectiveAnchor,     // = TIP pixel
@@ -489,6 +590,7 @@ class NailTrackerStateMachine {
                 trackId = trackIdCounter++,
                 missFrames = 0,
                 fistFrames = 0,
+                flexFrames = 0,
             )
         }
     }
@@ -548,6 +650,8 @@ class NailTrackerStateMachine {
     private fun synthesizeDetections(
         jointPositions: Map<Int, PointF>,  // DIP pixel (dùng tính scale + forward)
         tipPositions: Map<Int, PointF>,    // TIP pixel (anchor chính — Fix #2)
+        frameW: Int,                       // Fix Viewport-clamp
+        frameH: Int,
     ): List<NailDetection> {
         if (tracks.isEmpty()) return emptyList()
         val out = ArrayList<NailDetection>(tracks.size)
@@ -643,8 +747,27 @@ class NailTrackerStateMachine {
             }
 
             // ── 5. Bbox mới (cx, cy, w, h) ──────────────────────────────
-            val newBboxCx = nailCenterFinal.x
-            val newBboxCy = nailCenterFinal.y
+            // Fix Flex: skip render nếu ngón đang gập (flexFrames >= ngưỡng).
+            // Track vẫn tồn tại để khi duỗi lại → resume ngay (không cần YOLO).
+            if (tr.flexFrames >= FLEX_SOFT_FRAMES) {
+                Log.d(TAG, "synthesizeDetections: skip render clsId=$clsId (flexFrames=${tr.flexFrames})")
+                continue
+            }
+            // Fix Viewport-clamp: ép nail polygon nằm trong viewport frame
+            // [0, frameW] × [0, frameH]. Khi ngón quá gần camera, polygon có
+            // thể vượt mép; clamp tránh render ngoài màn hình.
+            val fW = frameW.toFloat()
+            val fH = frameH.toFloat()
+            for (i in polygonNew.indices) {
+                val p = polygonNew[i]
+                polygonNew[i] = PointF(p.x.coerceIn(0f, fW), p.y.coerceIn(0f, fH))
+            }
+            for (i in nailBedNew.indices) {
+                val p = nailBedNew[i]
+                nailBedNew[i] = PointF(p.x.coerceIn(0f, fW), p.y.coerceIn(0f, fH))
+            }
+            val newBboxCx = nailCenterFinal.x.coerceIn(0f, fW)
+            val newBboxCy = nailCenterFinal.y.coerceIn(0f, fH)
             val newBboxW = tr.bboxRef[2] * scale
             val newBboxH = tr.bboxRef[3] * scale
 

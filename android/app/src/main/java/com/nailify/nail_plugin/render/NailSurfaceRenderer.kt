@@ -71,8 +71,11 @@ class NailSurfaceRenderer {
     private var debugShowBbox     = true
     private var debugShowFps      = true
     // FIX #6: Visual compare overlay — vẽ polygon YOLO gốc (chưa affine) cạnh
-    // polygon đã ghép để thấy anchor lệch bao xa.
-    private var debugShowAnchorCompare = true
+    // polygon đã ghép để thấy anchor lệch bao xa. Fix UI: default tắt (polygon
+    // đỏ chỉ phục vụ debug, không show lên UI production).
+    private var debugShowAnchorCompare = false
+    // Fix UI: vẽ U-curve boundary (xanh) sau khi ốp design. Default tắt.
+    private var debugShowUBoundary = false
 
     // Manual offset (Flutter MethodChannel sliders)
     private var offsetX    = 0f
@@ -179,10 +182,18 @@ class NailSurfaceRenderer {
         appContext = ctx.applicationContext
     }
 
-    fun setDebugFlags(showSkeleton: Boolean, showBbox: Boolean, showFps: Boolean) {
+    fun setDebugFlags(
+        showSkeleton: Boolean,
+        showBbox: Boolean,
+        showFps: Boolean,
+        showAnchorCompare: Boolean = false,
+        showUBoundary: Boolean = false,
+    ) {
         debugShowSkeleton = showSkeleton
         debugShowBbox     = showBbox
         debugShowFps      = showFps
+        debugShowAnchorCompare = showAnchorCompare
+        debugShowUBoundary = showUBoundary
     }
 
     fun updateManualOffset(dx: Float, dy: Float, scale: Float, rotation: Float) {
@@ -423,19 +434,19 @@ class NailSurfaceRenderer {
         val c2_y = minLong * vLongY + renderMaxShort * vShortY
 
         if (design == null) {
-            // FALLBACK: Draw the U-Curve explicitly so the user can see it!
+            // Fallback: vẽ móng đơn sắc không viền, không bóng, không highlight.
             val fallbackPath = Path()
             fallbackPath.moveTo(pLeft_x * scaleX + padLeft, pLeft_y * scaleY + padTop)
             fallbackPath.quadTo(c1_x * scaleX + padLeft, c1_y * scaleY + padTop, pCenter_x * scaleX + padLeft, pCenter_y * scaleY + padTop)
             fallbackPath.quadTo(c2_x * scaleX + padLeft, c2_y * scaleY + padTop, pRight_x * scaleX + padLeft, pRight_y * scaleY + padTop)
-            fallbackPath.lineTo(pLeft_x * scaleX + padLeft, pLeft_y * scaleY + padTop) // Close the loop just to make it a polygon
-            
-            polygonFillPaint.color = classColor
-            polygonFillPaint.alpha = 180
-            canvas.drawPath(fallbackPath, polygonFillPaint)
-            
-            polygonPaint.color = classColor
-            canvas.drawPath(fallbackPath, polygonPaint)
+            fallbackPath.lineTo(pLeft_x * scaleX + padLeft, pLeft_y * scaleY + padTop)
+
+            val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                style = Paint.Style.FILL
+                color = classColor
+                alpha = 180
+            }
+            canvas.drawPath(fallbackPath, fillPaint)
             return
         }
 
@@ -504,21 +515,24 @@ class NailSurfaceRenderer {
         renderPaint.shader = shader
         
         canvas.drawPath(hybridPath, renderPaint)
-        
+
         // 8. Draw the U-Curve Boundary for Visualization (Replacing the Square Box)
-        // Only draw the bottom part (the U-curve) to show how it fits the cuticle
-        val uCurveBoundary = Path()
-        uCurveBoundary.moveTo(pLeft_x * scaleX + padLeft, pLeft_y * scaleY + padTop)
-        uCurveBoundary.quadTo(c1_x * scaleX + padLeft, c1_y * scaleY + padTop, pCenter_x * scaleX + padLeft, pCenter_y * scaleY + padTop)
-        uCurveBoundary.quadTo(c2_x * scaleX + padLeft, c2_y * scaleY + padTop, pRight_x * scaleX + padLeft, pRight_y * scaleY + padTop)
-        
-        val boundaryPaint = android.graphics.Paint().apply {
-            color = Color.GREEN
-            style = android.graphics.Paint.Style.STROKE
-            strokeWidth = 3f
-            isAntiAlias = true
+        // Only draw the bottom part (the U-curve) to show how it fits the cuticle.
+        // Fix UI: chỉ vẽ khi debugShowUBoundary được bật (mặc định tắt).
+        if (debugShowUBoundary) {
+            val uCurveBoundary = Path()
+            uCurveBoundary.moveTo(pLeft_x * scaleX + padLeft, pLeft_y * scaleY + padTop)
+            uCurveBoundary.quadTo(c1_x * scaleX + padLeft, c1_y * scaleY + padTop, pCenter_x * scaleX + padLeft, pCenter_y * scaleY + padTop)
+            uCurveBoundary.quadTo(c2_x * scaleX + padLeft, c2_y * scaleY + padTop, pRight_x * scaleX + padLeft, pRight_y * scaleY + padTop)
+
+            val boundaryPaint = android.graphics.Paint().apply {
+                color = Color.GREEN
+                style = android.graphics.Paint.Style.STROKE
+                strokeWidth = 3f
+                isAntiAlias = true
+            }
+            canvas.drawPath(uCurveBoundary, boundaryPaint)
         }
-        canvas.drawPath(uCurveBoundary, boundaryPaint)
     }
 
     // ── Skeleton ───────────────────────────────────────────────────────────────

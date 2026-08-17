@@ -55,6 +55,8 @@ class _NativeCameraViewState extends State<NativeCameraView> {
           showSkeleton: false,
           showBbox: false,
           showFps: _showFps,
+          showAnchorCompare: false,
+          showUBoundary: false,
         );
         await NailTryOnClient.instance.startSession(
           config: widget.config,
@@ -89,15 +91,17 @@ class _NativeCameraViewState extends State<NativeCameraView> {
         showSkeleton: false,
         showBbox: false,
         showFps: _showFps,
+        showAnchorCompare: false,
+        showUBoundary: false,
       );
     } catch (_) {}
   }
 
   @override
   Widget build(BuildContext context) {
-    // Camera fills ~85% of the screen height so users get a wide view of their hand.
+    // Camera fills ~95% of the screen height so users get a wide view of their hand.
     final media = MediaQuery.of(context);
-    final cameraHeight = media.size.height * 0.85;
+    final cameraHeight = media.size.height * 0.95;
 
     return SizedBox(
       height: cameraHeight,

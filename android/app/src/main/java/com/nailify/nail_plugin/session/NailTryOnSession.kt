@@ -114,12 +114,18 @@ class NailTryOnSession(
         renderer?.updateManualOffset(dx, dy, scale, rotation)
     }
 
-    fun setDebugFlags(showSkeleton: Boolean, showBbox: Boolean, showFps: Boolean) {
+    fun setDebugFlags(
+        showSkeleton: Boolean,
+        showBbox: Boolean,
+        showFps: Boolean,
+        showAnchorCompare: Boolean = false,
+        showUBoundary: Boolean = false,
+    ) {
         debugShowSkeleton = showSkeleton
         debugShowBbox = showBbox
         debugShowFps = showFps
         pipeline?.setDebugProvider { DebugState(showSkeleton, showBbox, showFps) }
-        renderer?.setDebugFlags(showSkeleton, showBbox, showFps)
+        renderer?.setDebugFlags(showSkeleton, showBbox, showFps, showAnchorCompare, showUBoundary)
     }
 
     fun captureSnapshot(): CompletableFuture<String?> {

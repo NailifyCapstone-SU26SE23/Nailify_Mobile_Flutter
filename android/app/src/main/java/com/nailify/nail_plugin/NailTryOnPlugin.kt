@@ -177,10 +177,13 @@ class NailTryOnPlugin : FlutterPlugin, ActivityAware {
             }
 
             "setDebugFlags" -> {
-                val showSkeleton = call.argument<Boolean>("showSkeleton") ?: true
-                val showBbox     = call.argument<Boolean>("showBbox") ?: true
+                // Fix UI: default tất cả FALSE (không show debug overlay lên UI production).
+                val showSkeleton = call.argument<Boolean>("showSkeleton") ?: false
+                val showBbox     = call.argument<Boolean>("showBbox") ?: false
                 val showFps      = call.argument<Boolean>("showFps") ?: true
-                session?.setDebugFlags(showSkeleton, showBbox, showFps)
+                val showAnchorCompare = call.argument<Boolean>("showAnchorCompare") ?: false
+                val showUBoundary = call.argument<Boolean>("showUBoundary") ?: false
+                session?.setDebugFlags(showSkeleton, showBbox, showFps, showAnchorCompare, showUBoundary)
                 result.success(null)
             }
 

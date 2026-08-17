@@ -242,6 +242,7 @@ class PipelineExecutor(
             fingerVectors = fingerVectors,
             tipPositions = tipPositions,
             jointPositions = jointPositions,
+            pipPositions = mediaPipe.lastPipPositions,  // Fix Flex-angle
             frameW = frameW,
             frameH = frameH,
         )

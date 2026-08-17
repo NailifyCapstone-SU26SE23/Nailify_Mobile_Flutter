@@ -101,14 +101,18 @@ class NailTryOnClient {
   }
 
   Future<void> setDebugFlags({
-    bool showSkeleton = true,
-    bool showBbox = true,
+    bool showSkeleton = false,
+    bool showBbox = false,
     bool showFps = true,
+    bool showAnchorCompare = false,
+    bool showUBoundary = false,
   }) async {
     await _method.invokeMethod<void>('setDebugFlags', {
       'showSkeleton': showSkeleton,
       'showBbox': showBbox,
       'showFps': showFps,
+      'showAnchorCompare': showAnchorCompare,
+      'showUBoundary': showUBoundary,
     });
   }
 

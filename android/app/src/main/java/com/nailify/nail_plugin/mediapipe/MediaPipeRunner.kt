@@ -79,6 +79,17 @@ class MediaPipeRunner(private val context: Context) {
             3 to 15,   // Ring DIP
             4 to 3,    // Thumb IP (coi như DIP vì thumb không có DIP đúng nghĩa)
         )
+
+        // Landmark PIP — khớp giữa đốt ngón tay, dùng tính góc gập ngón.
+        // Fix Flex-angle: khi ngón gập ngang (góc ~90°), TIP-DIP distance không
+        // đổi → SOFT flex (distance) miss. Góc PIP-DIP-TIP < 130° mới bắt được.
+        private val FINGER_PIP_INDEX = mapOf(
+            0 to 6,    // Index PIP
+            1 to 10,   // Middle PIP
+            2 to 18,   // Pinky PIP
+            3 to 14,   // Ring PIP
+            4 to 2,    // Thumb MCP (thumb layout khác, dùng tạm landmark 2)
+        )
     }
 
     private var handLandmarker: HandLandmarker? = null
@@ -96,6 +107,12 @@ class MediaPipeRunner(private val context: Context) {
     @Volatile var lastSkeletonPoints: Array<FloatArray>? = null
     @Volatile var lastImageWidth: Int = 0
     @Volatile var lastImageHeight: Int = 0
+    /**
+     * Fix Flex-angle: per-finger PIP landmark PIXEL coords. Kết hợp với
+     * lastTipPositions và lastJointPositions (DIP) để tính góc
+     * ∠PIP-DIP-TIP — phát hiện gập ngang (ngón xoay 90°) mà distance không thấy.
+     */
+    @Volatile var lastPipPositions: Map<Int, PointF> = emptyMap()
 
     /**
      * Timestamp microseconds đã gửi lần trước — bảo đảm strictly increasing
@@ -164,6 +181,7 @@ class MediaPipeRunner(private val context: Context) {
             lastFingerVectors = emptyMap()
             lastTipPositions = emptyMap()
             lastJointPositions = emptyMap()
+            lastPipPositions = emptyMap()
             lastSkeletonPoints = null
             return
         }
@@ -179,6 +197,7 @@ class MediaPipeRunner(private val context: Context) {
         val vectors = HashMap<Int, PointF>()
         val tips = HashMap<Int, PointF>()
         val anchors = HashMap<Int, PointF>()
+        val pips = HashMap<Int, PointF>()
         for ((clsId, dipIdx) in FINGER_DIP_INDEX) {
             if (dipIdx >= n) continue
             val tipIdx = FINGER_TIP_INDEX[clsId] ?: continue
@@ -199,10 +218,18 @@ class MediaPipeRunner(private val context: Context) {
             //  - DIP pixel: dùng làm ANCHOR chính (neo nail khi gập ngón không trượt).
             tips[clsId] = PointF(tip.x() * w, tip.y() * h)
             anchors[clsId] = PointF(dip.x() * w, dip.y() * h)
+
+            // Fix Flex-angle: PIP pixel để tính góc gập ngón.
+            val pipIdx = FINGER_PIP_INDEX[clsId]
+            if (pipIdx != null && pipIdx < n) {
+                val pip = landmarks[pipIdx]
+                pips[clsId] = PointF(pip.x() * w, pip.y() * h)
+            }
         }
         lastFingerVectors = vectors
         lastTipPositions = tips
         lastJointPositions = anchors
+        lastPipPositions = pips
         // Fix #2: anchor chính cho nail = TIP (đầu ngón tay). Nail nằm ở TIP,
         // anchor = TIP cho khoảng cách nail→TIP gần như không đổi khi gập.
         lastAnchorPositions = HashMap(tips)

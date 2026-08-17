@@ -555,6 +555,6 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         private const val LANDMARK_STROKE_WIDTH = 3F // Now treated as DP
         private const val FingerColorFallback = "#FF4081"
         private const val NAIL_LANDMARK_WIDTH_SCALE = 2.5F
-        private const val NAIL_LANDMARK_HEIGHT_SCALE = 1F
+        private const val NAIL_LANDMARK_HEIGHT_SCALE = 1.5F
     }
 }

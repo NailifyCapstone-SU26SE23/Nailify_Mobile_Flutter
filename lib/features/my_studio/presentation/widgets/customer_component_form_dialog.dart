@@ -39,7 +39,25 @@ class _CustomerComponentFormDialogState
           ? component.price.toString()
           : '';
       _customDataController.text = component.customDataJson;
-      _componentType = int.tryParse(component.componentType) ?? 0;
+      _componentType = _componentTypeValue(component.componentType);
+    }
+  }
+
+  int _componentTypeValue(String value) {
+    final normalized = value.trim().toLowerCase();
+    final parsed = int.tryParse(normalized);
+    if (parsed != null) return parsed;
+    switch (normalized) {
+      case 'gem':
+        return 0;
+      case 'sticker':
+        return 1;
+      case 'charm':
+        return 2;
+      case 'art':
+        return 3;
+      default:
+        return 0;
     }
   }
 

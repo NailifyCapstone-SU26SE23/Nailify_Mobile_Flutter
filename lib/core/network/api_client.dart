@@ -169,6 +169,16 @@ class ApiClient {
   }
 
   AppException _handleDioError(DioException error) {
+    final path = error.requestOptions.path;
+    final statusCode = error.response?.statusCode;
+    if (path.contains('/Auth/login') &&
+        (statusCode == 400 || statusCode == 401)) {
+      return const AppException(
+        message: 'Email hoặc mật khẩu không chính xác, vui lòng kiểm tra lại',
+        code: 'INVALID_CREDENTIALS',
+      );
+    }
+
     switch (error.type) {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
@@ -183,12 +193,14 @@ class ApiClient {
         if (statusCode != null) {
           return ExceptionFactory.fromHttpStatusCode(
             statusCode,
-            message: message,
+            message: message?.toString(),
             data: error.response?.data,
           );
         }
         return ServerException(
-          message: message ?? 'Lỗi từ Server',
+          message:
+              message?.toString() ??
+              'Hệ thống đang gặp sự cố. Vui lòng thử lại sau.',
           data: error.response?.data,
         );
       default:

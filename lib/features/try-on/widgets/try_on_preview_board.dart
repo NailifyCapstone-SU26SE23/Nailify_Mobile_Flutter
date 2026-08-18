@@ -133,7 +133,10 @@ class _TryOnPreviewBoardState extends State<TryOnPreviewBoard> with SingleTicker
           child: Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              border: Border.all(color: Colors.black12),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+                width: 0.5,
+              ),
               borderRadius: BorderRadius.circular(16),
             ),
           child: LayoutBuilder(

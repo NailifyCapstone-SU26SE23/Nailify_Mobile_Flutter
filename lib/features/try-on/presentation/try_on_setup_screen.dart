@@ -84,7 +84,9 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
     });
 
     try {
-      debugPrint('[TryOnSetupScreen] _fetchData started. widget.customerNail=${widget.customerNail?.customerNailId}, widget.recommendedData=${widget.recommendedData != null}');
+      debugPrint(
+        '[TryOnSetupScreen] _fetchData started. widget.customerNail=${widget.customerNail?.customerNailId}, widget.recommendedData=${widget.recommendedData != null}',
+      );
       final results = await Future.wait([
         _setupService.fetchTryOnData(),
         if (widget.customerNail != null)
@@ -155,10 +157,16 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
 
       // If coming from Perfect Match, compute recommended overrides
       NailShapeModel? finalShape = _resolveShape(data.nailShapes, customerNail);
-      NailSurfaceModel? finalSurface = _resolveSurface(data.nailSurfaces, customerNail);
+      NailSurfaceModel? finalSurface = _resolveSurface(
+        data.nailSurfaces,
+        customerNail,
+      );
       Map<int, String> finalColors = Map.from(initialColors);
       Map<int, List<String>?> finalGradients = Map.from(initialGradients);
-      List<PlacedComponentDraft> finalPlacements = _buildDrafts(customerNail, data.combinedComponents);
+      List<PlacedComponentDraft> finalPlacements = _buildDrafts(
+        customerNail,
+        data.combinedComponents,
+      );
       CombinedComponent? finalSelectedComponent;
 
       final recData = widget.recommendedData;
@@ -168,15 +176,28 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
           // Resolve shape safely
           if (recData['nailShape'] is Map) {
             final recShapeId = (recData['nailShape'] as Map)['nailShapeId'];
-            finalShape = data.nailShapes.firstWhereOrNull((s) => s.nailShapeId == recShapeId) ?? finalShape;
-            debugPrint('[TryOnSetupScreen] Resolved shape: ${finalShape?.name}');
+            finalShape =
+                data.nailShapes.firstWhereOrNull(
+                  (s) => s.nailShapeId == recShapeId,
+                ) ??
+                finalShape;
+            debugPrint(
+              '[TryOnSetupScreen] Resolved shape: ${finalShape?.name}',
+            );
           }
 
           // Resolve surface safely
           if (recData['nailSurface'] is Map) {
-            final recSurfaceId = (recData['nailSurface'] as Map)['nailSurfaceId'];
-            finalSurface = data.nailSurfaces.firstWhereOrNull((s) => s.nailSurfaceId == recSurfaceId) ?? finalSurface;
-            debugPrint('[TryOnSetupScreen] Resolved surface: ${finalSurface?.name}');
+            final recSurfaceId =
+                (recData['nailSurface'] as Map)['nailSurfaceId'];
+            finalSurface =
+                data.nailSurfaces.firstWhereOrNull(
+                  (s) => s.nailSurfaceId == recSurfaceId,
+                ) ??
+                finalSurface;
+            debugPrint(
+              '[TryOnSetupScreen] Resolved surface: ${finalSurface?.name}',
+            );
           }
 
           // Colors & Gradients safely
@@ -209,24 +230,28 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
               if (matched != null) {
                 finalSelectedComponent ??= matched;
                 for (var fIdx = 1; fIdx <= 5; fIdx++) {
-                  resolved.add(PlacedComponentDraft(
-                    localId: localId++,
-                    component: matched,
-                    componentId: matched.componentId,
-                    customerComponentId: matched.customerComponentId,
-                    name: matched.name,
-                    imageUrl: matched.imageUrl,
-                    fingerIndex: fIdx,
-                    posX: 0,
-                    posY: 0,
-                    scale: 0.5,
-                    rotation: 0,
-                  ));
+                  resolved.add(
+                    PlacedComponentDraft(
+                      localId: localId++,
+                      component: matched,
+                      componentId: matched.componentId,
+                      customerComponentId: matched.customerComponentId,
+                      name: matched.name,
+                      imageUrl: matched.imageUrl,
+                      fingerIndex: fIdx,
+                      posX: 0,
+                      posY: 0,
+                      scale: 0.5,
+                      rotation: 0,
+                    ),
+                  );
                 }
               }
             }
             if (resolved.isNotEmpty) finalPlacements = resolved;
-            debugPrint('[TryOnSetupScreen] Resolved placements count: ${finalPlacements.length}');
+            debugPrint(
+              '[TryOnSetupScreen] Resolved placements count: ${finalPlacements.length}',
+            );
           }
         } catch (innerErr) {
           debugPrint('[TryOnSetupScreen] Inner parsing error: $innerErr');
@@ -268,22 +293,40 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
     final data = _tryOnData!;
 
     // Resolve shape
-    NailShapeModel? resolvedShape = _resolveShape(data.nailShapes, _customerNail);
+    NailShapeModel? resolvedShape = _resolveShape(
+      data.nailShapes,
+      _customerNail,
+    );
     if (recData['nailShape'] is Map) {
       final recShapeId = (recData['nailShape'] as Map)['nailShapeId'];
-      resolvedShape = data.nailShapes.firstWhereOrNull((s) => s.nailShapeId == recShapeId) ?? resolvedShape;
+      resolvedShape =
+          data.nailShapes.firstWhereOrNull(
+            (s) => s.nailShapeId == recShapeId,
+          ) ??
+          resolvedShape;
     }
 
     // Resolve surface
-    NailSurfaceModel? resolvedSurface = _resolveSurface(data.nailSurfaces, _customerNail);
+    NailSurfaceModel? resolvedSurface = _resolveSurface(
+      data.nailSurfaces,
+      _customerNail,
+    );
     if (recData['nailSurface'] is Map) {
       final recSurfaceId = (recData['nailSurface'] as Map)['nailSurfaceId'];
-      resolvedSurface = data.nailSurfaces.firstWhereOrNull((s) => s.nailSurfaceId == recSurfaceId) ?? resolvedSurface;
+      resolvedSurface =
+          data.nailSurfaces.firstWhereOrNull(
+            (s) => s.nailSurfaceId == recSurfaceId,
+          ) ??
+          resolvedSurface;
     }
 
     // Colors & Gradients — safe casts
-    final Map<int, String> initialColors = {for (var i = 1; i <= 5; i++) i: '#FF4081'};
-    final Map<int, List<String>?> initialGradients = {for (var i = 1; i <= 5; i++) i: null};
+    final Map<int, String> initialColors = {
+      for (var i = 1; i <= 5; i++) i: '#FF4081',
+    };
+    final Map<int, List<String>?> initialGradients = {
+      for (var i = 1; i <= 5; i++) i: null,
+    };
     final colorsRaw = recData['colors'];
     if (colorsRaw is List && colorsRaw.isNotEmpty) {
       final primaryHex = colorsRaw.first.toString();
@@ -345,7 +388,9 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
       _placements
         ..clear()
         ..addAll(resolvedPlacements);
-      _selectedPlacementId = _placements.isEmpty ? null : _placements.first.localId;
+      _selectedPlacementId = _placements.isEmpty
+          ? null
+          : _placements.first.localId;
     });
   }
 
@@ -357,14 +402,16 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
       if (mounted) {
         _applyRecommendedData(res);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đã tạo lại thiết kế móng phù hợp mới!')),
+          const SnackBar(
+            content: Text('Đã tạo lại thiết kế móng phù hợp mới!'),
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi khi tạo lại thiết kế: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi khi tạo lại thiết kế: $e')));
       }
     } finally {
       if (mounted) {
@@ -386,10 +433,14 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
     setState(() {
       for (var i = 1; i <= 5; i++) {
         _fingerColors[i] = currentColor;
-        _fingerGradients[i] = currentGradient == null ? null : [...currentGradient];
+        _fingerGradients[i] = currentGradient == null
+            ? null
+            : [...currentGradient];
       }
 
-      _placements.removeWhere((p) => !placementMatchesFinger(p.fingerIndex, srcIdx));
+      _placements.removeWhere(
+        (p) => !placementMatchesFinger(p.fingerIndex, srcIdx),
+      );
 
       int localIdCounter = DateTime.now().microsecondsSinceEpoch;
       for (var fIdx = 1; fIdx <= 5; fIdx++) {
@@ -416,7 +467,9 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Đã áp dụng mẫu thiết kế của ngón này cho tất cả các ngón!'),
+        content: Text(
+          'Đã áp dụng mẫu thiết kế của ngón này cho tất cả các ngón!',
+        ),
         duration: Duration(seconds: 2),
       ),
     );
@@ -499,15 +552,15 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
     });
   }
 
-
-
   DateTime? _lastScaleWarningTime;
   void _showScaleWarning() {
     final now = DateTime.now();
     if (_lastScaleWarningTime == null ||
         now.difference(_lastScaleWarningTime!) > const Duration(seconds: 4)) {
       _lastScaleWarningTime = now;
-      _showMessage('Kích thước phụ kiện lớn hơn bề ngang móng, vui lòng thu nhỏ lại.');
+      _showMessage(
+        'Kích thước phụ kiện lớn hơn bề ngang móng, vui lòng thu nhỏ lại.',
+      );
     }
   }
 
@@ -534,12 +587,12 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
         _placements.removeAt(index);
       }
       if (_selectedPlacementId == localId) {
-        _selectedPlacementId = _placements.isEmpty ? null : _placements.last.localId;
+        _selectedPlacementId = _placements.isEmpty
+            ? null
+            : _placements.last.localId;
       }
     });
   }
-
-
 
   void _togglePreviewDetailFinger(int fingerIndex) {
     setState(() {
@@ -662,7 +715,9 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
       }
 
       _deletedPlacementIds.clear();
-      final fresh = await _customerNailRepository.getCustomerNailById(targetNailId);
+      final fresh = await _customerNailRepository.getCustomerNailById(
+        targetNailId,
+      );
       setState(() => _customerNail = fresh);
       if (mounted) _showMessage('Đã lưu thiết lập thử móng.');
       await _fetchData();
@@ -713,9 +768,13 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+      backgroundColor: Theme.of(
+        context,
+      ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       appBar: AppBar(
-        title: Text(_customerNail == null ? 'Thiết kế móng' : _customerNail!.name),
+        title: Text(
+          _customerNail == null ? 'Thiết kế móng' : _customerNail!.name,
+        ),
         backgroundColor: Colors.transparent,
       ),
       body: Stack(
@@ -757,7 +816,10 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: (_selectedNailShape != null && !_isSaving && !_launching)
+                      onPressed:
+                          (_selectedNailShape != null &&
+                              !_isSaving &&
+                              !_launching)
                           ? () => _launchTryOn(photo: false)
                           : null,
                       icon: const Icon(Icons.videocam_outlined),
@@ -774,7 +836,10 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: (_selectedNailShape != null && !_isSaving && !_launching)
+                      onPressed:
+                          (_selectedNailShape != null &&
+                              !_isSaving &&
+                              !_launching)
                           ? () => _launchTryOn(photo: true)
                           : null,
                       icon: const Icon(Icons.photo_camera_outlined),
@@ -808,12 +873,21 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
                           : const Icon(Icons.refresh_rounded, size: 20),
                       label: const Text(
                         'Gen lại',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
                       ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFFE91E63),
-                        side: const BorderSide(color: Color(0xFFFFD1E1), width: 1.5),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        side: const BorderSide(
+                          color: Color(0xFFFFD1E1),
+                          width: 1.5,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -823,7 +897,10 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
                   ],
                   Expanded(
                     child: FilledButton(
-                      onPressed: (_selectedNailShape != null && !_isSaving && !_launching)
+                      onPressed:
+                          (_selectedNailShape != null &&
+                              !_isSaving &&
+                              !_launching)
                           ? _save
                           : null,
                       style: FilledButton.styleFrom(
@@ -873,7 +950,12 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
           // Phần trên: Bảng Preview cố định (sử dụng Expanded để tự động giãn nở khi panel thu lại)
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(top: 16.0, left: 16.0, right: 16.0, bottom: 8.0),
+              padding: const EdgeInsets.only(
+                top: 16.0,
+                left: 16.0,
+                right: 16.0,
+                bottom: 8.0,
+              ),
               child: TryOnPreviewBoard(
                 nail: _customerNail,
                 selectedShape: _selectedNailShape,
@@ -886,7 +968,8 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
                 detailFingerIndex: _previewDetailFingerIndex,
                 placements: _placements,
                 selectedPlacementId: _selectedPlacementId,
-                onSelectPlacement: (id) => setState(() => _selectedPlacementId = id),
+                onSelectPlacement: (id) =>
+                    setState(() => _selectedPlacementId = id),
                 onUpdatePlacement: _updatePlacement,
                 onDeletePlacement: _deletePlacementById,
                 onToggleDetailFinger: _togglePreviewDetailFinger,
@@ -910,7 +993,9 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
                   offset: const Offset(0, -5),
                 ),
               ],
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -919,7 +1004,12 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
                   children: [
                     Expanded(
                       child: Container(
-                        margin: const EdgeInsets.only(left: 16, top: 12, bottom: 12, right: 8),
+                        margin: const EdgeInsets.only(
+                          left: 16,
+                          top: 12,
+                          bottom: 12,
+                          right: 8,
+                        ),
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
                           color: Colors.grey.shade100,
@@ -935,7 +1025,9 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFFE91E63).withValues(alpha: 0.2),
+                                color: const Color(
+                                  0xFFE91E63,
+                                ).withValues(alpha: 0.2),
                                 blurRadius: 6,
                                 offset: const Offset(0, 3),
                               ),
@@ -945,8 +1037,14 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
                           unselectedLabelColor: Colors.grey.shade600,
                           indicatorSize: TabBarIndicatorSize.tab,
                           dividerColor: Colors.transparent,
-                          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                          labelStyle: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                          unselectedLabelStyle: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
                           tabs: const [
                             Tab(text: 'Dáng móng'),
                             Tab(text: 'Bề mặt'),
@@ -957,16 +1055,22 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
                       ),
                     ),
                     IconButton(
-                      onPressed: () => setState(() => _isSelectorExpanded = !_isSelectorExpanded),
+                      onPressed: () => setState(
+                        () => _isSelectorExpanded = !_isSelectorExpanded,
+                      ),
                       icon: Icon(
-                        _isSelectorExpanded ? Icons.keyboard_arrow_down_rounded : Icons.keyboard_arrow_up_rounded,
+                        _isSelectorExpanded
+                            ? Icons.keyboard_arrow_down_rounded
+                            : Icons.keyboard_arrow_up_rounded,
                         color: const Color(0xFFE91E63),
                         size: 26,
                       ),
                       style: IconButton.styleFrom(
                         backgroundColor: const Color(0xFFFCE4EC),
                         padding: const EdgeInsets.all(12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -1047,22 +1151,34 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
-                    color: _selectedPlacement != null ? const Color(0xFFE91E63) : Colors.black87,
+                    color: _selectedPlacement != null
+                        ? const Color(0xFFE91E63)
+                        : Colors.black87,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               FilledButton.icon(
-                onPressed: _selectedComponent == null ? null : _addSelectedComponent,
+                onPressed: _selectedComponent == null
+                    ? null
+                    : _addSelectedComponent,
                 icon: const Icon(Icons.add_rounded, size: 16),
-                label: const Text('Thêm vào móng', style: TextStyle(fontWeight: FontWeight.bold)),
+                label: const Text(
+                  'Thêm vào móng',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 style: FilledButton.styleFrom(
                   visualDensity: VisualDensity.compact,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   backgroundColor: const Color(0xFFE91E63),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                 ),
               ),
             ],
@@ -1117,7 +1233,9 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
               _fingerGradients[i] = gradient == null ? null : [...gradient];
             }
           } else {
-            _fingerGradients[_selectedFingerIndex] = gradient == null ? null : [...gradient];
+            _fingerGradients[_selectedFingerIndex] = gradient == null
+                ? null
+                : [...gradient];
           }
         }),
       ),
@@ -1153,8 +1271,14 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
               unselectedLabelColor: Colors.grey.shade600,
               indicatorSize: TabBarIndicatorSize.tab,
               dividerColor: Colors.transparent,
-              labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-              unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+              labelStyle: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
               tabs: const [
                 Tab(text: 'Mẫu hệ thống'),
                 Tab(text: 'Phụ kiện của tôi'),
@@ -1163,12 +1287,15 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
           ),
           const SizedBox(height: 16),
           SizedBox(
-            height: 130, // Optimized height matching compact 120px ComponentGrid
+            height:
+                130, // Optimized height matching compact 120px ComponentGrid
             child: TabBarView(
               children: [
                 ComponentGrid(
                   title: '',
-                  components: data.combinedComponents.where((item) => !item.isCustomerComponent).toList(),
+                  components: data.combinedComponents
+                      .where((item) => !item.isCustomerComponent)
+                      .toList(),
                   selectedComponent: _selectedComponent,
                   onSelected: (component) {
                     setState(() {
@@ -1179,7 +1306,9 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
                 ),
                 ComponentGrid(
                   title: '',
-                  components: data.combinedComponents.where((item) => item.isCustomerComponent).toList(),
+                  components: data.combinedComponents
+                      .where((item) => item.isCustomerComponent)
+                      .toList(),
                   selectedComponent: _selectedComponent,
                   onSelected: (component) {
                     setState(() {
@@ -1224,6 +1353,8 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
 
   void _showMessage(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }

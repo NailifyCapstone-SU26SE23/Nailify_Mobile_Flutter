@@ -21,7 +21,6 @@ class _CustomerComponentFormDialogState
     extends State<CustomerComponentFormDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _priceController = TextEditingController();
   final _customDataController = TextEditingController();
   final _picker = ImagePicker();
 
@@ -35,9 +34,6 @@ class _CustomerComponentFormDialogState
     final component = widget.component;
     if (component != null) {
       _nameController.text = component.name;
-      _priceController.text = component.price > 0
-          ? component.price.toString()
-          : '';
       _customDataController.text = component.customDataJson;
       _componentType = int.tryParse(component.componentType) ?? 0;
     }
@@ -46,7 +42,6 @@ class _CustomerComponentFormDialogState
   @override
   void dispose() {
     _nameController.dispose();
-    _priceController.dispose();
     _customDataController.dispose();
     super.dispose();
   }
@@ -68,7 +63,7 @@ class _CustomerComponentFormDialogState
         await repository.createCustomerComponent(
           name: _nameController.text.trim(),
           componentType: _componentType,
-          price: double.tryParse(_priceController.text.trim()),
+          price: null,
           customDataJson: _customDataController.text.trim(),
           imagePath: _imageFile?.path,
         );
@@ -77,7 +72,7 @@ class _CustomerComponentFormDialogState
           customerComponentId: widget.component!.customerComponentId,
           name: _nameController.text.trim(),
           componentType: _componentType,
-          price: double.tryParse(_priceController.text.trim()),
+          price: null,
           customDataJson: _customDataController.text.trim(),
           imagePath: _imageFile?.path,
         );
@@ -150,34 +145,6 @@ class _CustomerComponentFormDialogState
                   validator: (value) => value?.trim().isEmpty == true
                       ? 'Vui lòng nhập tên'
                       : null,
-                ),
-                const SizedBox(height: 16),
-
-                // Giá tiền
-                TextFormField(
-                  controller: _priceController,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textPrimary,
-                  ),
-                  decoration: InputDecoration(
-                    labelText: 'Giá tiền (VND)',
-                    labelStyle: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 13,
-                    ),
-                    filled: true,
-                    fillColor: const Color(0xFFF5F5F7),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-                  ),
-                  keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 16),
 

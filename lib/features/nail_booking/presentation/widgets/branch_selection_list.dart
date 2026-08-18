@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../generated/l10n.dart';
 
@@ -46,34 +45,7 @@ class BranchSelectionList extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // --- NÚT BẢN ĐỒ TÌM KIẾM SALON GẦN ĐÂY ---
-        Container(
-          width: double.infinity,
-          margin: const EdgeInsets.only(bottom: 20),
-          child: ElevatedButton.icon(
-            onPressed: () {
-              context.push(
-                '/salon-map',
-                extra: {'salons': salons, 'onSalonSelected': onBranchSelected},
-              );
-            },
-            icon: const Icon(Icons.near_me_outlined, size: 20),
-            label: Text(
-              S.of(context).findNearbySalons,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              elevation: 4,
-              shadowColor: AppColors.primary.withOpacity(0.3),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-          ),
-        ),
+
 
         // --- DANH SÁCH SALON ---
         ...salons.map((salon) {

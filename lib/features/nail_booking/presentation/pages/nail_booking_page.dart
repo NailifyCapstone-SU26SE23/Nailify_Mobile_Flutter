@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../generated/l10n.dart';
@@ -43,6 +44,12 @@ class _NailBookingPageState extends State<NailBookingPage> {
   bool _isPromotionExpanded = false;
   bool _isReviewingPrice = false;
   String? _holdToken;
+  Timer? _holdTimer;
+  int _holdRemainingSeconds = 0;
+  bool _isHolding = false;
+  String? _priceReviewKey;
+  String? _inFlightPriceReviewKey;
+  Future<void>? _inFlightPriceReview;
 
   List<dynamic> _salons = [];
   List<dynamic> _services = [];
@@ -87,6 +94,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
 
   @override
   void dispose() {
+    _holdTimer?.cancel();
     _cancelCurrentHold();
     _pageController.dispose();
     super.dispose();
@@ -131,6 +139,31 @@ class _NailBookingPageState extends State<NailBookingPage> {
     return _nailVariantPrice +
         _shapeMethodPrice.round() +
         _selectedExtraServicesTotal;
+  }
+
+  int? get _reviewSubtotal {
+    final value = _priceReview?['price'];
+    if (value is num) return value.round();
+    return int.tryParse(value?.toString() ?? '');
+  }
+
+  String get _priceReviewRequestKey {
+    final serviceIds = _selectedExtraServices.whereType<String>().toList()
+      ..sort();
+    final promotionIds = (_selectedPromotionIds ?? const <int>[]).toList()
+      ..sort();
+    return [
+      _selectedBranch?['salonId']?.toString() ?? '',
+      _selectedDate == null ? '' : _formatBookingDate(_selectedDate!),
+      _selectedTime ?? '',
+      _noArtistSelected
+          ? ''
+          : _selectedStylist?['nailArtistId']?.toString() ?? '',
+      _nailVariantId.toString(),
+      _shapeMethodConfigId?.toString() ?? '',
+      serviceIds.join(','),
+      promotionIds.join(','),
+    ].join('|');
   }
 
   List<Map<String, dynamic>> get _availableServices {
@@ -339,9 +372,14 @@ class _NailBookingPageState extends State<NailBookingPage> {
         _selectedTime == null) {
       return;
     }
+    final requestKey = _priceReviewRequestKey;
+    if (_priceReview != null && _priceReviewKey == requestKey) return;
+    if (_inFlightPriceReviewKey == requestKey && _inFlightPriceReview != null) {
+      return _inFlightPriceReview;
+    }
 
     setState(() => _isReviewingPrice = true);
-    try {
+    final reviewFuture = () async {
       final review = await _apiService.reviewBookingPrice(
         salonId: _selectedBranch!['salonId'],
         bookingDate: _formatBookingDate(_selectedDate!),
@@ -355,11 +393,26 @@ class _NailBookingPageState extends State<NailBookingPage> {
         shapeMethodConfigId: _shapeMethodConfigId,
       );
       if (!mounted) return;
-      setState(() => _priceReview = review);
+      if (_priceReviewRequestKey != requestKey) return;
+      setState(() {
+        _priceReview = review;
+        _priceReviewKey = requestKey;
+      });
+    }();
+
+    _inFlightPriceReviewKey = requestKey;
+    _inFlightPriceReview = reviewFuture;
+
+    try {
+      await reviewFuture;
     } catch (e) {
       if (mounted) _showSnackBar('Loi tinh gia: $e');
     } finally {
-      if (mounted) setState(() => _isReviewingPrice = false);
+      if (_inFlightPriceReviewKey == requestKey) {
+        _inFlightPriceReviewKey = null;
+        _inFlightPriceReview = null;
+        if (mounted) setState(() => _isReviewingPrice = false);
+      }
     }
   }
 
@@ -374,7 +427,10 @@ class _NailBookingPageState extends State<NailBookingPage> {
         );
 
         if (!mounted) return;
+        _holdTimer?.cancel();
         _holdToken = null;
+        _isHolding = false;
+        _holdRemainingSeconds = 0;
         context.go('/payment-qr', extra: paymentData);
       } catch (e) {
         _showSnackBar(S.of(context).bookingPaymentError(e.toString()));
@@ -386,23 +442,35 @@ class _NailBookingPageState extends State<NailBookingPage> {
 
   Future<bool> _createHoldForSummary() async {
     await _cancelCurrentHold();
-    final token = await _createHoldToken();
+    final hold = await _createHold();
+    final token = hold?['holdToken']?.toString();
     if (!_noArtistSelected && (token == null || token.isEmpty)) {
       _showSnackBar('Không thể giữ khung giờ này. Vui lòng chọn giờ khác.');
       return false;
     }
-    if (mounted) setState(() => _holdToken = token);
+    if (mounted && token != null) {
+      final remaining = (hold?['remainingSeconds'] as num?)?.toInt() ?? 300;
+      setState(() {
+        _holdToken = token;
+        _holdRemainingSeconds = remaining;
+        _isHolding = true;
+      });
+      _startHoldTimer(token);
+    }
     return true;
   }
 
   Future<void> _cancelCurrentHold() async {
     final token = _holdToken;
-    if (token == null || token.isEmpty) return;
+    _holdTimer?.cancel();
     _holdToken = null;
+    _isHolding = false;
+    _holdRemainingSeconds = 0;
+    if (token == null || token.isEmpty) return;
     await _apiService.cancelHoldSlot(token);
   }
 
-  Future<String?> _createHoldToken() async {
+  Future<Map<String, dynamic>?> _createHold() async {
     if (_noArtistSelected) return null;
 
     final salonId = _selectedBranch?['salonId']?.toString() ?? '';
@@ -411,15 +479,74 @@ class _NailBookingPageState extends State<NailBookingPage> {
       return null;
     }
 
-    final hold = await _apiService.holdSlot(
+    return _apiService.holdSlot(
       salonId: salonId,
       nailArtistId: artistId,
       bookingDate: _formatBookingDate(_selectedDate!),
       startTime: _normalizedSelectedTime,
       bookingItems: _buildBookingItems(),
     );
+  }
 
-    return hold['holdToken']?.toString();
+  void _startHoldTimer(String token) {
+    _holdTimer?.cancel();
+    _holdTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted || _holdToken != token) {
+        timer.cancel();
+        return;
+      }
+      if (_holdRemainingSeconds <= 1) {
+        timer.cancel();
+        setState(() {
+          _holdToken = null;
+          _isHolding = false;
+          _holdRemainingSeconds = 0;
+          _selectedTime = null;
+          _priceReview = null;
+        });
+        _showSnackBar('Thời gian giữ chỗ đã hết. Vui lòng chọn lại khung giờ.');
+        if (_currentStep > 2) {
+          _pageController.animateToPage(
+            2,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
+      } else {
+        setState(() => _holdRemainingSeconds--);
+      }
+    });
+  }
+
+  Widget _buildHoldCountdownBanner() {
+    if (!_isHolding) return const SizedBox.shrink();
+    final minutes = (_holdRemainingSeconds ~/ 60).toString().padLeft(2, '0');
+    final seconds = (_holdRemainingSeconds % 60).toString().padLeft(2, '0');
+    final isUrgent = _holdRemainingSeconds <= 60;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      color: isUrgent ? Colors.red.shade600 : Colors.orange.shade700,
+      child: Row(
+        children: [
+          const Icon(Icons.lock_clock, color: Colors.white, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              isUrgent
+                  ? 'Chỗ có thể bị hủy sau $minutes:$seconds'
+                  : 'Slot đang được giữ cho bạn - còn $minutes:$seconds để hoàn tất',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Map<String, dynamic> _buildBookingRequestPayload({String? holdToken}) {
@@ -577,6 +704,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
   Future<void> _handleBackAction() async {
     if (_currentStep == 3) {
       await _cancelCurrentHold();
+      if (!mounted) return;
     }
     if (_currentStep > 0) {
       _pageController.previousPage(
@@ -659,6 +787,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
       body: Column(
         children: [
           _buildStepIndicator(),
+          _buildHoldCountdownBanner(),
           Expanded(
             child: PageView(
               controller: _pageController,
@@ -738,10 +867,13 @@ class _NailBookingPageState extends State<NailBookingPage> {
             selectedDate: _selectedDate,
             salonId: _selectedBranch?['salonId'],
             artistId: _selectedStylist?['nailArtistId'],
-            onTimeChanged: (time) => setState(() {
-              _selectedTime = time;
-              _priceReview = null;
-            }),
+            onTimeChanged: (time) {
+              _cancelCurrentHold();
+              setState(() {
+                _selectedTime = time;
+                _priceReview = null;
+              });
+            },
           ),
         ],
       ),
@@ -812,9 +944,11 @@ class _NailBookingPageState extends State<NailBookingPage> {
 
   Widget _buildPaymentDetails() {
     final reviewTotal = _priceReview?['totalPrice'];
-    final totalPrice = reviewTotal is num
-        ? reviewTotal.round()
-        : int.tryParse(reviewTotal?.toString() ?? '') ?? _estimatedTotalPrice;
+    final totalPrice =
+        reviewTotal is num
+            ? reviewTotal.round()
+            : int.tryParse(reviewTotal?.toString() ?? '') ??
+                  _estimatedTotalPrice;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -880,6 +1014,11 @@ class _NailBookingPageState extends State<NailBookingPage> {
     final shapeMethodName = _shapeMethodName ?? S.of(context).shapeMethodLabel;
     final shouldShowShapeMethod =
         _shapeMethodName != null || _shapeMethodPrice > 0;
+    final reviewedNailPrice = _reviewSubtotal == null
+        ? null
+        : (_reviewSubtotal! - _selectedExtraServicesTotal).clamp(0, 1 << 31);
+    final displayPrice =
+        reviewedNailPrice ?? _nailVariantPrice + _shapeMethodPrice.round();
     final detailRows = <Map<String, dynamic>>[];
 
     if (variant?.nailSurface != null) {
@@ -908,7 +1047,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
           _buildPaymentRow(
             widget.nailData!['name']?.toString() ??
                 S.of(context).bookingNailVariantDefault,
-            _nailVariantPrice + _shapeMethodPrice.round(),
+            displayPrice,
           ),
           if (detailRows.isNotEmpty) ...[
             const SizedBox(height: 4),

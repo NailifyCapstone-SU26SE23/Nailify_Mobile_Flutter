@@ -7,6 +7,7 @@ import '../../../../core/utils/price_formatter.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../data/models/customer_nail_models.dart' as nails_model;
+import '../../data/models/nail_component_model.dart';
 import '../../data/models/nail_variant_model.dart';
 import '../../data/models/shape_method_config_model.dart';
 import '../../data/repositories/favorite_nail_repository.dart';
@@ -357,6 +358,10 @@ class _DetailContentState extends State<_DetailContent> {
   @override
   Widget build(BuildContext context) {
     final variant = widget.variant;
+    final grouped = <int, List<NailComponentModel>>{};
+    for (final component in variant.nailComponents) {
+      grouped.putIfAbsent(component.fingerIndex, () => []).add(component);
+    }
     final ratingStr = _isLoadingRating ? '...' : _rating.toStringAsFixed(1);
     final reviewsCountStr = _isLoadingRating ? '...' : '$_reviewsCount';
 
@@ -541,6 +546,7 @@ class _DetailContentState extends State<_DetailContent> {
                       ),
                       const SizedBox(height: 24),
                       _buildShapeMethodSelection(),
+                      _buildComponentChips(grouped),
                       _buildComponentPriceTable(variant),
                     ],
                   ),
@@ -696,7 +702,7 @@ class _DetailContentState extends State<_DetailContent> {
                               'id': variant.nailVariantId.toString(),
                               'name': variant.name,
                               'image': variant.imageUrl,
-                              'price': variant.price,
+                              'price': variant.estimatedPrice ?? variant.price,
                               'shapeMethodConfigId':
                                   _selectedShapeMethod?.shapeMethodConfigId,
                               'shapeMethodName': _selectedShapeMethod?.name,
@@ -942,6 +948,44 @@ class _DetailContentState extends State<_DetailContent> {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildComponentChips(Map<int, List<NailComponentModel>> grouped) {
+    final hasComponents = grouped.values.any(
+      (components) => components.isNotEmpty,
+    );
+    if (!hasComponents) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 28),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            S.of(context).designComponentsLabel,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+              fontFamily: 'Georgia',
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 16),
+          for (var finger = 0; finger < 5; finger++)
+            _FingerComponents(
+              fingerIndex: finger,
+              components: grouped[finger] ?? const [],
+            ),
+          if (grouped[-1]?.isNotEmpty == true)
+            _FingerComponents(
+              fingerIndex: -1,
+              components: grouped[-1]!,
+              title: S.of(context).sharedLabel,
+            ),
         ],
       ),
     );
@@ -1222,6 +1266,145 @@ class _DetailContentState extends State<_DetailContent> {
             );
           })
           .toList(),
+    );
+  }
+}
+
+class _FingerComponents extends StatelessWidget {
+  final int fingerIndex;
+  final List<NailComponentModel> components;
+  final String? title;
+
+  const _FingerComponents({
+    required this.fingerIndex,
+    required this.components,
+    this.title,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (components.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 70,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text(
+                title ?? _fingerName(context, fingerIndex),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: components
+                  .map((component) => _ComponentChip(component: component))
+                  .toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _fingerName(BuildContext context, int index) {
+    final s = S.of(context);
+    final names = [
+      s.fingerThumb,
+      s.fingerIndex,
+      s.fingerMiddle,
+      s.fingerRing,
+      s.fingerPinky,
+    ];
+    return index >= 0 && index < names.length
+        ? names[index]
+        : s.fingerOther(index.toString());
+  }
+}
+
+class _ComponentChip extends StatelessWidget {
+  final NailComponentModel component;
+
+  const _ComponentChip({required this.component});
+
+  @override
+  Widget build(BuildContext context) {
+    final typeText = component.component?.componentType.isNotEmpty == true
+        ? component.component!.componentType
+        : S.of(context).decorationLabel;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFF4081).withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFFFF4081).withValues(alpha: 0.06),
+          width: 1.2,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: SizedBox(
+              width: 28,
+              height: 28,
+              child: component.component?.imageUrl.isNotEmpty == true
+                  ? Image.network(
+                      component.component!.imageUrl,
+                      fit: BoxFit.contain,
+                    )
+                  : const Icon(
+                      Icons.auto_awesome,
+                      color: AppColors.primary,
+                      size: 18,
+                    ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 140),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  component.component?.name ??
+                      S
+                          .of(context)
+                          .componentNameFallback(
+                            component.componentId.toString(),
+                          ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                Text(
+                  typeText,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 10, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

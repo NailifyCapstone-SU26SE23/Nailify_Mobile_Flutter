@@ -1,12 +1,10 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../generated/l10n.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/network/api_client.dart';
-import '../../../nails/data/models/customer_nail_models.dart';
 import '../../../quiz/data/datasources/quiz_repository.dart';
 import '../../../quiz/data/models/quiz_result_model.dart';
 
@@ -97,7 +95,8 @@ class _NailCompositionDesignPageState extends State<NailCompositionDesignPage>
         setState(() {
           _isGenerating = false;
         });
-        context.push('/try-on', extra: _buildRecommendedNail(res));
+        final extra = <String, dynamic>{...res, 'fromPerfectMatch': true};
+        context.push('/try-on', extra: extra);
       }
     } catch (e) {
       if (mounted) {
@@ -107,42 +106,6 @@ class _NailCompositionDesignPageState extends State<NailCompositionDesignPage>
         });
       }
     }
-  }
-
-  CustomerNailModel _buildRecommendedNail(Map<String, dynamic> response) {
-    final data = response['data'] is Map
-        ? Map<String, dynamic>.from(response['data'] as Map)
-        : response;
-    final colors = data['colors'];
-
-    return CustomerNailModel.fromJson({
-      'customerNailId': 0,
-      'name': 'Perfect Match',
-      'imageUrl': '',
-      'nailShapeId': data['nailShapeId'],
-      'nailSurfaceId': data['nailSurfaceId'],
-      'customColor': _buildRecommendedColorJson(colors),
-      'nailShape': data['nailShape'],
-      'nailSurface': data['nailSurface'],
-      'customerNailComponents': const [],
-    });
-  }
-
-  String _buildRecommendedColorJson(dynamic colors) {
-    if (colors is List && colors.isNotEmpty) {
-      return jsonEncode({
-        'mode': 'perFinger',
-        'fingers': [
-          for (var i = 1; i <= 5; i++)
-            {
-              'fingerIndex': i,
-              'color': colors[(i - 1) % colors.length].toString(),
-            },
-        ],
-      });
-    }
-
-    return jsonEncode({'mode': 'single', 'color': '#FF4081'});
   }
 
   @override

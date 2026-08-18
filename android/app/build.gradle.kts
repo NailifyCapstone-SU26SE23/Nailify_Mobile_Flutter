@@ -43,6 +43,17 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    packaging {
+        jniLibs {
+            pickFirsts.add("**/libonnxruntime.so")
+            pickFirsts.add("**/libonnxruntime_extensions.so")
+        }
+    }
+
+    androidResources {
+        noCompress += listOf("onnx", "pt", "task", "tflite", "json")
+    }
 }
 
 flutter {

@@ -32,6 +32,7 @@ import '../../features/quiz/presentation/pages/analyze_page.dart';
 import '../../features/quiz/presentation/pages/quiz_page.dart';
 import '../../features/services/presentation/pages/service_detail_page.dart';
 import '../../features/services/presentation/pages/service_list_page.dart';
+import '../../features/try-on/presentation/nail_snapshot_page.dart';
 import '../../features/try-on/presentation/try_on_setup_screen.dart';
 import '../widgets/main_shell.dart';
 
@@ -228,6 +229,10 @@ class AppRouter {
           GoRoute(
             path: '/try-on',
             builder: (context, state) => const TryOnSetupScreen(),
+          ),
+          GoRoute(
+            path: '/snapshot-try-on',
+            builder: (context, state) => const NailSnapshotPage(),
           ),
           GoRoute(
             path: '/profile',

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/di/injection.dart';
 import '../../nails/data/models/customer_nail_models.dart';
@@ -281,6 +282,10 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
   }
 
   Future<void> _launchTryOn({required bool photo}) async {
+    if (photo) {
+      context.push('/snapshot-try-on');
+      return;
+    }
     final preview = _buildPreviewNail();
     if (preview == null) {
       _showMessage('Vui lòng chọn dáng móng.');
@@ -296,11 +301,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
           'Virtual try-on is not available on this build.',
         );
       }
-      if (photo) {
-        await service.launchCustomerPhoto(preview, context: context);
-      } else {
-        await service.launchCustomerLive(preview, context: context);
-      }
+      await service.launchCustomerLive(preview, context: context);
     } catch (error) {
       _showMessage(error.toString());
     } finally {

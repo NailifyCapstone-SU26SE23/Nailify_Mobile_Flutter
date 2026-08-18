@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/di/injection.dart';
 import '../../nails/data/models/customer_nail_models.dart';
 import '../../nails/services/ar_try_on_service.dart';
+import 'nail_snapshot_page.dart';
 import 'snapshot_preview_screen.dart';
 
 class TryOnMethodSelectionScreen extends StatefulWidget {
@@ -42,40 +43,11 @@ class _TryOnMethodSelectionScreenState
 
   // ---- Snapshot Try-on ----
   Future<void> _launchSnapshot() async {
-    setState(() => _launching = true);
-    try {
-      final service = getIt<ArTryOnService>();
-      if (!await service.isAvailable()) {
-        throw UnsupportedError(
-          'Virtual try-on is not available on this build.',
-        );
-      }
-
-      // Vòng lặp: mở camera → nếu user bấm "Chụp lại" thì mở camera lại
-      // mà KHÔNG đưa user về trang chọn phương thức.
-      while (true) {
-        final result = await service.launchCustomerSnapshot(widget.previewNail);
-        if (!mounted) return;
-
-        // Push màn hình Preview và chờ kết quả
-        final action = await Navigator.of(context).push<String>(
-          MaterialPageRoute(
-            builder: (_) => SnapshotPreviewScreen(
-              snapshot: result,
-              nail: widget.previewNail,
-            ),
-          ),
-        );
-
-        // 'retake' → quay lại camera chụp tiếp (vòng lặp tiếp tục)
-        // null/khác  → người dùng bấm Back → thoát
-        if (action != 'retake') break;
-      }
-    } catch (error) {
-      if (mounted) _showError(error.toString());
-    } finally {
-      if (mounted) setState(() => _launching = false);
-    }
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const NailSnapshotPage(),
+      ),
+    );
   }
 
   void _showError(String msg) {

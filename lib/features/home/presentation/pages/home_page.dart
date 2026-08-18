@@ -29,6 +29,10 @@ class HomePage extends StatelessWidget {
 
               const HomeQuizBanner(),
 
+              const SizedBox(height: 16),
+
+              const HomeSnapshotTryOnBanner(),
+
               const SizedBox(height: 36),
 
               const HomeServices(),
@@ -336,6 +340,103 @@ extension _TextExtension on Text {
       textWidthBasis: textWidthBasis,
       textHeightBehavior: textHeightBehavior,
       selectionColor: selectionColor,
+    );
+  }
+}
+
+class HomeSnapshotTryOnBanner extends StatelessWidget {
+  const HomeSnapshotTryOnBanner({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: const LinearGradient(
+            colors: [Color(0xFFE8F5E9), Color(0xFFF3E5F5)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          border: Border.all(color: Colors.pink.shade100, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.pink.withValues(alpha: 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(
+                        Icons.photo_camera_rounded,
+                        color: Color(0xFFFF4081),
+                        size: 20,
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        'AI Snapshot Try-on',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFFF4081),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Thử móng AI qua ảnh chụp 3D',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                      height: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Chụp hoặc chọn 1 ảnh bàn tay, AI sẽ quét viền móng & ghép móng 3D AR cực đẹp!',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () => context.push('/snapshot-try-on'),
+                    icon: const Icon(Icons.center_focus_strong, size: 18),
+                    label: const Text('Thử móng ngay'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF4081),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

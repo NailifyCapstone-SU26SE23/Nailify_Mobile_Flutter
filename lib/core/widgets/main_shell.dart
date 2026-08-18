@@ -479,58 +479,42 @@ class _MainShellState extends State<MainShell> {
                   ),
                 ),
               ),
-              actions: _isLoggedIn
-                  ? [
-                      if (_hasRecommendations) ...[
-                        const BlinkingPerfectMatchButton(),
-                        const SizedBox(width: 12),
-                      ],
-                    ]
-                  : [
-                      // HIỂN THỊ NÚT ĐĂNG NHẬP/ĐĂNG KÝ KHI CHƯA CÓ TOKEN
-                      OutlinedButton(
-                        onPressed: () => context.push('/login'),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(
-                            color: AppColors.primary,
-                            width: 1.2,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                        ),
-                        child: const Text(
-                          'Sign in',
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 14,
-                          ),
-                        ),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+                  tooltip: 'Snapshot Try-on',
+                  onPressed: () => context.push('/snapshot-try-on'),
+                ),
+                if (_isLoggedIn && _hasRecommendations) ...[
+                  const BlinkingPerfectMatchButton(),
+                  const SizedBox(width: 8),
+                ],
+                if (!_isLoggedIn) ...[
+                  OutlinedButton(
+                    onPressed: () => context.push('/login'),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(
+                        color: AppColors.primary,
+                        width: 1.2,
                       ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: () => context.push('/register'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                        ),
-                        child: const Text(
-                          'Register',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            fontSize: 14,
-                          ),
-                        ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
                       ),
-                      const SizedBox(width: 16),
-                    ],
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                    ),
+                    child: const Text(
+                      'Sign in',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                const SizedBox(width: 8),
+              ],
             )
           : null, // No AppBar when showHeader is false
       // Wrap the body with SafeArea when header is hidden

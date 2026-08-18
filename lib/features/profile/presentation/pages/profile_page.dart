@@ -831,7 +831,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       Expanded(
                         child: _buildProfileNavButton(
                           icon: Icons.receipt_long_rounded,
-                          label: 'Giao dịch',
+                          label: 'Giao dịch',
                           onTap: () => context.push('/profile/transactions'),
                         ),
                       ),
@@ -839,14 +839,14 @@ class _ProfilePageState extends State<ProfilePage> {
                       Expanded(
                         child: _buildProfileNavButton(
                           icon: Icons.favorite_rounded,
-                          label: 'Yêu thích',
+                          label: 'Yêu thích',
                           onTap: () =>
                               context.push('/profile/favorite-nails-list'),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 100),
+                  const SizedBox(height: 24),
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(

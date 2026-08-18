@@ -199,8 +199,11 @@ class AppRouter {
         },
       ),
       ShellRoute(
-        builder: (context, state, child) =>
-            MainShell(showHeader: state.matchedLocation == '/', child: child),
+        builder: (context, state, child) => MainShell(
+          showHeader: state.matchedLocation == '/',
+          currentLocation: state.matchedLocation,
+          child: child,
+        ),
         routes: [
           GoRoute(path: '/', builder: (context, state) => const HomePage()),
           GoRoute(

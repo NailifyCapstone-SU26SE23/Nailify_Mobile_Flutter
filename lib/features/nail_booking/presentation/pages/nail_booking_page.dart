@@ -42,6 +42,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
   bool _isLoadingPromotions = false;
   bool _isPromotionExpanded = false;
   bool _isReviewingPrice = false;
+  String? _holdToken;
 
   List<dynamic> _salons = [];
   List<dynamic> _services = [];
@@ -86,6 +87,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
 
   @override
   void dispose() {
+    _cancelCurrentHold();
     _pageController.dispose();
     super.dispose();
   }
@@ -367,12 +369,12 @@ class _NailBookingPageState extends State<NailBookingPage> {
       setState(() => _isSubmitting = true);
 
       try {
-        final holdToken = await _createHoldToken();
         final paymentData = await _paymentApiService.createPaymentForRequest(
-          _buildBookingRequestPayload(holdToken: holdToken),
+          _buildBookingRequestPayload(holdToken: _holdToken),
         );
 
         if (!mounted) return;
+        _holdToken = null;
         context.go('/payment-qr', extra: paymentData);
       } catch (e) {
         _showSnackBar(S.of(context).bookingPaymentError(e.toString()));
@@ -380,6 +382,24 @@ class _NailBookingPageState extends State<NailBookingPage> {
         if (mounted) setState(() => _isSubmitting = false);
       }
     });
+  }
+
+  Future<bool> _createHoldForSummary() async {
+    await _cancelCurrentHold();
+    final token = await _createHoldToken();
+    if (!_noArtistSelected && (token == null || token.isEmpty)) {
+      _showSnackBar('Không thể giữ khung giờ này. Vui lòng chọn giờ khác.');
+      return false;
+    }
+    if (mounted) setState(() => _holdToken = token);
+    return true;
+  }
+
+  Future<void> _cancelCurrentHold() async {
+    final token = _holdToken;
+    if (token == null || token.isEmpty) return;
+    _holdToken = null;
+    await _apiService.cancelHoldSlot(token);
   }
 
   Future<String?> _createHoldToken() async {
@@ -475,6 +495,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   void _handleBranchSelected(dynamic branch) {
+    _cancelCurrentHold();
     setState(() {
       _selectedBranch = Map<String, dynamic>.from(branch as Map);
       _selectedDate = null;
@@ -488,6 +509,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   void _handleServiceChanged(List<String?> services) {
+    _cancelCurrentHold();
     setState(() {
       _selectedExtraServices = services;
       _selectedStylist = null;
@@ -503,6 +525,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   void _handleDateChanged(DateTime date) {
+    _cancelCurrentHold();
     setState(() {
       _selectedDate = date;
       _selectedStylist = null;
@@ -516,6 +539,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   void _handleStylistSelected(Map<String, dynamic>? stylist) {
+    _cancelCurrentHold();
     setState(() {
       _selectedStylist = stylist;
       _selectedTime = null;
@@ -526,6 +550,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   void _handleArtistModeChanged(bool isNoArtist) {
+    _cancelCurrentHold();
     setState(() {
       _noArtistSelected = isNoArtist;
       _selectedStylist = null;
@@ -549,7 +574,10 @@ class _NailBookingPageState extends State<NailBookingPage> {
     }
   }
 
-  void _handleBackAction() {
+  Future<void> _handleBackAction() async {
+    if (_currentStep == 3) {
+      await _cancelCurrentHold();
+    }
     if (_currentStep > 0) {
       _pageController.previousPage(
         duration: const Duration(milliseconds: 300),
@@ -560,7 +588,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
     }
   }
 
-  void _handleNextAction() {
+  Future<void> _handleNextAction() async {
     if (_currentStep == 0 && _selectedBranch == null) {
       _showSnackBar(S.of(context).bookingValidateSalon);
       return;
@@ -586,6 +614,8 @@ class _NailBookingPageState extends State<NailBookingPage> {
 
     if (_currentStep < 3) {
       if (_currentStep == 2) {
+        final held = await _createHoldForSummary();
+        if (!held) return;
         _reviewPrice();
       }
       _pageController.nextPage(

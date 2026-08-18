@@ -364,6 +364,15 @@ class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
   }
 
   void _openCustomNailBooking(BuildContext context, CustomerNailModel nail) {
-    context.push('/custom-nail-booking', extra: {'nail': nail});
+    context.push(
+      '/custom-nail-booking',
+      extra: {
+        'nail': nail,
+        'shapeMethodConfigId': nail.shapeMethodConfigId,
+        'shapeMethodName': nail.shapeMethodName,
+        'shapeMethodPrice': nail.shapeMethodPrice,
+        'shapeMethodDuration': nail.shapeMethodDuration,
+      },
+    );
   }
 }

@@ -4,11 +4,13 @@ import '../../../../generated/l10n.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/utils/auth_guard.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../../my_studio/data/models/customer_nail_model.dart';
 import '../../../nails/data/models/shape_method_config_model.dart';
 import '../../../nails/data/repositories/nail_variant_repository.dart';
 import '../../data/datasources/booking_api_service.dart';
+import '../../data/datasources/payment_api_service.dart';
 import '../../data/datasources/promotion_api_service.dart';
 import '../../data/models/promotion_model.dart';
 import '../widgets/booking_date_selection.dart';
@@ -38,6 +40,7 @@ class CustomNailBookingPage extends StatefulWidget {
 class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   final PageController _pageController = PageController();
   final BookingApiService _apiService = BookingApiService();
+  final PaymentApiService _paymentApiService = PaymentApiService();
   final PromotionApiService _promotionApiService = PromotionApiService();
 
   int _currentStep = 0;
@@ -47,6 +50,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   bool _isLoadingPromotions = false;
   bool _isPromotionExpanded = false;
   bool _isReviewingPrice = false;
+  String? _holdToken;
 
   Future<List<ShapeMethodConfigModel>>? _shapeMethodsFuture;
   ShapeMethodConfigModel? _selectedShapeMethod;
@@ -76,6 +80,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
 
   @override
   void dispose() {
+    _cancelCurrentHold();
     _pageController.dispose();
     super.dispose();
   }
@@ -245,54 +250,88 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   }
 
   Future<void> _executeBooking() async {
-    if (_isSubmitting) return;
-    setState(() => _isSubmitting = true);
+    AuthGuard.check(context, () async {
+      if (_isSubmitting) return;
+      setState(() => _isSubmitting = true);
 
-    try {
-      final salonId = widget.nail.salonId;
-      final artistId = widget.nail.nailArtistId ?? '';
-      final customerNailRequestId = widget.nail.customerNailRequestId;
+      try {
+        final paymentData = await _paymentApiService.createPaymentForRequest(
+          _buildBookingRequestPayload(holdToken: _holdToken),
+        );
 
-      if (customerNailRequestId.isEmpty) {
-        throw Exception('ID yeu cau mong custom khong hop le.');
+        if (!mounted) return;
+        _holdToken = null;
+        context.go('/payment-qr', extra: paymentData);
+      } catch (e) {
+        if (mounted) {
+          _showSnackBar(e.toString().replaceAll('Exception: ', 'Loi: '));
+        }
+      } finally {
+        if (mounted) setState(() => _isSubmitting = false);
       }
-      if (salonId.isEmpty || artistId.isEmpty) {
-        throw Exception('Thieu thong tin chi nhanh hoac tho.');
-      }
+    });
+  }
 
-      final response = await _apiService.createCustomNailBooking(
-        salonId,
-        _formatBookingDate(_selectedDate!),
-        _normalizedSelectedTime,
-        artistId,
-        customerNailRequestId,
-        _groupedServicesMap,
-        shapeMethodConfigId: _selectedShapeMethodConfigId,
-        selectedPromotionIds: _selectedPromotionIds,
-      );
-
-      if (!mounted) return;
-      context.go(
-        '/booking-success',
-        extra: {
-          'bookingId': response['bookingId']?.toString() ?? '',
-          'serviceName': 'Custom: ${widget.nail.name}',
-          'date': _selectedDate,
-          'time': _normalizedSelectedTime,
-          'price': response['price'],
-          'discount': response['discount'],
-          'totalPrice': response['totalPrice'],
-          'discounts': response['discounts'] ?? response['discountBreakdown'],
-          'stylistName': widget.nail.stylistName,
-        },
-      );
-    } catch (e) {
-      if (mounted) {
-        _showSnackBar(e.toString().replaceAll('Exception: ', 'Loi: '));
-      }
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+  Future<bool> _createHoldForSummary() async {
+    await _cancelCurrentHold();
+    final token = await _createHoldToken();
+    if (token == null || token.isEmpty) {
+      _showSnackBar('Không thể giữ khung giờ này. Vui lòng chọn giờ khác.');
+      return false;
     }
+    if (mounted) setState(() => _holdToken = token);
+    return true;
+  }
+
+  Future<String?> _createHoldToken() async {
+    final salonId = widget.nail.salonId;
+    final artistId = widget.nail.nailArtistId ?? '';
+    if (salonId.isEmpty || artistId.isEmpty || _selectedDate == null) {
+      return null;
+    }
+
+    final hold = await _apiService.holdSlot(
+      salonId: salonId,
+      nailArtistId: artistId,
+      bookingDate: _formatBookingDate(_selectedDate!),
+      startTime: _normalizedSelectedTime,
+      bookingItems: _buildBookingItems(),
+    );
+
+    return hold['holdToken']?.toString();
+  }
+
+  Future<void> _cancelCurrentHold() async {
+    final token = _holdToken;
+    if (token == null || token.isEmpty) return;
+    _holdToken = null;
+    await _apiService.cancelHoldSlot(token);
+  }
+
+  Map<String, dynamic> _buildBookingRequestPayload({String? holdToken}) {
+    return {
+      'salonId': widget.nail.salonId,
+      'bookingDate': _formatBookingDate(_selectedDate!),
+      'startTime': _normalizedSelectedTime,
+      'nailArtistId': widget.nail.nailArtistId,
+      'holdToken': holdToken,
+      'bookingItems': _buildBookingItems(),
+      'selectedPromotionIds': _selectedPromotionIds,
+    };
+  }
+
+  List<Map<String, dynamic>> _buildBookingItems() {
+    return [
+      {
+        'customerNailRequestId': widget.nail.customerNailRequestId,
+        if (_selectedShapeMethodConfigId != null)
+          'shapeMethodConfigId': _selectedShapeMethodConfigId,
+        'quantity': 1,
+      },
+      ..._groupedServicesMap.entries.map(
+        (entry) => {'serviceId': entry.key, 'quantity': entry.value},
+      ),
+    ];
   }
 
   String get _normalizedSelectedTime {
@@ -340,6 +379,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   }
 
   void _handleServiceChanged(List<String?> services) {
+    _cancelCurrentHold();
     setState(() {
       _selectedExtraServices = services;
       _selectedTime = null;
@@ -350,7 +390,10 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
     if (_selectedDate != null) _fetchTimeSlots();
   }
 
-  void _handleBackAction() {
+  Future<void> _handleBackAction() async {
+    if (_currentStep == 2) {
+      await _cancelCurrentHold();
+    }
     if (_currentStep > 0) {
       _pageController.previousPage(
         duration: const Duration(milliseconds: 300),
@@ -361,7 +404,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
     }
   }
 
-  void _handleNextAction() {
+  Future<void> _handleNextAction() async {
     if (_currentStep == 0 && _selectedExtraServices.contains(null)) {
       _showSnackBar('Vui long chon hoac xoa dich vu dang bo trong.');
       return;
@@ -373,6 +416,8 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
 
     if (_currentStep < 2) {
       if (_currentStep == 1) {
+        final held = await _createHoldForSummary();
+        if (!held) return;
         setState(() => _priceReview = null);
         _reviewPrice();
       }
@@ -522,6 +567,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                   value: method.shapeMethodConfigId,
                   groupValue: _selectedShapeMethodConfigId,
                   onChanged: (_) {
+                    _cancelCurrentHold();
                     setState(() {
                       _selectedShapeMethod = method;
                       _priceReview = null;
@@ -560,6 +606,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
           BookingDateSelection(
             selectedDate: _selectedDate,
             onDateChanged: (date) {
+              _cancelCurrentHold();
               setState(() => _selectedDate = date);
               _fetchTimeSlots();
             },
@@ -573,7 +620,10 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
             selectedDate: _selectedDate,
             salonId: widget.nail.salonId,
             artistId: widget.nail.nailArtistId,
-            onTimeChanged: (time) => setState(() => _selectedTime = time),
+            onTimeChanged: (time) {
+              _cancelCurrentHold();
+              setState(() => _selectedTime = time);
+            },
           ),
         ],
       ),
@@ -1356,9 +1406,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                             ),
                           )
                         : Text(
-                            _currentStep == 2
-                                ? 'Xác nhận đặt lịch'
-                                : 'Tiếp tục',
+                            _currentStep == 2 ? 'Thanh toán' : 'Tiếp tục',
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                   ),

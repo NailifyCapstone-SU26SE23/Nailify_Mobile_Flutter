@@ -14,6 +14,10 @@ class CustomerNailModel {
   final DateTime? updatedAt;
   final String? artistFullName;
   final String? salonName;
+  final int? shapeMethodConfigId;
+  final String? shapeMethodName;
+  final num? shapeMethodPrice;
+  final int? shapeMethodDuration;
 
   // --- Thông tin chi tiết customerNail (nested) ---
   final String name;
@@ -46,6 +50,10 @@ class CustomerNailModel {
     this.updatedAt,
     this.artistFullName,
     this.salonName,
+    this.shapeMethodConfigId,
+    this.shapeMethodName,
+    this.shapeMethodPrice,
+    this.shapeMethodDuration,
     required this.name,
     this.imageUrl,
     this.nailShapeId,
@@ -64,6 +72,9 @@ class CustomerNailModel {
     final customerNail = json['customerNail'] as Map<String, dynamic>? ?? {};
     final salon = json['salon'] as Map<String, dynamic>?;
     final approvedArtist = json['approvedArtist'] as Map<String, dynamic>?;
+    final shapeMethodConfig = _readNullableMap(
+      json['shapeMethodConfig'] ?? json['ShapeMethodConfig'],
+    );
 
     final rawPrice = json['price'] ?? json['Price'];
     final parsedPrice = (rawPrice as num?)?.toInt() ?? 0;
@@ -93,6 +104,21 @@ class CustomerNailModel {
           : null,
       artistFullName: json['artistFullName']?.toString(),
       salonName: json['salonName']?.toString(),
+      shapeMethodConfigId: _readNullableInt(
+        json['shapeMethodConfigId'] ??
+            json['ShapeMethodConfigId'] ??
+            shapeMethodConfig?['shapeMethodConfigId'] ??
+            shapeMethodConfig?['ShapeMethodConfigId'],
+      ),
+      shapeMethodName:
+          shapeMethodConfig?['name']?.toString() ??
+          shapeMethodConfig?['Name']?.toString(),
+      shapeMethodPrice: _readNullableNum(
+        shapeMethodConfig?['price'] ?? shapeMethodConfig?['Price'],
+      ),
+      shapeMethodDuration: _readNullableInt(
+        shapeMethodConfig?['duration'] ?? shapeMethodConfig?['Duration'],
+      ),
 
       // Nested customerNail fields
       name: customerNail['name']?.toString() ?? 'Móng tùy chỉnh',
@@ -157,5 +183,23 @@ class CustomerNailModel {
       }
     }
     return list.where((s) => s.isNotEmpty).toList();
+  }
+
+  static Map<String, dynamic>? _readNullableMap(dynamic value) {
+    if (value is Map) return Map<String, dynamic>.from(value);
+    return null;
+  }
+
+  static int? _readNullableInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString());
+  }
+
+  static num? _readNullableNum(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value;
+    return num.tryParse(value.toString());
   }
 }

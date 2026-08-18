@@ -37,10 +37,11 @@ class CustomerComponentRepository {
     String? imagePath,
   }) async {
     final formData = FormData.fromMap({
-      'Name': name,
-      'ComponentType': componentType,
-      'Price': ?price,
-      'CustomDataJson': ?customDataJson,
+      'name': name,
+      'componentType': componentType,
+      'price': ?price,
+      if (customDataJson != null && customDataJson.trim().isNotEmpty)
+        'customDataJson': customDataJson.trim(),
     });
     if (imagePath != null && imagePath.isNotEmpty) {
       formData.files.add(
@@ -63,10 +64,11 @@ class CustomerComponentRepository {
     String? imagePath,
   }) async {
     final formData = FormData.fromMap({
-      'Name': name,
-      'ComponentType': componentType,
-      'CustomDataJson': customDataJson,
-      'Price': ?price,
+      'name': name,
+      'componentType': componentType,
+      if (customDataJson.trim().isNotEmpty)
+        'customDataJson': customDataJson.trim(),
+      'price': ?price,
     });
     if (imagePath != null && imagePath.isNotEmpty) {
       formData.files.add(

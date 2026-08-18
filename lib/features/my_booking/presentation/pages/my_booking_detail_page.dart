@@ -1453,11 +1453,6 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
         totalPrice += shapePrice;
       }
 
-      // Add custom fee (request.price is the custom fee)
-      if (request.price > 0) {
-        totalPrice += request.price;
-      }
-
       return totalPrice;
     }
 

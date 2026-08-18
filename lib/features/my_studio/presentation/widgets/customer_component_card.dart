@@ -30,6 +30,24 @@ class CustomerComponentCard extends StatelessWidget {
     }
   }
 
+  int _componentTypeValue(String value) {
+    final normalized = value.trim().toLowerCase();
+    final parsed = int.tryParse(normalized);
+    if (parsed != null) return parsed;
+    switch (normalized) {
+      case 'gem':
+        return 0;
+      case 'sticker':
+        return 1;
+      case 'charm':
+        return 2;
+      case 'art':
+        return 3;
+      default:
+        return 0;
+    }
+  }
+
   Color _getComponentTypeColor(int type) {
     switch (type) {
       case 0:
@@ -47,7 +65,7 @@ class CustomerComponentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final typeInt = int.tryParse(component.componentType) ?? 0;
+    final typeInt = _componentTypeValue(component.componentType);
     final typeColor = _getComponentTypeColor(typeInt);
 
     return Container(

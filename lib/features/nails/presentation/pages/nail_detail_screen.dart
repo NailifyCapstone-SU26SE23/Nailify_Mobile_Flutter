@@ -438,7 +438,7 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        S.of(context).variantsCount(design.nailVariants.length),
+                        S.of(context).variantsCount(design.nailVariants.length.toString()),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

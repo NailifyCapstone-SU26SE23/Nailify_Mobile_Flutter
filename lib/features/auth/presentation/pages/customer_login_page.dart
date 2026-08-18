@@ -43,7 +43,16 @@ class _LoginPageState extends State<LoginPage> {
       context.go('/');
     } catch (e) {
       if (!mounted) return;
-      _showSnackBar(e.toString(), AppColors.error);
+      final errorMsg = e.toString();
+      if (errorMsg.contains('Lỗi từ Server') || 
+          errorMsg.toLowerCase().contains('invalid') || 
+          errorMsg.toLowerCase().contains('credentials') || 
+          errorMsg.contains('400') || 
+          errorMsg.contains('401')) {
+        _showSnackBar('Email hoặc mật khẩu không chính xác, vui lòng kiểm tra lại', AppColors.error);
+      } else {
+        _showSnackBar(errorMsg, AppColors.error);
+      }
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);

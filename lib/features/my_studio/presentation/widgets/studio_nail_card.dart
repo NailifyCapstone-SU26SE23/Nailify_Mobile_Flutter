@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../generated/l10n.dart';
 import '../../data/models/customer_nail_model.dart';
 
 class StudioNailCard extends StatelessWidget {
@@ -33,23 +34,24 @@ class StudioNailCard extends StatelessWidget {
     }
   }
 
-  String _getStatusText(String status) {
+  String _getStatusText(BuildContext context, String status) {
     switch (status) {
       case 'Pending':
+        return S.of(context).statusPending;
       case 'PendingReview':
-        return 'Chờ duyệt';
+        return S.of(context).statusPendingReview;
       case 'Review':
-        return 'Đang thẩm định';
+        return S.of(context).statusReview;
       case 'Assigned':
-        return 'Đã gán thợ';
+        return S.of(context).statusAssigned;
       case 'Reviewed':
-        return 'Thợ đã đánh giá';
+        return S.of(context).statusReviewed;
       case 'Quoted':
-        return 'Đã báo giá';
+        return S.of(context).statusQuoted;
       case 'Approved':
-        return 'Sẵn sàng đặt lịch';
+        return S.of(context).statusApproved;
       case 'Rejected':
-        return 'Bị từ chối';
+        return S.of(context).statusRejected;
       default:
         return status;
     }
@@ -150,7 +152,7 @@ class StudioNailCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(30),
                           ),
                           child: Text(
-                            _getStatusText(nail.status),
+                            _getStatusText(context, nail.status),
                             style: TextStyle(
                               color: _getStatusColor(nail.status),
                               fontSize: 11,

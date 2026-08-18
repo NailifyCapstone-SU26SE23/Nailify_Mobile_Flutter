@@ -287,8 +287,10 @@ class _NailBookingPageState extends State<NailBookingPage> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isLoadingTimes = false);
-      _showSnackBar('Loi tai khung gio: $e');
+      setState(() {
+        _isLoadingTimes = false;
+        _timeSlots = [];
+      });
     }
   }
 
@@ -333,8 +335,10 @@ class _NailBookingPageState extends State<NailBookingPage> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isLoadingTimes = false);
-      _showSnackBar('Lỗi tải khung giờ salon: $e');
+      setState(() {
+        _isLoadingTimes = false;
+        _timeSlots = [];
+      });
     }
   }
 

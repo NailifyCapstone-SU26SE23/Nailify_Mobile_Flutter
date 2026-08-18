@@ -26,90 +26,123 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m2(value) => "Giảm ${value}%";
 
-  static String m3(name) => "Dịch vụ thêm: ${name}";
+  static String m3(minutes) => "${minutes} phút";
 
-  static String m4(month, year) => "Tháng ${month} năm ${year}";
+  static String m4(name) => "Dịch vụ thêm: ${name}";
 
-  static String m5(error) => "Không thể tạo thanh toán: ${error}";
+  static String m5(month, year) => "Tháng ${month} năm ${year}";
 
-  static String m6(count) => "Đã chọn ${count}";
+  static String m6(error) => "Không thể tạo thanh toán: ${error}";
 
-  static String m7(price) => "${price} / cái";
+  static String m7(qty) => "SL: ${qty}";
 
-  static String m8(error) => "Lỗi tham gia hàng chờ: ${error}";
+  static String m8(count) => "Đã chọn ${count}";
 
-  static String m9(time) => "Bạn đã đăng ký chờ cho giờ ${time}";
+  static String m9(price) => "${price} / cái";
 
-  static String m10(qty) => "Bảo hành miễn phí • Số lượng: ${qty}";
+  static String m10(error) => "Lỗi tham gia hàng chờ: ${error}";
 
-  static String m11(color) => "Tông màu ${color} khớp với màu bạn thích.";
+  static String m11(time) => "Bạn đã đăng ký chờ cho giờ ${time}";
 
-  static String m12(name) => "Bạn có chắc muốn xóa \"${name}\"?";
+  static String m12(qty) => "Bảo hành miễn phí • Số lượng: ${qty}";
 
-  static String m13(name) => "Bạn có chắc muốn xóa \"${name}\"?";
+  static String m13(name) => "Bộ sưu tập: ${name}";
 
-  static String m14(error) => "Không thể tải thông tin: ${error}";
+  static String m14(color) => "Tông màu ${color} khớp với màu bạn thích.";
 
-  static String m15(error) => "Không thể tải form: ${error}";
+  static String m15(id) => "Thành phần ${id}";
 
-  static String m16(m) => "Tháng ${m}";
+  static String m16(name) => "Bạn có chắc muốn xóa \"${name}\"?";
 
-  static String m17(error) => "Lỗi khi tạo lại thiết kế: ${error}";
+  static String m17(name) => "Bạn có chắc muốn xóa \"${name}\"?";
 
-  static String m18(date) => "Ngày: ${date}";
+  static String m18(index) => "Ngón ${index}";
 
-  static String m19(error) => "Gửi yêu cầu thất bại: ${error}";
+  static String m19(error) => "Lỗi khi tải dữ liệu: ${error}";
 
-  static String m20(error) => "Lỗi tạo hồ sơ móng: ${error}";
+  static String m20(error) => "Không thể tải thông tin: ${error}";
 
-  static String m21(error) => "Lỗi cập nhật thông tin: ${error}";
+  static String m21(error) => "Không thể tải form: ${error}";
 
-  static String m22(time) =>
+  static String m22(minutes) => "${minutes} phút";
+
+  static String m23(m) => "Tháng ${m}";
+
+  static String m24(min, max) => "Giá từ ${min} - ${max}";
+
+  static String m25(error) => "Lỗi khi tạo lại thiết kế: ${error}";
+
+  static String m26(date) => "Ngày: ${date}";
+
+  static String m27(error) => "Gửi yêu cầu thất bại: ${error}";
+
+  static String m28(error) => "Lỗi tạo hồ sơ móng: ${error}";
+
+  static String m29(error) => "Lỗi cập nhật thông tin: ${error}";
+
+  static String m30(count) => "${count} phiên bản";
+
+  static String m31(time) =>
       "Bạn có chắc muốn rời khỏi danh sách chờ lúc ${time}?\nBạn sẽ mất vị trí trong hàng chờ này.";
 
-  static String m23(error) => "Lỗi hủy chờ: ${error}";
+  static String m32(error) => "Lỗi hủy chờ: ${error}";
 
-  static String m24(error) => "Lỗi xác nhận: ${error}";
+  static String m33(error) => "Lỗi xác nhận: ${error}";
 
-  static String m25(n) => "${n} ngày trước";
+  static String m34(n) => "${n} ngày trước";
 
-  static String m26(n) => "${n} tiếng trước";
+  static String m35(n) => "${n} tiếng trước";
 
-  static String m27(n) => "${n} phút trước";
+  static String m36(n) => "${n} phút trước";
 
-  static String m28(y) => "Năm ${y}";
-
-  static String m29(dynamic minutes) => "${minutes} phút";
-
-  static String m30(dynamic qty) => "SL: ${qty}";
+  static String m37(y) => "Năm ${y}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
+    "accessories": MessageLookupByLibrary.simpleMessage("Phụ kiện"),
     "accessoriesTab": MessageLookupByLibrary.simpleMessage("Phụ kiện"),
     "account": MessageLookupByLibrary.simpleMessage("Tài khoản"),
     "addToNail": MessageLookupByLibrary.simpleMessage("Thêm vào móng"),
     "addressUpdating": MessageLookupByLibrary.simpleMessage(
       "Địa chỉ đang cập nhật",
     ),
+    "agreeToTermsError": MessageLookupByLibrary.simpleMessage(
+      "Bạn cần đồng ý với điều khoản dịch vụ để tiếp tục",
+    ),
+    "agreeToTermsText": MessageLookupByLibrary.simpleMessage(
+      "Tôi đồng ý với các điều khoản dịch vụ",
+    ),
     "allMonths": MessageLookupByLibrary.simpleMessage("Tất cả tháng"),
     "allStatus": MessageLookupByLibrary.simpleMessage("Tất cả"),
     "allYears": MessageLookupByLibrary.simpleMessage("Tất cả năm"),
+    "alreadyHaveAccount": MessageLookupByLibrary.simpleMessage(
+      "Bạn đã có tài khoản? ",
+    ),
     "anyArtist": MessageLookupByLibrary.simpleMessage("Bất kỳ"),
     "appName": MessageLookupByLibrary.simpleMessage("Nailify"),
     "applyToAllSuccess": MessageLookupByLibrary.simpleMessage(
       "Đã áp dụng mẫu thiết kế của ngón này cho tất cả các ngón!",
     ),
+    "assignedArtist": MessageLookupByLibrary.simpleMessage("Thợ chỉ định:"),
     "automaticFitDesign": MessageLookupByLibrary.simpleMessage(
       "THIẾT KẾ TỰ ĐỘNG PHÙ HỢP",
     ),
     "automaticFitDesignDesc": MessageLookupByLibrary.simpleMessage(
       "Bloom sẽ tự động phân tích tông da, dáng tay, nghề nghiệp và sở thích từ bài trắc nghiệm cá tính trước đó của bạn để tạo ra cấu hình móng hoàn chỉnh 5 tầng.",
     ),
+    "availableForTryOn": MessageLookupByLibrary.simpleMessage(
+      "Khả dụng để trải nghiệm",
+    ),
+    "availableVariants": MessageLookupByLibrary.simpleMessage(
+      "Phiên bản khả dụng",
+    ),
     "back": MessageLookupByLibrary.simpleMessage("Quay lại"),
     "bookAppointment": MessageLookupByLibrary.simpleMessage("Đặt Lịch"),
+    "bookAppointmentNow": MessageLookupByLibrary.simpleMessage("Đặt lịch ngay"),
     "bookAppointmentTitle": MessageLookupByLibrary.simpleMessage(
       "Đặt Lịch Hẹn",
     ),
+    "bookBtn": MessageLookupByLibrary.simpleMessage("Đặt"),
     "bookCustomNailTitle": MessageLookupByLibrary.simpleMessage(
       "Đặt lịch Custom Nail",
     ),
@@ -130,6 +163,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Dịch vụ đi kèm",
     ),
     "bookingApplyPromotion": m0,
+    "bookingArtistDefault": MessageLookupByLibrary.simpleMessage("Thợ"),
     "bookingArtistNoDate": MessageLookupByLibrary.simpleMessage(
       "Vui lòng chọn ngày hẹn trước",
     ),
@@ -137,11 +171,34 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingAutoAssign": MessageLookupByLibrary.simpleMessage(
       "Tự động phân công",
     ),
+    "bookingAutoAssignDesc": MessageLookupByLibrary.simpleMessage(
+      "Giờ hiển thị theo lịch salon, thợ sẽ được phân công tự động",
+    ),
+    "bookingAutoAssignTitle": MessageLookupByLibrary.simpleMessage(
+      "Để hệ thống tự phân công",
+    ),
     "bookingAvailableSlots": MessageLookupByLibrary.simpleMessage(
       "Khung giờ rảnh",
     ),
     "bookingBackBtn": MessageLookupByLibrary.simpleMessage("Quay lại"),
+    "bookingBranchLabel": MessageLookupByLibrary.simpleMessage("Chi nhánh"),
+    "bookingCancelBtnLabel": MessageLookupByLibrary.simpleMessage(
+      "Hủy đặt lịch",
+    ),
+    "bookingCancelFail": MessageLookupByLibrary.simpleMessage(
+      "Hủy lịch thất bại",
+    ),
+    "bookingCancelSuccess": MessageLookupByLibrary.simpleMessage(
+      "Hủy lịch thành công",
+    ),
+    "bookingCheckInCode": MessageLookupByLibrary.simpleMessage("Mã Check-in"),
+    "bookingCheckInInstruction": MessageLookupByLibrary.simpleMessage(
+      "Đưa mã này cho nhân viên tại quầy",
+    ),
     "bookingClearAll": MessageLookupByLibrary.simpleMessage("Bỏ chọn tất cả"),
+    "bookingClickToSelectArtist": MessageLookupByLibrary.simpleMessage(
+      "Bấm để chọn thợ thực hiện",
+    ),
     "bookingComponentDefault": MessageLookupByLibrary.simpleMessage(
       "Thành phần móng",
     ),
@@ -149,15 +206,23 @@ class MessageLookup extends MessageLookupByLibrary {
       "Xác nhận đặt lịch",
     ),
     "bookingContinueBtn": MessageLookupByLibrary.simpleMessage("Tiếp tục"),
+    "bookingDateLabel": MessageLookupByLibrary.simpleMessage("Ngày hẹn"),
     "bookingDetailsTitle": MessageLookupByLibrary.simpleMessage(
       "Chi tiết lịch hẹn",
     ),
     "bookingDiscount": MessageLookupByLibrary.simpleMessage("Giảm giá"),
     "bookingDiscountFixed": m1,
+    "bookingDiscountLabel": MessageLookupByLibrary.simpleMessage("Khuyến mãi:"),
     "bookingDiscountPercent": m2,
-    "bookingExtraService": m3,
+    "bookingDurationLabel": MessageLookupByLibrary.simpleMessage("Thời lượng"),
+    "bookingDurationValue": m3,
+    "bookingExtraService": m4,
     "bookingFindNearby": MessageLookupByLibrary.simpleMessage(
       "Tìm Salon gần đây (Xem bản đồ)",
+    ),
+    "bookingFingersLabel": MessageLookupByLibrary.simpleMessage("ngón"),
+    "bookingGeneralInfo": MessageLookupByLibrary.simpleMessage(
+      "Thông tin chung",
     ),
     "bookingGoHome": MessageLookupByLibrary.simpleMessage("Về Trang Chủ"),
     "bookingInfoDate": MessageLookupByLibrary.simpleMessage("Ngày hẹn"),
@@ -166,11 +231,14 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingInfoStaff": MessageLookupByLibrary.simpleMessage("Nhân viên"),
     "bookingInfoTime": MessageLookupByLibrary.simpleMessage("Thời gian"),
     "bookingInfoTotal": MessageLookupByLibrary.simpleMessage("Tổng thanh toán"),
+    "bookingLoadingArtists": MessageLookupByLibrary.simpleMessage(
+      "Đang tải danh sách thợ...",
+    ),
     "bookingMainService": MessageLookupByLibrary.simpleMessage("Dịch vụ chính"),
     "bookingMissingId": MessageLookupByLibrary.simpleMessage(
       "Lỗi: Lịch hẹn này bị khuyết ID từ hệ thống.",
     ),
-    "bookingMonthYear": m4,
+    "bookingMonthYear": m5,
     "bookingNailVariantDefault": MessageLookupByLibrary.simpleMessage(
       "Biến thể móng",
     ),
@@ -199,14 +267,39 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingNoSchedule": MessageLookupByLibrary.simpleMessage(
       "Thợ không có lịch làm việc vào ngày này.",
     ),
+    "bookingNotFound": MessageLookupByLibrary.simpleMessage(
+      "Không tìm thấy thông tin lịch hẹn.",
+    ),
+    "bookingOriginalPriceLabel": MessageLookupByLibrary.simpleMessage(
+      "Giá gốc:",
+    ),
+    "bookingPaidAmount": MessageLookupByLibrary.simpleMessage("Đã thanh toán:"),
     "bookingPayBtn": MessageLookupByLibrary.simpleMessage("Thanh toán"),
     "bookingPaymentDetails": MessageLookupByLibrary.simpleMessage(
       "Chi tiết thanh toán",
     ),
-    "bookingPaymentError": m5,
+    "bookingPaymentError": m6,
     "bookingPromotion": MessageLookupByLibrary.simpleMessage("Khuyến mại"),
+    "bookingQrError": MessageLookupByLibrary.simpleMessage(
+      "Lỗi hiển thị mã QR",
+    ),
     "bookingQtyLabel": MessageLookupByLibrary.simpleMessage("Số lượng"),
+    "bookingQuantityLabel": m7,
+    "bookingRatingDetails": MessageLookupByLibrary.simpleMessage(
+      "Chi tiết đánh giá",
+    ),
+    "bookingRemainingAmount": MessageLookupByLibrary.simpleMessage("Còn lại:"),
+    "bookingRescheduleBtnLabel": MessageLookupByLibrary.simpleMessage(
+      "Dời lịch hẹn",
+    ),
+    "bookingRescheduleFail": MessageLookupByLibrary.simpleMessage(
+      "Gửi yêu cầu dời lịch thất bại",
+    ),
+    "bookingRescheduleSuccess": MessageLookupByLibrary.simpleMessage(
+      "Gửi yêu cầu dời lịch thành công",
+    ),
     "bookingRetry": MessageLookupByLibrary.simpleMessage("Thử lại"),
+    "bookingReviewTitle": MessageLookupByLibrary.simpleMessage("Nhận xét"),
     "bookingSelectArtistFirst": MessageLookupByLibrary.simpleMessage(
       "Vui lòng chọn Thợ (hoặc “Không chọn thợ”) để xem giờ rảnh.",
     ),
@@ -219,14 +312,23 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingSelectPromotion": MessageLookupByLibrary.simpleMessage(
       "Chọn khuyến mại",
     ),
-    "bookingSelectedCount": m6,
+    "bookingSelectedCount": m8,
+    "bookingServicesBooked": MessageLookupByLibrary.simpleMessage(
+      "Dịch vụ đã đặt",
+    ),
     "bookingSlotPast": MessageLookupByLibrary.simpleMessage(
       "Khung giờ này đã qua, vui lòng chọn giờ khác.",
+    ),
+    "bookingStartTimeLabel": MessageLookupByLibrary.simpleMessage(
+      "Giờ bắt đầu",
     ),
     "bookingStepBook": MessageLookupByLibrary.simpleMessage("Đặt lịch"),
     "bookingStepCompleted": MessageLookupByLibrary.simpleMessage("Hoàn tất"),
     "bookingStepSelectSalon": MessageLookupByLibrary.simpleMessage("Chọn tiệm"),
     "bookingStepServices": MessageLookupByLibrary.simpleMessage("Dịch vụ"),
+    "bookingStylistLabel": MessageLookupByLibrary.simpleMessage(
+      "Kỹ thuật viên",
+    ),
     "bookingSuccessSubtitle": MessageLookupByLibrary.simpleMessage(
       "Cảm ơn bạn đã tin tưởng Nailify. Dưới đây là thông tin chi tiết lịch hẹn của bạn.",
     ),
@@ -243,7 +345,10 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingTabScheduled": MessageLookupByLibrary.simpleMessage("Lịch đặt"),
     "bookingTabWaitlist": MessageLookupByLibrary.simpleMessage("Lịch chờ"),
     "bookingTotal": MessageLookupByLibrary.simpleMessage("Tổng cộng"),
-    "bookingUnitPrice": m7,
+    "bookingTotalPaymentLabel": MessageLookupByLibrary.simpleMessage(
+      "Tổng thanh toán:",
+    ),
+    "bookingUnitPrice": m9,
     "bookingValidateDateTime": MessageLookupByLibrary.simpleMessage(
       "Vui lòng chọn đầy đủ ngày, thợ và khung giờ.",
     ),
@@ -257,14 +362,17 @@ class MessageLookup extends MessageLookupByLibrary {
       "Vui lòng chọn ít nhất một dịch vụ.",
     ),
     "bookingViewBtn": MessageLookupByLibrary.simpleMessage("Xem lịch hẹn"),
-    "bookingWaitlistError": m8,
-    "bookingWaitlistJoined": m9,
+    "bookingWaitlistError": m10,
+    "bookingWaitlistJoined": m11,
     "bookingWarrantyDefault": MessageLookupByLibrary.simpleMessage(
       "Dịch vụ bảo hành",
     ),
-    "bookingWarrantyFree": m10,
+    "bookingWarrantyFree": m12,
     "bookingWarrantyService": MessageLookupByLibrary.simpleMessage(
       "Chọn dịch vụ cần bảo hành",
+    ),
+    "bookingYourRating": MessageLookupByLibrary.simpleMessage(
+      "Đánh giá của bạn",
     ),
     "cancel": MessageLookupByLibrary.simpleMessage("Hủy"),
     "cancelBookingConfirmMsg": MessageLookupByLibrary.simpleMessage(
@@ -281,21 +389,32 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "cancelBookingTitle": MessageLookupByLibrary.simpleMessage("Hủy đặt lịch"),
     "cancelBtn": MessageLookupByLibrary.simpleMessage("Hủy"),
-    "colorMatchReason": m11,
+    "clearFilter": MessageLookupByLibrary.simpleMessage("Xoá lọc"),
+    "collectionLabel": m13,
+    "colorLabel": MessageLookupByLibrary.simpleMessage("Màu sắc"),
+    "colorMatchReason": m14,
     "completedLabel": MessageLookupByLibrary.simpleMessage("Hoàn tất"),
+    "componentNameFallback": m15,
     "confirm": MessageLookupByLibrary.simpleMessage("Xác nhận"),
     "confirmBtn": MessageLookupByLibrary.simpleMessage("Xác nhận"),
+    "confirmPasswordHint": MessageLookupByLibrary.simpleMessage(
+      "Xác nhận mật khẩu",
+    ),
     "createNewBtn": MessageLookupByLibrary.simpleMessage("Tạo mới"),
     "createNewNailBtn": MessageLookupByLibrary.simpleMessage(
       "Tạo mẫu móng mới",
     ),
+    "decorationLabel": MessageLookupByLibrary.simpleMessage("Trang trí"),
     "deleteBtn": MessageLookupByLibrary.simpleMessage("Xóa"),
-    "deleteComponentConfirm": m12,
+    "deleteComponentConfirm": m16,
     "deleteComponentTitle": MessageLookupByLibrary.simpleMessage(
       "Xóa thành phần",
     ),
-    "deleteNailConfirm": m13,
+    "deleteNailConfirm": m17,
     "deleteNailTitle": MessageLookupByLibrary.simpleMessage("Xóa mẫu móng"),
+    "designComponentsLabel": MessageLookupByLibrary.simpleMessage(
+      "Thành phần thiết kế",
+    ),
     "designFeatureAccessories": MessageLookupByLibrary.simpleMessage(
       "Tự động chọn họa tiết & phụ kiện tinh tế",
     ),
@@ -313,9 +432,16 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "doQuizButton": MessageLookupByLibrary.simpleMessage("KHẢO SÁT PHONG CÁCH"),
     "done": MessageLookupByLibrary.simpleMessage("Hoàn thành"),
+    "dontHaveAccount": MessageLookupByLibrary.simpleMessage(
+      "Bạn chưa có tài khoản? ",
+    ),
     "editRating": MessageLookupByLibrary.simpleMessage("Chỉnh sửa đánh giá"),
     "email": MessageLookupByLibrary.simpleMessage("Email"),
     "error": MessageLookupByLibrary.simpleMessage("Có lỗi xảy ra"),
+    "estimatedDuration": MessageLookupByLibrary.simpleMessage(
+      "Thời gian dự kiến:",
+    ),
+    "estimatedPrice": MessageLookupByLibrary.simpleMessage("Báo giá dự kiến:"),
     "exploreGalleryButton": MessageLookupByLibrary.simpleMessage(
       "Khám Phá Bộ Sưu Tập",
     ),
@@ -334,10 +460,18 @@ class MessageLookup extends MessageLookupByLibrary {
     "findNearbySalons": MessageLookupByLibrary.simpleMessage(
       "Tìm kiếm salon gần đây (Xem Bản đồ)",
     ),
+    "fingerIndex": MessageLookupByLibrary.simpleMessage("Ngón trỏ"),
+    "fingerMiddle": MessageLookupByLibrary.simpleMessage("Ngón giữa"),
+    "fingerOther": m18,
+    "fingerPinky": MessageLookupByLibrary.simpleMessage("Ngón út"),
+    "fingerRing": MessageLookupByLibrary.simpleMessage("Ngón áp út"),
+    "fingerThumb": MessageLookupByLibrary.simpleMessage("Ngón cái"),
+    "firstNameHint": MessageLookupByLibrary.simpleMessage("Tên"),
     "forYouTitle": MessageLookupByLibrary.simpleMessage("DÀNH RIÊNG CHO BẠN"),
+    "forgotPassword": MessageLookupByLibrary.simpleMessage("Quên mật khẩu?"),
     "fullName": MessageLookupByLibrary.simpleMessage("Họ và Tên"),
     "generateDesignButton": MessageLookupByLibrary.simpleMessage(
-      "TẠO THIẾT KẾ",
+      "GENERATE THIẾT KẾ",
     ),
     "generatingPersonalizedDesign": MessageLookupByLibrary.simpleMessage(
       "ĐANG TẠO THIẾT KẾ THÍCH HỢP",
@@ -361,10 +495,26 @@ class MessageLookup extends MessageLookupByLibrary {
       "Làm nhanh khảo sát Phong cách (Style Quiz) để tìm ra bộ móng phù hợp nhất với phong cách cá nhân.",
     ),
     "homeQuizTitle": MessageLookupByLibrary.simpleMessage("Nailify Match AI"),
-    "loadFailure": m14,
-    "loadFormFail": m15,
+    "introduction": MessageLookupByLibrary.simpleMessage("Giới thiệu"),
+    "languageLabel": MessageLookupByLibrary.simpleMessage("Ngôn ngữ"),
+    "lastNameHint": MessageLookupByLibrary.simpleMessage("Họ"),
+    "loadDataError": m19,
+    "loadFailure": m20,
+    "loadFormFail": m21,
     "loading": MessageLookupByLibrary.simpleMessage("Đang tải..."),
     "login": MessageLookupByLibrary.simpleMessage("Đăng nhập"),
+    "loginRequiredFields": MessageLookupByLibrary.simpleMessage(
+      "Vui lòng nhập đầy đủ Email và Mật khẩu",
+    ),
+    "loginRequiredMessage": MessageLookupByLibrary.simpleMessage(
+      "Vui lòng đăng nhập hoặc đăng ký tài khoản để sử dụng chức năng này.",
+    ),
+    "loginRequiredTitle": MessageLookupByLibrary.simpleMessage(
+      "Yêu cầu đăng nhập",
+    ),
+    "loginSuccess": MessageLookupByLibrary.simpleMessage(
+      "Đăng nhập thành công",
+    ),
     "logout": MessageLookupByLibrary.simpleMessage("Đăng xuất"),
     "logoutSuccess": MessageLookupByLibrary.simpleMessage(
       "Đăng xuất thành công!",
@@ -372,7 +522,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "loyalCustomer": MessageLookupByLibrary.simpleMessage(
       "Khách hàng thân thiết",
     ),
-    "monthFormat": m16,
+    "minutesLabel": m22,
+    "monthFormat": m23,
     "monthHint": MessageLookupByLibrary.simpleMessage("Tháng"),
     "myBooking": MessageLookupByLibrary.simpleMessage("Lịch hẹn"),
     "myBookingsTitle": MessageLookupByLibrary.simpleMessage("Lịch hẹn của tôi"),
@@ -380,6 +531,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "myNailsTab": MessageLookupByLibrary.simpleMessage("Móng của tôi"),
     "myStudio": MessageLookupByLibrary.simpleMessage("Studio"),
     "myStudioTitle": MessageLookupByLibrary.simpleMessage("Studio của tôi"),
+    "nailDescriptionDefault": MessageLookupByLibrary.simpleMessage(
+      "Mẫu thiết kế nghệ thuật cao cấp được chăm chút tỉ mỉ từ các chuyên viên làm móng hàng đầu, mang lại vẻ ngoài kiêu sa, cuốn hút và cá tính cho phái nữ.",
+    ),
+    "nailDesignFallback": MessageLookupByLibrary.simpleMessage(
+      "Mẫu thiết kế móng",
+    ),
     "nailDesignTitle": MessageLookupByLibrary.simpleMessage("Thiết kế móng"),
     "nailDetailsError": MessageLookupByLibrary.simpleMessage(
       "Không thể tải chi tiết thiết kế.",
@@ -387,16 +544,24 @@ class MessageLookup extends MessageLookupByLibrary {
     "nailDetailsTitle": MessageLookupByLibrary.simpleMessage(
       "Chi tiết thiết kế",
     ),
+    "nailFormLabel": MessageLookupByLibrary.simpleMessage("Form móng"),
     "nailGallerySubtitle": MessageLookupByLibrary.simpleMessage(
       "Khám phá các xu hướng thiết kế móng mới nhất",
     ),
     "nailGalleryTitle": MessageLookupByLibrary.simpleMessage("Bộ Sưu Tập Móng"),
+    "nailLoadError": MessageLookupByLibrary.simpleMessage(
+      "Không thể tải danh sách móng.",
+    ),
     "nailRecommendation": MessageLookupByLibrary.simpleMessage(
       "Gợi ý mẫu móng phù hợp nhất",
     ),
     "nailServiceDefault": MessageLookupByLibrary.simpleMessage(
       "Dịch vụ làm móng",
     ),
+    "nailShape": MessageLookupByLibrary.simpleMessage("Phom móng"),
+    "nailShapeLabel": MessageLookupByLibrary.simpleMessage("Dáng"),
+    "nailSurface": MessageLookupByLibrary.simpleMessage("Bề mặt"),
+    "nailSurfaceLabel": MessageLookupByLibrary.simpleMessage("Bề mặt"),
     "nailVariantsLabel": MessageLookupByLibrary.simpleMessage("Phiên bản móng"),
     "newCustomer": MessageLookupByLibrary.simpleMessage("Khách hàng mới"),
     "newNotification": MessageLookupByLibrary.simpleMessage(
@@ -426,6 +591,11 @@ class MessageLookup extends MessageLookupByLibrary {
     "noSalonFound": MessageLookupByLibrary.simpleMessage(
       "Không tìm thấy salon nào",
     ),
+    "noVariantsAvailable": MessageLookupByLibrary.simpleMessage(
+      "Hiện chưa có phiên bản nào cho thiết kế này.",
+    ),
+    "noneLabel": MessageLookupByLibrary.simpleMessage("Không"),
+    "noneValue": MessageLookupByLibrary.simpleMessage("Không"),
     "notifications": MessageLookupByLibrary.simpleMessage("Thông Báo Của Bạn"),
     "otherStyleFits": MessageLookupByLibrary.simpleMessage(
       "Các thiết kế khác phù hợp với phong cách của bạn",
@@ -462,15 +632,28 @@ class MessageLookup extends MessageLookupByLibrary {
       "Luôn Dẫn Đầu Xu Hướng",
     ),
     "password": MessageLookupByLibrary.simpleMessage("Mật khẩu"),
+    "passwordMismatch": MessageLookupByLibrary.simpleMessage(
+      "Mật khẩu xác nhận không khớp",
+    ),
     "paymentTitle": MessageLookupByLibrary.simpleMessage("Thanh toán"),
     "perfectMatch": MessageLookupByLibrary.simpleMessage("Perfect Match"),
     "perfectMatchTitle": MessageLookupByLibrary.simpleMessage("Nailify Match"),
     "phoneNumber": MessageLookupByLibrary.simpleMessage("Số Điện Thoại"),
+    "pleaseLoginToViewProfile": MessageLookupByLibrary.simpleMessage(
+      "Vui lòng đăng nhập để xem thông tin cá nhân",
+    ),
     "pointsLabel": MessageLookupByLibrary.simpleMessage("điểm tích lũy"),
     "premiumNailDesign": MessageLookupByLibrary.simpleMessage(
       "Mẫu móng cao cấp",
     ),
+    "priceFromTo": m24,
+    "processingDesc": MessageLookupByLibrary.simpleMessage(
+      "Mẫu móng của bạn đang được chuyên viên tại tiệm đánh giá tính khả thi và báo giá.",
+    ),
+    "processingLabel": MessageLookupByLibrary.simpleMessage("Đang xử lý:"),
+    "profileFavorites": MessageLookupByLibrary.simpleMessage("Yêu thích"),
     "profileTitle": MessageLookupByLibrary.simpleMessage("Thông Tin Cá Nhân"),
+    "profileTransactions": MessageLookupByLibrary.simpleMessage("Giao dịch"),
     "quizAlmostDone": MessageLookupByLibrary.simpleMessage("Gần xong rồi..."),
     "quizAnalyzingStyle": MessageLookupByLibrary.simpleMessage(
       "Đang phân tích phong cách...",
@@ -504,145 +687,35 @@ class MessageLookup extends MessageLookupByLibrary {
       "Chọn nhiều đáp án",
     ),
     "rateService": MessageLookupByLibrary.simpleMessage("Đánh giá dịch vụ"),
-    "reGenError": m17,
+    "ratingCleanliness": MessageLookupByLibrary.simpleMessage("Sạch sẽ"),
+    "ratingLoadError": MessageLookupByLibrary.simpleMessage(
+      "Chưa tải được thông tin đánh giá.",
+    ),
+    "ratingOverall": MessageLookupByLibrary.simpleMessage("Tổng thể"),
+    "ratingPunctuality": MessageLookupByLibrary.simpleMessage("Đúng giờ"),
+    "ratingServiceQuality": MessageLookupByLibrary.simpleMessage(
+      "Chất lượng dịch vụ",
+    ),
+    "reGenError": m25,
     "reGenSuccess": MessageLookupByLibrary.simpleMessage(
       "Đã tạo lại thiết kế móng phù hợp mới!",
     ),
     "reGenerateButton": MessageLookupByLibrary.simpleMessage("Gen lại"),
+    "recommended": MessageLookupByLibrary.simpleMessage("Được đề xuất"),
     "refundInfo": MessageLookupByLibrary.simpleMessage("Thông tin hoàn tiền"),
     "register": MessageLookupByLibrary.simpleMessage("Đăng ký"),
-    "requestDetailTitle": MessageLookupByLibrary.simpleMessage(
-      "Chi tiết yêu cầu",
-    ),
-    "loginRequiredTitle": MessageLookupByLibrary.simpleMessage(
-      "Yêu cầu đăng nhập",
-    ),
-    "loginRequiredMessage": MessageLookupByLibrary.simpleMessage(
-      "Vui lòng đăng nhập hoặc đăng ký tài khoản để sử dụng chức năng này.",
-    ),
-    "pleaseLoginToViewProfile": MessageLookupByLibrary.simpleMessage(
-      "Vui lòng đăng nhập để xem thông tin cá nhân",
-    ),
-    "languageLabel": MessageLookupByLibrary.simpleMessage("Ngôn ngữ"),
-    "forgotPassword": MessageLookupByLibrary.simpleMessage("Quên mật khẩu?"),
-    "dontHaveAccount": MessageLookupByLibrary.simpleMessage(
-      "Bạn chưa có tài khoản? ",
-    ),
     "registerNow": MessageLookupByLibrary.simpleMessage("Đăng ký ngay"),
-    "loginRequiredFields": MessageLookupByLibrary.simpleMessage(
-      "Vui lòng nhập đầy đủ Email và Mật khẩu",
-    ),
-    "loginSuccess": MessageLookupByLibrary.simpleMessage(
-      "Đăng nhập thành công",
-    ),
-    "alreadyHaveAccount": MessageLookupByLibrary.simpleMessage(
-      "Bạn đã có tài khoản? ",
-    ),
     "registerRequiredFields": MessageLookupByLibrary.simpleMessage(
       "Vui lòng điền đầy đủ các thông tin bắt buộc",
-    ),
-    "passwordMismatch": MessageLookupByLibrary.simpleMessage(
-      "Mật khẩu xác nhận không khớp",
-    ),
-    "agreeToTermsError": MessageLookupByLibrary.simpleMessage(
-      "Bạn cần đồng ý với điều khoản dịch vụ để tiếp tục",
     ),
     "registerSuccess": MessageLookupByLibrary.simpleMessage(
       "Đăng ký tài khoản thành công",
     ),
     "registerTitle": MessageLookupByLibrary.simpleMessage("Đăng ký tài khoản"),
-    "firstNameHint": MessageLookupByLibrary.simpleMessage("Tên"),
-    "lastNameHint": MessageLookupByLibrary.simpleMessage("Họ"),
-    "confirmPasswordHint": MessageLookupByLibrary.simpleMessage(
-      "Xác nhận mật khẩu",
+    "rejectReasonLabel": MessageLookupByLibrary.simpleMessage("Lý do từ chối:"),
+    "requestDetailTitle": MessageLookupByLibrary.simpleMessage(
+      "Chi tiết yêu cầu",
     ),
-    "agreeToTermsText": MessageLookupByLibrary.simpleMessage(
-      "Tôi đồng ý với các điều khoản dịch vụ",
-    ),
-    "bookingArtistDefault": MessageLookupByLibrary.simpleMessage("Thợ"),
-    "bookingLoadingArtists": MessageLookupByLibrary.simpleMessage(
-      "Đang tải danh sách thợ...",
-    ),
-    "bookingClickToSelectArtist": MessageLookupByLibrary.simpleMessage(
-      "Bấm để chọn thợ thực hiện",
-    ),
-    "bookingAutoAssignTitle": MessageLookupByLibrary.simpleMessage(
-      "Để hệ thống tự phân công",
-    ),
-    "bookingAutoAssignDesc": MessageLookupByLibrary.simpleMessage(
-      "Giờ hiển thị theo lịch salon, thợ sẽ được phân công tự động",
-    ),
-    "bookingGeneralInfo": MessageLookupByLibrary.simpleMessage(
-      "Thông tin chung",
-    ),
-    "bookingBranchLabel": MessageLookupByLibrary.simpleMessage("Chi nhánh"),
-    "bookingStylistLabel": MessageLookupByLibrary.simpleMessage(
-      "Kỹ thuật viên",
-    ),
-    "bookingDateLabel": MessageLookupByLibrary.simpleMessage("Ngày hẹn"),
-    "bookingStartTimeLabel": MessageLookupByLibrary.simpleMessage(
-      "Giờ bắt đầu",
-    ),
-    "bookingDurationLabel": MessageLookupByLibrary.simpleMessage("Thời lượng"),
-    "bookingDurationValue": m29,
-    "bookingServicesBooked": MessageLookupByLibrary.simpleMessage(
-      "Dịch vụ đã đặt",
-    ),
-    "bookingQuantityLabel": m30,
-    "bookingOriginalPriceLabel": MessageLookupByLibrary.simpleMessage(
-      "Giá gốc:",
-    ),
-    "bookingDiscountLabel": MessageLookupByLibrary.simpleMessage("Khuyến mãi:"),
-    "bookingTotalPaymentLabel": MessageLookupByLibrary.simpleMessage(
-      "Tổng thanh toán:",
-    ),
-    "bookingReviewTitle": MessageLookupByLibrary.simpleMessage("Nhận xét"),
-    "bookingRatingDetails": MessageLookupByLibrary.simpleMessage(
-      "Chi tiết đánh giá",
-    ),
-    "ratingOverall": MessageLookupByLibrary.simpleMessage("Tổng thể"),
-    "ratingServiceQuality": MessageLookupByLibrary.simpleMessage(
-      "Chất lượng dịch vụ",
-    ),
-    "ratingPunctuality": MessageLookupByLibrary.simpleMessage("Đúng giờ"),
-    "ratingCleanliness": MessageLookupByLibrary.simpleMessage("Sạch sẽ"),
-    "ratingLoadError": MessageLookupByLibrary.simpleMessage(
-      "Chưa tải được thông tin đánh giá.",
-    ),
-    "bookingNotFound": MessageLookupByLibrary.simpleMessage(
-      "Không tìm thấy thông tin lịch hẹn.",
-    ),
-    "bookingPaidAmount": MessageLookupByLibrary.simpleMessage("Đã thanh toán:"),
-    "bookingRemainingAmount": MessageLookupByLibrary.simpleMessage("Còn lại:"),
-    "bookingYourRating": MessageLookupByLibrary.simpleMessage(
-      "Đánh giá của bạn",
-    ),
-    "bookingCheckInCode": MessageLookupByLibrary.simpleMessage("Mã Check-in"),
-    "bookingCheckInInstruction": MessageLookupByLibrary.simpleMessage(
-      "Đưa mã này cho nhân viên tại quầy",
-    ),
-    "bookingRescheduleSuccess": MessageLookupByLibrary.simpleMessage(
-      "Gửi yêu cầu dời lịch thành công",
-    ),
-    "bookingRescheduleFail": MessageLookupByLibrary.simpleMessage(
-      "Gửi yêu cầu dời lịch thất bại",
-    ),
-    "bookingCancelSuccess": MessageLookupByLibrary.simpleMessage(
-      "Hủy lịch thành công",
-    ),
-    "bookingCancelFail": MessageLookupByLibrary.simpleMessage(
-      "Hủy lịch thất bại",
-    ),
-    "bookingCancelBtnLabel": MessageLookupByLibrary.simpleMessage(
-      "Hủy đặt lịch",
-    ),
-    "bookingRescheduleBtnLabel": MessageLookupByLibrary.simpleMessage(
-      "Dời lịch hẹn",
-    ),
-    "bookingQrError": MessageLookupByLibrary.simpleMessage(
-      "Lỗi hiển thị mã QR",
-    ),
-    "bookingFingersLabel": MessageLookupByLibrary.simpleMessage("ngón"),
     "requestsTab": MessageLookupByLibrary.simpleMessage("Yêu cầu"),
     "rescheduleAcceptBtn": MessageLookupByLibrary.simpleMessage(
       "Chấp nhận dời lịch",
@@ -678,7 +751,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "rescheduleFilterByDate": MessageLookupByLibrary.simpleMessage(
       "Lọc theo ngày",
     ),
-    "rescheduleFilterDate": m18,
+    "rescheduleFilterDate": m26,
     "rescheduleNew": MessageLookupByLibrary.simpleMessage("Mới"),
     "rescheduleOldSchedule": MessageLookupByLibrary.simpleMessage("Lịch cũ: "),
     "reschedulePendingMsg": MessageLookupByLibrary.simpleMessage(
@@ -718,6 +791,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Tìm thành phần...",
     ),
     "searchNailHint": MessageLookupByLibrary.simpleMessage("Tìm mẫu móng..."),
+    "seasonalTitle": MessageLookupByLibrary.simpleMessage("Theo mùa"),
     "selectDate": MessageLookupByLibrary.simpleMessage("Chọn Ngày"),
     "selectNailHint": MessageLookupByLibrary.simpleMessage("Chọn mẫu móng..."),
     "selectNailLabel": MessageLookupByLibrary.simpleMessage("Mẫu móng *"),
@@ -741,7 +815,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "sendBtn": MessageLookupByLibrary.simpleMessage("Gửi"),
     "sendRequestBtn": MessageLookupByLibrary.simpleMessage("Gửi yêu cầu"),
-    "sendRequestFail": m19,
+    "sendRequestFail": m27,
     "sendRequestSuccess": MessageLookupByLibrary.simpleMessage(
       "Đã gửi yêu cầu thành công.",
     ),
@@ -757,7 +831,14 @@ class MessageLookup extends MessageLookupByLibrary {
       "Trải nghiệm chăm sóc móng chuẩn salon cao cấp",
     ),
     "servicesTitle": MessageLookupByLibrary.simpleMessage("Dịch Vụ Nổi Bật"),
+    "shapeMethodLabel": MessageLookupByLibrary.simpleMessage(
+      "Phương pháp tạo form",
+    ),
+    "sharedLabel": MessageLookupByLibrary.simpleMessage("Dùng chung"),
     "statusApproved": MessageLookupByLibrary.simpleMessage("Sẵn sàng đặt lịch"),
+    "statusApprovedFeasible": MessageLookupByLibrary.simpleMessage(
+      "Đã duyệt khả thi!",
+    ),
     "statusAssigned": MessageLookupByLibrary.simpleMessage("Đã gán thợ"),
     "statusCancelled": MessageLookupByLibrary.simpleMessage("Đã hủy"),
     "statusCheckedIn": MessageLookupByLibrary.simpleMessage("Đã Check-in"),
@@ -794,6 +875,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "takeAnotherAnalysis": MessageLookupByLibrary.simpleMessage(
       "Thực hiện phân tích khác",
     ),
+    "technicalDetails": MessageLookupByLibrary.simpleMessage(
+      "Chi tiết kỹ thuật",
+    ),
     "tierLabel": MessageLookupByLibrary.simpleMessage("Hạng thành viên"),
     "totalPrice": MessageLookupByLibrary.simpleMessage("Tổng Tiền"),
     "transactionDetails": MessageLookupByLibrary.simpleMessage(
@@ -812,34 +896,38 @@ class MessageLookup extends MessageLookupByLibrary {
     "tryOnTabColor": MessageLookupByLibrary.simpleMessage("Màu sắc"),
     "tryOnTabShape": MessageLookupByLibrary.simpleMessage("Dáng móng"),
     "tryOnTabSurface": MessageLookupByLibrary.simpleMessage("Bề mặt"),
-    "updateFailure": m20,
+    "updateFailure": m28,
     "updateProfile": MessageLookupByLibrary.simpleMessage("Cập nhật"),
-    "updateProfileError": m21,
+    "updateProfileError": m29,
     "updateSuccess": MessageLookupByLibrary.simpleMessage(
       "Cập nhật hồ sơ phong cách và tạo bộ mẫu móng thành công!",
     ),
+    "variantDetailsTitle": MessageLookupByLibrary.simpleMessage(
+      "Chi tiết phiên bản",
+    ),
+    "variantsCount": m30,
     "viewAllServices": MessageLookupByLibrary.simpleMessage(
       "Xem tất cả dịch vụ",
     ),
     "viewDetail": MessageLookupByLibrary.simpleMessage("Xem Chi Tiết"),
     "vipCustomer": MessageLookupByLibrary.simpleMessage("Khách hàng VIP"),
     "waitlistCancelBtn": MessageLookupByLibrary.simpleMessage("Hủy chờ"),
-    "waitlistCancelDialogContent": m22,
+    "waitlistCancelDialogContent": m31,
     "waitlistCancelDialogTitle": MessageLookupByLibrary.simpleMessage(
       "Xác nhận hủy chờ",
     ),
-    "waitlistCancelError": m23,
+    "waitlistCancelError": m32,
     "waitlistCancelSuccess": MessageLookupByLibrary.simpleMessage(
       "Đã hủy chờ thành công.",
     ),
     "waitlistConfirmBookBtn": MessageLookupByLibrary.simpleMessage(
       "Xác nhận đặt lịch",
     ),
-    "waitlistConfirmError": m24,
+    "waitlistConfirmError": m33,
     "waitlistConfirmSuccess": MessageLookupByLibrary.simpleMessage(
       "Xác nhận đặt lịch thành công!",
     ),
-    "waitlistDaysAgo": m25,
+    "waitlistDaysAgo": m34,
     "waitlistDeclineBtn": MessageLookupByLibrary.simpleMessage("Từ chối"),
     "waitlistEmpty": MessageLookupByLibrary.simpleMessage(
       "Không có lịch chờ nào",
@@ -853,12 +941,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "waitlistHoldExpired": MessageLookupByLibrary.simpleMessage(
       "Thời gian giữ chỗ đã hết",
     ),
-    "waitlistHoursAgo": m26,
+    "waitlistHoursAgo": m35,
     "waitlistKeepBtn": MessageLookupByLibrary.simpleMessage("Giữ lại"),
     "waitlistLoadError": MessageLookupByLibrary.simpleMessage(
       "Không thể tải lịch chờ",
     ),
-    "waitlistMinutesAgo": m27,
+    "waitlistMinutesAgo": m36,
     "waitlistRegisteredAt": MessageLookupByLibrary.simpleMessage(
       "Đã đăng ký: ",
     ),
@@ -873,7 +961,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "warrantyServiceDefault": MessageLookupByLibrary.simpleMessage(
       "Dịch vụ bảo hành",
     ),
-    "yearFormat": m28,
+    "yearFormat": m37,
     "yearHint": MessageLookupByLibrary.simpleMessage("Năm"),
     "youMayAlsoLike": MessageLookupByLibrary.simpleMessage(
       "Có thể bạn cũng thích",
@@ -881,57 +969,5 @@ class MessageLookup extends MessageLookupByLibrary {
     "yourPersonalStyle": MessageLookupByLibrary.simpleMessage(
       "Phong cách cá nhân của bạn: ",
     ),
-    "clearFilter": MessageLookupByLibrary.simpleMessage("Xoá lọc"),
-    "nailLoadError": MessageLookupByLibrary.simpleMessage(
-      "Không thể tải danh sách móng.",
-    ),
-    "recommended": MessageLookupByLibrary.simpleMessage("Được đề xuất"),
-    "nailDesignFallback": MessageLookupByLibrary.simpleMessage(
-      "Mẫu thiết kế móng",
-    ),
-    "introduction": MessageLookupByLibrary.simpleMessage("Giới thiệu"),
-    "nailDescriptionDefault": MessageLookupByLibrary.simpleMessage(
-      "Mẫu thiết kế nghệ thuật cao cấp được chăm chút tỉ mỉ từ các chuyên viên làm móng hàng đầu, mang lại vẻ ngoài kiêu sa, cuốn hút và cá tính cho phái nữ.",
-    ),
-    "availableVariants": MessageLookupByLibrary.simpleMessage(
-      "Phiên bản khả dụng",
-    ),
-    "noVariantsAvailable": MessageLookupByLibrary.simpleMessage(
-      "Hiện chưa có phiên bản nào cho thiết kế này.",
-    ),
-    "bookBtn": MessageLookupByLibrary.simpleMessage("Đặt"),
-    "nailShapeLabel": MessageLookupByLibrary.simpleMessage("Dáng"),
-    "nailSurfaceLabel": MessageLookupByLibrary.simpleMessage("Bề mặt"),
-    "noneLabel": MessageLookupByLibrary.simpleMessage("Không"),
-    "priceFromTo": (min, max) => "Giá từ ${min} - ${max}",
-    "variantsCount": (count) => "${count} phiên bản",
-    "availableForTryOn": MessageLookupByLibrary.simpleMessage(
-      "Khả dụng để trải nghiệm",
-    ),
-    "loadDataError": (error) => "Lỗi khi tải dữ liệu: ${error}",
-    "variantDetailsTitle": MessageLookupByLibrary.simpleMessage(
-      "Chi tiết phiên bản",
-    ),
-    "collectionLabel": (name) => "Bộ sưu tập: {name}",
-    "nailFormLabel": MessageLookupByLibrary.simpleMessage("Form móng"),
-    "minutesLabel": (minutes) => "${minutes} phút",
-    "colorLabel": MessageLookupByLibrary.simpleMessage("Màu sắc"),
-    "designComponentsLabel": MessageLookupByLibrary.simpleMessage(
-      "Thành phần thiết kế",
-    ),
-    "sharedLabel": MessageLookupByLibrary.simpleMessage("Dùng chung"),
-    "bookAppointmentNow": MessageLookupByLibrary.simpleMessage("Đặt lịch ngay"),
-    "shapeMethodLabel": MessageLookupByLibrary.simpleMessage(
-      "Phương pháp tạo form",
-    ),
-    "decorationLabel": MessageLookupByLibrary.simpleMessage("Trang trí"),
-    "componentNameFallback": (id) => "Thành phần ${id}",
-    "fingerThumb": MessageLookupByLibrary.simpleMessage("Ngón cái"),
-    "fingerIndex": MessageLookupByLibrary.simpleMessage("Ngón trỏ"),
-    "fingerMiddle": MessageLookupByLibrary.simpleMessage("Ngón giữa"),
-    "fingerRing": MessageLookupByLibrary.simpleMessage("Ngón áp út"),
-    "fingerPinky": MessageLookupByLibrary.simpleMessage("Ngón út"),
-    "fingerOther": (index) => "Ngón ${index}",
-    "seasonalTitle": MessageLookupByLibrary.simpleMessage("Theo mùa"),
   };
 }

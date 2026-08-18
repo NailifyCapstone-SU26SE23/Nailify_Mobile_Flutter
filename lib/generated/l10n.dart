@@ -1,7 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
 import 'intl/messages_all.dart';
 
 // **************************************************************************
@@ -75,9 +74,9 @@ class S {
     return Intl.message('Bookings', name: 'myBooking', desc: '', args: []);
   }
 
-  /// `My Studio`
+  /// `Studio`
   String get myStudio {
-    return Intl.message('My Studio', name: 'myStudio', desc: '', args: []);
+    return Intl.message('Studio', name: 'myStudio', desc: '', args: []);
   }
 
   /// `Account`
@@ -3213,7 +3212,7 @@ class S {
   /// `Don't have an account? `
   String get dontHaveAccount {
     return Intl.message(
-      "Don't have an account? ",
+      'Don\'t have an account? ',
       name: 'dontHaveAccount',
       desc: '',
       args: [],
@@ -3451,7 +3450,7 @@ class S {
   }
 
   /// `{minutes} minutes`
-  String bookingDurationValue(Object minutes) {
+  String bookingDurationValue(String minutes) {
     return Intl.message(
       '$minutes minutes',
       name: 'bookingDurationValue',
@@ -3471,7 +3470,7 @@ class S {
   }
 
   /// `Qty: {qty}`
-  String bookingQuantityLabel(Object qty) {
+  String bookingQuantityLabel(String qty) {
     return Intl.message(
       'Qty: $qty',
       name: 'bookingQuantityLabel',
@@ -3755,7 +3754,7 @@ class S {
     );
   }
 
-  /// `Premium artistic nail designs...`
+  /// `Premium artistic nail designs meticulously crafted by top nail artists, bringing a glamorous, attractive, and personal look for women.`
   String get nailDescriptionDefault {
     return Intl.message(
       'Premium artistic nail designs meticulously crafted by top nail artists, bringing a glamorous, attractive, and personal look for women.',
@@ -3811,7 +3810,7 @@ class S {
   }
 
   /// `Price from {min} - {max}`
-  String priceFromTo(Object min, Object max) {
+  String priceFromTo(String min, String max) {
     return Intl.message(
       'Price from $min - $max',
       name: 'priceFromTo',
@@ -3821,7 +3820,7 @@ class S {
   }
 
   /// `{count} variants`
-  String variantsCount(Object count) {
+  String variantsCount(String count) {
     return Intl.message(
       '$count variants',
       name: 'variantsCount',
@@ -3841,7 +3840,7 @@ class S {
   }
 
   /// `Error loading data: {error}`
-  String loadDataError(Object error) {
+  String loadDataError(String error) {
     return Intl.message(
       'Error loading data: $error',
       name: 'loadDataError',
@@ -3861,7 +3860,7 @@ class S {
   }
 
   /// `Collection: {name}`
-  String collectionLabel(Object name) {
+  String collectionLabel(String name) {
     return Intl.message(
       'Collection: $name',
       name: 'collectionLabel',
@@ -3876,7 +3875,7 @@ class S {
   }
 
   /// `{minutes} mins`
-  String minutesLabel(Object minutes) {
+  String minutesLabel(String minutes) {
     return Intl.message(
       '$minutes mins',
       name: 'minutesLabel',
@@ -3936,7 +3935,7 @@ class S {
   }
 
   /// `Component {id}`
-  String componentNameFallback(Object id) {
+  String componentNameFallback(String id) {
     return Intl.message(
       'Component $id',
       name: 'componentNameFallback',
@@ -3971,7 +3970,7 @@ class S {
   }
 
   /// `Finger {index}`
-  String fingerOther(Object index) {
+  String fingerOther(String index) {
     return Intl.message(
       'Finger $index',
       name: 'fingerOther',
@@ -3983,6 +3982,131 @@ class S {
   /// `Seasonal`
   String get seasonalTitle {
     return Intl.message('Seasonal', name: 'seasonalTitle', desc: '', args: []);
+  }
+
+  /// `Transactions`
+  String get profileTransactions {
+    return Intl.message(
+      'Transactions',
+      name: 'profileTransactions',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Favorites`
+  String get profileFavorites {
+    return Intl.message(
+      'Favorites',
+      name: 'profileFavorites',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Approved feasible!`
+  String get statusApprovedFeasible {
+    return Intl.message(
+      'Approved feasible!',
+      name: 'statusApprovedFeasible',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Estimated price:`
+  String get estimatedPrice {
+    return Intl.message(
+      'Estimated price:',
+      name: 'estimatedPrice',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Estimated duration:`
+  String get estimatedDuration {
+    return Intl.message(
+      'Estimated duration:',
+      name: 'estimatedDuration',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Assigned artist:`
+  String get assignedArtist {
+    return Intl.message(
+      'Assigned artist:',
+      name: 'assignedArtist',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Technical details`
+  String get technicalDetails {
+    return Intl.message(
+      'Technical details',
+      name: 'technicalDetails',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nail shape`
+  String get nailShape {
+    return Intl.message('Nail shape', name: 'nailShape', desc: '', args: []);
+  }
+
+  /// `Nail surface`
+  String get nailSurface {
+    return Intl.message(
+      'Nail surface',
+      name: 'nailSurface',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Accessories`
+  String get accessories {
+    return Intl.message('Accessories', name: 'accessories', desc: '', args: []);
+  }
+
+  /// `Reason for rejection:`
+  String get rejectReasonLabel {
+    return Intl.message(
+      'Reason for rejection:',
+      name: 'rejectReasonLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Processing:`
+  String get processingLabel {
+    return Intl.message(
+      'Processing:',
+      name: 'processingLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Your design request is being evaluated and quoted by our specialist.`
+  String get processingDesc {
+    return Intl.message(
+      'Your design request is being evaluated and quoted by our specialist.',
+      name: 'processingDesc',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `None`
+  String get noneValue {
+    return Intl.message('None', name: 'noneValue', desc: '', args: []);
   }
 }
 

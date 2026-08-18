@@ -443,5 +443,19 @@
   "fingerRing": "Ngón áp út",
   "fingerPinky": "Ngón út",
   "fingerOther": "Ngón {index}",
-  "seasonalTitle": "Theo mùa"
+  "seasonalTitle": "Theo mùa",
+  "profileTransactions": "Giao dịch",
+  "profileFavorites": "Yêu thích",
+  "statusApprovedFeasible": "Đã duyệt khả thi!",
+  "estimatedPrice": "Báo giá dự kiến:",
+  "estimatedDuration": "Thời gian dự kiến:",
+  "assignedArtist": "Thợ chỉ định:",
+  "technicalDetails": "Chi tiết kỹ thuật",
+  "nailShape": "Phom móng",
+  "nailSurface": "Bề mặt",
+  "accessories": "Phụ kiện",
+  "rejectReasonLabel": "Lý do từ chối:",
+  "processingLabel": "Đang xử lý:",
+  "processingDesc": "Mẫu móng của bạn đang được chuyên viên tại tiệm đánh giá tính khả thi và báo giá.",
+  "noneValue": "Không"
 }

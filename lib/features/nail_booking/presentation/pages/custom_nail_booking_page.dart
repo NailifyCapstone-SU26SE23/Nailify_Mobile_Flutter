@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:dio/dio.dart';
 import '../../../../generated/l10n.dart';
 
 import '../../../../core/constants/app_colors.dart';
@@ -217,25 +216,6 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
         _isLoadingTimes = false;
         _timeSlots = [];
       });
-      
-      String errorMsg = 'Lỗi tải giờ rảnh';
-      if (e is DioException) {
-        final data = e.response?.data;
-        if (data is Map && data['message'] != null) {
-          errorMsg = data['message'].toString();
-        } else {
-          errorMsg = e.message ?? e.toString();
-        }
-      } else {
-        errorMsg = e.toString();
-      }
-      
-      // If it's just about having no schedule, the UI already displays
-      // "This artist has no schedule on this date" which is perfect.
-      if (!errorMsg.contains('không có lịch làm việc') && 
-          !errorMsg.contains('no schedule')) {
-        _showSnackBar(errorMsg);
-      }
     }
   }
 

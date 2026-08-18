@@ -464,5 +464,19 @@
   "fingerPinky": "Pinky",
   "fingerOther": "Finger {index}",
   "@fingerOther": { "placeholders": { "index": { "type": "String" } } },
-  "seasonalTitle": "Seasonal"
+  "seasonalTitle": "Seasonal",
+  "profileTransactions": "Transactions",
+  "profileFavorites": "Favorites",
+  "statusApprovedFeasible": "Approved feasible!",
+  "estimatedPrice": "Estimated price:",
+  "estimatedDuration": "Estimated duration:",
+  "assignedArtist": "Assigned artist:",
+  "technicalDetails": "Technical details",
+  "nailShape": "Nail shape",
+  "nailSurface": "Nail surface",
+  "accessories": "Accessories",
+  "rejectReasonLabel": "Reason for rejection:",
+  "processingLabel": "Processing:",
+  "processingDesc": "Your design request is being evaluated and quoted by our specialist.",
+  "noneValue": "None"
 }

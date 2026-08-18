@@ -26,89 +26,122 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m2(value) => "${value}% off";
 
-  static String m3(name) => "Add-on: ${name}";
+  static String m3(minutes) => "${minutes} minutes";
 
-  static String m4(month, year) => "${month}/${year}";
+  static String m4(name) => "Add-on: ${name}";
 
-  static String m5(error) => "Unable to create payment: ${error}";
+  static String m5(month, year) => "${month}/${year}";
 
-  static String m6(count) => "Selected: ${count}";
+  static String m6(error) => "Unable to create payment: ${error}";
 
-  static String m7(price) => "${price} / piece";
+  static String m7(qty) => "Qty: ${qty}";
 
-  static String m8(error) => "Error joining waitlist: ${error}";
+  static String m8(count) => "Selected: ${count}";
 
-  static String m9(time) => "You have joined the waitlist for ${time}";
+  static String m9(price) => "${price} / piece";
 
-  static String m10(qty) => "Free warranty • Qty: ${qty}";
+  static String m10(error) => "Error joining waitlist: ${error}";
 
-  static String m11(color) =>
+  static String m11(time) => "You have joined the waitlist for ${time}";
+
+  static String m12(qty) => "Free warranty • Qty: ${qty}";
+
+  static String m13(name) => "Collection: ${name}";
+
+  static String m14(color) =>
       "Color tone ${color} matches your preferred color.";
 
-  static String m12(name) => "Are you sure you want to delete \"${name}\"?";
+  static String m15(id) => "Component ${id}";
 
-  static String m13(name) => "Are you sure you want to delete \"${name}\"?";
+  static String m16(name) => "Are you sure you want to delete \"${name}\"?";
 
-  static String m14(error) => "Cannot load information: ${error}";
+  static String m17(name) => "Are you sure you want to delete \"${name}\"?";
 
-  static String m15(error) => "Unable to load form: ${error}";
+  static String m18(index) => "Finger ${index}";
 
-  static String m16(m) => "Month ${m}";
+  static String m19(error) => "Error loading data: ${error}";
 
-  static String m17(error) => "Error regenerating design: ${error}";
+  static String m20(error) => "Cannot load information: ${error}";
 
-  static String m18(date) => "Date: ${date}";
+  static String m21(error) => "Unable to load form: ${error}";
 
-  static String m19(error) => "Failed to send request: ${error}";
+  static String m22(minutes) => "${minutes} mins";
 
-  static String m20(error) => "Error creating nail profile: ${error}";
+  static String m23(m) => "Month ${m}";
 
-  static String m21(error) => "Update error: ${error}";
+  static String m24(min, max) => "Price from ${min} - ${max}";
 
-  static String m22(time) =>
+  static String m25(error) => "Error regenerating design: ${error}";
+
+  static String m26(date) => "Date: ${date}";
+
+  static String m27(error) => "Failed to send request: ${error}";
+
+  static String m28(error) => "Error creating nail profile: ${error}";
+
+  static String m29(error) => "Update error: ${error}";
+
+  static String m30(count) => "${count} variants";
+
+  static String m31(time) =>
       "Are you sure you want to leave the waitlist at ${time}?\nYou will lose your position in the queue.";
 
-  static String m23(error) => "Error cancelling waitlist: ${error}";
+  static String m32(error) => "Error cancelling waitlist: ${error}";
 
-  static String m24(error) => "Confirm error: ${error}";
+  static String m33(error) => "Confirm error: ${error}";
 
-  static String m25(n) => "${n} days ago";
+  static String m34(n) => "${n} days ago";
 
-  static String m26(n) => "${n} hours ago";
+  static String m35(n) => "${n} hours ago";
 
-  static String m27(n) => "${n} minutes ago";
+  static String m36(n) => "${n} minutes ago";
 
-  static String m28(y) => "Year ${y}";
-
-  static String m29(dynamic minutes) => "${minutes} minutes";
-
-  static String m30(dynamic qty) => "Qty: ${qty}";
+  static String m37(y) => "Year ${y}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
+    "accessories": MessageLookupByLibrary.simpleMessage("Accessories"),
     "accessoriesTab": MessageLookupByLibrary.simpleMessage("Accessories"),
     "account": MessageLookupByLibrary.simpleMessage("Account"),
     "addToNail": MessageLookupByLibrary.simpleMessage("Add to nail"),
     "addressUpdating": MessageLookupByLibrary.simpleMessage("Address updating"),
+    "agreeToTermsError": MessageLookupByLibrary.simpleMessage(
+      "You must agree to the terms of service to continue",
+    ),
+    "agreeToTermsText": MessageLookupByLibrary.simpleMessage(
+      "I agree to the terms of service",
+    ),
     "allMonths": MessageLookupByLibrary.simpleMessage("All Months"),
     "allStatus": MessageLookupByLibrary.simpleMessage("All"),
     "allYears": MessageLookupByLibrary.simpleMessage("All Years"),
+    "alreadyHaveAccount": MessageLookupByLibrary.simpleMessage(
+      "Already have an account? ",
+    ),
     "anyArtist": MessageLookupByLibrary.simpleMessage("Any Artist"),
     "appName": MessageLookupByLibrary.simpleMessage("Nailify"),
     "applyToAllSuccess": MessageLookupByLibrary.simpleMessage(
       "Applied this finger\'s design to all fingers!",
     ),
+    "assignedArtist": MessageLookupByLibrary.simpleMessage("Assigned artist:"),
     "automaticFitDesign": MessageLookupByLibrary.simpleMessage(
       "AUTOMATIC FIT DESIGN",
     ),
     "automaticFitDesignDesc": MessageLookupByLibrary.simpleMessage(
       "Bloom will automatically analyze your skin tone, hand shape, occupation, and preferences from your personality quiz to create a perfect 5-layer nail design.",
     ),
+    "availableForTryOn": MessageLookupByLibrary.simpleMessage(
+      "Available for try-on",
+    ),
+    "availableVariants": MessageLookupByLibrary.simpleMessage(
+      "Available variants",
+    ),
     "back": MessageLookupByLibrary.simpleMessage("Back"),
     "bookAppointment": MessageLookupByLibrary.simpleMessage("Book"),
+    "bookAppointmentNow": MessageLookupByLibrary.simpleMessage("Book now"),
     "bookAppointmentTitle": MessageLookupByLibrary.simpleMessage(
       "Book Appointment",
     ),
+    "bookBtn": MessageLookupByLibrary.simpleMessage("Book"),
     "bookCustomNailTitle": MessageLookupByLibrary.simpleMessage(
       "Book Custom Nail",
     ),
@@ -127,16 +160,40 @@ class MessageLookup extends MessageLookupByLibrary {
       "Add-on Services",
     ),
     "bookingApplyPromotion": m0,
+    "bookingArtistDefault": MessageLookupByLibrary.simpleMessage("Artist"),
     "bookingArtistNoDate": MessageLookupByLibrary.simpleMessage(
       "Please select a date first",
     ),
     "bookingArtistTab": MessageLookupByLibrary.simpleMessage("Artist"),
     "bookingAutoAssign": MessageLookupByLibrary.simpleMessage("Auto-assign"),
+    "bookingAutoAssignDesc": MessageLookupByLibrary.simpleMessage(
+      "Time displayed based on salon schedule. Artist will be auto-assigned.",
+    ),
+    "bookingAutoAssignTitle": MessageLookupByLibrary.simpleMessage(
+      "Auto-assignment by system",
+    ),
     "bookingAvailableSlots": MessageLookupByLibrary.simpleMessage(
       "Available Slots",
     ),
     "bookingBackBtn": MessageLookupByLibrary.simpleMessage("Back"),
+    "bookingBranchLabel": MessageLookupByLibrary.simpleMessage("Branch"),
+    "bookingCancelBtnLabel": MessageLookupByLibrary.simpleMessage(
+      "Cancel Booking",
+    ),
+    "bookingCancelFail": MessageLookupByLibrary.simpleMessage(
+      "Failed to cancel booking",
+    ),
+    "bookingCancelSuccess": MessageLookupByLibrary.simpleMessage(
+      "Booking cancelled successfully",
+    ),
+    "bookingCheckInCode": MessageLookupByLibrary.simpleMessage("Check-in Code"),
+    "bookingCheckInInstruction": MessageLookupByLibrary.simpleMessage(
+      "Show this code to the receptionist",
+    ),
     "bookingClearAll": MessageLookupByLibrary.simpleMessage("Clear all"),
+    "bookingClickToSelectArtist": MessageLookupByLibrary.simpleMessage(
+      "Click to choose performing artist",
+    ),
     "bookingComponentDefault": MessageLookupByLibrary.simpleMessage(
       "Nail Component",
     ),
@@ -144,15 +201,23 @@ class MessageLookup extends MessageLookupByLibrary {
       "Confirm Booking",
     ),
     "bookingContinueBtn": MessageLookupByLibrary.simpleMessage("Continue"),
+    "bookingDateLabel": MessageLookupByLibrary.simpleMessage("Date"),
     "bookingDetailsTitle": MessageLookupByLibrary.simpleMessage(
       "Booking Details",
     ),
     "bookingDiscount": MessageLookupByLibrary.simpleMessage("Discount"),
     "bookingDiscountFixed": m1,
+    "bookingDiscountLabel": MessageLookupByLibrary.simpleMessage("Discount:"),
     "bookingDiscountPercent": m2,
-    "bookingExtraService": m3,
+    "bookingDurationLabel": MessageLookupByLibrary.simpleMessage("Duration"),
+    "bookingDurationValue": m3,
+    "bookingExtraService": m4,
     "bookingFindNearby": MessageLookupByLibrary.simpleMessage(
       "Find Nearby Salons (View Map)",
+    ),
+    "bookingFingersLabel": MessageLookupByLibrary.simpleMessage("fingers"),
+    "bookingGeneralInfo": MessageLookupByLibrary.simpleMessage(
+      "General Information",
     ),
     "bookingGoHome": MessageLookupByLibrary.simpleMessage("Go to Home"),
     "bookingInfoDate": MessageLookupByLibrary.simpleMessage("Appointment Date"),
@@ -163,11 +228,14 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingInfoStaff": MessageLookupByLibrary.simpleMessage("Staff"),
     "bookingInfoTime": MessageLookupByLibrary.simpleMessage("Time"),
     "bookingInfoTotal": MessageLookupByLibrary.simpleMessage("Total Payment"),
+    "bookingLoadingArtists": MessageLookupByLibrary.simpleMessage(
+      "Loading artist list...",
+    ),
     "bookingMainService": MessageLookupByLibrary.simpleMessage("Main Service"),
     "bookingMissingId": MessageLookupByLibrary.simpleMessage(
       "Error: This booking is missing an ID from the system.",
     ),
-    "bookingMonthYear": m4,
+    "bookingMonthYear": m5,
     "bookingNailVariantDefault": MessageLookupByLibrary.simpleMessage(
       "Nail Variant",
     ),
@@ -194,14 +262,41 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingNoSchedule": MessageLookupByLibrary.simpleMessage(
       "This artist has no schedule on this date.",
     ),
+    "bookingNotFound": MessageLookupByLibrary.simpleMessage(
+      "Booking information not found.",
+    ),
+    "bookingOriginalPriceLabel": MessageLookupByLibrary.simpleMessage(
+      "Original Price:",
+    ),
+    "bookingPaidAmount": MessageLookupByLibrary.simpleMessage("Paid:"),
     "bookingPayBtn": MessageLookupByLibrary.simpleMessage("Pay Now"),
     "bookingPaymentDetails": MessageLookupByLibrary.simpleMessage(
       "Payment Details",
     ),
-    "bookingPaymentError": m5,
+    "bookingPaymentError": m6,
     "bookingPromotion": MessageLookupByLibrary.simpleMessage("Promotion"),
+    "bookingQrError": MessageLookupByLibrary.simpleMessage(
+      "Error displaying QR code",
+    ),
     "bookingQtyLabel": MessageLookupByLibrary.simpleMessage("Quantity"),
+    "bookingQuantityLabel": m7,
+    "bookingRatingDetails": MessageLookupByLibrary.simpleMessage(
+      "Rating Details",
+    ),
+    "bookingRemainingAmount": MessageLookupByLibrary.simpleMessage(
+      "Remaining:",
+    ),
+    "bookingRescheduleBtnLabel": MessageLookupByLibrary.simpleMessage(
+      "Reschedule Appointment",
+    ),
+    "bookingRescheduleFail": MessageLookupByLibrary.simpleMessage(
+      "Failed to send reschedule request",
+    ),
+    "bookingRescheduleSuccess": MessageLookupByLibrary.simpleMessage(
+      "Reschedule request sent successfully",
+    ),
     "bookingRetry": MessageLookupByLibrary.simpleMessage("Retry"),
+    "bookingReviewTitle": MessageLookupByLibrary.simpleMessage("Review"),
     "bookingSelectArtistFirst": MessageLookupByLibrary.simpleMessage(
       "Please select an artist (or \"No preference\") to see available slots.",
     ),
@@ -214,16 +309,21 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingSelectPromotion": MessageLookupByLibrary.simpleMessage(
       "Select Promotion",
     ),
-    "bookingSelectedCount": m6,
+    "bookingSelectedCount": m8,
+    "bookingServicesBooked": MessageLookupByLibrary.simpleMessage(
+      "Services Booked",
+    ),
     "bookingSlotPast": MessageLookupByLibrary.simpleMessage(
       "This time has passed, please choose another.",
     ),
+    "bookingStartTimeLabel": MessageLookupByLibrary.simpleMessage("Start Time"),
     "bookingStepBook": MessageLookupByLibrary.simpleMessage("Book"),
     "bookingStepCompleted": MessageLookupByLibrary.simpleMessage("Completed"),
     "bookingStepSelectSalon": MessageLookupByLibrary.simpleMessage(
       "Select Salon",
     ),
     "bookingStepServices": MessageLookupByLibrary.simpleMessage("Services"),
+    "bookingStylistLabel": MessageLookupByLibrary.simpleMessage("Stylist"),
     "bookingSuccessSubtitle": MessageLookupByLibrary.simpleMessage(
       "Thank you for trusting Nailify. Here are the details of your appointment.",
     ),
@@ -238,7 +338,10 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingTabScheduled": MessageLookupByLibrary.simpleMessage("Scheduled"),
     "bookingTabWaitlist": MessageLookupByLibrary.simpleMessage("Waitlist"),
     "bookingTotal": MessageLookupByLibrary.simpleMessage("Total"),
-    "bookingUnitPrice": m7,
+    "bookingTotalPaymentLabel": MessageLookupByLibrary.simpleMessage(
+      "Total Payment:",
+    ),
+    "bookingUnitPrice": m9,
     "bookingValidateDateTime": MessageLookupByLibrary.simpleMessage(
       "Please fill in date, artist and time slot.",
     ),
@@ -252,15 +355,16 @@ class MessageLookup extends MessageLookupByLibrary {
       "Please select at least one service.",
     ),
     "bookingViewBtn": MessageLookupByLibrary.simpleMessage("View Booking"),
-    "bookingWaitlistError": m8,
-    "bookingWaitlistJoined": m9,
+    "bookingWaitlistError": m10,
+    "bookingWaitlistJoined": m11,
     "bookingWarrantyDefault": MessageLookupByLibrary.simpleMessage(
       "Warranty Service",
     ),
-    "bookingWarrantyFree": m10,
+    "bookingWarrantyFree": m12,
     "bookingWarrantyService": MessageLookupByLibrary.simpleMessage(
       "Select warranty service",
     ),
+    "bookingYourRating": MessageLookupByLibrary.simpleMessage("Your Rating"),
     "cancel": MessageLookupByLibrary.simpleMessage("Cancel"),
     "cancelBookingConfirmMsg": MessageLookupByLibrary.simpleMessage(
       "Are you sure you want to cancel this booking?",
@@ -278,22 +382,33 @@ class MessageLookup extends MessageLookupByLibrary {
       "Cancel Booking",
     ),
     "cancelBtn": MessageLookupByLibrary.simpleMessage("Cancel"),
-    "colorMatchReason": m11,
+    "clearFilter": MessageLookupByLibrary.simpleMessage("Clear filter"),
+    "collectionLabel": m13,
+    "colorLabel": MessageLookupByLibrary.simpleMessage("Colors"),
+    "colorMatchReason": m14,
     "completedLabel": MessageLookupByLibrary.simpleMessage("Completed"),
+    "componentNameFallback": m15,
     "confirm": MessageLookupByLibrary.simpleMessage("Confirm"),
     "confirmBtn": MessageLookupByLibrary.simpleMessage("Confirm"),
+    "confirmPasswordHint": MessageLookupByLibrary.simpleMessage(
+      "Confirm Password",
+    ),
     "createNewBtn": MessageLookupByLibrary.simpleMessage("Create New"),
     "createNewNailBtn": MessageLookupByLibrary.simpleMessage(
       "Create New Nail Design",
     ),
+    "decorationLabel": MessageLookupByLibrary.simpleMessage("Decoration"),
     "deleteBtn": MessageLookupByLibrary.simpleMessage("Delete"),
-    "deleteComponentConfirm": m12,
+    "deleteComponentConfirm": m16,
     "deleteComponentTitle": MessageLookupByLibrary.simpleMessage(
       "Delete Component",
     ),
-    "deleteNailConfirm": m13,
+    "deleteNailConfirm": m17,
     "deleteNailTitle": MessageLookupByLibrary.simpleMessage(
       "Delete Nail Design",
+    ),
+    "designComponentsLabel": MessageLookupByLibrary.simpleMessage(
+      "Design components",
     ),
     "designFeatureAccessories": MessageLookupByLibrary.simpleMessage(
       "Auto-select exquisite patterns & accessories",
@@ -312,9 +427,16 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "doQuizButton": MessageLookupByLibrary.simpleMessage("TAKE STYLE QUIZ NOW"),
     "done": MessageLookupByLibrary.simpleMessage("Done"),
+    "dontHaveAccount": MessageLookupByLibrary.simpleMessage(
+      "Don\'t have an account? ",
+    ),
     "editRating": MessageLookupByLibrary.simpleMessage("Edit Rating"),
     "email": MessageLookupByLibrary.simpleMessage("Email"),
     "error": MessageLookupByLibrary.simpleMessage("An error occurred"),
+    "estimatedDuration": MessageLookupByLibrary.simpleMessage(
+      "Estimated duration:",
+    ),
+    "estimatedPrice": MessageLookupByLibrary.simpleMessage("Estimated price:"),
     "exploreGalleryButton": MessageLookupByLibrary.simpleMessage(
       "Explore Gallery",
     ),
@@ -333,7 +455,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "findNearbySalons": MessageLookupByLibrary.simpleMessage(
       "Find Nearby Salons (View Map)",
     ),
+    "fingerIndex": MessageLookupByLibrary.simpleMessage("Index"),
+    "fingerMiddle": MessageLookupByLibrary.simpleMessage("Middle"),
+    "fingerOther": m18,
+    "fingerPinky": MessageLookupByLibrary.simpleMessage("Pinky"),
+    "fingerRing": MessageLookupByLibrary.simpleMessage("Ring"),
+    "fingerThumb": MessageLookupByLibrary.simpleMessage("Thumb"),
+    "firstNameHint": MessageLookupByLibrary.simpleMessage("First Name"),
     "forYouTitle": MessageLookupByLibrary.simpleMessage("EXCLUSIVE FOR YOU"),
+    "forgotPassword": MessageLookupByLibrary.simpleMessage("Forgot password?"),
     "fullName": MessageLookupByLibrary.simpleMessage("Full Name"),
     "generateDesignButton": MessageLookupByLibrary.simpleMessage(
       "GENERATE DESIGN",
@@ -364,36 +494,65 @@ class MessageLookup extends MessageLookupByLibrary {
       "Take a quick Style Quiz to find the best nail design for your personal style.",
     ),
     "homeQuizTitle": MessageLookupByLibrary.simpleMessage("Nailify Match AI"),
-    "loadFailure": m14,
-    "loadFormFail": m15,
+    "introduction": MessageLookupByLibrary.simpleMessage("Introduction"),
+    "languageLabel": MessageLookupByLibrary.simpleMessage("Language"),
+    "lastNameHint": MessageLookupByLibrary.simpleMessage("Last Name"),
+    "loadDataError": m19,
+    "loadFailure": m20,
+    "loadFormFail": m21,
     "loading": MessageLookupByLibrary.simpleMessage("Loading..."),
     "login": MessageLookupByLibrary.simpleMessage("Login"),
+    "loginRequiredFields": MessageLookupByLibrary.simpleMessage(
+      "Please enter both Email and Password",
+    ),
+    "loginRequiredMessage": MessageLookupByLibrary.simpleMessage(
+      "Please sign in or register an account to use this feature.",
+    ),
+    "loginRequiredTitle": MessageLookupByLibrary.simpleMessage(
+      "Authentication Required",
+    ),
+    "loginSuccess": MessageLookupByLibrary.simpleMessage(
+      "Logged in successfully",
+    ),
     "logout": MessageLookupByLibrary.simpleMessage("Logout"),
     "logoutSuccess": MessageLookupByLibrary.simpleMessage(
       "Logged out successfully!",
     ),
     "loyalCustomer": MessageLookupByLibrary.simpleMessage("Loyal Customer"),
-    "monthFormat": m16,
+    "minutesLabel": m22,
+    "monthFormat": m23,
     "monthHint": MessageLookupByLibrary.simpleMessage("Month"),
     "myBooking": MessageLookupByLibrary.simpleMessage("Bookings"),
     "myBookingsTitle": MessageLookupByLibrary.simpleMessage("My Bookings"),
     "myComponents": MessageLookupByLibrary.simpleMessage("My Components"),
     "myNailsTab": MessageLookupByLibrary.simpleMessage("My Nails"),
-    "myStudio": MessageLookupByLibrary.simpleMessage("My Studio"),
+    "myStudio": MessageLookupByLibrary.simpleMessage("Studio"),
     "myStudioTitle": MessageLookupByLibrary.simpleMessage("My Studio"),
+    "nailDescriptionDefault": MessageLookupByLibrary.simpleMessage(
+      "Premium artistic nail designs meticulously crafted by top nail artists, bringing a glamorous, attractive, and personal look for women.",
+    ),
+    "nailDesignFallback": MessageLookupByLibrary.simpleMessage("Nail design"),
     "nailDesignTitle": MessageLookupByLibrary.simpleMessage("Nail Design"),
     "nailDetailsError": MessageLookupByLibrary.simpleMessage(
       "Cannot load design details.",
     ),
     "nailDetailsTitle": MessageLookupByLibrary.simpleMessage("Design Details"),
+    "nailFormLabel": MessageLookupByLibrary.simpleMessage("Nail form"),
     "nailGallerySubtitle": MessageLookupByLibrary.simpleMessage(
       "Discover the latest nail design trends",
     ),
     "nailGalleryTitle": MessageLookupByLibrary.simpleMessage("Nail Gallery"),
+    "nailLoadError": MessageLookupByLibrary.simpleMessage(
+      "Cannot load nail designs.",
+    ),
     "nailRecommendation": MessageLookupByLibrary.simpleMessage(
       "Best matching nail design",
     ),
     "nailServiceDefault": MessageLookupByLibrary.simpleMessage("Nail Service"),
+    "nailShape": MessageLookupByLibrary.simpleMessage("Nail shape"),
+    "nailShapeLabel": MessageLookupByLibrary.simpleMessage("Shape"),
+    "nailSurface": MessageLookupByLibrary.simpleMessage("Nail surface"),
+    "nailSurfaceLabel": MessageLookupByLibrary.simpleMessage("Surface"),
     "nailVariantsLabel": MessageLookupByLibrary.simpleMessage("Nail Variants"),
     "newCustomer": MessageLookupByLibrary.simpleMessage("New Customer"),
     "newNotification": MessageLookupByLibrary.simpleMessage(
@@ -419,6 +578,11 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "noRequests": MessageLookupByLibrary.simpleMessage("No requests yet."),
     "noSalonFound": MessageLookupByLibrary.simpleMessage("No salons found"),
+    "noVariantsAvailable": MessageLookupByLibrary.simpleMessage(
+      "There are currently no variants available for this design.",
+    ),
+    "noneLabel": MessageLookupByLibrary.simpleMessage("None"),
+    "noneValue": MessageLookupByLibrary.simpleMessage("None"),
     "notifications": MessageLookupByLibrary.simpleMessage("Your Notifications"),
     "otherStyleFits": MessageLookupByLibrary.simpleMessage(
       "Other designs matching your style",
@@ -453,15 +617,28 @@ class MessageLookup extends MessageLookupByLibrary {
       "Always Trendy",
     ),
     "password": MessageLookupByLibrary.simpleMessage("Password"),
+    "passwordMismatch": MessageLookupByLibrary.simpleMessage(
+      "Confirm password does not match",
+    ),
     "paymentTitle": MessageLookupByLibrary.simpleMessage("Payment"),
     "perfectMatch": MessageLookupByLibrary.simpleMessage("Perfect Match"),
     "perfectMatchTitle": MessageLookupByLibrary.simpleMessage("Nailify Match"),
     "phoneNumber": MessageLookupByLibrary.simpleMessage("Phone Number"),
+    "pleaseLoginToViewProfile": MessageLookupByLibrary.simpleMessage(
+      "Please sign in to view your personal profile",
+    ),
     "pointsLabel": MessageLookupByLibrary.simpleMessage("points"),
     "premiumNailDesign": MessageLookupByLibrary.simpleMessage(
       "Premium nail design",
     ),
+    "priceFromTo": m24,
+    "processingDesc": MessageLookupByLibrary.simpleMessage(
+      "Your design request is being evaluated and quoted by our specialist.",
+    ),
+    "processingLabel": MessageLookupByLibrary.simpleMessage("Processing:"),
+    "profileFavorites": MessageLookupByLibrary.simpleMessage("Favorites"),
     "profileTitle": MessageLookupByLibrary.simpleMessage("Personal Profile"),
+    "profileTransactions": MessageLookupByLibrary.simpleMessage("Transactions"),
     "quizAlmostDone": MessageLookupByLibrary.simpleMessage("Almost done..."),
     "quizAnalyzingStyle": MessageLookupByLibrary.simpleMessage(
       "Analyzing style...",
@@ -491,141 +668,37 @@ class MessageLookup extends MessageLookupByLibrary {
       "Select multiple answers",
     ),
     "rateService": MessageLookupByLibrary.simpleMessage("Rate Service"),
-    "reGenError": m17,
+    "ratingCleanliness": MessageLookupByLibrary.simpleMessage("Cleanliness"),
+    "ratingLoadError": MessageLookupByLibrary.simpleMessage(
+      "Could not load rating information.",
+    ),
+    "ratingOverall": MessageLookupByLibrary.simpleMessage("Overall"),
+    "ratingPunctuality": MessageLookupByLibrary.simpleMessage("Punctuality"),
+    "ratingServiceQuality": MessageLookupByLibrary.simpleMessage(
+      "Service Quality",
+    ),
+    "reGenError": m25,
     "reGenSuccess": MessageLookupByLibrary.simpleMessage(
       "New matching nail design generated!",
     ),
     "reGenerateButton": MessageLookupByLibrary.simpleMessage("Regenerate"),
+    "recommended": MessageLookupByLibrary.simpleMessage("Recommended"),
     "refundInfo": MessageLookupByLibrary.simpleMessage("Refund Information"),
     "register": MessageLookupByLibrary.simpleMessage("Register"),
-    "requestDetailTitle": MessageLookupByLibrary.simpleMessage(
-      "Request Detail",
-    ),
-    "loginRequiredTitle": MessageLookupByLibrary.simpleMessage(
-      "Authentication Required",
-    ),
-    "loginRequiredMessage": MessageLookupByLibrary.simpleMessage(
-      "Please sign in or register an account to use this feature.",
-    ),
-    "pleaseLoginToViewProfile": MessageLookupByLibrary.simpleMessage(
-      "Please sign in to view your personal profile",
-    ),
-    "languageLabel": MessageLookupByLibrary.simpleMessage("Language"),
-    "forgotPassword": MessageLookupByLibrary.simpleMessage("Forgot password?"),
-    "dontHaveAccount": MessageLookupByLibrary.simpleMessage(
-      "Don't have an account? ",
-    ),
     "registerNow": MessageLookupByLibrary.simpleMessage("Register now"),
-    "loginRequiredFields": MessageLookupByLibrary.simpleMessage(
-      "Please enter both Email and Password",
-    ),
-    "loginSuccess": MessageLookupByLibrary.simpleMessage(
-      "Logged in successfully",
-    ),
-    "alreadyHaveAccount": MessageLookupByLibrary.simpleMessage(
-      "Already have an account? ",
-    ),
     "registerRequiredFields": MessageLookupByLibrary.simpleMessage(
       "Please fill in all required fields",
-    ),
-    "passwordMismatch": MessageLookupByLibrary.simpleMessage(
-      "Confirm password does not match",
-    ),
-    "agreeToTermsError": MessageLookupByLibrary.simpleMessage(
-      "You must agree to the terms of service to continue",
     ),
     "registerSuccess": MessageLookupByLibrary.simpleMessage(
       "Account registered successfully",
     ),
     "registerTitle": MessageLookupByLibrary.simpleMessage("Register Account"),
-    "firstNameHint": MessageLookupByLibrary.simpleMessage("First Name"),
-    "lastNameHint": MessageLookupByLibrary.simpleMessage("Last Name"),
-    "confirmPasswordHint": MessageLookupByLibrary.simpleMessage(
-      "Confirm Password",
+    "rejectReasonLabel": MessageLookupByLibrary.simpleMessage(
+      "Reason for rejection:",
     ),
-    "agreeToTermsText": MessageLookupByLibrary.simpleMessage(
-      "I agree to the terms of service",
+    "requestDetailTitle": MessageLookupByLibrary.simpleMessage(
+      "Request Detail",
     ),
-    "bookingArtistDefault": MessageLookupByLibrary.simpleMessage("Artist"),
-    "bookingLoadingArtists": MessageLookupByLibrary.simpleMessage(
-      "Loading artist list...",
-    ),
-    "bookingClickToSelectArtist": MessageLookupByLibrary.simpleMessage(
-      "Click to choose performing artist",
-    ),
-    "bookingAutoAssignTitle": MessageLookupByLibrary.simpleMessage(
-      "Auto-assignment by system",
-    ),
-    "bookingAutoAssignDesc": MessageLookupByLibrary.simpleMessage(
-      "Time displayed based on salon schedule. Artist will be auto-assigned.",
-    ),
-    "bookingGeneralInfo": MessageLookupByLibrary.simpleMessage(
-      "General Information",
-    ),
-    "bookingBranchLabel": MessageLookupByLibrary.simpleMessage("Branch"),
-    "bookingStylistLabel": MessageLookupByLibrary.simpleMessage("Stylist"),
-    "bookingDateLabel": MessageLookupByLibrary.simpleMessage("Date"),
-    "bookingStartTimeLabel": MessageLookupByLibrary.simpleMessage("Start Time"),
-    "bookingDurationLabel": MessageLookupByLibrary.simpleMessage("Duration"),
-    "bookingDurationValue": m29,
-    "bookingServicesBooked": MessageLookupByLibrary.simpleMessage(
-      "Services Booked",
-    ),
-    "bookingQuantityLabel": m30,
-    "bookingOriginalPriceLabel": MessageLookupByLibrary.simpleMessage(
-      "Original Price:",
-    ),
-    "bookingDiscountLabel": MessageLookupByLibrary.simpleMessage("Discount:"),
-    "bookingTotalPaymentLabel": MessageLookupByLibrary.simpleMessage(
-      "Total Payment:",
-    ),
-    "bookingReviewTitle": MessageLookupByLibrary.simpleMessage("Review"),
-    "bookingRatingDetails": MessageLookupByLibrary.simpleMessage(
-      "Rating Details",
-    ),
-    "ratingOverall": MessageLookupByLibrary.simpleMessage("Overall"),
-    "ratingServiceQuality": MessageLookupByLibrary.simpleMessage(
-      "Service Quality",
-    ),
-    "ratingPunctuality": MessageLookupByLibrary.simpleMessage("Punctuality"),
-    "ratingCleanliness": MessageLookupByLibrary.simpleMessage("Cleanliness"),
-    "ratingLoadError": MessageLookupByLibrary.simpleMessage(
-      "Could not load rating information.",
-    ),
-    "bookingNotFound": MessageLookupByLibrary.simpleMessage(
-      "Booking information not found.",
-    ),
-    "bookingPaidAmount": MessageLookupByLibrary.simpleMessage("Paid:"),
-    "bookingRemainingAmount": MessageLookupByLibrary.simpleMessage(
-      "Remaining:",
-    ),
-    "bookingYourRating": MessageLookupByLibrary.simpleMessage("Your Rating"),
-    "bookingCheckInCode": MessageLookupByLibrary.simpleMessage("Check-in Code"),
-    "bookingCheckInInstruction": MessageLookupByLibrary.simpleMessage(
-      "Show this code to the receptionist",
-    ),
-    "bookingRescheduleSuccess": MessageLookupByLibrary.simpleMessage(
-      "Reschedule request sent successfully",
-    ),
-    "bookingRescheduleFail": MessageLookupByLibrary.simpleMessage(
-      "Failed to send reschedule request",
-    ),
-    "bookingCancelSuccess": MessageLookupByLibrary.simpleMessage(
-      "Booking cancelled successfully",
-    ),
-    "bookingCancelFail": MessageLookupByLibrary.simpleMessage(
-      "Failed to cancel booking",
-    ),
-    "bookingCancelBtnLabel": MessageLookupByLibrary.simpleMessage(
-      "Cancel Booking",
-    ),
-    "bookingRescheduleBtnLabel": MessageLookupByLibrary.simpleMessage(
-      "Reschedule Appointment",
-    ),
-    "bookingQrError": MessageLookupByLibrary.simpleMessage(
-      "Error displaying QR code",
-    ),
-    "bookingFingersLabel": MessageLookupByLibrary.simpleMessage("fingers"),
     "requestsTab": MessageLookupByLibrary.simpleMessage("Requests"),
     "rescheduleAcceptBtn": MessageLookupByLibrary.simpleMessage(
       "Accept Reschedule",
@@ -661,7 +734,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "rescheduleFilterByDate": MessageLookupByLibrary.simpleMessage(
       "Filter by date",
     ),
-    "rescheduleFilterDate": m18,
+    "rescheduleFilterDate": m26,
     "rescheduleNew": MessageLookupByLibrary.simpleMessage("New"),
     "rescheduleOldSchedule": MessageLookupByLibrary.simpleMessage(
       "Old schedule: ",
@@ -705,6 +778,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "searchNailHint": MessageLookupByLibrary.simpleMessage(
       "Search nail designs...",
     ),
+    "seasonalTitle": MessageLookupByLibrary.simpleMessage("Seasonal"),
     "selectDate": MessageLookupByLibrary.simpleMessage("Select Date"),
     "selectNailHint": MessageLookupByLibrary.simpleMessage(
       "Select nail design...",
@@ -730,7 +804,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "sendBtn": MessageLookupByLibrary.simpleMessage("Send"),
     "sendRequestBtn": MessageLookupByLibrary.simpleMessage("Send Request"),
-    "sendRequestFail": m19,
+    "sendRequestFail": m27,
     "sendRequestSuccess": MessageLookupByLibrary.simpleMessage(
       "Request sent successfully.",
     ),
@@ -746,7 +820,14 @@ class MessageLookup extends MessageLookupByLibrary {
       "Premium salon-quality nail care experience",
     ),
     "servicesTitle": MessageLookupByLibrary.simpleMessage("Featured Services"),
+    "shapeMethodLabel": MessageLookupByLibrary.simpleMessage(
+      "Form shaping method",
+    ),
+    "sharedLabel": MessageLookupByLibrary.simpleMessage("Shared"),
     "statusApproved": MessageLookupByLibrary.simpleMessage("Ready to Book"),
+    "statusApprovedFeasible": MessageLookupByLibrary.simpleMessage(
+      "Approved feasible!",
+    ),
     "statusAssigned": MessageLookupByLibrary.simpleMessage("Artist Assigned"),
     "statusCancelled": MessageLookupByLibrary.simpleMessage("Cancelled"),
     "statusCheckedIn": MessageLookupByLibrary.simpleMessage("Checked In"),
@@ -783,6 +864,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "takeAnotherAnalysis": MessageLookupByLibrary.simpleMessage(
       "Take Another Analysis",
     ),
+    "technicalDetails": MessageLookupByLibrary.simpleMessage(
+      "Technical details",
+    ),
     "tierLabel": MessageLookupByLibrary.simpleMessage("Tier"),
     "totalPrice": MessageLookupByLibrary.simpleMessage("Total Price"),
     "transactionDetails": MessageLookupByLibrary.simpleMessage(
@@ -801,34 +885,38 @@ class MessageLookup extends MessageLookupByLibrary {
     "tryOnTabColor": MessageLookupByLibrary.simpleMessage("Nail Color"),
     "tryOnTabShape": MessageLookupByLibrary.simpleMessage("Nail Shape"),
     "tryOnTabSurface": MessageLookupByLibrary.simpleMessage("Nail Surface"),
-    "updateFailure": m20,
+    "updateFailure": m28,
     "updateProfile": MessageLookupByLibrary.simpleMessage("Update"),
-    "updateProfileError": m21,
+    "updateProfileError": m29,
     "updateSuccess": MessageLookupByLibrary.simpleMessage(
       "Successfully updated style profile and generated nail template!",
     ),
+    "variantDetailsTitle": MessageLookupByLibrary.simpleMessage(
+      "Variant Details",
+    ),
+    "variantsCount": m30,
     "viewAllServices": MessageLookupByLibrary.simpleMessage(
       "View All Services",
     ),
     "viewDetail": MessageLookupByLibrary.simpleMessage("View Detail"),
     "vipCustomer": MessageLookupByLibrary.simpleMessage("VIP Customer"),
     "waitlistCancelBtn": MessageLookupByLibrary.simpleMessage("Cancel Wait"),
-    "waitlistCancelDialogContent": m22,
+    "waitlistCancelDialogContent": m31,
     "waitlistCancelDialogTitle": MessageLookupByLibrary.simpleMessage(
       "Confirm Cancel Wait",
     ),
-    "waitlistCancelError": m23,
+    "waitlistCancelError": m32,
     "waitlistCancelSuccess": MessageLookupByLibrary.simpleMessage(
       "Waitlist cancelled successfully.",
     ),
     "waitlistConfirmBookBtn": MessageLookupByLibrary.simpleMessage(
       "Confirm Booking",
     ),
-    "waitlistConfirmError": m24,
+    "waitlistConfirmError": m33,
     "waitlistConfirmSuccess": MessageLookupByLibrary.simpleMessage(
       "Booking confirmed successfully!",
     ),
-    "waitlistDaysAgo": m25,
+    "waitlistDaysAgo": m34,
     "waitlistDeclineBtn": MessageLookupByLibrary.simpleMessage("Decline"),
     "waitlistEmpty": MessageLookupByLibrary.simpleMessage("No waitlists"),
     "waitlistEmptyDesc": MessageLookupByLibrary.simpleMessage(
@@ -840,12 +928,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "waitlistHoldExpired": MessageLookupByLibrary.simpleMessage(
       "Hold time has expired",
     ),
-    "waitlistHoursAgo": m26,
+    "waitlistHoursAgo": m35,
     "waitlistKeepBtn": MessageLookupByLibrary.simpleMessage("Keep"),
     "waitlistLoadError": MessageLookupByLibrary.simpleMessage(
       "Unable to load waitlist",
     ),
-    "waitlistMinutesAgo": m27,
+    "waitlistMinutesAgo": m36,
     "waitlistRegisteredAt": MessageLookupByLibrary.simpleMessage(
       "Registered: ",
     ),
@@ -858,61 +946,11 @@ class MessageLookup extends MessageLookupByLibrary {
     "warrantyServiceDefault": MessageLookupByLibrary.simpleMessage(
       "Warranty Service",
     ),
-    "yearFormat": m28,
+    "yearFormat": m37,
     "yearHint": MessageLookupByLibrary.simpleMessage("Year"),
     "youMayAlsoLike": MessageLookupByLibrary.simpleMessage("You may also like"),
     "yourPersonalStyle": MessageLookupByLibrary.simpleMessage(
       "Your personal style: ",
     ),
-    "clearFilter": MessageLookupByLibrary.simpleMessage("Clear filter"),
-    "nailLoadError": MessageLookupByLibrary.simpleMessage(
-      "Cannot load nail designs.",
-    ),
-    "recommended": MessageLookupByLibrary.simpleMessage("Recommended"),
-    "nailDesignFallback": MessageLookupByLibrary.simpleMessage("Nail design"),
-    "introduction": MessageLookupByLibrary.simpleMessage("Introduction"),
-    "nailDescriptionDefault": MessageLookupByLibrary.simpleMessage(
-      "Premium artistic nail designs meticulously crafted by top nail artists, bringing a glamorous, attractive, and personal look for women.",
-    ),
-    "availableVariants": MessageLookupByLibrary.simpleMessage(
-      "Available variants",
-    ),
-    "noVariantsAvailable": MessageLookupByLibrary.simpleMessage(
-      "There are currently no variants available for this design.",
-    ),
-    "bookBtn": MessageLookupByLibrary.simpleMessage("Book"),
-    "nailShapeLabel": MessageLookupByLibrary.simpleMessage("Shape"),
-    "nailSurfaceLabel": MessageLookupByLibrary.simpleMessage("Surface"),
-    "noneLabel": MessageLookupByLibrary.simpleMessage("None"),
-    "priceFromTo": (min, max) => "Price from ${min} - ${max}",
-    "variantsCount": (count) => "${count} variants",
-    "availableForTryOn": MessageLookupByLibrary.simpleMessage(
-      "Available for try-on",
-    ),
-    "loadDataError": (error) => "Error loading data: ${error}",
-    "variantDetailsTitle": MessageLookupByLibrary.simpleMessage(
-      "Variant Details",
-    ),
-    "collectionLabel": (name) => "Collection: ${name}",
-    "nailFormLabel": MessageLookupByLibrary.simpleMessage("Nail form"),
-    "minutesLabel": (minutes) => "${minutes} mins",
-    "colorLabel": MessageLookupByLibrary.simpleMessage("Colors"),
-    "designComponentsLabel": MessageLookupByLibrary.simpleMessage(
-      "Design components",
-    ),
-    "sharedLabel": MessageLookupByLibrary.simpleMessage("Shared"),
-    "bookAppointmentNow": MessageLookupByLibrary.simpleMessage("Book now"),
-    "shapeMethodLabel": MessageLookupByLibrary.simpleMessage(
-      "Form shaping method",
-    ),
-    "decorationLabel": MessageLookupByLibrary.simpleMessage("Decoration"),
-    "componentNameFallback": (id) => "Component ${id}",
-    "fingerThumb": MessageLookupByLibrary.simpleMessage("Thumb"),
-    "fingerIndex": MessageLookupByLibrary.simpleMessage("Index"),
-    "fingerMiddle": MessageLookupByLibrary.simpleMessage("Middle"),
-    "fingerRing": MessageLookupByLibrary.simpleMessage("Ring"),
-    "fingerPinky": MessageLookupByLibrary.simpleMessage("Pinky"),
-    "fingerOther": (index) => "Finger ${index}",
-    "seasonalTitle": MessageLookupByLibrary.simpleMessage("Seasonal"),
   };
 }

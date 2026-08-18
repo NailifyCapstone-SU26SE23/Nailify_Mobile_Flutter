@@ -115,7 +115,7 @@ class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
                       _buildAlertBox(
                         Colors.red,
                         Icons.error_outline,
-                        'Lý do từ chối:',
+                        S.of(context).rejectReasonLabel,
                         nail.rejectReason!,
                       ),
 
@@ -130,8 +130,8 @@ class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
                       _buildAlertBox(
                         Colors.orange,
                         Icons.hourglass_top,
-                        'Đang xử lý:',
-                        'Mẫu móng của bạn đang được chuyên viên tại tiệm đánh giá tính khả thi và báo giá.',
+                        S.of(context).processingLabel,
+                        S.of(context).processingDesc,
                       ),
 
                     // --- TRẠNG THÁI: ĐÃ DUYỆT ---
@@ -147,13 +147,13 @@ class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Row(
+                            Row(
                               children: [
-                                Icon(Icons.check_circle, color: Colors.green),
-                                SizedBox(width: 8),
+                                const Icon(Icons.check_circle, color: Colors.green),
+                                const SizedBox(width: 8),
                                 Text(
-                                  'Đã duyệt khả thi!',
-                                  style: TextStyle(
+                                  S.of(context).statusApprovedFeasible,
+                                  style: const TextStyle(
                                     color: Colors.green,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -163,17 +163,17 @@ class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
                             const Divider(color: Colors.green),
                             const SizedBox(height: 8),
                             _buildPriceDurationRow(
-                              'Báo giá dự kiến:',
+                              S.of(context).estimatedPrice,
                               PriceFormatter.format(nail.price),
                             ),
                             const SizedBox(height: 8),
                             _buildPriceDurationRow(
-                              'Thời gian dự kiến:',
+                              S.of(context).estimatedDuration,
                               DurationFormatter.format(nail.duration),
                             ),
                             const SizedBox(height: 8),
                             _buildPriceDurationRow(
-                              'Thợ chỉ định:',
+                              S.of(context).assignedArtist,
                               nail.stylistName,
                             ),
                           ],
@@ -181,9 +181,9 @@ class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
                       ),
 
                     // --- CHI TIẾT KỸ THUẬT ---
-                    const Text(
-                      'Chi tiết kỹ thuật',
-                      style: TextStyle(
+                    Text(
+                      S.of(context).technicalDetails,
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -198,12 +198,12 @@ class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
                       ),
                       child: Column(
                         children: [
-                          _buildRow('Phom móng', nail.shapeName),
-                          _buildRow('Bề mặt', nail.surfaceName),
+                          _buildRow(S.of(context).nailShape, nail.shapeName),
+                          _buildRow(S.of(context).nailSurface, nail.surfaceName),
                           _buildRow(
-                            'Phụ kiện',
+                            S.of(context).accessories,
                             nail.accessoryNames.isEmpty
-                                ? 'Không'
+                                ? S.of(context).noneValue
                                 : nail.accessoryNames.join(', '),
                             isLast: true,
                           ),

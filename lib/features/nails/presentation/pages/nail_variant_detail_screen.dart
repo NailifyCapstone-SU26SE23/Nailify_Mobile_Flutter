@@ -418,7 +418,7 @@ class _DetailContentState extends State<_DetailContent> {
                               context,
                               icon: Icons.access_time_filled_rounded,
                               label: S.of(context).bookingDurationLabel,
-                              value: S.of(context).minutesLabel(variant.duration!),
+                              value: S.of(context).minutesLabel(variant.duration!.toString()),
                             ));
                           }
                           final colors = _parseColors(variant.colorJson);
@@ -835,7 +835,7 @@ class _DetailContentState extends State<_DetailContent> {
                     ),
                   ),
                   subtitle: Text(
-                    S.of(context).minutesLabel(method.duration),
+                    S.of(context).minutesLabel(method.duration.toString()),
                     style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
                   ),
                   secondary: Text(
@@ -952,7 +952,7 @@ class _FingerComponents extends StatelessWidget {
       s.fingerRing,
       s.fingerPinky,
     ];
-    return index >= 0 && index < names.length ? names[index] : s.fingerOther(index);
+    return index >= 0 && index < names.length ? names[index] : s.fingerOther(index.toString());
   }
 }
 
@@ -1004,7 +1004,7 @@ class _ComponentChip extends StatelessWidget {
               children: [
                 Text(
                   component.component?.name ??
-                      S.of(context).componentNameFallback(component.componentId),
+                      S.of(context).componentNameFallback(component.componentId.toString()),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(

@@ -202,12 +202,18 @@ class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
                       ),
                       child: Column(
                         children: [
-                          _buildRow('Phom móng', nail.shapeName),
-                          _buildRow('Bề mặt', nail.surfaceName),
                           _buildRow(
-                            'Phụ kiện',
+                            S.of(context).nailShapeLabel,
+                            nail.shapeName,
+                          ),
+                          _buildRow(
+                            S.of(context).nailSurfaceLabel,
+                            nail.surfaceName,
+                          ),
+                          _buildRow(
+                            S.of(context).accessoriesTab,
                             nail.accessoryNames.isEmpty
-                                ? 'Không'
+                                ? S.of(context).noneLabel
                                 : nail.accessoryNames.join(', '),
                             isLast: true,
                           ),

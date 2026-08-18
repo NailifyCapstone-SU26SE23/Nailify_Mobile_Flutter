@@ -297,6 +297,9 @@ class AppRouter {
               if (extra is nails_models.CustomerNailModel) {
                 return TryOnSetupScreen(customerNail: extra);
               }
+              if (extra is Map<String, dynamic>) {
+                return TryOnSetupScreen(recommendedData: extra);
+              }
               return const TryOnSetupScreen();
             },
           ),

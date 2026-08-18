@@ -60,7 +60,9 @@ class _TryOnPreviewBoardState extends State<TryOnPreviewBoard>
   // Width multipliers for the available preview areas.
   static const double _focusedPreviewScale = 0.92;
   static const double _rowPreviewScale = 1.0;
-
+  static const double handNailScale = 3.0;
+  static const double handNailOffsetX = -0.07;
+  static const double handNailOffsetY = -0.12;
   late final AnimationController _controller;
   late final Animation<double> _animation;
 
@@ -149,12 +151,15 @@ class _TryOnPreviewBoardState extends State<TryOnPreviewBoard>
           widget.onSelectPlacement(-1);
         },
         child: AspectRatio(
-          aspectRatio: showingRow ? 2.25 : 1.1,
+          aspectRatio: showingRow ? 1.0 : 1.1,
           child: Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              border: Border.all(color: Colors.black12),
-              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+                width: 0.5,
+              ),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -189,52 +194,92 @@ class _TryOnPreviewBoardState extends State<TryOnPreviewBoard>
                 final double detailLeft = (width - detailWidth) / 2;
                 final double detailTop = (height - detailHeight) / 2;
 
-                const double rowPadding = 8.0;
-                const double columnGap = 6.0;
-                final double columnWidth =
-                    (width - rowPadding * 2 - columnGap * 4) / 5;
-                final double columnHeight = height - rowPadding * 2;
-                final double nailSlotWidth = columnWidth * _rowPreviewScale;
-                final double nailSlotHeight = columnHeight * 0.9;
-                final double rowTop =
-                    rowPadding + (columnHeight - nailSlotHeight) / 2;
-                final List<Map<String, dynamic>> fingerConfigs = List.generate(
-                  5,
-                  (index) {
-                    final columnLeft =
-                        rowPadding + index * (columnWidth + columnGap);
-                    return {
-                      'finger': index + 1,
-                      'columnLeft': columnLeft,
-                      'columnWidth': columnWidth,
-                      'left': columnLeft + (columnWidth - nailSlotWidth) / 2,
-                      'top': rowTop,
-                      'width': nailSlotWidth,
-                      'height': nailSlotHeight,
-                      'angle': 0.0,
-                    };
-                  },
-                );
+                final List<Map<String, dynamic>> fingerConfigs =
+                    [
+                      {
+                        'finger': 1,
+                        'cx': 0.242,
+                        'cy': 0.485,
+                        'w': 0.0781,
+                        'h': 0.1074,
+                        'angle': -30.0,
+                      },
+                      {
+                        'finger': 2,
+                        'cx': 0.374,
+                        'cy': 0.2497,
+                        'w': 0.0664,
+                        'h': 0.0928,
+                        'angle': -6.0,
+                      },
+                      {
+                        'finger': 3,
+                        'cx': 0.5087,
+                        'cy': 0.2061,
+                        'w': 0.0703,
+                        'h': 0.0928,
+                        'angle': 0.0,
+                      },
+                      {
+                        'finger': 4,
+                        'cx': 0.6352,
+                        'cy': 0.2645,
+                        'w': 0.0635,
+                        'h': 0.0928,
+                        'angle': 5.0,
+                      },
+                      {
+                        'finger': 5,
+                        'cx': 0.7460,
+                        'cy': 0.4021,
+                        'w': 0.0605,
+                        'h': 0.0977,
+                        'angle': 13.0,
+                      },
+                    ].map((cfg) {
+                      final angle = cfg['angle'] as double;
+                      final rad = angle * math.pi / 180;
+                      final cx = (cfg['cx'] as double) + handNailOffsetX;
+                      final cy = (cfg['cy'] as double) + handNailOffsetY;
+                      final w = cfg['w'] as double;
+                      final h = cfg['h'] as double;
+                      final leftRatio = cx - w / 2 + (h / 2) * math.sin(rad);
+                      final topRatio = cy - h / 2 - (h / 2) * math.cos(rad);
+                      return {
+                        'finger': cfg['finger'],
+                        'left': width * leftRatio,
+                        'top': height * topRatio,
+
+                        'width': width * w * _rowPreviewScale * handNailScale,
+                        'height': height * h * handNailScale,
+                        'angle': angle,
+                      };
+                    }).toList();
 
                 return Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    // 1. Five nail columns
+                    // 1. Hand model background
                     if (t < 1.0)
-                      ...fingerConfigs.map(
-                        (cfg) => Positioned(
-                          left: cfg['columnLeft'] as double,
-                          top: rowPadding,
-                          width: cfg['columnWidth'] as double,
-                          height: columnHeight,
-                          child: Opacity(
-                            opacity: (1.0 - t).clamp(0.0, 1.0),
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.black12),
-                              ),
+                      Positioned.fill(
+                        child: Opacity(
+                          opacity: (1.0 - t).clamp(0.0, 1.0),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Image.asset(
+                              'assets/images/try_on_hand_template.png',
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                    color: const Color(0xFFFDE8F0),
+                                    child: const Center(
+                                      child: Icon(
+                                        Icons.pan_tool_outlined,
+                                        color: Color(0xFFFFB6C1),
+                                        size: 80,
+                                      ),
+                                    ),
+                                  ),
                             ),
                           ),
                         ),
@@ -821,6 +866,17 @@ class _PlacedComponentPreviewState extends State<_PlacedComponentPreview> {
                       : Colors.transparent,
                   width: widget.selected ? 1.5 : 0,
                 ),
+                boxShadow: widget.selected
+                    ? [
+                        BoxShadow(
+                          color: const Color(
+                            0xFFE91E63,
+                          ).withValues(alpha: 0.18),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                        ),
+                      ]
+                    : null,
                 borderRadius: BorderRadius.circular(widget.compact ? 3 : 6),
               ),
               child: widget.placement.imageUrl.isEmpty
@@ -856,10 +912,14 @@ class _PlacedComponentPreviewState extends State<_PlacedComponentPreview> {
               onTapDown: (_) => widget.onDelete(),
               child: Container(
                 margin: const EdgeInsets.all(2),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFE91E63),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFE91E63), Color(0xFFC2185B)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   shape: BoxShape.circle,
-                  boxShadow: [
+                  boxShadow: const [
                     BoxShadow(
                       color: Colors.black26,
                       blurRadius: 3,
@@ -924,10 +984,14 @@ class _PlacedComponentPreviewState extends State<_PlacedComponentPreview> {
               },
               child: Container(
                 margin: const EdgeInsets.all(2),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFE91E63),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFE91E63), Color(0xFFC2185B)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   shape: BoxShape.circle,
-                  boxShadow: [
+                  boxShadow: const [
                     BoxShadow(
                       color: Colors.black26,
                       blurRadius: 3,

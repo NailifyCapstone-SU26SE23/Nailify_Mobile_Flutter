@@ -24,8 +24,9 @@ import '../widgets/try_on_preview_board.dart';
 
 class TryOnSetupScreen extends StatefulWidget {
   final CustomerNailModel? customerNail;
+  final Map<String, dynamic>? recommendedData;
 
-  const TryOnSetupScreen({super.key, this.customerNail});
+  const TryOnSetupScreen({super.key, this.customerNail, this.recommendedData});
 
   @override
   State<TryOnSetupScreen> createState() => _TryOnSetupScreenState();
@@ -39,6 +40,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
 
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _isSelectorExpanded = true;
   bool _launching = false;
   String? _error;
   TryOnData? _tryOnData;
@@ -540,9 +542,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
 
     return Column(
       children: [
-        // Phần trên: Bảng Preview cố định
-        SizedBox(
-          height: MediaQuery.of(context).size.height * 0.35,
+        Expanded(
           child: Padding(
             padding: const EdgeInsets.only(
               top: 16.0,
@@ -571,52 +571,125 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
           ),
         ),
 
-        // Phần dưới: Điều khiển công cụ (Scrollable)
-        Expanded(
-          child: Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -5),
-                ),
-              ],
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          width: double.infinity,
+          height: _isSelectorExpanded ? 260 : 108,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, -5),
               ),
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+            ],
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
                 children: [
-                  // 1. TabBar
-                  TabBar(
-                    controller: _tabController,
-                    labelColor: Colors.pink,
-                    unselectedLabelColor: Colors.grey,
-                    indicatorColor: Colors.pink,
-                    isScrollable: true,
-                    tabAlignment: TabAlignment.start,
-                    labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-                    tabs: const [
-                      Tab(text: "Dáng móng"),
-                      Tab(text: "Bề mặt"),
-                      Tab(text: "Màu sắc"),
-                      Tab(text: "Phụ kiện"),
-                    ],
+                  Expanded(
+                    child: Container(
+                      margin: const EdgeInsets.only(
+                        left: 16,
+                        top: 12,
+                        bottom: 12,
+                        right: 8,
+                      ),
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: TabBar(
+                        controller: _tabController,
+                        indicator: BoxDecoration(
+                          borderRadius: BorderRadius.circular(28),
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFE91E63), Color(0xFFC2185B)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(
+                                0xFFE91E63,
+                              ).withValues(alpha: 0.2),
+                              blurRadius: 6,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        labelColor: Colors.white,
+                        unselectedLabelColor: Colors.grey.shade600,
+                        indicatorSize: TabBarIndicatorSize.tab,
+                        dividerColor: Colors.transparent,
+                        labelStyle: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                        unselectedLabelStyle: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                        tabs: const [
+                          Tab(text: 'Dáng móng'),
+                          Tab(text: 'Bề mặt'),
+                          Tab(text: 'Màu sắc'),
+                          Tab(text: 'Phụ kiện'),
+                        ],
+                      ),
+                    ),
                   ),
+                  IconButton(
+                    onPressed: () => setState(
+                      () => _isSelectorExpanded = !_isSelectorExpanded,
+                    ),
+                    icon: Icon(
+                      _isSelectorExpanded
+                          ? Icons.keyboard_arrow_down_rounded
+                          : Icons.keyboard_arrow_up_rounded,
+                      color: const Color(0xFFE91E63),
+                      size: 26,
+                    ),
+                    style: IconButton.styleFrom(
+                      backgroundColor: const Color(0xFFFCE4EC),
+                      padding: const EdgeInsets.all(12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                ],
+              ),
 
-                  // 2. Nội dung Tab (thay đổi theo index)
-                  Padding(
+              if (!_isSelectorExpanded)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 12, left: 16, right: 16),
+                  child: Text(
+                    'Bấm nút mũi tên bên phải để hiển thị bảng thiết kế móng',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ),
+
+              if (_isSelectorExpanded)
+                Expanded(
+                  child: SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: _buildActiveTabContent(data),
                   ),
-                ],
-              ),
-            ),
+                ),
+            ],
           ),
         ),
       ],
@@ -669,9 +742,12 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
                 Expanded(
                   child: Text(
                     _selectedPlacement?.name ?? 'Chưa chọn phụ kiện trên móng',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
+                      color: _selectedPlacement != null
+                          ? const Color(0xFFE91E63)
+                          : Colors.black87,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -681,14 +757,22 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
                   onPressed: _selectedComponent == null
                       ? null
                       : _addSelectedComponent,
-                  icon: const Icon(Icons.add, size: 16),
-                  label: const Text('Thêm vào móng'),
+                  icon: const Icon(Icons.add_rounded, size: 16),
+                  label: const Text(
+                    'Thêm vào móng',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   style: FilledButton.styleFrom(
                     visualDensity: VisualDensity.compact,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    backgroundColor: Colors.pink,
+                    backgroundColor: const Color(0xFFE91E63),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                   ),
                 ),
               ],
@@ -772,13 +856,40 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            color: Theme.of(context).colorScheme.surface,
-            child: const TabBar(
-              tabs: [
-                Tab(text: 'System'),
-                Tab(text: 'My Components'),
-              ],
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: TabBar(
+              indicator: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              labelColor: const Color(0xFFE91E63),
+              unselectedLabelColor: Colors.grey.shade600,
               indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: Colors.transparent,
+              labelStyle: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+              tabs: const [
+                Tab(text: 'Mẫu hệ thống'),
+                Tab(text: 'Phụ kiện của tôi'),
+              ],
             ),
           ),
           const SizedBox(height: 16),

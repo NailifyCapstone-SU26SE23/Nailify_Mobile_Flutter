@@ -1,15 +1,15 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
+import '../../../core/network/api_client.dart';
+import '../../quiz/data/datasources/quiz_repository.dart';
 import '../../../core/di/injection.dart';
 import '../../nails/data/models/customer_nail_models.dart';
 import '../../nails/data/models/nail_shape_model.dart';
 import '../../nails/data/models/nail_surface_model.dart';
 import '../../nails/data/repositories/customer_nail_repository.dart';
 import '../../nails/data/repositories/nail_component_repository.dart';
-import '../../nails/services/ar_try_on_service.dart';
 import '../models/placed_component_draft.dart';
 import '../models/try_on_data.dart';
 import '../services/try_on_setup_service.dart';
@@ -17,28 +17,29 @@ import '../utils/try_on_setup_helpers.dart';
 import '../widgets/component_grid.dart';
 import '../widgets/nail_shape_selector.dart';
 import '../widgets/nail_surface_selector.dart';
-import '../widgets/try_on_action_bar.dart';
 import '../widgets/try_on_color_selector.dart';
-import '../widgets/try_on_placement_controls.dart';
 import '../widgets/try_on_preview_board.dart';
+import '../../nails/services/ar_try_on_service.dart';
+import '../../../core/constants/app_colors.dart';
 
 class TryOnSetupScreen extends StatefulWidget {
   final CustomerNailModel? customerNail;
+  final Map<String, dynamic>? recommendedData;
 
-  const TryOnSetupScreen({super.key, this.customerNail});
+  const TryOnSetupScreen({super.key, this.customerNail, this.recommendedData});
 
   @override
   State<TryOnSetupScreen> createState() => _TryOnSetupScreenState();
 }
 
-class _TryOnSetupScreenState extends State<TryOnSetupScreen>
-    with SingleTickerProviderStateMixin {
+class _TryOnSetupScreenState extends State<TryOnSetupScreen> {
   late final TryOnSetupService _setupService;
   late final NailComponentRepository _componentRepository;
   late final CustomerNailRepository _customerNailRepository;
 
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _isSelectorExpanded = true;
   bool _launching = false;
   String? _error;
   TryOnData? _tryOnData;
@@ -66,28 +67,14 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
   int? _selectedPlacementId;
   final List<PlacedComponentDraft> _placements = [];
   final Set<int> _deletedPlacementIds = {};
-  late final TabController _tabController;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
-    _tabController.addListener(_handleTabChange);
     _setupService = getIt<TryOnSetupService>();
     _componentRepository = getIt<NailComponentRepository>();
     _customerNailRepository = getIt<CustomerNailRepository>();
     _fetchData();
-  }
-
-  void _handleTabChange() {
-    if (mounted) setState(() {});
-  }
-
-  @override
-  void dispose() {
-    _tabController.removeListener(_handleTabChange);
-    _tabController.dispose();
-    super.dispose();
   }
 
   Future<void> _fetchData() async {
@@ -97,13 +84,15 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
     });
 
     try {
+      debugPrint('[TryOnSetupScreen] _fetchData started. widget.customerNail=${widget.customerNail?.customerNailId}, widget.recommendedData=${widget.recommendedData != null}');
       final results = await Future.wait([
         _setupService.fetchTryOnData(),
-        if ((widget.customerNail?.customerNailId ?? 0) > 0)
+        if (widget.customerNail != null)
           _customerNailRepository.getCustomerNailById(
             widget.customerNail!.customerNailId,
           ),
       ]);
+      debugPrint('[TryOnSetupScreen] fetchTryOnData completed.');
       final data = results.first as TryOnData;
       final customerNail = widget.customerNail == null
           ? null
@@ -164,30 +153,273 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
         }
       }
 
+      // If coming from Perfect Match, compute recommended overrides
+      NailShapeModel? finalShape = _resolveShape(data.nailShapes, customerNail);
+      NailSurfaceModel? finalSurface = _resolveSurface(data.nailSurfaces, customerNail);
+      Map<int, String> finalColors = Map.from(initialColors);
+      Map<int, List<String>?> finalGradients = Map.from(initialGradients);
+      List<PlacedComponentDraft> finalPlacements = _buildDrafts(customerNail, data.combinedComponents);
+      CombinedComponent? finalSelectedComponent;
+
+      final recData = widget.recommendedData;
+      if (recData != null) {
+        debugPrint('[TryOnSetupScreen] Processing recommendedData: $recData');
+        try {
+          // Resolve shape safely
+          if (recData['nailShape'] is Map) {
+            final recShapeId = (recData['nailShape'] as Map)['nailShapeId'];
+            finalShape = data.nailShapes.firstWhereOrNull((s) => s.nailShapeId == recShapeId) ?? finalShape;
+            debugPrint('[TryOnSetupScreen] Resolved shape: ${finalShape?.name}');
+          }
+
+          // Resolve surface safely
+          if (recData['nailSurface'] is Map) {
+            final recSurfaceId = (recData['nailSurface'] as Map)['nailSurfaceId'];
+            finalSurface = data.nailSurfaces.firstWhereOrNull((s) => s.nailSurfaceId == recSurfaceId) ?? finalSurface;
+            debugPrint('[TryOnSetupScreen] Resolved surface: ${finalSurface?.name}');
+          }
+
+          // Colors & Gradients safely
+          final colorsRaw = recData['colors'];
+          if (colorsRaw is List && colorsRaw.isNotEmpty) {
+            final primaryHex = colorsRaw.first.toString();
+            for (var i = 1; i <= 5; i++) {
+              finalColors[i] = primaryHex;
+            }
+            if (colorsRaw.length >= 2) {
+              final stops = colorsRaw.map((e) => e.toString()).take(3).toList();
+              for (var i = 1; i <= 5; i++) {
+                finalGradients[i] = stops;
+              }
+            }
+            debugPrint('[TryOnSetupScreen] Resolved colors: $finalColors');
+          }
+
+          // Placements safely
+          final componentsRaw = recData['components'];
+          if (componentsRaw is List) {
+            final resolved = <PlacedComponentDraft>[];
+            int localId = DateTime.now().microsecondsSinceEpoch;
+            for (final comp in componentsRaw) {
+              if (comp is! Map) continue;
+              final compId = comp['componentId'];
+              final matched = data.combinedComponents.firstWhereOrNull(
+                (c) => !c.isCustomerComponent && c.componentId == compId,
+              );
+              if (matched != null) {
+                finalSelectedComponent ??= matched;
+                for (var fIdx = 1; fIdx <= 5; fIdx++) {
+                  resolved.add(PlacedComponentDraft(
+                    localId: localId++,
+                    component: matched,
+                    componentId: matched.componentId,
+                    customerComponentId: matched.customerComponentId,
+                    name: matched.name,
+                    imageUrl: matched.imageUrl,
+                    fingerIndex: fIdx,
+                    posX: 0,
+                    posY: 0,
+                    scale: 0.5,
+                    rotation: 0,
+                  ));
+                }
+              }
+            }
+            if (resolved.isNotEmpty) finalPlacements = resolved;
+            debugPrint('[TryOnSetupScreen] Resolved placements count: ${finalPlacements.length}');
+          }
+        } catch (innerErr) {
+          debugPrint('[TryOnSetupScreen] Inner parsing error: $innerErr');
+        }
+      }
+
+      debugPrint('[TryOnSetupScreen] Setting state now...');
       setState(() {
         _tryOnData = data;
         _customerNail = customerNail;
-        _selectedNailShape = _resolveShape(data.nailShapes, customerNail);
-        _selectedNailSurface = _resolveSurface(data.nailSurfaces, customerNail);
+        _selectedNailShape = finalShape;
+        _selectedNailSurface = finalSurface;
+        _selectedComponent = finalSelectedComponent;
         _fingerColors.clear();
-        _fingerColors.addAll(initialColors);
+        _fingerColors.addAll(finalColors);
         _fingerGradients
           ..clear()
-          ..addAll(initialGradients);
+          ..addAll(finalGradients);
         _placements
           ..clear()
-          ..addAll(_buildDrafts(customerNail, data.combinedComponents));
+          ..addAll(finalPlacements);
         _selectedPlacementId = _placements.isEmpty
             ? null
             : _placements.first.localId;
         _isLoading = false;
       });
+      debugPrint('[TryOnSetupScreen] _fetchData finished setting state.');
     } catch (error) {
+      debugPrint('[TryOnSetupScreen] Outer error in _fetchData: $error');
       setState(() {
         _error = error.toString();
         _isLoading = false;
       });
     }
+  }
+
+  void _applyRecommendedData(Map<String, dynamic> recData) {
+    if (_tryOnData == null) return;
+    final data = _tryOnData!;
+
+    // Resolve shape
+    NailShapeModel? resolvedShape = _resolveShape(data.nailShapes, _customerNail);
+    if (recData['nailShape'] is Map) {
+      final recShapeId = (recData['nailShape'] as Map)['nailShapeId'];
+      resolvedShape = data.nailShapes.firstWhereOrNull((s) => s.nailShapeId == recShapeId) ?? resolvedShape;
+    }
+
+    // Resolve surface
+    NailSurfaceModel? resolvedSurface = _resolveSurface(data.nailSurfaces, _customerNail);
+    if (recData['nailSurface'] is Map) {
+      final recSurfaceId = (recData['nailSurface'] as Map)['nailSurfaceId'];
+      resolvedSurface = data.nailSurfaces.firstWhereOrNull((s) => s.nailSurfaceId == recSurfaceId) ?? resolvedSurface;
+    }
+
+    // Colors & Gradients — safe casts
+    final Map<int, String> initialColors = {for (var i = 1; i <= 5; i++) i: '#FF4081'};
+    final Map<int, List<String>?> initialGradients = {for (var i = 1; i <= 5; i++) i: null};
+    final colorsRaw = recData['colors'];
+    if (colorsRaw is List && colorsRaw.isNotEmpty) {
+      final primaryHex = colorsRaw.first.toString();
+      for (var i = 1; i <= 5; i++) {
+        initialColors[i] = primaryHex;
+      }
+      if (colorsRaw.length >= 2) {
+        final stops = colorsRaw.map((e) => e.toString()).take(3).toList();
+        for (var i = 1; i <= 5; i++) {
+          initialGradients[i] = stops;
+        }
+      }
+    }
+
+    // Placements — safe casts
+    final List<PlacedComponentDraft> resolvedPlacements = [];
+    CombinedComponent? resolvedSelectedComponent;
+    final componentsRaw = recData['components'];
+    if (componentsRaw is List) {
+      int localIdCounter = DateTime.now().microsecondsSinceEpoch;
+      for (final comp in componentsRaw) {
+        if (comp is! Map) continue;
+        final compId = comp['componentId'];
+        final matchedComponent = data.combinedComponents.firstWhereOrNull(
+          (c) => !c.isCustomerComponent && c.componentId == compId,
+        );
+        if (matchedComponent != null) {
+          resolvedSelectedComponent ??= matchedComponent;
+          for (var fIdx = 1; fIdx <= 5; fIdx++) {
+            resolvedPlacements.add(
+              PlacedComponentDraft(
+                localId: localIdCounter++,
+                component: matchedComponent,
+                componentId: matchedComponent.componentId,
+                customerComponentId: matchedComponent.customerComponentId,
+                name: matchedComponent.name,
+                imageUrl: matchedComponent.imageUrl,
+                fingerIndex: fIdx,
+                posX: 0,
+                posY: 0,
+                scale: 0.5,
+                rotation: 0,
+              ),
+            );
+          }
+        }
+      }
+    }
+
+    setState(() {
+      _selectedNailShape = resolvedShape;
+      _selectedNailSurface = resolvedSurface;
+      _selectedComponent = resolvedSelectedComponent;
+      _fingerColors.clear();
+      _fingerColors.addAll(initialColors);
+      _fingerGradients
+        ..clear()
+        ..addAll(initialGradients);
+      _placements
+        ..clear()
+        ..addAll(resolvedPlacements);
+      _selectedPlacementId = _placements.isEmpty ? null : _placements.first.localId;
+    });
+  }
+
+  Future<void> _reGenerateDesign() async {
+    setState(() => _isSaving = true);
+    try {
+      final quizRepo = QuizRepository(getIt<ApiClient>());
+      final res = await quizRepo.getCustomerNailComposition();
+      if (mounted) {
+        _applyRecommendedData(res);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã tạo lại thiết kế móng phù hợp mới!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi khi tạo lại thiết kế: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+
+  void _applyToAllFingers() {
+    final srcIdx = _selectedFingerIndex;
+    if (srcIdx == -1) return;
+
+    final currentColor = _fingerColors[srcIdx] ?? '#FF4081';
+    final currentGradient = _fingerGradients[srcIdx];
+    final srcPlacements = _placements
+        .where((p) => placementMatchesFinger(p.fingerIndex, srcIdx))
+        .toList();
+
+    setState(() {
+      for (var i = 1; i <= 5; i++) {
+        _fingerColors[i] = currentColor;
+        _fingerGradients[i] = currentGradient == null ? null : [...currentGradient];
+      }
+
+      _placements.removeWhere((p) => !placementMatchesFinger(p.fingerIndex, srcIdx));
+
+      int localIdCounter = DateTime.now().microsecondsSinceEpoch;
+      for (var fIdx = 1; fIdx <= 5; fIdx++) {
+        if (fIdx == srcIdx) continue;
+        for (final p in srcPlacements) {
+          _placements.add(
+            PlacedComponentDraft(
+              localId: localIdCounter++,
+              component: p.component,
+              componentId: p.componentId,
+              customerComponentId: p.customerComponentId,
+              name: p.name,
+              imageUrl: p.imageUrl,
+              fingerIndex: fIdx,
+              posX: p.posX,
+              posY: p.posY,
+              scale: p.scale,
+              rotation: p.rotation,
+            ),
+          );
+        }
+      }
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Đã áp dụng mẫu thiết kế của ngón này cho tất cả các ngón!'),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   NailShapeModel? _resolveShape(
@@ -267,56 +499,47 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
     });
   }
 
-  void _removeSelectedPlacement() {
-    final selected = _selectedPlacement;
-    if (selected == null) return;
-    _deletePlacement(selected.localId);
+
+
+  DateTime? _lastScaleWarningTime;
+  void _showScaleWarning() {
+    final now = DateTime.now();
+    if (_lastScaleWarningTime == null ||
+        now.difference(_lastScaleWarningTime!) > const Duration(seconds: 4)) {
+      _lastScaleWarningTime = now;
+      _showMessage('Kích thước phụ kiện lớn hơn bề ngang móng, vui lòng thu nhỏ lại.');
+    }
   }
 
-  void _updatePlacement(PlacedComponentDraft placement) {
-    final index = _placements.indexWhere(
-      (item) => item.localId == placement.localId,
-    );
-    if (index == -1) return;
-    setState(() {
-      _placements[index] = placement;
-      _selectedPlacementId = placement.localId;
-    });
-  }
-
-  void _deletePlacement(int localId) {
-    final index = _placements.indexWhere((item) => item.localId == localId);
-    if (index == -1) return;
-    final selected = _placements[index];
-    setState(() {
-      if (selected.customerNailComponentId != null) {
-        _deletedPlacementIds.add(selected.customerNailComponentId!);
+  void _updatePlacement(PlacedComponentDraft updated) {
+    final index = _placements.indexWhere((p) => p.localId == updated.localId);
+    if (index != -1) {
+      setState(() {
+        _placements[index] = updated;
+      });
+      if (updated.scale > 1.2) {
+        _showScaleWarning();
       }
-      _placements.removeAt(index);
-      _selectedPlacementId = _placements.isEmpty
-          ? null
-          : _placements.last.localId;
+    }
+  }
+
+  void _deletePlacementById(int localId) {
+    setState(() {
+      final index = _placements.indexWhere((p) => p.localId == localId);
+      if (index != -1) {
+        final placement = _placements[index];
+        if (placement.customerNailComponentId != null) {
+          _deletedPlacementIds.add(placement.customerNailComponentId!);
+        }
+        _placements.removeAt(index);
+      }
+      if (_selectedPlacementId == localId) {
+        _selectedPlacementId = _placements.isEmpty ? null : _placements.last.localId;
+      }
     });
   }
 
-  void _nudge({
-    double dx = 0,
-    double dy = 0,
-    double scale = 0,
-    double rotation = 0,
-  }) {
-    final index = _selectedPlacementIndex;
-    if (index == -1) return;
-    final current = _placements[index];
-    setState(() {
-      _placements[index] = current.copyWith(
-        posX: (current.posX + dx).clamp(-0.5, 0.5).toDouble(),
-        posY: (current.posY + dy).clamp(-0.5, 0.5).toDouble(),
-        scale: (current.scale + scale).clamp(0.1, 1.5).toDouble(),
-        rotation: current.rotation + rotation,
-      );
-    });
-  }
+
 
   void _togglePreviewDetailFinger(int fingerIndex) {
     setState(() {
@@ -379,30 +602,30 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
   }
 
   Future<void> _save() async {
-    final nail = _customerNail;
     final shape = _selectedNailShape;
     if (shape == null) {
-      _showMessage('Vui lòng tạo mẫu móng và chọn dáng móng.');
+      _showMessage('Vui lòng chọn dáng móng.');
       return;
     }
 
     setState(() => _isSaving = true);
     try {
-      var customerNailId = nail?.customerNailId ?? 0;
-      final isNewCustomerNail = customerNailId <= 0;
-      final nailName = nail?.name.trim().isNotEmpty == true
-          ? nail!.name
-          : 'Custom Nail';
+      int targetNailId;
+      String targetName = 'My Custom Design';
 
-      if (customerNailId <= 0) {
-        customerNailId = await _customerNailRepository.createCustomerNail(
-          name: nailName,
+      if (_customerNail == null) {
+        // Create new design first
+        targetNailId = await _customerNailRepository.createCustomerNail(
+          name: targetName,
         );
+      } else {
+        targetNailId = _customerNail!.customerNailId;
+        targetName = _customerNail!.name;
       }
 
       await _customerNailRepository.updateCustomerNail(
-        customerNailId: customerNailId,
-        name: nailName,
+        customerNailId: targetNailId,
+        name: targetName,
         nailShapeId: shape.nailShapeId,
         nailSurfaceId: _selectedNailSurface?.nailSurfaceId,
         customColor: _buildColorJson(),
@@ -413,7 +636,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
       }
 
       for (final placement in _placements) {
-        final payload = placement.toPayload(customerNailId);
+        final payload = placement.toPayload(targetNailId);
         if (placement.customerNailComponentId == null) {
           await _componentRepository.createCustomerNailComponent(
             customerNailId: payload.customerNailId,
@@ -439,21 +662,11 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
       }
 
       _deletedPlacementIds.clear();
-      final fresh = await _customerNailRepository.getCustomerNailById(
-        customerNailId,
-      );
+      final fresh = await _customerNailRepository.getCustomerNailById(targetNailId);
       setState(() => _customerNail = fresh);
-      _showMessage('Đã lưu thiết lập thử móng.');
-      if ((widget.customerNail?.customerNailId ?? 0) > 0) {
-        await _fetchData();
-      }
-      if (mounted) {
-        if (isNewCustomerNail) {
-          context.go('/my-studio');
-        } else {
-          Navigator.of(context).pop(true);
-        }
-      }
+      if (mounted) _showMessage('Đã lưu thiết lập thử móng.');
+      await _fetchData();
+      if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
       _showMessage(error.toString());
     } finally {
@@ -500,18 +713,14 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(
-        context,
-      ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       appBar: AppBar(
-        title: Text(
-          _customerNail == null ? 'Thiết kế móng' : _customerNail!.name,
-        ),
+        title: Text(_customerNail == null ? 'Thiết kế móng' : _customerNail!.name),
         backgroundColor: Colors.transparent,
       ),
       body: Stack(
         children: [
-          _buildBody(),
+          Positioned.fill(child: _buildBody()),
           if (_launching)
             const Positioned.fill(
               child: ColoredBox(
@@ -521,13 +730,132 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
             ),
         ],
       ),
-      bottomNavigationBar: TryOnActionBar(
-        canSave: _customerNail != null && _selectedNailShape != null,
-        isSaving: _isSaving,
-        isLaunching: _launching,
-        onSave: _save,
-        onLiveTryOn: () => _launchTryOn(photo: false),
-        onPhotoTryOn: () => _launchTryOn(photo: true),
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 16,
+            bottom: MediaQuery.of(context).padding.bottom > 0
+                ? MediaQuery.of(context).padding.bottom
+                : 16,
+          ),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: (_selectedNailShape != null && !_isSaving && !_launching)
+                          ? () => _launchTryOn(photo: false)
+                          : null,
+                      icon: const Icon(Icons.videocam_outlined),
+                      label: const Text('Live'),
+                      style: OutlinedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        side: const BorderSide(color: AppColors.primary),
+                        foregroundColor: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: (_selectedNailShape != null && !_isSaving && !_launching)
+                          ? () => _launchTryOn(photo: true)
+                          : null,
+                      icon: const Icon(Icons.photo_camera_outlined),
+                      label: const Text('Photo'),
+                      style: OutlinedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        side: const BorderSide(color: AppColors.primary),
+                        foregroundColor: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  if (widget.recommendedData?['fromPerfectMatch'] == true) ...[
+                    OutlinedButton.icon(
+                      onPressed: _isSaving ? null : _reGenerateDesign,
+                      icon: _isSaving
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Color(0xFFE91E63),
+                              ),
+                            )
+                          : const Icon(Icons.refresh_rounded, size: 20),
+                      label: const Text(
+                        'Gen lại',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFFE91E63),
+                        side: const BorderSide(color: Color(0xFFFFD1E1), width: 1.5),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: (_selectedNailShape != null && !_isSaving && !_launching)
+                          ? _save
+                          : null,
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        backgroundColor: Colors.pink,
+                      ),
+                      child: _isSaving
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              'Lưu mẫu thiết kế',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -538,43 +866,41 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
     final data = _tryOnData;
     if (data == null) return const Center(child: Text('No data available'));
 
-    return Column(
-      children: [
-        // Phần trên: Bảng Preview cố định
-        SizedBox(
-          height: MediaQuery.of(context).size.height * 0.35,
-          child: Padding(
-            padding: const EdgeInsets.only(
-              top: 16.0,
-              left: 16.0,
-              right: 16.0,
-              bottom: 8.0,
-            ),
-            child: TryOnPreviewBoard(
-              nail: _customerNail,
-              selectedShape: _selectedNailShape,
-              selectedSurface: _selectedNailSurface,
-              selectedColor: _activeFingerColor,
-              gradientStops: _activeFingerGradient,
-              fingerColors: _fingerColors,
-              fingerGradients: _fingerGradients,
-              selectedFingerIndex: _selectedFingerIndex,
-              detailFingerIndex: _previewDetailFingerIndex,
-              placements: _placements,
-              selectedPlacementId: _selectedPlacementId,
-              onSelectPlacement: (id) =>
-                  setState(() => _selectedPlacementId = id),
-              onUpdatePlacement: _updatePlacement,
-              onDeletePlacement: _deletePlacement,
-              onToggleDetailFinger: _togglePreviewDetailFinger,
+    return DefaultTabController(
+      length: 4,
+      child: Column(
+        children: [
+          // Phần trên: Bảng Preview cố định (sử dụng Expanded để tự động giãn nở khi panel thu lại)
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 16.0, left: 16.0, right: 16.0, bottom: 8.0),
+              child: TryOnPreviewBoard(
+                nail: _customerNail,
+                selectedShape: _selectedNailShape,
+                selectedSurface: _selectedNailSurface,
+                selectedColor: _activeFingerColor,
+                gradientStops: _activeFingerGradient,
+                fingerColors: _fingerColors,
+                fingerGradients: _fingerGradients,
+                selectedFingerIndex: _selectedFingerIndex,
+                detailFingerIndex: _previewDetailFingerIndex,
+                placements: _placements,
+                selectedPlacementId: _selectedPlacementId,
+                onSelectPlacement: (id) => setState(() => _selectedPlacementId = id),
+                onUpdatePlacement: _updatePlacement,
+                onDeletePlacement: _deletePlacementById,
+                onToggleDetailFinger: _togglePreviewDetailFinger,
+                onApplyToAll: _applyToAllFingers,
+              ),
             ),
           ),
-        ),
 
-        // Phần dưới: Điều khiển công cụ (Scrollable)
-        Expanded(
-          child: Container(
+          // Phần dưới: Điều khiển công cụ (AnimatedContainer để co giãn chiều cao mượt mà)
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
             width: double.infinity,
+            height: _isSelectorExpanded ? 220 : 108,
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surface,
               boxShadow: [
@@ -584,130 +910,165 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
                   offset: const Offset(0, -5),
                 ),
               ],
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             ),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // 1. TabBar
-                  TabBar(
-                    controller: _tabController,
-                    labelColor: Colors.pink,
-                    unselectedLabelColor: Colors.grey,
-                    indicatorColor: Colors.pink,
-                    isScrollable: true,
-                    tabAlignment: TabAlignment.start,
-                    labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-                    tabs: const [
-                      Tab(text: "Dáng móng"),
-                      Tab(text: "Bề mặt"),
-                      Tab(text: "Màu sắc"),
-                      Tab(text: "Phụ kiện"),
-                    ],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        margin: const EdgeInsets.only(left: 16, top: 12, bottom: 12, right: 8),
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: TabBar(
+                          indicator: BoxDecoration(
+                            borderRadius: BorderRadius.circular(28),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFE91E63), Color(0xFFC2185B)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFE91E63).withValues(alpha: 0.2),
+                                blurRadius: 6,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          labelColor: Colors.white,
+                          unselectedLabelColor: Colors.grey.shade600,
+                          indicatorSize: TabBarIndicatorSize.tab,
+                          dividerColor: Colors.transparent,
+                          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                          tabs: const [
+                            Tab(text: 'Dáng móng'),
+                            Tab(text: 'Bề mặt'),
+                            Tab(text: 'Màu sắc'),
+                            Tab(text: 'Phụ kiện'),
+                          ],
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => setState(() => _isSelectorExpanded = !_isSelectorExpanded),
+                      icon: Icon(
+                        _isSelectorExpanded ? Icons.keyboard_arrow_down_rounded : Icons.keyboard_arrow_up_rounded,
+                        color: const Color(0xFFE91E63),
+                        size: 26,
+                      ),
+                      style: IconButton.styleFrom(
+                        backgroundColor: const Color(0xFFFCE4EC),
+                        padding: const EdgeInsets.all(12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                  ],
+                ),
+
+                if (!_isSelectorExpanded)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 12, left: 16, right: 16),
+                    child: Text(
+                      'Bấm nút mũi tên bên phải để hiển thị bảng thiết kế móng',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey,
+                      ),
+                    ),
                   ),
 
-                  // 2. Nội dung Tab (thay đổi theo index)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: _buildActiveTabContent(data),
+                // Nội dung Tab (chỉ hiển thị khi panel được mở rộng)
+                if (_isSelectorExpanded)
+                  Expanded(
+                    child: TabBarView(
+                      children: [
+                        SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: _buildShapeTool(data),
+                        ),
+                        SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: _buildSurfaceTool(data),
+                        ),
+                        SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: _buildColorTool(),
+                        ),
+                        SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: _buildComponentsTab(data),
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
+              ],
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
-  }
-
-  Widget _buildActiveTabContent(TryOnData data) {
-    switch (_tabController.index) {
-      case 0:
-        return _buildShapeTool(data);
-      case 1:
-        return _buildSurfaceTool(data);
-      case 2:
-        return _buildColorTool();
-      case 3:
-        return _buildComponentsTab(data);
-      default:
-        return const SizedBox.shrink();
-    }
   }
 
   Widget _buildComponentsTab(TryOnData data) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Nửa trên: Danh sách phụ kiện
         _buildComponentsTool(data),
         const SizedBox(height: 16),
         const Divider(height: 1),
         const SizedBox(height: 16),
-        // Nửa dưới: Remote D-Pad
         _buildPlacementTool(),
       ],
     );
   }
 
   Widget _buildPlacementTool() {
-    return SingleChildScrollView(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 8.0,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    _selectedPlacement?.name ?? 'Chưa chọn phụ kiện trên móng',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  _selectedPlacement?.name ?? 'Chưa chọn phụ kiện trên móng',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: _selectedPlacement != null ? const Color(0xFFE91E63) : Colors.black87,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                FilledButton.icon(
-                  onPressed: _selectedComponent == null
-                      ? null
-                      : _addSelectedComponent,
-                  icon: const Icon(Icons.add, size: 16),
-                  label: const Text('Thêm vào móng'),
-                  style: FilledButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    backgroundColor: Colors.pink,
-                  ),
+              ),
+              FilledButton.icon(
+                onPressed: _selectedComponent == null ? null : _addSelectedComponent,
+                icon: const Icon(Icons.add_rounded, size: 16),
+                label: const Text('Thêm vào móng', style: TextStyle(fontWeight: FontWeight.bold)),
+                style: FilledButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  backgroundColor: const Color(0xFFE91E63),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          TryOnPlacementControls(
-            selectedPlacement: _selectedPlacement,
-            onMoveLeft: () => _nudge(dx: -0.04),
-            onMoveRight: () => _nudge(dx: 0.04),
-            onMoveUp: () => _nudge(dy: -0.04),
-            onMoveDown: () => _nudge(dy: 0.04),
-            onScaleDown: () => _nudge(scale: -0.05),
-            onScaleUp: () => _nudge(scale: 0.05),
-            onRotateLeft: () => _nudge(rotation: -10),
-            onRotateRight: () => _nudge(rotation: 10),
-            onRemove: _removeSelectedPlacement,
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -756,9 +1117,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
               _fingerGradients[i] = gradient == null ? null : [...gradient];
             }
           } else {
-            _fingerGradients[_selectedFingerIndex] = gradient == null
-                ? null
-                : [...gradient];
+            _fingerGradients[_selectedFingerIndex] = gradient == null ? null : [...gradient];
           }
         }),
       ),
@@ -772,37 +1131,62 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            color: Theme.of(context).colorScheme.surface,
-            child: const TabBar(
-              tabs: [
-                Tab(text: 'System'),
-                Tab(text: 'My Components'),
-              ],
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: TabBar(
+              indicator: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              labelColor: const Color(0xFFE91E63),
+              unselectedLabelColor: Colors.grey.shade600,
               indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: Colors.transparent,
+              labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+              unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+              tabs: const [
+                Tab(text: 'Mẫu hệ thống'),
+                Tab(text: 'Phụ kiện của tôi'),
+              ],
             ),
           ),
           const SizedBox(height: 16),
           SizedBox(
-            height: 170, // Đủ chỗ cho Grid 160px
+            height: 130, // Optimized height matching compact 120px ComponentGrid
             child: TabBarView(
               children: [
                 ComponentGrid(
                   title: '',
-                  components: data.combinedComponents
-                      .where((item) => !item.isCustomerComponent)
-                      .toList(),
+                  components: data.combinedComponents.where((item) => !item.isCustomerComponent).toList(),
                   selectedComponent: _selectedComponent,
-                  onSelected: (component) =>
-                      setState(() => _selectedComponent = component),
+                  onSelected: (component) {
+                    setState(() {
+                      _selectedComponent = component;
+                    });
+                    _addSelectedComponent();
+                  },
                 ),
                 ComponentGrid(
                   title: '',
-                  components: data.combinedComponents
-                      .where((item) => item.isCustomerComponent)
-                      .toList(),
+                  components: data.combinedComponents.where((item) => item.isCustomerComponent).toList(),
                   selectedComponent: _selectedComponent,
-                  onSelected: (component) =>
-                      setState(() => _selectedComponent = component),
+                  onSelected: (component) {
+                    setState(() {
+                      _selectedComponent = component;
+                    });
+                    _addSelectedComponent();
+                  },
                 ),
               ],
             ),
@@ -840,8 +1224,6 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
 
   void _showMessage(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 }

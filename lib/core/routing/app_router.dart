@@ -42,9 +42,16 @@ import '../../features/try-on/presentation/try_on_setup_screen.dart';
 import '../widgets/main_shell.dart';
 
 class AppRouter {
+  static final GlobalKey<NavigatorState> rootNavigatorKey =
+      GlobalKey<NavigatorState>(debugLabel: 'root');
+  static final GlobalKey<NavigatorState> shellNavigatorKey =
+      GlobalKey<NavigatorState>(debugLabel: 'shell');
+
   static final GoRouter router = GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/',
     routes: [
+      // ── Auth (root navigator) ─────────────────────────────────────────────
       GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
       GoRoute(
         path: '/forgot-password',
@@ -93,6 +100,8 @@ class AppRouter {
           return EmailVerificationPage(email: email);
         },
       ),
+
+      // ── Booking & Payment (root navigator) ────────────────────────────────
       GoRoute(
         path: '/nail-booking',
         builder: (context, state) {
@@ -110,8 +119,18 @@ class AppRouter {
       GoRoute(
         path: '/custom-nail-booking',
         builder: (context, state) {
-          final nail = state.extra as CustomerNailModel;
-          return CustomNailBookingPage(nail: nail);
+          final extra = state.extra;
+          if (extra is CustomerNailModel) {
+            return CustomNailBookingPage(nail: extra);
+          }
+          final map = extra as Map<String, dynamic>;
+          return CustomNailBookingPage(
+            nail: map['nail'] as CustomerNailModel,
+            shapeMethodConfigId: map['shapeMethodConfigId'] as int?,
+            shapeMethodName: map['shapeMethodName'] as String?,
+            shapeMethodPrice: map['shapeMethodPrice'] as num?,
+            shapeMethodDuration: map['shapeMethodDuration'] as int?,
+          );
         },
       ),
       GoRoute(
@@ -163,6 +182,8 @@ class AppRouter {
           return TransactionListPage(bookingId: bookingId);
         },
       ),
+
+      // ── Quiz & Perfect Match (root navigator) ─────────────────────────────
       GoRoute(path: '/quiz', builder: (context, state) => const QuizPage()),
       GoRoute(
         path: '/quiz/analyze',
@@ -194,9 +215,107 @@ class AppRouter {
           );
         },
       ),
+
+      // ── Detail / full-screen pages (root navigator, no bottom nav) ────────
+      // KEY FIX: All pages accessed via context.push() must live here at the
+      // root level. Keeping them inside ShellRoute lets the shell navigator
+      // accumulate "pushed" pages; any parent widget rebuild (e.g. locale
+      // change) then triggers Navigator._debugCheckDuplicatedPageKeys → crash.
+      GoRoute(
+        path: '/nails/:id',
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+          return NailDetailScreen(nailDesignId: id ?? 0);
+        },
+      ),
+      GoRoute(
+        path: '/nail-variants/:id',
+        pageBuilder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+          return CustomTransitionPage<void>(
+            key: state.pageKey,
+            child: NailVariantDetailScreen(nailVariantId: id ?? 0),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  final offset = Tween<Offset>(
+                    begin: const Offset(0, 1),
+                    end: Offset.zero,
+                  ).chain(CurveTween(curve: Curves.easeOutCubic));
+                  return SlideTransition(
+                    position: animation.drive(offset),
+                    child: child,
+                  );
+                },
+          );
+        },
+      ),
+      GoRoute(
+        path: '/services/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          return ServiceDetailPage(serviceId: id);
+        },
+      ),
+      GoRoute(
+        path: '/my-bookings/detail',
+        builder: (context, state) {
+          final bookingId = state.extra?.toString() ?? '';
+          return MyBookingDetailPage(bookingId: bookingId);
+        },
+      ),
+      GoRoute(
+        path: '/my-bookings/rate',
+        builder: (context, state) {
+          final bookingId = state.extra?.toString() ?? '';
+          return BookingRatingPage(bookingId: bookingId);
+        },
+      ),
+      GoRoute(
+        path: '/my-studio/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          return CustomerNailDetailPage(id: id);
+        },
+      ),
+      GoRoute(
+        path: '/try-on',
+        builder: (context, state) {
+          final extra = state.extra;
+          if (extra is nails_models.CustomerNailModel) {
+            return TryOnSetupScreen(customerNail: extra);
+          }
+          return const TryOnSetupScreen();
+        },
+      ),
+      GoRoute(
+        path: '/another-design',
+        builder: (context, state) => const AnotherDesignPage(),
+      ),
+      GoRoute(
+        path: '/profile/update-info',
+        builder: (context, state) => const UpdateProfilePage(),
+      ),
+      GoRoute(
+        path: '/profile/update-preferences',
+        builder: (context, state) => const UpdatePreferencesPage(),
+      ),
+      GoRoute(
+        path: '/profile/transactions',
+        builder: (context, state) => const TransactionListPage(),
+      ),
+      GoRoute(
+        path: '/profile/favorite-nails-list',
+        builder: (context, state) => const FavoriteNailsPage(),
+      ),
+
+      // ── Shell: tab pages with bottom nav bar ──────────────────────────────
       ShellRoute(
-        builder: (context, state, child) =>
-            MainShell(showHeader: state.matchedLocation == '/', child: child),
+        navigatorKey: shellNavigatorKey,
+        builder: (context, state, child) => MainShell(
+          showHeader: state.matchedLocation == '/',
+          currentLocation: state.matchedLocation,
+          child: child,
+        ),
         routes: [
           GoRoute(path: '/', builder: (context, state) => const HomePage()),
           GoRoute(
@@ -212,107 +331,20 @@ class AppRouter {
             builder: (context, state) => const NailListScreen(),
           ),
           GoRoute(
-            path: '/nails/:id',
-            builder: (context, state) {
-              final id = int.tryParse(state.pathParameters['id'] ?? '');
-              return NailDetailScreen(nailDesignId: id ?? 0);
-            },
-          ),
-          GoRoute(
-            path: '/nail-variants/:id',
-            pageBuilder: (context, state) {
-              final id = int.tryParse(state.pathParameters['id'] ?? '');
-              return CustomTransitionPage<void>(
-                key: state.pageKey,
-                child: NailVariantDetailScreen(nailVariantId: id ?? 0),
-                transitionsBuilder:
-                    (context, animation, secondaryAnimation, child) {
-                      final offset = Tween<Offset>(
-                        begin: const Offset(0, 1),
-                        end: Offset.zero,
-                      ).chain(CurveTween(curve: Curves.easeOutCubic));
-                      return SlideTransition(
-                        position: animation.drive(offset),
-                        child: child,
-                      );
-                    },
-              );
-            },
-          ),
-          GoRoute(
             path: '/services',
             builder: (context, state) => const ServiceListPage(),
-          ),
-          GoRoute(
-            path: '/services/:id',
-            builder: (context, state) {
-              final id = state.pathParameters['id'] ?? '';
-              return ServiceDetailPage(serviceId: id);
-            },
           ),
           GoRoute(
             path: '/my-bookings',
             builder: (context, state) => const MyBookingListPage(),
           ),
           GoRoute(
-            path: '/my-bookings/detail',
-            builder: (context, state) {
-              final bookingId = state.extra?.toString() ?? '';
-              return MyBookingDetailPage(bookingId: bookingId);
-            },
-          ),
-          GoRoute(
-            path: '/my-bookings/rate',
-            builder: (context, state) {
-              final bookingId = state.extra?.toString() ?? '';
-              return BookingRatingPage(bookingId: bookingId);
-            },
-          ),
-          GoRoute(
             path: '/my-studio',
             builder: (context, state) => const MyStudioTabPage(),
           ),
           GoRoute(
-            path: '/my-studio/:id',
-            builder: (context, state) {
-              final id = state.pathParameters['id'] ?? '';
-              return CustomerNailDetailPage(id: id);
-            },
-          ),
-          GoRoute(
-            path: '/another-design',
-            builder: (context, state) => const AnotherDesignPage(),
-          ),
-          GoRoute(
-            path: '/try-on',
-            builder: (context, state) {
-              final extra = state.extra;
-              if (extra is nails_models.CustomerNailModel) {
-                return TryOnSetupScreen(customerNail: extra);
-              }
-              return const TryOnSetupScreen();
-            },
-          ),
-
-          GoRoute(
             path: '/profile',
             builder: (context, state) => const ProfilePage(),
-          ),
-          GoRoute(
-            path: '/profile/update-info',
-            builder: (context, state) => const UpdateProfilePage(),
-          ),
-          GoRoute(
-            path: '/profile/update-preferences',
-            builder: (context, state) => const UpdatePreferencesPage(),
-          ),
-          GoRoute(
-            path: '/profile/transactions',
-            builder: (context, state) => const TransactionListPage(),
-          ),
-          GoRoute(
-            path: '/profile/favorite-nails-list',
-            builder: (context, state) => const FavoriteNailsPage(),
           ),
           GoRoute(
             path: '/profile/booking-history',

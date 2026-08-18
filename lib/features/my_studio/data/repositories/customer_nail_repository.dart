@@ -15,7 +15,7 @@ class CustomerNailRepository {
     String? name,
   }) async {
     final response = await _apiClient.get<dynamic>(
-      '/CustomerNails',
+      '/CustomerNails/me',
       queryParameters: {
         'pageNumber': page,
         'pageSize': pageSize,

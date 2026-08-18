@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:dio/dio.dart';
 import '../../../../generated/l10n.dart';
 
 import '../../../../core/constants/app_colors.dart';
@@ -49,6 +51,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
 
   Future<List<ShapeMethodConfigModel>>? _shapeMethodsFuture;
   ShapeMethodConfigModel? _selectedShapeMethod;
+  String? _resolvedArtistId;
   List<dynamic> _services = [];
   List<dynamic> _timeSlots = [];
   List<PromotionModel> _promotions = [];
@@ -56,6 +59,10 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   List<String?> _selectedExtraServices = [];
   DateTime? _selectedDate;
   String? _selectedTime;
+  String? _holdToken;
+  Timer? _holdTimer;
+  int _holdRemainingSeconds = 0;
+  bool _isHolding = false;
 
   final List<Map<String, dynamic>> _bookingSteps = [
     {'title': 'Dịch vụ', 'icon': Icons.spa_rounded},
@@ -70,10 +77,15 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
     _shapeMethodsFuture = _loadShapeMethods();
     _fetchServices();
     _fetchPromotions();
+    _resolveArtist();
   }
 
   @override
   void dispose() {
+    _holdTimer?.cancel();
+    if (_holdToken != null) {
+      _apiService.cancelHoldSlot(_holdToken!);
+    }
     _pageController.dispose();
     super.dispose();
   }
@@ -173,7 +185,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   Future<void> _fetchTimeSlots() async {
     if (_selectedDate == null) return;
 
-    final artistId = widget.nail.nailArtistId ?? '';
+    final artistId = _resolvedArtistId ?? widget.nail.nailArtistId ?? '';
     if (artistId.isEmpty) {
       _showSnackBar('Khong tim thay tho da duyet.');
       return;
@@ -201,8 +213,91 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isLoadingTimes = false);
-      _showSnackBar('Loi tai gio ranh: $e');
+      setState(() {
+        _isLoadingTimes = false;
+        _timeSlots = [];
+      });
+      
+      String errorMsg = 'Lỗi tải giờ rảnh';
+      if (e is DioException) {
+        final data = e.response?.data;
+        if (data is Map && data['message'] != null) {
+          errorMsg = data['message'].toString();
+        } else {
+          errorMsg = e.message ?? e.toString();
+        }
+      } else {
+        errorMsg = e.toString();
+      }
+      
+      // If it's just about having no schedule, the UI already displays
+      // "This artist has no schedule on this date" which is perfect.
+      if (!errorMsg.contains('không có lịch làm việc') && 
+          !errorMsg.contains('no schedule')) {
+        _showSnackBar(errorMsg);
+      }
+    }
+  }
+
+  Future<void> _resolveArtist() async {
+    final salonId = widget.nail.salonId;
+    if (salonId.isEmpty) return;
+
+    try {
+      final artists = await _apiService.getNailArtistsBySalon(salonId);
+      final targetId = widget.nail.approvedArtistId;
+      final targetName = widget.nail.stylistName.toLowerCase().trim();
+
+      dynamic matchedArtist;
+
+      // 1. Match by nailArtistId
+      if (targetId != null) {
+        for (var a in artists) {
+          if (a is Map && a['nailArtistId']?.toString() == targetId) {
+            matchedArtist = a;
+            break;
+          }
+        }
+      }
+
+      // 2. Match by userId
+      if (matchedArtist == null && targetId != null) {
+        for (var a in artists) {
+          if (a is Map && a['userId']?.toString() == targetId) {
+            matchedArtist = a;
+            break;
+          }
+        }
+      }
+
+      // 3. Match by name
+      if (matchedArtist == null && targetName.isNotEmpty && targetName != 'chưa gán') {
+        for (var a in artists) {
+          if (a is Map) {
+            final firstName = a['firstName']?.toString() ?? '';
+            final lastName = a['lastName']?.toString() ?? '';
+            final fullName = '$firstName $lastName'.toLowerCase().trim();
+            if (fullName == targetName) {
+              matchedArtist = a;
+              break;
+            }
+          }
+        }
+      }
+
+      if (matchedArtist != null && matchedArtist is Map) {
+        final nailArtistId = matchedArtist['nailArtistId']?.toString();
+        if (nailArtistId != null && nailArtistId.isNotEmpty) {
+          setState(() {
+            _resolvedArtistId = nailArtistId;
+          });
+          if (_selectedDate != null) {
+            _fetchTimeSlots();
+          }
+        }
+      }
+    } catch (_) {
+      // Fail silently
     }
   }
 
@@ -231,7 +326,15 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
         _groupedServicesMap,
         shapeMethodConfigId: _selectedShapeMethodConfigId,
         selectedPromotionIds: _selectedPromotionIds,
+        holdToken: _holdToken,
       );
+
+      _holdTimer?.cancel();
+      setState(() {
+        _holdToken = null;
+        _isHolding = false;
+        _holdRemainingSeconds = 0;
+      });
 
       if (!mounted) return;
       context.go(
@@ -255,6 +358,148 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+
+  Future<bool> _holdSelectedSlot() async {
+    final salonId = widget.nail.salonId;
+    final artistId = widget.nail.nailArtistId ?? '';
+    final customerNailRequestId = widget.nail.customerNailRequestId;
+
+    if (customerNailRequestId.isEmpty ||
+        salonId.isEmpty ||
+        artistId.isEmpty ||
+        _selectedDate == null ||
+        _selectedTime == null) {
+      return false;
+    }
+
+    final bookingDate = _formatBookingDate(_selectedDate!);
+    final formattedTime = _normalizedSelectedTime;
+
+    final List<Map<String, dynamic>> bookingItems = [
+      {
+        'customerNailRequestId': customerNailRequestId,
+        if (_selectedShapeMethodConfigId != null)
+          'shapeMethodConfigId': _selectedShapeMethodConfigId,
+        'quantity': 1,
+      }
+    ];
+    _groupedServicesMap.forEach((serviceId, quantity) {
+      bookingItems.add({'serviceId': serviceId, 'quantity': quantity});
+    });
+
+    try {
+      final data = await _apiService.holdSlot(
+        salonId: salonId,
+        nailArtistId: artistId,
+        bookingDate: bookingDate,
+        startTime: formattedTime,
+        bookingItems: bookingItems,
+      );
+
+      final token = data['holdToken']?.toString();
+      if (token == null || token.isEmpty) return false;
+
+      final remaining = (data['remainingSeconds'] as num?)?.toInt() ?? 300;
+
+      setState(() {
+        _holdToken = token;
+        _holdRemainingSeconds = remaining;
+        _isHolding = true;
+      });
+
+      _startHoldTimer(token);
+      return true;
+    } catch (e) {
+      _showSnackBar('Khung giờ này vừa mới có người chọn. Vui lòng chọn giờ khác.');
+      setState(() {
+        _holdToken = null;
+        _isHolding = false;
+        _holdRemainingSeconds = 0;
+        _selectedTime = null;
+      });
+      _fetchTimeSlots();
+      return false;
+    }
+  }
+
+  void _startHoldTimer(String token) {
+    _holdTimer?.cancel();
+    _holdTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_holdToken != token) {
+        timer.cancel();
+        return;
+      }
+      if (_holdRemainingSeconds <= 1) {
+        timer.cancel();
+        setState(() {
+          _holdToken = null;
+          _isHolding = false;
+          _holdRemainingSeconds = 0;
+          _selectedTime = null;
+        });
+        _showSnackBar('Thời gian giữ chỗ đã hết! Vui lòng chọn lại khung giờ.');
+        if (_currentStep > 1) {
+          _pageController.animateToPage(
+            1,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
+      } else {
+        setState(() {
+          _holdRemainingSeconds--;
+        });
+      }
+    });
+  }
+
+  void _cancelCurrentHold() {
+    final token = _holdToken;
+    if (token != null) {
+      _apiService.cancelHoldSlot(token); // fire-and-forget
+      setState(() {
+        _holdToken = null;
+        _isHolding = false;
+        _holdRemainingSeconds = 0;
+      });
+    }
+  }
+
+  Widget _buildHoldCountdownBanner() {
+    if (!_isHolding) return const SizedBox.shrink();
+    final secs = _holdRemainingSeconds;
+    final min = (secs ~/ 60).toString().padLeft(2, '0');
+    final sec = (secs % 60).toString().padLeft(2, '0');
+    final isUrgent = secs <= 60;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      color: isUrgent ? Colors.red.shade600 : Colors.orange.shade700,
+      child: Row(
+        children: [
+          const Icon(Icons.lock_clock, color: Colors.white, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              isUrgent
+                  ? 'Chỗ có thể bị hủy sau $min:$sec giây!'
+                  : 'Slot đang được giữ chỗ cho bạn – còn $min:$sec để hoàn tất',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   String get _normalizedSelectedTime {
@@ -302,6 +547,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   }
 
   void _handleServiceChanged(List<String?> services) {
+    _cancelCurrentHold();
     setState(() {
       _selectedExtraServices = services;
       _selectedTime = null;
@@ -321,14 +567,22 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
     }
   }
 
-  void _handleNextAction() {
+  Future<void> _handleNextAction() async {
     if (_currentStep == 0 && _selectedExtraServices.contains(null)) {
       _showSnackBar('Vui long chon hoac xoa dich vu dang bo trong.');
       return;
     }
-    if (_currentStep == 1 && (_selectedDate == null || _selectedTime == null)) {
-      _showSnackBar('Vui long chon ngay va khung gio.');
-      return;
+    if (_currentStep == 1) {
+      if (_selectedDate == null || _selectedTime == null) {
+        _showSnackBar('Vui long chon ngay va khung gio.');
+        return;
+      }
+      if (_holdToken == null || !_isHolding) {
+        setState(() => _isSubmitting = true);
+        final held = await _holdSelectedSlot();
+        setState(() => _isSubmitting = false);
+        if (!held || !mounted) return;
+      }
     }
 
     if (_currentStep < 2) {
@@ -382,6 +636,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
           : Column(
               children: [
                 _buildStepIndicator(),
+                _buildHoldCountdownBanner(),
                 Expanded(
                   child: PageView(
                     controller: _pageController,
@@ -507,6 +762,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
           BookingDateSelection(
             selectedDate: _selectedDate,
             onDateChanged: (date) {
+              _cancelCurrentHold();
               setState(() => _selectedDate = date);
               _fetchTimeSlots();
             },
@@ -520,7 +776,10 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
             selectedDate: _selectedDate,
             salonId: widget.nail.salonId,
             artistId: widget.nail.nailArtistId,
-            onTimeChanged: (time) => setState(() => _selectedTime = time),
+            onTimeChanged: (time) {
+              _cancelCurrentHold();
+              setState(() => _selectedTime = time);
+            },
           ),
         ],
       ),

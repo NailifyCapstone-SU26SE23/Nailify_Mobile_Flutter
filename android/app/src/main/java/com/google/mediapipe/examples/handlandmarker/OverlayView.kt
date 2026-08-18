@@ -145,7 +145,7 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                                 drawBitmap(bitmap, null, destRect, null)
                             }
                             design.decorations.forEach { decoration ->
-                                drawDecoration(this, decoration, destRect)
+                                drawDecoration(this, decoration, destRect, bitmap)
                             }
                         }
 
@@ -512,12 +512,66 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         return if (kotlin.math.abs(value) > 1f) value / 100f else value
     }
 
-    private fun drawDecoration(canvas: Canvas, decoration: NailDecoration, nailBounds: RectF) {
+    class ContentRatio(val widthRatio: Float, val heightRatio: Float, val offsetX: Float, val offsetY: Float)
+    private val contentRatioCache = mutableMapOf<Bitmap, ContentRatio>()
+
+    private fun getContentRatio(bitmap: Bitmap): ContentRatio {
+        return contentRatioCache.getOrPut(bitmap) {
+            val width = bitmap.width
+            val height = bitmap.height
+            var minX = width
+            var maxX = 0
+            var minY = height
+            var maxY = 0
+
+            val pixels = IntArray(width * height)
+            bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+
+            for (y in 0 until height) {
+                for (x in 0 until width) {
+                    val alpha = (pixels[y * width + x] ushr 24) and 0xff
+                    if (alpha > 5) {
+                        if (x < minX) minX = x
+                        if (x > maxX) maxX = x
+                        if (y < minY) minY = y
+                        if (y > maxY) maxY = y
+                    }
+                }
+            }
+
+            if (maxX < minX || maxY < minY) {
+                ContentRatio(1f, 1f, 0f, 0f)
+            } else {
+                val contentWidth = (maxX - minX + 1).toFloat()
+                val contentHeight = (maxY - minY + 1).toFloat()
+
+                val contentCenterX = (minX + maxX + 1) / 2f
+                val contentCenterY = (minY + maxY + 1) / 2f
+                val offsetX = (contentCenterX - width / 2f) / width
+                val offsetY = (contentCenterY - height / 2f) / height
+
+                ContentRatio(
+                    contentWidth / width,
+                    contentHeight / height,
+                    offsetX,
+                    offsetY
+                )
+            }
+        }
+    }
+
+    private fun drawDecoration(canvas: Canvas, decoration: NailDecoration, nailBounds: RectF, nailBitmap: Bitmap) {
         val bitmap = loadBitmapFromUri(decoration.imageSrc) ?: return
-        val width = nailBounds.width() * decoration.scale
-        val height = nailBounds.height() * decoration.scale
-        val centerX = nailBounds.centerX() + decoration.x * nailBounds.width()
-        val centerY = nailBounds.centerY() + decoration.y * nailBounds.height()
+        val ratio = getContentRatio(nailBitmap)
+
+        val width = nailBounds.width() * ratio.widthRatio * decoration.scale
+        val height = width // Keep it square to match Flutter
+
+        val nailContentCenterX = nailBounds.centerX() + ratio.offsetX * nailBounds.width()
+        val nailContentCenterY = nailBounds.centerY() + ratio.offsetY * nailBounds.height()
+
+        val centerX = nailContentCenterX + decoration.x * (nailBounds.width() * ratio.widthRatio)
+        val centerY = nailContentCenterY + decoration.y * (nailBounds.height() * ratio.heightRatio)
         val rect = RectF(
             centerX - width / 2f,
             centerY - height / 2f,

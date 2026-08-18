@@ -7,10 +7,9 @@ import '../../../../core/utils/price_formatter.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../data/models/customer_nail_models.dart' as nails_model;
-import '../../data/models/nail_component_model.dart';
 import '../../data/models/nail_variant_model.dart';
+import '../../data/models/nail_component_model.dart';
 import '../../data/models/shape_method_config_model.dart';
-import '../../data/repositories/favorite_nail_repository.dart';
 import '../../data/repositories/nail_variant_repository.dart';
 import '../../services/ar_try_on_service.dart';
 import '../../../../generated/l10n.dart';
@@ -34,8 +33,6 @@ class _NailVariantDetailScreenState extends State<NailVariantDetailScreen> {
   late Future<NailVariantModel> _future;
   bool _launching = false;
   bool _isFavorited = false;
-  int? _favoriteNailId;
-  bool _favoriteInitialized = false;
 
   @override
   void initState() {
@@ -58,57 +55,71 @@ class _NailVariantDetailScreenState extends State<NailVariantDetailScreen> {
           'Virtual try-on is not available on this build.',
         );
       }
-      await service.launchCustomerLive(customerNail);
+
+      if (!mounted) return;
+      setState(() => _launching = false);
+
+      showModalBottomSheet(
+        context: context,
+        builder: (context) {
+          return SafeArea(
+            child: Wrap(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.videocam_outlined, color: AppColors.primary),
+                  title: const Text('Thử trực tiếp qua Camera (Live AR)'),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    setState(() => _launching = true);
+                    try {
+                      await service.launchCustomerLive(customerNail);
+                    } catch (e) {
+                      _showError(e);
+                    } finally {
+                      if (mounted) setState(() => _launching = false);
+                    }
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_camera_outlined, color: AppColors.primary),
+                  title: const Text('Thử qua ảnh chụp (Photo AR)'),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    setState(() => _launching = true);
+                    try {
+                      await service.launchCustomerPhoto(customerNail);
+                    } catch (e) {
+                      _showError(e);
+                    } finally {
+                      if (mounted) setState(() => _launching = false);
+                    }
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              Localizations.localeOf(context).languageCode == 'vi'
-                  ? 'Lỗi khi mở AR: $e'
-                  : 'Error opening AR: $e',
-            ),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
         setState(() => _launching = false);
+        _showError(e);
       }
     }
   }
 
-  Future<void> _openPhotoTryOn(
-    nails_model.CustomerNailModel customerNail,
-  ) async {
-    setState(() => _launching = true);
-    try {
-      final service = getIt<ArTryOnService>();
-      if (!await service.isAvailable()) {
-        throw UnsupportedError(
-          'Virtual try-on is not available on this build.',
-        );
-      }
-
-      await service.launchCustomerPhoto(customerNail);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              Localizations.localeOf(context).languageCode == 'vi'
-                  ? 'Lỗi khi mở AR: $e'
-                  : 'Error opening AR: $e',
-            ),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _launching = false);
-      }
-    }
+  void _showError(dynamic e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          Localizations.localeOf(context).languageCode == 'vi'
+              ? 'Lỗi khi mở AR: $e'
+              : 'Error opening AR: $e',
+        ),
+      ),
+    );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -156,66 +167,19 @@ class _NailVariantDetailScreenState extends State<NailVariantDetailScreen> {
               ),
             );
           }
-          final variant = snapshot.data!;
-          if (!_favoriteInitialized) {
-            _isFavorited = variant.isFavorited;
-            _favoriteNailId = variant.favoriteNailId;
-            _favoriteInitialized = true;
-          }
           return _DetailContent(
-            variant: variant,
+            variant: snapshot.data!,
             designName: widget.designName,
             launching: _launching,
             onTryOn: _openTryOn,
-            onPhotoTryOn: _openPhotoTryOn,
             isFavorited: _isFavorited,
-            onFavoriteToggle: _toggleFavorite,
+            onFavoriteToggle: () {
+              setState(() => _isFavorited = !_isFavorited);
+            },
           );
         },
       ),
     );
-  }
-
-  Future<void> _toggleFavorite() async {
-    AuthGuard.check(context, () {
-      _toggleFavoriteAfterAuth();
-    });
-  }
-
-  Future<void> _toggleFavoriteAfterAuth() async {
-    final previousIsFavorited = _isFavorited;
-    final previousFavoriteNailId = _favoriteNailId;
-    final shouldFavorite = !_isFavorited;
-    setState(() {
-      _isFavorited = shouldFavorite;
-      if (!shouldFavorite) _favoriteNailId = null;
-    });
-    try {
-      if (shouldFavorite) {
-        final favoriteNailId = await getIt<FavoriteNailRepository>()
-            .favoriteVariant(widget.nailVariantId);
-        if (mounted) {
-          setState(() => _favoriteNailId = favoriteNailId);
-        }
-      } else {
-        if (previousFavoriteNailId == null) {
-          throw StateError('Missing favoriteNailId');
-        }
-        await getIt<FavoriteNailRepository>().unfavorite(
-          previousFavoriteNailId,
-        );
-      }
-    } catch (error) {
-      if (mounted) {
-        setState(() {
-          _isFavorited = previousIsFavorited;
-          _favoriteNailId = previousFavoriteNailId;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Khong the cap nhat yeu thich: $error')),
-        );
-      }
-    }
   }
 }
 
@@ -225,8 +189,6 @@ class _DetailContent extends StatefulWidget {
   final bool launching;
   final Future<void> Function(nails_model.CustomerNailModel customerNail)
   onTryOn;
-  final Future<void> Function(nails_model.CustomerNailModel customerNail)
-  onPhotoTryOn;
   final bool isFavorited;
   final VoidCallback onFavoriteToggle;
 
@@ -235,7 +197,6 @@ class _DetailContent extends StatefulWidget {
     this.designName,
     required this.launching,
     required this.onTryOn,
-    required this.onPhotoTryOn,
     required this.isFavorited,
     required this.onFavoriteToggle,
   });
@@ -311,7 +272,7 @@ class _DetailContentState extends State<_DetailContent> {
           }
         }
       }
-
+      
       final colors = <Color>[];
       for (final hex in hexStrings.toSet()) {
         final cleanHex = hex.replaceAll('#', '').trim();
@@ -359,7 +320,10 @@ class _DetailContentState extends State<_DetailContent> {
                           color: AppColors.primary,
                         ),
                       )
-                    : Image.network(variant.imageUrl, fit: BoxFit.cover),
+                    : Image.network(
+                        variant.imageUrl,
+                        fit: BoxFit.cover,
+                      ),
               ),
 
               // Overlapping white card content
@@ -369,16 +333,9 @@ class _DetailContentState extends State<_DetailContent> {
                   width: double.infinity,
                   decoration: const BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(28),
-                    ),
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
                   ),
-                  padding: const EdgeInsets.fromLTRB(
-                    20,
-                    24,
-                    20,
-                    100,
-                  ), // padding bottom 100 to avoid sticky bottom bar overlapping
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 100), // padding bottom 100 to avoid sticky bottom bar overlapping
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -397,11 +354,7 @@ class _DetailContentState extends State<_DetailContent> {
                         const SizedBox(height: 6),
                         Text(
                           S.of(context).collectionLabel(widget.designName!),
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade500,
-                            fontWeight: FontWeight.w500,
-                          ),
+                          style: TextStyle(fontSize: 13, color: Colors.grey.shade500, fontWeight: FontWeight.w500),
                         ),
                       ],
                       const SizedBox(height: 12),
@@ -418,11 +371,7 @@ class _DetailContentState extends State<_DetailContent> {
                       // Rating block
                       Row(
                         children: [
-                          const Icon(
-                            Icons.star_rounded,
-                            color: Color(0xFFFFB300),
-                            size: 20,
-                          ),
+                          const Icon(Icons.star_rounded, color: Color(0xFFFFB300), size: 20),
                           const SizedBox(width: 4),
                           Text(
                             ratingStr,
@@ -449,46 +398,36 @@ class _DetailContentState extends State<_DetailContent> {
                         builder: (context) {
                           final specItems = <Widget>[];
                           if (variant.nailShape != null) {
-                            specItems.add(
-                              _buildSpecCard(
-                                context,
-                                icon: Icons.gesture_rounded,
-                                label: S.of(context).nailFormLabel,
-                                value: variant.nailShape!.name,
-                              ),
-                            );
+                            specItems.add(_buildSpecCard(
+                              context,
+                              icon: Icons.gesture_rounded,
+                              label: S.of(context).nailFormLabel,
+                              value: variant.nailShape!.name,
+                            ));
                           }
                           if (variant.nailSurface != null) {
-                            specItems.add(
-                              _buildSpecCard(
-                                context,
-                                icon: Icons.layers_rounded,
-                                label: S.of(context).nailSurfaceLabel,
-                                value: variant.nailSurface!.name,
-                              ),
-                            );
+                            specItems.add(_buildSpecCard(
+                              context,
+                              icon: Icons.layers_rounded,
+                              label: S.of(context).nailSurfaceLabel,
+                              value: variant.nailSurface!.name,
+                            ));
                           }
                           if (variant.duration != null) {
-                            specItems.add(
-                              _buildSpecCard(
-                                context,
-                                icon: Icons.access_time_filled_rounded,
-                                label: S.of(context).bookingDurationLabel,
-                                value: S
-                                    .of(context)
-                                    .minutesLabel(variant.duration!),
-                              ),
-                            );
+                            specItems.add(_buildSpecCard(
+                              context,
+                              icon: Icons.access_time_filled_rounded,
+                              label: S.of(context).bookingDurationLabel,
+                              value: S.of(context).minutesLabel(variant.duration!),
+                            ));
                           }
                           final colors = _parseColors(variant.colorJson);
                           if (colors.isNotEmpty) {
-                            specItems.add(
-                              _buildSpecColorsCard(
-                                context,
-                                label: S.of(context).colorLabel,
-                                colors: colors,
-                              ),
-                            );
+                            specItems.add(_buildSpecColorsCard(
+                              context,
+                              label: S.of(context).colorLabel,
+                              colors: colors,
+                            ));
                           }
 
                           if (specItems.isEmpty) return const SizedBox.shrink();
@@ -497,13 +436,12 @@ class _DetailContentState extends State<_DetailContent> {
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: specItems.length,
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  crossAxisSpacing: 12,
-                                  mainAxisSpacing: 12,
-                                  childAspectRatio: 1.85,
-                                ),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                              childAspectRatio: 1.85,
+                            ),
                             itemBuilder: (context, index) => specItems[index],
                           );
                         },
@@ -577,13 +515,9 @@ class _DetailContentState extends State<_DetailContent> {
                   backgroundColor: Colors.white.withValues(alpha: 0.9),
                   radius: 20,
                   child: Icon(
-                    widget.isFavorited
-                        ? Icons.favorite_rounded
-                        : Icons.favorite_outline_rounded,
+                    widget.isFavorited ? Icons.favorite_rounded : Icons.favorite_outline_rounded,
                     size: 20,
-                    color: widget.isFavorited
-                        ? Colors.redAccent
-                        : Colors.black87,
+                    color: widget.isFavorited ? Colors.redAccent : Colors.black87,
                   ),
                 ),
               ),
@@ -611,7 +545,7 @@ class _DetailContentState extends State<_DetailContent> {
             child: SafeArea(
               child: Row(
                 children: [
-                  // Live camera try-on
+                  // AR Try-On Button
                   Expanded(
                     flex: 1,
                     child: SizedBox(
@@ -641,37 +575,7 @@ class _DetailContentState extends State<_DetailContent> {
                                   color: AppColors.primary,
                                 ),
                               )
-                            : const Icon(Icons.videocam_outlined, size: 24),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-
-                  // Photo try-on
-                  Expanded(
-                    flex: 1,
-                    child: SizedBox(
-                      height: 50,
-                      child: OutlinedButton(
-                        onPressed: widget.launching
-                            ? null
-                            : () {
-                                widget.onPhotoTryOn(_toCustomerNail(variant));
-                              },
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.primary,
-                          side: const BorderSide(
-                            color: AppColors.primary,
-                            width: 1.5,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: const Icon(
-                          Icons.photo_camera_outlined,
-                          size: 24,
-                        ),
+                            : const Icon(Icons.view_in_ar_rounded, size: 24),
                       ),
                     ),
                   ),
@@ -749,7 +653,11 @@ class _DetailContentState extends State<_DetailContent> {
         children: [
           Row(
             children: [
-              Icon(icon, color: const Color(0xFFFF4081), size: 20),
+              Icon(
+                icon,
+                color: const Color(0xFFFF4081),
+                size: 20,
+              ),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
@@ -961,31 +869,29 @@ class _DetailContentState extends State<_DetailContent> {
       duration: variant.duration,
       nailShape: variant.nailShape,
       nailSurface: variant.nailSurface,
-      customerNailComponents: variant.nailComponents
-          .map<nails_model.CustomerNailComponentModel>((component) {
-            final source = component.component;
-            return nails_model.CustomerNailComponentModel(
-              customerNailComponentId: component.nailComponentId,
-              customerNailId: variant.nailVariantId,
-              componentId: component.componentId,
-              customerComponentId: null,
-              posX: component.posX,
-              posY: component.posY,
-              fingerIndex: component.fingerIndex,
-              configJson: jsonEncode({
-                'scale': component.config.scale,
-                'rotation': component.config.rotation,
-                'color': component.config.color,
-                'gradient': component.config.gradient,
-                'type': component.config.type,
-                'imageSrc': component.config.imageSrc,
-                'x': component.config.x,
-                'y': component.config.y,
-              }),
-              component: source,
-            );
-          })
-          .toList(),
+      customerNailComponents: variant.nailComponents.map<nails_model.CustomerNailComponentModel>((component) {
+        final source = component.component;
+        return nails_model.CustomerNailComponentModel(
+          customerNailComponentId: component.nailComponentId,
+          customerNailId: variant.nailVariantId,
+          componentId: component.componentId,
+          customerComponentId: null,
+          posX: component.posX,
+          posY: component.posY,
+          fingerIndex: component.fingerIndex,
+          configJson: jsonEncode({
+            'scale': component.config.scale,
+            'rotation': component.config.rotation,
+            'color': component.config.color,
+            'gradient': component.config.gradient,
+            'type': component.config.type,
+            'imageSrc': component.config.imageSrc,
+            'x': component.config.x,
+            'y': component.config.y,
+          }),
+          component: source,
+        );
+      }).toList(),
     );
   }
 }
@@ -1046,9 +952,7 @@ class _FingerComponents extends StatelessWidget {
       s.fingerRing,
       s.fingerPinky,
     ];
-    return index >= 0 && index < names.length
-        ? names[index]
-        : s.fingerOther(index);
+    return index >= 0 && index < names.length ? names[index] : s.fingerOther(index);
   }
 }
 
@@ -1100,9 +1004,7 @@ class _ComponentChip extends StatelessWidget {
               children: [
                 Text(
                   component.component?.name ??
-                      S
-                          .of(context)
-                          .componentNameFallback(component.componentId),
+                      S.of(context).componentNameFallback(component.componentId),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -1149,9 +1051,7 @@ class NailVariantSkeleton extends StatelessWidget {
                   width: double.infinity,
                   decoration: const BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(28),
-                    ),
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
                   ),
                   padding: const EdgeInsets.all(20),
                   child: Column(
@@ -1163,25 +1063,13 @@ class NailVariantSkeleton extends StatelessWidget {
                       const SizedBox(height: 12),
                       const SkeletonBox(width: 100, height: 22),
                       const SizedBox(height: 20),
-                      const SkeletonBox(
-                        width: double.infinity,
-                        height: 120,
-                        borderRadius: BorderRadius.all(Radius.circular(16)),
-                      ),
+                      const SkeletonBox(width: double.infinity, height: 120, borderRadius: BorderRadius.all(Radius.circular(16))),
                       const SizedBox(height: 24),
-                      const SkeletonBox(
-                        width: double.infinity,
-                        height: 80,
-                        borderRadius: BorderRadius.all(Radius.circular(16)),
-                      ),
+                      const SkeletonBox(width: double.infinity, height: 80, borderRadius: BorderRadius.all(Radius.circular(16))),
                       const SizedBox(height: 28),
                       const SkeletonBox(width: 160, height: 22),
                       const SizedBox(height: 16),
-                      const SkeletonBox(
-                        width: double.infinity,
-                        height: 60,
-                        borderRadius: BorderRadius.all(Radius.circular(16)),
-                      ),
+                      const SkeletonBox(width: double.infinity, height: 60, borderRadius: BorderRadius.all(Radius.circular(16))),
                     ],
                   ),
                 ),
@@ -1195,11 +1083,7 @@ class NailVariantSkeleton extends StatelessWidget {
           child: CircleAvatar(
             backgroundColor: Colors.white.withValues(alpha: 0.9),
             radius: 20,
-            child: const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              size: 18,
-              color: Colors.black87,
-            ),
+            child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: Colors.black87),
           ),
         ),
       ],

@@ -44,12 +44,15 @@ class _LoginPageState extends State<LoginPage> {
     } catch (e) {
       if (!mounted) return;
       final errorMsg = e.toString();
-      if (errorMsg.contains('Lỗi từ Server') || 
-          errorMsg.toLowerCase().contains('invalid') || 
-          errorMsg.toLowerCase().contains('credentials') || 
-          errorMsg.contains('400') || 
+      if (errorMsg.contains('Lỗi từ Server') ||
+          errorMsg.toLowerCase().contains('invalid') ||
+          errorMsg.toLowerCase().contains('credentials') ||
+          errorMsg.contains('400') ||
           errorMsg.contains('401')) {
-        _showSnackBar('Email hoặc mật khẩu không chính xác, vui lòng kiểm tra lại', AppColors.error);
+        _showSnackBar(
+          'Email hoặc mật khẩu không chính xác, vui lòng kiểm tra lại',
+          AppColors.error,
+        );
       } else {
         _showSnackBar(errorMsg, AppColors.error);
       }

@@ -688,7 +688,9 @@ class _MainShellState extends State<MainShell> {
                   Expanded(
                     child: widget.showHeader
                         ? _buildAnimatedBody(context, widget.child)
-                        : SafeArea(child: _buildAnimatedBody(context, widget.child)),
+                        : SafeArea(
+                            child: _buildAnimatedBody(context, widget.child),
+                          ),
                   ),
                 ],
               );
@@ -908,7 +910,10 @@ class _MainShellState extends State<MainShell> {
     );
   }
 
-  Widget _buildGlobalHoldCountdownBanner(BuildContext context, GlobalBookingManager manager) {
+  Widget _buildGlobalHoldCountdownBanner(
+    BuildContext context,
+    GlobalBookingManager manager,
+  ) {
     final secs = manager.holdRemainingSeconds;
     final min = (secs ~/ 60).toString().padLeft(2, '0');
     final sec = (secs % 60).toString().padLeft(2, '0');
@@ -945,7 +950,11 @@ class _MainShellState extends State<MainShell> {
                 ),
               ),
             ),
-            const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 12),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: Colors.white,
+              size: 12,
+            ),
           ],
         ),
       ),

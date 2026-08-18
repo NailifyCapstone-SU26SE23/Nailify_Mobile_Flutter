@@ -231,7 +231,9 @@ class _NailListViewState extends State<_NailListView> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFFFF4081).withValues(alpha: 0.03),
+                          color: const Color(
+                            0xFFFF4081,
+                          ).withValues(alpha: 0.03),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
@@ -239,22 +241,39 @@ class _NailListViewState extends State<_NailListView> {
                     ),
                     child: TextField(
                       controller: _searchController,
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
                       decoration: InputDecoration(
                         hintText: S.of(context).searchNailHint,
-                        hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                        prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFFFF4081), size: 20),
+                        hintStyle: TextStyle(
+                          color: Colors.grey.shade400,
+                          fontSize: 14,
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.search_rounded,
+                          color: Color(0xFFFF4081),
+                          size: 20,
+                        ),
                         suffixIcon: _searchController.text.isNotEmpty
                             ? GestureDetector(
                                 onTap: () {
                                   _searchController.clear();
                                   _onSearchChanged('');
                                 },
-                                child: const Icon(Icons.clear_rounded, color: Colors.grey, size: 20),
+                                child: const Icon(
+                                  Icons.clear_rounded,
+                                  color: Colors.grey,
+                                  size: 20,
+                                ),
                               )
                             : null,
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                       ),
                       onChanged: _onSearchChanged,
                     ),
@@ -268,12 +287,17 @@ class _NailListViewState extends State<_NailListView> {
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFF4081).withValues(alpha: 0.02),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: const Color(0xFFFF4081).withValues(alpha: 0.08),
+                          color: const Color(
+                            0xFFFF4081,
+                          ).withValues(alpha: 0.08),
                           width: 1,
                         ),
                       ),
@@ -299,13 +323,20 @@ class _NailListViewState extends State<_NailListView> {
                           GestureDetector(
                             onTap: () {
                               _searchController.clear();
-                              context.read<NailCatalogCubit>().applyFilters(const NailFilters());
+                              context.read<NailCatalogCubit>().applyFilters(
+                                const NailFilters(),
+                              );
                               setState(() {});
                             },
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFF4081).withValues(alpha: 0.08),
+                                color: const Color(
+                                  0xFFFF4081,
+                                ).withValues(alpha: 0.08),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Row(
@@ -347,8 +378,7 @@ class _NailListViewState extends State<_NailListView> {
                   state.designs.isEmpty)
                 SliverFillRemaining(
                   child: _ErrorState(
-                    message:
-                        state.errorMessage ?? S.of(context).nailLoadError,
+                    message: state.errorMessage ?? S.of(context).nailLoadError,
                     onRetry: () =>
                         context.read<NailCatalogCubit>().loadDesigns(),
                   ),
@@ -385,8 +415,9 @@ class _NailListViewState extends State<_NailListView> {
   }
 
   Widget _buildFilteredGrid(BuildContext context, NailCatalogState state) {
-    final hasMatch = widget.matchedResults != null && widget.matchedResults!.isNotEmpty;
-    
+    final hasMatch =
+        widget.matchedResults != null && widget.matchedResults!.isNotEmpty;
+
     final matchLookup = <int, int>{};
     if (hasMatch) {
       for (final design in state.designs) {
@@ -427,70 +458,66 @@ class _NailListViewState extends State<_NailListView> {
 
   Widget _buildCollectionsSkeleton() {
     return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, sectionIndex) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
+      delegate: SliverChildBuilderDelegate((context, sectionIndex) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: const [
+                    SkeletonBox(
+                      width: 140,
+                      height: 22,
+                      borderRadius: BorderRadius.all(Radius.circular(6)),
+                    ),
+                    SkeletonBox(
+                      width: 80,
+                      height: 20,
+                      borderRadius: BorderRadius.all(Radius.circular(10)),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 250,
+                child: ListView.separated(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
-                      SkeletonBox(width: 140, height: 22, borderRadius: BorderRadius.all(Radius.circular(6))),
-                      SkeletonBox(width: 80, height: 20, borderRadius: BorderRadius.all(Radius.circular(10))),
-                    ],
-                  ),
+                  scrollDirection: Axis.horizontal,
+                  itemCount: 4,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    return SizedBox(
+                      width: 150,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SkeletonBox(
+                            width: 150,
+                            height: 160,
+                            borderRadius: BorderRadius.all(Radius.circular(16)),
+                          ),
+                          const SizedBox(height: 10),
+                          const SkeletonBox(width: 120, height: 16),
+                          const SizedBox(height: 6),
+                          const SkeletonBox(width: 80, height: 12),
+                          const SizedBox(height: 6),
+                          const SkeletonBox(width: 100, height: 14),
+                        ],
+                      ),
+                    );
+                  },
                 ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  height: 250,
-                  child: ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    scrollDirection: Axis.horizontal,
-                    itemCount: 4,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(width: 12),
-                    itemBuilder: (context, index) {
-                      return SizedBox(
-                        width: 150,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SkeletonBox(
-                              width: 150,
-                              height: 160,
-                              borderRadius: BorderRadius.all(Radius.circular(16)),
-                            ),
-                            const SizedBox(height: 10),
-                            const SkeletonBox(
-                              width: 120,
-                              height: 16,
-                            ),
-                            const SizedBox(height: 6),
-                            const SkeletonBox(
-                              width: 80,
-                              height: 12,
-                            ),
-                            const SizedBox(height: 6),
-                            const SkeletonBox(
-                              width: 100,
-                              height: 14,
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-        childCount: 3,
-      ),
+              ),
+            ],
+          ),
+        );
+      }, childCount: 3),
     );
   }
 
@@ -498,36 +525,33 @@ class _NailListViewState extends State<_NailListView> {
     return SliverPadding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
       sliver: SliverList(
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SkeletonBox(
-                    width: double.infinity,
-                    height: 200,
-                    borderRadius: BorderRadius.all(Radius.circular(16)),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
-                      SkeletonBox(width: 180, height: 18),
-                      SkeletonBox(width: 45, height: 14),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  const SkeletonBox(width: 150, height: 13),
-                  const SizedBox(height: 4),
-                  const SkeletonBox(width: 240, height: 13),
-                ],
-              ),
-            );
-          },
-          childCount: 3,
-        ),
+        delegate: SliverChildBuilderDelegate((context, index) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SkeletonBox(
+                  width: double.infinity,
+                  height: 200,
+                  borderRadius: BorderRadius.all(Radius.circular(16)),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: const [
+                    SkeletonBox(width: 180, height: 18),
+                    SkeletonBox(width: 45, height: 14),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                const SkeletonBox(width: 150, height: 13),
+                const SizedBox(height: 4),
+                const SkeletonBox(width: 240, height: 13),
+              ],
+            ),
+          );
+        }, childCount: 3),
       ),
     );
   }
@@ -552,14 +576,15 @@ class _NailListViewState extends State<_NailListView> {
 
     // 1. "Dành riêng cho bạn" — top matches from the quiz, sorted descending.
     if (hasMatch) {
-      final matchedDesigns = state.designs
-          .where((d) => matchLookup.containsKey(d.nailDesignId))
-          .toList()
-        ..sort(
-          (a, b) => matchLookup[b.nailDesignId]!.compareTo(
-            matchLookup[a.nailDesignId]!,
-          ),
-        );
+      final matchedDesigns =
+          state.designs
+              .where((d) => matchLookup.containsKey(d.nailDesignId))
+              .toList()
+            ..sort(
+              (a, b) => matchLookup[b.nailDesignId]!.compareTo(
+                matchLookup[a.nailDesignId]!,
+              ),
+            );
 
       if (matchedDesigns.isNotEmpty) {
         sections.add(
@@ -598,8 +623,7 @@ class _NailListViewState extends State<_NailListView> {
               _applyCategoryTypeFilter(
                 context,
                 state,
-                (name) =>
-                    name == 'theme' || name == 'season' || name == 'mùa',
+                (name) => name == 'theme' || name == 'season' || name == 'mùa',
               );
               setState(() {});
             },
@@ -614,7 +638,9 @@ class _NailListViewState extends State<_NailListView> {
     final styleDesigns = state.designs.where((d) {
       return d.categories.any((c) {
         final typeName = c.categoryTypeName.toLowerCase();
-        return typeName == 'style' || typeName == 'phong cách' || typeName == 'phongcach';
+        return typeName == 'style' ||
+            typeName == 'phong cách' ||
+            typeName == 'phongcach';
       });
     }).toList();
 
@@ -647,7 +673,11 @@ class _NailListViewState extends State<_NailListView> {
     final skinToneDesigns = state.designs.where((d) {
       return d.categories.any((c) {
         final typeName = c.categoryTypeName.toLowerCase();
-        return typeName == 'skin tone' || typeName == 'skin-tone' || typeName == 'skintone' || typeName == 'tông da' || typeName == 'tongda';
+        return typeName == 'skin tone' ||
+            typeName == 'skin-tone' ||
+            typeName == 'skintone' ||
+            typeName == 'tông da' ||
+            typeName == 'tongda';
       });
     }).toList();
 
@@ -719,7 +749,9 @@ class _NailListViewState extends State<_NailListView> {
             onDesignTap: (design) =>
                 context.go('/nails/${design.nailDesignId}'),
             onSeeAll: () {
-              final match = state.categoryTypes.where((c) => c.name == entry.key);
+              final match = state.categoryTypes.where(
+                (c) => c.name == entry.key,
+              );
               if (match.isNotEmpty) {
                 context.read<NailCatalogCubit>().applyFilters(
                   NailFilters(
@@ -730,7 +762,9 @@ class _NailListViewState extends State<_NailListView> {
                   ),
                 );
               } else {
-                context.read<NailCatalogCubit>().applyFilters(const NailFilters());
+                context.read<NailCatalogCubit>().applyFilters(
+                  const NailFilters(),
+                );
               }
               setState(() {});
             },
@@ -790,12 +824,16 @@ class _NailListViewState extends State<_NailListView> {
     final filters = state.filters;
     final parts = <String>[];
     if (filters.name != null && filters.name!.isNotEmpty) {
-      parts.add(isVi ? 'từ khoá "${filters.name}"' : 'keyword "${filters.name}"');
+      parts.add(
+        isVi ? 'từ khoá "${filters.name}"' : 'keyword "${filters.name}"',
+      );
     }
     if (filters.categoryIds.isNotEmpty) {
       final catNames = state.categoryTypes
           .expand((type) => type.categories)
-          .where((category) => filters.categoryIds.contains(category.categoryId))
+          .where(
+            (category) => filters.categoryIds.contains(category.categoryId),
+          )
           .map((category) => category.name)
           .join(', ');
       if (catNames.isNotEmpty) {
@@ -855,7 +893,8 @@ class NailDesignFullWidthCard extends StatefulWidget {
   });
 
   @override
-  State<NailDesignFullWidthCard> createState() => _NailDesignFullWidthCardState();
+  State<NailDesignFullWidthCard> createState() =>
+      _NailDesignFullWidthCardState();
 }
 
 class _NailDesignFullWidthCardState extends State<NailDesignFullWidthCard> {
@@ -886,8 +925,11 @@ class _NailDesignFullWidthCardState extends State<NailDesignFullWidthCard> {
       _isLoadingRating = true;
     });
 
-    final variantIds = widget.design.nailVariants.map((v) => v.nailVariantId).toList();
-    final stats = await getIt<NailVariantRepository>().getRatingStatsForVariants(variantIds);
+    final variantIds = widget.design.nailVariants
+        .map((v) => v.nailVariantId)
+        .toList();
+    final stats = await getIt<NailVariantRepository>()
+        .getRatingStatsForVariants(variantIds);
 
     if (mounted) {
       setState(() {
@@ -951,13 +993,13 @@ class _NailDesignFullWidthCardState extends State<NailDesignFullWidthCard> {
                                   fit: BoxFit.cover,
                                   errorBuilder: (context, error, stackTrace) =>
                                       Container(
-                                    color: const Color(0xFFF5F5F7),
-                                    alignment: Alignment.center,
-                                    child: const Icon(
-                                      Icons.broken_image_rounded,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
+                                        color: const Color(0xFFF5F5F7),
+                                        alignment: Alignment.center,
+                                        child: const Icon(
+                                          Icons.broken_image_rounded,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
                                 ),
                               );
                             },
@@ -980,7 +1022,9 @@ class _NailDesignFullWidthCardState extends State<NailDesignFullWidthCard> {
                         borderRadius: BorderRadius.circular(30),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFFF66C4).withValues(alpha: 0.35),
+                            color: const Color(
+                              0xFFFF66C4,
+                            ).withValues(alpha: 0.35),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
                           ),
@@ -1078,20 +1122,14 @@ class _NailDesignFullWidthCardState extends State<NailDesignFullWidthCard> {
             const SizedBox(height: 4),
             Text(
               design.categories.map((c) => c.name).join(' • '),
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 2),
             Text(
               '${design.nailVariants.length} phiên bản • $reviewsCountStr đánh giá',
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey.shade500,
-              ),
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

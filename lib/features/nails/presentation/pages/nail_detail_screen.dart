@@ -60,7 +60,8 @@ class _NailDetailScreenState extends State<NailDetailScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        snapshot.error?.toString() ?? S.of(context).nailDetailsError,
+                        snapshot.error?.toString() ??
+                            S.of(context).nailDetailsError,
                         textAlign: TextAlign.center,
                         style: const TextStyle(color: AppColors.textSecondary),
                       ),
@@ -96,9 +97,7 @@ class _NailDetailScreenState extends State<NailDetailScreen> {
 class _DesignDetailContent extends StatefulWidget {
   final NailDesignModel design;
 
-  const _DesignDetailContent({
-    required this.design,
-  });
+  const _DesignDetailContent({required this.design});
 
   @override
   State<_DesignDetailContent> createState() => _DesignDetailContentState();
@@ -184,8 +183,11 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
       _isLoadingRating = true;
     });
 
-    final variantIds = widget.design.nailVariants.map((v) => v.nailVariantId).toList();
-    final stats = await getIt<NailVariantRepository>().getRatingStatsForVariants(variantIds);
+    final variantIds = widget.design.nailVariants
+        .map((v) => v.nailVariantId)
+        .toList();
+    final stats = await getIt<NailVariantRepository>()
+        .getRatingStatsForVariants(variantIds);
 
     if (mounted) {
       setState(() {
@@ -239,9 +241,16 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
                   width: double.infinity,
                   decoration: const BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(28),
+                    ),
                   ),
-                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 100), // padding bottom 100 to avoid sticky bottom bar overlapping
+                  padding: const EdgeInsets.fromLTRB(
+                    20,
+                    24,
+                    20,
+                    100,
+                  ), // padding bottom 100 to avoid sticky bottom bar overlapping
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -272,7 +281,11 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
                       // Rating block
                       Row(
                         children: [
-                          const Icon(Icons.star_rounded, color: Color(0xFFFFB300), size: 20),
+                          const Icon(
+                            Icons.star_rounded,
+                            color: Color(0xFFFFB300),
+                            size: 20,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             ratingStr,
@@ -331,9 +344,14 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
                           ),
                           const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFF4081).withValues(alpha: 0.08),
+                              color: const Color(
+                                0xFFFF4081,
+                              ).withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
@@ -354,7 +372,9 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
                           child: Center(
                             child: Text(
                               S.of(context).noVariantsAvailable,
-                              style: const TextStyle(color: AppColors.textSecondary),
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                              ),
                             ),
                           ),
                         )
@@ -417,7 +437,9 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
                         ? Icons.favorite_rounded
                         : Icons.favorite_outline_rounded,
                     size: 20,
-                    color: design.isFavorited ? Colors.redAccent : Colors.black87,
+                    color: design.isFavorited
+                        ? Colors.redAccent
+                        : Colors.black87,
                   ),
                 ),
               ),
@@ -451,7 +473,11 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        S.of(context).variantsCount(design.nailVariants.length.toString()),
+                        S
+                            .of(context)
+                            .variantsCount(
+                              design.nailVariants.length.toString(),
+                            ),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -545,7 +571,10 @@ class _ImageGalleryState extends State<_ImageGallery> {
                   errorBuilder: (context, error, stackTrace) => Container(
                     color: const Color(0xFFF5F5F7),
                     alignment: Alignment.center,
-                    child: const Icon(Icons.broken_image_rounded, color: Colors.grey),
+                    child: const Icon(
+                      Icons.broken_image_rounded,
+                      color: Colors.grey,
+                    ),
                   ),
                 ),
               );
@@ -645,7 +674,8 @@ class _VariantSection extends StatelessWidget {
                         letterSpacing: -0.2,
                       ),
                     ),
-                    if (variant.nailShape != null || variant.nailSurface != null) ...[
+                    if (variant.nailShape != null ||
+                        variant.nailSurface != null) ...[
                       const SizedBox(height: 4),
                       Text(
                         '${S.of(context).nailShapeLabel}: ${variant.nailShape?.name ?? S.of(context).noneLabel} • ${S.of(context).nailSurfaceLabel}: ${variant.nailSurface?.name ?? S.of(context).noneLabel}',
@@ -673,10 +703,16 @@ class _VariantSection extends StatelessWidget {
               const SizedBox(width: 8),
               // Outlined "Đặt" button like in Image 2
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFFF4081), width: 1.5),
+                  border: Border.all(
+                    color: const Color(0xFFFF4081),
+                    width: 1.5,
+                  ),
                 ),
                 child: Text(
                   S.of(context).bookBtn,
@@ -718,7 +754,9 @@ class NailDetailSkeleton extends StatelessWidget {
                   width: double.infinity,
                   decoration: const BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(28),
+                    ),
                   ),
                   padding: const EdgeInsets.all(20),
                   child: Column(
@@ -730,17 +768,33 @@ class NailDetailSkeleton extends StatelessWidget {
                       const SizedBox(height: 12),
                       const SkeletonBox(width: 200, height: 16),
                       const SizedBox(height: 20),
-                      const SkeletonBox(width: double.infinity, height: 50, borderRadius: BorderRadius.all(Radius.circular(16))),
+                      const SkeletonBox(
+                        width: double.infinity,
+                        height: 50,
+                        borderRadius: BorderRadius.all(Radius.circular(16)),
+                      ),
                       const SizedBox(height: 24),
                       const SkeletonBox(width: 100, height: 22),
                       const SizedBox(height: 12),
-                      const SkeletonBox(width: double.infinity, height: 72, borderRadius: BorderRadius.all(Radius.circular(12))),
+                      const SkeletonBox(
+                        width: double.infinity,
+                        height: 72,
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
+                      ),
                       const SizedBox(height: 28),
                       const SkeletonBox(width: 150, height: 22),
                       const SizedBox(height: 16),
-                      const SkeletonBox(width: double.infinity, height: 96, borderRadius: BorderRadius.all(Radius.circular(20))),
+                      const SkeletonBox(
+                        width: double.infinity,
+                        height: 96,
+                        borderRadius: BorderRadius.all(Radius.circular(20)),
+                      ),
                       const SizedBox(height: 12),
-                      const SkeletonBox(width: double.infinity, height: 96, borderRadius: BorderRadius.all(Radius.circular(20))),
+                      const SkeletonBox(
+                        width: double.infinity,
+                        height: 96,
+                        borderRadius: BorderRadius.all(Radius.circular(20)),
+                      ),
                     ],
                   ),
                 ),
@@ -758,12 +812,20 @@ class NailDetailSkeleton extends StatelessWidget {
               CircleAvatar(
                 backgroundColor: Colors.white.withValues(alpha: 0.9),
                 radius: 20,
-                child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: Colors.black87),
+                child: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 18,
+                  color: Colors.black87,
+                ),
               ),
               CircleAvatar(
                 backgroundColor: Colors.white.withValues(alpha: 0.9),
                 radius: 20,
-                child: const Icon(Icons.favorite_outline_rounded, size: 18, color: Colors.black87),
+                child: const Icon(
+                  Icons.favorite_outline_rounded,
+                  size: 18,
+                  color: Colors.black87,
+                ),
               ),
             ],
           ),

@@ -11,6 +11,7 @@ import '../../../../core/utils/price_formatter.dart';
 import '../../../nails/data/models/nail_variant_model.dart';
 import '../../../nails/data/models/shape_method_config_model.dart';
 import '../../../nails/data/repositories/nail_variant_repository.dart';
+import '../../../nail_booking/data/datasources/booking_api_service.dart';
 import '../../../nail_booking/data/datasources/payment_api_service.dart';
 import '../../../my_studio/data/datasources/studio_api_service.dart';
 import '../../../my_studio/data/models/customer_nail_model.dart' as studio;
@@ -30,6 +31,7 @@ class MyBookingDetailPage extends StatefulWidget {
 
 class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
   final MyBookingApiService _apiService = MyBookingApiService();
+  final BookingApiService _bookingApiService = BookingApiService();
   final PaymentApiService _paymentApiService = PaymentApiService();
   final StudioApiService _studioApiService = StudioApiService();
   final NailVariantRepository _nailVariantRepository =
@@ -38,6 +40,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
   bool _isCreatingPayment = false;
   Map<String, dynamic>? _booking;
   Map<String, dynamic>? _rating;
+  Map<String, dynamic>? _salon;
   final Map<int, NailVariantModel> _nailVariantsById = {};
   final Map<int, ShapeMethodConfigModel> _shapeMethodsById = {};
   final Map<String, studio.CustomerNailModel> _customerNailRequestsById = {};
@@ -53,6 +56,15 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
       final data = await _apiService.getBookingDetails(widget.bookingId);
       await _fetchNailVariants(data);
 
+      Map<String, dynamic>? salon;
+      try {
+        salon = await _bookingApiService.getSalonDetail(
+          data['salonId']?.toString() ?? '',
+        );
+      } catch (e) {
+        debugPrint('==== Failed to load salon detail: $e ====');
+      }
+
       Map<String, dynamic>? rating;
       if (bookingIsRated(data)) {
         try {
@@ -65,6 +77,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
       setState(() {
         _booking = data;
         _rating = rating;
+        _salon = salon;
         _isLoading = false;
       });
     } catch (e) {
@@ -282,6 +295,10 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     }
   }
 
+  Map<String, dynamic>? _getMatchingSalon() {
+    return _salon;
+  }
+
   String _getBookingSalonName(Map<String, dynamic>? booking) {
     if (booking == null) return '';
     final direct = booking['salonName']?.toString();
@@ -289,6 +306,11 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     final nestedMap = booking['salon'];
     if (nestedMap is Map) {
       final name = (nestedMap['salonName'] ?? nestedMap['name'])?.toString();
+      if (name != null && name.trim().isNotEmpty) return name.trim();
+    }
+    final matched = _getMatchingSalon();
+    if (matched != null) {
+      final name = (matched['salonName'] ?? matched['name'])?.toString();
       if (name != null && name.trim().isNotEmpty) return name.trim();
     }
     return '';
@@ -304,6 +326,11 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
           ?.toString();
       if (addr != null && addr.trim().isNotEmpty) return addr.trim();
     }
+    final matched = _getMatchingSalon();
+    if (matched != null) {
+      final addr = (matched['salonAddress'] ?? matched['address'])?.toString();
+      if (addr != null && addr.trim().isNotEmpty) return addr.trim();
+    }
     return '';
   }
 
@@ -316,6 +343,11 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
       final lat = nestedMap['latitude'];
       if (lat != null) return _toDouble(lat);
     }
+    final matched = _getMatchingSalon();
+    if (matched != null) {
+      final lat = matched['latitude'];
+      if (lat != null) return _toDouble(lat);
+    }
     return null;
   }
 
@@ -326,6 +358,11 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     final nestedMap = booking['salon'];
     if (nestedMap is Map) {
       final lng = nestedMap['longitude'];
+      if (lng != null) return _toDouble(lng);
+    }
+    final matched = _getMatchingSalon();
+    if (matched != null) {
+      final lng = matched['longitude'];
       if (lng != null) return _toDouble(lng);
     }
     return null;
@@ -1023,6 +1060,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
 
   Widget _buildBookingItem(dynamic rawItem) {
     final item = rawItem as Map<String, dynamic>;
+    final request = _customerNailRequestForItem(item);
     final names = [
       item['nailVariantName']?.toString().trim() ?? '',
       item['customerNailName']?.toString().trim() ?? '',
@@ -1037,7 +1075,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
         ? S.of(context).bookingInfoService
         : names.join(' & ');
 
-    return Container(
+    final itemCard = Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -1118,6 +1156,61 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
             const SizedBox(height: 2),
             ...detailLines.map(_buildBookingComponentLine),
           ],
+        ],
+      ),
+    );
+
+    if (request == null || request.price <= 0) return itemCard;
+
+    return Column(
+      children: [
+        itemCard,
+        _buildCustomFeeBookingItem(request.price),
+      ],
+    );
+  }
+
+  Widget _buildCustomFeeBookingItem(num price) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Expanded(
+            flex: 10,
+            child: Text(
+              'Phí custom',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Expanded(
+            flex: 5,
+            child: Text(
+              S.of(context).bookingQuantityLabel('1'),
+              style: const TextStyle(color: Colors.grey, fontSize: 13),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          Expanded(
+            flex: 9,
+            child: Text(
+              PriceFormatter.format(price),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.right,
+            ),
+          ),
         ],
       ),
     );
@@ -1283,14 +1376,6 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     details.addAll(
       _groupBookingComponents(_requestCustomerNailComponents(request)),
     );
-
-    if (request.price > 0) {
-      details.add({
-        'name': 'Phí Custom',
-        'price': request.price,
-        'quantity': 1,
-      });
-    }
 
     return details;
   }

@@ -1163,10 +1163,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     if (request == null || request.price <= 0) return itemCard;
 
     return Column(
-      children: [
-        itemCard,
-        _buildCustomFeeBookingItem(request.price),
-      ],
+      children: [itemCard, _buildCustomFeeBookingItem(request.price)],
     );
   }
 

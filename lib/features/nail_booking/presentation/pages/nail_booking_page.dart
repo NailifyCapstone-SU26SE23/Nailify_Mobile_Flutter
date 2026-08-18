@@ -944,11 +944,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
 
   Widget _buildPaymentDetails() {
     final reviewTotal = _priceReview?['totalPrice'];
-    final totalPrice =
-        reviewTotal is num
-            ? reviewTotal.round()
-            : int.tryParse(reviewTotal?.toString() ?? '') ??
-                  _estimatedTotalPrice;
+    final totalPrice = reviewTotal is num
+        ? reviewTotal.round()
+        : int.tryParse(reviewTotal?.toString() ?? '') ?? _estimatedTotalPrice;
 
     return Container(
       padding: const EdgeInsets.all(16),

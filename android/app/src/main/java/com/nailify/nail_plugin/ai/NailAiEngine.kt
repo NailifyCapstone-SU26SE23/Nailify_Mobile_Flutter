@@ -35,30 +35,33 @@ class NailAiEngine(
     private val inputSize: Int = 640,
     private val numClasses: Int = 5,
     private val numMaskCoeffs: Int = 32,
-    // Fix A: ngưỡng confidence mặc định hạ từ 0.75 → 0.30.
-    // Máy ảo (ánh sáng thấp, motion blur, nén video) chỉ đạt conf 0.4-0.7 cho
-    // các nail ở góc; 0.75 chỉ giữ đúng 1 nail có conf cao nhất → tưởng như
-    // "chỉ 1 móng". YOLOv11-seg train ở conf=0.25 là default hợp lý.
-    private val confThreshold: Float = 0.30f,
-    // Fix A: per-class thresholds — ngón cái/áp út thường conf thấp hơn do
-    // góc nhìn xấu (che bởi ngón khác, xa camera hơn). Hạ riêng để không bị miss.
-    private val perClassThresholds: Map<String, Float> = mapOf(
-        "thumb" to 0.25f,
-        "index" to 0.30f,
-        "middle" to 0.30f,
-        "ring" to 0.25f,
-        "pinky" to 0.25f
-    ),
-    // Fix A: iouThreshold nới từ 0.45 → 0.55. 5 nail trên bàn tay đặt khá gần
-    // nhau (đặc biệt ring+pinky, middle+ring), NMS quá chặt sẽ suppress nail
-    // thật. 0.55 vẫn loại bỏ duplicate detection cùng vị trí.
-    private val iouThreshold: Float = 0.55f,
-    private val maskThreshold: Float = 0.3f,
-    // Dùng diện tích pixel²  thay vì giới hạn w/h cứng nhắc.
-    // maxArea = 120000 ≈ ngón tay chiếm ~350×350px trên khung 640×640.
-    private val minArea: Float = 800f,
-    private val maxArea: Float = 120000f,
-    private val maxAspectRatio: Float = 6.0f,
+// Tăng recall: ngưỡng confidence mặc định hạ từ 0.30 → 0.15.
+// YOLOv11-seg train ở conf=0.25 là default hợp lý; nhưng thực tế còn
+// nhiều nail ở conf 0.15-0.30 bị miss (góc xấu, motion blur, ánh sáng).
+// Ưu tiên nhận thêm nail (recall) hơn là bỏ sót, sau đó PolygonTracker +
+// StateMachine sẽ loại bỏ detection rác ở downstream.
+private val confThreshold: Float = 0.15f,
+// Tăng recall per-class — hạ tất cả xuống thấp để bắt nail ở góc xấu.
+// thumb/ring/pinky thường conf thấp nhất do góc nhìn xấu.
+private val perClassThresholds: Map<String, Float> = mapOf(
+    "thumb" to 0.12f,
+    "index" to 0.15f,
+    "middle" to 0.15f,
+    "ring" to 0.12f,
+    "pinky" to 0.12f
+),
+// Tăng recall: iouThreshold nới từ 0.55 → 0.65. 5 nail trên bàn tay đặt
+// khá gần nhau (đặc biệt ring+pinky, middle+ring), NMS quá chặt sẽ suppress
+// nail thật. 0.65 vẫn loại bỏ duplicate detection cùng vị trí.
+private val iouThreshold: Float = 0.65f,
+// Tăng recall mask: hạ từ 0.3 → 0.2 để lấy thêm pixel móng ở rìa (mask
+// yếu). Polygon sau đó sẽ được làm mượt bởi renderer.
+private val maskThreshold: Float = 0.2f,
+// Tăng recall nail nhỏ ở xa: minArea 800 → 400 (cho phép nail chiếm
+// ~20×20px ở xa camera vẫn được nhận).
+private val minArea: Float = 400f,
+private val maxArea: Float = 150000f,
+private val maxAspectRatio: Float = 8.0f,
 ) {
     companion object {
         private const val TAG = "NailAiEngine"

@@ -245,6 +245,7 @@ class PipelineExecutor(
             pipPositions = mediaPipe.lastPipPositions,  // Fix Flex-angle
             frameW = frameW,
             frameH = frameH,
+            skeletonNormalized = skeleton,  // HIDE-LOGIC v3: palm-normal detection
         )
         lastPhase = phase
         lastSyntheticCount = finalDetections.size

@@ -33,6 +33,34 @@
  *      detections ngay frame đó (không render móng đóng băng).
  *
  * ═══════════════════════════════════════════════════════════════
+ * HIDE-LOGIC v3 (ẩn móng bằng skeleton MediaPipe):
+ * ═══════════════════════════════════════════════════════════════
+ *
+ *   Mục tiêu: ẩn triệt để móng khi người dùng KHÔNG muốn thấy (xoay tay
+ *   ngửa lòng bàn tay, gập ngón, nắm đấm...) — không chớp chớp.
+ *
+ *   Hai tín hiệu ẩn:
+ *
+ *     A) PALM-FACE: dùng cross product của 2 vector trên mặt phẳng 2D
+ *        (wrist→MCP_index × wrist→MCP_pinky). Dấu cross quyết định mặt
+ *        bàn tay đang quay về phía camera:
+ *          - Lưng bàn tay (móng hướng về camera) → cross dương → render nail
+ *          - Lòng bàn tay (móng hướng xa camera)  → cross âm → ẩn nail
+ *        Hysteresis 8 frame để tránh chớp khi xoay tay vừa đúng ranh giới.
+ *
+ *     B) FLEX-ANGLE: góc ∠PIP-DIP-TIP cho 4 ngón dài (index/middle/ring/pinky):
+ *          - Ngón duỗi thẳng (>165°) → render nail
+ *          - Ngón gập nhẹ (130°–165°) → soft-hide (chớp có thể xảy ra ở ranh giới)
+ *          - Ngón gập sâu (<130°) → hide hoàn toàn (không chớp)
+ *        Thumb KHÔNG áp dụng (cấu trúc khác, dễ sai).
+ *
+ *   Hai tín hiệu OR lại — chỉ cần 1 trong 2 báo hide thì skip render.
+ *
+ *   Đặc biệt: re-scan anchor YOLO luôn refresh lại `forceShowFrames = N`
+ *   để KHI vừa anchor xong móng hiện ngay, không phải chờ flex/palm trở lại
+ *   bình thường (UX mượt khi vừa đưa tay vào khung).
+ *
+ * ═══════════════════════════════════════════════════════════════
  * TOÁN HỌC AFFINE (đã sửa các bug trước):
  * ═══════════════════════════════════════════════════════════════
  *
@@ -142,7 +170,154 @@ class NailTrackerStateMachine {
          * → nhánh distance miss. Góc bắt được nhờ cả 2 vector đều ở mặt phẳng 2D.
          */
         private const val FLEX_ANGLE_THRESHOLD_DEG = 130f
+
+        // ═══════════════════════════════════════════════════════════
+        // HIDE-LOGIC v4 constants — ẩn móng KHI GẬP, không chớp
+        // ═══════════════════════════════════════════════════════════
+
+        /**
+         * HIDE Flex-angle: góc gập < ngưỡng này → ẨN TRIỆT ĐỂ.
+         * Đặt RẤT GẦN 180° (gập > 15°) — chỉ cần ngón hơi cong là
+         * móng đã biến mất. Kết hợp với dead-zone 165-175° → không
+         * chớp khi tay run nhẹ quanh ranh giới.
+         *
+         * 165° = gập ~15° — threshold thực tế, ngón gần như duỗi thẳng.
+         */
+        private const val FLEX_HIDE_BELOW_DEG = 165f
+
+        /**
+         * SHOW Flex-angle: góc gập > ngưỡng này → HIỆN LẠI.
+         * Đặt = 175° (gập < 5°) — gần như duỗi thẳng tuyệt đối.
+         * Hiện móng CHỈ khi người dùng CỐ Ý duỗi ngón, không phải
+         * "ngón hơi cong" sẵn.
+         *
+         * Dead-zone = 165°–175°: trong khoảng này giữ nguyên trạng
+         * thái hiện tại → KHÔNG chớp chớp khi góc dao động nhẹ.
+         */
+        private const val FLEX_SHOW_ABOVE_DEG = 175f
+
+        /**
+         * DEEP-FLEX (gập sâu): góc gập < ngưỡng này HOẶC TIP-DIP
+         * distance < ngưỡng phụ → XÓA TRACK TRIỆT ĐỂ (không phải ẩn,
+         * mà xóa hẳn). Buộc YOLO phải re-anchor khi duỗi lại.
+         *
+         * 90° = gập vuông góc → không còn móng nào để nhìn.
+         *
+         * Lý do xóa hẳn: gập sâu → MediaPipe landmarks ở vị trí cũ
+         * không còn tương ứng y học với móng (móng bị che). Khi duỗi
+         * ra, anchor cũ lệch → cần YOLO refresh.
+         *
+         * Hysteresis: 1 lần xóa → 3 frame liên tiếp gập sâu mới xóa
+         * (tránh MP estimate thoáng qua).
+         */
+        private const val DEEP_FLEX_ANGLE_DEG = 90f
+        private const val DEEP_FLEX_DISTANCE_RATIO = 0.08f
+        private const val DEEP_FLEX_FRAMES_TO_REMOVE = 3
+
+        // (alias cũ giữ để tương thích nếu có nơi nào đang tham chiếu)
+        @Suppress("unused")
+        private const val FLEX_ANGLE_THRESHOLD_DEG_LEGACY = FLEX_ANGLE_THRESHOLD_DEG
+
+        /**
+         * Force-show sau khi vừa anchor YOLO xong: trong `N` frame đầu
+         * tiên của track, LUÔN render bất kể flex/palm (UX mượt khi tay
+         * mới xuất hiện). Sau đó áp dụng hide-logic bình thường.
+         */
+        private const val FORCE_SHOW_FRAMES_AFTER_ANCHOR = 8
+
+        /**
+         * YOLO re-anchor displacement threshold: nếu khoảng cách giữa
+         * centroid YOLO mới và anchor cũ > tỉ lệ này × frameW → reset
+         * polygonTemplate (không dùng EMA scale cũ). Fix bug "xoay tay
+         * 20s vẫn thấy móng cũ": YOLO detect vị trí mới nhưng code
+         * cũ giữ polygon template cũ (chỉ EMA scale lenRef).
+         *
+         * 0.20 = 20% frameW ≈ ~100-140px trên 640.
+         */
+        private const val REANCHOR_DISPLACEMENT_RATIO = 0.20f
     }
+
+    // ── HIDE-LOGIC v3 helpers ──────────────────────────────────────────────
+
+    /**
+     * Tính palm-normal 2D: cross product của 2 vector trên mặt phẳng 2D.
+     * Dùng wrist(0), MCP_index(5), MCP_pinky(17). Với MediaPipe HandLandmarker:
+     *   - Lưng bàn tay hướng về camera: cross (wrist→MCP_index × wrist→MCP_pinky) > 0
+     *   - Lòng bàn tay hướng về camera: cross < 0
+     * Trả về null nếu không có landmarks (hand mất tracking).
+     *
+     * Lưu ý: chỉ hoạt động khi camera KHÔNG lật ngược (selfie camera OK).
+     * Front camera mirror không ảnh hưởng vì MCP_index vẫn bên trái MCP_pinky
+     * trong mirror view (mirror lật cả ảnh theo chiều ngang).
+     */
+    private fun computePalmSide(skel: Array<FloatArray>?): Boolean? {
+        if (skel == null || skel.size < 18) return null
+        val wrist = skel[0]
+        val mcpIndex = skel[5]
+        val mcpPinky = skel[17]
+        // skel đã là normalized [0..1] (x, y). Cross product vẫn giữ dấu đúng
+        // vì cả v1 và v2 cùng chia tỉ lệ với frameW/frameH → dấu cross không đổi.
+        val v1x = mcpIndex[0] - wrist[0]
+        val v1y = mcpIndex[1] - wrist[1]
+        val v2x = mcpPinky[0] - wrist[0]
+        val v2y = mcpPinky[1] - wrist[1]
+        // Cross product z-component (trong 2D): v1.x*v2.y - v1.y*v2.x
+        val cross = v1x * v2y - v1y * v2x
+        // true = palm-up (lưng bàn tay về phía camera), false = palm-down (lòng bàn tay về phía camera).
+        return cross >= 0f
+    }
+
+    /**
+     * HIDE-LOGIC v4: ẩn track khi gập ngón (góc hoặc distance nhỏ).
+     * Dead-zone (165°–175°) giữ nguyên trạng thái → KHÔNG chớp.
+     *
+     * @param angleDeg    góc ∠PIP-DIP-TIP (độ). null nếu thiếu PIP.
+     * @param dist        TIP↔DIP distance (pixel).
+     * @param deepFlexOut output: true nếu frame này đạt DEEP_FLEX (gập
+     *                    sâu). Caller dùng để đếm và xóa track triệt để.
+     */
+    private fun updateHideState(
+        tr: NailTrack,
+        angleDeg: Float?,
+        dist: Float?,
+        isLongFinger: Boolean,
+    ): Boolean {
+        // ─── 1. FLEX hide (góc gập ngón) ─────────────────────────────────
+        // Chỉ áp dụng cho 4 ngón dài; thumb thì bỏ qua (cấu trúc khác).
+        if (isLongFinger && angleDeg != null) {
+            // Dead-zone: 165°–175° → KHÔNG thay đổi hiddenByFlex.
+            // Ngoài dead-zone:
+            //   - angle < 165° → set hiddenByFlex = true (nếu chưa ẩn)
+            //   - angle > 175° → set hiddenByFlex = false (nếu đang ẩn)
+            if (angleDeg < FLEX_HIDE_BELOW_DEG) {
+                if (!tr.hiddenByFlex) {
+                    tr.hiddenByFlex = true
+                    Log.d(TAG, "HIDE: flex angle=${angleDeg.toInt()}° < ${FLEX_HIDE_BELOW_DEG.toInt()}° → hide track clsId=${tr.clsId}")
+                }
+            } else if (angleDeg > FLEX_SHOW_ABOVE_DEG) {
+                if (tr.hiddenByFlex) {
+                    tr.hiddenByFlex = false
+                    Log.d(TAG, "SHOW: flex angle=${angleDeg.toInt()}° > ${FLEX_SHOW_ABOVE_DEG.toInt()}° → show track clsId=${tr.clsId}")
+                }
+            }
+            // else: dead-zone → giữ nguyên trạng thái
+        }
+        // ─── 2. DEEP-FLEX detection (gập sâu → xóa track) ───────────────
+        // Điều kiện:
+        //   - Góc < 90° (gập vuông góc) HOẶC
+        //   - TIP-DIP distance < 8% frameW (gập sâu distance path)
+        // Thumb cũng áp dụng (dù cấu trúc khác, gập sâu là không có móng).
+        val isDeepFlex = (angleDeg != null && angleDeg < DEEP_FLEX_ANGLE_DEG) ||
+                         (dist != null && dist < lastFrameWidth * DEEP_FLEX_DISTANCE_RATIO)
+        if (isDeepFlex) {
+            tr.deepFlexFrames++
+        } else {
+            tr.deepFlexFrames = 0
+        }
+        return tr.deepFlexFrames >= DEEP_FLEX_FRAMES_TO_REMOVE
+    }
+
+    // ────────────────────────────────────────────────────────────────────
 
     enum class Phase { SEARCHING, TRACKING, LOST }
 
@@ -181,6 +356,29 @@ class NailTrackerStateMachine {
         // Khi >= FLEX_SOFT_FRAMES → skip render (track vẫn tồn tại để resume
         // ngay khi duỗi lại, không cần YOLO re-anchor). Reset về 0 khi duỗi.
         var flexFrames: Int = 0,
+        // ═══════════════════════════════════════════════════════════
+        // HIDE-LOGIC v3: per-track hide state với hysteresis
+        // ═══════════════════════════════════════════════════════════
+        /**
+         * `true` = track đang bị ẩn (flex hoặc palm). Một khi đã ẩn thì
+         * KHÔNG hiện lại cho đến khi cả flex-angle lẫn palm đều ở trạng
+         * thái "show". Tránh chớp khi ngón run ở ranh giới gập.
+         */
+        var hiddenByFlex: Boolean = false,
+        var hiddenByPalm: Boolean = false,
+        /**
+         * DEEP-FLEX counter: số frame liên tiếp có góc < 90° hoặc
+         * distance < 8% frameW. Khi >= DEEP_FLEX_FRAMES_TO_REMOVE →
+         * XÓA TRACK (gập sâu, móng bị che, cần YOLO re-anchor khi
+         * duỗi). Reset về 0 mỗi khi ngón trở lại trạng thái bình thường.
+         */
+        var deepFlexFrames: Int = 0,
+        /**
+         * Force-show sau khi vừa anchor: số frame còn lại của "luôn
+         * render" window. Set = FORCE_SHOW_FRAMES_AFTER_ANCHOR khi anchor,
+         * giảm dần mỗi frame TRACKING.
+         */
+        var forceShowFrames: Int = FORCE_SHOW_FRAMES_AFTER_ANCHOR,
     )
 
     private val tracks = HashMap<Int, NailTrack>()
@@ -215,6 +413,10 @@ class NailTrackerStateMachine {
         pipPositions: Map<Int, PointF>,  // Fix Flex-angle: tính góc PIP-DIP-TIP
         frameW: Int,
         frameH: Int,
+        // HIDE-LOGIC v3: 21 landmarks MediaPipe NORMALIZED coords [0..1].
+        // State machine sẽ tự nhân frameW/frameH để ra pixel coords (dùng cho
+        // palm-normal cross product). Null nếu chưa có MediaPipe result.
+        skeletonNormalized: Array<FloatArray>? = null,
     ): Pair<Phase, List<NailDetection>> {
         lastFrameWidth = frameW
         lastFrameHeight = frameH
@@ -226,24 +428,37 @@ class NailTrackerStateMachine {
         // ── STATE TRANSITION ─────────────────────────────────────────────
         when (currentPhase) {
             Phase.SEARCHING -> {
-                if (yoloPack != null && yoloDetections.isNotEmpty()) {
-                    // TIME-CAPSULE: dùng MP từ pack (đồng bộ với YOLO), fallback
-                    // sang MP camera-frame hiện tại nếu pack rỗng (YOLO đã chạy
-                    // lúc MP chưa có landmark → vẫn cố gắng anchor với best-effort).
-                    // Fix #2: anchor = TIP (pack.tipPositions), jointPositions = DIP.
-                    val anchorsAtSubmit = yoloPack.anchorPositions.ifEmpty { yoloPack.tipPositions }
-                    val dipsAtSubmit = yoloPack.jointPositions
-                    val anchorsNow = anchorsAtSubmit.ifEmpty { tipPositions }
-                    val dipsNow = dipsAtSubmit.ifEmpty { jointPositions }
-                    anchorFromYolo(yoloDetections, anchorsNow, dipsNow)
-                    if (hasHand && tracks.isNotEmpty()) {
-                        currentPhase = Phase.TRACKING
-                        framesTrackedSinceSearch = 0
-                        Log.i(TAG, "SEARCHING → TRACKING (anchored ${tracks.size}/5 tracks)")
-                    } else if (tracks.isEmpty()) {
-                        Log.w(TAG, "SEARCHING: YOLO detected ${yoloDetections.size} nails but no MP match — waiting for next cycle")
-                    } else {
-                        Log.i(TAG, "SEARCHING → TRACKING pending (no hand in current frame, tracks=${tracks.size})")
+                if (yoloPack != null) {
+                    // BUG #2 FIX: nếu YOLO có detections rỗng (tay vừa xoay, móng
+                    // không còn hướng camera) → CLEAR tracks cũ để renderer không
+                    // vẽ nail "ảo" ở vị trí cũ. Cũng chuyển sang trạng thái LOST
+                    // để chờ MediaPipe re-detect bàn tay (lúc đó sẽ chuyển lại
+                    // SEARCHING và YOLO chạy lại).
+                    if (yoloDetections.isEmpty() && tracks.isNotEmpty()) {
+                        Log.i(TAG, "SEARCHING: YOLO returned 0 detections → clearing ${tracks.size} stale tracks (palm flipped?)")
+                        tracks.clear()
+                        currentPhase = Phase.LOST
+                        return currentPhase to emptyList()
+                    }
+                    if (yoloDetections.isNotEmpty()) {
+                        // TIME-CAPSULE: dùng MP từ pack (đồng bộ với YOLO), fallback
+                        // sang MP camera-frame hiện tại nếu pack rỗng (YOLO đã chạy
+                        // lúc MP chưa có landmark → vẫn cố gắng anchor với best-effort).
+                        // Fix #2: anchor = TIP (pack.tipPositions), jointPositions = DIP.
+                        val anchorsAtSubmit = yoloPack.anchorPositions.ifEmpty { yoloPack.tipPositions }
+                        val dipsAtSubmit = yoloPack.jointPositions
+                        val anchorsNow = anchorsAtSubmit.ifEmpty { tipPositions }
+                        val dipsNow = dipsAtSubmit.ifEmpty { jointPositions }
+                        anchorFromYolo(yoloDetections, anchorsNow, dipsNow, skeletonNormalized, frameW)
+                        if (hasHand && tracks.isNotEmpty()) {
+                            currentPhase = Phase.TRACKING
+                            framesTrackedSinceSearch = 0
+                            Log.i(TAG, "SEARCHING → TRACKING (anchored ${tracks.size}/5 tracks)")
+                        } else if (tracks.isEmpty()) {
+                            Log.w(TAG, "SEARCHING: YOLO detected ${yoloDetections.size} nails but no MP match — waiting for next cycle")
+                        } else {
+                            Log.i(TAG, "SEARCHING → TRACKING pending (no hand in current frame, tracks=${tracks.size})")
+                        }
                     }
                 }
             }
@@ -268,23 +483,27 @@ class NailTrackerStateMachine {
                     // duỗi (reset cả 2 đếm).
                     // Fix Flex-angle: tính thêm góc ∠PIP-DIP-TIP để bắt gập ngang
                     // (ngón xoay 90° làm TIP-DIP distance không đổi). OR với distance.
+                    // HIDE-LOGIC v3: gọi updateHideState() cho từng track để cập nhật
+                    // hiddenByFlex + hiddenByPalm.
                     val fistThresholdPx = lastFrameWidth * FIST_THRESHOLD_RATIO
                     val flexThresholdPx = lastFrameWidth * FLEX_SOFT_RATIO
                     val tracksToRemove = ArrayList<Int>()
+                    val palmIsBack = computePalmSide(skeletonNormalized)
                     for ((clsId, tr) in tracks) {
                         if (jointPositions.containsKey(clsId)) {
                             tr.missFrames = 0
                             val tip = tipPositions[clsId]
                             val dip = jointPositions[clsId]
+                            val pip = pipPositions[clsId]
+                            val isLongFinger = clsId != 4  // clsId 4 = thumb, bỏ qua flex-angle
+                            var angleDeg: Float? = null
+                            var dist: Float? = null
                             if (tip != null && dip != null) {
                                 val dx = tip.x - dip.x
                                 val dy = tip.y - dip.y
-                                val dist = sqrt(dx * dx + dy * dy)
+                                dist = sqrt(dx * dx + dy * dy)
                                 // Fix Flex-angle: tính góc ∠PIP-DIP-TIP.
-                                // Vector v1 = DIP→TIP (đốt ngoài), v2 = DIP→PIP (đốt trong).
-                                // Góc giữa 2 vector = góc gập ngón tại DIP.
-                                val pip = pipPositions[clsId]
-                                val angleDeg: Float? = if (pip != null) {
+                                if (pip != null) {
                                     val v1x = tip.x - dip.x
                                     val v1y = tip.y - dip.y
                                     val v2x = pip.x - dip.x
@@ -294,9 +513,9 @@ class NailTrackerStateMachine {
                                     val m2 = sqrt(v2x * v2x + v2y * v2y)
                                     if (m1 > 1e-3f && m2 > 1e-3f) {
                                         val cosA = (dot / (m1 * m2)).coerceIn(-1f, 1f)
-                                        Math.toDegrees(kotlin.math.acos(cosA).toDouble()).toFloat()
-                                    } else null
-                                } else null
+                                        angleDeg = Math.toDegrees(kotlin.math.acos(cosA).toDouble()).toFloat()
+                                    }
+                                }
                                 val isAngleFlex = angleDeg != null && angleDeg < FLEX_ANGLE_THRESHOLD_DEG
                                 when {
                                     dist < fistThresholdPx -> {
@@ -325,6 +544,28 @@ class NailTrackerStateMachine {
                                     Log.d(TAG, "clsId=$clsId dist=${dist.toInt()} angle=${angleDeg.toInt()}°")
                                 }
                             }
+                            // HIDE-LOGIC v4: cập nhật flex/deep-flex state trước.
+                            // updateHideState trả về true nếu frame này đạt DEEP_FLEX
+                            // (gập sâu đủ 3 frame liên tiếp) → xóa track triệt để.
+                            val isDeepFlex = updateHideState(tr, angleDeg, dist, isLongFinger)
+                            if (isDeepFlex) {
+                                tracksToRemove.add(clsId)
+                                Log.i(TAG, "track removed: DEEP-FLEX detected for clsId=$clsId (${tr.clsName}) " +
+                                    "deepFlexFrames=${tr.deepFlexFrames} → will re-anchor via YOLO")
+                            }
+                            // HIDE-LOGIC v4: palm hide với dead-zone (chỉ chuyển
+                            // trạng thái khi đổi dấu cross product, không chớp).
+                            if (palmIsBack != null) {
+                                if (!palmIsBack && !tr.hiddenByPalm) {
+                                    tr.hiddenByPalm = true
+                                    Log.d(TAG, "HIDE: palm side changed to FRONT → hide track clsId=${tr.clsId}")
+                                } else if (palmIsBack && tr.hiddenByPalm) {
+                                    tr.hiddenByPalm = false
+                                    Log.d(TAG, "SHOW: palm side changed to BACK → show track clsId=${tr.clsId}")
+                                }
+                            }
+                            // Decrement force-show window.
+                            if (tr.forceShowFrames > 0) tr.forceShowFrames--
                         } else {
                             tr.missFrames++
                         }
@@ -396,7 +637,7 @@ class NailTrackerStateMachine {
         val anchorsMp = pack.anchorPositions.ifEmpty { pack.tipPositions }
         val dipsMp = pack.jointPositions
 
-        anchorFromYolo(pack.detections, anchorsMp, dipsMp)
+        anchorFromYolo(pack.detections, anchorsMp, dipsMp, frameW = frameW)
 
         // Nếu MP snapshot rỗng nhưng YOLO có detections → vẫn giữ SEARCHING
         // để frame MP tiếp theo có thể TRACKING. Nếu MP có → chuyển TRACKING.
@@ -431,13 +672,20 @@ class NailTrackerStateMachine {
         detections: List<NailDetection>,
         anchorPositions: Map<Int, PointF>,  // TIP pixel (anchor chính)
         jointPositions: Map<Int, PointF>,   // DIP pixel (để tính forward)
+        skeletonNormalized: Array<FloatArray>? = null,  // HIDE-LOGIC v3 (unused here, kept for symmetry)
+        frameW: Int = 0,  // HIDE-LOGIC v3
     ) {
         tracks.clear()
         lastSearchDetections = detections.size
+        val palmIsBack = computePalmSide(skeletonNormalized)
 
         // Fix B: pre-compute spatial lookup trên TIP — pair of (clsId, TIP).
         // Dùng để match YOLO bbox nếu clsId-match fail.
         val spatialAnchors: List<Pair<Int, PointF>> = anchorPositions.entries.map { it.key to it.value }
+        // HIDE-LOGIC v3: displacement threshold để detect "xoay tay, YOLO
+        // thấy móng ở chỗ mới xa so với anchor cũ" → reset polygon thay vì
+        // EMA scale (giữ polygon cũ).
+        val reanchorThresholdPx = if (frameW > 0) frameW * REANCHOR_DISPLACEMENT_RATIO else 0f
 
         for (det in detections) {
             val anchorMp = anchorPositions[det.clsId]  // TIP
@@ -591,7 +839,16 @@ class NailTrackerStateMachine {
                 missFrames = 0,
                 fistFrames = 0,
                 flexFrames = 0,
+                // HIDE-LOGIC v3: track mới luôn force-show vài frame đầu (UX mượt).
+                hiddenByFlex = false,
+                hiddenByPalm = palmIsBack == null || palmIsBack == false, // nếu lòng bàn tay → hide luôn
+                forceShowFrames = FORCE_SHOW_FRAMES_AFTER_ANCHOR,
             )
+            // Nếu YOLO thấy nail mà palm đang ở lòng bàn tay → log lạ
+            // (YOLO rất ít khi nhầm, nhưng nếu xảy ra thì biết).
+            if (palmIsBack == false) {
+                Log.w(TAG, "anchorFromYolo: YOLO detected nail but palm is facing DOWN — hiding immediately clsId=$matchedClsId")
+            }
         }
     }
 
@@ -751,6 +1008,14 @@ class NailTrackerStateMachine {
             // Track vẫn tồn tại để khi duỗi lại → resume ngay (không cần YOLO).
             if (tr.flexFrames >= FLEX_SOFT_FRAMES) {
                 Log.d(TAG, "synthesizeDetections: skip render clsId=$clsId (flexFrames=${tr.flexFrames})")
+                continue
+            }
+            // HIDE-LOGIC v3: ẩn nếu gập sâu hoặc lòng bàn tay (hysteresis).
+            // Force-show trong FORCE_SHOW_FRAMES_AFTER_ANCHOR frame đầu (UX mượt khi tay mới xuất hiện).
+            val isHiddenByLogic = tr.hiddenByFlex || tr.hiddenByPalm
+            if (isHiddenByLogic && tr.forceShowFrames <= 0) {
+                Log.d(TAG, "synthesizeDetections: skip render clsId=$clsId " +
+                    "(hiddenByFlex=${tr.hiddenByFlex} hiddenByPalm=${tr.hiddenByPalm})")
                 continue
             }
             // Fix Viewport-clamp: ép nail polygon nằm trong viewport frame

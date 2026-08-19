@@ -4,10 +4,7 @@ class ColorFingerConfig {
   final int fingerIndex;
   final String color;
 
-  ColorFingerConfig({
-    required this.fingerIndex,
-    required this.color,
-  });
+  ColorFingerConfig({required this.fingerIndex, required this.color});
 
   factory ColorFingerConfig.fromJson(Map<String, dynamic> json) {
     return ColorFingerConfig(
@@ -21,10 +18,7 @@ class ColorJsonConfig {
   final String mode; // 'perFinger', 'solid', 'gradient'
   final List<ColorFingerConfig> fingers;
 
-  ColorJsonConfig({
-    required this.mode,
-    required this.fingers,
-  });
+  ColorJsonConfig({required this.mode, required this.fingers});
 
   factory ColorJsonConfig.fromJson(String rawJson) {
     try {

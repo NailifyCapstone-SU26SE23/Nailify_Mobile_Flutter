@@ -172,7 +172,9 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
         final recColors = widget.recommendedData!['colors'];
         if (recColors is List && recColors.isNotEmpty) {
           for (var i = 1; i <= 5; i++) {
-            final colorHex = recColors[(i - 1) % recColors.length].toString().trim();
+            final colorHex = recColors[(i - 1) % recColors.length]
+                .toString()
+                .trim();
             if (colorHex.startsWith('#')) {
               initialColors[i] = colorHex;
             }
@@ -192,44 +194,56 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
         selectedShape = _resolveShape(data.nailShapes, customerNail);
       } else if (widget.recommendedData != null) {
         final shapeData = widget.recommendedData!['nailShape'];
-        final shapeId = shapeData != null ? asTryOnInt(shapeData['nailShapeId'] ?? shapeData['id']) : null;
+        final shapeId = shapeData != null
+            ? asTryOnInt(shapeData['nailShapeId'] ?? shapeData['id'])
+            : null;
         if (shapeId != null && shapeId > 0) {
-          selectedShape = data.nailShapes.firstWhereOrNull((s) => s.nailShapeId == shapeId);
+          selectedShape = data.nailShapes.firstWhereOrNull(
+            (s) => s.nailShapeId == shapeId,
+          );
         }
         if (selectedShape == null && shapeData != null) {
           final shapeName = shapeData['name']?.toString().toLowerCase();
           if (shapeName != null) {
-            selectedShape = data.nailShapes.firstWhereOrNull((s) => s.name.toLowerCase() == shapeName);
+            selectedShape = data.nailShapes.firstWhereOrNull(
+              (s) => s.name.toLowerCase() == shapeName,
+            );
           }
         }
       }
-      if (selectedShape == null) {
-        selectedShape = data.nailShapes.isEmpty ? null : data.nailShapes.first;
-      }
+      selectedShape ??= data.nailShapes.isEmpty ? null : data.nailShapes.first;
 
       NailSurfaceModel? selectedSurface;
       if (customerNail != null) {
         selectedSurface = _resolveSurface(data.nailSurfaces, customerNail);
       } else if (widget.recommendedData != null) {
         final surfaceData = widget.recommendedData!['nailSurface'];
-        final surfaceId = surfaceData != null ? asTryOnInt(surfaceData['nailSurfaceId'] ?? surfaceData['id']) : null;
+        final surfaceId = surfaceData != null
+            ? asTryOnInt(surfaceData['nailSurfaceId'] ?? surfaceData['id'])
+            : null;
         if (surfaceId != null && surfaceId > 0) {
-          selectedSurface = data.nailSurfaces.firstWhereOrNull((s) => s.nailSurfaceId == surfaceId);
+          selectedSurface = data.nailSurfaces.firstWhereOrNull(
+            (s) => s.nailSurfaceId == surfaceId,
+          );
         }
         if (selectedSurface == null && surfaceData != null) {
           final surfaceName = surfaceData['name']?.toString().toLowerCase();
           if (surfaceName != null) {
-            selectedSurface = data.nailSurfaces.firstWhereOrNull((s) => s.name.toLowerCase() == surfaceName);
+            selectedSurface = data.nailSurfaces.firstWhereOrNull(
+              (s) => s.name.toLowerCase() == surfaceName,
+            );
           }
         }
       }
-      if (selectedSurface == null) {
-        selectedSurface = data.nailSurfaces.isEmpty ? null : data.nailSurfaces.first;
-      }
+      selectedSurface ??= data.nailSurfaces.isEmpty
+            ? null
+            : data.nailSurfaces.first;
 
       final List<PlacedComponentDraft> initialPlacements = [];
       if (customerNail != null) {
-        initialPlacements.addAll(_buildDrafts(customerNail, data.combinedComponents));
+        initialPlacements.addAll(
+          _buildDrafts(customerNail, data.combinedComponents),
+        );
       } else if (widget.recommendedData != null) {
         final recComponents = widget.recommendedData!['components'];
         if (recComponents is List) {
@@ -237,36 +251,56 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
           for (var index = 0; index < recComponents.length; index++) {
             final compMap = recComponents[index];
             if (compMap is Map) {
-              final compId = asTryOnInt(compMap['componentId'] ?? compMap['id']);
+              final compId = asTryOnInt(
+                compMap['componentId'] ?? compMap['id'],
+              );
               final custCompId = asTryOnInt(compMap['customerComponentId']);
-              
+
               final matchedComp = data.combinedComponents.firstWhereOrNull((c) {
                 if (custCompId > 0) {
-                  return c.isCustomerComponent && c.customerComponentId == custCompId;
+                  return c.isCustomerComponent &&
+                      c.customerComponentId == custCompId;
                 }
                 if (compId > 0) {
                   return !c.isCustomerComponent && c.componentId == compId;
                 }
                 return false;
               });
-              
+
               if (matchedComp != null) {
-                final fIndex = asTryOnInt(compMap['fingerIndex'] ?? compMap['FingerIndex'], fallback: 3);
+                final fIndex = asTryOnInt(
+                  compMap['fingerIndex'] ?? compMap['FingerIndex'],
+                  fallback: 3,
+                );
                 final normFinger = normalizeFingerIndexFromApi(fIndex);
-                
-                initialPlacements.add(PlacedComponentDraft(
-                  localId: componentCreatedAt + index,
-                  component: matchedComp,
-                  componentId: matchedComp.componentId,
-                  customerComponentId: matchedComp.customerComponentId,
-                  name: matchedComp.name,
-                  imageUrl: matchedComp.imageUrl,
-                  fingerIndex: normFinger,
-                  posX: asTryOnDouble(compMap['posX'] ?? compMap['PosX'], fallback: 0),
-                  posY: asTryOnDouble(compMap['posY'] ?? compMap['PosY'], fallback: 0),
-                  scale: asTryOnDouble(compMap['scale'] ?? compMap['Scale'], fallback: 0.5),
-                  rotation: asTryOnDouble(compMap['rotation'] ?? compMap['Rotation'], fallback: 0),
-                ));
+
+                initialPlacements.add(
+                  PlacedComponentDraft(
+                    localId: componentCreatedAt + index,
+                    component: matchedComp,
+                    componentId: matchedComp.componentId,
+                    customerComponentId: matchedComp.customerComponentId,
+                    name: matchedComp.name,
+                    imageUrl: matchedComp.imageUrl,
+                    fingerIndex: normFinger,
+                    posX: asTryOnDouble(
+                      compMap['posX'] ?? compMap['PosX'],
+                      fallback: 0,
+                    ),
+                    posY: asTryOnDouble(
+                      compMap['posY'] ?? compMap['PosY'],
+                      fallback: 0,
+                    ),
+                    scale: asTryOnDouble(
+                      compMap['scale'] ?? compMap['Scale'],
+                      fallback: 0.5,
+                    ),
+                    rotation: asTryOnDouble(
+                      compMap['rotation'] ?? compMap['Rotation'],
+                      fallback: 0,
+                    ),
+                  ),
+                );
               }
             }
           }
@@ -461,7 +495,9 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
       final recColors = res['colors'];
       if (recColors is List && recColors.isNotEmpty) {
         for (var i = 1; i <= 5; i++) {
-          final colorHex = recColors[(i - 1) % recColors.length].toString().trim();
+          final colorHex = recColors[(i - 1) % recColors.length]
+              .toString()
+              .trim();
           if (colorHex.startsWith('#')) {
             newColors[i] = colorHex;
           }
@@ -477,35 +513,45 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
 
       NailShapeModel? selectedShape;
       final shapeData = res['nailShape'];
-      final shapeId = shapeData != null ? asTryOnInt(shapeData['nailShapeId'] ?? shapeData['id']) : null;
+      final shapeId = shapeData != null
+          ? asTryOnInt(shapeData['nailShapeId'] ?? shapeData['id'])
+          : null;
       if (shapeId != null && shapeId > 0) {
-        selectedShape = data.nailShapes.firstWhereOrNull((s) => s.nailShapeId == shapeId);
+        selectedShape = data.nailShapes.firstWhereOrNull(
+          (s) => s.nailShapeId == shapeId,
+        );
       }
       if (selectedShape == null && shapeData != null) {
         final shapeName = shapeData['name']?.toString().toLowerCase();
         if (shapeName != null) {
-          selectedShape = data.nailShapes.firstWhereOrNull((s) => s.name.toLowerCase() == shapeName);
+          selectedShape = data.nailShapes.firstWhereOrNull(
+            (s) => s.name.toLowerCase() == shapeName,
+          );
         }
       }
-      if (selectedShape == null) {
-        selectedShape = _selectedNailShape ?? (data.nailShapes.isEmpty ? null : data.nailShapes.first);
-      }
+      selectedShape ??= _selectedNailShape ??
+            (data.nailShapes.isEmpty ? null : data.nailShapes.first);
 
       NailSurfaceModel? selectedSurface;
       final surfaceData = res['nailSurface'];
-      final surfaceId = surfaceData != null ? asTryOnInt(surfaceData['nailSurfaceId'] ?? surfaceData['id']) : null;
+      final surfaceId = surfaceData != null
+          ? asTryOnInt(surfaceData['nailSurfaceId'] ?? surfaceData['id'])
+          : null;
       if (surfaceId != null && surfaceId > 0) {
-        selectedSurface = data.nailSurfaces.firstWhereOrNull((s) => s.nailSurfaceId == surfaceId);
+        selectedSurface = data.nailSurfaces.firstWhereOrNull(
+          (s) => s.nailSurfaceId == surfaceId,
+        );
       }
       if (selectedSurface == null && surfaceData != null) {
         final surfaceName = surfaceData['name']?.toString().toLowerCase();
         if (surfaceName != null) {
-          selectedSurface = data.nailSurfaces.firstWhereOrNull((s) => s.name.toLowerCase() == surfaceName);
+          selectedSurface = data.nailSurfaces.firstWhereOrNull(
+            (s) => s.name.toLowerCase() == surfaceName,
+          );
         }
       }
-      if (selectedSurface == null) {
-        selectedSurface = _selectedNailSurface ?? (data.nailSurfaces.isEmpty ? null : data.nailSurfaces.first);
-      }
+      selectedSurface ??= _selectedNailSurface ??
+            (data.nailSurfaces.isEmpty ? null : data.nailSurfaces.first);
 
       final List<PlacedComponentDraft> newPlacements = [];
       final recComponents = res['components'];
@@ -519,7 +565,8 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
 
             final matchedComp = data.combinedComponents.firstWhereOrNull((c) {
               if (custCompId > 0) {
-                return c.isCustomerComponent && c.customerComponentId == custCompId;
+                return c.isCustomerComponent &&
+                    c.customerComponentId == custCompId;
               }
               if (compId > 0) {
                 return !c.isCustomerComponent && c.componentId == compId;
@@ -528,22 +575,39 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
             });
 
             if (matchedComp != null) {
-              final fIndex = asTryOnInt(compMap['fingerIndex'] ?? compMap['FingerIndex'], fallback: 3);
+              final fIndex = asTryOnInt(
+                compMap['fingerIndex'] ?? compMap['FingerIndex'],
+                fallback: 3,
+              );
               final normFinger = normalizeFingerIndexFromApi(fIndex);
 
-              newPlacements.add(PlacedComponentDraft(
-                localId: componentCreatedAt + index,
-                component: matchedComp,
-                componentId: matchedComp.componentId,
-                customerComponentId: matchedComp.customerComponentId,
-                name: matchedComp.name,
-                imageUrl: matchedComp.imageUrl,
-                fingerIndex: normFinger,
-                posX: asTryOnDouble(compMap['posX'] ?? compMap['PosX'], fallback: 0),
-                posY: asTryOnDouble(compMap['posY'] ?? compMap['PosY'], fallback: 0),
-                scale: asTryOnDouble(compMap['scale'] ?? compMap['Scale'], fallback: 0.5),
-                rotation: asTryOnDouble(compMap['rotation'] ?? compMap['Rotation'], fallback: 0),
-              ));
+              newPlacements.add(
+                PlacedComponentDraft(
+                  localId: componentCreatedAt + index,
+                  component: matchedComp,
+                  componentId: matchedComp.componentId,
+                  customerComponentId: matchedComp.customerComponentId,
+                  name: matchedComp.name,
+                  imageUrl: matchedComp.imageUrl,
+                  fingerIndex: normFinger,
+                  posX: asTryOnDouble(
+                    compMap['posX'] ?? compMap['PosX'],
+                    fallback: 0,
+                  ),
+                  posY: asTryOnDouble(
+                    compMap['posY'] ?? compMap['PosY'],
+                    fallback: 0,
+                  ),
+                  scale: asTryOnDouble(
+                    compMap['scale'] ?? compMap['Scale'],
+                    fallback: 0.5,
+                  ),
+                  rotation: asTryOnDouble(
+                    compMap['rotation'] ?? compMap['Rotation'],
+                    fallback: 0,
+                  ),
+                ),
+              );
             }
           }
         }

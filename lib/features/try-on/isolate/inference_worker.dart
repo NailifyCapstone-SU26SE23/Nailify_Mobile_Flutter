@@ -43,7 +43,10 @@ class InferenceWorker {
     final stopwatch = Stopwatch()..start();
     await init();
 
-    final rawOutputs = await _onnxService.runInference(frameImage, useArModel: false);
+    final rawOutputs = await _onnxService.runInference(
+      frameImage,
+      useArModel: false,
+    );
     final polygons = YoloSegDecoder.decode(
       rawOutputs: rawOutputs,
       confThreshold: confThreshold,
@@ -51,8 +54,13 @@ class InferenceWorker {
       maskThreshold: maskThreshold,
     );
 
-    final rawPoses = await _onnxService.runPoseInferenceOnTensor(rawOutputs.letterbox);
-    final List<NailPoseKeypoints?> matchedPoses = List.filled(polygons.length, null);
+    final rawPoses = await _onnxService.runPoseInferenceOnTensor(
+      rawOutputs.letterbox,
+    );
+    final List<NailPoseKeypoints?> matchedPoses = List.filled(
+      polygons.length,
+      null,
+    );
     final List<Map<String, dynamic>> pairs = [];
     for (int i = 0; i < polygons.length; i++) {
       final Offset c = _centroid(polygons[i]);
@@ -83,7 +91,11 @@ class InferenceWorker {
 
     final List<Map<String, dynamic>> combined = [];
     for (int i = 0; i < polygons.length; i++) {
-      combined.add({'poly': polygons[i], 'pose': matchedPoses[i], 'cx': _centroid(polygons[i]).dx});
+      combined.add({
+        'poly': polygons[i],
+        'pose': matchedPoses[i],
+        'cx': _centroid(polygons[i]).dx,
+      });
     }
     combined.sort((a, b) => (a['cx'] as double).compareTo(b['cx'] as double));
     final List<List<Offset>> sortedPolygons = [];
@@ -98,7 +110,9 @@ class InferenceWorker {
     debugPrint('🤖 [LOCAL ONNX PIPELINE RESULTS]');
     debugPrint('💅 Móng nhận diện (best.onnx): ${sortedPolygons.length}');
     debugPrint('🎯 Pose nhận diện (thanhdtPose.onnx): ${rawPoses.length}');
-    debugPrint('⏱️ Tổng thời gian chạy local: ${stopwatch.elapsedMilliseconds} ms');
+    debugPrint(
+      '⏱️ Tổng thời gian chạy local: ${stopwatch.elapsedMilliseconds} ms',
+    );
     debugPrint('==================================================');
     return InferenceWorkerResult(
       polygons: sortedPolygons,
@@ -118,7 +132,10 @@ class InferenceWorker {
     final stopwatch = Stopwatch()..start();
     await init();
     final letterboxResult = await compute(prepareFrameForInference, rawFrame);
-    final rawOutputs = await _onnxService.runInferenceOnTensor(letterboxResult, useArModel: true);
+    final rawOutputs = await _onnxService.runInferenceOnTensor(
+      letterboxResult,
+      useArModel: true,
+    );
     final polygons = await compute(
       decodePolygons,
       DecodeInput(
@@ -130,10 +147,17 @@ class InferenceWorker {
         maskThreshold: maskThreshold,
       ),
     );
-    final List<NailPoseKeypoints?> matchedPoses = List.filled(polygons.length, null);
+    final List<NailPoseKeypoints?> matchedPoses = List.filled(
+      polygons.length,
+      null,
+    );
     final List<Map<String, dynamic>> combined = [];
     for (int i = 0; i < polygons.length; i++) {
-      combined.add({'poly': polygons[i], 'pose': matchedPoses[i], 'cx': _centroid(polygons[i]).dx});
+      combined.add({
+        'poly': polygons[i],
+        'pose': matchedPoses[i],
+        'cx': _centroid(polygons[i]).dx,
+      });
     }
     combined.sort((a, b) => (a['cx'] as double).compareTo(b['cx'] as double));
     final List<List<Offset>> sortedPolygons = [];
@@ -154,7 +178,10 @@ class InferenceWorker {
 
   static Offset _centroid(List<Offset> poly) {
     double sumX = 0, sumY = 0;
-    for (final pt in poly) { sumX += pt.dx; sumY += pt.dy; }
+    for (final pt in poly) {
+      sumX += pt.dx;
+      sumY += pt.dy;
+    }
     return Offset(sumX / poly.length, sumY / poly.length);
   }
 
@@ -164,7 +191,8 @@ class InferenceWorker {
     double iouThreshold = 0.45,
     double maskThreshold = 0.5,
   }) {
-    return processCameraFrame(rawFrame,
+    return processCameraFrame(
+      rawFrame,
       confThreshold: confThreshold,
       iouThreshold: iouThreshold,
       maskThreshold: maskThreshold,

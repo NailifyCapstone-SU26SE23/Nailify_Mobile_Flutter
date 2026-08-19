@@ -39,11 +39,9 @@ class _TryOnMethodSelectionScreenState
 
   // ---- Snapshot Try-on ----
   Future<void> _launchSnapshot() async {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => const SnapShotScreen(),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const SnapShotScreen()));
   }
 
   void _showError(String msg) {

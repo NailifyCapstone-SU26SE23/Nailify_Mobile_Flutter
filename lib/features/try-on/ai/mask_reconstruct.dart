@@ -59,7 +59,9 @@ class MaskReconstructionProcessor {
         int protoX = px1 + x;
         double val = 0.0;
         for (int c = 0; c < det.maskCoeffs.length && c < 32; c++) {
-          val += det.maskCoeffs[c] * _getProtoVal(rawProto, c, protoY, protoX, 160, 160);
+          val +=
+              det.maskCoeffs[c] *
+              _getProtoVal(rawProto, c, protoY, protoX, 160, 160);
         }
         maskRoiProto[y][x] = _sigmoid(val);
       }
@@ -74,8 +76,12 @@ class MaskReconstructionProcessor {
       (_) => List.filled(boxW, false),
     );
 
-    final double scaleX = (roiWProto > 1) ? (roiWProto - 1.0) / max(1.0, boxW - 1.0) : 0.0;
-    final double scaleY = (roiHProto > 1) ? (roiHProto - 1.0) / max(1.0, boxH - 1.0) : 0.0;
+    final double scaleX = (roiWProto > 1)
+        ? (roiWProto - 1.0) / max(1.0, boxW - 1.0)
+        : 0.0;
+    final double scaleY = (roiHProto > 1)
+        ? (roiHProto - 1.0) / max(1.0, boxH - 1.0)
+        : 0.0;
 
     for (int dy = 0; dy < boxH; dy++) {
       double gy = dy * scaleY;
@@ -94,7 +100,8 @@ class MaskReconstructionProcessor {
         double v12 = maskRoiProto[y2][x1];
         double v22 = maskRoiProto[y2][x2];
 
-        double val = (1.0 - fx) * (1.0 - fy) * v11 +
+        double val =
+            (1.0 - fx) * (1.0 - fy) * v11 +
             fx * (1.0 - fy) * v21 +
             (1.0 - fx) * fy * v12 +
             fx * fy * v22;
@@ -124,7 +131,9 @@ class MaskReconstructionProcessor {
   ) {
     if (rawProto == null) return 0.0;
 
-    if (rawProto is Float32List || rawProto is List<double> || rawProto is List<num>) {
+    if (rawProto is Float32List ||
+        rawProto is List<double> ||
+        rawProto is List<num>) {
       int idx = c * (h * w) + y * w + x;
       if (idx >= 0 && idx < rawProto.length) {
         return (rawProto[idx] as num).toDouble();

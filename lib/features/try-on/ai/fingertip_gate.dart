@@ -49,12 +49,14 @@ List<Offset> fingertipPixelPositions({
   for (final hand in hands) {
     for (final index in fingertipLandmarkIndices) {
       if (index >= hand.landmarks.length) continue;
-      fingertips.add(landmarkToPixel(
-        hand.landmarks[index],
-        sensorWidth: sensorWidth,
-        sensorHeight: sensorHeight,
-        rotationDegrees: rotationDegrees,
-      ));
+      fingertips.add(
+        landmarkToPixel(
+          hand.landmarks[index],
+          sensorWidth: sensorWidth,
+          sensorHeight: sensorHeight,
+          rotationDegrees: rotationDegrees,
+        ),
+      );
     }
   }
   return fingertips;

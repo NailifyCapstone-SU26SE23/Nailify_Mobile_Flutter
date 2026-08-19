@@ -63,10 +63,10 @@ class NailTryOnClient {
 
   static final NailTryOnClient instance = NailTryOnClient._();
 
-  static const MethodChannel _method =
-      MethodChannel('com.nailify.ar/tryon');
-  static const EventChannel _events =
-      EventChannel('com.nailify.ar/tryon/events');
+  static const MethodChannel _method = MethodChannel('com.nailify.ar/tryon');
+  static const EventChannel _events = EventChannel(
+    'com.nailify.ar/tryon/events',
+  );
 
   Stream<NailTryOnStats>? _statsStream;
 
@@ -117,7 +117,9 @@ class NailTryOnClient {
   }
 
   Future<String?> captureSnapshot() async {
-    final result = await _method.invokeMapMethod<String, dynamic>('captureSnapshot');
+    final result = await _method.invokeMapMethod<String, dynamic>(
+      'captureSnapshot',
+    );
     return result?['imagePath'] as String?;
   }
 
@@ -127,18 +129,18 @@ class NailTryOnClient {
         .receiveBroadcastStream()
         .map((event) => NailTryOnStats.fromMap(event as Map))
         .handleError((e, st) {
-      // swallow stream errors; emit empty stats
-      return NailTryOnStats(
-        yoloDetections: 0,
-        yoloInferenceMs: 0,
-        mediapipeHand: false,
-        mediapipeFingers: 0,
-        mediapipeMs: 0,
-        trackerConfirmed: 0,
-        frameSize: '',
-        totalMs: 0,
-      );
-    });
+          // swallow stream errors; emit empty stats
+          return NailTryOnStats(
+            yoloDetections: 0,
+            yoloInferenceMs: 0,
+            mediapipeHand: false,
+            mediapipeFingers: 0,
+            mediapipeMs: 0,
+            trackerConfirmed: 0,
+            frameSize: '',
+            totalMs: 0,
+          );
+        });
     return _statsStream!;
   }
 }

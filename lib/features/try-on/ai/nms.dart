@@ -47,7 +47,7 @@ class NmsProcessor {
         // 2. Check center distance (prevent 2 detections on the same finger)
         final double dist = sqrt(
           (cand.cx - kept.cx) * (cand.cx - kept.cx) +
-          (cand.cy - kept.cy) * (cand.cy - kept.cy)
+              (cand.cy - kept.cy) * (cand.cy - kept.cy),
         );
         final double minDim = min(min(cand.w, cand.h), min(kept.w, kept.h));
         if (dist < minDim * 0.85) {

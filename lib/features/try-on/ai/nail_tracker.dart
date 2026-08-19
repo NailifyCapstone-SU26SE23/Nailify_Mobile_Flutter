@@ -42,22 +42,22 @@ class NailTracker {
       // +X is pointing toward the fingertip. -X is toward the palm.
       final double width = frame.length * 0.95 * nailScale;
       final double length = frame.length * 1.5 * nailScale;
-      
-      // Center the polygon slightly behind the actual fingertip landmark 
+
+      // Center the polygon slightly behind the actual fingertip landmark
       // (because the landmark is at the very edge of the flesh).
       final double centerX = -length * 0.45;
-      
+
       final List<Offset> localShape = [
         Offset(centerX - length / 2, -width / 2), // Cuticle left
         Offset(centerX + length / 2, -width / 2), // Tip left
-        Offset(centerX + length / 2, width / 2),  // Tip right
-        Offset(centerX - length / 2, width / 2),  // Cuticle right
+        Offset(centerX + length / 2, width / 2), // Tip right
+        Offset(centerX - length / 2, width / 2), // Cuticle right
       ];
 
       // Transform local polygon to world screen space
-      rendered.add(localShape
-          .map((lp) => frame.tip + _rotate(lp, frame.angle))
-          .toList());
+      rendered.add(
+        localShape.map((lp) => frame.tip + _rotate(lp, frame.angle)).toList(),
+      );
     });
     return rendered;
   }

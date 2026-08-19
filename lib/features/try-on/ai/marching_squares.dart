@@ -60,10 +60,9 @@ class MarchingSquaresProcessor {
     // Map ROI local coordinates to 640 space coordinates
     final List<Offset> points640 = [];
     for (var pt in boundaryPoints) {
-      points640.add(Offset(
-        (roi.boxX1 + pt.x).toDouble(),
-        (roi.boxY1 + pt.y).toDouble(),
-      ));
+      points640.add(
+        Offset((roi.boxX1 + pt.x).toDouble(), (roi.boxY1 + pt.y).toDouble()),
+      );
     }
 
     return points640;

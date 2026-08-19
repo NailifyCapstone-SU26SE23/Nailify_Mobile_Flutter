@@ -9,23 +9,23 @@ class NailDebugPainter extends CustomPainter {
   final List<String>? labels;
   final List<NailPoseKeypoints?>? poseKeypoints;
 
-  NailDebugPainter({
-    required this.polygons,
-    this.labels,
-    this.poseKeypoints,
-  });
+  NailDebugPainter({required this.polygons, this.labels, this.poseKeypoints});
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (polygons.isEmpty && (poseKeypoints == null || poseKeypoints!.isEmpty)) return;
+    if (polygons.isEmpty && (poseKeypoints == null || poseKeypoints!.isEmpty)) {
+      return;
+    }
 
     // 1. Vẽ viền đa giác móng (Polygons từ best.onnx)
     final Paint polyFillPaint = Paint()
-      ..color = const Color(0x4000E5FF)  // Màu xanh cyan trong suốt
+      ..color =
+          const Color(0x4000E5FF) // Màu xanh cyan trong suốt
       ..style = PaintingStyle.fill;
 
     final Paint polyBorderPaint = Paint()
-      ..color = const Color(0xFF00E5FF)  // Viền xanh cyan rực rỡ
+      ..color =
+          const Color(0xFF00E5FF) // Viền xanh cyan rực rỡ
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.0;
 
@@ -44,7 +44,9 @@ class NailDebugPainter extends CustomPainter {
       canvas.drawPath(path, polyBorderPaint);
 
       // Nhãn tên ngón tay
-      final String label = (labels != null && i < labels!.length) ? labels![i] : "nail #${i + 1}";
+      final String label = (labels != null && i < labels!.length)
+          ? labels![i]
+          : "nail #${i + 1}";
       final textSpan = TextSpan(
         text: label,
         style: const TextStyle(
@@ -66,16 +68,19 @@ class NailDebugPainter extends CustomPainter {
     // 2. Vẽ Hướng Móng & Keypoints (từ thanhdtPose.onnx / erikdev/2)
     if (poseKeypoints != null && poseKeypoints!.isNotEmpty) {
       final Paint linePaint = Paint()
-        ..color = const Color(0xFFFFEA00) // Đường màu vàng nối gốc -> đỉnh
+        ..color =
+            const Color(0xFFFFEA00) // Đường màu vàng nối gốc -> đỉnh
         ..style = PaintingStyle.stroke
         ..strokeWidth = 4.5;
 
       final Paint tipPaint = Paint()
-        ..color = const Color(0xFF00FF00) // Chấm xanh lá rực rỡ tại Đỉnh móng (Tip)
+        ..color =
+            const Color(0xFF00FF00) // Chấm xanh lá rực rỡ tại Đỉnh móng (Tip)
         ..style = PaintingStyle.fill;
 
       final Paint basePaint = Paint()
-        ..color = const Color(0xFFFF1744) // Chấm đỏ tươi tại Gốc móng (Base)
+        ..color =
+            const Color(0xFFFF1744) // Chấm đỏ tươi tại Gốc móng (Base)
         ..style = PaintingStyle.fill;
 
       final Paint blackBorderPaint = Paint()
@@ -105,7 +110,12 @@ class NailDebugPainter extends CustomPainter {
     }
   }
 
-  static void _drawSmallLabel(Canvas canvas, String text, Offset pos, Color color) {
+  static void _drawSmallLabel(
+    Canvas canvas,
+    String text,
+    Offset pos,
+    Color color,
+  ) {
     final textSpan = TextSpan(
       text: text,
       style: TextStyle(

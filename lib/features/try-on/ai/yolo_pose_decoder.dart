@@ -85,7 +85,9 @@ class YoloPoseDecoder {
       }
 
       debugPrint('🤖 [LOCAL ONNX POSE DECODER]');
-      debugPrint('🎯 Nhận diện thành công ${rawPoses.length} Pose Keypoints từ thanhdtPose.onnx!');
+      debugPrint(
+        '🎯 Nhận diện thành công ${rawPoses.length} Pose Keypoints từ thanhdtPose.onnx!',
+      );
     } catch (e, stack) {
       debugPrint('⚠️ Lỗi decode thanhdtPose.onnx: $e\n$stack');
     }

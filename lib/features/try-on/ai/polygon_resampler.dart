@@ -15,7 +15,10 @@ import 'dart:ui';
 class PolygonResampler {
   static const int defaultPointCount = 48;
 
-  static List<Offset> resample(List<Offset> polygon, {int pointCount = defaultPointCount}) {
+  static List<Offset> resample(
+    List<Offset> polygon, {
+    int pointCount = defaultPointCount,
+  }) {
     if (polygon.length < 3) return polygon;
 
     double cx = 0, cy = 0;
@@ -36,7 +39,8 @@ class PolygonResampler {
       radii[i] = sqrt(dx * dx + dy * dy);
     }
 
-    final order = List<int>.generate(n, (i) => i)..sort((a, b) => angles[a].compareTo(angles[b]));
+    final order = List<int>.generate(n, (i) => i)
+      ..sort((a, b) => angles[a].compareTo(angles[b]));
 
     final List<Offset> result = [];
     for (int k = 0; k < pointCount; k++) {
@@ -59,15 +63,19 @@ class PolygonResampler {
     final int n = order.length;
 
     int lo = 0, hi = n - 1;
-    if (targetAngle <= angles[order[0]] || targetAngle >= angles[order[n - 1]]) {
+    if (targetAngle <= angles[order[0]] ||
+        targetAngle >= angles[order[n - 1]]) {
       // Wrap-around segment between the last and first sorted samples.
       final double a1 = angles[order[n - 1]];
       final double a2 = angles[order[0]] + 2 * pi;
       double t = targetAngle;
       if (t < angles[order[0]]) t += 2 * pi;
       final double span = a2 - a1;
-      final double frac = span.abs() < 1e-9 ? 0.0 : ((t - a1) / span).clamp(0.0, 1.0);
-      return radii[order[n - 1]] + frac * (radii[order[0]] - radii[order[n - 1]]);
+      final double frac = span.abs() < 1e-9
+          ? 0.0
+          : ((t - a1) / span).clamp(0.0, 1.0);
+      return radii[order[n - 1]] +
+          frac * (radii[order[0]] - radii[order[n - 1]]);
     }
 
     while (hi - lo > 1) {
@@ -82,7 +90,9 @@ class PolygonResampler {
     final double a1 = angles[order[lo]];
     final double a2 = angles[order[hi]];
     final double span = a2 - a1;
-    final double frac = span.abs() < 1e-9 ? 0.0 : ((targetAngle - a1) / span).clamp(0.0, 1.0);
+    final double frac = span.abs() < 1e-9
+        ? 0.0
+        : ((targetAngle - a1) / span).clamp(0.0, 1.0);
     return radii[order[lo]] + frac * (radii[order[hi]] - radii[order[lo]]);
   }
 }

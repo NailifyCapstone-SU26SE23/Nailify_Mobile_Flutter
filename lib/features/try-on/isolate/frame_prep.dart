@@ -24,8 +24,12 @@ LetterboxResult prepareFrameForInference(RawCameraFrame raw) {
 
   final letterbox = LetterboxProcessor.process(rgb);
 
-  final int origW = (raw.rotationDegrees == 90 || raw.rotationDegrees == 270) ? raw.height : raw.width;
-  final int origH = (raw.rotationDegrees == 90 || raw.rotationDegrees == 270) ? raw.width : raw.height;
+  final int origW = (raw.rotationDegrees == 90 || raw.rotationDegrees == 270)
+      ? raw.height
+      : raw.width;
+  final int origH = (raw.rotationDegrees == 90 || raw.rotationDegrees == 270)
+      ? raw.width
+      : raw.height;
 
   return LetterboxResult(
     tensor: letterbox.tensor,
@@ -84,7 +88,10 @@ img.Image _yuv420ToImage(RawCameraFrame raw, {int step = 1}) {
       final int vValue = vBuffer[uvIndex] - 128;
 
       int r = (yValue + 1.402 * vValue).round().clamp(0, 255);
-      int g = (yValue - 0.344136 * uValue - 0.714136 * vValue).round().clamp(0, 255);
+      int g = (yValue - 0.344136 * uValue - 0.714136 * vValue).round().clamp(
+        0,
+        255,
+      );
       int b = (yValue + 1.772 * uValue).round().clamp(0, 255);
 
       imgImage.setPixelRgb(outX, outY, r, g, b);

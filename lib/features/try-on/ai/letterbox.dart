@@ -34,7 +34,9 @@ class LetterboxProcessor {
 
     final resizedImage = img.copyResize(inputImage, width: newW, height: newH);
 
-    final Float32List float32List = Float32List(1 * 3 * targetSize * targetSize);
+    final Float32List float32List = Float32List(
+      1 * 3 * targetSize * targetSize,
+    );
     final double fillValue = 114.0 / 255.0;
     float32List.fillRange(0, float32List.length, fillValue);
 

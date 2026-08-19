@@ -17,7 +17,8 @@ class RawCameraFrame {
   final int plane0RowStride;
   final int uvRowStride;
   final int uvPixelStride;
-  final int rotationDegrees; // 0, 90, 180, 270 — from the camera sensor orientation
+  final int
+  rotationDegrees; // 0, 90, 180, 270 — from the camera sensor orientation
 
   RawCameraFrame({
     required this.width,

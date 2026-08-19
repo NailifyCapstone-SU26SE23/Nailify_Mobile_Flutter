@@ -110,11 +110,7 @@ class _NativeCameraViewState extends State<NativeCameraView> {
         fit: StackFit.expand,
         children: [
           const _NativeSurface(),
-          Positioned(
-            top: 12,
-            left: 12,
-            child: _StatsCard(stats: _lastStats),
-          ),
+          Positioned(top: 12, left: 12, child: _StatsCard(stats: _lastStats)),
           Positioned(
             top: 12,
             right: 12,
@@ -184,9 +180,9 @@ class _StatsCard extends StatelessWidget {
     final text = s == null
         ? 'init...'
         : 'YOLO ${s.yoloDetections} (${s.yoloInferenceMs}ms)\n'
-            'MP ${s.mediapipeHand ? "${s.mediapipeFingers}f" : "-"} (${s.mediapipeMs}ms)\n'
-            'tracks ${s.trackerConfirmed}\n'
-            'total ${s.totalMs}ms';
+              'MP ${s.mediapipeHand ? "${s.mediapipeFingers}f" : "-"} (${s.mediapipeMs}ms)\n'
+              'tracks ${s.trackerConfirmed}\n'
+              'total ${s.totalMs}ms';
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
@@ -209,7 +205,11 @@ class _DebugToggleButton extends StatelessWidget {
   final String label;
   final bool on;
   final VoidCallback onTap;
-  const _DebugToggleButton({required this.label, required this.on, required this.onTap});
+  const _DebugToggleButton({
+    required this.label,
+    required this.on,
+    required this.onTap,
+  });
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -220,7 +220,10 @@ class _DebugToggleButton extends StatelessWidget {
           color: on ? Colors.green : Colors.black54,
           borderRadius: BorderRadius.circular(6),
         ),
-        child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
+        child: Text(
+          label,
+          style: const TextStyle(color: Colors.white, fontSize: 12),
+        ),
       ),
     );
   }

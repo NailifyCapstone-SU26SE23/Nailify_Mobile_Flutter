@@ -35,7 +35,9 @@ class YoloSegDecoder {
     // Step 1: Parse prediction anchors
     final candidates = _parseOutput0(rawOutputs.pred, confThreshold);
     if (candidates.isEmpty) {
-      debugPrint("🔍 [YOLO AI] Không có anchor nào đạt confThreshold (>= $confThreshold)");
+      debugPrint(
+        "🔍 [YOLO AI] Không có anchor nào đạt confThreshold (>= $confThreshold)",
+      );
       return [];
     }
 
@@ -50,11 +52,15 @@ class YoloSegDecoder {
 
     debugPrint("--------------------------------------------------");
     debugPrint("🤖 [YOLO SEG DECODER RESULTS]");
-    debugPrint("🔍 Anchors ứng viên: ${candidates.length} -> NMS giữ lại: ${nmsDetections.length} móng");
+    debugPrint(
+      "🔍 Anchors ứng viên: ${candidates.length} -> NMS giữ lại: ${nmsDetections.length} móng",
+    );
     for (int i = 0; i < nmsDetections.length; i++) {
       final det = nmsDetections[i];
       final label = getClassName(det.classId);
-      debugPrint("   📌 Móng #${i + 1}: ClassID = ${det.classId} ($label) | Score = ${(det.score * 100).toStringAsFixed(1)}% | Box = (cx: ${det.cx.toStringAsFixed(1)}, cy: ${det.cy.toStringAsFixed(1)}, w: ${det.w.toStringAsFixed(1)}, h: ${det.h.toStringAsFixed(1)})");
+      debugPrint(
+        "   📌 Móng #${i + 1}: ClassID = ${det.classId} ($label) | Score = ${(det.score * 100).toStringAsFixed(1)}% | Box = (cx: ${det.cx.toStringAsFixed(1)}, cy: ${det.cy.toStringAsFixed(1)}, w: ${det.w.toStringAsFixed(1)}, h: ${det.h.toStringAsFixed(1)})",
+      );
     }
     debugPrint("--------------------------------------------------");
 
@@ -90,8 +96,10 @@ class YoloSegDecoder {
       // Step 5: Undo Letterbox to Original Image Coordinates
       final List<Offset> origPolygon = [];
       for (var pt in polygon640) {
-        double origX = (pt.dx - rawOutputs.letterbox.padLeft) / rawOutputs.letterbox.scale;
-        double origY = (pt.dy - rawOutputs.letterbox.padTop) / rawOutputs.letterbox.scale;
+        double origX =
+            (pt.dx - rawOutputs.letterbox.padLeft) / rawOutputs.letterbox.scale;
+        double origY =
+            (pt.dy - rawOutputs.letterbox.padTop) / rawOutputs.letterbox.scale;
 
         origX = origX.clamp(0.0, imgW);
         origY = origY.clamp(0.0, imgH);
@@ -107,7 +115,10 @@ class YoloSegDecoder {
     return resultPolygons;
   }
 
-  static List<YoloDetection> _parseOutput0(dynamic rawOut0, double confThreshold) {
+  static List<YoloDetection> _parseOutput0(
+    dynamic rawOut0,
+    double confThreshold,
+  ) {
     final List<YoloDetection> candidates = [];
 
     dynamic matrix = rawOut0;
@@ -139,7 +150,9 @@ class YoloSegDecoder {
 
         for (int c = 0; c < numClasses; c++) {
           double rawScore = ((matrix[4 + c] as List)[i] as num).toDouble();
-          double score = (rawScore > 1.0 || rawScore < 0.0) ? _sigmoid(rawScore) : rawScore;
+          double score = (rawScore > 1.0 || rawScore < 0.0)
+              ? _sigmoid(rawScore)
+              : rawScore;
           if (score > maxScore) {
             maxScore = score;
             maxClassId = c;
@@ -157,19 +170,27 @@ class YoloSegDecoder {
 
           int maskStartChannel = 4 + numClasses;
           List<double> coeffs = [];
-          for (int c = 0; c < numMaskCoeffs && (maskStartChannel + c) < numChannels; c++) {
-            coeffs.add(((matrix[maskStartChannel + c] as List)[i] as num).toDouble());
+          for (
+            int c = 0;
+            c < numMaskCoeffs && (maskStartChannel + c) < numChannels;
+            c++
+          ) {
+            coeffs.add(
+              ((matrix[maskStartChannel + c] as List)[i] as num).toDouble(),
+            );
           }
 
-          candidates.add(YoloDetection(
-            cx: cx,
-            cy: cy,
-            w: w,
-            h: h,
-            score: maxScore,
-            classId: maxClassId,
-            maskCoeffs: coeffs,
-          ));
+          candidates.add(
+            YoloDetection(
+              cx: cx,
+              cy: cy,
+              w: w,
+              h: h,
+              score: maxScore,
+              classId: maxClassId,
+              maskCoeffs: coeffs,
+            ),
+          );
         }
       }
     }
@@ -187,7 +208,9 @@ class YoloSegDecoder {
 
         for (int c = 0; c < numClasses; c++) {
           double rawScore = (anchorData[4 + c] as num).toDouble();
-          double score = (rawScore > 1.0 || rawScore < 0.0) ? _sigmoid(rawScore) : rawScore;
+          double score = (rawScore > 1.0 || rawScore < 0.0)
+              ? _sigmoid(rawScore)
+              : rawScore;
           if (score > maxScore) {
             maxScore = score;
             maxClassId = c;
@@ -205,19 +228,25 @@ class YoloSegDecoder {
 
           int maskStartChannel = 4 + numClasses;
           List<double> coeffs = [];
-          for (int c = 0; c < numMaskCoeffs && (maskStartChannel + c) < numChannels; c++) {
+          for (
+            int c = 0;
+            c < numMaskCoeffs && (maskStartChannel + c) < numChannels;
+            c++
+          ) {
             coeffs.add((anchorData[maskStartChannel + c] as num).toDouble());
           }
 
-          candidates.add(YoloDetection(
-            cx: cx,
-            cy: cy,
-            w: w,
-            h: h,
-            score: maxScore,
-            classId: maxClassId,
-            maskCoeffs: coeffs,
-          ));
+          candidates.add(
+            YoloDetection(
+              cx: cx,
+              cy: cy,
+              w: w,
+              h: h,
+              score: maxScore,
+              classId: maxClassId,
+              maskCoeffs: coeffs,
+            ),
+          );
         }
       }
     }

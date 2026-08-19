@@ -73,7 +73,9 @@ class TryOnActionBar extends StatelessWidget {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: !isSaving && !isLaunching ? onRegenerate : null,
+                      onPressed: !isSaving && !isLaunching
+                          ? onRegenerate
+                          : null,
                       icon: const Icon(Icons.refresh_rounded),
                       label: const Text(
                         'Tạo lại',

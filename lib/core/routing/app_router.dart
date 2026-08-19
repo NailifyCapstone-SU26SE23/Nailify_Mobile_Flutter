@@ -37,6 +37,7 @@ import '../../features/services/presentation/pages/service_detail_page.dart';
 import '../../features/services/presentation/pages/service_list_page.dart';
 import '../../features/nails/data/models/customer_nail_models.dart'
     as nails_models;
+import '../../features/try-on/presentation/nail_snapshot_page.dart';
 import '../../features/try-on/presentation/try_on_setup_screen.dart';
 import '../widgets/main_shell.dart';
 
@@ -302,6 +303,10 @@ class AppRouter {
               }
               return const TryOnSetupScreen();
             },
+          ),
+          GoRoute(
+            path: '/snapshot-try-on',
+            builder: (context, state) => const SnapShotScreen(),
           ),
 
           GoRoute(

@@ -643,3 +643,4 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         private val fingerClassIds = listOf(4, 0, 1, 3, 2)
     }
 }
+

@@ -10,6 +10,8 @@ import '../../nails/data/models/nail_surface_model.dart';
 import '../../nails/data/repositories/customer_nail_repository.dart';
 import '../../nails/data/repositories/nail_component_repository.dart';
 import '../../nails/services/ar_try_on_service.dart';
+import '../../../core/network/api_client.dart';
+import '../../quiz/data/datasources/quiz_repository.dart';
 import '../models/placed_component_draft.dart';
 import '../models/try_on_data.dart';
 import '../services/try_on_setup_service.dart';
@@ -37,6 +39,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
   late final TryOnSetupService _setupService;
   late final NailComponentRepository _componentRepository;
   late final CustomerNailRepository _customerNailRepository;
+  late final QuizRepository _quizRepo;
 
   bool _isLoading = true;
   bool _isSaving = false;
@@ -78,6 +81,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
     _setupService = getIt<TryOnSetupService>();
     _componentRepository = getIt<NailComponentRepository>();
     _customerNailRepository = getIt<CustomerNailRepository>();
+    _quizRepo = QuizRepository(getIt<ApiClient>());
     _fetchData();
   }
 
@@ -164,13 +168,116 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
             initialColors[i] = singleColor;
           }
         }
+      } else if (widget.recommendedData != null) {
+        final recColors = widget.recommendedData!['colors'];
+        if (recColors is List && recColors.isNotEmpty) {
+          for (var i = 1; i <= 5; i++) {
+            final colorHex = recColors[(i - 1) % recColors.length].toString().trim();
+            if (colorHex.startsWith('#')) {
+              initialColors[i] = colorHex;
+            }
+          }
+        } else {
+          final recColor = widget.recommendedData!['color'];
+          if (recColor is String && recColor.startsWith('#')) {
+            for (var i = 1; i <= 5; i++) {
+              initialColors[i] = recColor;
+            }
+          }
+        }
+      }
+
+      NailShapeModel? selectedShape;
+      if (customerNail != null) {
+        selectedShape = _resolveShape(data.nailShapes, customerNail);
+      } else if (widget.recommendedData != null) {
+        final shapeData = widget.recommendedData!['nailShape'];
+        final shapeId = shapeData != null ? asTryOnInt(shapeData['nailShapeId'] ?? shapeData['id']) : null;
+        if (shapeId != null && shapeId > 0) {
+          selectedShape = data.nailShapes.firstWhereOrNull((s) => s.nailShapeId == shapeId);
+        }
+        if (selectedShape == null && shapeData != null) {
+          final shapeName = shapeData['name']?.toString().toLowerCase();
+          if (shapeName != null) {
+            selectedShape = data.nailShapes.firstWhereOrNull((s) => s.name.toLowerCase() == shapeName);
+          }
+        }
+      }
+      if (selectedShape == null) {
+        selectedShape = data.nailShapes.isEmpty ? null : data.nailShapes.first;
+      }
+
+      NailSurfaceModel? selectedSurface;
+      if (customerNail != null) {
+        selectedSurface = _resolveSurface(data.nailSurfaces, customerNail);
+      } else if (widget.recommendedData != null) {
+        final surfaceData = widget.recommendedData!['nailSurface'];
+        final surfaceId = surfaceData != null ? asTryOnInt(surfaceData['nailSurfaceId'] ?? surfaceData['id']) : null;
+        if (surfaceId != null && surfaceId > 0) {
+          selectedSurface = data.nailSurfaces.firstWhereOrNull((s) => s.nailSurfaceId == surfaceId);
+        }
+        if (selectedSurface == null && surfaceData != null) {
+          final surfaceName = surfaceData['name']?.toString().toLowerCase();
+          if (surfaceName != null) {
+            selectedSurface = data.nailSurfaces.firstWhereOrNull((s) => s.name.toLowerCase() == surfaceName);
+          }
+        }
+      }
+      if (selectedSurface == null) {
+        selectedSurface = data.nailSurfaces.isEmpty ? null : data.nailSurfaces.first;
+      }
+
+      final List<PlacedComponentDraft> initialPlacements = [];
+      if (customerNail != null) {
+        initialPlacements.addAll(_buildDrafts(customerNail, data.combinedComponents));
+      } else if (widget.recommendedData != null) {
+        final recComponents = widget.recommendedData!['components'];
+        if (recComponents is List) {
+          final componentCreatedAt = DateTime.now().microsecondsSinceEpoch;
+          for (var index = 0; index < recComponents.length; index++) {
+            final compMap = recComponents[index];
+            if (compMap is Map) {
+              final compId = asTryOnInt(compMap['componentId'] ?? compMap['id']);
+              final custCompId = asTryOnInt(compMap['customerComponentId']);
+              
+              final matchedComp = data.combinedComponents.firstWhereOrNull((c) {
+                if (custCompId > 0) {
+                  return c.isCustomerComponent && c.customerComponentId == custCompId;
+                }
+                if (compId > 0) {
+                  return !c.isCustomerComponent && c.componentId == compId;
+                }
+                return false;
+              });
+              
+              if (matchedComp != null) {
+                final fIndex = asTryOnInt(compMap['fingerIndex'] ?? compMap['FingerIndex'], fallback: 3);
+                final normFinger = normalizeFingerIndexFromApi(fIndex);
+                
+                initialPlacements.add(PlacedComponentDraft(
+                  localId: componentCreatedAt + index,
+                  component: matchedComp,
+                  componentId: matchedComp.componentId,
+                  customerComponentId: matchedComp.customerComponentId,
+                  name: matchedComp.name,
+                  imageUrl: matchedComp.imageUrl,
+                  fingerIndex: normFinger,
+                  posX: asTryOnDouble(compMap['posX'] ?? compMap['PosX'], fallback: 0),
+                  posY: asTryOnDouble(compMap['posY'] ?? compMap['PosY'], fallback: 0),
+                  scale: asTryOnDouble(compMap['scale'] ?? compMap['Scale'], fallback: 0.5),
+                  rotation: asTryOnDouble(compMap['rotation'] ?? compMap['Rotation'], fallback: 0),
+                ));
+              }
+            }
+          }
+        }
       }
 
       setState(() {
         _tryOnData = data;
         _customerNail = customerNail;
-        _selectedNailShape = _resolveShape(data.nailShapes, customerNail);
-        _selectedNailSurface = _resolveSurface(data.nailSurfaces, customerNail);
+        _selectedNailShape = selectedShape;
+        _selectedNailSurface = selectedSurface;
         _fingerColors.clear();
         _fingerColors.addAll(initialColors);
         _fingerGradients
@@ -178,7 +285,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
           ..addAll(initialGradients);
         _placements
           ..clear()
-          ..addAll(_buildDrafts(customerNail, data.combinedComponents));
+          ..addAll(initialPlacements);
         _selectedPlacementId = _placements.isEmpty
             ? null
             : _placements.first.localId;
@@ -327,6 +434,140 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
           : fingerIndex;
       _selectedFingerIndex = _previewDetailFingerIndex ?? -1;
     });
+  }
+
+  Future<void> _regenerateDesign() async {
+    setState(() => _launching = true);
+    try {
+      final res = await _quizRepo.getCustomerNailComposition();
+      final data = _tryOnData;
+      if (data == null) return;
+
+      final Map<int, String> newColors = {
+        1: '#FF4081',
+        2: '#FF4081',
+        3: '#FF4081',
+        4: '#FF4081',
+        5: '#FF4081',
+      };
+      final Map<int, List<String>?> newGradients = {
+        1: null,
+        2: null,
+        3: null,
+        4: null,
+        5: null,
+      };
+
+      final recColors = res['colors'];
+      if (recColors is List && recColors.isNotEmpty) {
+        for (var i = 1; i <= 5; i++) {
+          final colorHex = recColors[(i - 1) % recColors.length].toString().trim();
+          if (colorHex.startsWith('#')) {
+            newColors[i] = colorHex;
+          }
+        }
+      } else {
+        final recColor = res['color'];
+        if (recColor is String && recColor.startsWith('#')) {
+          for (var i = 1; i <= 5; i++) {
+            newColors[i] = recColor;
+          }
+        }
+      }
+
+      NailShapeModel? selectedShape;
+      final shapeData = res['nailShape'];
+      final shapeId = shapeData != null ? asTryOnInt(shapeData['nailShapeId'] ?? shapeData['id']) : null;
+      if (shapeId != null && shapeId > 0) {
+        selectedShape = data.nailShapes.firstWhereOrNull((s) => s.nailShapeId == shapeId);
+      }
+      if (selectedShape == null && shapeData != null) {
+        final shapeName = shapeData['name']?.toString().toLowerCase();
+        if (shapeName != null) {
+          selectedShape = data.nailShapes.firstWhereOrNull((s) => s.name.toLowerCase() == shapeName);
+        }
+      }
+      if (selectedShape == null) {
+        selectedShape = _selectedNailShape ?? (data.nailShapes.isEmpty ? null : data.nailShapes.first);
+      }
+
+      NailSurfaceModel? selectedSurface;
+      final surfaceData = res['nailSurface'];
+      final surfaceId = surfaceData != null ? asTryOnInt(surfaceData['nailSurfaceId'] ?? surfaceData['id']) : null;
+      if (surfaceId != null && surfaceId > 0) {
+        selectedSurface = data.nailSurfaces.firstWhereOrNull((s) => s.nailSurfaceId == surfaceId);
+      }
+      if (selectedSurface == null && surfaceData != null) {
+        final surfaceName = surfaceData['name']?.toString().toLowerCase();
+        if (surfaceName != null) {
+          selectedSurface = data.nailSurfaces.firstWhereOrNull((s) => s.name.toLowerCase() == surfaceName);
+        }
+      }
+      if (selectedSurface == null) {
+        selectedSurface = _selectedNailSurface ?? (data.nailSurfaces.isEmpty ? null : data.nailSurfaces.first);
+      }
+
+      final List<PlacedComponentDraft> newPlacements = [];
+      final recComponents = res['components'];
+      if (recComponents is List) {
+        final componentCreatedAt = DateTime.now().microsecondsSinceEpoch;
+        for (var index = 0; index < recComponents.length; index++) {
+          final compMap = recComponents[index];
+          if (compMap is Map) {
+            final compId = asTryOnInt(compMap['componentId'] ?? compMap['id']);
+            final custCompId = asTryOnInt(compMap['customerComponentId']);
+
+            final matchedComp = data.combinedComponents.firstWhereOrNull((c) {
+              if (custCompId > 0) {
+                return c.isCustomerComponent && c.customerComponentId == custCompId;
+              }
+              if (compId > 0) {
+                return !c.isCustomerComponent && c.componentId == compId;
+              }
+              return false;
+            });
+
+            if (matchedComp != null) {
+              final fIndex = asTryOnInt(compMap['fingerIndex'] ?? compMap['FingerIndex'], fallback: 3);
+              final normFinger = normalizeFingerIndexFromApi(fIndex);
+
+              newPlacements.add(PlacedComponentDraft(
+                localId: componentCreatedAt + index,
+                component: matchedComp,
+                componentId: matchedComp.componentId,
+                customerComponentId: matchedComp.customerComponentId,
+                name: matchedComp.name,
+                imageUrl: matchedComp.imageUrl,
+                fingerIndex: normFinger,
+                posX: asTryOnDouble(compMap['posX'] ?? compMap['PosX'], fallback: 0),
+                posY: asTryOnDouble(compMap['posY'] ?? compMap['PosY'], fallback: 0),
+                scale: asTryOnDouble(compMap['scale'] ?? compMap['Scale'], fallback: 0.5),
+                rotation: asTryOnDouble(compMap['rotation'] ?? compMap['Rotation'], fallback: 0),
+              ));
+            }
+          }
+        }
+      }
+
+      setState(() {
+        _selectedNailShape = selectedShape;
+        _selectedNailSurface = selectedSurface;
+        _fingerColors.clear();
+        _fingerColors.addAll(newColors);
+        _fingerGradients.clear();
+        _fingerGradients.addAll(newGradients);
+        _placements.clear();
+        _placements.addAll(newPlacements);
+        _selectedPlacementId = _placements.isEmpty
+            ? null
+            : _placements.first.localId;
+      });
+      _showMessage('Đã tạo lại thiết kế mới.');
+    } catch (e) {
+      _showMessage('Lỗi khi tạo lại thiết kế: ${e.toString()}');
+    } finally {
+      setState(() => _launching = false);
+    }
   }
 
   Future<void> _launchTryOn({required bool photo}) async {
@@ -524,12 +765,13 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
         ],
       ),
       bottomNavigationBar: TryOnActionBar(
-        canSave: _customerNail != null && _selectedNailShape != null,
+        canSave: _selectedNailShape != null,
         isSaving: _isSaving,
         isLaunching: _launching,
         onSave: _save,
         onLiveTryOn: () => _launchTryOn(photo: false),
         onPhotoTryOn: () => _launchTryOn(photo: true),
+        onRegenerate: widget.recommendedData != null ? _regenerateDesign : null,
       ),
     );
   }

@@ -96,7 +96,7 @@ class _NailCompositionDesignPageState extends State<NailCompositionDesignPage>
           _isGenerating = false;
         });
         final extra = <String, dynamic>{...res, 'fromPerfectMatch': true};
-        context.push('/try-on', extra: extra);
+        context.go('/try-on', extra: extra);
       }
     } catch (e) {
       if (mounted) {

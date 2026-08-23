@@ -1714,3 +1714,145 @@ class _NailOverlayPreview extends StatelessWidget {
     );
   }
 }
+
+class FingerPreviewTile extends StatelessWidget {
+  final NailShapeModel? selectedShape;
+  final NailSurfaceModel? selectedSurface;
+  final String color;
+  final List<String>? gradientStops;
+  final List<PlacedComponentDraft> placements;
+  final int? selectedPlacementId;
+  final ValueChanged<int> onSelectPlacement;
+  final VoidCallback? onTap;
+  final bool compact;
+  final bool transparentBackground;
+
+  const FingerPreviewTile({
+    super.key,
+    required this.selectedShape,
+    required this.selectedSurface,
+    required this.color,
+    required this.gradientStops,
+    required this.placements,
+    required this.selectedPlacementId,
+    required this.onSelectPlacement,
+    this.onTap,
+    this.compact = false,
+    this.transparentBackground = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: transparentBackground ? Colors.transparent : Colors.white,
+          border: transparentBackground ? null : Border.all(color: Colors.black12),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final nailWidth = constraints.maxWidth * (compact ? 0.86 : 0.72);
+            final nailHeight = constraints.maxHeight * (compact ? 0.9 : 0.9);
+            final nailLeft = (constraints.maxWidth - nailWidth) / 2;
+            final nailTop = (constraints.maxHeight - nailHeight) / 2;
+
+            return Stack(
+              children: [
+                transparentBackground ? const SizedBox.shrink() : Positioned.fill(child: Container(color: Colors.white)),
+                if (selectedShape?.imageUrl.isNotEmpty == true)
+                  Positioned(
+                    left: nailLeft,
+                    top: nailTop,
+                    width: nailWidth,
+                    height: nailHeight,
+                    child: _NailColorPreview(
+                      imageUrl: selectedShape!.imageUrl,
+                      color: color,
+                      gradientStops: gradientStops,
+                      surface: selectedSurface,
+                    ),
+                  )
+                else
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 14),
+                      child: Text(
+                        selectedShape?.name ?? 'Select nail shape',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: compact ? 11 : null,
+                        ),
+                      ),
+                    ),
+                  ),
+                if (selectedShape?.imageUrl.isNotEmpty == true)
+                  Positioned(
+                    left: nailLeft,
+                    top: nailTop,
+                    width: nailWidth,
+                    height: nailHeight,
+                    child: Stack(
+                      children: placements.map((placement) {
+                        final size =
+                            nailWidth * placement.scale.clamp(0.1, 1.5);
+                        final centerX =
+                            nailWidth / 2 + placement.posX * nailWidth;
+                        final centerY =
+                            nailHeight / 2 + placement.posY * nailHeight;
+                        return _PlacedComponentPreview(
+                          placement: placement,
+                          selected: selectedPlacementId == placement.localId,
+                          size: size,
+                          left: centerX - size / 2,
+                          top: centerY - size / 2,
+                          compact: compact,
+                          onSelectPlacement: onSelectPlacement,
+                          onUpdate: (_) {},
+                          onDelete: () {},
+                          nailWidth: nailWidth,
+                          nailHeight: nailHeight,
+                          selectedShape: selectedShape,
+                        );
+                      }).toList(),
+                    ),
+                  )
+                else
+                  ...placements.map((placement) {
+                    final size =
+                        constraints.maxWidth *
+                        0.6 *
+                        placement.scale.clamp(0.1, 1.5);
+                    final centerX =
+                        constraints.maxWidth / 2 +
+                        placement.posX * constraints.maxWidth;
+                    final centerY =
+                        constraints.maxHeight / 2 +
+                        placement.posY * constraints.maxHeight;
+                    return _PlacedComponentPreview(
+                      placement: placement,
+                      selected: selectedPlacementId == placement.localId,
+                      size: size,
+                      left: centerX - size / 2,
+                      top: centerY - size / 2,
+                      compact: compact,
+                      onSelectPlacement: onSelectPlacement,
+                      onUpdate: (_) {},
+                      onDelete: () {},
+                      nailWidth: constraints.maxWidth,
+                      nailHeight: constraints.maxHeight,
+                      selectedShape: selectedShape,
+                    );
+                  }),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}

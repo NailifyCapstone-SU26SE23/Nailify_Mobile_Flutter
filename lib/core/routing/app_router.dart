@@ -306,9 +306,8 @@ class AppRouter {
           ),
           GoRoute(
             path: '/snapshot-try-on',
-            builder: (context, state) => const SnapShotScreen(),
+            builder: (context, state) => const NailSnapshotPage(),
           ),
-
           GoRoute(
             path: '/profile',
             builder: (context, state) => const ProfilePage(),

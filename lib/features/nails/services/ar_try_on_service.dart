@@ -1,134 +1,130 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/services.dart';
+import 'package:flutter/material.dart';
 
+import '../../try-on/presentation/native_try_on_screen.dart';
+import '../../try-on/services/nail_image_generator.dart';
 import '../data/models/customer_nail_models.dart';
 import '../data/models/nail_component_config.dart';
 import '../data/models/nail_component_model.dart';
 import '../data/models/nail_surface_model.dart';
 import '../data/models/nail_variant_model.dart';
 
+/// Service trung gian cho AR Try-On.
+///
+/// Refactor: Toàn bộ live/photo giờ chạy trong NailTryOnPlugin (native).
+/// Service chỉ:
+///  - Convert config (NailVariantModel / CustomerNailModel) -> Map.
+///  - Gọi Navigator.push(NativeTryOnScreen) thay vì startActivity Native cũ.
+///
+/// Snapshot mode KHÔNG còn được hỗ trợ (chưa port sang plugin mới).
+/// Caller có thể dùng launchCustomerLive thay thế.
 class ArTryOnService {
-  static const MethodChannel _channel = MethodChannel('com.nailify.ar/tryon');
-
   Future<bool> isAvailable() async {
-    if (!Platform.isAndroid) return false;
-    return await _channel.invokeMethod<bool>('isAvailable') ?? false;
+    return Platform.isAndroid;
   }
 
+  /// Mở camera Live overlay qua plugin Native.
+  /// [context] là BuildContext của caller (button bấm). Navigator sẽ push từ đó.
   Future<void> launchLive(
     NailVariantModel nailVariant, {
     NailSurfaceModel? surface,
+    BuildContext? context,
   }) {
-    return _launch(nailVariant, mode: 'live', surface: surface);
+    return _pushLiveScreen(
+      _convertToArFormat(nailVariant, surface: surface),
+      context: context,
+    );
   }
 
   Future<void> launchPhoto(
     NailVariantModel nailVariant, {
     NailSurfaceModel? surface,
+    BuildContext? context,
   }) {
-    return _launch(nailVariant, mode: 'photo', surface: surface);
-  }
-
-  Future<void> launchCustomerLive(CustomerNailModel customerNail) {
-    return _launchConfig(
-      _convertCustomerToArFormat(customerNail),
-      mode: 'live',
+    return _pushLiveScreen(
+      _convertToArFormat(nailVariant, surface: surface),
+      mode: 'photo',
+      context: context,
     );
   }
 
-  Future<void> launchCustomerPhoto(CustomerNailModel customerNail) {
-    return _launchConfig(
+  Future<void> launchCustomerLive(
+    CustomerNailModel customerNail, {
+    BuildContext? context,
+  }) async {
+    if (context == null) return;
+    final designPaths = await NailImageGenerator.generate(context, customerNail);
+    final config = _convertCustomerToArFormat(customerNail);
+    config['designPaths'] = designPaths;
+    
+    return _pushLiveScreen(
+      config,
+      context: context,
+    );
+  }
+
+  Future<void> launchCustomerPhoto(
+    CustomerNailModel customerNail, {
+    BuildContext? context,
+  }) {
+    return _pushLiveScreen(
       _convertCustomerToArFormat(customerNail),
       mode: 'photo',
+      context: context,
     );
   }
 
-  /// Mở camera ở chế độ Snapshot:
-  /// Native chụp ảnh → chạy MediaPipe IMAGE → trả về [SnapshotResult]
-  /// chứa đường dẫn ảnh và danh sách tọa độ từng ngón tay.
+  /// Snapshot mode KHÔNG còn được hỗ trợ bởi plugin mới.
+  /// Caller nên dùng `launchCustomerLive` để live preview.
   Future<SnapshotResult> launchCustomerSnapshot(
     CustomerNailModel customerNail,
   ) async {
-    if (!Platform.isAndroid) {
-      throw UnsupportedError('Snapshot try-on chỉ hỗ trợ Android.');
-    }
-
-    final config = _convertCustomerToArFormat(customerNail);
-
-    final result = await _channel.invokeMethod<Map<dynamic, dynamic>>(
-      'launchSnapshot',
-      {'config': config},
+    throw UnsupportedError(
+      'Snapshot mode chưa được port sang plugin mới. Dùng launchCustomerLive để live preview.',
     );
-    if (result == null) {
-      throw Exception('Native không trả về kết quả Snapshot.');
-    }
-    final imagePath = result['imagePath'] as String? ?? '';
-    final jsonStr = result['landmarksJson'] as String? ?? '[]';
-    return SnapshotResult.fromJson(imagePath, jsonStr);
   }
 
-  /// Mở Gallery ở chế độ Snapshot:
-  /// Native mở bộ sưu tập -> chọn ảnh -> chạy MediaPipe IMAGE -> trả về [SnapshotResult]
-  Future<SnapshotResult> launchCustomerGallery(
-    CustomerNailModel customerNail,
-  ) async {
-    if (!Platform.isAndroid) {
-      throw UnsupportedError('Gallery try-on chỉ hỗ trợ Android.');
-    }
-
-    final config = _convertCustomerToArFormat(customerNail);
-
-    final result = await _channel.invokeMethod<Map<dynamic, dynamic>>(
-      'launchGallerySnapshot',
-      {'config': config},
-    );
-    if (result == null) {
-      throw Exception('Native không trả về kết quả Gallery.');
-    }
-    final imagePath = result['imagePath'] as String? ?? '';
-    final jsonStr = result['landmarksJson'] as String? ?? '[]';
-    return SnapshotResult.fromJson(imagePath, jsonStr);
-  }
 
   Future<void> launch(
     NailVariantModel nailVariant, {
     NailSurfaceModel? surface,
+    BuildContext? context,
   }) {
-    return launchLive(nailVariant, surface: surface);
+    return launchLive(nailVariant, surface: surface, context: context);
   }
 
-  Future<void> _launch(
-    NailVariantModel nailVariant, {
-    required String mode,
-    NailSurfaceModel? surface,
+  // -------------------------------------------------------------------------
+  // Internal helpers
+  // -------------------------------------------------------------------------
+
+  Future<void> _pushLiveScreen(
+    Map<String, dynamic> config, {
+    String mode = 'live',
+    BuildContext? context,
   }) async {
     if (!Platform.isAndroid) {
       throw UnsupportedError('Virtual try-on is only available on Android.');
     }
-    await _launchConfig(
-      _convertToArFormat(nailVariant, surface: surface),
-      mode: mode,
+    final ctx = context;
+    if (ctx == null) {
+      throw StateError(
+        'BuildContext is required to push NativeTryOnScreen. '
+        'Pass context from the calling screen.',
+      );
+    }
+    await Navigator.of(ctx).push(
+      MaterialPageRoute<void>(
+        fullscreenDialog: true,
+        builder: (_) => NativeTryOnScreen(config: config, mode: mode),
+      ),
     );
   }
 
-  Future<void> _launchConfig(
-    Map<String, dynamic> config, {
-    required String mode,
-  }) async {
-    if (!Platform.isAndroid) {
-      throw UnsupportedError('Virtual try-on is only available on Android.');
-    }
-    await _channel.invokeMethod<void>('launch', {
-      'config': config,
-      'mode': mode,
-      'manualOffsetX': 0.0,
-      'manualOffsetY': 0.0,
-      'manualScale': 1.0,
-      'manualRotation': 0.0,
-    });
-  }
+  // -------------------------------------------------------------------------
+  // Config conversion (giữ nguyên từ bản cũ)
+  // -------------------------------------------------------------------------
 
   Map<String, dynamic> _convertToArFormat(
     NailVariantModel nail, {
@@ -391,15 +387,12 @@ class _FingerAppearance {
 }
 
 // =============================================================================
-// Snapshot Result Models
+// Snapshot Result Models (giữ nguyên cho snapshot screens khác dùng lại)
 // =============================================================================
 
 /// Kết quả trả về từ Native sau khi chụp Snapshot và phân tích MediaPipe.
 class SnapshotResult {
-  /// Đường dẫn tuyệt đối đến file ảnh trong cache của Native.
   final String imagePath;
-
-  /// Danh sách tọa độ đã tính sẵn cho từng ngón tay (thumb → pinky).
   final List<FingerLandmark> landmarks;
 
   const SnapshotResult({required this.imagePath, required this.landmarks});
@@ -417,28 +410,14 @@ class SnapshotResult {
   bool get hasHand => landmarks.isNotEmpty;
 }
 
-/// Tọa độ và góc xoay của một ngón tay đã được Native tính sẵn.
-///
-/// Công thức render trong Flutter:
-///   finalX = baseX + manualOffsetX
-///   finalY = baseY + manualOffsetY
-///   finalRotation = baseRotation + manualRotation
-///   finalScale = baseScale * manualScale  (tuỳ chỉnh kích thước từ D-Pad)
+/// Tọa độ và góc xoay của một ngón tay.
 class FingerLandmark {
-  final String finger; // "thumb", "index", "middle", "ring", "pinky"
-  final int fingerIndex; // 0..4
-
-  /// Tọa độ pixel của đầu ngón tay trên ảnh gốc từ Native.
+  final String finger;
+  final int fingerIndex;
   final double baseX;
   final double baseY;
-
-  /// Góc hướng ngón tay (radian). atan2(tip - joint).
   final double baseRotation;
-
-  /// Khoảng cách tip ↔ joint (pixel) — làm cơ sở kích thước móng.
   final double baseScale;
-
-  /// Kích thước ảnh Native (để Flutter tự tính tỉ lệ scale sang màn hình).
   final int imageWidth;
   final int imageHeight;
 

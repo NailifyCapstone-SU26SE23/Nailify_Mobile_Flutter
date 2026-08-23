@@ -49,9 +49,7 @@ class NailVariantApiService {
     int pageSize = 10,
   }) async {
     try {
-      final uri = Uri.parse(
-        "https://nailify-be.onrender.com/api/NailShapes?pageNumber=$pageNumber&pageSize=$pageSize",
-      );
+      final uri = Uri.parse("https://nailify-be.onrender.com/api/NailShapes?pageNumber=$pageNumber&pageSize=$pageSize");
       final response = await http.get(uri);
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonBody = jsonDecode(response.body);
@@ -70,9 +68,7 @@ class NailVariantApiService {
     int pageSize = 10,
   }) async {
     try {
-      final uri = Uri.parse(
-        "https://nailify-be.onrender.com/api/NailSurfaces?pageNumber=$pageNumber&pageSize=$pageSize",
-      );
+      final uri = Uri.parse("https://nailify-be.onrender.com/api/NailSurfaces?pageNumber=$pageNumber&pageSize=$pageSize");
       final response = await http.get(uri);
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonBody = jsonDecode(response.body);
@@ -92,8 +88,7 @@ class NailVariantApiService {
     String? componentType,
   }) async {
     try {
-      String url =
-          "https://nailify-be.onrender.com/api/Components?pageNumber=$pageNumber&pageSize=$pageSize";
+      String url = "https://nailify-be.onrender.com/api/Components?pageNumber=$pageNumber&pageSize=$pageSize";
       if (componentType != null && componentType.isNotEmpty) {
         url += "&componentType=$componentType";
       }
@@ -141,10 +136,8 @@ class NailVariantApiService {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode != 200) return null;
 
-      final ProcessedImageBytes? processed = await compute(
-        processNailImageBytes,
-        response.bodyBytes,
-      );
+      final ProcessedImageBytes? processed =
+          await compute(processNailImageBytes, response.bodyBytes);
       if (processed == null) return null;
 
       final Completer<ui.Image> completer = Completer();
@@ -234,9 +227,7 @@ void _keyOutSolidBackground(img.Image im) {
   }
   final double bgR = rSum / 4, bgG = gSum / 4, bgB = bSum / 4;
   for (final c in corners) {
-    if ((c.r - bgR).abs() > 14 ||
-        (c.g - bgG).abs() > 14 ||
-        (c.b - bgB).abs() > 14) {
+    if ((c.r - bgR).abs() > 14 || (c.g - bgG).abs() > 14 || (c.b - bgB).abs() > 14) {
       return; // corners disagree — not a solid background card
     }
   }

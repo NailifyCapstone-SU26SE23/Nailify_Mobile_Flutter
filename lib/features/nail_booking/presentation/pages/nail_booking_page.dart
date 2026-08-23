@@ -1002,6 +1002,10 @@ class _NailBookingPageState extends State<NailBookingPage> {
             strong: true,
             highlight: true,
           ),
+          if (_selectedBranch != null) ...[
+            const Divider(height: 16),
+            _buildDepositDetails(totalPrice),
+          ],
         ],
       ),
     );
@@ -1115,6 +1119,68 @@ class _NailBookingPageState extends State<NailBookingPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPaymentRowWithText(
+    String label,
+    String valueText, {
+    bool strong = false,
+    bool muted = false,
+    bool highlight = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: highlight ? 16 : 14,
+                  color: muted ? Colors.grey : AppColors.textPrimary,
+                  fontWeight: strong ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            ),
+          ),
+          Text(
+            valueText,
+            style: TextStyle(
+              fontWeight: strong ? FontWeight.bold : FontWeight.w600,
+              color: highlight ? AppColors.primary : AppColors.textPrimary,
+              fontSize: highlight ? 18 : 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDepositDetails(int totalPrice) {
+    final depositInfo = PriceFormatter.getDepositInfo(_selectedBranch?['depositConfig'], totalPrice);
+    final depositConfigText = depositInfo['displayText'] as String;
+    final depositAmount = depositInfo['amount'] as int;
+
+    return Column(
+      children: [
+        _buildPaymentRowWithText(
+          'Tỷ lệ cọc:',
+          depositConfigText,
+          muted: true,
+        ),
+        const SizedBox(height: 8),
+        _buildPaymentRow(
+          'Tiền cọc cần thanh toán:',
+          depositAmount,
+          strong: true,
+          highlight: true,
+        ),
+      ],
     );
   }
 

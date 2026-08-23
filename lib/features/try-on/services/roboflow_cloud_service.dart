@@ -38,25 +38,19 @@ class RoboflowCloudService {
   }
 
   /// Sends image bytes to Roboflow Cloud APIs (Segmentation + Pose) and matches keypoint directions with polygons
-  static Future<RoboflowCloudResult> detectNailsOnline(
-    Uint8List imageBytes,
-  ) async {
+  static Future<RoboflowCloudResult> detectNailsOnline(Uint8List imageBytes) async {
     final stopwatch = Stopwatch()..start();
     try {
       if (apiKey.trim().isEmpty) {
         debugPrint("⚠️ Vui lòng điền Roboflow API Key!");
-        return RoboflowCloudResult(
-          polygons: [],
-          labels: [],
-          inferenceTime: Duration.zero,
-        );
+        return RoboflowCloudResult(polygons: [], labels: [], inferenceTime: Duration.zero);
       }
 
       final String base64Image = base64Encode(imageBytes);
 
       // 1. Gọi Roboflow Segmentation API (Viền móng)
       final Uri segUrl = Uri.parse(
-        "https://detect.roboflow.com/$segModelId/$segVersion?api_key=$apiKey",
+        "https://detect.roboflow.com/$segModelId/$segVersion?api_key=$apiKey"
       );
 
       final segFuture = http.post(
@@ -67,7 +61,7 @@ class RoboflowCloudService {
 
       // 2. Gọi Roboflow Pose Keypoint API (Model erikdev version 3)
       final Uri poseUrl = Uri.parse(
-        "https://detect.roboflow.com/$poseModelId/$poseVersion?api_key=$poseApiKey",
+        "https://detect.roboflow.com/$poseModelId/$poseVersion?api_key=$poseApiKey"
       );
 
       final poseFuture = http.post(
@@ -90,13 +84,11 @@ class RoboflowCloudService {
       // A. Parse kết quả Segmentation
       if (segResponse.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(segResponse.body);
-        final predictions =
-            data["predictions"] ?? data["boxes"] as List<dynamic>? ?? [];
+        final predictions = data["predictions"] ?? data["boxes"] as List<dynamic>? ?? [];
 
         for (final pred in predictions) {
           final points = pred["points"] as List<dynamic>?;
-          final String label = (pred["label"] ?? pred["class"] ?? "")
-              .toString();
+          final String label = (pred["label"] ?? pred["class"] ?? "").toString();
 
           if (points != null && points.isNotEmpty) {
             final List<Offset> polygon = [];
@@ -104,9 +96,7 @@ class RoboflowCloudService {
               if (pt is List && pt.length >= 2) {
                 polygon.add(Offset(_parseDouble(pt[0]), _parseDouble(pt[1])));
               } else if (pt is Map) {
-                polygon.add(
-                  Offset(_parseDouble(pt["x"]), _parseDouble(pt["y"])),
-                );
+                polygon.add(Offset(_parseDouble(pt["x"]), _parseDouble(pt["y"])));
               }
             }
             if (polygon.isNotEmpty) {
@@ -116,16 +106,13 @@ class RoboflowCloudService {
           }
         }
       } else {
-        debugPrint(
-          "⚠️ Lỗi Roboflow Segmentation API: ${segResponse.statusCode} - ${segResponse.body}",
-        );
+        debugPrint("⚠️ Lỗi Roboflow Segmentation API: ${segResponse.statusCode} - ${segResponse.body}");
       }
 
       // B. Parse kết quả Pose Keypoints linh hoạt
       if (poseResponse.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(poseResponse.body);
-        final predictions =
-            data["predictions"] ?? data["boxes"] as List<dynamic>? ?? [];
+        final predictions = data["predictions"] ?? data["boxes"] as List<dynamic>? ?? [];
 
         for (final pred in predictions) {
           final keypoints = pred["keypoints"] as List<dynamic>?;
@@ -161,9 +148,7 @@ class RoboflowCloudService {
           }
         }
       } else {
-        debugPrint(
-          "⚠️ Lỗi Roboflow Pose API: ${poseResponse.statusCode} - ${poseResponse.body}",
-        );
+        debugPrint("⚠️ Lỗi Roboflow Pose API: ${poseResponse.statusCode} - ${poseResponse.body}");
       }
 
       // C. Ghép cặp Polygons với Pose Keypoint gần nhất
@@ -198,9 +183,7 @@ class RoboflowCloudService {
 
       debugPrint("==================================================");
       debugPrint("☁️ [ROBOFLOW ONLINE API LOG]");
-      debugPrint(
-        "⏱️ Thời gian phản hồi API: ${stopwatch.elapsedMilliseconds} ms",
-      );
+      debugPrint("⏱️ Thời gian phản hồi API: ${stopwatch.elapsedMilliseconds} ms");
       debugPrint("💅 Số lượng móng nhận diện (Seg): ${resultPolygons.length}");
       debugPrint("🎯 Số lượng Pose Keypoint nhận diện: ${rawPoseList.length}");
       for (int i = 0; i < resultPolygons.length; i++) {
@@ -222,11 +205,7 @@ class RoboflowCloudService {
     } catch (e, stack) {
       stopwatch.stop();
       debugPrint("⚠️ Lỗi kết nối Roboflow Cloud: $e\n$stack");
-      return RoboflowCloudResult(
-        polygons: [],
-        labels: [],
-        inferenceTime: stopwatch.elapsed,
-      );
+      return RoboflowCloudResult(polygons: [], labels: [], inferenceTime: stopwatch.elapsed);
     }
   }
 

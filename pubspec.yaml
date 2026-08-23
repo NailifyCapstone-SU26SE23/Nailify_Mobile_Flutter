@@ -52,15 +52,18 @@ dependencies:
   get_it: ^9.2.1
   image_picker: ^1.2.2
   qr_flutter: ^4.1.0
+
+  # AI & Snapshot Try-on dependencies
   onnxruntime: ^1.4.1
   image: ^4.8.0
   http: ^1.2.0
-  hand_landmarker: ^3.0.0
+  hand_landmarker: ^3.0.1
 
   # Localization (Hỗ trợ core hệ thống)
   flutter_localizations:
     sdk: flutter
   intl: ^0.20.2
+  permission_handler: ^13.0.0
 
 
 

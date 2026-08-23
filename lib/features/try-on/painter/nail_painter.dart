@@ -25,9 +25,7 @@ class NailPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (polygons.isEmpty) return;
 
-    final double imgW = (imageWidth != null && imageWidth! > 0)
-        ? imageWidth!
-        : size.width;
+    final double imgW = (imageWidth != null && imageWidth! > 0) ? imageWidth! : size.width;
     final double scaleX = (imageWidth != null && imageWidth! > 0)
         ? size.width / imageWidth!
         : 1.0;
@@ -39,9 +37,7 @@ class NailPainter extends CustomPainter {
       if (polygon.length < 3) continue;
 
       final path = Path();
-      double firstX = isFrontCamera
-          ? (imgW - polygon.first.dx)
-          : polygon.first.dx;
+      double firstX = isFrontCamera ? (imgW - polygon.first.dx) : polygon.first.dx;
       final Offset firstScaled = Offset(
         firstX * scaleX,
         polygon.first.dy * scaleY,
@@ -50,7 +46,10 @@ class NailPainter extends CustomPainter {
 
       for (int i = 1; i < polygon.length; i++) {
         double px = isFrontCamera ? (imgW - polygon[i].dx) : polygon[i].dx;
-        path.lineTo(px * scaleX, polygon[i].dy * scaleY);
+        path.lineTo(
+          px * scaleX,
+          polygon[i].dy * scaleY,
+        );
       }
       path.close();
 

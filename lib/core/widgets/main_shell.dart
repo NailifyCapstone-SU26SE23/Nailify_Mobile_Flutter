@@ -484,6 +484,11 @@ class _MainShellState extends State<MainShell> {
                   ),
                   actions: _isLoggedIn
                       ? [
+                          IconButton(
+                            icon: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+                            tooltip: 'Snapshot Try-on',
+                            onPressed: () => context.push('/snapshot-try-on'),
+                          ),
                           PopupMenuButton<void>(
                             offset: const Offset(0, 48),
                             shape: RoundedRectangleBorder(
@@ -626,6 +631,11 @@ class _MainShellState extends State<MainShell> {
                           const SizedBox(width: 12),
                         ]
                       : [
+                          IconButton(
+                            icon: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+                            tooltip: 'Snapshot Try-on',
+                            onPressed: () => context.push('/snapshot-try-on'),
+                          ),
                           // HIỂN THỊ NÚT ĐĂNG NHẬP/ĐĂNG KÝ KHI CHƯA CÓ TOKEN
                           OutlinedButton(
                             onPressed: () => context.push('/login'),

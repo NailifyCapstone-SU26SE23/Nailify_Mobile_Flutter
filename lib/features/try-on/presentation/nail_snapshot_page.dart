@@ -16,19 +16,18 @@ import '../services/roboflow_cloud_service.dart';
 
 enum _DragMode { none, move, scaleRotate }
 
-class SnapShotScreen extends StatefulWidget {
-  const SnapShotScreen({super.key});
+class NailSnapshotPage extends StatefulWidget {
+  const NailSnapshotPage({super.key});
 
   @override
-  State<SnapShotScreen> createState() => _SnapShotScreenState();
+  State<NailSnapshotPage> createState() => _NailSnapshotPageState();
 }
 
-class _SnapShotScreenState extends State<SnapShotScreen>
-    with SingleTickerProviderStateMixin {
+class _NailSnapshotPageState extends State<NailSnapshotPage> with SingleTickerProviderStateMixin {
   File? _imageFile;
   bool _isProcessing = false;
   bool _isLoadingVariants = false;
-  final bool _showDebugOverlay = false; // Render try-on overlay directly
+  bool _showDebugOverlay = false; // Render try-on overlay directly
 
   final InferenceWorker _worker = InferenceWorker();
   List<List<Offset>> _nailPolygons = [];
@@ -52,10 +51,8 @@ class _SnapShotScreenState extends State<SnapShotScreen>
   bool _isLoadingCustomization = false;
 
   // Accessory & Finger selection state
-  int _selectedFingerIndex =
-      -1; // -1: All fingers, 1: Thumb, 2: Index, 3: Middle, 4: Ring, 5: Pinky
-  int?
-  _selectedComponentId; // Currently active accessory item ID for Bounding Box handles
+  int _selectedFingerIndex = -1; // -1: All fingers, 1: Thumb, 2: Index, 3: Middle, 4: Ring, 5: Pinky
+  int? _selectedComponentId; // Currently active accessory item ID for Bounding Box handles
   _DragMode _dragMode = _DragMode.none;
 
   // Zoom & Focus Transformation controllers
@@ -80,12 +77,8 @@ class _SnapShotScreenState extends State<SnapShotScreen>
     setState(() => _isLoadingCustomization = true);
     try {
       final shapes = await NailVariantApiService.fetchNailShapes(pageSize: 20);
-      final surfaces = await NailVariantApiService.fetchNailSurfaces(
-        pageSize: 20,
-      );
-      final components = await NailVariantApiService.fetchComponents(
-        pageSize: 30,
-      );
+      final surfaces = await NailVariantApiService.fetchNailSurfaces(pageSize: 20);
+      final components = await NailVariantApiService.fetchComponents(pageSize: 30);
       if (mounted) {
         setState(() {
           _apiShapes = shapes;
@@ -145,21 +138,14 @@ class _SnapShotScreenState extends State<SnapShotScreen>
     // 1. Load Nail Shape PNG Image (trimmed & background-removed for exact 1:1 fitting)
     ui.Image? shapeImg;
     if (variant.nailShape.imageUrl.isNotEmpty) {
-      shapeImg =
-          await NailVariantApiService.loadTrimmedUiImageFromUrl(
-            variant.nailShape.imageUrl,
-          ) ??
-          await NailVariantApiService.loadUiImageFromUrl(
-            variant.nailShape.imageUrl,
-          );
+      shapeImg = await NailVariantApiService.loadTrimmedUiImageFromUrl(variant.nailShape.imageUrl) ??
+          await NailVariantApiService.loadUiImageFromUrl(variant.nailShape.imageUrl);
     }
 
     // 2. Load Component Images (Charms/Stickers)
     Map<int, ui.Image> charmImgs = {};
     for (final compItem in variant.nailComponents) {
-      final img = await NailVariantApiService.loadUiImageFromUrl(
-        compItem.component.imageUrl,
-      );
+      final img = await NailVariantApiService.loadUiImageFromUrl(compItem.component.imageUrl);
       if (img != null) {
         charmImgs[compItem.component.componentId] = img;
       }
@@ -175,7 +161,7 @@ class _SnapShotScreenState extends State<SnapShotScreen>
 
   Future<void> _onSelectShape(NailShape newShape) async {
     if (_selectedVariant == null) return;
-
+    
     final updatedVariant = NailVariantModel(
       nailVariantId: _selectedVariant!.nailVariantId,
       name: _selectedVariant!.name,
@@ -192,13 +178,10 @@ class _SnapShotScreenState extends State<SnapShotScreen>
 
     ui.Image? shapeImg;
     if (newShape.imageUrl.isNotEmpty) {
-      shapeImg =
-          await NailVariantApiService.loadTrimmedUiImageFromUrl(
-            newShape.imageUrl,
-          ) ??
+      shapeImg = await NailVariantApiService.loadTrimmedUiImageFromUrl(newShape.imageUrl) ??
           await NailVariantApiService.loadUiImageFromUrl(newShape.imageUrl);
     }
-
+    
     if (mounted) {
       setState(() {
         _selectedShapeImage = shapeImg;
@@ -208,7 +191,7 @@ class _SnapShotScreenState extends State<SnapShotScreen>
 
   Future<void> _onSelectSurface(NailSurface newSurface) async {
     if (_selectedVariant == null) return;
-
+    
     final updatedVariant = NailVariantModel(
       nailVariantId: _selectedVariant!.nailVariantId,
       name: _selectedVariant!.name,
@@ -243,11 +226,7 @@ class _SnapShotScreenState extends State<SnapShotScreen>
     int j = poly.length - 1;
     for (int i = 0; i < poly.length; i++) {
       if ((poly[i].dy > p.dy) != (poly[j].dy > p.dy) &&
-          (p.dx <
-              (poly[j].dx - poly[i].dx) *
-                      (p.dy - poly[i].dy) /
-                      (poly[j].dy - poly[i].dy) +
-                  poly[i].dx)) {
+          (p.dx < (poly[j].dx - poly[i].dx) * (p.dy - poly[i].dy) / (poly[j].dy - poly[i].dy) + poly[i].dx)) {
         inside = !inside;
       }
       j = i;
@@ -322,13 +301,13 @@ class _SnapShotScreenState extends State<SnapShotScreen>
     _zoomAnimationController!.stop();
 
     final Matrix4 startMatrix = _transformationController.value;
-    _zoomAnimation = Matrix4Tween(begin: startMatrix, end: targetMatrix)
-        .animate(
-          CurvedAnimation(
-            parent: _zoomAnimationController!,
-            curve: Curves.easeInOutCubic,
-          ),
-        );
+    _zoomAnimation = Matrix4Tween(
+      begin: startMatrix,
+      end: targetMatrix,
+    ).animate(CurvedAnimation(
+      parent: _zoomAnimationController!,
+      curve: Curves.easeInOutCubic,
+    ));
 
     _zoomAnimation!.addListener(() {
       _transformationController.value = _zoomAnimation!.value;
@@ -339,9 +318,7 @@ class _SnapShotScreenState extends State<SnapShotScreen>
 
   void _handleTapDown(TapDownDetails details) {
     if (_selectedVariant == null) return;
-    final Offset tapPos = _transformationController.toScene(
-      details.localPosition,
-    );
+    final Offset tapPos = _transformationController.toScene(details.localPosition);
     final transforms = _getFingerTransforms();
 
     // 1. Check Delete handle ('X') or Scale/Rotate handle of selected component
@@ -350,39 +327,23 @@ class _SnapShotScreenState extends State<SnapShotScreen>
         if (compItem.nailComponentId == _selectedComponentId) {
           final info = _findTransformForComponent(compItem, transforms);
           if (info != null) {
-            final charmImage =
-                _selectedComponentImages[compItem.component.componentId];
+            final charmImage = _selectedComponentImages[compItem.component.componentId];
             final double charmWidth = info.destRect.width * compItem.scale;
             final double charmHeight = charmImage != null
                 ? charmWidth * (charmImage.height / charmImage.width)
                 : charmWidth;
 
-            final double charmLocalX =
-                info.destRect.center.dx +
-                compItem.posX * (info.destRect.width / 2);
-            final double charmLocalY =
-                info.destRect.center.dy +
-                compItem.posY * (info.destRect.height / 2);
-            final Offset charmCanvasCenter = info.localToCanvas(
-              Offset(charmLocalX, charmLocalY),
-            );
+            final double charmLocalX = info.destRect.center.dx + compItem.posX * (info.destRect.width / 2);
+            final double charmLocalY = info.destRect.center.dy + compItem.posY * (info.destRect.height / 2);
+            final Offset charmCanvasCenter = info.localToCanvas(Offset(charmLocalX, charmLocalY));
 
-            final double totalAngle =
-                info.angle + compItem.rotation * math.pi / 180.0;
+            final double totalAngle = info.angle + compItem.rotation * math.pi / 180.0;
 
-            final Offset blLocal = Offset(
-              -charmWidth / 2 - 3,
-              charmHeight / 2 + 3,
-            );
-            final Offset deleteHandleCanvas =
-                charmCanvasCenter + _rotateVector(blLocal, totalAngle);
+            final Offset blLocal = Offset(-charmWidth / 2 - 3, charmHeight / 2 + 3);
+            final Offset deleteHandleCanvas = charmCanvasCenter + _rotateVector(blLocal, totalAngle);
 
-            final Offset trLocal = Offset(
-              charmWidth / 2 + 3,
-              -charmHeight / 2 - 3,
-            );
-            final Offset trHandleCanvas =
-                charmCanvasCenter + _rotateVector(trLocal, totalAngle);
+            final Offset trLocal = Offset(charmWidth / 2 + 3, -charmHeight / 2 - 3);
+            final Offset trHandleCanvas = charmCanvasCenter + _rotateVector(trLocal, totalAngle);
 
             if ((tapPos - deleteHandleCanvas).distance <= 24.0) {
               _deleteComponent(compItem.nailComponentId);
@@ -402,18 +363,12 @@ class _SnapShotScreenState extends State<SnapShotScreen>
     for (final compItem in _selectedVariant!.nailComponents.reversed) {
       final info = _findTransformForComponent(compItem, transforms);
       if (info != null) {
-        final charmLocalX =
-            info.destRect.center.dx + compItem.posX * (info.destRect.width / 2);
-        final charmLocalY =
-            info.destRect.center.dy +
-            compItem.posY * (info.destRect.height / 2);
-        final Offset charmCanvasCenter = info.localToCanvas(
-          Offset(charmLocalX, charmLocalY),
-        );
+        final charmLocalX = info.destRect.center.dx + compItem.posX * (info.destRect.width / 2);
+        final charmLocalY = info.destRect.center.dy + compItem.posY * (info.destRect.height / 2);
+        final Offset charmCanvasCenter = info.localToCanvas(Offset(charmLocalX, charmLocalY));
 
         final double charmWidth = info.destRect.width * compItem.scale;
-        if ((tapPos - charmCanvasCenter).distance <=
-            math.max(charmWidth / 2, 35.0)) {
+        if ((tapPos - charmCanvasCenter).distance <= math.max(charmWidth / 2, 35.0)) {
           setState(() {
             _selectedComponentId = compItem.nailComponentId;
             if (compItem.fingerIndex != -1) {
@@ -446,40 +401,26 @@ class _SnapShotScreenState extends State<SnapShotScreen>
 
   void _handlePanStart(DragStartDetails details) {
     if (_selectedComponentId == null || _selectedVariant == null) return;
-    final Offset tapPos = _transformationController.toScene(
-      details.localPosition,
-    );
+    final Offset tapPos = _transformationController.toScene(details.localPosition);
     final transforms = _getFingerTransforms();
 
     for (final compItem in _selectedVariant!.nailComponents) {
       if (compItem.nailComponentId == _selectedComponentId) {
         final info = _findTransformForComponent(compItem, transforms);
         if (info != null) {
-          final charmImage =
-              _selectedComponentImages[compItem.component.componentId];
+          final charmImage = _selectedComponentImages[compItem.component.componentId];
           final double charmWidth = info.destRect.width * compItem.scale;
           final double charmHeight = charmImage != null
               ? charmWidth * (charmImage.height / charmImage.width)
               : charmWidth;
 
-          final double charmLocalX =
-              info.destRect.center.dx +
-              compItem.posX * (info.destRect.width / 2);
-          final double charmLocalY =
-              info.destRect.center.dy +
-              compItem.posY * (info.destRect.height / 2);
-          final Offset charmCanvasCenter = info.localToCanvas(
-            Offset(charmLocalX, charmLocalY),
-          );
+          final double charmLocalX = info.destRect.center.dx + compItem.posX * (info.destRect.width / 2);
+          final double charmLocalY = info.destRect.center.dy + compItem.posY * (info.destRect.height / 2);
+          final Offset charmCanvasCenter = info.localToCanvas(Offset(charmLocalX, charmLocalY));
 
-          final double totalAngle =
-              info.angle + compItem.rotation * math.pi / 180.0;
-          final Offset trLocal = Offset(
-            charmWidth / 2 + 3,
-            -charmHeight / 2 - 3,
-          );
-          final Offset trHandleCanvas =
-              charmCanvasCenter + _rotateVector(trLocal, totalAngle);
+          final double totalAngle = info.angle + compItem.rotation * math.pi / 180.0;
+          final Offset trLocal = Offset(charmWidth / 2 + 3, -charmHeight / 2 - 3);
+          final Offset trHandleCanvas = charmCanvasCenter + _rotateVector(trLocal, totalAngle);
 
           if ((tapPos - trHandleCanvas).distance <= 32.0) {
             _dragMode = _DragMode.scaleRotate;
@@ -493,63 +434,36 @@ class _SnapShotScreenState extends State<SnapShotScreen>
   }
 
   void _handlePanUpdate(DragUpdateDetails details) {
-    if (_selectedComponentId == null ||
-        _selectedVariant == null ||
-        _dragMode == _DragMode.none) {
-      return;
-    }
+    if (_selectedComponentId == null || _selectedVariant == null || _dragMode == _DragMode.none) return;
 
     final transforms = _getFingerTransforms();
-    final int idx = _selectedVariant!.nailComponents.indexWhere(
-      (c) => c.nailComponentId == _selectedComponentId,
-    );
+    final int idx = _selectedVariant!.nailComponents.indexWhere((c) => c.nailComponentId == _selectedComponentId);
     if (idx == -1) return;
 
     final compItem = _selectedVariant!.nailComponents[idx];
     final info = _findTransformForComponent(compItem, transforms);
     if (info == null) return;
 
-    final Offset currentPos = _transformationController.toScene(
-      details.localPosition,
-    );
-    final Offset previousPos = _transformationController.toScene(
-      details.localPosition - details.delta,
-    );
+    final Offset currentPos = _transformationController.toScene(details.localPosition);
+    final Offset previousPos = _transformationController.toScene(details.localPosition - details.delta);
     final Offset delta = currentPos - previousPos;
 
     if (_dragMode == _DragMode.move) {
-      final Offset localDelta =
-          info.canvasToLocal(delta) - info.canvasToLocal(Offset.zero);
-      final double newPosX =
-          (compItem.posX + localDelta.dx / (info.destRect.width / 2)).clamp(
-            -10.0,
-            10.0,
-          );
-      final double newPosY =
-          (compItem.posY + localDelta.dy / (info.destRect.height / 2)).clamp(
-            -10.0,
-            10.0,
-          );
+      final Offset localDelta = info.canvasToLocal(delta) - info.canvasToLocal(Offset.zero);
+      final double newPosX = (compItem.posX + localDelta.dx / (info.destRect.width / 2)).clamp(-10.0, 10.0);
+      final double newPosY = (compItem.posY + localDelta.dy / (info.destRect.height / 2)).clamp(-10.0, 10.0);
 
       final updatedItem = compItem.copyWith(posX: newPosX, posY: newPosY);
-      final updatedList = List<NailComponentItem>.from(
-        _selectedVariant!.nailComponents,
-      );
+      final updatedList = List<NailComponentItem>.from(_selectedVariant!.nailComponents);
       updatedList[idx] = updatedItem;
 
       setState(() {
-        _selectedVariant = _selectedVariant!.copyWith(
-          nailComponents: updatedList,
-        );
+        _selectedVariant = _selectedVariant!.copyWith(nailComponents: updatedList);
       });
     } else if (_dragMode == _DragMode.scaleRotate) {
-      final double charmLocalX =
-          info.destRect.center.dx + compItem.posX * (info.destRect.width / 2);
-      final double charmLocalY =
-          info.destRect.center.dy + compItem.posY * (info.destRect.height / 2);
-      final Offset charmCanvasCenter = info.localToCanvas(
-        Offset(charmLocalX, charmLocalY),
-      );
+      final double charmLocalX = info.destRect.center.dx + compItem.posX * (info.destRect.width / 2);
+      final double charmLocalY = info.destRect.center.dy + compItem.posY * (info.destRect.height / 2);
+      final Offset charmCanvasCenter = info.localToCanvas(Offset(charmLocalX, charmLocalY));
 
       final Offset relTouch = currentPos - charmCanvasCenter;
       final double dist = relTouch.distance;
@@ -558,22 +472,14 @@ class _SnapShotScreenState extends State<SnapShotScreen>
       final double newScale = (dist / baseRadius).clamp(0.2, 3.0);
 
       final double touchAngle = math.atan2(relTouch.dy, relTouch.dx);
-      final double newRotation =
-          ((touchAngle - info.angle) * 180.0 / math.pi) + 45.0;
+      final double newRotation = ((touchAngle - info.angle) * 180.0 / math.pi) + 45.0;
 
-      final updatedItem = compItem.copyWith(
-        scale: newScale,
-        rotation: newRotation,
-      );
-      final updatedList = List<NailComponentItem>.from(
-        _selectedVariant!.nailComponents,
-      );
+      final updatedItem = compItem.copyWith(scale: newScale, rotation: newRotation);
+      final updatedList = List<NailComponentItem>.from(_selectedVariant!.nailComponents);
       updatedList[idx] = updatedItem;
 
       setState(() {
-        _selectedVariant = _selectedVariant!.copyWith(
-          nailComponents: updatedList,
-        );
+        _selectedVariant = _selectedVariant!.copyWith(nailComponents: updatedList);
       });
     }
   }
@@ -588,9 +494,7 @@ class _SnapShotScreenState extends State<SnapShotScreen>
         .where((c) => c.nailComponentId != componentItemId)
         .toList();
     setState(() {
-      _selectedVariant = _selectedVariant!.copyWith(
-        nailComponents: updatedList,
-      );
+      _selectedVariant = _selectedVariant!.copyWith(nailComponents: updatedList);
       if (_selectedComponentId == componentItemId) {
         _selectedComponentId = null;
       }
@@ -600,16 +504,10 @@ class _SnapShotScreenState extends State<SnapShotScreen>
   void _clearCurrentFingerComponents() {
     if (_selectedVariant == null) return;
     final updatedList = _selectedVariant!.nailComponents
-        .where(
-          (c) =>
-              c.fingerIndex != _selectedFingerIndex &&
-              _selectedFingerIndex != -1,
-        )
+        .where((c) => c.fingerIndex != _selectedFingerIndex && _selectedFingerIndex != -1)
         .toList();
     setState(() {
-      _selectedVariant = _selectedVariant!.copyWith(
-        nailComponents: _selectedFingerIndex == -1 ? [] : updatedList,
-      );
+      _selectedVariant = _selectedVariant!.copyWith(nailComponents: _selectedFingerIndex == -1 ? [] : updatedList);
       _selectedComponentId = null;
     });
   }
@@ -635,9 +533,7 @@ class _SnapShotScreenState extends State<SnapShotScreen>
       component: newComponent,
     );
 
-    final updatedComponents = List<NailComponentItem>.from(
-      _selectedVariant!.nailComponents,
-    )..add(newItem);
+    final updatedComponents = List<NailComponentItem>.from(_selectedVariant!.nailComponents)..add(newItem);
 
     final updatedVariant = _selectedVariant!.copyWith(
       nailComponents: updatedComponents,
@@ -648,9 +544,7 @@ class _SnapShotScreenState extends State<SnapShotScreen>
       _selectedComponentId = newItem.nailComponentId;
     });
 
-    final img = await NailVariantApiService.loadUiImageFromUrl(
-      newComponent.imageUrl,
-    );
+    final img = await NailVariantApiService.loadUiImageFromUrl(newComponent.imageUrl);
     if (img != null && mounted) {
       setState(() {
         _selectedComponentImages[newComponent.componentId] = img;
@@ -669,14 +563,10 @@ class _SnapShotScreenState extends State<SnapShotScreen>
       if (decodedImage != null) {
         // 📌 FIX EXIF ROTATION BUG: Bake EXIF orientation directly into physical pixel matrix!
         final normalizedImage = img.bakeOrientation(decodedImage);
-        final normalizedBytes = Uint8List.fromList(
-          img.encodeJpg(normalizedImage),
-        );
+        final normalizedBytes = Uint8List.fromList(img.encodeJpg(normalizedImage));
 
         final tempDir = Directory.systemTemp;
-        final tempFile = File(
-          '${tempDir.path}/normalized_${DateTime.now().millisecondsSinceEpoch}.jpg',
-        );
+        final tempFile = File('${tempDir.path}/normalized_${DateTime.now().millisecondsSinceEpoch}.jpg');
         await tempFile.writeAsBytes(normalizedBytes);
 
         setState(() {
@@ -723,9 +613,7 @@ class _SnapShotScreenState extends State<SnapShotScreen>
 
       if (result.polygons.isEmpty && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Không nhận diện được móng nào trong ảnh này.'),
-          ),
+          const SnackBar(content: Text('Không nhận diện được móng nào trong ảnh này.')),
         );
       }
     } catch (e) {
@@ -775,9 +663,7 @@ class _SnapShotScreenState extends State<SnapShotScreen>
 
       if (result.polygons.isEmpty && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Roboflow Cloud không tìm thấy móng nào.'),
-          ),
+          const SnackBar(content: Text('Roboflow Cloud không tìm thấy móng nào.')),
         );
       }
     } catch (e) {
@@ -850,8 +736,7 @@ class _SnapShotScreenState extends State<SnapShotScreen>
                             child: FittedBox(
                               fit: BoxFit.contain,
                               child: InteractiveViewer(
-                                transformationController:
-                                    _transformationController,
+                                transformationController: _transformationController,
                                 minScale: 0.8,
                                 maxScale: 6.0,
                                 panEnabled: _selectedComponentId == null,
@@ -874,28 +759,20 @@ class _SnapShotScreenState extends State<SnapShotScreen>
                                                   ? NailDebugPainter(
                                                       polygons: _nailPolygons,
                                                       labels: _nailLabels,
-                                                      poseKeypoints:
-                                                          _nailPoseKeypoints,
+                                                      poseKeypoints: _nailPoseKeypoints,
                                                     )
                                                   : (_selectedVariant != null
-                                                        ? AdvancedNailPainter(
-                                                            polygons:
-                                                                _nailPolygons,
-                                                            labels: _nailLabels,
-                                                            poseKeypoints:
-                                                                _nailPoseKeypoints,
-                                                            variant:
-                                                                _selectedVariant!,
-                                                            nailShapeImage:
-                                                                _selectedShapeImage,
-                                                            componentImages:
-                                                                _selectedComponentImages,
-                                                            selectedFingerIndex:
-                                                                _selectedFingerIndex,
-                                                            selectedComponentId:
-                                                                _selectedComponentId,
-                                                          )
-                                                        : null),
+                                                      ? AdvancedNailPainter(
+                                                          polygons: _nailPolygons,
+                                                          labels: _nailLabels,
+                                                          poseKeypoints: _nailPoseKeypoints,
+                                                          variant: _selectedVariant!,
+                                                          nailShapeImage: _selectedShapeImage,
+                                                          componentImages: _selectedComponentImages,
+                                                          selectedFingerIndex: _selectedFingerIndex,
+                                                          selectedComponentId: _selectedComponentId,
+                                                        )
+                                                      : null),
                                             ),
                                           ),
                                       ],
@@ -911,19 +788,14 @@ class _SnapShotScreenState extends State<SnapShotScreen>
                               right: 12,
                               child: FloatingActionButton.small(
                                 heroTag: 'resetZoomBtn',
-                                backgroundColor: Colors.white.withValues(
-                                  alpha: 0.9,
-                                ),
+                                backgroundColor: Colors.white.withValues(alpha: 0.9),
                                 foregroundColor: AppColors.primary,
                                 elevation: 2,
                                 onPressed: () {
                                   setState(() => _selectedFingerIndex = -1);
                                   _zoomToFinger(-1);
                                 },
-                                child: const Icon(
-                                  Icons.center_focus_strong,
-                                  size: 20,
-                                ),
+                                child: const Icon(Icons.center_focus_strong, size: 20),
                               ),
                             ),
                         ],
@@ -946,9 +818,7 @@ class _SnapShotScreenState extends State<SnapShotScreen>
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(24),
-                ),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.06),
@@ -982,10 +852,7 @@ class _SnapShotScreenState extends State<SnapShotScreen>
                             unselectedLabelColor: Colors.black54,
                             indicatorColor: AppColors.primary,
                             indicatorSize: TabBarIndicatorSize.label,
-                            labelStyle: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                            ),
+                            labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                             unselectedLabelStyle: TextStyle(fontSize: 13),
                             tabs: [
                               Tab(text: "Mẫu"),
@@ -1017,19 +884,11 @@ class _SnapShotScreenState extends State<SnapShotScreen>
                           Expanded(
                             child: FilledButton.icon(
                               onPressed: () => _pickImage(ImageSource.camera),
-                              icon: const Icon(
-                                Icons.camera_alt_outlined,
-                                size: 20,
-                              ),
-                              label: const Text(
-                                'Chụp ảnh',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
+                              icon: const Icon(Icons.camera_alt_outlined, size: 20),
+                              label: const Text('Chụp ảnh', style: TextStyle(fontWeight: FontWeight.bold)),
                               style: FilledButton.styleFrom(
                                 backgroundColor: AppColors.primary,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
                                 ),
@@ -1040,23 +899,12 @@ class _SnapShotScreenState extends State<SnapShotScreen>
                           Expanded(
                             child: OutlinedButton.icon(
                               onPressed: () => _pickImage(ImageSource.gallery),
-                              icon: const Icon(
-                                Icons.photo_library_outlined,
-                                size: 20,
-                              ),
-                              label: const Text(
-                                'Chọn từ máy',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
+                              icon: const Icon(Icons.photo_library_outlined, size: 20),
+                              label: const Text('Chọn từ máy', style: TextStyle(fontWeight: FontWeight.bold)),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: AppColors.primary,
-                                side: const BorderSide(
-                                  color: AppColors.primary,
-                                  width: 1.5,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
+                                side: const BorderSide(color: AppColors.primary, width: 1.5),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
                                 ),
@@ -1138,10 +986,7 @@ class _SnapShotScreenState extends State<SnapShotScreen>
                   label: const Text('Chọn từ máy'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
-                    side: const BorderSide(
-                      color: AppColors.primary,
-                      width: 1.5,
-                    ),
+                    side: const BorderSide(color: AppColors.primary, width: 1.5),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -1157,20 +1002,15 @@ class _SnapShotScreenState extends State<SnapShotScreen>
   }
 
   Widget _buildVariantsList() {
-    if (_isLoadingVariants) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (_apiVariants.isEmpty) {
-      return const Center(child: Text("Không có mẫu nào"));
-    }
-
+    if (_isLoadingVariants) return const Center(child: CircularProgressIndicator());
+    if (_apiVariants.isEmpty) return const Center(child: Text("Không có mẫu nào"));
+    
     return ListView.builder(
       scrollDirection: Axis.horizontal,
       itemCount: _apiVariants.length,
       itemBuilder: (context, index) {
         final variant = _apiVariants[index];
-        final isSelected =
-            _selectedVariant?.nailVariantId == variant.nailVariantId;
+        final isSelected = _selectedVariant?.nailVariantId == variant.nailVariantId;
         return _buildSelectorItem(
           title: variant.name,
           imageUrl: variant.imageUrl,
@@ -1182,20 +1022,15 @@ class _SnapShotScreenState extends State<SnapShotScreen>
   }
 
   Widget _buildShapesList() {
-    if (_isLoadingCustomization) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (_apiShapes.isEmpty) {
-      return const Center(child: Text("Không có dáng móng nào"));
-    }
-
+    if (_isLoadingCustomization) return const Center(child: CircularProgressIndicator());
+    if (_apiShapes.isEmpty) return const Center(child: Text("Không có dáng móng nào"));
+    
     return ListView.builder(
       scrollDirection: Axis.horizontal,
       itemCount: _apiShapes.length,
       itemBuilder: (context, index) {
         final shape = _apiShapes[index];
-        final isSelected =
-            _selectedVariant?.nailShape.nailShapeId == shape.nailShapeId;
+        final isSelected = _selectedVariant?.nailShape.nailShapeId == shape.nailShapeId;
         return _buildSelectorItem(
           title: shape.name,
           imageUrl: shape.imageUrl,
@@ -1207,21 +1042,15 @@ class _SnapShotScreenState extends State<SnapShotScreen>
   }
 
   Widget _buildSurfacesList() {
-    if (_isLoadingCustomization) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (_apiSurfaces.isEmpty) {
-      return const Center(child: Text("Không có bề mặt nào"));
-    }
-
+    if (_isLoadingCustomization) return const Center(child: CircularProgressIndicator());
+    if (_apiSurfaces.isEmpty) return const Center(child: Text("Không có bề mặt nào"));
+    
     return ListView.builder(
       scrollDirection: Axis.horizontal,
       itemCount: _apiSurfaces.length,
       itemBuilder: (context, index) {
         final surface = _apiSurfaces[index];
-        final isSelected =
-            _selectedVariant?.nailSurface.nailSurfaceId ==
-            surface.nailSurfaceId;
+        final isSelected = _selectedVariant?.nailSurface.nailSurfaceId == surface.nailSurfaceId;
         return _buildSelectorItem(
           title: surface.name,
           icon: Icons.layers,
@@ -1233,12 +1062,8 @@ class _SnapShotScreenState extends State<SnapShotScreen>
   }
 
   Widget _buildComponentsList() {
-    if (_isLoadingCustomization) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (_apiComponents.isEmpty) {
-      return const Center(child: Text("Không có phụ kiện nào"));
-    }
+    if (_isLoadingCustomization) return const Center(child: CircularProgressIndicator());
+    if (_apiComponents.isEmpty) return const Center(child: Text("Không có phụ kiện nào"));
 
     return Column(
       children: [
@@ -1260,22 +1085,14 @@ class _SnapShotScreenState extends State<SnapShotScreen>
                 const VerticalDivider(width: 12, indent: 6, endIndent: 6),
                 IconButton(
                   onPressed: _clearCurrentFingerComponents,
-                  icon: const Icon(
-                    Icons.cleaning_services,
-                    size: 16,
-                    color: Colors.orange,
-                  ),
+                  icon: const Icon(Icons.cleaning_services, size: 16, color: Colors.orange),
                   tooltip: "Xóa phụ kiện ngón này",
                   constraints: const BoxConstraints(),
                   padding: const EdgeInsets.all(4),
                 ),
                 IconButton(
                   onPressed: _clearAllComponents,
-                  icon: const Icon(
-                    Icons.delete_sweep,
-                    size: 18,
-                    color: Colors.redAccent,
-                  ),
+                  icon: const Icon(Icons.delete_sweep, size: 18, color: Colors.redAccent),
                   tooltip: "Xóa tất cả phụ kiện",
                   constraints: const BoxConstraints(),
                   padding: const EdgeInsets.all(4),
@@ -1364,8 +1181,7 @@ class _SnapShotScreenState extends State<SnapShotScreen>
                   width: 45,
                   height: 45,
                   fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.image_not_supported, size: 30),
+                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported, size: 30),
                 ),
               )
             else if (icon != null)

@@ -109,7 +109,7 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
     final amount = widget.paymentData['amount'];
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFFAF8F9),
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(
@@ -142,51 +142,100 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
                 ),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 420),
+                    constraints: const BoxConstraints(maxWidth: 400),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Container(
-                          padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+                          padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppColors.borderLight),
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.pink.withOpacity(0.04),
+                                blurRadius: 24,
+                                spreadRadius: 4,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               const Text(
-                                'Quét mã QR để thanh toán',
+                                'Số tiền thanh toán',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey,
+                                  letterSpacing: 0.5,
                                 ),
                               ),
-                              const SizedBox(height: 18),
+                              const SizedBox(height: 4),
+                              Text(
+                                PriceFormatter.format(amount ?? 0),
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppColors.primaryDark,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 10,
+                                    height: 10,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 1.5,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        AppColors.primary.withOpacity(0.8),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  const Text(
+                                    'Đang chờ quét mã...',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 24),
                               Center(
                                 child: Container(
-                                  padding: const EdgeInsets.all(14),
+                                  padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
                                     color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: AppColors.borderLight,
-                                    ),
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.pink.withOpacity(0.06),
+                                        blurRadius: 16,
+                                        spreadRadius: 2,
+                                      ),
+                                    ],
                                   ),
                                   child: qrCode.isEmpty
                                       ? const SizedBox(
-                                          width: 240,
-                                          height: 240,
+                                          width: 200,
+                                          height: 200,
                                           child: Center(
                                             child: Text(
-                                              'Khong co ma QR cho giao dich nay.',
+                                              'Không tìm thấy mã QR.\nVui lòng thử lại.',
                                               textAlign: TextAlign.center,
                                               style: TextStyle(
                                                 color: Colors.grey,
+                                                fontSize: 13,
                                               ),
                                             ),
                                           ),
@@ -194,63 +243,64 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
                                       : QrImageView(
                                           data: qrCode,
                                           version: QrVersions.auto,
-                                          size: 240,
+                                          size: 200,
                                           backgroundColor: Colors.white,
                                         ),
                                 ),
                               ),
-                              const SizedBox(height: 18),
+                              const SizedBox(height: 24),
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 12,
-                                ),
+                                padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: Colors.orange.shade50,
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(
-                                    color: Colors.orange.shade200,
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.info_outline,
-                                      color: Colors.orange.shade700,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(
-                                        'Vui lòng thanh toán 20% tiền cọc trước',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.orange.shade800,
-                                          fontWeight: FontWeight.w500,
-                                          height: 1.25,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 18),
-                              Container(
-                                padding: const EdgeInsets.all(14),
-                                decoration: BoxDecoration(
-                                  color: AppColors.background,
-                                  borderRadius: BorderRadius.circular(12),
+                                  color: const Color(0xFFF9F9FB),
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
                                 child: Column(
                                   children: [
                                     _buildInfoRow(
-                                      'Ma don',
-                                      _orderCode.toString(),
+                                      'Mã đơn hàng',
+                                      '#${_orderCode.toString()}',
                                     ),
-                                    const Divider(height: 18),
+                                    const Divider(height: 16, color: Color(0xFFEEEEEE)),
                                     _buildInfoRow(
-                                      'So tien',
-                                      PriceFormatter.format(amount ?? 0),
+                                      'Phương thức',
+                                      'Chuyển khoản QR',
+                                    ),
+                                    const Divider(height: 16, color: Color(0xFFEEEEEE)),
+                                    _buildInfoRow(
+                                      'Trạng thái',
+                                      'Chờ thanh toán',
+                                      isStatus: true,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFF0F5),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Icon(
+                                      Icons.info_outline_rounded,
+                                      color: AppColors.primaryDark,
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Chụp ảnh QR này hoặc sử dụng ứng dụng Ngân hàng / Ví điện tử quét mã để thanh toán.',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: AppColors.primaryDark,
+                                          fontWeight: FontWeight.w500,
+                                          height: 1.4,
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -258,20 +308,22 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 20),
-                        OutlinedButton(
+                        const SizedBox(height: 24),
+                        TextButton(
                           onPressed: _isCancelling ? null : _cancelPayment,
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.red,
-                            side: const BorderSide(color: Colors.red),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.grey.shade600,
                             minimumSize: const Size(double.infinity, 50),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
                           child: Text(
-                            _isCancelling ? 'Đang hủy...' : 'Hủy thanh toán',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                            _isCancelling ? 'Đang hủy...' : 'Hủy giao dịch',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
                           ),
                         ),
                       ],
@@ -286,21 +338,44 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildInfoRow(String label, String value, {bool isStatus = false}) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        SizedBox(
-          width: 90,
-          child: Text(label, style: const TextStyle(color: Colors.grey)),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            textAlign: TextAlign.right,
-            style: const TextStyle(fontWeight: FontWeight.w600),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13,
+            color: Colors.grey,
+            fontWeight: FontWeight.w500,
           ),
         ),
+        if (isStatus)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: Colors.orange.shade200, width: 0.5),
+            ),
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.orange.shade800,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          )
+        else
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
       ],
     );
   }

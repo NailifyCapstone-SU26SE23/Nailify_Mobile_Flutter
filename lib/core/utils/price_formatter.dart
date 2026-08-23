@@ -25,4 +25,91 @@ class PriceFormatter {
 
     return '$formattedNumber VNĐ';
   }
+
+  /// Calculates deposit rate/text and amount based on configuration and total price
+  static Map<String, dynamic> getDepositInfo(dynamic config, num totalAmount) {
+    if (config == null) {
+      final amount = (totalAmount * 0.2).round();
+      return {
+        'displayText': '20%',
+        'amount': amount,
+      };
+    }
+    
+    // If it's a Map
+    if (config is Map) {
+      final val = config['percentage'] ?? config['value'] ?? config['amount'] ?? config['depositConfig'];
+      return getDepositInfo(val, totalAmount);
+    }
+    
+    // If it's a String
+    if (config is String) {
+      final clean = config.replaceAll(RegExp(r'[^\d\.]'), '').trim();
+      final parsed = double.tryParse(clean);
+      if (parsed != null) {
+        if (config.contains('%')) {
+          final amount = (totalAmount * parsed / 100).round();
+          return {
+            'displayText': '${parsed.toStringAsFixed(parsed % 1 == 0 ? 0 : 1)}%',
+            'amount': amount,
+          };
+        }
+        if (parsed > 0.0 && parsed <= 1.0) {
+          final pct = parsed * 100.0;
+          final amount = (totalAmount * parsed).round();
+          return {
+            'displayText': '${pct.toStringAsFixed(pct % 1 == 0 ? 0 : 1)}%',
+            'amount': amount,
+          };
+        } else if (parsed > 1.0 && parsed <= 100) {
+          final amount = (totalAmount * parsed / 100).round();
+          return {
+            'displayText': '${parsed.toStringAsFixed(parsed % 1 == 0 ? 0 : 1)}%',
+            'amount': amount,
+          };
+        } else {
+          return {
+            'displayText': format(parsed.round()),
+            'amount': parsed.round(),
+          };
+        }
+      }
+      final amount = (totalAmount * 0.2).round();
+      return {
+        'displayText': config,
+        'amount': amount,
+      };
+    }
+    
+    // If it's a number
+    if (config is num) {
+      final val = config.toDouble();
+      if (val > 0.0 && val <= 1.0) {
+        final pct = val * 100.0;
+        final amount = (totalAmount * val).round();
+        return {
+          'displayText': '${pct.toStringAsFixed(pct % 1 == 0 ? 0 : 1)}%',
+          'amount': amount,
+        };
+      } else if (val > 1.0 && val <= 100) {
+        final amount = (totalAmount * val / 100).round();
+        return {
+          'displayText': '${val.toStringAsFixed(val % 1 == 0 ? 0 : 1)}%',
+          'amount': amount,
+        };
+      } else {
+        return {
+          'displayText': format(val.round()),
+          'amount': val.round(),
+        };
+      }
+    }
+    
+    final amount = (totalAmount * 0.2).round();
+    return {
+      'displayText': '20%',
+      'amount': amount,
+    };
+  }
 }
+

@@ -4,6 +4,7 @@ import '../../../core/di/injection.dart';
 import '../../nails/data/models/customer_nail_models.dart';
 import '../../nails/services/ar_try_on_service.dart';
 import 'nail_snapshot_page.dart';
+import 'snapshot_preview_screen.dart';
 
 class TryOnMethodSelectionScreen extends StatefulWidget {
   final CustomerNailModel previewNail;
@@ -29,7 +30,10 @@ class _TryOnMethodSelectionScreenState
           'Virtual try-on is not available on this build.',
         );
       }
-      await service.launchCustomerLive(widget.previewNail);
+      await service.launchCustomerLive(
+        widget.previewNail,
+        context: context,
+      );
     } catch (error) {
       _showError(error.toString());
     } finally {
@@ -39,9 +43,11 @@ class _TryOnMethodSelectionScreenState
 
   // ---- Snapshot Try-on ----
   Future<void> _launchSnapshot() async {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const SnapShotScreen()));
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const NailSnapshotPage(),
+      ),
+    );
   }
 
   void _showError(String msg) {

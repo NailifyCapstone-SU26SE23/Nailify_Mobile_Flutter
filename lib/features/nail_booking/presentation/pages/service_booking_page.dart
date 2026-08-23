@@ -596,6 +596,10 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                   ),
                 ],
               ),
+              if (state.selectedBranch != null) ...[
+                const Divider(height: 16),
+                _buildDepositDetails(finalPrice, state.selectedBranch),
+              ],
             ],
           ),
         ),
@@ -717,6 +721,48 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDepositDetails(int totalPrice, Map<String, dynamic>? branch) {
+    final depositInfo = PriceFormatter.getDepositInfo(branch?['depositConfig'], totalPrice);
+    final depositConfigText = depositInfo['displayText'] as String;
+    final depositAmount = depositInfo['amount'] as int;
+
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Tỷ lệ cọc:',
+              style: TextStyle(color: Colors.grey),
+            ),
+            Text(
+              depositConfigText,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Tiền cọc cần thanh toán:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Text(
+              PriceFormatter.format(depositAmount),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 

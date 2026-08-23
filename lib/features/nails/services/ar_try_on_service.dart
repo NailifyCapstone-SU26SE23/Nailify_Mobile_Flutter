@@ -55,14 +55,14 @@ class ArTryOnService {
     BuildContext? context,
   }) async {
     if (context == null) return;
-    final designPaths = await NailImageGenerator.generate(context, customerNail);
+    final designPaths = await NailImageGenerator.generate(
+      context,
+      customerNail,
+    );
     final config = _convertCustomerToArFormat(customerNail);
     config['designPaths'] = designPaths;
-    
-    return _pushLiveScreen(
-      config,
-      context: context,
-    );
+
+    return _pushLiveScreen(config, context: context);
   }
 
   Future<void> launchCustomerPhoto(
@@ -85,7 +85,6 @@ class ArTryOnService {
       'Snapshot mode chưa được port sang plugin mới. Dùng launchCustomerLive để live preview.',
     );
   }
-
 
   Future<void> launch(
     NailVariantModel nailVariant, {

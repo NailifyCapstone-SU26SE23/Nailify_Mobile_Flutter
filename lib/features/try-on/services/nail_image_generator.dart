@@ -22,7 +22,7 @@ class NailImageGenerator {
       PageRouteBuilder(
         opaque: false,
         barrierDismissible: false,
-        pageBuilder: (context, _, __) => _GeneratorScreen(nail: nail),
+        pageBuilder: (context, _, _) => _GeneratorScreen(nail: nail),
       ),
     );
     return result ?? {};
@@ -71,16 +71,22 @@ class _GeneratorScreenState extends State<_GeneratorScreen> {
         }
         final boundary = ctx.findRenderObject() as RenderRepaintBoundary?;
         if (boundary == null) {
-          debugPrint('[NailGen] finger $i: RenderRepaintBoundary is null — skipping');
+          debugPrint(
+            '[NailGen] finger $i: RenderRepaintBoundary is null — skipping',
+          );
           continue;
         }
 
         // Wait if it still needs paint
         if (boundary.debugNeedsPaint) {
-          debugPrint('[NailGen] finger $i: still needs paint, waiting a bit...');
+          debugPrint(
+            '[NailGen] finger $i: still needs paint, waiting a bit...',
+          );
           await Future.delayed(const Duration(milliseconds: 100));
           if (boundary.debugNeedsPaint) {
-            debugPrint('[NailGen] finger $i: STILL needs paint, skipping to avoid crash');
+            debugPrint(
+              '[NailGen] finger $i: STILL needs paint, skipping to avoid crash',
+            );
             continue;
           }
         }
@@ -92,7 +98,9 @@ class _GeneratorScreenState extends State<_GeneratorScreen> {
           final file = File('${tempDir.path}/nail_${fingerNames[i]}.png');
           await file.writeAsBytes(byteData.buffer.asUint8List());
           paths[fingerNames[i]] = file.path;
-          debugPrint('[NailGen] saved: ${file.path} (${byteData.lengthInBytes} bytes)');
+          debugPrint(
+            '[NailGen] saved: ${file.path} (${byteData.lengthInBytes} bytes)',
+          );
         }
       }
 
@@ -125,11 +133,13 @@ class _GeneratorScreenState extends State<_GeneratorScreen> {
             final config = jsonDecode(c.configJson);
             return PlacedComponentDraft(
               localId: c.customerNailComponentId ?? 0,
-              component: null, // Since we don't have CombinedComponent, we rely on imageUrl directly
+              component:
+                  null, // Since we don't have CombinedComponent, we rely on imageUrl directly
               componentId: c.componentId,
               customerComponentId: c.customerComponentId,
               name: c.component?.name ?? c.customerComponent?.name ?? 'Sticker',
-              imageUrl: c.component?.imageUrl ?? c.customerComponent?.imageUrl ?? '',
+              imageUrl:
+                  c.component?.imageUrl ?? c.customerComponent?.imageUrl ?? '',
               fingerIndex: c.fingerIndex,
               posX: config['x'] ?? c.posX,
               posY: config['y'] ?? c.posY,
@@ -167,7 +177,12 @@ class _GeneratorScreenState extends State<_GeneratorScreen> {
                         color: fingerColors[fingerIndex]!,
                         gradientStops: fingerGradients[fingerIndex],
                         placements: placements
-                            .where((p) => placementMatchesFinger(p.fingerIndex, fingerIndex))
+                            .where(
+                              (p) => placementMatchesFinger(
+                                p.fingerIndex,
+                                fingerIndex,
+                              ),
+                            )
                             .toList(),
                         selectedPlacementId: null,
                         onSelectPlacement: (_) {},

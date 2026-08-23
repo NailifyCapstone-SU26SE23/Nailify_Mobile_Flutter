@@ -725,7 +725,10 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
   }
 
   Widget _buildDepositDetails(int totalPrice, Map<String, dynamic>? branch) {
-    final depositInfo = PriceFormatter.getDepositInfo(branch?['depositConfig'], totalPrice);
+    final depositInfo = PriceFormatter.getDepositInfo(
+      branch?['depositConfig'],
+      totalPrice,
+    );
     final depositConfigText = depositInfo['displayText'] as String;
     final depositAmount = depositInfo['amount'] as int;
 
@@ -734,10 +737,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Tỷ lệ cọc:',
-              style: TextStyle(color: Colors.grey),
-            ),
+            const Text('Tỷ lệ cọc:', style: TextStyle(color: Colors.grey)),
             Text(
               depositConfigText,
               style: const TextStyle(fontWeight: FontWeight.w600),

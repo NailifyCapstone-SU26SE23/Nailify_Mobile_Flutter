@@ -485,7 +485,10 @@ class _MainShellState extends State<MainShell> {
                   actions: _isLoggedIn
                       ? [
                           IconButton(
-                            icon: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+                            icon: const Icon(
+                              Icons.camera_alt_outlined,
+                              color: AppColors.primary,
+                            ),
                             tooltip: 'Snapshot Try-on',
                             onPressed: () => context.push('/snapshot-try-on'),
                           ),
@@ -632,7 +635,10 @@ class _MainShellState extends State<MainShell> {
                         ]
                       : [
                           IconButton(
-                            icon: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+                            icon: const Icon(
+                              Icons.camera_alt_outlined,
+                              color: AppColors.primary,
+                            ),
                             tooltip: 'Snapshot Try-on',
                             onPressed: () => context.push('/snapshot-try-on'),
                           ),

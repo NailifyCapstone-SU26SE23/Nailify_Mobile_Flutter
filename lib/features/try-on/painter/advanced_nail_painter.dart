@@ -5,7 +5,7 @@ import '../models/nail_variant_model.dart';
 
 /// Represents keypoint coordinates for nail orientation (Tip: Keypoint 0, Base: Keypoint 1).
 class NailPoseKeypoints {
-  final Offset tip;  // Keypoint 0 (Đỉnh móng)
+  final Offset tip; // Keypoint 0 (Đỉnh móng)
   final Offset base; // Keypoint 1 (Gốc móng)
 
   NailPoseKeypoints({required this.tip, required this.base});
@@ -126,8 +126,9 @@ class AdvancedNailPainter extends CustomPainter {
     final Offset minor = Offset(-major.dy, major.dx);
 
     final double tr = covXX + covYY;
-    final double disc = math.sqrt(math.max(
-        0.0, (covXX - covYY) * (covXX - covYY) / 4 + covXY * covXY));
+    final double disc = math.sqrt(
+      math.max(0.0, (covXX - covYY) * (covXX - covYY) / 4 + covXY * covXY),
+    );
     final double lMajor = tr / 2 + disc;
     final double lMinor = tr / 2 - disc;
     final double elong = lMinor > 1e-6 ? lMajor / lMinor : double.infinity;
@@ -163,8 +164,9 @@ class AdvancedNailPainter extends CustomPainter {
     covYY /= cs.length;
 
     final double tr = covXX + covYY;
-    final double disc = math.sqrt(math.max(
-        0.0, (covXX - covYY) * (covXX - covYY) / 4 + covXY * covXY));
+    final double disc = math.sqrt(
+      math.max(0.0, (covXX - covYY) * (covXX - covYY) / 4 + covXY * covXY),
+    );
     final double lMajor = tr / 2 + disc;
     final double lMinor = tr / 2 - disc;
     if (lMajor < 1e-6) return null;
@@ -184,8 +186,9 @@ class AdvancedNailPainter extends CustomPainter {
     final pca = _nailPca(poly, c);
     // For thumb (fingerIndex == 1), always use pca.major because thumb spreads out
     if (fingerIndex == 1 || across == null) {
-      final double conf =
-          pca.elongation.isFinite ? (1 - 1 / pca.elongation).clamp(0.0, 1.0) : 1.0;
+      final double conf = pca.elongation.isFinite
+          ? (1 - 1 / pca.elongation).clamp(0.0, 1.0)
+          : 1.0;
       return (dir: pca.major, conf: conf);
     }
     final Offset perpA = Offset(-across.dy, across.dx);
@@ -248,17 +251,26 @@ class AdvancedNailPainter extends CustomPainter {
       used++;
     }
 
-    final Offset meanCentroid =
-        count > 0 ? Offset(meanX / count, meanY / count) : Offset.zero;
+    final Offset meanCentroid = count > 0
+        ? Offset(meanX / count, meanY / count)
+        : Offset.zero;
 
     if (used < 2 || wSum < 1e-6) {
-      return (center: meanCentroid, reliable: false, indexCentroid: idxCentroid);
+      return (
+        center: meanCentroid,
+        reliable: false,
+        indexCentroid: idxCentroid,
+      );
     }
 
     final double r = math.sqrt(sumCos2 * sumCos2 + sumSin2 * sumSin2) / wSum;
     final double det = a11 * a22 - a12 * a12;
     if (r > 0.97 || det.abs() < 1e-6) {
-      return (center: meanCentroid, reliable: false, indexCentroid: idxCentroid);
+      return (
+        center: meanCentroid,
+        reliable: false,
+        indexCentroid: idxCentroid,
+      );
     }
 
     final double px = (a22 * b1 - a12 * b2) / det;
@@ -278,10 +290,13 @@ class AdvancedNailPainter extends CustomPainter {
   }) {
     final Offset center = _centroid(poly);
 
-    final bool isPoseValid = (poseKeypoint != null) &&
+    final bool isPoseValid =
+        (poseKeypoint != null) &&
         (poseKeypoint.tip - poseKeypoint.base).distance >= 2.0 &&
-        poseKeypoint.tip.dx > 5 && poseKeypoint.tip.dy > 5 &&
-        poseKeypoint.base.dx > 5 && poseKeypoint.base.dy > 5;
+        poseKeypoint.tip.dx > 5 &&
+        poseKeypoint.tip.dy > 5 &&
+        poseKeypoint.base.dx > 5 &&
+        poseKeypoint.base.dy > 5;
 
     // 1. Calculate unit vector pointing from cuticle toward fingertip
     final Offset tipDir = isPoseValid
@@ -315,8 +330,10 @@ class AdvancedNailPainter extends CustomPainter {
     if (localBounds.width < 2 || localBounds.height < 2) return;
 
     // 3. Base gel color + HSL offsets from API
-    final Color nailColor =
-        _applySurfaceHsl(_getFingerColor(fingerIndex), variant.nailSurface);
+    final Color nailColor = _applySurfaceHsl(
+      _getFingerColor(fingerIndex),
+      variant.nailSurface,
+    );
 
     final double? poseLength = isPoseValid
         ? (poseKeypoint.tip - poseKeypoint.base).distance
@@ -327,16 +344,28 @@ class AdvancedNailPainter extends CustomPainter {
     canvas.rotate(angle);
 
     if (nailShapeImage != null) {
-      _paintShapeNail(canvas, localBounds, nailColor, fingerIndex, poseLength: poseLength);
+      _paintShapeNail(
+        canvas,
+        localBounds,
+        nailColor,
+        fingerIndex,
+        poseLength: poseLength,
+      );
     } else {
       _paintNaturalNail(canvas, localPts, localBounds, nailColor, fingerIndex);
     }
 
-    if (selectedFingerIndex != null && (selectedFingerIndex == fingerIndex || selectedFingerIndex == -1)) {
+    if (selectedFingerIndex != null &&
+        (selectedFingerIndex == fingerIndex || selectedFingerIndex == -1)) {
       _drawFingerHighlight(canvas, localBounds);
     }
 
-    _renderComponentBoundingBoxOverlay(canvas, localBounds, fingerIndex, poseLength: poseLength);
+    _renderComponentBoundingBoxOverlay(
+      canvas,
+      localBounds,
+      fingerIndex,
+      poseLength: poseLength,
+    );
 
     canvas.restore();
   }
@@ -351,8 +380,12 @@ class AdvancedNailPainter extends CustomPainter {
     double? poseLength,
   }) {
     final ui.Image shape = nailShapeImage!;
-    final Rect src =
-        Rect.fromLTWH(0, 0, shape.width.toDouble(), shape.height.toDouble());
+    final Rect src = Rect.fromLTWH(
+      0,
+      0,
+      shape.width.toDouble(),
+      shape.height.toDouble(),
+    );
 
     final double effectiveHeight = (poseLength != null && poseLength > 0)
         ? math.max(nb.height, poseLength)
@@ -361,8 +394,10 @@ class AdvancedNailPainter extends CustomPainter {
     // Fit width snugly to cyan polygon width + 15% margin to cover natural nail
     final double fitWidth = nb.width * _widthCover;
     final double aspect = src.height / src.width;
-    final double fitHeight =
-        math.max(fitWidth * aspect, effectiveHeight * _minHeightCover);
+    final double fitHeight = math.max(
+      fitWidth * aspect,
+      effectiveHeight * _minHeightCover,
+    );
 
     // Anchored at cuticle (bottom of local box, +Y) extending toward tip (-Y)
     final double bottom = nb.bottom + effectiveHeight * _cuticleOverlap;
@@ -388,7 +423,13 @@ class AdvancedNailPainter extends CustomPainter {
     _applySurfaceShader(canvas, dest, variant.nailSurface);
 
     // 💍 Accessories / Charms / Stickers
-    _renderComponents(canvas, dest.center, dest.width, dest.height, fingerIndex);
+    _renderComponents(
+      canvas,
+      dest.center,
+      dest.width,
+      dest.height,
+      fingerIndex,
+    );
 
     // Mask to shape silhouette
     canvas.drawImageRect(
@@ -502,7 +543,8 @@ class AdvancedNailPainter extends CustomPainter {
       final p1 = localPts[i];
       final p2 = localPts[(i + 1) % localPts.length];
 
-      if ((p1.dy <= targetY && p2.dy >= targetY) || (p2.dy <= targetY && p1.dy >= targetY)) {
+      if ((p1.dy <= targetY && p2.dy >= targetY) ||
+          (p2.dy <= targetY && p1.dy >= targetY)) {
         if ((p1.dy - p2.dy).abs() > 1e-5) {
           final double t = (targetY - p1.dy) / (p2.dy - p1.dy);
           final double x = p1.dx + t * (p2.dx - p1.dx);
@@ -664,7 +706,11 @@ class AdvancedNailPainter extends CustomPainter {
       canvas.drawImageRect(
         charmImage,
         Rect.fromLTWH(
-            0, 0, charmImage.width.toDouble(), charmImage.height.toDouble()),
+          0,
+          0,
+          charmImage.width.toDouble(),
+          charmImage.height.toDouble(),
+        ),
         Rect.fromCenter(
           center: Offset.zero,
           width: charmTargetWidth,
@@ -700,9 +746,11 @@ class AdvancedNailPainter extends CustomPainter {
 
     for (final compItem in variant.nailComponents) {
       if (compItem.nailComponentId != selectedComponentId) continue;
-      if (compItem.fingerIndex != -1 && compItem.fingerIndex != fingerIndex) continue;
+      if (compItem.fingerIndex != -1 && compItem.fingerIndex != fingerIndex)
+        continue;
 
-      final ui.Image? charmImage = componentImages[compItem.component.componentId];
+      final ui.Image? charmImage =
+          componentImages[compItem.component.componentId];
       if (charmImage == null) continue;
 
       final double effectiveHeight = (poseLength != null && poseLength > 0)
@@ -711,7 +759,10 @@ class AdvancedNailPainter extends CustomPainter {
 
       final double fitWidth = nb.width * _widthCover;
       final double fitHeight = nailShapeImage != null
-          ? math.max(fitWidth * (nailShapeImage!.height / nailShapeImage!.width), effectiveHeight * _minHeightCover)
+          ? math.max(
+              fitWidth * (nailShapeImage!.height / nailShapeImage!.width),
+              effectiveHeight * _minHeightCover,
+            )
           : nb.height;
 
       final double bottom = nb.bottom + effectiveHeight * _cuticleOverlap;
@@ -722,8 +773,10 @@ class AdvancedNailPainter extends CustomPainter {
         fitHeight,
       );
 
-      final double charmPixelX = dest.center.dx + compItem.posX * (dest.width / 2);
-      final double charmPixelY = dest.center.dy + compItem.posY * (dest.height / 2);
+      final double charmPixelX =
+          dest.center.dx + compItem.posX * (dest.width / 2);
+      final double charmPixelY =
+          dest.center.dy + compItem.posY * (dest.height / 2);
 
       final double charmTargetWidth = dest.width * compItem.scale;
       final double charmAspectRatio = charmImage.height / charmImage.width;
@@ -757,17 +810,37 @@ class AdvancedNailPainter extends CustomPainter {
         ..strokeWidth = 2.0
         ..strokeCap = StrokeCap.round;
 
-      canvas.drawLine(trHandle + const Offset(-4, 4), trHandle + const Offset(4, -4), iconPaint);
-      canvas.drawLine(trHandle + const Offset(4, -4), trHandle + const Offset(1, -4), iconPaint);
-      canvas.drawLine(trHandle + const Offset(4, -4), trHandle + const Offset(4, -1), iconPaint);
+      canvas.drawLine(
+        trHandle + const Offset(-4, 4),
+        trHandle + const Offset(4, -4),
+        iconPaint,
+      );
+      canvas.drawLine(
+        trHandle + const Offset(4, -4),
+        trHandle + const Offset(1, -4),
+        iconPaint,
+      );
+      canvas.drawLine(
+        trHandle + const Offset(4, -4),
+        trHandle + const Offset(4, -1),
+        iconPaint,
+      );
 
       // 2. Bottom-Left handle (Delete 'X')
       final Offset blHandle = boxRect.bottomLeft;
       final Paint blBgPaint = Paint()..color = Colors.redAccent.shade700;
       canvas.drawCircle(blHandle, 11, blBgPaint);
 
-      canvas.drawLine(blHandle + const Offset(-4, -4), blHandle + const Offset(4, 4), iconPaint);
-      canvas.drawLine(blHandle + const Offset(-4, 4), blHandle + const Offset(4, -4), iconPaint);
+      canvas.drawLine(
+        blHandle + const Offset(-4, -4),
+        blHandle + const Offset(4, 4),
+        iconPaint,
+      );
+      canvas.drawLine(
+        blHandle + const Offset(-4, 4),
+        blHandle + const Offset(4, -4),
+        iconPaint,
+      );
 
       canvas.restore();
     }
@@ -796,10 +869,13 @@ class AdvancedNailPainter extends CustomPainter {
       }
 
       final Offset center = _centroid(poly);
-      final bool isPoseValid = (poseKpt != null) &&
+      final bool isPoseValid =
+          (poseKpt != null) &&
           (poseKpt.tip - poseKpt.base).distance >= 2.0 &&
-          poseKpt.tip.dx > 5 && poseKpt.tip.dy > 5 &&
-          poseKpt.base.dx > 5 && poseKpt.base.dy > 5;
+          poseKpt.tip.dx > 5 &&
+          poseKpt.tip.dy > 5 &&
+          poseKpt.base.dx > 5 &&
+          poseKpt.base.dy > 5;
 
       final Offset tipDir = isPoseValid
           ? poseKpt.direction
@@ -829,16 +905,21 @@ class AdvancedNailPainter extends CustomPainter {
       final Rect localBounds = Rect.fromLTRB(minX, minY, maxX, maxY);
       if (localBounds.width < 2 || localBounds.height < 2) continue;
 
-      final double effectiveHeight = (isPoseValid && (poseKpt.tip - poseKpt.base).distance > 0)
+      final double effectiveHeight =
+          (isPoseValid && (poseKpt.tip - poseKpt.base).distance > 0)
           ? math.max(localBounds.height, (poseKpt.tip - poseKpt.base).distance)
           : localBounds.height;
 
       final double fitWidth = localBounds.width * _widthCover;
       final double fitHeight = nailShapeImage != null
-          ? math.max(fitWidth * (nailShapeImage!.height / nailShapeImage!.width), effectiveHeight * _minHeightCover)
+          ? math.max(
+              fitWidth * (nailShapeImage!.height / nailShapeImage!.width),
+              effectiveHeight * _minHeightCover,
+            )
           : localBounds.height;
 
-      final double bottom = localBounds.bottom + effectiveHeight * _cuticleOverlap;
+      final double bottom =
+          localBounds.bottom + effectiveHeight * _cuticleOverlap;
       final Rect dest = Rect.fromLTWH(
         localBounds.center.dx - fitWidth / 2,
         bottom - fitHeight,
@@ -846,14 +927,16 @@ class AdvancedNailPainter extends CustomPainter {
         fitHeight,
       );
 
-      result.add(FingerTransformInfo(
-        fingerIndex: fingerIndex,
-        polygonCentroid: center,
-        angle: angle,
-        localBounds: localBounds,
-        destRect: dest,
-        polygonPoints: poly,
-      ));
+      result.add(
+        FingerTransformInfo(
+          fingerIndex: fingerIndex,
+          polygonCentroid: center,
+          angle: angle,
+          localBounds: localBounds,
+          destRect: dest,
+          polygonPoints: poly,
+        ),
+      );
     }
 
     return result;
@@ -900,7 +983,10 @@ class FingerTransformInfo {
   Offset localToCanvas(Offset localPoint) {
     final double c = math.cos(angle);
     final double s = math.sin(angle);
-    final Offset rotated = Offset(localPoint.dx * c - localPoint.dy * s, localPoint.dx * s + localPoint.dy * c);
+    final Offset rotated = Offset(
+      localPoint.dx * c - localPoint.dy * s,
+      localPoint.dx * s + localPoint.dy * c,
+    );
     return polygonCentroid + rotated;
   }
 }

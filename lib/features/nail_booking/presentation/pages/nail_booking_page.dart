@@ -1162,17 +1162,16 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   Widget _buildDepositDetails(int totalPrice) {
-    final depositInfo = PriceFormatter.getDepositInfo(_selectedBranch?['depositConfig'], totalPrice);
+    final depositInfo = PriceFormatter.getDepositInfo(
+      _selectedBranch?['depositConfig'],
+      totalPrice,
+    );
     final depositConfigText = depositInfo['displayText'] as String;
     final depositAmount = depositInfo['amount'] as int;
 
     return Column(
       children: [
-        _buildPaymentRowWithText(
-          'Tỷ lệ cọc:',
-          depositConfigText,
-          muted: true,
-        ),
+        _buildPaymentRowWithText('Tỷ lệ cọc:', depositConfigText, muted: true),
         const SizedBox(height: 8),
         _buildPaymentRow(
           'Tiền cọc cần thanh toán:',

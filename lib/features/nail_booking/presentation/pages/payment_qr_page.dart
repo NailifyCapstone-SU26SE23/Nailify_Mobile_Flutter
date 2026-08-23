@@ -261,12 +261,18 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
                                       'Mã đơn hàng',
                                       '#${_orderCode.toString()}',
                                     ),
-                                    const Divider(height: 16, color: Color(0xFFEEEEEE)),
+                                    const Divider(
+                                      height: 16,
+                                      color: Color(0xFFEEEEEE),
+                                    ),
                                     _buildInfoRow(
                                       'Phương thức',
                                       'Chuyển khoản QR',
                                     ),
-                                    const Divider(height: 16, color: Color(0xFFEEEEEE)),
+                                    const Divider(
+                                      height: 16,
+                                      color: Color(0xFFEEEEEE),
+                                    ),
                                     _buildInfoRow(
                                       'Trạng thái',
                                       'Chờ thanh toán',
@@ -290,7 +296,7 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
                                       color: AppColors.primaryDark,
                                       size: 16,
                                     ),
-                                    const SizedBox(width: 8),
+                                    SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
                                         'Chụp ảnh QR này hoặc sử dụng ứng dụng Ngân hàng / Ví điện tử quét mã để thanh toán.',

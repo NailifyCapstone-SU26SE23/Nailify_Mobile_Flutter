@@ -1749,7 +1749,9 @@ class FingerPreviewTile extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: transparentBackground ? Colors.transparent : Colors.white,
-          border: transparentBackground ? null : Border.all(color: Colors.black12),
+          border: transparentBackground
+              ? null
+              : Border.all(color: Colors.black12),
           borderRadius: BorderRadius.circular(8),
         ),
         child: LayoutBuilder(
@@ -1761,7 +1763,9 @@ class FingerPreviewTile extends StatelessWidget {
 
             return Stack(
               children: [
-                transparentBackground ? const SizedBox.shrink() : Positioned.fill(child: Container(color: Colors.white)),
+                transparentBackground
+                    ? const SizedBox.shrink()
+                    : Positioned.fill(child: Container(color: Colors.white)),
                 if (selectedShape?.imageUrl.isNotEmpty == true)
                   Positioned(
                     left: nailLeft,

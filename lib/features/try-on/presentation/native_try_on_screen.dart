@@ -16,7 +16,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../nails/widgets/native_camera_view.dart';
 import '../../nails/services/nail_try_on_client.dart';
@@ -89,9 +88,7 @@ class _NativeTryOnScreenState extends State<NativeTryOnScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: SafeArea(
-        child: _buildBody(),
-      ),
+      body: SafeArea(child: _buildBody()),
     );
   }
 
@@ -103,7 +100,9 @@ class _NativeTryOnScreenState extends State<NativeTryOnScreen> {
       );
     }
     if (_isChecking) {
-      return const Center(child: CircularProgressIndicator(color: Colors.white));
+      return const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      );
     }
     if (!_hasPermission) {
       return _ErrorView(
@@ -128,9 +127,7 @@ class _ErrorView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        const Center(
-          child: CircularProgressIndicator(color: Colors.white),
-        ),
+        const Center(child: CircularProgressIndicator(color: Colors.white)),
         Positioned(
           top: 24,
           left: 16,

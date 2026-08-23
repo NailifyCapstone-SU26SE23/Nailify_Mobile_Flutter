@@ -30,18 +30,19 @@ class PriceFormatter {
   static Map<String, dynamic> getDepositInfo(dynamic config, num totalAmount) {
     if (config == null) {
       final amount = (totalAmount * 0.2).round();
-      return {
-        'displayText': '20%',
-        'amount': amount,
-      };
+      return {'displayText': '20%', 'amount': amount};
     }
-    
+
     // If it's a Map
     if (config is Map) {
-      final val = config['percentage'] ?? config['value'] ?? config['amount'] ?? config['depositConfig'];
+      final val =
+          config['percentage'] ??
+          config['value'] ??
+          config['amount'] ??
+          config['depositConfig'];
       return getDepositInfo(val, totalAmount);
     }
-    
+
     // If it's a String
     if (config is String) {
       final clean = config.replaceAll(RegExp(r'[^\d\.]'), '').trim();
@@ -50,7 +51,8 @@ class PriceFormatter {
         if (config.contains('%')) {
           final amount = (totalAmount * parsed / 100).round();
           return {
-            'displayText': '${parsed.toStringAsFixed(parsed % 1 == 0 ? 0 : 1)}%',
+            'displayText':
+                '${parsed.toStringAsFixed(parsed % 1 == 0 ? 0 : 1)}%',
             'amount': amount,
           };
         }
@@ -64,7 +66,8 @@ class PriceFormatter {
         } else if (parsed > 1.0 && parsed <= 100) {
           final amount = (totalAmount * parsed / 100).round();
           return {
-            'displayText': '${parsed.toStringAsFixed(parsed % 1 == 0 ? 0 : 1)}%',
+            'displayText':
+                '${parsed.toStringAsFixed(parsed % 1 == 0 ? 0 : 1)}%',
             'amount': amount,
           };
         } else {
@@ -75,12 +78,9 @@ class PriceFormatter {
         }
       }
       final amount = (totalAmount * 0.2).round();
-      return {
-        'displayText': config,
-        'amount': amount,
-      };
+      return {'displayText': config, 'amount': amount};
     }
-    
+
     // If it's a number
     if (config is num) {
       final val = config.toDouble();
@@ -98,18 +98,11 @@ class PriceFormatter {
           'amount': amount,
         };
       } else {
-        return {
-          'displayText': format(val.round()),
-          'amount': val.round(),
-        };
+        return {'displayText': format(val.round()), 'amount': val.round()};
       }
     }
-    
+
     final amount = (totalAmount * 0.2).round();
-    return {
-      'displayText': '20%',
-      'amount': amount,
-    };
+    return {'displayText': '20%', 'amount': amount};
   }
 }
-

@@ -57,7 +57,7 @@ dependencies:
   onnxruntime: ^1.4.1
   image: ^4.8.0
   http: ^1.2.0
-  hand_landmarker: ^3.0.1
+  hand_landmarker: ^3.0.0
 
   # Localization (Hỗ trợ core hệ thống)
   flutter_localizations:

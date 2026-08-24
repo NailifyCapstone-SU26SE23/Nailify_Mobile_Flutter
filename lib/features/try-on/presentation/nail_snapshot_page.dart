@@ -495,8 +495,9 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
   void _handlePanUpdate(DragUpdateDetails details) {
     if (_selectedComponentId == null ||
         _selectedVariant == null ||
-        _dragMode == _DragMode.none)
+        _dragMode == _DragMode.none) {
       return;
+    }
 
     final transforms = _getFingerTransforms();
     final int idx = _selectedVariant!.nailComponents.indexWhere(
@@ -1156,10 +1157,12 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
   }
 
   Widget _buildVariantsList() {
-    if (_isLoadingVariants)
+    if (_isLoadingVariants) {
       return const Center(child: CircularProgressIndicator());
-    if (_apiVariants.isEmpty)
+    }
+    if (_apiVariants.isEmpty) {
       return const Center(child: Text("Không có mẫu nào"));
+    }
 
     return ListView.builder(
       scrollDirection: Axis.horizontal,
@@ -1179,10 +1182,12 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
   }
 
   Widget _buildShapesList() {
-    if (_isLoadingCustomization)
+    if (_isLoadingCustomization) {
       return const Center(child: CircularProgressIndicator());
-    if (_apiShapes.isEmpty)
+    }
+    if (_apiShapes.isEmpty) {
       return const Center(child: Text("Không có dáng móng nào"));
+    }
 
     return ListView.builder(
       scrollDirection: Axis.horizontal,
@@ -1202,10 +1207,12 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
   }
 
   Widget _buildSurfacesList() {
-    if (_isLoadingCustomization)
+    if (_isLoadingCustomization) {
       return const Center(child: CircularProgressIndicator());
-    if (_apiSurfaces.isEmpty)
+    }
+    if (_apiSurfaces.isEmpty) {
       return const Center(child: Text("Không có bề mặt nào"));
+    }
 
     return ListView.builder(
       scrollDirection: Axis.horizontal,
@@ -1226,10 +1233,12 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
   }
 
   Widget _buildComponentsList() {
-    if (_isLoadingCustomization)
+    if (_isLoadingCustomization) {
       return const Center(child: CircularProgressIndicator());
-    if (_apiComponents.isEmpty)
+    }
+    if (_apiComponents.isEmpty) {
       return const Center(child: Text("Không có phụ kiện nào"));
+    }
 
     return Column(
       children: [

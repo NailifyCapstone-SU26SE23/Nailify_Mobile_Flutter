@@ -5,16 +5,64 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/price_formatter.dart';
 
 import '../../../../generated/l10n.dart';
+import '../../data/datasources/booking_api_service.dart';
 import '../utils/transaction_status_utils.dart';
 
-class TransactionDetailPage extends StatelessWidget {
+class TransactionDetailPage extends StatefulWidget {
   final Map<String, dynamic> transaction;
 
   const TransactionDetailPage({super.key, required this.transaction});
 
   @override
+  State<TransactionDetailPage> createState() => _TransactionDetailPageState();
+}
+
+class _TransactionDetailPageState extends State<TransactionDetailPage> {
+  final BookingApiService _bookingApiService = BookingApiService();
+  bool _isOpeningBooking = false;
+
+  Future<void> _openBooking() async {
+    if (_isOpeningBooking) return;
+
+    final directBookingId =
+        widget.transaction['bookingId']?.toString().trim() ?? '';
+    if (directBookingId.isNotEmpty) {
+      context.go('/my-bookings/detail', extra: directBookingId);
+      return;
+    }
+
+    final orderCode = _readInt(widget.transaction['orderCode']);
+    if (orderCode == null) return;
+
+    setState(() => _isOpeningBooking = true);
+    try {
+      final bookingId = await _bookingApiService.getBookingIdByOrderCode(
+        orderCode,
+      );
+      if (!mounted) return;
+      if (bookingId.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Không tìm thấy lịch hẹn.')),
+        );
+        return;
+      }
+      context.go('/my-bookings/detail', extra: bookingId);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Lỗi mở lịch hẹn: $error')));
+    } finally {
+      if (mounted) setState(() => _isOpeningBooking = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final bookingId = transaction['bookingId']?.toString() ?? '';
+    final transaction = widget.transaction;
+    final bookingId = transaction['bookingId']?.toString().trim() ?? '';
+    final orderCode = _readInt(transaction['orderCode']);
+    final canOpenBooking = bookingId.isNotEmpty || orderCode != null;
     final status = transaction['status']?.toString() ?? '';
     final statusView = transactionStatusView(status);
 
@@ -116,9 +164,9 @@ class TransactionDetailPage extends StatelessWidget {
               ],
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: bookingId.isEmpty
-                    ? null
-                    : () => context.go('/my-bookings/detail', extra: bookingId),
+                onPressed: canOpenBooking && !_isOpeningBooking
+                    ? _openBooking
+                    : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -127,16 +175,34 @@ class TransactionDetailPage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'Xem lịch hẹn',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
+                child: _isOpeningBooking
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        'Xem lịch hẹn',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  int? _readInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '');
   }
 
   Widget _buildRow(String label, dynamic value) {

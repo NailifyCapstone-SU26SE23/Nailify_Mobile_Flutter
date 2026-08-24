@@ -746,8 +746,9 @@ class AdvancedNailPainter extends CustomPainter {
 
     for (final compItem in variant.nailComponents) {
       if (compItem.nailComponentId != selectedComponentId) continue;
-      if (compItem.fingerIndex != -1 && compItem.fingerIndex != fingerIndex)
+      if (compItem.fingerIndex != -1 && compItem.fingerIndex != fingerIndex) {
         continue;
+      }
 
       final ui.Image? charmImage =
           componentImages[compItem.component.componentId];

@@ -148,7 +148,7 @@ class _ProfilePageState extends State<ProfilePage> {
               title: 'Lịch sử đặt lịch',
               route: '/profile/booking-history',
             ),
-            ProfileActionTile(title: 'Hóa đơn', route: '/profile/invoices'),
+            ProfileActionTile(title: 'Hóa đơn', route: '/profile/transactions'),
             ProfileActionTile(
               title: 'Bộ móng yêu thích',
               route: '/profile/favorite-nails',

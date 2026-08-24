@@ -424,28 +424,8 @@ class _MainShellState extends State<MainShell> {
     }
   }
 
-  Widget _buildAnimatedBody(BuildContext context, Widget child) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
-      switchInCurve: Curves.easeInOut,
-      switchOutCurve: Curves.easeInOut,
-      transitionBuilder: (Widget child, Animation<double> animation) {
-        return FadeTransition(
-          opacity: animation,
-          child: SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0.015, 0.0),
-              end: Offset.zero,
-            ).animate(animation),
-            child: child,
-          ),
-        );
-      },
-      child: KeyedSubtree(
-        key: ValueKey(GoRouterState.of(context).matchedLocation),
-        child: child,
-      ),
-    );
+  Widget _buildShellBody(Widget child) {
+    return child;
   }
 
   @override
@@ -703,10 +683,8 @@ class _MainShellState extends State<MainShell> {
                     _buildGlobalHoldCountdownBanner(context, manager),
                   Expanded(
                     child: widget.showHeader
-                        ? _buildAnimatedBody(context, widget.child)
-                        : SafeArea(
-                            child: _buildAnimatedBody(context, widget.child),
-                          ),
+                        ? _buildShellBody(widget.child)
+                        : SafeArea(child: _buildShellBody(widget.child)),
                   ),
                 ],
               );

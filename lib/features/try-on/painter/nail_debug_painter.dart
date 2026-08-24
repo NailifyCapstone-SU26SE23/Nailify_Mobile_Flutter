@@ -13,8 +13,9 @@ class NailDebugPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (polygons.isEmpty && (poseKeypoints == null || poseKeypoints!.isEmpty))
+    if (polygons.isEmpty && (poseKeypoints == null || poseKeypoints!.isEmpty)) {
       return;
+    }
 
     // 1. Vẽ viền đa giác móng (Polygons từ best.onnx)
     final Paint polyFillPaint = Paint()

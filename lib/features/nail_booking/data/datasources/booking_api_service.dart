@@ -4,12 +4,101 @@ import '../../../../core/network/api_client.dart';
 class BookingApiService {
   final ApiClient _apiClient = getIt<ApiClient>();
 
+  double _parseAverageRating(dynamic data) {
+    if (data == null) return 0.0;
+    if (data is Map) {
+      if (data['averageRating'] is num) {
+        return (data['averageRating'] as num).toDouble();
+      }
+      if (data['averageScore'] is num) {
+        return (data['averageScore'] as num).toDouble();
+      }
+      if (data['rating'] is num) {
+        return (data['rating'] as num).toDouble();
+      }
+      final inner = data['data'];
+      if (inner != null && inner != data) {
+        return _parseAverageRating(inner);
+      }
+      final items = data['items'] as List<dynamic>? ?? [];
+      if (items.isEmpty) return 0.0;
+      double sum = 0;
+      int count = 0;
+      for (final item in items) {
+        if (item is Map) {
+          final score =
+              item['overallScore'] ??
+              item['OverallScore'] ??
+              item['rating'] ??
+              item['score'];
+          if (score is num) {
+            sum += score;
+            count++;
+          }
+        }
+      }
+      return count > 0 ? sum / count : 0.0;
+    } else if (data is List) {
+      if (data.isEmpty) return 0.0;
+      double sum = 0;
+      int count = 0;
+      for (final item in data) {
+        if (item is Map) {
+          final score =
+              item['overallScore'] ??
+              item['OverallScore'] ??
+              item['rating'] ??
+              item['score'];
+          if (score is num) {
+            sum += score;
+            count++;
+          }
+        }
+      }
+      return count > 0 ? sum / count : 0.0;
+    }
+    return 0.0;
+  }
+
+  Future<double> getSalonRating(String salonId) async {
+    if (salonId.isEmpty) return 0.0;
+    try {
+      final response = await _apiClient.get('/BookingRatings/by-salon/$salonId');
+      return _parseAverageRating(response.data);
+    } catch (_) {
+      return 0.0;
+    }
+  }
+
+  Future<double> getNailArtistRating(String artistId) async {
+    if (artistId.isEmpty) return 0.0;
+    try {
+      final response = await _apiClient.get(
+        '/BookingRatings/by-nail-artist/$artistId',
+      );
+      return _parseAverageRating(response.data);
+    } catch (_) {
+      return 0.0;
+    }
+  }
+
   Future<List<dynamic>> getSalons() async {
     final response = await _apiClient.get(
       '/Salons',
       queryParameters: {'PageIndex': 1, 'PageSize': 10},
     );
-    return response.data['data']['items'] ?? [];
+    final items = (response.data['data']['items'] as List<dynamic>?) ?? [];
+
+    final listWithRatings = await Future.wait(
+      items.map((salon) async {
+        if (salon is! Map) return salon;
+        final map = Map<String, dynamic>.from(salon);
+        final salonId = map['salonId']?.toString() ?? '';
+        final rating = await getSalonRating(salonId);
+        return {...map, 'rating': rating};
+      }),
+    );
+    return listWithRatings;
   }
 
   Future<Map<String, dynamic>?> getSalonDetail(String salonId) async {
@@ -62,7 +151,34 @@ class BookingApiService {
         ),
       },
     );
-    return response.data['data'] ?? [];
+    final items = (response.data['data'] as List<dynamic>?) ?? [];
+
+    final listWithRatings = await Future.wait(
+      items.map((artist) async {
+        if (artist is! Map) return artist;
+        final map = Map<String, dynamic>.from(artist);
+        final artistId =
+            map['nailArtistId']?.toString() ?? map['id']?.toString() ?? '';
+        final firstName = map['firstName']?.toString() ?? '';
+        final lastName = map['lastName']?.toString() ?? '';
+        final fullName =
+            map['fullName']?.toString() ?? '$firstName $lastName'.trim();
+        final rating = await getNailArtistRating(artistId);
+        return {
+          ...map,
+          'fullName': fullName.isNotEmpty ? fullName : 'Thợ nail',
+          'rating': rating,
+        };
+      }),
+    );
+
+    listWithRatings.sort((a, b) {
+      final rA = (a is Map ? a['rating'] : 0) as num? ?? 0;
+      final rB = (b is Map ? b['rating'] : 0) as num? ?? 0;
+      return rB.compareTo(rA);
+    });
+
+    return listWithRatings;
   }
 
   Future<List<dynamic>> getArtistAvailableSlots(
@@ -73,7 +189,21 @@ class BookingApiService {
       '/Bookings/artist-available-slots',
       queryParameters: {'NailArtistId': artistId, 'BookingDate': bookingDate},
     );
-    return response.data['data']['timeSlots'] ?? [];
+    final List<dynamic> list =
+        response.data['data']['timeSlots'] ?? response.data['data'] ?? [];
+    return list.map((slot) {
+      final map = Map<String, dynamic>.from(slot);
+      final rawTime = map['startTime'] ?? map['time'] ?? '';
+      String formattedTime = rawTime.toString();
+      if (formattedTime.isNotEmpty && formattedTime.split(':').length == 2) {
+        formattedTime = '$formattedTime:00';
+      }
+      return {
+        'startTime': formattedTime,
+        'isAvailable': map['isAvailable'] == true,
+        'isHeld': map['isHeld'] == true,
+      };
+    }).toList();
   }
 
   Future<List<dynamic>> getSalonAvailableSlots({
@@ -361,11 +491,33 @@ class BookingApiService {
       queryParameters: {'PageNumber': 1, 'PageSize': 50, 'salonId': salonId},
     );
     final items = response.data['data']['items'] as List<dynamic>? ?? [];
-    return items.map((artist) {
-      final firstName = artist['firstName']?.toString() ?? '';
-      final lastName = artist['lastName']?.toString() ?? '';
-      return {...artist, 'fullName': '$firstName $lastName'.trim()};
-    }).toList();
+
+    final listWithRatings = await Future.wait(
+      items.map((artist) async {
+        if (artist is! Map) return artist;
+        final map = Map<String, dynamic>.from(artist);
+        final artistId =
+            map['nailArtistId']?.toString() ?? map['id']?.toString() ?? '';
+        final firstName = map['firstName']?.toString() ?? '';
+        final lastName = map['lastName']?.toString() ?? '';
+        final fullName =
+            map['fullName']?.toString() ?? '$firstName $lastName'.trim();
+        final rating = await getNailArtistRating(artistId);
+        return {
+          ...map,
+          'fullName': fullName.isNotEmpty ? fullName : 'Thợ nail',
+          'rating': rating,
+        };
+      }),
+    );
+
+    listWithRatings.sort((a, b) {
+      final rA = (a is Map ? a['rating'] : 0) as num? ?? 0;
+      final rB = (b is Map ? b['rating'] : 0) as num? ?? 0;
+      return rB.compareTo(rA);
+    });
+
+    return listWithRatings;
   }
 
   Future<Map<String, dynamic>> createServiceBooking(

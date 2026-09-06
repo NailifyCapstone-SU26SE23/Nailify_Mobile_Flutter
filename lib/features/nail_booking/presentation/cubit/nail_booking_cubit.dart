@@ -58,19 +58,39 @@ class NailBookingCubit extends Cubit<NailBookingState> {
   // USER SELECTIONS
   // ══════════════════════════════════════════════════════════════
 
-  void selectBranch(Map<String, dynamic> branch) {
+  Future<void> selectBranch(Map<String, dynamic> branch) async {
     emit(
       state.copyWith(
         selectedBranch: branch,
         clearSeat: true,
         clearStylist: true,
         clearTime: true,
+        noArtistSelected: false,
         artists: [],
         timeSlots: [],
-        artistsStatus: NailBookingLoadStatus.initial,
+        artistsStatus: NailBookingLoadStatus.loading,
         timeSlotsStatus: NailBookingLoadStatus.initial,
       ),
     );
+    final salonId = branch['salonId']?.toString() ?? '';
+    if (salonId.isNotEmpty) {
+      try {
+        final artists = await _repository.getArtistsBySalon(salonId);
+        emit(
+          state.copyWith(
+            artists: artists,
+            artistsStatus: NailBookingLoadStatus.loaded,
+          ),
+        );
+      } catch (e) {
+        emit(
+          state.copyWith(
+            artistsStatus: NailBookingLoadStatus.error,
+            errorMessage: 'Lỗi tải danh sách thợ: $e',
+          ),
+        );
+      }
+    }
   }
 
   void initializeWarranty({
@@ -111,28 +131,22 @@ class NailBookingCubit extends Cubit<NailBookingState> {
     required DateTime date,
     required int nailVariantId,
     int? shapeMethodConfigId,
-
-    /// Dùng getSuggestedArtists (NailBooking) hay getNailArtistsBySalon (ServiceBooking)
     bool useSuggestedArtists = true,
   }) async {
     emit(
       state.copyWith(
         selectedDate: date,
-        clearStylist: true,
         clearTime: true,
-        noArtistSelected: false,
-        artists: [],
         timeSlots: [],
-        artistsStatus: NailBookingLoadStatus.loading,
-        timeSlotsStatus: NailBookingLoadStatus.initial,
+        timeSlotsStatus: NailBookingLoadStatus.loading,
       ),
     );
 
-    await _fetchArtists(
-      nailVariantId: nailVariantId,
-      shapeMethodConfigId: shapeMethodConfigId,
-      useSuggestedArtists: useSuggestedArtists,
-    );
+    if (state.noArtistSelected || state.selectedStylist == null) {
+      await _loadSalonSlots();
+    } else {
+      await _fetchTimeSlots();
+    }
   }
 
   Future<void> _fetchArtists({

@@ -19,6 +19,7 @@ import '../widgets/booking_service_selection.dart';
 import '../widgets/booking_stylist_selection.dart';
 import '../widgets/booking_time_selection.dart';
 import '../widgets/branch_selection_list.dart';
+import '../widgets/artist_selection_list.dart';
 
 class NailBookingPage extends StatefulWidget {
   final Map<String, dynamic>? nailData;
@@ -71,6 +72,10 @@ class _NailBookingPageState extends State<NailBookingPage> {
     {
       'title': S.of(context).bookingStepSelectSalon,
       'icon': Icons.storefront_rounded,
+    },
+    {
+      'title': 'Chọn thợ',
+      'icon': Icons.person_pin_rounded,
     },
     {'title': S.of(context).bookingStepServices, 'icon': Icons.spa_rounded},
     {
@@ -621,10 +626,29 @@ class _NailBookingPageState extends State<NailBookingPage> {
     return int.tryParse(price?.toString() ?? '') ?? 0;
   }
 
+  Future<void> _fetchSalonArtists(String salonId) async {
+    setState(() {
+      _isLoadingArtists = true;
+      _artists = [];
+    });
+    try {
+      final data = await _apiService.getNailArtistsBySalon(salonId);
+      if (!mounted) return;
+      setState(() {
+        _artists = data;
+        _isLoadingArtists = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLoadingArtists = false);
+    }
+  }
+
   void _handleBranchSelected(dynamic branch) {
     _cancelCurrentHold();
+    final branchMap = Map<String, dynamic>.from(branch as Map);
     setState(() {
-      _selectedBranch = Map<String, dynamic>.from(branch as Map);
+      _selectedBranch = branchMap;
       _selectedDate = null;
       _selectedStylist = null;
       _selectedTime = null;
@@ -633,6 +657,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
       _timeSlots = [];
       _priceReview = null;
     });
+    _fetchSalonArtists(branchMap['salonId']?.toString() ?? '');
   }
 
   void _handleServiceChanged(List<String?> services) {
@@ -642,27 +667,23 @@ class _NailBookingPageState extends State<NailBookingPage> {
       _selectedStylist = null;
       _selectedTime = null;
       _priceReview = null;
-      _artists = [];
       _timeSlots = [];
     });
-
-    if (_selectedBranch != null && _selectedDate != null) {
-      _fetchArtists();
-    }
   }
 
   void _handleDateChanged(DateTime date) {
     _cancelCurrentHold();
     setState(() {
       _selectedDate = date;
-      _selectedStylist = null;
       _selectedTime = null;
-      _noArtistSelected = false;
       _priceReview = null;
-      _artists = [];
       _timeSlots = [];
     });
-    _fetchArtists();
+    if (_noArtistSelected || _selectedStylist == null) {
+      _loadSalonSlots();
+    } else {
+      _fetchTimeSlots();
+    }
   }
 
   void _handleStylistSelected(Map<String, dynamic>? stylist) {
@@ -721,7 +742,13 @@ class _NailBookingPageState extends State<NailBookingPage> {
       _showSnackBar(S.of(context).bookingValidateSalon);
       return;
     }
-    if (_currentStep == 1) {
+    if (_currentStep == 1 &&
+        _selectedStylist == null &&
+        !_noArtistSelected) {
+      _showSnackBar('Vui lòng chọn thợ hoặc chọn "Tự động phân công"!');
+      return;
+    }
+    if (_currentStep == 2) {
       if (_selectedExtraServices.contains(null)) {
         _showSnackBar(S.of(context).bookingValidateService);
         return;
@@ -732,16 +759,13 @@ class _NailBookingPageState extends State<NailBookingPage> {
         return;
       }
     }
-    if (_currentStep == 2 &&
-        (_selectedDate == null ||
-            (_selectedStylist == null && !_noArtistSelected) ||
-            _selectedTime == null)) {
+    if (_currentStep == 3 && (_selectedDate == null || _selectedTime == null)) {
       _showSnackBar(S.of(context).bookingValidateDateTime);
       return;
     }
 
-    if (_currentStep < 3) {
-      if (_currentStep == 2) {
+    if (_currentStep < 4) {
+      if (_currentStep == 3) {
         final held = await _createHoldForSummary();
         if (!held) return;
         _reviewPrice();
@@ -795,6 +819,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
               onPageChanged: (idx) => setState(() => _currentStep = idx),
               children: [
                 _buildSalonStep(),
+                _buildArtistStep(),
                 _buildServiceStep(),
                 _buildScheduleStep(),
                 _buildSummaryStep(),
@@ -815,6 +840,20 @@ class _NailBookingPageState extends State<NailBookingPage> {
         isLoading: _isLoadingSalons,
         selectedBranchId: _selectedBranch?['salonId'],
         onBranchSelected: _handleBranchSelected,
+      ),
+    );
+  }
+
+  Widget _buildArtistStep() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: ArtistSelectionList(
+        artists: _artists,
+        isLoading: _isLoadingArtists,
+        selectedStylistId: _selectedStylist?['nailArtistId'],
+        noArtistSelected: _noArtistSelected,
+        onStylistSelected: _handleStylistSelected,
+        onModeChanged: _handleArtistModeChanged,
       ),
     );
   }
@@ -847,23 +886,11 @@ class _NailBookingPageState extends State<NailBookingPage> {
             onDateChanged: _handleDateChanged,
           ),
           const SizedBox(height: 28),
-          BookingStylistSelection(
-            artists: _artists,
-            isLoading: _isLoadingArtists,
-            selectedStylistId: _selectedStylist?['nailArtistId'],
-            noArtistSelected: _noArtistSelected,
-            isDateSelected: _selectedDate != null,
-            onStylistSelected: _handleStylistSelected,
-            onModeChanged: _handleArtistModeChanged,
-          ),
-          const SizedBox(height: 28),
           BookingTimeSelection(
             timeSlots: _timeSlots,
             isLoading: _isLoadingTimes,
             selectedTime: _selectedTime,
-            canSelect:
-                _selectedDate != null &&
-                (_selectedStylist != null || _noArtistSelected),
+            canSelect: _selectedDate != null,
             selectedDate: _selectedDate,
             salonId: _selectedBranch?['salonId'],
             artistId: _selectedStylist?['nailArtistId'],
@@ -1621,7 +1648,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                             ),
                           )
                         : Text(
-                            _currentStep == 3
+                            _currentStep == 4
                                 ? S.of(context).bookingPayBtn
                                 : S.of(context).bookingContinueBtn,
                             style: const TextStyle(fontWeight: FontWeight.bold),

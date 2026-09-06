@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../generated/l10n.dart';
 
+import 'rating_star_badge.dart';
+
 class BranchSelectionList extends StatelessWidget {
   final List<dynamic> salons;
   final bool isLoading;
@@ -45,9 +47,20 @@ class BranchSelectionList extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const Text(
+          'Chọn tiệm dịch vụ',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 12),
+
         // --- DANH SÁCH SALON ---
         ...salons.map((salon) {
           final bool isSelected = selectedBranchId == salon['salonId'];
+          final num rawRating = (salon['rating'] as num?) ?? 0;
 
           return GestureDetector(
             onTap: () => onBranchSelected(salon),
@@ -67,8 +80,8 @@ class BranchSelectionList extends StatelessWidget {
                 boxShadow: [
                   BoxShadow(
                     color: isSelected
-                        ? AppColors.primary.withOpacity(0.08)
-                        : Colors.black.withOpacity(0.02),
+                        ? AppColors.primary.withValues(alpha: 0.08)
+                        : Colors.black.withValues(alpha: 0.02),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -112,6 +125,13 @@ class BranchSelectionList extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 6),
+                            // Rating Badge Salon
+                            RatingStarBadge(
+                              rating: rawRating.toDouble(),
+                              isCompact: true,
+                            ),
+                            const SizedBox(width: 6),
+                            // Status Badge
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,

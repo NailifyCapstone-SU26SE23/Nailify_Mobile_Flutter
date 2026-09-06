@@ -1,4014 +1,3174 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
-import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'dart:async';
 
-import 'intl/messages_all.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/intl.dart' as intl;
 
-// **************************************************************************
-// Generator: Flutter Intl IDE plugin
-// Made by Localizely
-// **************************************************************************
+import 'l10n_en.dart';
+import 'l10n_vi.dart';
 
-// ignore_for_file: non_constant_identifier_names, lines_longer_than_80_chars
-// ignore_for_file: join_return_with_assignment, prefer_final_in_for_each
-// ignore_for_file: avoid_redundant_argument_values, avoid_escaping_inner_quotes
+// ignore_for_file: type=lint
 
-class S {
-  S();
+/// Callers can lookup localized strings with an instance of S
+/// returned by `S.of(context)`.
+///
+/// Applications need to include `S.delegate()` in their app's
+/// `localizationDelegates` list, and the locales they support in the app's
+/// `supportedLocales` list. For example:
+///
+/// ```dart
+/// import 'generated/l10n.dart';
+///
+/// return MaterialApp(
+///   localizationsDelegates: S.localizationsDelegates,
+///   supportedLocales: S.supportedLocales,
+///   home: MyApplicationHome(),
+/// );
+/// ```
+///
+/// ## Update pubspec.yaml
+///
+/// Please make sure to update your pubspec.yaml to include the following
+/// packages:
+///
+/// ```yaml
+/// dependencies:
+///   # Internationalization support.
+///   flutter_localizations:
+///     sdk: flutter
+///   intl: any # Use the pinned version from flutter_localizations
+///
+///   # Rest of dependencies
+/// ```
+///
+/// ## iOS Applications
+///
+/// iOS applications define key application metadata, including supported
+/// locales, in an Info.plist file that is built into the application bundle.
+/// To configure the locales supported by your app, you’ll need to edit this
+/// file.
+///
+/// First, open your project’s ios/Runner.xcworkspace Xcode workspace file.
+/// Then, in the Project Navigator, open the Info.plist file under the Runner
+/// project’s Runner folder.
+///
+/// Next, select the Information Property List item, select Add Item from the
+/// Editor menu, then select Localizations from the pop-up menu.
+///
+/// Select and expand the newly-created Localizations item then, for each
+/// locale your application supports, add a new item and select the locale
+/// you wish to add from the pop-up menu in the Value field. This list should
+/// be consistent with the languages listed in the S.supportedLocales
+/// property.
+abstract class S {
+  S(String locale)
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
-  static S? _current;
-
-  static S get current {
-    assert(
-      _current != null,
-      'No instance of S was loaded. Try to initialize the S delegate before accessing S.current.',
-    );
-    return _current!;
-  }
-
-  static const AppLocalizationDelegate delegate = AppLocalizationDelegate();
-
-  static Future<S> load(Locale locale) {
-    final name = (locale.countryCode?.isEmpty ?? false)
-        ? locale.languageCode
-        : locale.toString();
-    final localeName = Intl.canonicalizedLocale(name);
-    return initializeMessages(localeName).then((_) {
-      Intl.defaultLocale = localeName;
-      final instance = S();
-      S._current = instance;
-
-      return instance;
-    });
-  }
+  final String localeName;
 
   static S of(BuildContext context) {
-    final instance = S.maybeOf(context);
-    assert(
-      instance != null,
-      'No instance of S present in the widget tree. Did you add S.delegate in localizationsDelegates?',
-    );
-    return instance!;
-  }
-
-  static S? maybeOf(BuildContext context) {
-    return Localizations.of<S>(context, S);
-  }
-
-  /// `Nailify`
-  String get appName {
-    return Intl.message('Nailify', name: 'appName', desc: '', args: []);
-  }
-
-  /// `Home`
-  String get home {
-    return Intl.message('Home', name: 'home', desc: '', args: []);
-  }
-
-  /// `Book`
-  String get bookAppointment {
-    return Intl.message('Book', name: 'bookAppointment', desc: '', args: []);
-  }
-
-  /// `Bookings`
-  String get myBooking {
-    return Intl.message('Bookings', name: 'myBooking', desc: '', args: []);
-  }
-
-  /// `My Studio`
-  String get myStudio {
-    return Intl.message('My Studio', name: 'myStudio', desc: '', args: []);
-  }
-
-  /// `Account`
-  String get account {
-    return Intl.message('Account', name: 'account', desc: '', args: []);
-  }
-
-  /// `Login`
-  String get login {
-    return Intl.message('Login', name: 'login', desc: '', args: []);
-  }
-
-  /// `Logout`
-  String get logout {
-    return Intl.message('Logout', name: 'logout', desc: '', args: []);
-  }
-
-  /// `Register`
-  String get register {
-    return Intl.message('Register', name: 'register', desc: '', args: []);
-  }
-
-  /// `Email`
-  String get email {
-    return Intl.message('Email', name: 'email', desc: '', args: []);
-  }
-
-  /// `Password`
-  String get password {
-    return Intl.message('Password', name: 'password', desc: '', args: []);
-  }
-
-  /// `Full Name`
-  String get fullName {
-    return Intl.message('Full Name', name: 'fullName', desc: '', args: []);
-  }
-
-  /// `Phone Number`
-  String get phoneNumber {
-    return Intl.message(
-      'Phone Number',
-      name: 'phoneNumber',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Save`
-  String get save {
-    return Intl.message('Save', name: 'save', desc: '', args: []);
-  }
-
-  /// `Cancel`
-  String get cancel {
-    return Intl.message('Cancel', name: 'cancel', desc: '', args: []);
-  }
-
-  /// `Confirm`
-  String get confirm {
-    return Intl.message('Confirm', name: 'confirm', desc: '', args: []);
-  }
-
-  /// `Back`
-  String get back {
-    return Intl.message('Back', name: 'back', desc: '', args: []);
-  }
-
-  /// `Next`
-  String get next {
-    return Intl.message('Next', name: 'next', desc: '', args: []);
-  }
-
-  /// `Done`
-  String get done {
-    return Intl.message('Done', name: 'done', desc: '', args: []);
-  }
-
-  /// `Loading...`
-  String get loading {
-    return Intl.message('Loading...', name: 'loading', desc: '', args: []);
-  }
-
-  /// `An error occurred`
-  String get error {
-    return Intl.message('An error occurred', name: 'error', desc: '', args: []);
-  }
-
-  /// `Retry`
-  String get retry {
-    return Intl.message('Retry', name: 'retry', desc: '', args: []);
-  }
-
-  /// `No data available`
-  String get noData {
-    return Intl.message(
-      'No data available',
-      name: 'noData',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Select Date`
-  String get selectDate {
-    return Intl.message('Select Date', name: 'selectDate', desc: '', args: []);
-  }
-
-  /// `Select Time`
-  String get selectTime {
-    return Intl.message('Select Time', name: 'selectTime', desc: '', args: []);
-  }
-
-  /// `Select Salon`
-  String get selectSalon {
-    return Intl.message(
-      'Select Salon',
-      name: 'selectSalon',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Select Service`
-  String get selectService {
-    return Intl.message(
-      'Select Service',
-      name: 'selectService',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Total Price`
-  String get totalPrice {
-    return Intl.message('Total Price', name: 'totalPrice', desc: '', args: []);
-  }
-
-  /// `Book Now`
-  String get bookNow {
-    return Intl.message('Book Now', name: 'bookNow', desc: '', args: []);
-  }
-
-  /// `Perfect Match`
-  String get perfectMatch {
-    return Intl.message(
-      'Perfect Match',
-      name: 'perfectMatch',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `You have 1 new notification`
-  String get newNotification {
-    return Intl.message(
-      'You have 1 new notification',
-      name: 'newNotification',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Best matching nail design`
-  String get nailRecommendation {
-    return Intl.message(
-      'Best matching nail design',
-      name: 'nailRecommendation',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `View Detail`
-  String get viewDetail {
-    return Intl.message('View Detail', name: 'viewDetail', desc: '', args: []);
-  }
-
-  /// `Your Notifications`
-  String get notifications {
-    return Intl.message(
-      'Your Notifications',
-      name: 'notifications',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Personal Profile`
-  String get profileTitle {
-    return Intl.message(
-      'Personal Profile',
-      name: 'profileTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Personal Style Settings`
-  String get styleProfileSetup {
-    return Intl.message(
-      'Personal Style Settings',
-      name: 'styleProfileSetup',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Logged out successfully!`
-  String get logoutSuccess {
-    return Intl.message(
-      'Logged out successfully!',
-      name: 'logoutSuccess',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Update`
-  String get updateProfile {
-    return Intl.message('Update', name: 'updateProfile', desc: '', args: []);
-  }
-
-  /// `points`
-  String get pointsLabel {
-    return Intl.message('points', name: 'pointsLabel', desc: '', args: []);
-  }
-
-  /// `Tier`
-  String get tierLabel {
-    return Intl.message('Tier', name: 'tierLabel', desc: '', args: []);
-  }
-
-  /// `Status`
-  String get statusLabel {
-    return Intl.message('Status', name: 'statusLabel', desc: '', args: []);
-  }
-
-  /// `Successfully updated style profile and generated nail template!`
-  String get updateSuccess {
-    return Intl.message(
-      'Successfully updated style profile and generated nail template!',
-      name: 'updateSuccess',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Error creating nail profile: {error}`
-  String updateFailure(Object error) {
-    return Intl.message(
-      'Error creating nail profile: $error',
-      name: 'updateFailure',
-      desc: '',
-      args: [error],
-    );
-  }
-
-  /// `Cannot load information: {error}`
-  String loadFailure(Object error) {
-    return Intl.message(
-      'Cannot load information: $error',
-      name: 'loadFailure',
-      desc: '',
-      args: [error],
-    );
-  }
-
-  /// `Update error: {error}`
-  String updateProfileError(Object error) {
-    return Intl.message(
-      'Update error: $error',
-      name: 'updateProfileError',
-      desc: '',
-      args: [error],
-    );
-  }
-
-  /// `Beauty on your\nfingertips`
-  String get homeBannerTitle {
-    return Intl.message(
-      'Beauty on your\nfingertips',
-      name: 'homeBannerTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Discover natural elegance through every touch`
-  String get homeBannerSubtitle {
-    return Intl.message(
-      'Discover natural elegance through every touch',
-      name: 'homeBannerSubtitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Book Now`
-  String get bookNowButton {
-    return Intl.message('Book Now', name: 'bookNowButton', desc: '', args: []);
-  }
-
-  /// `Nailify Match AI`
-  String get homeQuizTitle {
-    return Intl.message(
-      'Nailify Match AI',
-      name: 'homeQuizTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Find your perfect nail design`
-  String get homeQuizHeading {
-    return Intl.message(
-      'Find your perfect nail design',
-      name: 'homeQuizHeading',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Take a quick Style Quiz to find the best nail design for your personal style.`
-  String get homeQuizSubtitle {
-    return Intl.message(
-      'Take a quick Style Quiz to find the best nail design for your personal style.',
-      name: 'homeQuizSubtitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `TAKE STYLE QUIZ NOW`
-  String get doQuizButton {
-    return Intl.message(
-      'TAKE STYLE QUIZ NOW',
-      name: 'doQuizButton',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Featured Services`
-  String get servicesTitle {
-    return Intl.message(
-      'Featured Services',
-      name: 'servicesTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Premium salon-quality nail care experience`
-  String get servicesSubtitle {
-    return Intl.message(
-      'Premium salon-quality nail care experience',
-      name: 'servicesSubtitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Nail Gallery`
-  String get nailGalleryTitle {
-    return Intl.message(
-      'Nail Gallery',
-      name: 'nailGalleryTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Discover the latest nail design trends`
-  String get nailGallerySubtitle {
-    return Intl.message(
-      'Discover the latest nail design trends',
-      name: 'nailGallerySubtitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Explore Gallery`
-  String get exploreGalleryButton {
-    return Intl.message(
-      'Explore Gallery',
-      name: 'exploreGalleryButton',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `OUR PROMISE`
-  String get ourPromiseTitle {
-    return Intl.message(
-      'OUR PROMISE',
-      name: 'ourPromiseTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Why Choose Us`
-  String get ourPromiseHeading {
-    return Intl.message(
-      'Why Choose Us',
-      name: 'ourPromiseHeading',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `At Nailify, we understand that you have many choices. Here is why we stand out:`
-  String get ourPromiseSubtitle {
-    return Intl.message(
-      'At Nailify, we understand that you have many choices. Here is why we stand out:',
-      name: 'ourPromiseSubtitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Years of Experience`
-  String get ourPromiseExpTitle {
-    return Intl.message(
-      'Years of Experience',
-      name: 'ourPromiseExpTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `We bring a wealth of experience and artistry to the world of nail design.`
-  String get ourPromiseExpDesc {
-    return Intl.message(
-      'We bring a wealth of experience and artistry to the world of nail design.',
-      name: 'ourPromiseExpDesc',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Professional Technicians`
-  String get ourPromiseTechTitle {
-    return Intl.message(
-      'Professional Technicians',
-      name: 'ourPromiseTechTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Our technicians are certified and trained to provide the most detailed nail care.`
-  String get ourPromiseTechDesc {
-    return Intl.message(
-      'Our technicians are certified and trained to provide the most detailed nail care.',
-      name: 'ourPromiseTechDesc',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Best Quality`
-  String get ourPromiseQualityTitle {
-    return Intl.message(
-      'Best Quality',
-      name: 'ourPromiseQualityTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Only premium, non-toxic products are used to ensure your safety and satisfaction.`
-  String get ourPromiseQualityDesc {
-    return Intl.message(
-      'Only premium, non-toxic products are used to ensure your safety and satisfaction.',
-      name: 'ourPromiseQualityDesc',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Always Trendy`
-  String get ourPromiseTrendTitle {
-    return Intl.message(
-      'Always Trendy',
-      name: 'ourPromiseTrendTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `We constantly update our collection with the latest techniques and global trends.`
-  String get ourPromiseTrendDesc {
-    return Intl.message(
-      'We constantly update our collection with the latest techniques and global trends.',
-      name: 'ourPromiseTrendDesc',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `WHAT CLIENTS SAY`
-  String get reviewsTitle {
-    return Intl.message(
-      'WHAT CLIENTS SAY',
-      name: 'reviewsTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Our Lovely Customers`
-  String get reviewsHeading {
-    return Intl.message(
-      'Our Lovely Customers',
-      name: 'reviewsHeading',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Nail Care & Cuticle`
-  String get serviceCare {
-    return Intl.message(
-      'Nail Care & Cuticle',
-      name: 'serviceCare',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Gel Polish`
-  String get serviceGel {
-    return Intl.message('Gel Polish', name: 'serviceGel', desc: '', args: []);
-  }
-
-  /// `Nail Art`
-  String get serviceArt {
-    return Intl.message('Nail Art', name: 'serviceArt', desc: '', args: []);
-  }
-
-  /// `Acrylic Extension`
-  String get serviceAcrylic {
-    return Intl.message(
-      'Acrylic Extension',
-      name: 'serviceAcrylic',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Book Appointment Now!`
-  String get homeCtaTitle {
-    return Intl.message(
-      'Book Appointment Now!',
-      name: 'homeCtaTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Book an appointment with Nailify — join us on the journey of exquisite nail art.`
-  String get homeCtaSubtitle {
-    return Intl.message(
-      'Book an appointment with Nailify — join us on the journey of exquisite nail art.',
-      name: 'homeCtaSubtitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `BOOK APPOINTMENT NOW`
-  String get homeCtaButton {
-    return Intl.message(
-      'BOOK APPOINTMENT NOW',
-      name: 'homeCtaButton',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Loyal Customer`
-  String get loyalCustomer {
-    return Intl.message(
-      'Loyal Customer',
-      name: 'loyalCustomer',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `New Customer`
-  String get newCustomer {
-    return Intl.message(
-      'New Customer',
-      name: 'newCustomer',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `VIP Customer`
-  String get vipCustomer {
-    return Intl.message(
-      'VIP Customer',
-      name: 'vipCustomer',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `"I absolutely love my nails! The staff here is very talented and the designs are gorgeous. I will definitely be back!"`
-  String get reviewLinhMai {
-    return Intl.message(
-      '"I absolutely love my nails! The staff here is very talented and the designs are gorgeous. I will definitely be back!"',
-      name: 'reviewLinhMai',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `"The mirror (chrome) polish looks beautiful and the staff is extremely friendly."`
-  String get reviewThuNga {
-    return Intl.message(
-      '"The mirror (chrome) polish looks beautiful and the staff is extremely friendly."',
-      name: 'reviewThuNga',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `"The best nail salon in the area. The attention to detail is incomparable, and my nails stayed on for weeks without chipping!"`
-  String get reviewHoangAnh {
-    return Intl.message(
-      '"The best nail salon in the area. The attention to detail is incomparable, and my nails stayed on for weeks without chipping!"',
-      name: 'reviewHoangAnh',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `My Bookings`
-  String get myBookingsTitle {
-    return Intl.message(
-      'My Bookings',
-      name: 'myBookingsTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Booking Details`
-  String get bookingDetailsTitle {
-    return Intl.message(
-      'Booking Details',
-      name: 'bookingDetailsTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Rate Service`
-  String get rateService {
-    return Intl.message(
-      'Rate Service',
-      name: 'rateService',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Edit Rating`
-  String get editRating {
-    return Intl.message('Edit Rating', name: 'editRating', desc: '', args: []);
-  }
-
-  /// `Book Appointment`
-  String get bookAppointmentTitle {
-    return Intl.message(
-      'Book Appointment',
-      name: 'bookAppointmentTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Book Service`
-  String get bookServiceTitle {
-    return Intl.message(
-      'Book Service',
-      name: 'bookServiceTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Nailify Match`
-  String get perfectMatchTitle {
-    return Intl.message(
-      'Nailify Match',
-      name: 'perfectMatchTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Nail Design`
-  String get nailDesignTitle {
-    return Intl.message(
-      'Nail Design',
-      name: 'nailDesignTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Select Try-on Method`
-  String get selectTryOnMethodTitle {
-    return Intl.message(
-      'Select Try-on Method',
-      name: 'selectTryOnMethodTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Discover the design made for you`
-  String get quizDiscoverDesign {
-    return Intl.message(
-      'Discover the design made for you',
-      name: 'quizDiscoverDesign',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Select multiple answers`
-  String get quizSelectMultiple {
-    return Intl.message(
-      'Select multiple answers',
-      name: 'quizSelectMultiple',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Analyzing style...`
-  String get quizAnalyzingStyle {
-    return Intl.message(
-      'Analyzing style...',
-      name: 'quizAnalyzingStyle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Finding matching colors...`
-  String get quizFindingColors {
-    return Intl.message(
-      'Finding matching colors...',
-      name: 'quizFindingColors',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Matching with nail collection...`
-  String get quizMatchingCollections {
-    return Intl.message(
-      'Matching with nail collection...',
-      name: 'quizMatchingCollections',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Almost done...`
-  String get quizAlmostDone {
-    return Intl.message(
-      'Almost done...',
-      name: 'quizAlmostDone',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Nailify has found the perfect matching nail designs just for you!`
-  String get quizBannerFound {
-    return Intl.message(
-      'Nailify has found the perfect matching nail designs just for you!',
-      name: 'quizBannerFound',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `If you haven't found the right design, Nailify can help.`
-  String get quizBannerNotFound {
-    return Intl.message(
-      'If you haven\'t found the right design, Nailify can help.',
-      name: 'quizBannerNotFound',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `VIEW PERFECT MATCH RESULTS`
-  String get quizBannerViewResults {
-    return Intl.message(
-      'VIEW PERFECT MATCH RESULTS',
-      name: 'quizBannerViewResults',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Retake Quiz`
-  String get quizBannerRetake {
-    return Intl.message(
-      'Retake Quiz',
-      name: 'quizBannerRetake',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Design Your Own`
-  String get quizBannerDesign {
-    return Intl.message(
-      'Design Your Own',
-      name: 'quizBannerDesign',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Take Quiz`
-  String get quizBannerTake {
-    return Intl.message(
-      'Take Quiz',
-      name: 'quizBannerTake',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Design Details`
-  String get nailDetailsTitle {
-    return Intl.message(
-      'Design Details',
-      name: 'nailDetailsTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Nail Variants`
-  String get nailVariantsLabel {
-    return Intl.message(
-      'Nail Variants',
-      name: 'nailVariantsLabel',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Cannot load design details.`
-  String get nailDetailsError {
-    return Intl.message(
-      'Cannot load design details.',
-      name: 'nailDetailsError',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Color tone {color} matches your preferred color.`
-  String colorMatchReason(Object color) {
-    return Intl.message(
-      'Color tone $color matches your preferred color.',
-      name: 'colorMatchReason',
-      desc: '',
-      args: [color],
-    );
-  }
-
-  /// `EXCLUSIVE FOR YOU`
-  String get forYouTitle {
-    return Intl.message(
-      'EXCLUSIVE FOR YOU',
-      name: 'forYouTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Style Recommendation`
-  String get styleRecommendation {
-    return Intl.message(
-      'Style Recommendation',
-      name: 'styleRecommendation',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Your personal style: `
-  String get yourPersonalStyle {
-    return Intl.message(
-      'Your personal style: ',
-      name: 'yourPersonalStyle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `DESIGN YOUR OWN NAIL`
-  String get designYourOwnNail {
-    return Intl.message(
-      'DESIGN YOUR OWN NAIL',
-      name: 'designYourOwnNail',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Premium nail design`
-  String get premiumNailDesign {
-    return Intl.message(
-      'Premium nail design',
-      name: 'premiumNailDesign',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Why it fits your style`
-  String get styleFitReasons {
-    return Intl.message(
-      'Why it fits your style',
-      name: 'styleFitReasons',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `You may also like`
-  String get youMayAlsoLike {
-    return Intl.message(
-      'You may also like',
-      name: 'youMayAlsoLike',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Other designs matching your style`
-  String get otherStyleFits {
-    return Intl.message(
-      'Other designs matching your style',
-      name: 'otherStyleFits',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Try another design`
-  String get tryAnotherDesign {
-    return Intl.message(
-      'Try another design',
-      name: 'tryAnotherDesign',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `No matching designs found`
-  String get noMatchingFound {
-    return Intl.message(
-      'No matching designs found',
-      name: 'noMatchingFound',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `We couldn't find any nail designs matching your attributes. Please try retaking the style quiz.`
-  String get noMatchingDesc {
-    return Intl.message(
-      'We couldn\'t find any nail designs matching your attributes. Please try retaking the style quiz.',
-      name: 'noMatchingDesc',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Month`
-  String get monthHint {
-    return Intl.message('Month', name: 'monthHint', desc: '', args: []);
-  }
-
-  /// `Year`
-  String get yearHint {
-    return Intl.message('Year', name: 'yearHint', desc: '', args: []);
-  }
-
-  /// `All Months`
-  String get allMonths {
-    return Intl.message('All Months', name: 'allMonths', desc: '', args: []);
-  }
-
-  /// `All Years`
-  String get allYears {
-    return Intl.message('All Years', name: 'allYears', desc: '', args: []);
-  }
-
-  /// `Month {m}`
-  String monthFormat(Object m) {
-    return Intl.message('Month $m', name: 'monthFormat', desc: '', args: [m]);
-  }
-
-  /// `Year {y}`
-  String yearFormat(Object y) {
-    return Intl.message('Year $y', name: 'yearFormat', desc: '', args: [y]);
-  }
-
-  /// `All`
-  String get allStatus {
-    return Intl.message('All', name: 'allStatus', desc: '', args: []);
-  }
-
-  /// `Pending Approval`
-  String get statusPending {
-    return Intl.message(
-      'Pending Approval',
-      name: 'statusPending',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Ready to Book`
-  String get statusApproved {
-    return Intl.message(
-      'Ready to Book',
-      name: 'statusApproved',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Artist Assigned`
-  String get statusAssigned {
-    return Intl.message(
-      'Artist Assigned',
-      name: 'statusAssigned',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Checked In`
-  String get statusCheckedIn {
-    return Intl.message(
-      'Checked In',
-      name: 'statusCheckedIn',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `In Progress`
-  String get statusInProgress {
-    return Intl.message(
-      'In Progress',
-      name: 'statusInProgress',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Completed`
-  String get statusCompleted {
-    return Intl.message(
-      'Completed',
-      name: 'statusCompleted',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Artist Reviewed`
-  String get statusReviewed {
-    return Intl.message(
-      'Artist Reviewed',
-      name: 'statusReviewed',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Repaired`
-  String get statusRepaired {
-    return Intl.message('Repaired', name: 'statusRepaired', desc: '', args: []);
-  }
-
-  /// `Rejected`
-  String get statusRejected {
-    return Intl.message('Rejected', name: 'statusRejected', desc: '', args: []);
-  }
-
-  /// `Cancelled`
-  String get statusCancelled {
-    return Intl.message(
-      'Cancelled',
-      name: 'statusCancelled',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Scheduled`
-  String get bookingTabScheduled {
-    return Intl.message(
-      'Scheduled',
-      name: 'bookingTabScheduled',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Waitlist`
-  String get bookingTabWaitlist {
-    return Intl.message(
-      'Waitlist',
-      name: 'bookingTabWaitlist',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Rescheduled`
-  String get bookingTabReschedule {
-    return Intl.message(
-      'Rescheduled',
-      name: 'bookingTabReschedule',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Warranty`
-  String get warrantyButton {
-    return Intl.message('Warranty', name: 'warrantyButton', desc: '', args: []);
-  }
-
-  /// `Services`
-  String get servicesLabel {
-    return Intl.message('Services', name: 'servicesLabel', desc: '', args: []);
-  }
-
-  /// `Completed`
-  String get completedLabel {
-    return Intl.message(
-      'Completed',
-      name: 'completedLabel',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `View All Services`
-  String get viewAllServices {
-    return Intl.message(
-      'View All Services',
-      name: 'viewAllServices',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Find Nearby Salons (View Map)`
-  String get findNearbySalons {
-    return Intl.message(
-      'Find Nearby Salons (View Map)',
-      name: 'findNearbySalons',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Book This Design`
-  String get bookThisDesign {
-    return Intl.message(
-      'Book This Design',
-      name: 'bookThisDesign',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Take Another Analysis`
-  String get takeAnotherAnalysis {
-    return Intl.message(
-      'Take Another Analysis',
-      name: 'takeAnotherAnalysis',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Nail Shape`
-  String get tryOnTabShape {
-    return Intl.message(
-      'Nail Shape',
-      name: 'tryOnTabShape',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Nail Surface`
-  String get tryOnTabSurface {
-    return Intl.message(
-      'Nail Surface',
-      name: 'tryOnTabSurface',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Nail Color`
-  String get tryOnTabColor {
-    return Intl.message(
-      'Nail Color',
-      name: 'tryOnTabColor',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Accessories`
-  String get tryOnTabAccessories {
-    return Intl.message(
-      'Accessories',
-      name: 'tryOnTabAccessories',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Personal Nail Design`
-  String get designPageTitle {
-    return Intl.message(
-      'Personal Nail Design',
-      name: 'designPageTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `AUTOMATIC FIT DESIGN`
-  String get automaticFitDesign {
-    return Intl.message(
-      'AUTOMATIC FIT DESIGN',
-      name: 'automaticFitDesign',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Bloom will automatically analyze your skin tone, hand shape, occupation, and preferences from your personality quiz to create a perfect 5-layer nail design.`
-  String get automaticFitDesignDesc {
-    return Intl.message(
-      'Bloom will automatically analyze your skin tone, hand shape, occupation, and preferences from your personality quiz to create a perfect 5-layer nail design.',
-      name: 'automaticFitDesignDesc',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Suggest nail shapes matching your hand structure`
-  String get designFeatureShape {
-    return Intl.message(
-      'Suggest nail shapes matching your hand structure',
-      name: 'designFeatureShape',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Match skin-toning colors based on Warm/Cool tone`
-  String get designFeatureColor {
-    return Intl.message(
-      'Match skin-toning colors based on Warm/Cool tone',
-      name: 'designFeatureColor',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Auto-select exquisite patterns & accessories`
-  String get designFeatureAccessories {
-    return Intl.message(
-      'Auto-select exquisite patterns & accessories',
-      name: 'designFeatureAccessories',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `GENERATE DESIGN`
-  String get generateDesignButton {
-    return Intl.message(
-      'GENERATE DESIGN',
-      name: 'generateDesignButton',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Tap the arrow button on the right to show the design panel`
-  String get tryOnHintText {
-    return Intl.message(
-      'Tap the arrow button on the right to show the design panel',
-      name: 'tryOnHintText',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Regenerate`
-  String get reGenerateButton {
-    return Intl.message(
-      'Regenerate',
-      name: 'reGenerateButton',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Save Design`
-  String get saveDesignButton {
-    return Intl.message(
-      'Save Design',
-      name: 'saveDesignButton',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Try-on setup saved successfully.`
-  String get saveDesignSuccess {
-    return Intl.message(
-      'Try-on setup saved successfully.',
-      name: 'saveDesignSuccess',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Please select a nail shape.`
-  String get selectNailShapeWarn {
-    return Intl.message(
-      'Please select a nail shape.',
-      name: 'selectNailShapeWarn',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Applied this finger's design to all fingers!`
-  String get applyToAllSuccess {
-    return Intl.message(
-      'Applied this finger\'s design to all fingers!',
-      name: 'applyToAllSuccess',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `New matching nail design generated!`
-  String get reGenSuccess {
-    return Intl.message(
-      'New matching nail design generated!',
-      name: 'reGenSuccess',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Error regenerating design: {error}`
-  String reGenError(Object error) {
-    return Intl.message(
-      'Error regenerating design: $error',
-      name: 'reGenError',
-      desc: '',
-      args: [error],
-    );
-  }
-
-  /// `System Models`
-  String get systemModels {
-    return Intl.message(
-      'System Models',
-      name: 'systemModels',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `My Components`
-  String get myComponents {
-    return Intl.message(
-      'My Components',
-      name: 'myComponents',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `No accessory selected on nail`
-  String get noAccessorySelected {
-    return Intl.message(
-      'No accessory selected on nail',
-      name: 'noAccessorySelected',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Add to nail`
-  String get addToNail {
-    return Intl.message('Add to nail', name: 'addToNail', desc: '', args: []);
-  }
-
-  /// `GENERATING PERSONALIZED DESIGN`
-  String get generatingPersonalizedDesign {
-    return Intl.message(
-      'GENERATING PERSONALIZED DESIGN',
-      name: 'generatingPersonalizedDesign',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Failed to generate design`
-  String get failedGenerateDesign {
-    return Intl.message(
-      'Failed to generate design',
-      name: 'failedGenerateDesign',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `An error occurred while fetching recommended nail design based on your preferences.`
-  String get failedGenerateDesignDesc {
-    return Intl.message(
-      'An error occurred while fetching recommended nail design based on your preferences.',
-      name: 'failedGenerateDesignDesc',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Try changing the month, year, or status filter.`
-  String get tryChangeFilter {
-    return Intl.message(
-      'Try changing the month, year, or status filter.',
-      name: 'tryChangeFilter',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Book a nail appointment now to get started!`
-  String get bookNowHint {
-    return Intl.message(
-      'Book a nail appointment now to get started!',
-      name: 'bookNowHint',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Explore Services`
-  String get exploreServices {
-    return Intl.message(
-      'Explore Services',
-      name: 'exploreServices',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Nail Service`
-  String get nailServiceDefault {
-    return Intl.message(
-      'Nail Service',
-      name: 'nailServiceDefault',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Any Artist`
-  String get anyArtist {
-    return Intl.message('Any Artist', name: 'anyArtist', desc: '', args: []);
-  }
-
-  /// `Error: This booking is missing an ID from the system.`
-  String get bookingMissingId {
-    return Intl.message(
-      'Error: This booking is missing an ID from the system.',
-      name: 'bookingMissingId',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Warranty Service`
-  String get warrantyServiceDefault {
-    return Intl.message(
-      'Warranty Service',
-      name: 'warrantyServiceDefault',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Warranty`
-  String get warrantyPrefix {
-    return Intl.message('Warranty', name: 'warrantyPrefix', desc: '', args: []);
-  }
-
-  /// `Waitlist cancelled successfully.`
-  String get waitlistCancelSuccess {
-    return Intl.message(
-      'Waitlist cancelled successfully.',
-      name: 'waitlistCancelSuccess',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Error cancelling waitlist: {error}`
-  String waitlistCancelError(Object error) {
-    return Intl.message(
-      'Error cancelling waitlist: $error',
-      name: 'waitlistCancelError',
-      desc: '',
-      args: [error],
-    );
-  }
-
-  /// `Booking confirmed successfully!`
-  String get waitlistConfirmSuccess {
-    return Intl.message(
-      'Booking confirmed successfully!',
-      name: 'waitlistConfirmSuccess',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Confirm error: {error}`
-  String waitlistConfirmError(Object error) {
-    return Intl.message(
-      'Confirm error: $error',
-      name: 'waitlistConfirmError',
-      desc: '',
-      args: [error],
-    );
-  }
-
-  /// `Unable to load waitlist`
-  String get waitlistLoadError {
-    return Intl.message(
-      'Unable to load waitlist',
-      name: 'waitlistLoadError',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `No waitlists`
-  String get waitlistEmpty {
-    return Intl.message(
-      'No waitlists',
-      name: 'waitlistEmpty',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `When a slot opens for your registered time,\nthe record will appear here.`
-  String get waitlistEmptyDesc {
-    return Intl.message(
-      'When a slot opens for your registered time,\nthe record will appear here.',
-      name: 'waitlistEmptyDesc',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `WAITING`
-  String get waitlistStatusPending {
-    return Intl.message(
-      'WAITING',
-      name: 'waitlistStatusPending',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `SLOT AVAILABLE`
-  String get waitlistStatusOpened {
-    return Intl.message(
-      'SLOT AVAILABLE',
-      name: 'waitlistStatusOpened',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Hold time has expired`
-  String get waitlistHoldExpired {
-    return Intl.message(
-      'Hold time has expired',
-      name: 'waitlistHoldExpired',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Hold ends in: `
-  String get waitlistHoldEndsIn {
-    return Intl.message(
-      'Hold ends in: ',
-      name: 'waitlistHoldEndsIn',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Registered: `
-  String get waitlistRegisteredAt {
-    return Intl.message(
-      'Registered: ',
-      name: 'waitlistRegisteredAt',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `{n} minutes ago`
-  String waitlistMinutesAgo(Object n) {
-    return Intl.message(
-      '$n minutes ago',
-      name: 'waitlistMinutesAgo',
-      desc: '',
-      args: [n],
-    );
-  }
-
-  /// `{n} hours ago`
-  String waitlistHoursAgo(Object n) {
-    return Intl.message(
-      '$n hours ago',
-      name: 'waitlistHoursAgo',
-      desc: '',
-      args: [n],
-    );
-  }
-
-  /// `{n} days ago`
-  String waitlistDaysAgo(Object n) {
-    return Intl.message(
-      '$n days ago',
-      name: 'waitlistDaysAgo',
-      desc: '',
-      args: [n],
-    );
-  }
-
-  /// `Cancel Wait`
-  String get waitlistCancelBtn {
-    return Intl.message(
-      'Cancel Wait',
-      name: 'waitlistCancelBtn',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Decline`
-  String get waitlistDeclineBtn {
-    return Intl.message(
-      'Decline',
-      name: 'waitlistDeclineBtn',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Confirm Booking`
-  String get waitlistConfirmBookBtn {
-    return Intl.message(
-      'Confirm Booking',
-      name: 'waitlistConfirmBookBtn',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Confirm Cancel Wait`
-  String get waitlistCancelDialogTitle {
-    return Intl.message(
-      'Confirm Cancel Wait',
-      name: 'waitlistCancelDialogTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Are you sure you want to leave the waitlist at {time}?\nYou will lose your position in the queue.`
-  String waitlistCancelDialogContent(Object time) {
-    return Intl.message(
-      'Are you sure you want to leave the waitlist at $time?\nYou will lose your position in the queue.',
-      name: 'waitlistCancelDialogContent',
-      desc: '',
-      args: [time],
-    );
-  }
-
-  /// `Keep`
-  String get waitlistKeepBtn {
-    return Intl.message('Keep', name: 'waitlistKeepBtn', desc: '', args: []);
-  }
-
-  /// `Reschedule accepted successfully`
-  String get rescheduleAcceptSuccess {
-    return Intl.message(
-      'Reschedule accepted successfully',
-      name: 'rescheduleAcceptSuccess',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Failed to accept reschedule`
-  String get rescheduleAcceptFail {
-    return Intl.message(
-      'Failed to accept reschedule',
-      name: 'rescheduleAcceptFail',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Reschedule declined successfully`
-  String get rescheduleDeclineSuccess {
-    return Intl.message(
-      'Reschedule declined successfully',
-      name: 'rescheduleDeclineSuccess',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Failed to decline reschedule`
-  String get rescheduleDeclineFail {
-    return Intl.message(
-      'Failed to decline reschedule',
-      name: 'rescheduleDeclineFail',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Processing...`
-  String get rescheduleProcessing {
-    return Intl.message(
-      'Processing...',
-      name: 'rescheduleProcessing',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Filter by date`
-  String get rescheduleFilterByDate {
-    return Intl.message(
-      'Filter by date',
-      name: 'rescheduleFilterByDate',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Date: {date}`
-  String rescheduleFilterDate(Object date) {
-    return Intl.message(
-      'Date: $date',
-      name: 'rescheduleFilterDate',
-      desc: '',
-      args: [date],
-    );
-  }
-
-  /// `Clear date filter`
-  String get rescheduleClearFilter {
-    return Intl.message(
-      'Clear date filter',
-      name: 'rescheduleClearFilter',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `No reschedule requests on this day`
-  String get rescheduleEmptyFiltered {
-    return Intl.message(
-      'No reschedule requests on this day',
-      name: 'rescheduleEmptyFiltered',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `No reschedule requests`
-  String get rescheduleEmptyAll {
-    return Intl.message(
-      'No reschedule requests',
-      name: 'rescheduleEmptyAll',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Try selecting a different date or clear the filter.`
-  String get rescheduleEmptyFilteredDesc {
-    return Intl.message(
-      'Try selecting a different date or clear the filter.',
-      name: 'rescheduleEmptyFilteredDesc',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `When a reschedule request from the Salon or\nyour reschedule request is being processed,\nthe record will appear here.`
-  String get rescheduleEmptyAllDesc {
-    return Intl.message(
-      'When a reschedule request from the Salon or\nyour reschedule request is being processed,\nthe record will appear here.',
-      name: 'rescheduleEmptyAllDesc',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `New`
-  String get rescheduleNew {
-    return Intl.message('New', name: 'rescheduleNew', desc: '', args: []);
-  }
-
-  /// `New suggested time from salon:`
-  String get rescheduleSuggestedTime {
-    return Intl.message(
-      'New suggested time from salon:',
-      name: 'rescheduleSuggestedTime',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Time you requested to reschedule:`
-  String get rescheduleRequestedTime {
-    return Intl.message(
-      'Time you requested to reschedule:',
-      name: 'rescheduleRequestedTime',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Old schedule: `
-  String get rescheduleOldSchedule {
-    return Intl.message(
-      'Old schedule: ',
-      name: 'rescheduleOldSchedule',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Reason: `
-  String get rescheduleReason {
-    return Intl.message(
-      'Reason: ',
-      name: 'rescheduleReason',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Waiting for salon to respond to your reschedule request`
-  String get reschedulePendingMsg {
-    return Intl.message(
-      'Waiting for salon to respond to your reschedule request',
-      name: 'reschedulePendingMsg',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Decline`
-  String get rescheduleDeclineBtn {
-    return Intl.message(
-      'Decline',
-      name: 'rescheduleDeclineBtn',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Accept Reschedule`
-  String get rescheduleAcceptBtn {
-    return Intl.message(
-      'Accept Reschedule',
-      name: 'rescheduleAcceptBtn',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `My Studio`
-  String get myStudioTitle {
-    return Intl.message('My Studio', name: 'myStudioTitle', desc: '', args: []);
-  }
-
-  /// `My Nails`
-  String get myNailsTab {
-    return Intl.message('My Nails', name: 'myNailsTab', desc: '', args: []);
-  }
-
-  /// `Accessories`
-  String get accessoriesTab {
-    return Intl.message(
-      'Accessories',
-      name: 'accessoriesTab',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Requests`
-  String get requestsTab {
-    return Intl.message('Requests', name: 'requestsTab', desc: '', args: []);
-  }
-
-  /// `All`
-  String get studioAllTab {
-    return Intl.message('All', name: 'studioAllTab', desc: '', args: []);
-  }
-
-  /// `Processing`
-  String get studioProcessingTab {
-    return Intl.message(
-      'Processing',
-      name: 'studioProcessingTab',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Approved`
-  String get studioApprovedTab {
-    return Intl.message(
-      'Approved',
-      name: 'studioApprovedTab',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Rejected`
-  String get studioRejectedTab {
-    return Intl.message(
-      'Rejected',
-      name: 'studioRejectedTab',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `No approval requests yet.`
-  String get studioNoRequests {
-    return Intl.message(
-      'No approval requests yet.',
-      name: 'studioNoRequests',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Create New`
-  String get studioCreateNew {
-    return Intl.message(
-      'Create New',
-      name: 'studioCreateNew',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Booking Successful!`
-  String get bookingSuccessTitle {
-    return Intl.message(
-      'Booking Successful!',
-      name: 'bookingSuccessTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Thank you for trusting Nailify. Here are the details of your appointment.`
-  String get bookingSuccessSubtitle {
-    return Intl.message(
-      'Thank you for trusting Nailify. Here are the details of your appointment.',
-      name: 'bookingSuccessSubtitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Service`
-  String get bookingInfoService {
-    return Intl.message(
-      'Service',
-      name: 'bookingInfoService',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Appointment Date`
-  String get bookingInfoDate {
-    return Intl.message(
-      'Appointment Date',
-      name: 'bookingInfoDate',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Time`
-  String get bookingInfoTime {
-    return Intl.message('Time', name: 'bookingInfoTime', desc: '', args: []);
-  }
-
-  /// `Staff`
-  String get bookingInfoStaff {
-    return Intl.message('Staff', name: 'bookingInfoStaff', desc: '', args: []);
-  }
-
-  /// `Original Price`
-  String get bookingInfoOriginalPrice {
-    return Intl.message(
-      'Original Price',
-      name: 'bookingInfoOriginalPrice',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Total Payment`
-  String get bookingInfoTotal {
-    return Intl.message(
-      'Total Payment',
-      name: 'bookingInfoTotal',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Pay Now`
-  String get bookingPayBtn {
-    return Intl.message('Pay Now', name: 'bookingPayBtn', desc: '', args: []);
-  }
-
-  /// `View Booking`
-  String get bookingViewBtn {
-    return Intl.message(
-      'View Booking',
-      name: 'bookingViewBtn',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Go to Home`
-  String get bookingGoHome {
-    return Intl.message(
-      'Go to Home',
-      name: 'bookingGoHome',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Unable to create payment: {error}`
-  String bookingPaymentError(Object error) {
-    return Intl.message(
-      'Unable to create payment: $error',
-      name: 'bookingPaymentError',
-      desc: '',
-      args: [error],
-    );
-  }
-
-  /// `Discount`
-  String get bookingDiscount {
-    return Intl.message(
-      'Discount',
-      name: 'bookingDiscount',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Cancel Booking`
-  String get cancelBookingTitle {
-    return Intl.message(
-      'Cancel Booking',
-      name: 'cancelBookingTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Are you sure you want to cancel this booking?`
-  String get cancelBookingConfirmMsg {
-    return Intl.message(
-      'Are you sure you want to cancel this booking?',
-      name: 'cancelBookingConfirmMsg',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Enter reason for cancellation (max 50 words)`
-  String get cancelBookingReasonHint {
-    return Intl.message(
-      'Enter reason for cancellation (max 50 words)',
-      name: 'cancelBookingReasonHint',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Please enter a reason`
-  String get cancelBookingReasonRequired {
-    return Intl.message(
-      'Please enter a reason',
-      name: 'cancelBookingReasonRequired',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Reason cannot exceed 50 words`
-  String get cancelBookingReasonTooLong {
-    return Intl.message(
-      'Reason cannot exceed 50 words',
-      name: 'cancelBookingReasonTooLong',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Cancel`
-  String get cancelBtn {
-    return Intl.message('Cancel', name: 'cancelBtn', desc: '', args: []);
-  }
-
-  /// `Confirm`
-  String get confirmBtn {
-    return Intl.message('Confirm', name: 'confirmBtn', desc: '', args: []);
-  }
-
-  /// `Search nail designs...`
-  String get searchNailHint {
-    return Intl.message(
-      'Search nail designs...',
-      name: 'searchNailHint',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Search components...`
-  String get searchComponentHint {
-    return Intl.message(
-      'Search components...',
-      name: 'searchComponentHint',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `All`
-  String get filterAll {
-    return Intl.message('All', name: 'filterAll', desc: '', args: []);
-  }
-
-  /// `Public`
-  String get filterPublic {
-    return Intl.message('Public', name: 'filterPublic', desc: '', args: []);
-  }
-
-  /// `Private`
-  String get filterPrivate {
-    return Intl.message('Private', name: 'filterPrivate', desc: '', args: []);
-  }
-
-  /// `Type`
-  String get filterType {
-    return Intl.message('Type', name: 'filterType', desc: '', args: []);
-  }
-
-  /// `Create New`
-  String get createNewBtn {
-    return Intl.message('Create New', name: 'createNewBtn', desc: '', args: []);
-  }
-
-  /// `Delete Nail Design`
-  String get deleteNailTitle {
-    return Intl.message(
-      'Delete Nail Design',
-      name: 'deleteNailTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Are you sure you want to delete "{name}"?`
-  String deleteNailConfirm(Object name) {
-    return Intl.message(
-      'Are you sure you want to delete "$name"?',
-      name: 'deleteNailConfirm',
-      desc: '',
-      args: [name],
-    );
-  }
-
-  /// `Delete Component`
-  String get deleteComponentTitle {
-    return Intl.message(
-      'Delete Component',
-      name: 'deleteComponentTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Are you sure you want to delete "{name}"?`
-  String deleteComponentConfirm(Object name) {
-    return Intl.message(
-      'Are you sure you want to delete "$name"?',
-      name: 'deleteComponentConfirm',
-      desc: '',
-      args: [name],
-    );
-  }
-
-  /// `Delete`
-  String get deleteBtn {
-    return Intl.message('Delete', name: 'deleteBtn', desc: '', args: []);
-  }
-
-  /// `Retry`
-  String get retryBtn {
-    return Intl.message('Retry', name: 'retryBtn', desc: '', args: []);
-  }
-
-  /// `No nail designs yet`
-  String get noNailDesigns {
-    return Intl.message(
-      'No nail designs yet',
-      name: 'noNailDesigns',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Create New Nail Design`
-  String get createNewNailBtn {
-    return Intl.message(
-      'Create New Nail Design',
-      name: 'createNewNailBtn',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `No components yet`
-  String get noComponents {
-    return Intl.message(
-      'No components yet',
-      name: 'noComponents',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `All statuses`
-  String get filterAllStatus {
-    return Intl.message(
-      'All statuses',
-      name: 'filterAllStatus',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `No requests yet.`
-  String get noRequests {
-    return Intl.message(
-      'No requests yet.',
-      name: 'noRequests',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Send Request`
-  String get sendRequestBtn {
-    return Intl.message(
-      'Send Request',
-      name: 'sendRequestBtn',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Send Design Request`
-  String get sendRequestTitle {
-    return Intl.message(
-      'Send Design Request',
-      name: 'sendRequestTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Nail Design *`
-  String get selectNailLabel {
-    return Intl.message(
-      'Nail Design *',
-      name: 'selectNailLabel',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Select nail design...`
-  String get selectNailHint {
-    return Intl.message(
-      'Select nail design...',
-      name: 'selectNailHint',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Select Salon branch...`
-  String get selectSalonHint {
-    return Intl.message(
-      'Select Salon branch...',
-      name: 'selectSalonHint',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Send`
-  String get sendBtn {
-    return Intl.message('Send', name: 'sendBtn', desc: '', args: []);
-  }
-
-  /// `Request sent successfully.`
-  String get sendRequestSuccess {
-    return Intl.message(
-      'Request sent successfully.',
-      name: 'sendRequestSuccess',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Failed to send request: {error}`
-  String sendRequestFail(Object error) {
-    return Intl.message(
-      'Failed to send request: $error',
-      name: 'sendRequestFail',
-      desc: '',
-      args: [error],
-    );
-  }
-
-  /// `Unable to load form: {error}`
-  String loadFormFail(Object error) {
-    return Intl.message(
-      'Unable to load form: $error',
-      name: 'loadFormFail',
-      desc: '',
-      args: [error],
-    );
-  }
-
-  /// `Select Nail Design`
-  String get selectNailTitle {
-    return Intl.message(
-      'Select Nail Design',
-      name: 'selectNailTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `No nail designs found`
-  String get noNailFound {
-    return Intl.message(
-      'No nail designs found',
-      name: 'noNailFound',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Select Salon Branch`
-  String get selectSalonTitle {
-    return Intl.message(
-      'Select Salon Branch',
-      name: 'selectSalonTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `No salons found`
-  String get noSalonFound {
-    return Intl.message(
-      'No salons found',
-      name: 'noSalonFound',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Address updating`
-  String get addressUpdating {
-    return Intl.message(
-      'Address updating',
-      name: 'addressUpdating',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Pending review`
-  String get statusPendingReview {
-    return Intl.message(
-      'Pending review',
-      name: 'statusPendingReview',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Under Review`
-  String get statusReview {
-    return Intl.message(
-      'Under Review',
-      name: 'statusReview',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Quoted`
-  String get statusQuoted {
-    return Intl.message('Quoted', name: 'statusQuoted', desc: '', args: []);
-  }
-
-  /// `Select Salon`
-  String get bookingStepSelectSalon {
-    return Intl.message(
-      'Select Salon',
-      name: 'bookingStepSelectSalon',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Services`
-  String get bookingStepServices {
-    return Intl.message(
-      'Services',
-      name: 'bookingStepServices',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Book`
-  String get bookingStepBook {
-    return Intl.message('Book', name: 'bookingStepBook', desc: '', args: []);
-  }
-
-  /// `Completed`
-  String get bookingStepCompleted {
-    return Intl.message(
-      'Completed',
-      name: 'bookingStepCompleted',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Please select a salon branch.`
-  String get bookingValidateSalon {
-    return Intl.message(
-      'Please select a salon branch.',
-      name: 'bookingValidateSalon',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Please select or remove the empty service.`
-  String get bookingValidateService {
-    return Intl.message(
-      'Please select or remove the empty service.',
-      name: 'bookingValidateService',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Please select at least one service.`
-  String get bookingValidateServiceMin {
-    return Intl.message(
-      'Please select at least one service.',
-      name: 'bookingValidateServiceMin',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Please fill in date, artist and time slot.`
-  String get bookingValidateDateTime {
-    return Intl.message(
-      'Please fill in date, artist and time slot.',
-      name: 'bookingValidateDateTime',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Branch`
-  String get bookingSummaryBranch {
-    return Intl.message(
-      'Branch',
-      name: 'bookingSummaryBranch',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Date`
-  String get bookingSummaryDate {
-    return Intl.message('Date', name: 'bookingSummaryDate', desc: '', args: []);
-  }
-
-  /// `Time`
-  String get bookingSummaryTime {
-    return Intl.message('Time', name: 'bookingSummaryTime', desc: '', args: []);
-  }
-
-  /// `Artist`
-  String get bookingSummaryArtist {
-    return Intl.message(
-      'Artist',
-      name: 'bookingSummaryArtist',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Auto-assign`
-  String get bookingAutoAssign {
-    return Intl.message(
-      'Auto-assign',
-      name: 'bookingAutoAssign',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Payment Details`
-  String get bookingPaymentDetails {
-    return Intl.message(
-      'Payment Details',
-      name: 'bookingPaymentDetails',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Add-on: {name}`
-  String bookingExtraService(String name) {
-    return Intl.message(
-      'Add-on: $name',
-      name: 'bookingExtraService',
-      desc: '',
-      args: [name],
-    );
-  }
-
-  /// `Total`
-  String get bookingTotal {
-    return Intl.message('Total', name: 'bookingTotal', desc: '', args: []);
-  }
-
-  /// `Nail Variant`
-  String get bookingNailVariantDefault {
-    return Intl.message(
-      'Nail Variant',
-      name: 'bookingNailVariantDefault',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Nail Component`
-  String get bookingComponentDefault {
-    return Intl.message(
-      'Nail Component',
-      name: 'bookingComponentDefault',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Promotion`
-  String get bookingPromotion {
-    return Intl.message(
-      'Promotion',
-      name: 'bookingPromotion',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `No promotion applied`
-  String get bookingNoPromotion {
-    return Intl.message(
-      'No promotion applied',
-      name: 'bookingNoPromotion',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `No promotions available.`
-  String get bookingNoPromotionAvailable {
-    return Intl.message(
-      'No promotions available.',
-      name: 'bookingNoPromotionAvailable',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Apply ({count})`
-  String bookingApplyPromotion(String count) {
-    return Intl.message(
-      'Apply ($count)',
-      name: 'bookingApplyPromotion',
-      desc: '',
-      args: [count],
-    );
-  }
-
-  /// `No promotion`
-  String get bookingNoApply {
-    return Intl.message(
-      'No promotion',
-      name: 'bookingNoApply',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Back`
-  String get bookingBackBtn {
-    return Intl.message('Back', name: 'bookingBackBtn', desc: '', args: []);
-  }
-
-  /// `Continue`
-  String get bookingContinueBtn {
-    return Intl.message(
-      'Continue',
-      name: 'bookingContinueBtn',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Confirm Booking`
-  String get bookingConfirmBtn {
-    return Intl.message(
-      'Confirm Booking',
-      name: 'bookingConfirmBtn',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Select Date`
-  String get bookingSelectDateTitle {
-    return Intl.message(
-      'Select Date',
-      name: 'bookingSelectDateTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `{month}/{year}`
-  String bookingMonthYear(String month, String year) {
-    return Intl.message(
-      '$month/$year',
-      name: 'bookingMonthYear',
-      desc: '',
-      args: [month, year],
-    );
-  }
-
-  /// `No branches available.`
-  String get bookingNoBranch {
-    return Intl.message(
-      'No branches available.',
-      name: 'bookingNoBranch',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Find Nearby Salons (View Map)`
-  String get bookingFindNearby {
-    return Intl.message(
-      'Find Nearby Salons (View Map)',
-      name: 'bookingFindNearby',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Main Service`
-  String get bookingMainService {
-    return Intl.message(
-      'Main Service',
-      name: 'bookingMainService',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Select warranty service`
-  String get bookingWarrantyService {
-    return Intl.message(
-      'Select warranty service',
-      name: 'bookingWarrantyService',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Warranty Service`
-  String get bookingWarrantyDefault {
-    return Intl.message(
-      'Warranty Service',
-      name: 'bookingWarrantyDefault',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Free warranty • Qty: {qty}`
-  String bookingWarrantyFree(String qty) {
-    return Intl.message(
-      'Free warranty • Qty: $qty',
-      name: 'bookingWarrantyFree',
-      desc: '',
-      args: [qty],
-    );
-  }
-
-  /// `Add-on Services`
-  String get bookingAddonServices {
-    return Intl.message(
-      'Add-on Services',
-      name: 'bookingAddonServices',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Selected: {count}`
-  String bookingSelectedCount(String count) {
-    return Intl.message(
-      'Selected: $count',
-      name: 'bookingSelectedCount',
-      desc: '',
-      args: [count],
-    );
-  }
-
-  /// `No add-on services available.`
-  String get bookingNoAddon {
-    return Intl.message(
-      'No add-on services available.',
-      name: 'bookingNoAddon',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Quantity`
-  String get bookingQtyLabel {
-    return Intl.message(
-      'Quantity',
-      name: 'bookingQtyLabel',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Add Service`
-  String get bookingAddService {
-    return Intl.message(
-      'Add Service',
-      name: 'bookingAddService',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Add Add-on Service`
-  String get bookingAddServiceTitle {
-    return Intl.message(
-      'Add Add-on Service',
-      name: 'bookingAddServiceTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Select Artist`
-  String get bookingSelectArtistTitle {
-    return Intl.message(
-      'Select Artist',
-      name: 'bookingSelectArtistTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Please select a date first`
-  String get bookingArtistNoDate {
-    return Intl.message(
-      'Please select a date first',
-      name: 'bookingArtistNoDate',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `No artists available on this date.`
-  String get bookingNoArtistAvailable {
-    return Intl.message(
-      'No artists available on this date.',
-      name: 'bookingNoArtistAvailable',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Artist`
-  String get bookingArtistTab {
-    return Intl.message('Artist', name: 'bookingArtistTab', desc: '', args: []);
-  }
-
-  /// `No preference`
-  String get bookingNoArtistTab {
-    return Intl.message(
-      'No preference',
-      name: 'bookingNoArtistTab',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Available Slots`
-  String get bookingAvailableSlots {
-    return Intl.message(
-      'Available Slots',
-      name: 'bookingAvailableSlots',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Please select an artist (or "No preference") to see available slots.`
-  String get bookingSelectArtistFirst {
-    return Intl.message(
-      'Please select an artist (or "No preference") to see available slots.',
-      name: 'bookingSelectArtistFirst',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `This artist has no schedule on this date.`
-  String get bookingNoSchedule {
-    return Intl.message(
-      'This artist has no schedule on this date.',
-      name: 'bookingNoSchedule',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `This time has passed, please choose another.`
-  String get bookingSlotPast {
-    return Intl.message(
-      'This time has passed, please choose another.',
-      name: 'bookingSlotPast',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `You have joined the waitlist for {time}`
-  String bookingWaitlistJoined(String time) {
-    return Intl.message(
-      'You have joined the waitlist for $time',
-      name: 'bookingWaitlistJoined',
-      desc: '',
-      args: [time],
-    );
-  }
-
-  /// `Select Promotion`
-  String get bookingSelectPromotion {
-    return Intl.message(
-      'Select Promotion',
-      name: 'bookingSelectPromotion',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Clear all`
-  String get bookingClearAll {
-    return Intl.message(
-      'Clear all',
-      name: 'bookingClearAll',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `{value}% off`
-  String bookingDiscountPercent(String value) {
-    return Intl.message(
-      '$value% off',
-      name: 'bookingDiscountPercent',
-      desc: '',
-      args: [value],
-    );
-  }
-
-  /// `{value} off`
-  String bookingDiscountFixed(String value) {
-    return Intl.message(
-      '$value off',
-      name: 'bookingDiscountFixed',
-      desc: '',
-      args: [value],
-    );
-  }
-
-  /// `No promotions available`
-  String get bookingNoPromotions {
-    return Intl.message(
-      'No promotions available',
-      name: 'bookingNoPromotions',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Retry`
-  String get bookingRetry {
-    return Intl.message('Retry', name: 'bookingRetry', desc: '', args: []);
-  }
-
-  /// `Error joining waitlist: {error}`
-  String bookingWaitlistError(String error) {
-    return Intl.message(
-      'Error joining waitlist: $error',
-      name: 'bookingWaitlistError',
-      desc: '',
-      args: [error],
-    );
-  }
-
-  /// `{price} / piece`
-  String bookingUnitPrice(String price) {
-    return Intl.message(
-      '$price / piece',
-      name: 'bookingUnitPrice',
-      desc: '',
-      args: [price],
-    );
-  }
-
-  /// `Transaction Details`
-  String get transactionDetails {
-    return Intl.message(
-      'Transaction Details',
-      name: 'transactionDetails',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Refund Information`
-  String get refundInfo {
-    return Intl.message(
-      'Refund Information',
-      name: 'refundInfo',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Payment`
-  String get paymentTitle {
-    return Intl.message('Payment', name: 'paymentTitle', desc: '', args: []);
-  }
-
-  /// `Book Custom Nail`
-  String get bookCustomNailTitle {
-    return Intl.message(
-      'Book Custom Nail',
-      name: 'bookCustomNailTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Request Detail`
-  String get requestDetailTitle {
-    return Intl.message(
-      'Request Detail',
-      name: 'requestDetailTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Authentication Required`
-  String get loginRequiredTitle {
-    return Intl.message(
-      'Authentication Required',
-      name: 'loginRequiredTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Please sign in or register an account to use this feature.`
-  String get loginRequiredMessage {
-    return Intl.message(
-      'Please sign in or register an account to use this feature.',
-      name: 'loginRequiredMessage',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Please sign in to view your personal profile`
-  String get pleaseLoginToViewProfile {
-    return Intl.message(
-      'Please sign in to view your personal profile',
-      name: 'pleaseLoginToViewProfile',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Language`
-  String get languageLabel {
-    return Intl.message('Language', name: 'languageLabel', desc: '', args: []);
-  }
-
-  /// `Forgot password?`
-  String get forgotPassword {
-    return Intl.message(
-      'Forgot password?',
-      name: 'forgotPassword',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Don't have an account? `
-  String get dontHaveAccount {
-    return Intl.message(
-      "Don't have an account? ",
-      name: 'dontHaveAccount',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Register now`
-  String get registerNow {
-    return Intl.message(
-      'Register now',
-      name: 'registerNow',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Please enter both Email and Password`
-  String get loginRequiredFields {
-    return Intl.message(
-      'Please enter both Email and Password',
-      name: 'loginRequiredFields',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Logged in successfully`
-  String get loginSuccess {
-    return Intl.message(
-      'Logged in successfully',
-      name: 'loginSuccess',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Already have an account? `
-  String get alreadyHaveAccount {
-    return Intl.message(
-      'Already have an account? ',
-      name: 'alreadyHaveAccount',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Please fill in all required fields`
-  String get registerRequiredFields {
-    return Intl.message(
-      'Please fill in all required fields',
-      name: 'registerRequiredFields',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Confirm password does not match`
-  String get passwordMismatch {
-    return Intl.message(
-      'Confirm password does not match',
-      name: 'passwordMismatch',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `You must agree to the terms of service to continue`
-  String get agreeToTermsError {
-    return Intl.message(
-      'You must agree to the terms of service to continue',
-      name: 'agreeToTermsError',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Account registered successfully`
-  String get registerSuccess {
-    return Intl.message(
-      'Account registered successfully',
-      name: 'registerSuccess',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Register Account`
-  String get registerTitle {
-    return Intl.message(
-      'Register Account',
-      name: 'registerTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `First Name`
-  String get firstNameHint {
-    return Intl.message(
-      'First Name',
-      name: 'firstNameHint',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Last Name`
-  String get lastNameHint {
-    return Intl.message('Last Name', name: 'lastNameHint', desc: '', args: []);
-  }
-
-  /// `Confirm Password`
-  String get confirmPasswordHint {
-    return Intl.message(
-      'Confirm Password',
-      name: 'confirmPasswordHint',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `I agree to the terms of service`
-  String get agreeToTermsText {
-    return Intl.message(
-      'I agree to the terms of service',
-      name: 'agreeToTermsText',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Artist`
-  String get bookingArtistDefault {
-    return Intl.message(
-      'Artist',
-      name: 'bookingArtistDefault',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Loading artist list...`
-  String get bookingLoadingArtists {
-    return Intl.message(
-      'Loading artist list...',
-      name: 'bookingLoadingArtists',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Click to choose performing artist`
-  String get bookingClickToSelectArtist {
-    return Intl.message(
-      'Click to choose performing artist',
-      name: 'bookingClickToSelectArtist',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Auto-assignment by system`
-  String get bookingAutoAssignTitle {
-    return Intl.message(
-      'Auto-assignment by system',
-      name: 'bookingAutoAssignTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Time displayed based on salon schedule. Artist will be auto-assigned.`
-  String get bookingAutoAssignDesc {
-    return Intl.message(
-      'Time displayed based on salon schedule. Artist will be auto-assigned.',
-      name: 'bookingAutoAssignDesc',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `General Information`
-  String get bookingGeneralInfo {
-    return Intl.message(
-      'General Information',
-      name: 'bookingGeneralInfo',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Branch`
-  String get bookingBranchLabel {
-    return Intl.message(
-      'Branch',
-      name: 'bookingBranchLabel',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Stylist`
-  String get bookingStylistLabel {
-    return Intl.message(
-      'Stylist',
-      name: 'bookingStylistLabel',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Date`
-  String get bookingDateLabel {
-    return Intl.message('Date', name: 'bookingDateLabel', desc: '', args: []);
-  }
-
-  /// `Start Time`
-  String get bookingStartTimeLabel {
-    return Intl.message(
-      'Start Time',
-      name: 'bookingStartTimeLabel',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Duration`
-  String get bookingDurationLabel {
-    return Intl.message(
-      'Duration',
-      name: 'bookingDurationLabel',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `{minutes} minutes`
-  String bookingDurationValue(Object minutes) {
-    return Intl.message(
-      '$minutes minutes',
-      name: 'bookingDurationValue',
-      desc: '',
-      args: [minutes],
-    );
-  }
-
-  /// `Services Booked`
-  String get bookingServicesBooked {
-    return Intl.message(
-      'Services Booked',
-      name: 'bookingServicesBooked',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Qty: {qty}`
-  String bookingQuantityLabel(Object qty) {
-    return Intl.message(
-      'Qty: $qty',
-      name: 'bookingQuantityLabel',
-      desc: '',
-      args: [qty],
-    );
-  }
-
-  /// `Original Price:`
-  String get bookingOriginalPriceLabel {
-    return Intl.message(
-      'Original Price:',
-      name: 'bookingOriginalPriceLabel',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Discount:`
-  String get bookingDiscountLabel {
-    return Intl.message(
-      'Discount:',
-      name: 'bookingDiscountLabel',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Total Payment:`
-  String get bookingTotalPaymentLabel {
-    return Intl.message(
-      'Total Payment:',
-      name: 'bookingTotalPaymentLabel',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Review`
-  String get bookingReviewTitle {
-    return Intl.message(
-      'Review',
-      name: 'bookingReviewTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Rating Details`
-  String get bookingRatingDetails {
-    return Intl.message(
-      'Rating Details',
-      name: 'bookingRatingDetails',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Overall`
-  String get ratingOverall {
-    return Intl.message('Overall', name: 'ratingOverall', desc: '', args: []);
-  }
-
-  /// `Service Quality`
-  String get ratingServiceQuality {
-    return Intl.message(
-      'Service Quality',
-      name: 'ratingServiceQuality',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Punctuality`
-  String get ratingPunctuality {
-    return Intl.message(
-      'Punctuality',
-      name: 'ratingPunctuality',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Cleanliness`
-  String get ratingCleanliness {
-    return Intl.message(
-      'Cleanliness',
-      name: 'ratingCleanliness',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Could not load rating information.`
-  String get ratingLoadError {
-    return Intl.message(
-      'Could not load rating information.',
-      name: 'ratingLoadError',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Booking information not found.`
-  String get bookingNotFound {
-    return Intl.message(
-      'Booking information not found.',
-      name: 'bookingNotFound',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Paid:`
-  String get bookingPaidAmount {
-    return Intl.message('Paid:', name: 'bookingPaidAmount', desc: '', args: []);
-  }
-
-  /// `Remaining:`
-  String get bookingRemainingAmount {
-    return Intl.message(
-      'Remaining:',
-      name: 'bookingRemainingAmount',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Your Rating`
-  String get bookingYourRating {
-    return Intl.message(
-      'Your Rating',
-      name: 'bookingYourRating',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Check-in Code`
-  String get bookingCheckInCode {
-    return Intl.message(
-      'Check-in Code',
-      name: 'bookingCheckInCode',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Show this code to the receptionist`
-  String get bookingCheckInInstruction {
-    return Intl.message(
-      'Show this code to the receptionist',
-      name: 'bookingCheckInInstruction',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Reschedule request sent successfully`
-  String get bookingRescheduleSuccess {
-    return Intl.message(
-      'Reschedule request sent successfully',
-      name: 'bookingRescheduleSuccess',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Failed to send reschedule request`
-  String get bookingRescheduleFail {
-    return Intl.message(
-      'Failed to send reschedule request',
-      name: 'bookingRescheduleFail',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Booking cancelled successfully`
-  String get bookingCancelSuccess {
-    return Intl.message(
-      'Booking cancelled successfully',
-      name: 'bookingCancelSuccess',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Failed to cancel booking`
-  String get bookingCancelFail {
-    return Intl.message(
-      'Failed to cancel booking',
-      name: 'bookingCancelFail',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Cancel Booking`
-  String get bookingCancelBtnLabel {
-    return Intl.message(
-      'Cancel Booking',
-      name: 'bookingCancelBtnLabel',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Reschedule Appointment`
-  String get bookingRescheduleBtnLabel {
-    return Intl.message(
-      'Reschedule Appointment',
-      name: 'bookingRescheduleBtnLabel',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Error displaying QR code`
-  String get bookingQrError {
-    return Intl.message(
-      'Error displaying QR code',
-      name: 'bookingQrError',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `fingers`
-  String get bookingFingersLabel {
-    return Intl.message(
-      'fingers',
-      name: 'bookingFingersLabel',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Clear filter`
-  String get clearFilter {
-    return Intl.message(
-      'Clear filter',
-      name: 'clearFilter',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Cannot load nail designs.`
-  String get nailLoadError {
-    return Intl.message(
-      'Cannot load nail designs.',
-      name: 'nailLoadError',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Recommended`
-  String get recommended {
-    return Intl.message('Recommended', name: 'recommended', desc: '', args: []);
-  }
-
-  /// `Nail design`
-  String get nailDesignFallback {
-    return Intl.message(
-      'Nail design',
-      name: 'nailDesignFallback',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Introduction`
-  String get introduction {
-    return Intl.message(
-      'Introduction',
-      name: 'introduction',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Premium artistic nail designs...`
-  String get nailDescriptionDefault {
-    return Intl.message(
-      'Premium artistic nail designs meticulously crafted by top nail artists, bringing a glamorous, attractive, and personal look for women.',
-      name: 'nailDescriptionDefault',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Available variants`
-  String get availableVariants {
-    return Intl.message(
-      'Available variants',
-      name: 'availableVariants',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `There are currently no variants available for this design.`
-  String get noVariantsAvailable {
-    return Intl.message(
-      'There are currently no variants available for this design.',
-      name: 'noVariantsAvailable',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Book`
-  String get bookBtn {
-    return Intl.message('Book', name: 'bookBtn', desc: '', args: []);
-  }
-
-  /// `Shape`
-  String get nailShapeLabel {
-    return Intl.message('Shape', name: 'nailShapeLabel', desc: '', args: []);
-  }
-
-  /// `Surface`
-  String get nailSurfaceLabel {
-    return Intl.message(
-      'Surface',
-      name: 'nailSurfaceLabel',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `None`
-  String get noneLabel {
-    return Intl.message('None', name: 'noneLabel', desc: '', args: []);
-  }
-
-  /// `Price from {min} - {max}`
-  String priceFromTo(Object min, Object max) {
-    return Intl.message(
-      'Price from $min - $max',
-      name: 'priceFromTo',
-      desc: '',
-      args: [min, max],
-    );
-  }
-
-  /// `{count} variants`
-  String variantsCount(Object count) {
-    return Intl.message(
-      '$count variants',
-      name: 'variantsCount',
-      desc: '',
-      args: [count],
-    );
-  }
-
-  /// `Available for try-on`
-  String get availableForTryOn {
-    return Intl.message(
-      'Available for try-on',
-      name: 'availableForTryOn',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Error loading data: {error}`
-  String loadDataError(Object error) {
-    return Intl.message(
-      'Error loading data: $error',
-      name: 'loadDataError',
-      desc: '',
-      args: [error],
-    );
-  }
-
-  /// `Variant Details`
-  String get variantDetailsTitle {
-    return Intl.message(
-      'Variant Details',
-      name: 'variantDetailsTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Collection: {name}`
-  String collectionLabel(Object name) {
-    return Intl.message(
-      'Collection: $name',
-      name: 'collectionLabel',
-      desc: '',
-      args: [name],
-    );
-  }
-
-  /// `Nail form`
-  String get nailFormLabel {
-    return Intl.message('Nail form', name: 'nailFormLabel', desc: '', args: []);
-  }
-
-  /// `{minutes} mins`
-  String minutesLabel(Object minutes) {
-    return Intl.message(
-      '$minutes mins',
-      name: 'minutesLabel',
-      desc: '',
-      args: [minutes],
-    );
-  }
-
-  /// `Colors`
-  String get colorLabel {
-    return Intl.message('Colors', name: 'colorLabel', desc: '', args: []);
-  }
-
-  /// `Design components`
-  String get designComponentsLabel {
-    return Intl.message(
-      'Design components',
-      name: 'designComponentsLabel',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Shared`
-  String get sharedLabel {
-    return Intl.message('Shared', name: 'sharedLabel', desc: '', args: []);
-  }
-
-  /// `Book now`
-  String get bookAppointmentNow {
-    return Intl.message(
-      'Book now',
-      name: 'bookAppointmentNow',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Form shaping method`
-  String get shapeMethodLabel {
-    return Intl.message(
-      'Form shaping method',
-      name: 'shapeMethodLabel',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Decoration`
-  String get decorationLabel {
-    return Intl.message(
-      'Decoration',
-      name: 'decorationLabel',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Component {id}`
-  String componentNameFallback(Object id) {
-    return Intl.message(
-      'Component $id',
-      name: 'componentNameFallback',
-      desc: '',
-      args: [id],
-    );
-  }
-
-  /// `Thumb`
-  String get fingerThumb {
-    return Intl.message('Thumb', name: 'fingerThumb', desc: '', args: []);
-  }
-
-  /// `Index`
-  String get fingerIndex {
-    return Intl.message('Index', name: 'fingerIndex', desc: '', args: []);
-  }
-
-  /// `Middle`
-  String get fingerMiddle {
-    return Intl.message('Middle', name: 'fingerMiddle', desc: '', args: []);
-  }
-
-  /// `Ring`
-  String get fingerRing {
-    return Intl.message('Ring', name: 'fingerRing', desc: '', args: []);
-  }
-
-  /// `Pinky`
-  String get fingerPinky {
-    return Intl.message('Pinky', name: 'fingerPinky', desc: '', args: []);
-  }
-
-  /// `Finger {index}`
-  String fingerOther(Object index) {
-    return Intl.message(
-      'Finger $index',
-      name: 'fingerOther',
-      desc: '',
-      args: [index],
-    );
-  }
-
-  /// `Seasonal`
-  String get seasonalTitle {
-    return Intl.message('Seasonal', name: 'seasonalTitle', desc: '', args: []);
-  }
+    return Localizations.of<S>(context, S)!;
+  }
+
+  static const LocalizationsDelegate<S> delegate = _SDelegate();
+
+  /// A list of this localizations delegate along with the default localizations
+  /// delegates.
+  ///
+  /// Returns a list of localizations delegates containing this delegate along with
+  /// GlobalMaterialLocalizations.delegate, GlobalCupertinoLocalizations.delegate,
+  /// and GlobalWidgetsLocalizations.delegate.
+  ///
+  /// Additional delegates can be added by appending to this list in
+  /// MaterialApp. This list does not have to be used at all if a custom list
+  /// of delegates is preferred or required.
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
+
+  /// A list of this localizations delegate's supported locales.
+  static const List<Locale> supportedLocales = <Locale>[
+    Locale('en'),
+    Locale('vi'),
+  ];
+
+  /// No description provided for @appName.
+  ///
+  /// In en, this message translates to:
+  /// **'Nailify'**
+  String get appName;
+
+  /// No description provided for @home.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get home;
+
+  /// No description provided for @bookAppointment.
+  ///
+  /// In en, this message translates to:
+  /// **'Book'**
+  String get bookAppointment;
+
+  /// No description provided for @myBooking.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookings'**
+  String get myBooking;
+
+  /// No description provided for @myStudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Studio'**
+  String get myStudio;
+
+  /// No description provided for @account.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get account;
+
+  /// No description provided for @login.
+  ///
+  /// In en, this message translates to:
+  /// **'Login'**
+  String get login;
+
+  /// No description provided for @logout.
+  ///
+  /// In en, this message translates to:
+  /// **'Logout'**
+  String get logout;
+
+  /// No description provided for @register.
+  ///
+  /// In en, this message translates to:
+  /// **'Register'**
+  String get register;
+
+  /// No description provided for @email.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get email;
+
+  /// No description provided for @password.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get password;
+
+  /// No description provided for @fullName.
+  ///
+  /// In en, this message translates to:
+  /// **'Full Name'**
+  String get fullName;
+
+  /// No description provided for @phoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone Number'**
+  String get phoneNumber;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get confirm;
+
+  /// No description provided for @back.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get back;
+
+  /// No description provided for @next.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get next;
+
+  /// No description provided for @done.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get done;
+
+  /// No description provided for @loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading...'**
+  String get loading;
+
+  /// No description provided for @error.
+  ///
+  /// In en, this message translates to:
+  /// **'An error occurred'**
+  String get error;
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
+
+  /// No description provided for @noData.
+  ///
+  /// In en, this message translates to:
+  /// **'No data available'**
+  String get noData;
+
+  /// No description provided for @selectDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Date'**
+  String get selectDate;
+
+  /// No description provided for @selectTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Time'**
+  String get selectTime;
+
+  /// No description provided for @selectSalon.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Salon'**
+  String get selectSalon;
+
+  /// No description provided for @selectService.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Service'**
+  String get selectService;
+
+  /// No description provided for @totalPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Price'**
+  String get totalPrice;
+
+  /// No description provided for @bookNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Book Now'**
+  String get bookNow;
+
+  /// No description provided for @perfectMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Perfect Match'**
+  String get perfectMatch;
+
+  /// No description provided for @newNotification.
+  ///
+  /// In en, this message translates to:
+  /// **'You have 1 new notification'**
+  String get newNotification;
+
+  /// No description provided for @nailRecommendation.
+  ///
+  /// In en, this message translates to:
+  /// **'Best matching nail design'**
+  String get nailRecommendation;
+
+  /// No description provided for @viewDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'View Detail'**
+  String get viewDetail;
+
+  /// No description provided for @notifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Notifications'**
+  String get notifications;
+
+  /// No description provided for @profileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal Profile'**
+  String get profileTitle;
+
+  /// No description provided for @styleProfileSetup.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal Style Settings'**
+  String get styleProfileSetup;
+
+  /// No description provided for @logoutSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Logged out successfully!'**
+  String get logoutSuccess;
+
+  /// No description provided for @updateProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get updateProfile;
+
+  /// No description provided for @pointsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'points'**
+  String get pointsLabel;
+
+  /// No description provided for @tierLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tier'**
+  String get tierLabel;
+
+  /// No description provided for @statusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get statusLabel;
+
+  /// No description provided for @updateSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Successfully updated style profile and generated nail template!'**
+  String get updateSuccess;
+
+  /// No description provided for @updateFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'Error creating nail profile: {error}'**
+  String updateFailure(Object error);
+
+  /// No description provided for @loadFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot load information: {error}'**
+  String loadFailure(Object error);
+
+  /// No description provided for @updateProfileError.
+  ///
+  /// In en, this message translates to:
+  /// **'Update error: {error}'**
+  String updateProfileError(Object error);
+
+  /// No description provided for @homeBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Beauty on your\nfingertips'**
+  String get homeBannerTitle;
+
+  /// No description provided for @homeBannerSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover natural elegance through every touch'**
+  String get homeBannerSubtitle;
+
+  /// No description provided for @bookNowButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Book Now'**
+  String get bookNowButton;
+
+  /// No description provided for @homeQuizTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nailify Match AI'**
+  String get homeQuizTitle;
+
+  /// No description provided for @homeQuizHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Find your perfect nail design'**
+  String get homeQuizHeading;
+
+  /// No description provided for @homeQuizSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Take a quick Style Quiz to find the best nail design for your personal style.'**
+  String get homeQuizSubtitle;
+
+  /// No description provided for @doQuizButton.
+  ///
+  /// In en, this message translates to:
+  /// **'TAKE STYLE QUIZ NOW'**
+  String get doQuizButton;
+
+  /// No description provided for @servicesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Featured Services'**
+  String get servicesTitle;
+
+  /// No description provided for @servicesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium salon-quality nail care experience'**
+  String get servicesSubtitle;
+
+  /// No description provided for @nailGalleryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nail Gallery'**
+  String get nailGalleryTitle;
+
+  /// No description provided for @nailGallerySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover the latest nail design trends'**
+  String get nailGallerySubtitle;
+
+  /// No description provided for @exploreGalleryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore Gallery'**
+  String get exploreGalleryButton;
+
+  /// No description provided for @ourPromiseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'OUR PROMISE'**
+  String get ourPromiseTitle;
+
+  /// No description provided for @ourPromiseHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Why Choose Us'**
+  String get ourPromiseHeading;
+
+  /// No description provided for @ourPromiseSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'At Nailify, we understand that you have many choices. Here is why we stand out:'**
+  String get ourPromiseSubtitle;
+
+  /// No description provided for @ourPromiseExpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Years of Experience'**
+  String get ourPromiseExpTitle;
+
+  /// No description provided for @ourPromiseExpDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'We bring a wealth of experience and artistry to the world of nail design.'**
+  String get ourPromiseExpDesc;
+
+  /// No description provided for @ourPromiseTechTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Professional Technicians'**
+  String get ourPromiseTechTitle;
+
+  /// No description provided for @ourPromiseTechDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Our technicians are certified and trained to provide the most detailed nail care.'**
+  String get ourPromiseTechDesc;
+
+  /// No description provided for @ourPromiseQualityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Best Quality'**
+  String get ourPromiseQualityTitle;
+
+  /// No description provided for @ourPromiseQualityDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Only premium, non-toxic products are used to ensure your safety and satisfaction.'**
+  String get ourPromiseQualityDesc;
+
+  /// No description provided for @ourPromiseTrendTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Always Trendy'**
+  String get ourPromiseTrendTitle;
+
+  /// No description provided for @ourPromiseTrendDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'We constantly update our collection with the latest techniques and global trends.'**
+  String get ourPromiseTrendDesc;
+
+  /// No description provided for @reviewsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'WHAT CLIENTS SAY'**
+  String get reviewsTitle;
+
+  /// No description provided for @reviewsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Our Lovely Customers'**
+  String get reviewsHeading;
+
+  /// No description provided for @serviceCare.
+  ///
+  /// In en, this message translates to:
+  /// **'Nail Care & Cuticle'**
+  String get serviceCare;
+
+  /// No description provided for @serviceGel.
+  ///
+  /// In en, this message translates to:
+  /// **'Gel Polish'**
+  String get serviceGel;
+
+  /// No description provided for @serviceArt.
+  ///
+  /// In en, this message translates to:
+  /// **'Nail Art'**
+  String get serviceArt;
+
+  /// No description provided for @serviceAcrylic.
+  ///
+  /// In en, this message translates to:
+  /// **'Acrylic Extension'**
+  String get serviceAcrylic;
+
+  /// No description provided for @homeCtaTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Book Appointment Now!'**
+  String get homeCtaTitle;
+
+  /// No description provided for @homeCtaSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Book an appointment with Nailify — join us on the journey of exquisite nail art.'**
+  String get homeCtaSubtitle;
+
+  /// No description provided for @homeCtaButton.
+  ///
+  /// In en, this message translates to:
+  /// **'BOOK APPOINTMENT NOW'**
+  String get homeCtaButton;
+
+  /// No description provided for @loyalCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Loyal Customer'**
+  String get loyalCustomer;
+
+  /// No description provided for @newCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'New Customer'**
+  String get newCustomer;
+
+  /// No description provided for @vipCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'VIP Customer'**
+  String get vipCustomer;
+
+  /// No description provided for @reviewLinhMai.
+  ///
+  /// In en, this message translates to:
+  /// **'\"I absolutely love my nails! The staff here is very talented and the designs are gorgeous. I will definitely be back!\"'**
+  String get reviewLinhMai;
+
+  /// No description provided for @reviewThuNga.
+  ///
+  /// In en, this message translates to:
+  /// **'\"The mirror (chrome) polish looks beautiful and the staff is extremely friendly.\"'**
+  String get reviewThuNga;
+
+  /// No description provided for @reviewHoangAnh.
+  ///
+  /// In en, this message translates to:
+  /// **'\"The best nail salon in the area. The attention to detail is incomparable, and my nails stayed on for weeks without chipping!\"'**
+  String get reviewHoangAnh;
+
+  /// No description provided for @myBookingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My Bookings'**
+  String get myBookingsTitle;
+
+  /// No description provided for @bookingDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking Details'**
+  String get bookingDetailsTitle;
+
+  /// No description provided for @rateService.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate Service'**
+  String get rateService;
+
+  /// No description provided for @editRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Rating'**
+  String get editRating;
+
+  /// No description provided for @bookAppointmentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Book Appointment'**
+  String get bookAppointmentTitle;
+
+  /// No description provided for @bookServiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Book Service'**
+  String get bookServiceTitle;
+
+  /// No description provided for @perfectMatchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nailify Match'**
+  String get perfectMatchTitle;
+
+  /// No description provided for @nailDesignTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nail Design'**
+  String get nailDesignTitle;
+
+  /// No description provided for @selectTryOnMethodTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Try-on Method'**
+  String get selectTryOnMethodTitle;
+
+  /// No description provided for @quizDiscoverDesign.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover the design made for you'**
+  String get quizDiscoverDesign;
+
+  /// No description provided for @quizSelectMultiple.
+  ///
+  /// In en, this message translates to:
+  /// **'Select multiple answers'**
+  String get quizSelectMultiple;
+
+  /// No description provided for @quizAnalyzingStyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzing style...'**
+  String get quizAnalyzingStyle;
+
+  /// No description provided for @quizFindingColors.
+  ///
+  /// In en, this message translates to:
+  /// **'Finding matching colors...'**
+  String get quizFindingColors;
+
+  /// No description provided for @quizMatchingCollections.
+  ///
+  /// In en, this message translates to:
+  /// **'Matching with nail collection...'**
+  String get quizMatchingCollections;
+
+  /// No description provided for @quizAlmostDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Almost done...'**
+  String get quizAlmostDone;
+
+  /// No description provided for @quizBannerFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Nailify has found the perfect matching nail designs just for you!'**
+  String get quizBannerFound;
+
+  /// No description provided for @quizBannerNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'If you haven\'t found the right design, Nailify can help.'**
+  String get quizBannerNotFound;
+
+  /// No description provided for @quizBannerViewResults.
+  ///
+  /// In en, this message translates to:
+  /// **'VIEW PERFECT MATCH RESULTS'**
+  String get quizBannerViewResults;
+
+  /// No description provided for @quizBannerRetake.
+  ///
+  /// In en, this message translates to:
+  /// **'Retake Quiz'**
+  String get quizBannerRetake;
+
+  /// No description provided for @quizBannerDesign.
+  ///
+  /// In en, this message translates to:
+  /// **'Design Your Own'**
+  String get quizBannerDesign;
+
+  /// No description provided for @quizBannerTake.
+  ///
+  /// In en, this message translates to:
+  /// **'Take Quiz'**
+  String get quizBannerTake;
+
+  /// No description provided for @nailDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Design Details'**
+  String get nailDetailsTitle;
+
+  /// No description provided for @nailVariantsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Nail Variants'**
+  String get nailVariantsLabel;
+
+  /// No description provided for @nailDetailsError.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot load design details.'**
+  String get nailDetailsError;
+
+  /// No description provided for @colorMatchReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Color tone {color} matches your preferred color.'**
+  String colorMatchReason(Object color);
+
+  /// No description provided for @forYouTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'EXCLUSIVE FOR YOU'**
+  String get forYouTitle;
+
+  /// No description provided for @styleRecommendation.
+  ///
+  /// In en, this message translates to:
+  /// **'Style Recommendation'**
+  String get styleRecommendation;
+
+  /// No description provided for @yourPersonalStyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your personal style: '**
+  String get yourPersonalStyle;
+
+  /// No description provided for @designYourOwnNail.
+  ///
+  /// In en, this message translates to:
+  /// **'DESIGN YOUR OWN NAIL'**
+  String get designYourOwnNail;
+
+  /// No description provided for @premiumNailDesign.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium nail design'**
+  String get premiumNailDesign;
+
+  /// No description provided for @styleFitReasons.
+  ///
+  /// In en, this message translates to:
+  /// **'Why it fits your style'**
+  String get styleFitReasons;
+
+  /// No description provided for @youMayAlsoLike.
+  ///
+  /// In en, this message translates to:
+  /// **'You may also like'**
+  String get youMayAlsoLike;
+
+  /// No description provided for @otherStyleFits.
+  ///
+  /// In en, this message translates to:
+  /// **'Other designs matching your style'**
+  String get otherStyleFits;
+
+  /// No description provided for @tryAnotherDesign.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another design'**
+  String get tryAnotherDesign;
+
+  /// No description provided for @noMatchingFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching designs found'**
+  String get noMatchingFound;
+
+  /// No description provided for @noMatchingDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t find any nail designs matching your attributes. Please try retaking the style quiz.'**
+  String get noMatchingDesc;
+
+  /// No description provided for @monthHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get monthHint;
+
+  /// No description provided for @yearHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Year'**
+  String get yearHint;
+
+  /// No description provided for @allMonths.
+  ///
+  /// In en, this message translates to:
+  /// **'All Months'**
+  String get allMonths;
+
+  /// No description provided for @allYears.
+  ///
+  /// In en, this message translates to:
+  /// **'All Years'**
+  String get allYears;
+
+  /// No description provided for @monthFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Month {m}'**
+  String monthFormat(Object m);
+
+  /// No description provided for @yearFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Year {y}'**
+  String yearFormat(Object y);
+
+  /// No description provided for @allStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get allStatus;
+
+  /// No description provided for @statusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Approval'**
+  String get statusPending;
+
+  /// No description provided for @statusApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to Book'**
+  String get statusApproved;
+
+  /// No description provided for @statusAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Artist Assigned'**
+  String get statusAssigned;
+
+  /// No description provided for @statusCheckedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Checked In'**
+  String get statusCheckedIn;
+
+  /// No description provided for @statusInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'In Progress'**
+  String get statusInProgress;
+
+  /// No description provided for @statusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get statusCompleted;
+
+  /// No description provided for @statusReviewed.
+  ///
+  /// In en, this message translates to:
+  /// **'Artist Reviewed'**
+  String get statusReviewed;
+
+  /// No description provided for @statusRepaired.
+  ///
+  /// In en, this message translates to:
+  /// **'Repaired'**
+  String get statusRepaired;
+
+  /// No description provided for @statusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get statusRejected;
+
+  /// No description provided for @statusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get statusCancelled;
+
+  /// No description provided for @bookingTabScheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled'**
+  String get bookingTabScheduled;
+
+  /// No description provided for @bookingTabWaitlist.
+  ///
+  /// In en, this message translates to:
+  /// **'Waitlist'**
+  String get bookingTabWaitlist;
+
+  /// No description provided for @bookingTabReschedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Rescheduled'**
+  String get bookingTabReschedule;
+
+  /// No description provided for @warrantyButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Warranty'**
+  String get warrantyButton;
+
+  /// No description provided for @servicesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Services'**
+  String get servicesLabel;
+
+  /// No description provided for @completedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get completedLabel;
+
+  /// No description provided for @viewAllServices.
+  ///
+  /// In en, this message translates to:
+  /// **'View All Services'**
+  String get viewAllServices;
+
+  /// No description provided for @findNearbySalons.
+  ///
+  /// In en, this message translates to:
+  /// **'Find Nearby Salons (View Map)'**
+  String get findNearbySalons;
+
+  /// No description provided for @bookThisDesign.
+  ///
+  /// In en, this message translates to:
+  /// **'Book This Design'**
+  String get bookThisDesign;
+
+  /// No description provided for @takeAnotherAnalysis.
+  ///
+  /// In en, this message translates to:
+  /// **'Take Another Analysis'**
+  String get takeAnotherAnalysis;
+
+  /// No description provided for @tryOnTabShape.
+  ///
+  /// In en, this message translates to:
+  /// **'Nail Shape'**
+  String get tryOnTabShape;
+
+  /// No description provided for @tryOnTabSurface.
+  ///
+  /// In en, this message translates to:
+  /// **'Nail Surface'**
+  String get tryOnTabSurface;
+
+  /// No description provided for @tryOnTabColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Nail Color'**
+  String get tryOnTabColor;
+
+  /// No description provided for @tryOnTabAccessories.
+  ///
+  /// In en, this message translates to:
+  /// **'Accessories'**
+  String get tryOnTabAccessories;
+
+  /// No description provided for @designPageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal Nail Design'**
+  String get designPageTitle;
+
+  /// No description provided for @automaticFitDesign.
+  ///
+  /// In en, this message translates to:
+  /// **'AUTOMATIC FIT DESIGN'**
+  String get automaticFitDesign;
+
+  /// No description provided for @automaticFitDesignDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Bloom will automatically analyze your skin tone, hand shape, occupation, and preferences from your personality quiz to create a perfect 5-layer nail design.'**
+  String get automaticFitDesignDesc;
+
+  /// No description provided for @designFeatureShape.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest nail shapes matching your hand structure'**
+  String get designFeatureShape;
+
+  /// No description provided for @designFeatureColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Match skin-toning colors based on Warm/Cool tone'**
+  String get designFeatureColor;
+
+  /// No description provided for @designFeatureAccessories.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-select exquisite patterns & accessories'**
+  String get designFeatureAccessories;
+
+  /// No description provided for @generateDesignButton.
+  ///
+  /// In en, this message translates to:
+  /// **'GENERATE DESIGN'**
+  String get generateDesignButton;
+
+  /// No description provided for @tryOnHintText.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the arrow button on the right to show the design panel'**
+  String get tryOnHintText;
+
+  /// No description provided for @reGenerateButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Regenerate'**
+  String get reGenerateButton;
+
+  /// No description provided for @saveDesignButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Design'**
+  String get saveDesignButton;
+
+  /// No description provided for @saveDesignSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Try-on setup saved successfully.'**
+  String get saveDesignSuccess;
+
+  /// No description provided for @selectNailShapeWarn.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a nail shape.'**
+  String get selectNailShapeWarn;
+
+  /// No description provided for @applyToAllSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Applied this finger\'s design to all fingers!'**
+  String get applyToAllSuccess;
+
+  /// No description provided for @reGenSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'New matching nail design generated!'**
+  String get reGenSuccess;
+
+  /// No description provided for @reGenError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error regenerating design: {error}'**
+  String reGenError(Object error);
+
+  /// No description provided for @systemModels.
+  ///
+  /// In en, this message translates to:
+  /// **'System Models'**
+  String get systemModels;
+
+  /// No description provided for @myComponents.
+  ///
+  /// In en, this message translates to:
+  /// **'My Components'**
+  String get myComponents;
+
+  /// No description provided for @noAccessorySelected.
+  ///
+  /// In en, this message translates to:
+  /// **'No accessory selected on nail'**
+  String get noAccessorySelected;
+
+  /// No description provided for @addToNail.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to nail'**
+  String get addToNail;
+
+  /// No description provided for @generatingPersonalizedDesign.
+  ///
+  /// In en, this message translates to:
+  /// **'GENERATING PERSONALIZED DESIGN'**
+  String get generatingPersonalizedDesign;
+
+  /// No description provided for @failedGenerateDesign.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to generate design'**
+  String get failedGenerateDesign;
+
+  /// No description provided for @failedGenerateDesignDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'An error occurred while fetching recommended nail design based on your preferences.'**
+  String get failedGenerateDesignDesc;
+
+  /// No description provided for @tryChangeFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Try changing the month, year, or status filter.'**
+  String get tryChangeFilter;
+
+  /// No description provided for @bookNowHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Book a nail appointment now to get started!'**
+  String get bookNowHint;
+
+  /// No description provided for @exploreServices.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore Services'**
+  String get exploreServices;
+
+  /// No description provided for @nailServiceDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Nail Service'**
+  String get nailServiceDefault;
+
+  /// No description provided for @anyArtist.
+  ///
+  /// In en, this message translates to:
+  /// **'Any Artist'**
+  String get anyArtist;
+
+  /// No description provided for @bookingMissingId.
+  ///
+  /// In en, this message translates to:
+  /// **'Error: This booking is missing an ID from the system.'**
+  String get bookingMissingId;
+
+  /// No description provided for @warrantyServiceDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Warranty Service'**
+  String get warrantyServiceDefault;
+
+  /// No description provided for @warrantyPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Warranty'**
+  String get warrantyPrefix;
+
+  /// No description provided for @waitlistCancelSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Waitlist cancelled successfully.'**
+  String get waitlistCancelSuccess;
+
+  /// No description provided for @waitlistCancelError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error cancelling waitlist: {error}'**
+  String waitlistCancelError(Object error);
+
+  /// No description provided for @waitlistConfirmSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking confirmed successfully!'**
+  String get waitlistConfirmSuccess;
+
+  /// No description provided for @waitlistConfirmError.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm error: {error}'**
+  String waitlistConfirmError(Object error);
+
+  /// No description provided for @waitlistLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load waitlist'**
+  String get waitlistLoadError;
+
+  /// No description provided for @waitlistEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No waitlists'**
+  String get waitlistEmpty;
+
+  /// No description provided for @waitlistEmptyDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'When a slot opens for your registered time,\nthe record will appear here.'**
+  String get waitlistEmptyDesc;
+
+  /// No description provided for @waitlistStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'WAITING'**
+  String get waitlistStatusPending;
+
+  /// No description provided for @waitlistStatusOpened.
+  ///
+  /// In en, this message translates to:
+  /// **'SLOT AVAILABLE'**
+  String get waitlistStatusOpened;
+
+  /// No description provided for @waitlistHoldExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold time has expired'**
+  String get waitlistHoldExpired;
+
+  /// No description provided for @waitlistHoldEndsIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold ends in: '**
+  String get waitlistHoldEndsIn;
+
+  /// No description provided for @waitlistRegisteredAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Registered: '**
+  String get waitlistRegisteredAt;
+
+  /// No description provided for @waitlistMinutesAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} minutes ago'**
+  String waitlistMinutesAgo(Object n);
+
+  /// No description provided for @waitlistHoursAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} hours ago'**
+  String waitlistHoursAgo(Object n);
+
+  /// No description provided for @waitlistDaysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} days ago'**
+  String waitlistDaysAgo(Object n);
+
+  /// No description provided for @waitlistCancelBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel Wait'**
+  String get waitlistCancelBtn;
+
+  /// No description provided for @waitlistDeclineBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get waitlistDeclineBtn;
+
+  /// No description provided for @waitlistConfirmBookBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Booking'**
+  String get waitlistConfirmBookBtn;
+
+  /// No description provided for @waitlistCancelDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Cancel Wait'**
+  String get waitlistCancelDialogTitle;
+
+  /// No description provided for @waitlistCancelDialogContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to leave the waitlist at {time}?\nYou will lose your position in the queue.'**
+  String waitlistCancelDialogContent(Object time);
+
+  /// No description provided for @waitlistKeepBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep'**
+  String get waitlistKeepBtn;
+
+  /// No description provided for @rescheduleAcceptSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Reschedule accepted successfully'**
+  String get rescheduleAcceptSuccess;
+
+  /// No description provided for @rescheduleAcceptFail.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to accept reschedule'**
+  String get rescheduleAcceptFail;
+
+  /// No description provided for @rescheduleDeclineSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Reschedule declined successfully'**
+  String get rescheduleDeclineSuccess;
+
+  /// No description provided for @rescheduleDeclineFail.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to decline reschedule'**
+  String get rescheduleDeclineFail;
+
+  /// No description provided for @rescheduleProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing...'**
+  String get rescheduleProcessing;
+
+  /// No description provided for @rescheduleFilterByDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by date'**
+  String get rescheduleFilterByDate;
+
+  /// No description provided for @rescheduleFilterDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date: {date}'**
+  String rescheduleFilterDate(Object date);
+
+  /// No description provided for @rescheduleClearFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear date filter'**
+  String get rescheduleClearFilter;
+
+  /// No description provided for @rescheduleEmptyFiltered.
+  ///
+  /// In en, this message translates to:
+  /// **'No reschedule requests on this day'**
+  String get rescheduleEmptyFiltered;
+
+  /// No description provided for @rescheduleEmptyAll.
+  ///
+  /// In en, this message translates to:
+  /// **'No reschedule requests'**
+  String get rescheduleEmptyAll;
+
+  /// No description provided for @rescheduleEmptyFilteredDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Try selecting a different date or clear the filter.'**
+  String get rescheduleEmptyFilteredDesc;
+
+  /// No description provided for @rescheduleEmptyAllDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'When a reschedule request from the Salon or\nyour reschedule request is being processed,\nthe record will appear here.'**
+  String get rescheduleEmptyAllDesc;
+
+  /// No description provided for @rescheduleNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get rescheduleNew;
+
+  /// No description provided for @rescheduleSuggestedTime.
+  ///
+  /// In en, this message translates to:
+  /// **'New suggested time from salon:'**
+  String get rescheduleSuggestedTime;
+
+  /// No description provided for @rescheduleRequestedTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Time you requested to reschedule:'**
+  String get rescheduleRequestedTime;
+
+  /// No description provided for @rescheduleOldSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Old schedule: '**
+  String get rescheduleOldSchedule;
+
+  /// No description provided for @rescheduleReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason: '**
+  String get rescheduleReason;
+
+  /// No description provided for @reschedulePendingMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for salon to respond to your reschedule request'**
+  String get reschedulePendingMsg;
+
+  /// No description provided for @rescheduleDeclineBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get rescheduleDeclineBtn;
+
+  /// No description provided for @rescheduleAcceptBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept Reschedule'**
+  String get rescheduleAcceptBtn;
+
+  /// No description provided for @myStudioTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My Studio'**
+  String get myStudioTitle;
+
+  /// No description provided for @myNailsTab.
+  ///
+  /// In en, this message translates to:
+  /// **'My Nails'**
+  String get myNailsTab;
+
+  /// No description provided for @accessoriesTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Accessories'**
+  String get accessoriesTab;
+
+  /// No description provided for @requestsTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Requests'**
+  String get requestsTab;
+
+  /// No description provided for @studioAllTab.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get studioAllTab;
+
+  /// No description provided for @studioProcessingTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing'**
+  String get studioProcessingTab;
+
+  /// No description provided for @studioApprovedTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved'**
+  String get studioApprovedTab;
+
+  /// No description provided for @studioRejectedTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get studioRejectedTab;
+
+  /// No description provided for @studioNoRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'No approval requests yet.'**
+  String get studioNoRequests;
+
+  /// No description provided for @studioCreateNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Create New'**
+  String get studioCreateNew;
+
+  /// No description provided for @bookingSuccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking Successful!'**
+  String get bookingSuccessTitle;
+
+  /// No description provided for @bookingSuccessSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you for trusting Nailify. Here are the details of your appointment.'**
+  String get bookingSuccessSubtitle;
+
+  /// No description provided for @bookingInfoService.
+  ///
+  /// In en, this message translates to:
+  /// **'Service'**
+  String get bookingInfoService;
+
+  /// No description provided for @bookingInfoDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointment Date'**
+  String get bookingInfoDate;
+
+  /// No description provided for @bookingInfoTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get bookingInfoTime;
+
+  /// No description provided for @bookingInfoStaff.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff'**
+  String get bookingInfoStaff;
+
+  /// No description provided for @bookingInfoOriginalPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Original Price'**
+  String get bookingInfoOriginalPrice;
+
+  /// No description provided for @bookingInfoTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Payment'**
+  String get bookingInfoTotal;
+
+  /// No description provided for @bookingPayBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay Now'**
+  String get bookingPayBtn;
+
+  /// No description provided for @bookingViewBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'View Booking'**
+  String get bookingViewBtn;
+
+  /// No description provided for @bookingGoHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Home'**
+  String get bookingGoHome;
+
+  /// No description provided for @bookingPaymentError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to create payment: {error}'**
+  String bookingPaymentError(Object error);
+
+  /// No description provided for @bookingDiscount.
+  ///
+  /// In en, this message translates to:
+  /// **'Discount'**
+  String get bookingDiscount;
+
+  /// No description provided for @cancelBookingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel Booking'**
+  String get cancelBookingTitle;
+
+  /// No description provided for @cancelBookingConfirmMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to cancel this booking?'**
+  String get cancelBookingConfirmMsg;
+
+  /// No description provided for @cancelBookingReasonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter reason for cancellation (max 50 words)'**
+  String get cancelBookingReasonHint;
+
+  /// No description provided for @cancelBookingReasonRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a reason'**
+  String get cancelBookingReasonRequired;
+
+  /// No description provided for @cancelBookingReasonTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason cannot exceed 50 words'**
+  String get cancelBookingReasonTooLong;
+
+  /// No description provided for @cancelBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancelBtn;
+
+  /// No description provided for @confirmBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get confirmBtn;
+
+  /// No description provided for @searchNailHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search nail designs...'**
+  String get searchNailHint;
+
+  /// No description provided for @searchComponentHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search components...'**
+  String get searchComponentHint;
+
+  /// No description provided for @filterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get filterAll;
+
+  /// No description provided for @filterPublic.
+  ///
+  /// In en, this message translates to:
+  /// **'Public'**
+  String get filterPublic;
+
+  /// No description provided for @filterPrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Private'**
+  String get filterPrivate;
+
+  /// No description provided for @filterType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get filterType;
+
+  /// No description provided for @createNewBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Create New'**
+  String get createNewBtn;
+
+  /// No description provided for @deleteNailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Nail Design'**
+  String get deleteNailTitle;
+
+  /// No description provided for @deleteNailConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete \"{name}\"?'**
+  String deleteNailConfirm(Object name);
+
+  /// No description provided for @deleteComponentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Component'**
+  String get deleteComponentTitle;
+
+  /// No description provided for @deleteComponentConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete \"{name}\"?'**
+  String deleteComponentConfirm(Object name);
+
+  /// No description provided for @deleteBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get deleteBtn;
+
+  /// No description provided for @retryBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retryBtn;
+
+  /// No description provided for @noNailDesigns.
+  ///
+  /// In en, this message translates to:
+  /// **'No nail designs yet'**
+  String get noNailDesigns;
+
+  /// No description provided for @createNewNailBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Create New Nail Design'**
+  String get createNewNailBtn;
+
+  /// No description provided for @noComponents.
+  ///
+  /// In en, this message translates to:
+  /// **'No components yet'**
+  String get noComponents;
+
+  /// No description provided for @filterAllStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'All statuses'**
+  String get filterAllStatus;
+
+  /// No description provided for @noRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'No requests yet.'**
+  String get noRequests;
+
+  /// No description provided for @sendRequestBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Request'**
+  String get sendRequestBtn;
+
+  /// No description provided for @sendRequestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Design Request'**
+  String get sendRequestTitle;
+
+  /// No description provided for @selectNailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Nail Design *'**
+  String get selectNailLabel;
+
+  /// No description provided for @selectNailHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select nail design...'**
+  String get selectNailHint;
+
+  /// No description provided for @selectSalonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Salon branch...'**
+  String get selectSalonHint;
+
+  /// No description provided for @sendBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get sendBtn;
+
+  /// No description provided for @sendRequestSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Request sent successfully.'**
+  String get sendRequestSuccess;
+
+  /// No description provided for @sendRequestFail.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to send request: {error}'**
+  String sendRequestFail(Object error);
+
+  /// No description provided for @loadFormFail.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load form: {error}'**
+  String loadFormFail(Object error);
+
+  /// No description provided for @selectNailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Nail Design'**
+  String get selectNailTitle;
+
+  /// No description provided for @noNailFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No nail designs found'**
+  String get noNailFound;
+
+  /// No description provided for @selectSalonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Salon Branch'**
+  String get selectSalonTitle;
+
+  /// No description provided for @noSalonFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No salons found'**
+  String get noSalonFound;
+
+  /// No description provided for @addressUpdating.
+  ///
+  /// In en, this message translates to:
+  /// **'Address updating'**
+  String get addressUpdating;
+
+  /// No description provided for @statusPendingReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending review'**
+  String get statusPendingReview;
+
+  /// No description provided for @statusReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Under Review'**
+  String get statusReview;
+
+  /// No description provided for @statusQuoted.
+  ///
+  /// In en, this message translates to:
+  /// **'Quoted'**
+  String get statusQuoted;
+
+  /// No description provided for @bookingStepSelectSalon.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Salon'**
+  String get bookingStepSelectSalon;
+
+  /// No description provided for @bookingStepServices.
+  ///
+  /// In en, this message translates to:
+  /// **'Services'**
+  String get bookingStepServices;
+
+  /// No description provided for @bookingStepBook.
+  ///
+  /// In en, this message translates to:
+  /// **'Book'**
+  String get bookingStepBook;
+
+  /// No description provided for @bookingStepCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get bookingStepCompleted;
+
+  /// No description provided for @bookingValidateSalon.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a salon branch.'**
+  String get bookingValidateSalon;
+
+  /// No description provided for @bookingValidateService.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select or remove the empty service.'**
+  String get bookingValidateService;
+
+  /// No description provided for @bookingValidateServiceMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select at least one service.'**
+  String get bookingValidateServiceMin;
+
+  /// No description provided for @bookingValidateDateTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Please fill in date, artist and time slot.'**
+  String get bookingValidateDateTime;
+
+  /// No description provided for @bookingSummaryBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch'**
+  String get bookingSummaryBranch;
+
+  /// No description provided for @bookingSummaryDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get bookingSummaryDate;
+
+  /// No description provided for @bookingSummaryTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get bookingSummaryTime;
+
+  /// No description provided for @bookingSummaryArtist.
+  ///
+  /// In en, this message translates to:
+  /// **'Artist'**
+  String get bookingSummaryArtist;
+
+  /// No description provided for @bookingAutoAssign.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-assign'**
+  String get bookingAutoAssign;
+
+  /// No description provided for @bookingPaymentDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Details'**
+  String get bookingPaymentDetails;
+
+  /// No description provided for @bookingExtraService.
+  ///
+  /// In en, this message translates to:
+  /// **'Add-on: {name}'**
+  String bookingExtraService(String name);
+
+  /// No description provided for @bookingTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get bookingTotal;
+
+  /// No description provided for @bookingNailVariantDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Nail Variant'**
+  String get bookingNailVariantDefault;
+
+  /// No description provided for @bookingComponentDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Nail Component'**
+  String get bookingComponentDefault;
+
+  /// No description provided for @bookingPromotion.
+  ///
+  /// In en, this message translates to:
+  /// **'Promotion'**
+  String get bookingPromotion;
+
+  /// No description provided for @bookingNoPromotion.
+  ///
+  /// In en, this message translates to:
+  /// **'No promotion applied'**
+  String get bookingNoPromotion;
+
+  /// No description provided for @bookingNoPromotionAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No promotions available.'**
+  String get bookingNoPromotionAvailable;
+
+  /// No description provided for @bookingApplyPromotion.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply ({count})'**
+  String bookingApplyPromotion(String count);
+
+  /// No description provided for @bookingNoApply.
+  ///
+  /// In en, this message translates to:
+  /// **'No promotion'**
+  String get bookingNoApply;
+
+  /// No description provided for @bookingBackBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get bookingBackBtn;
+
+  /// No description provided for @bookingContinueBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get bookingContinueBtn;
+
+  /// No description provided for @bookingConfirmBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Booking'**
+  String get bookingConfirmBtn;
+
+  /// No description provided for @bookingSelectDateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Date'**
+  String get bookingSelectDateTitle;
+
+  /// No description provided for @bookingMonthYear.
+  ///
+  /// In en, this message translates to:
+  /// **'{month}/{year}'**
+  String bookingMonthYear(String month, String year);
+
+  /// No description provided for @bookingNoBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'No branches available.'**
+  String get bookingNoBranch;
+
+  /// No description provided for @bookingFindNearby.
+  ///
+  /// In en, this message translates to:
+  /// **'Find Nearby Salons (View Map)'**
+  String get bookingFindNearby;
+
+  /// No description provided for @bookingMainService.
+  ///
+  /// In en, this message translates to:
+  /// **'Main Service'**
+  String get bookingMainService;
+
+  /// No description provided for @bookingWarrantyService.
+  ///
+  /// In en, this message translates to:
+  /// **'Select warranty service'**
+  String get bookingWarrantyService;
+
+  /// No description provided for @bookingWarrantyDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Warranty Service'**
+  String get bookingWarrantyDefault;
+
+  /// No description provided for @bookingWarrantyFree.
+  ///
+  /// In en, this message translates to:
+  /// **'Free warranty • Qty: {qty}'**
+  String bookingWarrantyFree(String qty);
+
+  /// No description provided for @bookingAddonServices.
+  ///
+  /// In en, this message translates to:
+  /// **'Add-on Services'**
+  String get bookingAddonServices;
+
+  /// No description provided for @bookingSelectedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected: {count}'**
+  String bookingSelectedCount(String count);
+
+  /// No description provided for @bookingNoAddon.
+  ///
+  /// In en, this message translates to:
+  /// **'No add-on services available.'**
+  String get bookingNoAddon;
+
+  /// No description provided for @bookingQtyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity'**
+  String get bookingQtyLabel;
+
+  /// No description provided for @bookingAddService.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Service'**
+  String get bookingAddService;
+
+  /// No description provided for @bookingAddServiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Add-on Service'**
+  String get bookingAddServiceTitle;
+
+  /// No description provided for @bookingSelectArtistTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Artist'**
+  String get bookingSelectArtistTitle;
+
+  /// No description provided for @bookingArtistNoDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a date first'**
+  String get bookingArtistNoDate;
+
+  /// No description provided for @bookingNoArtistAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No artists available on this date.'**
+  String get bookingNoArtistAvailable;
+
+  /// No description provided for @bookingArtistTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Artist'**
+  String get bookingArtistTab;
+
+  /// No description provided for @bookingNoArtistTab.
+  ///
+  /// In en, this message translates to:
+  /// **'No preference'**
+  String get bookingNoArtistTab;
+
+  /// No description provided for @bookingAvailableSlots.
+  ///
+  /// In en, this message translates to:
+  /// **'Available Slots'**
+  String get bookingAvailableSlots;
+
+  /// No description provided for @bookingSelectArtistFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select an artist (or \"No preference\") to see available slots.'**
+  String get bookingSelectArtistFirst;
+
+  /// No description provided for @bookingNoSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'This artist has no schedule on this date.'**
+  String get bookingNoSchedule;
+
+  /// No description provided for @bookingSlotPast.
+  ///
+  /// In en, this message translates to:
+  /// **'This time has passed, please choose another.'**
+  String get bookingSlotPast;
+
+  /// No description provided for @bookingWaitlistJoined.
+  ///
+  /// In en, this message translates to:
+  /// **'You have joined the waitlist for {time}'**
+  String bookingWaitlistJoined(String time);
+
+  /// No description provided for @bookingSelectPromotion.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Promotion'**
+  String get bookingSelectPromotion;
+
+  /// No description provided for @bookingClearAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get bookingClearAll;
+
+  /// No description provided for @bookingDiscountPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'{value}% off'**
+  String bookingDiscountPercent(String value);
+
+  /// No description provided for @bookingDiscountFixed.
+  ///
+  /// In en, this message translates to:
+  /// **'{value} off'**
+  String bookingDiscountFixed(String value);
+
+  /// No description provided for @bookingNoPromotions.
+  ///
+  /// In en, this message translates to:
+  /// **'No promotions available'**
+  String get bookingNoPromotions;
+
+  /// No description provided for @bookingRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get bookingRetry;
+
+  /// No description provided for @bookingWaitlistError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error joining waitlist: {error}'**
+  String bookingWaitlistError(String error);
+
+  /// No description provided for @bookingUnitPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'{price} / piece'**
+  String bookingUnitPrice(String price);
+
+  /// No description provided for @transactionDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction Details'**
+  String get transactionDetails;
+
+  /// No description provided for @refundInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund Information'**
+  String get refundInfo;
+
+  /// No description provided for @paymentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get paymentTitle;
+
+  /// No description provided for @bookCustomNailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Book Custom Nail'**
+  String get bookCustomNailTitle;
+
+  /// No description provided for @requestDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Detail'**
+  String get requestDetailTitle;
+
+  /// No description provided for @loginRequiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication Required'**
+  String get loginRequiredTitle;
+
+  /// No description provided for @loginRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Please sign in or register an account to use this feature.'**
+  String get loginRequiredMessage;
+
+  /// No description provided for @pleaseLoginToViewProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Please sign in to view your personal profile'**
+  String get pleaseLoginToViewProfile;
+
+  /// No description provided for @languageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get languageLabel;
+
+  /// No description provided for @forgotPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot password?'**
+  String get forgotPassword;
+
+  /// No description provided for @dontHaveAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t have an account? '**
+  String get dontHaveAccount;
+
+  /// No description provided for @registerNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Register now'**
+  String get registerNow;
+
+  /// No description provided for @loginRequiredFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter both Email and Password'**
+  String get loginRequiredFields;
+
+  /// No description provided for @loginSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Logged in successfully'**
+  String get loginSuccess;
+
+  /// No description provided for @alreadyHaveAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Already have an account? '**
+  String get alreadyHaveAccount;
+
+  /// No description provided for @registerRequiredFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Please fill in all required fields'**
+  String get registerRequiredFields;
+
+  /// No description provided for @passwordMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm password does not match'**
+  String get passwordMismatch;
+
+  /// No description provided for @agreeToTermsError.
+  ///
+  /// In en, this message translates to:
+  /// **'You must agree to the terms of service to continue'**
+  String get agreeToTermsError;
+
+  /// No description provided for @registerSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Account registered successfully'**
+  String get registerSuccess;
+
+  /// No description provided for @registerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Register Account'**
+  String get registerTitle;
+
+  /// No description provided for @firstNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'First Name'**
+  String get firstNameHint;
+
+  /// No description provided for @lastNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Last Name'**
+  String get lastNameHint;
+
+  /// No description provided for @confirmPasswordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Password'**
+  String get confirmPasswordHint;
+
+  /// No description provided for @agreeToTermsText.
+  ///
+  /// In en, this message translates to:
+  /// **'I agree to the terms of service'**
+  String get agreeToTermsText;
+
+  /// No description provided for @bookingArtistDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Artist'**
+  String get bookingArtistDefault;
+
+  /// No description provided for @bookingLoadingArtists.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading artist list...'**
+  String get bookingLoadingArtists;
+
+  /// No description provided for @bookingClickToSelectArtist.
+  ///
+  /// In en, this message translates to:
+  /// **'Click to choose performing artist'**
+  String get bookingClickToSelectArtist;
+
+  /// No description provided for @bookingAutoAssignTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-assignment by system'**
+  String get bookingAutoAssignTitle;
+
+  /// No description provided for @bookingAutoAssignDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Time displayed based on salon schedule. Artist will be auto-assigned.'**
+  String get bookingAutoAssignDesc;
+
+  /// No description provided for @bookingGeneralInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'General Information'**
+  String get bookingGeneralInfo;
+
+  /// No description provided for @bookingBranchLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch'**
+  String get bookingBranchLabel;
+
+  /// No description provided for @bookingStylistLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Stylist'**
+  String get bookingStylistLabel;
+
+  /// No description provided for @bookingDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get bookingDateLabel;
+
+  /// No description provided for @bookingStartTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Time'**
+  String get bookingStartTimeLabel;
+
+  /// No description provided for @bookingDurationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get bookingDurationLabel;
+
+  /// No description provided for @bookingDurationValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} minutes'**
+  String bookingDurationValue(String minutes);
+
+  /// No description provided for @bookingServicesBooked.
+  ///
+  /// In en, this message translates to:
+  /// **'Services Booked'**
+  String get bookingServicesBooked;
+
+  /// No description provided for @bookingQuantityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Qty: {qty}'**
+  String bookingQuantityLabel(String qty);
+
+  /// No description provided for @bookingOriginalPriceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Original Price:'**
+  String get bookingOriginalPriceLabel;
+
+  /// No description provided for @bookingDiscountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Discount:'**
+  String get bookingDiscountLabel;
+
+  /// No description provided for @bookingTotalPaymentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Payment:'**
+  String get bookingTotalPaymentLabel;
+
+  /// No description provided for @bookingReviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get bookingReviewTitle;
+
+  /// No description provided for @bookingRatingDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating Details'**
+  String get bookingRatingDetails;
+
+  /// No description provided for @ratingOverall.
+  ///
+  /// In en, this message translates to:
+  /// **'Overall'**
+  String get ratingOverall;
+
+  /// No description provided for @ratingServiceQuality.
+  ///
+  /// In en, this message translates to:
+  /// **'Service Quality'**
+  String get ratingServiceQuality;
+
+  /// No description provided for @ratingPunctuality.
+  ///
+  /// In en, this message translates to:
+  /// **'Punctuality'**
+  String get ratingPunctuality;
+
+  /// No description provided for @ratingCleanliness.
+  ///
+  /// In en, this message translates to:
+  /// **'Cleanliness'**
+  String get ratingCleanliness;
+
+  /// No description provided for @ratingLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load rating information.'**
+  String get ratingLoadError;
+
+  /// No description provided for @bookingNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking information not found.'**
+  String get bookingNotFound;
+
+  /// No description provided for @bookingPaidAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid:'**
+  String get bookingPaidAmount;
+
+  /// No description provided for @bookingRemainingAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining:'**
+  String get bookingRemainingAmount;
+
+  /// No description provided for @bookingYourRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Rating'**
+  String get bookingYourRating;
+
+  /// No description provided for @bookingCheckInCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Check-in Code'**
+  String get bookingCheckInCode;
+
+  /// No description provided for @bookingCheckInInstruction.
+  ///
+  /// In en, this message translates to:
+  /// **'Show this code to the receptionist'**
+  String get bookingCheckInInstruction;
+
+  /// No description provided for @bookingRescheduleSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Reschedule request sent successfully'**
+  String get bookingRescheduleSuccess;
+
+  /// No description provided for @bookingRescheduleFail.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to send reschedule request'**
+  String get bookingRescheduleFail;
+
+  /// No description provided for @bookingCancelSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking cancelled successfully'**
+  String get bookingCancelSuccess;
+
+  /// No description provided for @bookingCancelFail.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to cancel booking'**
+  String get bookingCancelFail;
+
+  /// No description provided for @bookingCancelBtnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel Booking'**
+  String get bookingCancelBtnLabel;
+
+  /// No description provided for @bookingRescheduleBtnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reschedule Appointment'**
+  String get bookingRescheduleBtnLabel;
+
+  /// No description provided for @bookingQrError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error displaying QR code'**
+  String get bookingQrError;
+
+  /// No description provided for @bookingFingersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'fingers'**
+  String get bookingFingersLabel;
+
+  /// No description provided for @clearFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filter'**
+  String get clearFilter;
+
+  /// No description provided for @nailLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot load nail designs.'**
+  String get nailLoadError;
+
+  /// No description provided for @recommended.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended'**
+  String get recommended;
+
+  /// No description provided for @nailDesignFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Nail design'**
+  String get nailDesignFallback;
+
+  /// No description provided for @introduction.
+  ///
+  /// In en, this message translates to:
+  /// **'Introduction'**
+  String get introduction;
+
+  /// No description provided for @nailDescriptionDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium artistic nail designs meticulously crafted by top nail artists, bringing a glamorous, attractive, and personal look for women.'**
+  String get nailDescriptionDefault;
+
+  /// No description provided for @availableVariants.
+  ///
+  /// In en, this message translates to:
+  /// **'Available variants'**
+  String get availableVariants;
+
+  /// No description provided for @noVariantsAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'There are currently no variants available for this design.'**
+  String get noVariantsAvailable;
+
+  /// No description provided for @bookBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Book'**
+  String get bookBtn;
+
+  /// No description provided for @nailShapeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Shape'**
+  String get nailShapeLabel;
+
+  /// No description provided for @nailSurfaceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Surface'**
+  String get nailSurfaceLabel;
+
+  /// No description provided for @noneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get noneLabel;
+
+  /// No description provided for @priceFromTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Price from {min} - {max}'**
+  String priceFromTo(String min, String max);
+
+  /// No description provided for @variantsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} variants'**
+  String variantsCount(String count);
+
+  /// No description provided for @availableForTryOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Available for try-on'**
+  String get availableForTryOn;
+
+  /// No description provided for @loadDataError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading data: {error}'**
+  String loadDataError(String error);
+
+  /// No description provided for @variantDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Variant Details'**
+  String get variantDetailsTitle;
+
+  /// No description provided for @collectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Collection: {name}'**
+  String collectionLabel(String name);
+
+  /// No description provided for @nailFormLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Nail form'**
+  String get nailFormLabel;
+
+  /// No description provided for @minutesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} mins'**
+  String minutesLabel(String minutes);
+
+  /// No description provided for @colorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Colors'**
+  String get colorLabel;
+
+  /// No description provided for @designComponentsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Design components'**
+  String get designComponentsLabel;
+
+  /// No description provided for @sharedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared'**
+  String get sharedLabel;
+
+  /// No description provided for @bookAppointmentNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Book now'**
+  String get bookAppointmentNow;
+
+  /// No description provided for @shapeMethodLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Form shaping method'**
+  String get shapeMethodLabel;
+
+  /// No description provided for @decorationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Decoration'**
+  String get decorationLabel;
+
+  /// No description provided for @componentNameFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Component {id}'**
+  String componentNameFallback(String id);
+
+  /// No description provided for @fingerThumb.
+  ///
+  /// In en, this message translates to:
+  /// **'Thumb'**
+  String get fingerThumb;
+
+  /// No description provided for @fingerIndex.
+  ///
+  /// In en, this message translates to:
+  /// **'Index'**
+  String get fingerIndex;
+
+  /// No description provided for @fingerMiddle.
+  ///
+  /// In en, this message translates to:
+  /// **'Middle'**
+  String get fingerMiddle;
+
+  /// No description provided for @fingerRing.
+  ///
+  /// In en, this message translates to:
+  /// **'Ring'**
+  String get fingerRing;
+
+  /// No description provided for @fingerPinky.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinky'**
+  String get fingerPinky;
+
+  /// No description provided for @fingerOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Finger {index}'**
+  String fingerOther(String index);
+
+  /// No description provided for @seasonalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Seasonal'**
+  String get seasonalTitle;
+
+  /// No description provided for @profileTransactions.
+  ///
+  /// In en, this message translates to:
+  /// **'Transactions'**
+  String get profileTransactions;
+
+  /// No description provided for @profileFavorites.
+  ///
+  /// In en, this message translates to:
+  /// **'Favorites'**
+  String get profileFavorites;
+
+  /// No description provided for @statusApprovedFeasible.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved feasible!'**
+  String get statusApprovedFeasible;
+
+  /// No description provided for @estimatedPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated price:'**
+  String get estimatedPrice;
+
+  /// No description provided for @estimatedDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated duration:'**
+  String get estimatedDuration;
+
+  /// No description provided for @assignedArtist.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned artist:'**
+  String get assignedArtist;
+
+  /// No description provided for @technicalDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Technical details'**
+  String get technicalDetails;
+
+  /// No description provided for @nailShape.
+  ///
+  /// In en, this message translates to:
+  /// **'Nail shape'**
+  String get nailShape;
+
+  /// No description provided for @nailSurface.
+  ///
+  /// In en, this message translates to:
+  /// **'Nail surface'**
+  String get nailSurface;
+
+  /// No description provided for @accessories.
+  ///
+  /// In en, this message translates to:
+  /// **'Accessories'**
+  String get accessories;
+
+  /// No description provided for @rejectReasonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason for rejection:'**
+  String get rejectReasonLabel;
+
+  /// No description provided for @processingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing:'**
+  String get processingLabel;
+
+  /// No description provided for @processingDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Your design request is being evaluated and quoted by our specialist.'**
+  String get processingDesc;
+
+  /// No description provided for @noneValue.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get noneValue;
+
+  /// No description provided for @walletTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My Wallet'**
+  String get walletTitle;
+
+  /// No description provided for @walletEntrySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your points & vouchers'**
+  String get walletEntrySubtitle;
+
+  /// No description provided for @walletBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Available points'**
+  String get walletBalance;
+
+  /// No description provided for @walletLifetimePoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Lifetime points'**
+  String get walletLifetimePoints;
+
+  /// No description provided for @walletTierProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Tier progress'**
+  String get walletTierProgress;
+
+  /// No description provided for @walletTierNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No tier yet'**
+  String get walletTierNone;
+
+  /// No description provided for @walletTierMax.
+  ///
+  /// In en, this message translates to:
+  /// **'Highest tier reached'**
+  String get walletTierMax;
+
+  /// No description provided for @walletPointsToNext.
+  ///
+  /// In en, this message translates to:
+  /// **'{remaining} points to next tier'**
+  String walletPointsToNext(int remaining);
+
+  /// No description provided for @walletMyVouchers.
+  ///
+  /// In en, this message translates to:
+  /// **'My Vouchers'**
+  String get walletMyVouchers;
+
+  /// No description provided for @walletRedeem.
+  ///
+  /// In en, this message translates to:
+  /// **'Redeem Points'**
+  String get walletRedeem;
+
+  /// No description provided for @walletVoucherCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} vouchers available'**
+  String walletVoucherCount(int count);
+
+  /// No description provided for @walletVoucherAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get walletVoucherAll;
+
+  /// No description provided for @walletVoucherUsable.
+  ///
+  /// In en, this message translates to:
+  /// **'Usable'**
+  String get walletVoucherUsable;
+
+  /// No description provided for @walletVoucherUsed.
+  ///
+  /// In en, this message translates to:
+  /// **'Used'**
+  String get walletVoucherUsed;
+
+  /// No description provided for @walletVoucherExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired'**
+  String get walletVoucherExpired;
+
+  /// No description provided for @walletExpiringSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Expiring soon'**
+  String get walletExpiringSoon;
+
+  /// No description provided for @viewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'View all'**
+  String get viewAll;
+
+  /// No description provided for @voucherDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Detail'**
+  String get voucherDetail;
+
+  /// No description provided for @pointsShort.
+  ///
+  /// In en, this message translates to:
+  /// **'pts'**
+  String get pointsShort;
+
+  /// No description provided for @pointsRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'{points} pts'**
+  String pointsRequired(int points);
+
+  /// No description provided for @pointsRequiredTba.
+  ///
+  /// In en, this message translates to:
+  /// **'TBA'**
+  String get pointsRequiredTba;
+
+  /// No description provided for @expiredOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Expires {date}'**
+  String expiredOn(String date);
+
+  /// No description provided for @expiringIn.
+  ///
+  /// In en, this message translates to:
+  /// **'{time} left'**
+  String expiringIn(String time);
+
+  /// No description provided for @voucherDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Voucher detail'**
+  String get voucherDetailTitle;
+
+  /// No description provided for @voucherUseNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Use now'**
+  String get voucherUseNow;
+
+  /// No description provided for @voucherDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get voucherDescription;
+
+  /// No description provided for @voucherConditions.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms'**
+  String get voucherConditions;
+
+  /// No description provided for @voucherValidity.
+  ///
+  /// In en, this message translates to:
+  /// **'Validity'**
+  String get voucherValidity;
+
+  /// No description provided for @voucherStatusUsable.
+  ///
+  /// In en, this message translates to:
+  /// **'Usable'**
+  String get voucherStatusUsable;
+
+  /// No description provided for @voucherStatusUsed.
+  ///
+  /// In en, this message translates to:
+  /// **'Used'**
+  String get voucherStatusUsed;
+
+  /// No description provided for @voucherStatusExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired'**
+  String get voucherStatusExpired;
+
+  /// No description provided for @voucherStatusUpcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming'**
+  String get voucherStatusUpcoming;
+
+  /// No description provided for @redeemConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm redeem'**
+  String get redeemConfirmTitle;
+
+  /// No description provided for @redeemConfirmDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'You will spend {points} points for this voucher. {remaining} points will remain.'**
+  String redeemConfirmDesc(int points, int remaining);
+
+  /// No description provided for @redeemConfirmCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get redeemConfirmCta;
+
+  /// No description provided for @redeemConfirmCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get redeemConfirmCancel;
+
+  /// No description provided for @redeemConfirmTerms.
+  ///
+  /// In en, this message translates to:
+  /// **'Redeemed vouchers cannot be refunded. Validity follows the program rules.'**
+  String get redeemConfirmTerms;
+
+  /// No description provided for @redeemSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Voucher redeemed successfully'**
+  String get redeemSuccess;
+
+  /// No description provided for @redeemFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Redeem failed'**
+  String get redeemFailed;
+
+  /// No description provided for @redeemInsufficientPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough points for this voucher'**
+  String get redeemInsufficientPoints;
+
+  /// No description provided for @redeemSoldOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Voucher is sold out'**
+  String get redeemSoldOut;
+
+  /// No description provided for @redeemViewWallet.
+  ///
+  /// In en, this message translates to:
+  /// **'View in wallet'**
+  String get redeemViewWallet;
+
+  /// No description provided for @emptyWalletVouchers.
+  ///
+  /// In en, this message translates to:
+  /// **'You don\'t have any vouchers yet'**
+  String get emptyWalletVouchers;
+
+  /// No description provided for @emptyWalletVouchersHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Redeem your points to unlock attractive offers.'**
+  String get emptyWalletVouchersHint;
+
+  /// No description provided for @emptyRedeemable.
+  ///
+  /// In en, this message translates to:
+  /// **'No vouchers to redeem right now'**
+  String get emptyRedeemable;
+
+  /// No description provided for @emptyRedeemableHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Please come back later. We will add more offers soon.'**
+  String get emptyRedeemableHint;
+
+  /// No description provided for @filterPercentage.
+  ///
+  /// In en, this message translates to:
+  /// **'% off'**
+  String get filterPercentage;
+
+  /// No description provided for @filterFixedAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount off'**
+  String get filterFixedAmount;
+
+  /// No description provided for @walletOverviewLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load wallet. Please try again.'**
+  String get walletOverviewLoadError;
+
+  /// No description provided for @walletVoucherRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} left'**
+  String walletVoucherRemaining(int count);
+
+  /// No description provided for @walletVoucherUsedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Used {used}/{total}'**
+  String walletVoucherUsedCount(int used, int total);
+
+  /// No description provided for @walletQuickActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick actions'**
+  String get walletQuickActions;
+
+  /// No description provided for @balanceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You have {points} points to redeem'**
+  String balanceHint(int points);
 }
 
-class AppLocalizationDelegate extends LocalizationsDelegate<S> {
-  const AppLocalizationDelegate();
+class _SDelegate extends LocalizationsDelegate<S> {
+  const _SDelegate();
 
-  List<Locale> get supportedLocales {
-    return const <Locale>[
-      Locale.fromSubtags(languageCode: 'en'),
-      Locale.fromSubtags(languageCode: 'vi'),
-    ];
+  @override
+  Future<S> load(Locale locale) {
+    return SynchronousFuture<S>(lookupS(locale));
   }
 
   @override
-  bool isSupported(Locale locale) => _isSupported(locale);
-  @override
-  Future<S> load(Locale locale) => S.load(locale);
-  @override
-  bool shouldReload(AppLocalizationDelegate old) => false;
+  bool isSupported(Locale locale) =>
+      <String>['en', 'vi'].contains(locale.languageCode);
 
-  bool _isSupported(Locale locale) {
-    for (var supportedLocale in supportedLocales) {
-      if (supportedLocale.languageCode == locale.languageCode) {
-        return true;
-      }
-    }
-    return false;
+  @override
+  bool shouldReload(_SDelegate old) => false;
+}
+
+S lookupS(Locale locale) {
+  // Lookup logic when only language code is specified.
+  switch (locale.languageCode) {
+    case 'en':
+      return SEn();
+    case 'vi':
+      return SVi();
   }
+
+  throw FlutterError(
+    'S.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
 }

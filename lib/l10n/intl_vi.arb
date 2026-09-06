@@ -457,5 +457,151 @@
   "rejectReasonLabel": "Lý do từ chối:",
   "processingLabel": "Đang xử lý:",
   "processingDesc": "Mẫu móng của bạn đang được chuyên viên tại tiệm đánh giá tính khả thi và báo giá.",
-  "noneValue": "Không"
+  "noneValue": "Không",
+  "walletTitle": "Ví của tôi",
+  "@walletTitle": {},
+  "walletEntrySubtitle": "Điểm thưởng & voucher của bạn",
+  "@walletEntrySubtitle": {},
+  "walletBalance": "Điểm hiện có",
+  "@walletBalance": {},
+  "walletLifetimePoints": "Tổng điểm tích lũy",
+  "@walletLifetimePoints": {},
+  "walletTierProgress": "Tiến trình lên hạng",
+  "@walletTierProgress": {},
+  "walletTierNone": "Chưa có hạng thành viên",
+  "@walletTierNone": {},
+  "walletTierMax": "Đã đạt hạng cao nhất",
+  "@walletTierMax": {},
+  "walletPointsToNext": "Còn {remaining} điểm để lên hạng",
+  "@walletPointsToNext": {
+    "placeholders": {
+      "remaining": { "type": "int" }
+    }
+  },
+  "walletMyVouchers": "Voucher của tôi",
+  "@walletMyVouchers": {},
+  "walletRedeem": "Đổi điểm",
+  "@walletRedeem": {},
+  "walletVoucherCount": "{count} voucher khả dụng",
+  "@walletVoucherCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "walletVoucherAll": "Tất cả",
+  "@walletVoucherAll": {},
+  "walletVoucherUsable": "Có thể dùng",
+  "@walletVoucherUsable": {},
+  "walletVoucherUsed": "Đã dùng",
+  "@walletVoucherUsed": {},
+  "walletVoucherExpired": "Hết hạn",
+  "@walletVoucherExpired": {},
+  "walletExpiringSoon": "Sắp hết hạn",
+  "@walletExpiringSoon": {},
+  "viewAll": "Xem tất cả",
+  "@viewAll": {},
+  "voucherDetail": "Chi tiết",
+  "@voucherDetail": {},
+  "pointsShort": "điểm",
+  "@pointsShort": {},
+  "pointsRequired": "{points} điểm",
+  "@pointsRequired": {
+    "placeholders": {
+      "points": { "type": "int" }
+    }
+  },
+  "pointsRequiredTba": "Sắp công bố",
+  "@pointsRequiredTba": {},
+  "expiredOn": "Hết hạn {date}",
+  "@expiredOn": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "expiringIn": "Còn {time}",
+  "@expiringIn": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "voucherDetailTitle": "Chi tiết voucher",
+  "@voucherDetailTitle": {},
+  "voucherUseNow": "Dùng ngay",
+  "@voucherUseNow": {},
+  "voucherDescription": "Mô tả",
+  "@voucherDescription": {},
+  "voucherConditions": "Điều kiện áp dụng",
+  "@voucherConditions": {},
+  "voucherValidity": "Thời hạn",
+  "@voucherValidity": {},
+  "voucherStatusUsable": "Có thể sử dụng",
+  "@voucherStatusUsable": {},
+  "voucherStatusUsed": "Đã sử dụng",
+  "@voucherStatusUsed": {},
+  "voucherStatusExpired": "Đã hết hạn",
+  "@voucherStatusExpired": {},
+  "voucherStatusUpcoming": "Chưa bắt đầu",
+  "@voucherStatusUpcoming": {},
+  "redeemConfirmTitle": "Xác nhận đổi điểm",
+  "@redeemConfirmTitle": {},
+  "redeemConfirmDesc": "Bạn sẽ dùng {points} điểm để đổi voucher này. Sau khi đổi còn {remaining} điểm.",
+  "@redeemConfirmDesc": {
+    "placeholders": {
+      "points": { "type": "int" },
+      "remaining": { "type": "int" }
+    }
+  },
+  "redeemConfirmCta": "Xác nhận đổi",
+  "@redeemConfirmCta": {},
+  "redeemConfirmCancel": "Hủy",
+  "@redeemConfirmCancel": {},
+  "redeemConfirmTerms": "Voucher sau khi đổi không thể hoàn lại điểm. Hạn sử dụng theo quy định của chương trình.",
+  "@redeemConfirmTerms": {},
+  "redeemSuccess": "Đổi voucher thành công",
+  "@redeemSuccess": {},
+  "redeemFailed": "Đổi voucher thất bại",
+  "@redeemFailed": {},
+  "redeemInsufficientPoints": "Không đủ điểm để đổi voucher này",
+  "@redeemInsufficientPoints": {},
+  "redeemSoldOut": "Voucher đã hết lượt đổi",
+  "@redeemSoldOut": {},
+  "redeemViewWallet": "Xem trong ví",
+  "@redeemViewWallet": {},
+  "emptyWalletVouchers": "Bạn chưa có voucher nào",
+  "@emptyWalletVouchers": {},
+  "emptyWalletVouchersHint": "Hãy đổi điểm để nhận những ưu đãi hấp dẫn.",
+  "@emptyWalletVouchersHint": {},
+  "emptyRedeemable": "Hiện chưa có voucher để đổi",
+  "@emptyRedeemable": {},
+  "emptyRedeemableHint": "Vui lòng quay lại sau. Chúng tôi sẽ sớm cập nhật thêm ưu đãi.",
+  "@emptyRedeemableHint": {},
+  "filterAll": "Tất cả",
+  "@filterAll": {},
+  "filterPercentage": "Giảm %",
+  "@filterPercentage": {},
+  "filterFixedAmount": "Giảm tiền",
+  "@filterFixedAmount": {},
+  "walletOverviewLoadError": "Không thể tải thông tin ví. Vui lòng thử lại.",
+  "@walletOverviewLoadError": {},
+  "walletVoucherRemaining": "Còn {count} lượt",
+  "@walletVoucherRemaining": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "walletVoucherUsedCount": "Đã dùng {used}/{total}",
+  "@walletVoucherUsedCount": {
+    "placeholders": {
+      "used": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "walletQuickActions": "Thao tác nhanh",
+  "@walletQuickActions": {},
+  "balanceHint": "Bạn có {points} điểm để đổi",
+  "@balanceHint": {
+    "placeholders": {
+      "points": { "type": "int" }
+    }
+  }
 }

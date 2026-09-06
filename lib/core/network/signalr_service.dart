@@ -25,12 +25,20 @@ class SignalRService {
   final _expiredCtrl = StreamController<WaitlistExpiredEvent>.broadcast();
   final _cancelledCtrl = StreamController<BookingCancelledEvent>.broadcast();
   final _rescheduleCtrl = StreamController<BookingRescheduleEvent>.broadcast();
+  final _walletPointsCtrl =
+      StreamController<WalletPointsChangedEvent>.broadcast();
+  final _voucherReceivedCtrl =
+      StreamController<VoucherReceivedEvent>.broadcast();
 
   Stream<WaitlistPromotedEvent> get onWaitlistPromoted => _promotedCtrl.stream;
   Stream<WaitlistExpiredEvent> get onWaitlistExpired => _expiredCtrl.stream;
   Stream<BookingCancelledEvent> get onBookingCancelled => _cancelledCtrl.stream;
   Stream<BookingRescheduleEvent> get onBookingRescheduled =>
       _rescheduleCtrl.stream;
+  Stream<WalletPointsChangedEvent> get onWalletPointsChanged =>
+      _walletPointsCtrl.stream;
+  Stream<VoucherReceivedEvent> get onVoucherReceived =>
+      _voucherReceivedCtrl.stream;
 
   bool get isConnected => _isConnected;
 
@@ -156,6 +164,28 @@ class SignalRService {
                         'Yêu cầu dời lịch của bạn không được salon chấp nhận.',
                   );
             _rescheduleCtrl.add(payload);
+            break;
+
+          case 'WalletPointsChanged':
+          case 'LoyaltyPointsChanged':
+            final payload = payloadMap != null
+                ? WalletPointsChangedEvent.fromJson(payloadMap)
+                : WalletPointsChangedEvent(
+                    message: rawPayload?.toString() ??
+                        'Điểm của bạn đã được cập nhật.',
+                  );
+            _walletPointsCtrl.add(payload);
+            break;
+
+          case 'VoucherReceived':
+          case 'VoucherRedeemed':
+            final payload = payloadMap != null
+                ? VoucherReceivedEvent.fromJson(payloadMap)
+                : VoucherReceivedEvent(
+                    message: rawPayload?.toString() ??
+                        'Bạn vừa nhận một voucher.',
+                  );
+            _voucherReceivedCtrl.add(payload);
             break;
 
           default:

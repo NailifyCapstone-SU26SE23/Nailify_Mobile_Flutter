@@ -30,6 +30,11 @@ import '../../features/nails/presentation/pages/nail_variant_detail_screen.dart'
 import '../../features/perfect_match/presentation/pages/perfect_match_page.dart';
 import '../../features/perfect_match/presentation/pages/nail_composition_design_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/wallet/data/models/wallet_voucher_model.dart';
+import '../../features/wallet/presentation/pages/my_vouchers_page.dart';
+import '../../features/wallet/presentation/pages/redeem_voucher_page.dart';
+import '../../features/wallet/presentation/pages/voucher_detail_page.dart';
+import '../../features/wallet/presentation/pages/wallet_overview_page.dart';
 import '../../features/quiz/data/models/quiz_result_model.dart';
 import '../../features/quiz/presentation/pages/analyze_page.dart';
 import '../../features/quiz/presentation/pages/quiz_page.dart';
@@ -349,6 +354,34 @@ class AppRouter {
           GoRoute(
             path: '/profile/my-studio',
             builder: (context, state) => const MyStudioTabPage(),
+          ),
+          GoRoute(
+            path: '/profile/wallet',
+            builder: (context, state) => const WalletOverviewPage(),
+            routes: [
+              GoRoute(
+                path: 'vouchers',
+                builder: (context, state) => const MyVouchersPage(),
+              ),
+              GoRoute(
+                path: 'redeem',
+                builder: (context, state) => const RedeemVoucherPage(),
+              ),
+              GoRoute(
+                path: 'vouchers/:usageId',
+                builder: (context, state) {
+                  final id =
+                      int.tryParse(state.pathParameters['usageId'] ?? '');
+                  final extra = state.extra;
+                  return VoucherDetailPage(
+                    userVoucherUsageId: id ?? 0,
+                    voucher: extra is Map
+                        ? null
+                        : (extra as WalletVoucherModel?),
+                  );
+                },
+              ),
+            ],
           ),
         ],
       ),

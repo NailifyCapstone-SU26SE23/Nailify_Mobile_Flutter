@@ -478,5 +478,151 @@
   "rejectReasonLabel": "Reason for rejection:",
   "processingLabel": "Processing:",
   "processingDesc": "Your design request is being evaluated and quoted by our specialist.",
-  "noneValue": "None"
+  "noneValue": "None",
+  "walletTitle": "My Wallet",
+  "@walletTitle": {},
+  "walletEntrySubtitle": "Your points & vouchers",
+  "@walletEntrySubtitle": {},
+  "walletBalance": "Available points",
+  "@walletBalance": {},
+  "walletLifetimePoints": "Lifetime points",
+  "@walletLifetimePoints": {},
+  "walletTierProgress": "Tier progress",
+  "@walletTierProgress": {},
+  "walletTierNone": "No tier yet",
+  "@walletTierNone": {},
+  "walletTierMax": "Highest tier reached",
+  "@walletTierMax": {},
+  "walletPointsToNext": "{remaining} points to next tier",
+  "@walletPointsToNext": {
+    "placeholders": {
+      "remaining": { "type": "int" }
+    }
+  },
+  "walletMyVouchers": "My Vouchers",
+  "@walletMyVouchers": {},
+  "walletRedeem": "Redeem Points",
+  "@walletRedeem": {},
+  "walletVoucherCount": "{count} vouchers available",
+  "@walletVoucherCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "walletVoucherAll": "All",
+  "@walletVoucherAll": {},
+  "walletVoucherUsable": "Usable",
+  "@walletVoucherUsable": {},
+  "walletVoucherUsed": "Used",
+  "@walletVoucherUsed": {},
+  "walletVoucherExpired": "Expired",
+  "@walletVoucherExpired": {},
+  "walletExpiringSoon": "Expiring soon",
+  "@walletExpiringSoon": {},
+  "viewAll": "View all",
+  "@viewAll": {},
+  "voucherDetail": "Detail",
+  "@voucherDetail": {},
+  "pointsShort": "pts",
+  "@pointsShort": {},
+  "pointsRequired": "{points} pts",
+  "@pointsRequired": {
+    "placeholders": {
+      "points": { "type": "int" }
+    }
+  },
+  "pointsRequiredTba": "TBA",
+  "@pointsRequiredTba": {},
+  "expiredOn": "Expires {date}",
+  "@expiredOn": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "expiringIn": "{time} left",
+  "@expiringIn": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "voucherDetailTitle": "Voucher detail",
+  "@voucherDetailTitle": {},
+  "voucherUseNow": "Use now",
+  "@voucherUseNow": {},
+  "voucherDescription": "Description",
+  "@voucherDescription": {},
+  "voucherConditions": "Terms",
+  "@voucherConditions": {},
+  "voucherValidity": "Validity",
+  "@voucherValidity": {},
+  "voucherStatusUsable": "Usable",
+  "@voucherStatusUsable": {},
+  "voucherStatusUsed": "Used",
+  "@voucherStatusUsed": {},
+  "voucherStatusExpired": "Expired",
+  "@voucherStatusExpired": {},
+  "voucherStatusUpcoming": "Upcoming",
+  "@voucherStatusUpcoming": {},
+  "redeemConfirmTitle": "Confirm redeem",
+  "@redeemConfirmTitle": {},
+  "redeemConfirmDesc": "You will spend {points} points for this voucher. {remaining} points will remain.",
+  "@redeemConfirmDesc": {
+    "placeholders": {
+      "points": { "type": "int" },
+      "remaining": { "type": "int" }
+    }
+  },
+  "redeemConfirmCta": "Confirm",
+  "@redeemConfirmCta": {},
+  "redeemConfirmCancel": "Cancel",
+  "@redeemConfirmCancel": {},
+  "redeemConfirmTerms": "Redeemed vouchers cannot be refunded. Validity follows the program rules.",
+  "@redeemConfirmTerms": {},
+  "redeemSuccess": "Voucher redeemed successfully",
+  "@redeemSuccess": {},
+  "redeemFailed": "Redeem failed",
+  "@redeemFailed": {},
+  "redeemInsufficientPoints": "Not enough points for this voucher",
+  "@redeemInsufficientPoints": {},
+  "redeemSoldOut": "Voucher is sold out",
+  "@redeemSoldOut": {},
+  "redeemViewWallet": "View in wallet",
+  "@redeemViewWallet": {},
+  "emptyWalletVouchers": "You don't have any vouchers yet",
+  "@emptyWalletVouchers": {},
+  "emptyWalletVouchersHint": "Redeem your points to unlock attractive offers.",
+  "@emptyWalletVouchersHint": {},
+  "emptyRedeemable": "No vouchers to redeem right now",
+  "@emptyRedeemable": {},
+  "emptyRedeemableHint": "Please come back later. We will add more offers soon.",
+  "@emptyRedeemableHint": {},
+  "filterAll": "All",
+  "@filterAll": {},
+  "filterPercentage": "% off",
+  "@filterPercentage": {},
+  "filterFixedAmount": "Amount off",
+  "@filterFixedAmount": {},
+  "walletOverviewLoadError": "Could not load wallet. Please try again.",
+  "@walletOverviewLoadError": {},
+  "walletVoucherRemaining": "{count} left",
+  "@walletVoucherRemaining": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "walletVoucherUsedCount": "Used {used}/{total}",
+  "@walletVoucherUsedCount": {
+    "placeholders": {
+      "used": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "walletQuickActions": "Quick actions",
+  "@walletQuickActions": {},
+  "balanceHint": "You have {points} points to redeem",
+  "@balanceHint": {
+    "placeholders": {
+      "points": { "type": "int" }
+    }
+  }
 }

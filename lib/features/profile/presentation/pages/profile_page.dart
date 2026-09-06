@@ -11,8 +11,11 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/localization/locale_service.dart';
 import '../../../../core/network/api_client.dart';
-import '../../../../generated/l10n.dart';
+import '../../../../generated/l10n_x.dart';
 
+import '../../../../features/wallet/data/models/loyalty_model.dart';
+import '../../../../features/wallet/data/repositories/wallet_repository.dart';
+import '../../../../features/wallet/presentation/widgets/wallet_entry_card.dart';
 import '../../data/profile_data.dart';
 import '../widgets/personal_notes_section.dart';
 import '../widgets/style_profile_form_dialog.dart';
@@ -33,6 +36,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Map<String, dynamic>? _profileData;
   Map<String, dynamic>? _loyaltyData;
   Map<String, dynamic>? _styleCompositionResult;
+  int _usableVoucherCount = 0;
   final QuizRepository _quizRepo = QuizRepository(getIt<ApiClient>());
 
   String _skinTone = 'Light';
@@ -80,16 +84,21 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _logout() async {
     await getIt<SharedPreferences>().remove(AppConstants.authTokenKey);
     await getIt<SharedPreferences>().remove('has_completed_quiz');
+    // Clear wallet cache để user mới không thấy dữ liệu của user cũ.
+    try {
+      await getIt<WalletRepository>().clearCache();
+    } catch (_) {}
     if (mounted) {
       setState(() {
         _profileData = null;
         _loyaltyData = null;
+        _usableVoucherCount = 0;
         _isLoading = true;
       });
       context.go('/'); // Đưa người dùng về trang chủ
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(S.of(context).logoutSuccess)));
+      ).showSnackBar(SnackBar(content: Text(context.l10n.logoutSuccess)));
     }
   }
 
@@ -200,13 +209,13 @@ class _ProfilePageState extends State<ProfilePage> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(S.of(context).updateSuccess)));
+        ).showSnackBar(SnackBar(content: Text(context.l10n.updateSuccess)));
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(S.of(context).updateFailure(e))));
+        ).showSnackBar(SnackBar(content: Text(context.l10n.updateFailure(e))));
       }
       rethrow;
     }
@@ -237,10 +246,21 @@ class _ProfilePageState extends State<ProfilePage> {
 
       if (profileResponse.data != null &&
           profileResponse.data['isSucceeded'] == true) {
+        // Load voucher list song song để có số voucher cho entry card.
+        // Nếu fail thì vẫn hiển thị 0.
+        int usableVoucher = 0;
+        try {
+          final vouchers = await getIt<WalletRepository>()
+              .getMyWalletVouchers();
+          usableVoucher = vouchers.where((v) => v.isUsableNow).length;
+        } catch (_) {
+          usableVoucher = 0;
+        }
         if (mounted) {
           setState(() {
             _profileData = profileResponse.data['data'];
             _loyaltyData = loyaltyResponse.data?['data'];
+            _usableVoucherCount = usableVoucher;
             _isLoading = false;
           });
         }
@@ -254,7 +274,7 @@ class _ProfilePageState extends State<ProfilePage> {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(S.of(context).loadFailure(e))));
+        ).showSnackBar(SnackBar(content: Text(context.l10n.loadFailure(e))));
       }
     }
   }
@@ -285,7 +305,7 @@ class _ProfilePageState extends State<ProfilePage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(S.of(context).updateProfileError(e))),
+          SnackBar(content: Text(context.l10n.updateProfileError(e))),
         );
       }
       return false;
@@ -331,7 +351,7 @@ class _ProfilePageState extends State<ProfilePage> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(
-          S.of(context).profileTitle,
+          context.l10n.profileTitle,
           style: const TextStyle(
             color: AppColors.primaryDark,
             fontWeight: FontWeight.w800,
@@ -371,7 +391,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     const SizedBox(height: 24),
                     // Prompt Message
                     Text(
-                      S.of(context).pleaseLoginToViewProfile,
+                      context.l10n.pleaseLoginToViewProfile,
                       style: const TextStyle(
                         fontFamily: 'Georgia',
                         fontSize: 18,
@@ -399,7 +419,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               padding: const EdgeInsets.symmetric(vertical: 14),
                             ),
                             child: Text(
-                              S.of(context).login,
+                              context.l10n.login,
                               style: const TextStyle(
                                 color: AppColors.primary,
                                 fontWeight: FontWeight.bold,
@@ -422,7 +442,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               padding: const EdgeInsets.symmetric(vertical: 14),
                             ),
                             child: Text(
-                              S.of(context).register,
+                              context.l10n.register,
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 15,
@@ -607,6 +627,34 @@ class _ProfilePageState extends State<ProfilePage> {
                   _buildProfileCard(),
                   const SizedBox(height: 16),
 
+                  // Wallet entry card - shortcut tới ví điểm & voucher.
+                  if (_loyaltyData != null) ...[
+                    Builder(
+                      builder: (context) {
+                        LoyaltyModel? lm;
+                        try {
+                          lm = LoyaltyModel.fromJson(
+                            Map<String, dynamic>.from(
+                              _loyaltyData as Map,
+                            ),
+                          );
+                        } catch (_) {
+                          lm = null;
+                        }
+                        if (lm == null) return const SizedBox.shrink();
+                        return WalletEntryCard(
+                          lifetimePoints: lm.lifetimePoints,
+                          loyaltyPoints: lm.loyaltyPoint,
+                          voucherCount: _usableVoucherCount,
+                          tierName: lm.loyaltyTier?.name,
+                          tierImageUrl: lm.loyaltyTier?.imageUrl,
+                          tier: lm.loyaltyTier,
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
                   // Nút Thiết lập phong cách cá nhân
                   SizedBox(
                     width: double.infinity,
@@ -637,7 +685,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         color: Colors.white,
                       ),
                       label: Text(
-                        S.of(context).styleProfileSetup,
+                        context.l10n.styleProfileSetup,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -857,7 +905,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         color: Colors.redAccent,
                       ),
                       label: Text(
-                        S.of(context).logout,
+                        context.l10n.logout,
                         style: const TextStyle(
                           color: Colors.redAccent,
                           fontWeight: FontWeight.bold,
@@ -945,13 +993,29 @@ class _ProfilePageState extends State<ProfilePage> {
     final lastName = _profileData?['lastName']?.toString() ?? '';
     final phone = _profileData?['phone']?.toString() ?? 'Chưa cập nhật';
     final status = _profileData?['status']?.toString() ?? 'N/A';
-    final loyaltyPoint =
-        _loyaltyData?['loyaltyPoint']?.toString() ??
-        _profileData?['loyaltyPoint']?.toString() ??
-        '0';
-    final loyaltyTier =
-        (_loyaltyData?['loyaltyTier'] as Map<String, dynamic>?)?['name']
-            ?.toString();
+
+    // Parse loyalty data bằng model typed (fallback legacy nếu cấu trúc cũ).
+    LoyaltyModel? loyaltyModel;
+    try {
+      if (_loyaltyData != null) {
+        loyaltyModel = LoyaltyModel.fromJson(
+          Map<String, dynamic>.from(_loyaltyData as Map),
+        );
+      } else if (_profileData?['loyaltyPoint'] != null) {
+        // Fallback: dữ liệu loyalty nằm trong /Profile/customers.
+        loyaltyModel = LoyaltyModel(
+          loyaltyPoint:
+              (_profileData?['loyaltyPoint'] as num?)?.toInt() ?? 0,
+          lifetimePoints:
+              (_profileData?['lifetimePoints'] as num?)?.toInt() ?? 0,
+        );
+      }
+    } catch (_) {
+      loyaltyModel = null;
+    }
+
+    final loyaltyPoint = loyaltyModel?.loyaltyPoint.toString() ?? '0';
+    final loyaltyTier = loyaltyModel?.loyaltyTier;
 
     return Container(
       width: double.infinity,
@@ -1036,7 +1100,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         const SizedBox(width: 8),
                         Flexible(
                           child: Text(
-                            '$loyaltyPoint ${S.of(context).pointsLabel}',
+                            '$loyaltyPoint ${context.l10n.pointsLabel}',
                             style: const TextStyle(
                               color: Colors.yellowAccent,
                               fontWeight: FontWeight.bold,
@@ -1046,7 +1110,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       ],
                     ),
-                    if (loyaltyTier != null && loyaltyTier.isNotEmpty) ...[
+                    if (loyaltyTier != null) ...[
                       const SizedBox(height: 4),
                       Row(
                         children: [
@@ -1058,7 +1122,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           const SizedBox(width: 8),
                           Flexible(
                             child: Text(
-                              '${S.of(context).tierLabel} $loyaltyTier',
+                              '${context.l10n.tierLabel} ${loyaltyTier.name}',
                               style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 14,
@@ -1089,7 +1153,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  '${S.of(context).statusLabel}: $status',
+                  '${context.l10n.statusLabel}: $status',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 12,
@@ -1105,7 +1169,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   color: AppColors.primary,
                 ),
                 label: Text(
-                  S.of(context).updateProfile,
+                  context.l10n.updateProfile,
                   style: const TextStyle(
                     color: AppColors.primary,
                     fontWeight: FontWeight.bold,

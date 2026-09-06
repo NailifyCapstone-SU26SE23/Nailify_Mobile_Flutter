@@ -512,7 +512,7 @@ class _DetailContentState extends State<_DetailContent> {
                                 label: S.of(context).bookingDurationLabel,
                                 value: S
                                     .of(context)
-                                    .minutesLabel(variant.duration!),
+                                    .minutesLabel('${variant.duration}'),
                               ),
                             );
                           }
@@ -1207,7 +1207,7 @@ class _DetailContentState extends State<_DetailContent> {
                     ),
                   ),
                   subtitle: Text(
-                    S.of(context).minutesLabel(method.duration),
+                    S.of(context).minutesLabel('${method.duration}'),
                     style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
                   ),
                   secondary: Text(

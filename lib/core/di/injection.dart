@@ -13,6 +13,7 @@ import '../../features/nails/data/repositories/nail_component_repository.dart';
 import '../../features/nails/data/repositories/component_catalog_repository.dart';
 import '../../features/nails/services/ar_try_on_service.dart';
 import '../../features/nail_booking/data/repositories/transaction_repository.dart';
+import '../../features/wallet/data/repositories/wallet_repository.dart';
 import '../../features/auth/data/repositories/auth_repository.dart';
 import '../network/signalr_service.dart';
 
@@ -74,6 +75,14 @@ Future<void> configureDependencies() async {
 
   getIt.registerLazySingleton<TransactionRepository>(
     () => TransactionRepository(getIt<ApiClient>()),
+  );
+
+  // Wallet & Voucher
+  getIt.registerLazySingleton<WalletRepository>(
+    () => WalletRepository(
+      getIt<ApiClient>(),
+      prefs: getIt<SharedPreferences>(),
+    ),
   );
 
   // 5. Services

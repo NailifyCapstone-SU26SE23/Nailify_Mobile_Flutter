@@ -77,7 +77,7 @@ class CoreApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: S.delegate.supportedLocales,
+          supportedLocales: S.supportedLocales,
           locale: localeService.currentLocale,
 
           // Cấu hình định tuyến trung tâm GoRouter

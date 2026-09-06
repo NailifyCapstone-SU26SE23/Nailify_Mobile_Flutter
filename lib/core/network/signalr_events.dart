@@ -99,3 +99,50 @@ class BookingRescheduleEvent {
     );
   }
 }
+
+/// Sự kiện: Điểm ví thay đổi (cộng/trừ điểm). Payload optional.
+class WalletPointsChangedEvent {
+  final int? loyaltyPoint;
+  final int? lifetimePoints;
+  final String message;
+
+  const WalletPointsChangedEvent({
+    this.loyaltyPoint,
+    this.lifetimePoints,
+    required this.message,
+  });
+
+  factory WalletPointsChangedEvent.fromJson(Map<String, dynamic> json) {
+    return WalletPointsChangedEvent(
+      loyaltyPoint: (json['loyaltyPoint'] as num?)?.toInt(),
+      lifetimePoints: (json['lifetimePoints'] as num?)?.toInt(),
+      message:
+          json['message']?.toString() ?? 'Điểm của bạn đã được cập nhật.',
+    );
+  }
+}
+
+/// Sự kiện: Nhận voucher mới (sau redeem hoặc tặng).
+class VoucherReceivedEvent {
+  final int? userPromotionUsageId;
+  final int? promotionId;
+  final String? promotionName;
+  final String message;
+
+  const VoucherReceivedEvent({
+    this.userPromotionUsageId,
+    this.promotionId,
+    this.promotionName,
+    required this.message,
+  });
+
+  factory VoucherReceivedEvent.fromJson(Map<String, dynamic> json) {
+    return VoucherReceivedEvent(
+      userPromotionUsageId:
+          (json['userPromotionUsageId'] as num?)?.toInt(),
+      promotionId: (json['promotionId'] as num?)?.toInt(),
+      promotionName: json['promotionName']?.toString(),
+      message: json['message']?.toString() ?? 'Bạn vừa nhận một voucher.',
+    );
+  }
+}

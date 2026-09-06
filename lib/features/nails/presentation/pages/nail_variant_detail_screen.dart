@@ -1057,19 +1057,19 @@ class _DetailContentState extends State<_DetailContent> {
             PriceFormatter.format(discount),
             valueColor: Colors.green,
           ),
-        if (discountBreakdown is List && discountBreakdown.isNotEmpty)
-          ...discountBreakdown.whereType<Map>().map((item) {
-            final name = item['name']?.toString() ?? 'Giảm giá';
-            final amountDisplay = item['amountDisplay']?.toString();
-            final amount = _readNum(item['amount']);
-            return _buildPriceSummaryRow(
-              name,
-              _formatDiscountDisplay(amountDisplay) ??
-                  (amount == null ? '-' : PriceFormatter.format(-amount.abs())),
-              muted: true,
-              valueColor: Colors.green,
-            );
-          }),
+        // if (discountBreakdown is List && discountBreakdown.isNotEmpty)
+        //   ...discountBreakdown.whereType<Map>().map((item) {
+        //     final name = item['name']?.toString() ?? 'Giảm giá';
+        //     final amountDisplay = item['amountDisplay']?.toString();
+        //     final amount = _readNum(item['amount']);
+        //     return _buildPriceSummaryRow(
+        //       name,
+        //       _formatDiscountDisplay(amountDisplay) ??
+        //           (amount == null ? '-' : PriceFormatter.format(-amount.abs())),
+        //       muted: true,
+        //       valueColor: Colors.green,
+        //     );
+        //   }),
         _buildPriceSummaryRow(
           'Tổng tạm tính',
           _isLoadingPriceReview ? '...' : PriceFormatter.format(total),

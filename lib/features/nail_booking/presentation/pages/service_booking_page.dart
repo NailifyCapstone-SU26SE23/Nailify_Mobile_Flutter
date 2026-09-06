@@ -10,6 +10,7 @@ import '../../../../core/utils/duration_formatter.dart';
 import '../../data/models/promotion_model.dart';
 import '../cubit/nail_booking_cubit.dart';
 import '../widgets/branch_selection_list.dart';
+import '../widgets/artist_selection_list.dart';
 import '../widgets/booking_service_selection.dart';
 import '../widgets/booking_date_selection.dart';
 import '../widgets/booking_promotion_sheet.dart';
@@ -46,6 +47,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
 
   final List<Map<String, dynamic>> _bookingSteps = [
     {'title': 'Chọn tiệm', 'icon': Icons.storefront_rounded},
+    {'title': 'Chọn thợ', 'icon': Icons.person_pin_rounded},
     {'title': 'Dịch vụ', 'icon': Icons.spa_rounded},
     {'title': 'Đặt lịch', 'icon': Icons.calendar_month_rounded},
     {'title': 'Hoàn tất', 'icon': Icons.check_circle_rounded},
@@ -94,17 +96,19 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
       _showSnackBar('Vui lòng chọn 1 chi nhánh!');
       return;
     }
-    if (_currentStep == 1 && state.selectedExtraServices.contains(null)) {
+    if (_currentStep == 1 &&
+        state.selectedStylist == null &&
+        !state.noArtistSelected) {
+      _showSnackBar('Vui lòng chọn thợ hoặc chọn "Tự động phân công"!');
+      return;
+    }
+    if (_currentStep == 2 && state.selectedExtraServices.contains(null)) {
       _showSnackBar('Có ô dịch vụ đang bị bỏ trống!');
       return;
     }
-    if (_currentStep == 2) {
+    if (_currentStep == 3) {
       if (state.selectedDate == null) {
         _showSnackBar('Vui lòng chọn ngày hẹn!');
-        return;
-      }
-      if (state.selectedStylist == null && !state.noArtistSelected) {
-        _showSnackBar('Vui lòng chọn thợ hoặc chọn "Không chọn thợ"!');
         return;
       }
       if (state.selectedTime == null) {
@@ -120,7 +124,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
       }
     }
 
-    if (_currentStep < 3) {
+    if (_currentStep < 4) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -280,7 +284,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                   physics: const NeverScrollableScrollPhysics(),
                   onPageChanged: (idx) => setState(() => _currentStep = idx),
                   children: [
-                    // ── STEP 0: SALON ──────────────────────────────────
+                    // ── STEP 0: CHỌN TIỆM ───────────────────────────
                     SingleChildScrollView(
                       padding: const EdgeInsets.all(20),
                       child: BranchSelectionList(
@@ -291,6 +295,30 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                             cubit.selectBranch(
                               Map<String, dynamic>.from(branch as Map),
                             ),
+                      ),
+                    ),
+
+                    // ── STEP 1: CHỌN THỢ ────────────────────────────
+                    SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: ArtistSelectionList(
+                        artists: state.artists,
+                        isLoading: state.isLoadingArtists,
+                        selectedStylistId:
+                            state.selectedStylist?['nailArtistId'],
+                        noArtistSelected: state.noArtistSelected,
+                        onStylistSelected: (artist) {
+                          if (artist != null) {
+                            cubit.selectStylist(artist);
+                          }
+                        },
+                        onModeChanged: (isNoArtist) {
+                          if (isNoArtist) {
+                            cubit.setNoArtistMode();
+                          } else {
+                            cubit.setSelectArtistMode();
+                          }
+                        },
                       ),
                     ),
 
@@ -334,7 +362,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                       ),
                     ),
 
-                    // ── STEP 3: NGÀY → THỢ → GIỜ ─────────────────────
+                    // ── STEP 3: NGÀY & GIỜ ─────────────────────
                     SingleChildScrollView(
                       padding: const EdgeInsets.all(20),
                       child: Column(
@@ -351,31 +379,10 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                           ),
                           const SizedBox(height: 24),
 
-                          // 2. Chọn thợ (chỉ hiện sau khi chọn ngày)
-                          BookingStylistSelection(
-                            artists: state.artists,
-                            isLoading: state.isLoadingArtists,
-                            selectedStylistId:
-                                state.selectedStylist?['nailArtistId'],
-                            noArtistSelected: state.noArtistSelected,
-                            isDateSelected: state.isDateSelected,
-                            onStylistSelected: (artist) {
-                              if (artist != null) cubit.selectStylist(artist);
-                            },
-                            onModeChanged: (isNoArtist) {
-                              if (isNoArtist) {
-                                cubit.setNoArtistMode();
-                              } else {
-                                cubit.setSelectArtistMode();
-                              }
-                            },
-                          ),
-                          const SizedBox(height: 24),
-
-                          // 3. Chọn giờ (chỉ hiện sau khi chọn thợ/mode)
+                          // 2. Chọn giờ
                           AnimatedSwitcher(
                             duration: const Duration(milliseconds: 250),
-                            child: state.canSelectTime
+                            child: (state.selectedDate != null)
                                 ? BookingTimeSelection(
                                     key: const ValueKey('time-visible'),
                                     timeSlots: state.timeSlots,
@@ -1053,7 +1060,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                             ),
                           )
                         : Text(
-                            _currentStep == 3
+                            _currentStep == 4
                                 ? 'Xác nhận đặt lịch'
                                 : 'Tiếp tục',
                             style: const TextStyle(fontWeight: FontWeight.bold),

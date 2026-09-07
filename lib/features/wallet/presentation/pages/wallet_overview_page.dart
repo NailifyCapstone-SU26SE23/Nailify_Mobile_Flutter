@@ -75,6 +75,14 @@ class _WalletOverviewViewState extends State<_WalletOverviewView> {
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
+          IconButton(
+            tooltip: context.l10n.pointsHistoryTitle,
+            onPressed: () => context.push('/profile/wallet/transactions'),
+            icon: const Icon(
+              Icons.history_rounded,
+              color: AppColors.primaryDark,
+            ),
+          ),
           BlocBuilder<WalletOverviewCubit, WalletOverviewState>(
             builder: (context, state) {
               return IconButton(

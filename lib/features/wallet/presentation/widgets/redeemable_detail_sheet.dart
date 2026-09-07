@@ -185,12 +185,12 @@ class RedeemableDetailSheetState extends State<RedeemableDetailSheet> {
                   children: [
                     if (p.startDate != null)
                       _dateRow(
-                        label: 'Bắt đầu',
+                        label: context.l10n.voucherStartLabel,
                         date: p.startDate!,
                       ),
                     if (p.endDate != null)
                       _dateRow(
-                        label: 'Hết hạn',
+                        label: context.l10n.voucherEndLabel,
                         date: p.endDate!,
                       ),
                     if (p.remainingCount != null)
@@ -208,7 +208,7 @@ class RedeemableDetailSheetState extends State<RedeemableDetailSheet> {
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
                         child: Text(
-                          'Mỗi người dùng tối đa ${p.userLimit} lượt đổi',
+                          context.l10n.voucherUserLimit(p.userLimit!),
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey.shade700,

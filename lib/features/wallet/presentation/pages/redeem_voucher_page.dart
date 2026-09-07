@@ -194,6 +194,7 @@ class _RedeemVoucherViewState extends State<_RedeemVoucherView> {
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
             childAspectRatio: 0.62,
+            mainAxisExtent: 300,
           ),
           itemCount: filtered.length,
           itemBuilder: (context, index) {

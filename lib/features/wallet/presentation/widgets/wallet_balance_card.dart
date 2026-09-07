@@ -89,6 +89,32 @@ class WalletBalanceCard extends StatelessWidget {
                   color: AppColors.textPrimary,
                 ),
               ),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: () =>
+                    context.push('/profile/wallet/transactions'),
+                icon: const Icon(
+                  Icons.history_rounded,
+                  size: 14,
+                  color: AppColors.primary,
+                ),
+                label: Text(
+                  context.l10n.pointsHistoryTitle,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),

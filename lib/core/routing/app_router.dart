@@ -32,6 +32,7 @@ import '../../features/perfect_match/presentation/pages/nail_composition_design_
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/wallet/data/models/wallet_voucher_model.dart';
 import '../../features/wallet/presentation/pages/my_vouchers_page.dart';
+import '../../features/wallet/presentation/pages/points_history_page.dart';
 import '../../features/wallet/presentation/pages/redeem_voucher_page.dart';
 import '../../features/wallet/presentation/pages/voucher_detail_page.dart';
 import '../../features/wallet/presentation/pages/wallet_overview_page.dart';
@@ -366,6 +367,10 @@ class AppRouter {
               GoRoute(
                 path: 'redeem',
                 builder: (context, state) => const RedeemVoucherPage(),
+              ),
+              GoRoute(
+                path: 'transactions',
+                builder: (context, state) => const PointsHistoryPage(),
               ),
               GoRoute(
                 path: 'vouchers/:usageId',

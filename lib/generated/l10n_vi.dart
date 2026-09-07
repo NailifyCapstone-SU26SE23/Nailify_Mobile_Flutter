@@ -1569,6 +1569,33 @@ class SVi extends S {
   }
 
   @override
+  String get pointsHistoryTitle => 'Lịch sử điểm';
+
+  @override
+  String get pointsHistorySubtitle => 'Tổng quan điểm thưởng';
+
+  @override
+  String get pointsHistoryEarned => 'Đã tích';
+
+  @override
+  String get pointsHistorySpent => 'Đã dùng';
+
+  @override
+  String get pointsHistoryEmpty => 'Chưa có lịch sử điểm';
+
+  @override
+  String get pointsHistoryEmptyHint =>
+      'Điểm của bạn sẽ được ghi nhận khi có thay đổi.';
+
+  @override
+  String get pointsHistoryLoadError => 'Không thể tải lịch sử điểm.';
+
+  @override
+  String pointsHistoryBookingRef(String ref) {
+    return 'Booking: #$ref...';
+  }
+
+  @override
   String get voucherDetailTitle => 'Chi tiết voucher';
 
   @override
@@ -1620,13 +1647,24 @@ class SVi extends S {
   String get redeemFailed => 'Đổi voucher thất bại';
 
   @override
-  String get redeemInsufficientPoints => 'Không đủ điểm để đổi voucher này';
+  String get redeemInsufficientPoints => 'Không đủ điểm';
 
   @override
   String get redeemSoldOut => 'Voucher đã hết lượt đổi';
 
   @override
   String get redeemViewWallet => 'Xem trong ví';
+
+  @override
+  String voucherUserLimit(int limit) {
+    return 'Mỗi người dùng tối đa $limit lượt đổi';
+  }
+
+  @override
+  String get voucherStartLabel => 'Bắt đầu';
+
+  @override
+  String get voucherEndLabel => 'Hết hạn';
 
   @override
   String get emptyWalletVouchers => 'Bạn chưa có voucher nào';

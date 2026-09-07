@@ -653,9 +653,9 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
         );
       }
       if (photo) {
-        await service.launchCustomerPhoto(preview);
+        await service.launchCustomerPhoto(preview, context: context);
       } else {
-        await service.launchCustomerLive(preview);
+        await service.launchCustomerLive(preview, context: context);
       }
     } catch (error) {
       _showMessage(error.toString());

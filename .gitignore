@@ -44,8 +44,11 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 google-services.json
+google-login.json
 
 # Claude AI configuration (local/personal files)
 .claude/
 AGENTS.md
 CLAUDE.md
+
+lib/core/constants/app_constants.dart

@@ -15,6 +15,7 @@ import '../../features/my_studio/data/models/customer_nail_model.dart';
 import '../../features/my_studio/presentation/pages/customer_nail_detail_page.dart';
 import '../../features/nail_booking/presentation/pages/booking_success_page.dart';
 import '../../features/nail_booking/presentation/pages/custom_nail_booking_page.dart';
+import '../../features/nail_booking/presentation/pages/home_booking_page.dart';
 import '../../features/nail_booking/presentation/pages/nail_booking_page.dart';
 import '../../features/nail_booking/presentation/pages/payment_qr_page.dart';
 import '../../features/nail_booking/presentation/pages/payment_result_page.dart';
@@ -95,6 +96,10 @@ class AppRouter {
           final nailData = state.extra as Map<String, dynamic>?;
           return NailBookingPage(nailData: nailData);
         },
+      ),
+      GoRoute(
+        path: '/home-booking',
+        builder: (context, state) => const HomeBookingPage(),
       ),
       GoRoute(
         path: '/service-booking',

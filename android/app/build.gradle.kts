@@ -29,6 +29,13 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // ONNX Runtime + MediaPipe cung cấp .so cho arm64-v8a, armeabi-v7a, x86, x86_64.
+        // Giới hạn chỉ build & pack các ABI thực sự cần để tránh mix lib cũ/mới
+        // gây lỗi "OrtGetApiBase symbol not found".
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+        }
     }
 
     buildFeatures {
@@ -81,7 +88,7 @@ dependencies {
 
     implementation("androidx.window:window:1.1.0-alpha03")
     implementation("com.google.mediapipe:tasks-vision:0.10.29")
-    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.19.2")
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.20.0")
     implementation("com.google.code.gson:gson:2.11.0")
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
@@ -92,7 +99,7 @@ dependencies {
     implementation("com.google.firebase:firebase-auth")
 
     // ONNX Runtime for YOLO-Seg nail detection (inference at 640x640)
-    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.19.2")
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.20.0")
 
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

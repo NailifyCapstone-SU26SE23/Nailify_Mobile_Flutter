@@ -545,6 +545,26 @@
       "time": { "type": "String" }
     }
   },
+  "pointsHistoryTitle": "Points history",
+  "@pointsHistoryTitle": {},
+  "pointsHistorySubtitle": "Points overview",
+  "@pointsHistorySubtitle": {},
+  "pointsHistoryEarned": "Earned",
+  "@pointsHistoryEarned": {},
+  "pointsHistorySpent": "Spent",
+  "@pointsHistorySpent": {},
+  "pointsHistoryEmpty": "No points history yet",
+  "@pointsHistoryEmpty": {},
+  "pointsHistoryEmptyHint": "Your points changes will be recorded here.",
+  "@pointsHistoryEmptyHint": {},
+  "pointsHistoryLoadError": "Failed to load points history.",
+  "@pointsHistoryLoadError": {},
+  "pointsHistoryBookingRef": "Booking: #{ref}...",
+  "@pointsHistoryBookingRef": {
+    "placeholders": {
+      "ref": { "type": "String" }
+    }
+  },
   "voucherDetailTitle": "Voucher detail",
   "@voucherDetailTitle": {},
   "voucherUseNow": "Use now",
@@ -582,12 +602,22 @@
   "@redeemSuccess": {},
   "redeemFailed": "Redeem failed",
   "@redeemFailed": {},
-  "redeemInsufficientPoints": "Not enough points for this voucher",
+  "redeemInsufficientPoints": "Not enough points",
   "@redeemInsufficientPoints": {},
   "redeemSoldOut": "Voucher is sold out",
   "@redeemSoldOut": {},
   "redeemViewWallet": "View in wallet",
   "@redeemViewWallet": {},
+  "voucherUserLimit": "Max {limit} redemptions per user",
+  "@voucherUserLimit": {
+    "placeholders": {
+      "limit": { "type": "int" }
+    }
+  },
+  "voucherStartLabel": "Starts",
+  "@voucherStartLabel": {},
+  "voucherEndLabel": "Expires",
+  "@voucherEndLabel": {},
   "emptyWalletVouchers": "You don't have any vouchers yet",
   "@emptyWalletVouchers": {},
   "emptyWalletVouchersHint": "Redeem your points to unlock attractive offers.",

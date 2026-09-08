@@ -2959,6 +2959,54 @@ abstract class S {
   /// **'{time} left'**
   String expiringIn(String time);
 
+  /// No description provided for @pointsHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Points history'**
+  String get pointsHistoryTitle;
+
+  /// No description provided for @pointsHistorySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Points overview'**
+  String get pointsHistorySubtitle;
+
+  /// No description provided for @pointsHistoryEarned.
+  ///
+  /// In en, this message translates to:
+  /// **'Earned'**
+  String get pointsHistoryEarned;
+
+  /// No description provided for @pointsHistorySpent.
+  ///
+  /// In en, this message translates to:
+  /// **'Spent'**
+  String get pointsHistorySpent;
+
+  /// No description provided for @pointsHistoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No points history yet'**
+  String get pointsHistoryEmpty;
+
+  /// No description provided for @pointsHistoryEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your points changes will be recorded here.'**
+  String get pointsHistoryEmptyHint;
+
+  /// No description provided for @pointsHistoryLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load points history.'**
+  String get pointsHistoryLoadError;
+
+  /// No description provided for @pointsHistoryBookingRef.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking: #{ref}...'**
+  String pointsHistoryBookingRef(String ref);
+
   /// No description provided for @voucherDetailTitle.
   ///
   /// In en, this message translates to:
@@ -3058,7 +3106,7 @@ abstract class S {
   /// No description provided for @redeemInsufficientPoints.
   ///
   /// In en, this message translates to:
-  /// **'Not enough points for this voucher'**
+  /// **'Not enough points'**
   String get redeemInsufficientPoints;
 
   /// No description provided for @redeemSoldOut.
@@ -3072,6 +3120,24 @@ abstract class S {
   /// In en, this message translates to:
   /// **'View in wallet'**
   String get redeemViewWallet;
+
+  /// No description provided for @voucherUserLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Max {limit} redemptions per user'**
+  String voucherUserLimit(int limit);
+
+  /// No description provided for @voucherStartLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Starts'**
+  String get voucherStartLabel;
+
+  /// No description provided for @voucherEndLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Expires'**
+  String get voucherEndLabel;
 
   /// No description provided for @emptyWalletVouchers.
   ///

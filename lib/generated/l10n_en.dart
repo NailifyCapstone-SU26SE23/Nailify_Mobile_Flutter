@@ -1567,6 +1567,33 @@ class SEn extends S {
   }
 
   @override
+  String get pointsHistoryTitle => 'Points history';
+
+  @override
+  String get pointsHistorySubtitle => 'Points overview';
+
+  @override
+  String get pointsHistoryEarned => 'Earned';
+
+  @override
+  String get pointsHistorySpent => 'Spent';
+
+  @override
+  String get pointsHistoryEmpty => 'No points history yet';
+
+  @override
+  String get pointsHistoryEmptyHint =>
+      'Your points changes will be recorded here.';
+
+  @override
+  String get pointsHistoryLoadError => 'Failed to load points history.';
+
+  @override
+  String pointsHistoryBookingRef(String ref) {
+    return 'Booking: #$ref...';
+  }
+
+  @override
   String get voucherDetailTitle => 'Voucher detail';
 
   @override
@@ -1618,13 +1645,24 @@ class SEn extends S {
   String get redeemFailed => 'Redeem failed';
 
   @override
-  String get redeemInsufficientPoints => 'Not enough points for this voucher';
+  String get redeemInsufficientPoints => 'Not enough points';
 
   @override
   String get redeemSoldOut => 'Voucher is sold out';
 
   @override
   String get redeemViewWallet => 'View in wallet';
+
+  @override
+  String voucherUserLimit(int limit) {
+    return 'Max $limit redemptions per user';
+  }
+
+  @override
+  String get voucherStartLabel => 'Starts';
+
+  @override
+  String get voucherEndLabel => 'Expires';
 
   @override
   String get emptyWalletVouchers => 'You don\'t have any vouchers yet';

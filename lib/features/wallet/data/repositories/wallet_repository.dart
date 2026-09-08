@@ -7,6 +7,7 @@ import '../../../../core/network/api_client.dart';
 import '../../../../core/utils/paginated_response.dart';
 import '../datasources/wallet_api_service.dart';
 import '../models/loyalty_model.dart';
+import '../models/loyalty_transaction_model.dart';
 import '../models/redeem_outcome.dart';
 import '../models/redeemable_promotion_model.dart';
 import '../models/wallet_overview_model.dart';
@@ -238,5 +239,66 @@ class WalletRepository {
     // Invalidate cache liên quan để refresh sau khi redeem.
     await clearCache();
     return outcome;
+  }
+
+  // ─── Loyalty Transactions History ────────────────────────────────
+  // Cache key + TTL riêng để tránh chung TTL với overview.
+  static const _kCacheTransactions =
+      'wallet_loyalty_transactions_cache_v1';
+  static const Duration transactionsTtl = Duration(minutes: 2);
+
+  Future<PaginatedLoyaltyTransactions> getMyLoyaltyTransactions({
+    int pageNumber = 1,
+    int pageSize = 20,
+    bool forceRefresh = false,
+  }) async {
+    final isFirstPage = pageNumber == 1;
+    final cacheKey = '${_kCacheTransactions}_p$pageNumber';
+
+    if (isFirstPage && !forceRefresh && _isFresh(cacheKey, transactionsTtl)) {
+      final cached = _readCache(cacheKey);
+      if (cached != null) {
+        try {
+          return PaginatedLoyaltyTransactions.fromJson(cached);
+        } catch (_) {
+          // Fallback xuống API
+        }
+      }
+    }
+
+    final fresh = await _apiService.getMyLoyaltyTransactions(
+      pageNumber: pageNumber,
+      pageSize: pageSize,
+    );
+
+    if (isFirstPage) {
+      await _writeCache(
+        cacheKey,
+        <String, dynamic>{
+          'data': <String, dynamic>{
+            'items': fresh.items
+                .map(
+                  (t) => <String, dynamic>{
+                    'loyaltyTransactionId': t.loyaltyTransactionId,
+                    'customerId': t.customerId,
+                    'bookingId': t.bookingId,
+                    'points': t.points,
+                    'transactionType': t.transactionType.name,
+                    'loyaltyTierIdAtTime': t.loyaltyTierIdAtTime,
+                    'createdAt': t.createdAt.toIso8601String(),
+                  },
+                )
+                .toList(),
+            'metaData': <String, dynamic>{
+              'currentPage': fresh.page,
+              'hasNext': fresh.hasNextPage,
+              'totalItems': fresh.totalItems,
+            },
+          },
+        },
+      );
+    }
+
+    return fresh;
   }
 }

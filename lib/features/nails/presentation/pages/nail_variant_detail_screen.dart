@@ -59,7 +59,7 @@ class _NailVariantDetailScreenState extends State<NailVariantDetailScreen> {
           'Virtual try-on is not available on this build.',
         );
       }
-      await service.launchCustomerLive(customerNail);
+      await service.launchCustomerLive(customerNail, context: context);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -91,7 +91,7 @@ class _NailVariantDetailScreenState extends State<NailVariantDetailScreen> {
         );
       }
 
-      await service.launchCustomerPhoto(customerNail);
+      await service.launchCustomerPhoto(customerNail, context: context);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

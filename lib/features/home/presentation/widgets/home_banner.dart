@@ -131,7 +131,7 @@ class HomeBanner extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: () {
                   AuthGuard.check(context, () {
-                    context.push('/nail-booking');
+                    context.push('/home-booking');
                   });
                 },
                 style: ElevatedButton.styleFrom(

@@ -1,6 +1,7 @@
 import '../../../../core/network/api_client.dart';
 import '../../../../core/utils/paginated_response.dart';
 import '../models/loyalty_model.dart';
+import '../models/loyalty_transaction_model.dart';
 import '../models/redeem_outcome.dart';
 import '../models/redeem_result_model.dart';
 import '../models/redeemable_promotion_model.dart';
@@ -99,5 +100,33 @@ class WalletApiService {
       return raw['data'];
     }
     return raw;
+  }
+
+  /// GET /LoyaltyTransactions/me?pageNumber=&pageSize=
+  /// Lịch sử biến động điểm của khách hàng hiện tại.
+  Future<PaginatedLoyaltyTransactions> getMyLoyaltyTransactions({
+    int pageNumber = 1,
+    int pageSize = 20,
+  }) async {
+    final response = await _api.get<dynamic>(
+      '/LoyaltyTransactions/me',
+      queryParameters: {
+        'pageNumber': pageNumber,
+        'pageSize': pageSize,
+      },
+    );
+
+    final raw = response.data;
+    if (raw is Map) {
+      return PaginatedLoyaltyTransactions.fromJson(
+        Map<String, dynamic>.from(raw),
+      );
+    }
+    return const PaginatedLoyaltyTransactions(
+      items: [],
+      page: 1,
+      hasNextPage: false,
+      totalItems: 0,
+    );
   }
 }

@@ -15,6 +15,7 @@ import '../../features/my_studio/data/models/customer_nail_model.dart';
 import '../../features/my_studio/presentation/pages/customer_nail_detail_page.dart';
 import '../../features/nail_booking/presentation/pages/booking_success_page.dart';
 import '../../features/nail_booking/presentation/pages/custom_nail_booking_page.dart';
+import '../../features/nail_booking/presentation/pages/home_booking_page.dart';
 import '../../features/nail_booking/presentation/pages/nail_booking_page.dart';
 import '../../features/nail_booking/presentation/pages/payment_qr_page.dart';
 import '../../features/nail_booking/presentation/pages/payment_result_page.dart';
@@ -32,6 +33,7 @@ import '../../features/perfect_match/presentation/pages/nail_composition_design_
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/wallet/data/models/wallet_voucher_model.dart';
 import '../../features/wallet/presentation/pages/my_vouchers_page.dart';
+import '../../features/wallet/presentation/pages/points_history_page.dart';
 import '../../features/wallet/presentation/pages/redeem_voucher_page.dart';
 import '../../features/wallet/presentation/pages/voucher_detail_page.dart';
 import '../../features/wallet/presentation/pages/wallet_overview_page.dart';
@@ -94,6 +96,10 @@ class AppRouter {
           final nailData = state.extra as Map<String, dynamic>?;
           return NailBookingPage(nailData: nailData);
         },
+      ),
+      GoRoute(
+        path: '/home-booking',
+        builder: (context, state) => const HomeBookingPage(),
       ),
       GoRoute(
         path: '/service-booking',
@@ -366,6 +372,10 @@ class AppRouter {
               GoRoute(
                 path: 'redeem',
                 builder: (context, state) => const RedeemVoucherPage(),
+              ),
+              GoRoute(
+                path: 'transactions',
+                builder: (context, state) => const PointsHistoryPage(),
               ),
               GoRoute(
                 path: 'vouchers/:usageId',

@@ -524,6 +524,26 @@
       "time": { "type": "String" }
     }
   },
+  "pointsHistoryTitle": "Lịch sử điểm",
+  "@pointsHistoryTitle": {},
+  "pointsHistorySubtitle": "Tổng quan điểm thưởng",
+  "@pointsHistorySubtitle": {},
+  "pointsHistoryEarned": "Đã tích",
+  "@pointsHistoryEarned": {},
+  "pointsHistorySpent": "Đã dùng",
+  "@pointsHistorySpent": {},
+  "pointsHistoryEmpty": "Chưa có lịch sử điểm",
+  "@pointsHistoryEmpty": {},
+  "pointsHistoryEmptyHint": "Điểm của bạn sẽ được ghi nhận khi có thay đổi.",
+  "@pointsHistoryEmptyHint": {},
+  "pointsHistoryLoadError": "Không thể tải lịch sử điểm.",
+  "@pointsHistoryLoadError": {},
+  "pointsHistoryBookingRef": "Booking: #{ref}...",
+  "@pointsHistoryBookingRef": {
+    "placeholders": {
+      "ref": { "type": "String" }
+    }
+  },
   "voucherDetailTitle": "Chi tiết voucher",
   "@voucherDetailTitle": {},
   "voucherUseNow": "Dùng ngay",
@@ -561,12 +581,22 @@
   "@redeemSuccess": {},
   "redeemFailed": "Đổi voucher thất bại",
   "@redeemFailed": {},
-  "redeemInsufficientPoints": "Không đủ điểm để đổi voucher này",
+  "redeemInsufficientPoints": "Không đủ điểm",
   "@redeemInsufficientPoints": {},
   "redeemSoldOut": "Voucher đã hết lượt đổi",
   "@redeemSoldOut": {},
   "redeemViewWallet": "Xem trong ví",
   "@redeemViewWallet": {},
+  "voucherUserLimit": "Mỗi người dùng tối đa {limit} lượt đổi",
+  "@voucherUserLimit": {
+    "placeholders": {
+      "limit": { "type": "int" }
+    }
+  },
+  "voucherStartLabel": "Bắt đầu",
+  "@voucherStartLabel": {},
+  "voucherEndLabel": "Hết hạn",
+  "@voucherEndLabel": {},
   "emptyWalletVouchers": "Bạn chưa có voucher nào",
   "@emptyWalletVouchers": {},
   "emptyWalletVouchersHint": "Hãy đổi điểm để nhận những ưu đãi hấp dẫn.",

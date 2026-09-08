@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../generated/l10n.dart';
 import '../../data/datasources/promotion_api_service.dart';
-import '../../data/models/promotion_model.dart';
+import '../../data/models/wallet_voucher_model.dart';
 
 class BookingPromotionSheet extends StatefulWidget {
-  final List<PromotionModel> selectedPromotions;
-  final ValueChanged<List<PromotionModel>> onConfirm;
+  /// Danh sách voucher đã chọn trước đó.
+  final List<WalletVoucherModel> selectedPromotions;
+
+  /// Callback khi user confirm chọn voucher.
+  final ValueChanged<List<WalletVoucherModel>> onConfirm;
 
   const BookingPromotionSheet({
     super.key,
@@ -23,17 +26,17 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
   final PromotionApiService _apiService = PromotionApiService();
 
   late TabController _tabController;
-  List<PromotionModel> _allPromotions = [];
+  List<WalletVoucherModel> _allVouchers = [];
   bool _isLoading = true;
   String? _errorMessage;
-  late List<PromotionModel> _tempSelected;
+  late List<WalletVoucherModel> _tempSelected;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _tempSelected = List<PromotionModel>.from(widget.selectedPromotions);
-    _fetchPromotions();
+    _tempSelected = List<WalletVoucherModel>.from(widget.selectedPromotions);
+    _fetchVouchers();
   }
 
   @override
@@ -42,61 +45,51 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
     super.dispose();
   }
 
-  Future<void> _fetchPromotions() async {
+  Future<void> _fetchVouchers() async {
     try {
-      final result = await _apiService.getTodayPromotions(pageSize: 20);
-      if (mounted) {
-        setState(() {
-          _allPromotions = result;
-          _isLoading = false;
-        });
-      }
+      final vouchers = await _apiService.getMyWalletVouchers();
+      if (!mounted) return;
+      setState(() {
+        _allVouchers = vouchers
+            .where(
+              (v) => v.isValidForUse && v.hasUsagesLeft && !v.isExpired,
+            )
+            .toList();
+        _isLoading = false;
+      });
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = S.of(context).bookingNoPromotions;
-          _isLoading = false;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = S.of(context).bookingNoPromotions;
+        _isLoading = false;
+      });
     }
   }
 
-  List<PromotionModel> get _discounts =>
-      _allPromotions.where((p) => p.type == 'Discount').toList();
+  // Phân chia: giảm theo % → tab "Discount"; giảm cố định VND → tab "Voucher"
+  List<WalletVoucherModel> get _discounts => _allVouchers
+      .where((v) => v.discountType.toLowerCase() == 'percentage')
+      .toList();
 
-  List<PromotionModel> get _vouchers =>
-      _allPromotions.where((p) => p.type == 'Voucher').toList();
+  List<WalletVoucherModel> get _vouchers => _allVouchers
+      .where((v) => v.discountType.toLowerCase() != 'percentage')
+      .toList();
 
-  void _togglePromotion(PromotionModel promotion) {
+  void _togglePromotion(WalletVoucherModel voucher) {
     setState(() {
-      if (_tempSelected.any((p) => p.promotionId == promotion.promotionId)) {
+      if (_tempSelected.any((v) => v.promotionId == voucher.promotionId)) {
         _tempSelected.removeWhere(
-          (p) => p.promotionId == promotion.promotionId,
+          (v) => v.promotionId == voucher.promotionId,
         );
       } else {
-        _tempSelected.add(promotion);
+        _tempSelected.add(voucher);
       }
     });
   }
 
   void _confirm() {
-    widget.onConfirm(List<PromotionModel>.from(_tempSelected));
+    widget.onConfirm(List<WalletVoucherModel>.from(_tempSelected));
     Navigator.pop(context);
-  }
-
-  String _discountLabel(PromotionModel p) {
-    if (p.discountType == 'Percentage') {
-      final value = p.discountValue % 1 == 0
-          ? p.discountValue.toInt().toString()
-          : p.discountValue.toString();
-      return S.of(context).bookingDiscountPercent(value);
-    } else {
-      final value = p.discountValue.round().toString().replaceAllMapped(
-        RegExp(r'\B(?=(\d{3})+(?!\d))'),
-        (_) => ',',
-      );
-      return S.of(context).bookingDiscountFixed(value);
-    }
   }
 
   @override
@@ -121,7 +114,7 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
                   children: [
                     Expanded(
                       child: Text(
-                        S.of(context).bookingSelectPromotion,
+                        'Voucher trong ví của bạn',
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -165,8 +158,8 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
                     fontSize: 14,
                   ),
                   tabs: const [
-                    Tab(text: 'Discount'),
-                    Tab(text: 'Voucher'),
+                    Tab(text: 'Giảm %'),
+                    Tab(text: 'Giảm tiền'),
                   ],
                 ),
               ),
@@ -176,41 +169,41 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : _errorMessage != null
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.error_outline,
-                              color: Colors.grey.shade400,
-                              size: 48,
+                        ? Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.error_outline,
+                                  color: Colors.grey.shade400,
+                                  size: 48,
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  _errorMessage!,
+                                  style: const TextStyle(color: Colors.grey),
+                                ),
+                                const SizedBox(height: 12),
+                                FilledButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      _isLoading = true;
+                                      _errorMessage = null;
+                                    });
+                                    _fetchVouchers();
+                                  },
+                                  child: Text(S.of(context).bookingRetry),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 12),
-                            Text(
-                              _errorMessage!,
-                              style: const TextStyle(color: Colors.grey),
-                            ),
-                            const SizedBox(height: 12),
-                            FilledButton(
-                              onPressed: () {
-                                setState(() {
-                                  _isLoading = true;
-                                  _errorMessage = null;
-                                });
-                                _fetchPromotions();
-                              },
-                              child: Text(S.of(context).bookingRetry),
-                            ),
-                          ],
-                        ),
-                      )
-                    : TabBarView(
-                        controller: _tabController,
-                        children: [
-                          _buildList(_discounts, scrollController),
-                          _buildList(_vouchers, scrollController),
-                        ],
-                      ),
+                          )
+                        : TabBarView(
+                            controller: _tabController,
+                            children: [
+                              _buildList(_discounts, scrollController),
+                              _buildList(_vouchers, scrollController),
+                            ],
+                          ),
               ),
 
               // ──── FOOTER ────
@@ -231,12 +224,8 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
                       ),
                       child: Text(
                         _tempSelected.isEmpty
-                            ? S.of(context).bookingNoPromotion
-                            : S
-                                  .of(context)
-                                  .bookingApplyPromotion(
-                                    _tempSelected.length.toString(),
-                                  ),
+                            ? 'Không áp dụng'
+                            : 'Áp dụng ${_tempSelected.length} voucher',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -254,7 +243,7 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
   }
 
   Widget _buildList(
-    List<PromotionModel> list,
+    List<WalletVoucherModel> list,
     ScrollController scrollController,
   ) {
     if (list.isEmpty) {
@@ -283,14 +272,13 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
       itemCount: list.length,
       separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
-        final promo = list[index];
+        final voucher = list[index];
         final isSelected = _tempSelected.any(
-          (p) => p.promotionId == promo.promotionId,
+          (v) => v.promotionId == voucher.promotionId,
         );
-        final discountLabel = _discountLabel(promo);
 
         return GestureDetector(
-          onTap: () => _togglePromotion(promo),
+          onTap: () => _togglePromotion(voucher),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.all(16),
@@ -329,7 +317,7 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
                   child: Column(
                     children: [
                       Icon(
-                        promo.discountType == 'Percentage'
+                        voucher.discountType.toLowerCase() == 'percentage'
                             ? Icons.percent
                             : Icons.discount_outlined,
                         color: isSelected
@@ -339,9 +327,7 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        discountLabel
-                            .split(' ')
-                            .last, // e.g. "10%" or "50,000 đ"
+                        voucher.displayDiscount,
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -363,7 +349,7 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        promo.name,
+                        voucher.promotionName,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
@@ -372,9 +358,9 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
-                      if (promo.description.isNotEmpty)
+                      if (voucher.description.isNotEmpty)
                         Text(
-                          promo.description,
+                          voucher.description,
                           style: TextStyle(
                             color: Colors.grey.shade600,
                             fontSize: 13,
@@ -394,7 +380,7 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
                           border: Border.all(color: Colors.green.shade200),
                         ),
                         child: Text(
-                          discountLabel,
+                          'Còn ${voucher.remainingCount}/${voucher.receivedCount} lượt',
                           style: TextStyle(
                             color: Colors.green.shade700,
                             fontWeight: FontWeight.bold,
@@ -410,7 +396,7 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
                 // Checkbox
                 Checkbox(
                   value: isSelected,
-                  onChanged: (_) => _togglePromotion(promo),
+                  onChanged: (_) => _togglePromotion(voucher),
                   activeColor: AppColors.primary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(4),

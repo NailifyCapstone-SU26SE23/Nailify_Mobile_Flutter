@@ -7,14 +7,13 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../../../core/utils/duration_formatter.dart';
 
-import '../../data/models/promotion_model.dart';
+import '../../data/models/wallet_voucher_model.dart';
 import '../cubit/nail_booking_cubit.dart';
 import '../widgets/branch_selection_list.dart';
 import '../widgets/artist_selection_list.dart';
 import '../widgets/booking_service_selection.dart';
 import '../widgets/booking_date_selection.dart';
 import '../widgets/booking_promotion_sheet.dart';
-import '../widgets/booking_stylist_selection.dart';
 import '../widgets/booking_time_selection.dart';
 
 /// Entry point: bọc page trong BlocProvider.
@@ -59,6 +58,9 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
     final cubit = context.read<NailBookingCubit>();
     cubit.loadSalons();
     cubit.loadServices();
+    // Truyền ID dịch vụ gốc vào cubit để cubit build bookingItems cho
+    // API /Bookings/hold-slot (backend yêu cầu bookingItems không được rỗng).
+    cubit.setBaseService(_baseServiceId);
   }
 
   @override
@@ -139,7 +141,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
     NailBookingCubit cubit,
   ) async {
     final promos = state.selectedPromotions
-        .whereType<PromotionModel>()
+        .whereType<WalletVoucherModel>()
         .toList();
     final grouped = _groupedServicesMap(state.selectedExtraServices);
     final formattedDate = cubit.formatBookingDate(state.selectedDate!);
@@ -428,12 +430,12 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
     NailBookingCubit cubit,
   ) {
     final promos = state.selectedPromotions
-        .whereType<PromotionModel>()
+        .whereType<WalletVoucherModel>()
         .toList();
     final subtotal = _totalPrice(state, cubit);
-    final discount = cubit.discountAmount(
+    final discount = cubit.discountAmountFromVouchers(
       subtotal: subtotal,
-      promotions: promos,
+      vouchers: promos,
     );
     final finalPrice = (subtotal - discount).clamp(0, double.maxFinite).toInt();
     final grouped = _groupedServicesMap(state.selectedExtraServices);
@@ -620,7 +622,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
     NailBookingCubit cubit,
   ) {
     final promos = state.selectedPromotions
-        .whereType<PromotionModel>()
+        .whereType<WalletVoucherModel>()
         .toList();
     final hasPromos = promos.isNotEmpty;
     return GestureDetector(

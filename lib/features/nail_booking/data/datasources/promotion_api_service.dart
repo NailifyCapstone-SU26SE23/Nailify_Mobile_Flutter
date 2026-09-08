@@ -1,6 +1,7 @@
 import '../../../../core/di/injection.dart';
 import '../../../../core/network/api_client.dart';
 import '../models/promotion_model.dart';
+import '../models/wallet_voucher_model.dart';
 
 class PromotionApiService {
   final ApiClient _apiClient = getIt<ApiClient>();
@@ -50,6 +51,23 @@ class PromotionApiService {
     return items
         .whereType<Map>()
         .map((json) => PromotionModel.fromJson(Map<String, dynamic>.from(json)))
+        .toList();
+  }
+
+  /// Lấy danh sách khuyến mãi trong ví của user hiện tại.
+  ///
+  /// Endpoint: GET /api/Promotions/my-wallet-vouchers
+  /// Đây là danh sách các voucher user đã nhận/lưu vào ví, có thông tin
+  /// usage còn lại. Kết quả trả về đã lọc sẵn theo người dùng, không phải
+  /// tất cả khuyến mãi đang active trên hệ thống.
+  Future<List<WalletVoucherModel>> getMyWalletVouchers() async {
+    final response = await _apiClient.get('/Promotions/my-wallet-vouchers');
+    final items = response.data['data'] as List<dynamic>? ?? const [];
+    return items
+        .whereType<Map>()
+        .map(
+          (json) => WalletVoucherModel.fromJson(Map<String, dynamic>.from(json)),
+        )
         .toList();
   }
 

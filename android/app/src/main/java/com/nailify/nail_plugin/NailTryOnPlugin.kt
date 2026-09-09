@@ -57,13 +57,6 @@ class NailTryOnPlugin : FlutterPlugin, ActivityAware {
     // holder bị bỏ lỡ. Khi session được tạo, ta bind holder ngay.
     private var pendingHolder: android.view.SurfaceHolder? = null
 
-    /**
-     * MethodChannel.Result đang chờ xử lý cho "startSession" — dùng khi cần
-     * gửi error từ background (vd: ONNX Runtime loadLibrary thất bại trong
-     * NailTryOnSession constructor/start) về Dart side thay vì crash app.
-     */
-    private var pendingResult: MethodChannel.Result? = null
-
     // -------------------------------------------------------------------------
     // FlutterPlugin lifecycle
     // -------------------------------------------------------------------------
@@ -165,13 +158,8 @@ class NailTryOnPlugin : FlutterPlugin, ActivityAware {
                     result.error("NO_ACTIVITY", "Plugin is not attached to an Activity yet.", null)
                     return
                 }
-                // Lưu result vào pendingResult để startSession có thể gửi error
-                // về Dart nếu ONNX Runtime loadLibrary thất bại (UnsatisfiedLinkError).
-                // Nếu startSession thành công, nó sẽ tự clear pendingResult.
-                pendingResult = result
                 startSession(activityRef, config, mode)
-                // Không gọi result.success(null) ở đây — startSession đã reply rồi.
-                return
+                result.success(null)
             }
 
             "stopSession" -> {
@@ -234,35 +222,15 @@ class NailTryOnPlugin : FlutterPlugin, ActivityAware {
             Log.w(TAG, "Activity is not LifecycleOwner; cannot bind CameraX")
             return
         }
-
-        val newSession = try {
-            NailTryOnSession(
-                context = context ?: activity.applicationContext,
-                activity = lifecycleOwner,
-                mode = mode,
-                config = config ?: emptyMap<String, Any?>(),
-                eventSink = eventSink,
-            )
-        } catch (t: Throwable) {
-            // Bắt lỗi từ constructor NailTryOnSession (vd: ONNX Runtime loadLibrary
-            // thất bại, MediaPipe native lỗi, hoặc context null). Nếu không bắt,
-            // exception sẽ bubble lên Main thread qua MethodChannel → crash app.
-            Log.e(TAG, "Failed to create NailTryOnSession: ${t.message}", t)
-            sendError("AR_INIT_FAILED", "Failed to init AR session: ${t.message}")
-            return
-        }
+        val newSession = NailTryOnSession(
+            context = context ?: activity.applicationContext,
+            activity = lifecycleOwner,
+            mode = mode,
+            config = config ?: emptyMap<String, Any?>(),
+            eventSink = eventSink,
+        )
         session = newSession
-
-        try {
-            newSession.start()
-        } catch (t: Throwable) {
-            // start() đã tự bọc try-catch rồi, nhưng nếu emitError bị nuốt vì
-            // eventSink null thì đây là lớp phòng hộ cuối cùng.
-            Log.e(TAG, "Failed to start NailTryOnSession: ${t.message}", t)
-            session = null
-            sendError("AR_INIT_FAILED", "Failed to start AR session: ${t.message}")
-            return
-        }
+        newSession.start()
 
         // Bind pending holder (nếu surfaceCreated đã chạy trước khi session tạo).
         val holderToBind = savedHolder ?: pendingHolder
@@ -275,36 +243,6 @@ class NailTryOnPlugin : FlutterPlugin, ActivityAware {
         }
 
         Log.i(TAG, "Session started: mode=$mode")
-
-        // Reply success cho MethodChannel caller (Dart đang chờ).
-        val pending = pendingResult
-        if (pending != null) {
-            pendingResult = null
-            try {
-                pending.success(null)
-            } catch (e: Exception) {
-                Log.w(TAG, "pendingResult.success failed: ${e.message}")
-            }
-        }
-    }
-
-    /**
-     * Gửi error từ native side về Dart side qua MethodChannel để UI có thể
-     * hiển thị thông báo thân thiện thay vì crash app. EventChannel chỉ dùng
-     * cho stats; error phải đi qua MethodChannel result.error().
-     */
-    private fun sendError(code: String, message: String) {
-        val pending = pendingResult
-        if (pending != null) {
-            pendingResult = null
-            try {
-                pending.error(code, message, null)
-            } catch (e: Exception) {
-                Log.w(TAG, "pendingResult.error failed: ${e.message}")
-            }
-        }
-        // Ngoài ra log vào Logcat để debug.
-        Log.e(TAG, "sendError: $code — $message")
     }
 
     private fun stopSession() {

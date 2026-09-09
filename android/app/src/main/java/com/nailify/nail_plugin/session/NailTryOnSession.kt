@@ -62,7 +62,7 @@ class NailTryOnSession(
     fun start() {
         val designPathsMap = config["designPaths"] as? Map<*, *>
         Log.d(TAG, "designPathsMap received: $designPathsMap")
-
+        
         val designPaths: Map<String, String?> = if (designPathsMap != null) {
             mapOf(
                 "index" to designPathsMap["index"] as? String,
@@ -74,49 +74,19 @@ class NailTryOnSession(
         } else emptyMap()
         Log.d(TAG, "Parsed designPaths: $designPaths")
 
-        try {
-            pipeline = PipelineExecutor(context, debugProvider = { DebugState(debugShowSkeleton, debugShowBbox, debugShowFps) }).also {
-                it.designPaths = designPaths
-                it.setEventSink { stats -> emitEvent(stats) }
-                it.setSurfaceProvider { bitmap, detections -> renderer?.renderFrame(bitmap, detections) }
-                it.setSkeletonProvider { skel -> renderer?.currentSkeletonPoints = skel }
-            }
-            camera = CameraController(context, activity).also {
-                it.setAnalyzerExecutor(pipeline!!.cameraExecutor)
-                it.onFrame = { bitmap, rotation, isFront, pool -> pipeline!!.submit(bitmap, rotation, isFront, pool) }
-                it.onError = { msg -> Log.w(TAG, "Camera error: $msg") }
-                it.start()
-            }
-            Log.i(TAG, "NailTryOnSession started: mode=$mode")
-        } catch (t: Throwable) {
-            // Phòng trường hợp ONNX init throw (ABI mismatch / emulator thiếu lib),
-            // MediaPipe lỗi, hoặc Camera khởi tạo thất bại. Nếu để throw lên
-            // NailTryOnPlugin → Main thread → crash app. Thay vào đó emit error
-            // event về Dart để UI hiển thị "AR không khả dụng".
-            Log.e(TAG, "start() failed: ${t.message}", t)
-            cleanup()
-            emitError("AR init failed: ${t.message}")
+        pipeline = PipelineExecutor(context, debugProvider = { DebugState(debugShowSkeleton, debugShowBbox, debugShowFps) }).also {
+            it.designPaths = designPaths
+            it.setEventSink { stats -> emitEvent(stats) }
+            it.setSurfaceProvider { bitmap, detections -> renderer?.renderFrame(bitmap, detections) }
+            it.setSkeletonProvider { skel -> renderer?.currentSkeletonPoints = skel }
         }
-    }
-
-    private fun cleanup() {
-        try { camera?.stop() } catch (_: Exception) {}
-        try { pipeline?.shutdown() } catch (_: Exception) {}
-        try { renderer?.release() } catch (_: Exception) {}
-        camera = null
-        pipeline = null
-        renderer = null
-    }
-
-    private fun emitError(message: String) {
-        val sink = eventSink ?: return
-        mainHandler.post {
-            try {
-                sink.error("AR_INIT_FAILED", message, null)
-            } catch (e: Exception) {
-                Log.w(TAG, "emitError sink.error failed: ${e.message}")
-            }
+        camera = CameraController(context, activity).also {
+            it.setAnalyzerExecutor(pipeline!!.cameraExecutor)
+            it.onFrame = { bitmap, rotation, isFront, pool -> pipeline!!.submit(bitmap, rotation, isFront, pool) }
+            it.onError = { msg -> Log.w(TAG, "Camera error: $msg") }
+            it.start()
         }
+        Log.i(TAG, "NailTryOnSession started: mode=$mode")
     }
 
     fun stop() {

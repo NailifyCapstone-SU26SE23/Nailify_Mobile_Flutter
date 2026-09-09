@@ -1,6 +1,7 @@
 package com.google.mediapipe.examples.handlandmarker.fragment
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.res.Configuration
 import android.os.Bundle
 import android.util.Log
@@ -24,20 +25,26 @@ import com.google.mediapipe.examples.handlandmarker.HandLandmarkerHelper
 import com.google.mediapipe.examples.handlandmarker.MainViewModel
 import com.google.mediapipe.examples.handlandmarker.R
 import com.google.mediapipe.examples.handlandmarker.databinding.FragmentCameraBinding
+import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import com.google.mediapipe.tasks.vision.core.RunningMode
+import org.json.JSONArray
+import org.json.JSONObject
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import kotlin.math.acos
+import kotlin.math.sqrt
 
 class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
 
     companion object {
         private const val TAG = "Hand Landmarker"
+        const val RESULT_IMAGE_PATH = "imagePath"
+        const val RESULT_LANDMARKS_JSON = "landmarksJson"
         private const val LIVE_ANALYSIS_WIDTH = 640
         private const val LIVE_ANALYSIS_HEIGHT = 480
-
-        const val RESULT_IMAGE_PATH = "result_image_path"
-        const val RESULT_LANDMARKS_JSON = "result_landmarks_json"
+        private const val NAIL_VISIBILITY_MODEL_ASSET = "nail_visibility_model.json"
+        private const val NAIL_VISIBILITY_FALSE_CONFIRMATION_MS = 3_000L
     }
 
     private var _fragmentCameraBinding: FragmentCameraBinding? = null
@@ -52,6 +59,8 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
     private var camera: Camera? = null
     private var cameraProvider: ProcessCameraProvider? = null
     private var cameraFacing = CameraSelector.LENS_FACING_BACK
+    private var nailVisibilityModel: NailVisibilityModel? = null
+    private var nailVisibilityFalseStartMs: Long? = null
 
     /** Blocking ML operations are performed using this executor */
     private lateinit var backgroundExecutor: ExecutorService
@@ -123,6 +132,8 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
 
         // Initialize our background executor
         backgroundExecutor = Executors.newSingleThreadExecutor()
+        val appContext = view.context.applicationContext
+        nailVisibilityModel = loadNailVisibilityModel(appContext)
 
         // Wait for the views to be properly laid out
         fragmentCameraBinding.viewFinder.post {
@@ -132,7 +143,6 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
         }
 
         // Create the HandLandmarkerHelper that will handle the inference
-        val appContext = view.context.applicationContext
         backgroundExecutor.execute {
             handLandmarkerHelper = HandLandmarkerHelper(
                 context = appContext,
@@ -247,25 +257,188 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
         activity?.runOnUiThread {
             val binding = _fragmentCameraBinding ?: return@runOnUiThread
 
-            // Pass necessary information to OverlayView for drawing on the canvas
-            binding.overlay.setFullDesign(viewModel.nailSetConfig.value)
+            val result = resultBundle.results.first()
+            val nailsVisible = isNailVisible(result.landmarks().firstOrNull())
+            val shouldShowOverlay = shouldShowOverlay(nailsVisible)
+            binding.nailVisibilityPrompt.visibility =
+                if (shouldShowOverlay) View.GONE else View.VISIBLE
+            binding.overlay.visibility =
+                if (shouldShowOverlay) View.VISIBLE else View.GONE
 
-            binding.overlay.setResults(
-                resultBundle.results.first(),
-                resultBundle.nailDetections.firstOrNull().orEmpty(),
-                resultBundle.inputImageHeight,
-                resultBundle.inputImageWidth,
-                RunningMode.LIVE_STREAM
-            )
+            if (shouldShowOverlay) {
+                // Pass necessary information to OverlayView for drawing on the canvas
+                binding.overlay.setFullDesign(viewModel.nailSetConfig.value)
+
+                binding.overlay.setResults(
+                    result,
+                    resultBundle.inputImageHeight,
+                    resultBundle.inputImageWidth,
+                    RunningMode.LIVE_STREAM
+                )
+            } else {
+                binding.overlay.clear()
+            }
 
             // Force a redraw
             binding.overlay.invalidate()
         }
     }
 
+    private fun shouldShowOverlay(nailsVisible: Boolean): Boolean {
+        if (nailsVisible) {
+            nailVisibilityFalseStartMs = null
+            return true
+        }
+
+        val now = System.currentTimeMillis()
+        val falseStartMs = nailVisibilityFalseStartMs ?: now.also {
+            nailVisibilityFalseStartMs = it
+        }
+        return now - falseStartMs < NAIL_VISIBILITY_FALSE_CONFIRMATION_MS
+    }
+
+    private fun loadNailVisibilityModel(context: Context): NailVisibilityModel? {
+        return try {
+            val json = context.assets.open(NAIL_VISIBILITY_MODEL_ASSET)
+                .bufferedReader()
+                .use { it.readText() }
+            NailVisibilityModel.fromJson(JSONObject(json))
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to load nail visibility model.", e)
+            null
+        }
+    }
+
+    private fun isNailVisible(landmarks: List<NormalizedLandmark>?): Boolean {
+        if (landmarks == null || landmarks.size <= 20) return false
+        val model = nailVisibilityModel ?: return true
+        return model.isNailVisible(extractNailVisibilityFeatures(landmarks))
+    }
+
+    private fun extractNailVisibilityFeatures(landmarks: List<NormalizedLandmark>): DoubleArray {
+        val features = mutableListOf<Double>()
+        listOf(8 to 6, 12 to 10, 16 to 14, 20 to 18).forEach { (tipIndex, pipIndex) ->
+            features += landmarks[tipIndex].z().toDouble() - landmarks[pipIndex].z().toDouble()
+        }
+        listOf(
+            Triple(8, 6, 5),
+            Triple(12, 10, 9),
+            Triple(16, 14, 13),
+            Triple(20, 18, 17)
+        ).forEach { (tipIndex, pipIndex, mcpIndex) ->
+            features += calculateFingerAngle(landmarks, tipIndex, pipIndex, mcpIndex)
+        }
+
+        val wrist = landmarks[0]
+        val avgDepth = listOf(4, 8, 12, 16, 20)
+            .sumOf { landmarks[it].z().toDouble() - wrist.z().toDouble() } / 5.0
+        features += avgDepth
+
+        val indexTip = landmarks[8]
+        val pinkyTip = landmarks[20]
+        val xDiff = indexTip.x().toDouble() - pinkyTip.x().toDouble()
+        val yDiff = indexTip.y().toDouble() - pinkyTip.y().toDouble()
+        features += sqrt(xDiff * xDiff + yDiff * yDiff)
+
+        return features.toDoubleArray()
+    }
+
+    private fun calculateFingerAngle(
+        landmarks: List<NormalizedLandmark>,
+        tipIndex: Int,
+        pipIndex: Int,
+        mcpIndex: Int
+    ): Double {
+        val tip = landmarks[tipIndex]
+        val pip = landmarks[pipIndex]
+        val mcp = landmarks[mcpIndex]
+
+        val v1 = doubleArrayOf(
+            pip.x().toDouble() - mcp.x().toDouble(),
+            pip.y().toDouble() - mcp.y().toDouble(),
+            pip.z().toDouble() - mcp.z().toDouble()
+        )
+        val v2 = doubleArrayOf(
+            tip.x().toDouble() - pip.x().toDouble(),
+            tip.y().toDouble() - pip.y().toDouble(),
+            tip.z().toDouble() - pip.z().toDouble()
+        )
+
+        val v1Norm = sqrt(v1.sumOf { it * it })
+        val v2Norm = sqrt(v2.sumOf { it * it })
+        if (v1Norm == 0.0 || v2Norm == 0.0) return 0.0
+
+        val dot = v1.indices.sumOf { v1[it] * v2[it] }
+        val cosine = (dot / (v1Norm * v2Norm)).coerceIn(-1.0, 1.0)
+        return Math.toDegrees(acos(cosine))
+    }
+
+    private class NailVisibilityModel(
+        private val threshold: Double,
+        private val trees: List<Tree>
+    ) {
+        fun isNailVisible(features: DoubleArray): Boolean {
+            if (trees.isEmpty()) return false
+            return trees.sumOf { it.predict(features) } / trees.size > threshold
+        }
+
+        private class Tree(
+            private val childrenLeft: IntArray,
+            private val childrenRight: IntArray,
+            private val feature: IntArray,
+            private val threshold: DoubleArray,
+            private val classOneValues: DoubleArray
+        ) {
+            fun predict(features: DoubleArray): Double {
+                var node = 0
+                while (childrenLeft[node] != -1 && childrenRight[node] != -1) {
+                    node = if (features[feature[node]] <= threshold[node]) {
+                        childrenLeft[node]
+                    } else {
+                        childrenRight[node]
+                    }
+                }
+                return classOneValues[node]
+            }
+        }
+
+        companion object {
+            fun fromJson(json: JSONObject): NailVisibilityModel {
+                val treesJson = json.getJSONArray("trees")
+                val trees = List(treesJson.length()) { index ->
+                    val treeJson = treesJson.getJSONObject(index)
+                    Tree(
+                        childrenLeft = treeJson.getJSONArray("children_left").toIntArray(),
+                        childrenRight = treeJson.getJSONArray("children_right").toIntArray(),
+                        feature = treeJson.getJSONArray("feature").toIntArray(),
+                        threshold = treeJson.getJSONArray("threshold").toDoubleArray(),
+                        classOneValues = treeJson.getJSONArray("value").toClassOneValueArray()
+                    )
+                }
+                return NailVisibilityModel(
+                    threshold = json.getDouble("threshold"),
+                    trees = trees
+                )
+            }
+
+            private fun JSONArray.toIntArray(): IntArray =
+                IntArray(length()) { index -> getInt(index) }
+
+            private fun JSONArray.toDoubleArray(): DoubleArray =
+                DoubleArray(length()) { index -> getDouble(index) }
+
+            private fun JSONArray.toClassOneValueArray(): DoubleArray =
+                DoubleArray(length()) { index ->
+                    getJSONArray(index).getJSONArray(0).getDouble(1)
+                }
+        }
+    }
+
     override fun onError(error: String, errorCode: Int) {
         activity?.runOnUiThread {
             val context = context ?: return@runOnUiThread
+            val binding = _fragmentCameraBinding ?: return@runOnUiThread
+
             Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
         }
     }

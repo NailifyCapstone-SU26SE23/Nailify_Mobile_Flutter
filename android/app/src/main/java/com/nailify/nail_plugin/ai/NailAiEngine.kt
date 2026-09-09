@@ -65,36 +65,9 @@ class NailAiEngine(
         private const val DEFAULT_INPUT_NAME = "images"
     }
 
-    private val bitmapPool = BitmapPool(inputSize, inputSize)
-
-    /**
-     * Lazily khởi tạo ONNX Runtime OrtEnvironment.
-     *
-     * Lý do `lazy` thay vì `val` trực tiếp:
-     *   - Nếu `System.loadLibrary("onnxruntime4j_jni")` thất bại (symbol
-     *     "OrtGetApiBase" không tìm thấy trên emulator x86_64, hoặc ABI
-     *     mismatch), `OrtEnvironment.getEnvironment()` sẽ throw
-     *     `UnsatisfiedLinkError` — nếu để ở field initializer thì exception
-     *     xảy ra trong constructor `NailAiEngine`, bubble lên caller và làm
-     *     crash toàn app.
-     *   - Với `lazy`, exception chỉ xảy ra khi thực sự gọi `ortEnv` (trong
-     *     `load()`), và `load()` đã có try-catch để trả về `false` thay vì
-     *     ném lên UI thread.
-     */
-    private val ortEnv: OrtEnvironment by lazy {
-        try {
-            OrtEnvironment.getEnvironment()
-        } catch (t: UnsatisfiedLinkError) {
-            Log.e(TAG, "Failed to load ONNX Runtime native lib (OrtGetApiBase missing?). " +
-                "AR Try-On sẽ chạy ở chế độ fallback.", t)
-            throw t
-        } catch (t: Throwable) {
-            Log.e(TAG, "Failed to init OrtEnvironment: ${t.message}", t)
-            throw t
-        }
-    }
-
+    private val ortEnv: OrtEnvironment = OrtEnvironment.getEnvironment()
     private var session: OrtSession? = null
+    private val bitmapPool = BitmapPool(inputSize, inputSize)
 
     private val inputName: String
         get() = session?.inputInfo?.keys?.firstOrNull() ?: DEFAULT_INPUT_NAME
@@ -104,29 +77,16 @@ class NailAiEngine(
     fun load(): Boolean {
         if (loaded) return true
         return try {
-            // Khởi tạo lazy ortEnv trong try-catch để không crash khi
-            // ONNX native lib không load được (ABI mismatch / emulator x86_64).
-            val env = try {
-                ortEnv
-            } catch (t: UnsatisfiedLinkError) {
-                Log.e(TAG, "load() aborted: ONNX native lib missing (${t.message}). " +
-                    "AR Try-On chỉ chạy detection overlay (không có YOLO inference).", t)
-                return false
-            } catch (t: Throwable) {
-                Log.e(TAG, "load() aborted: OrtEnvironment init failed: ${t.message}", t)
-                return false
-            }
-
             val bytes = context.assets.open(modelAssetPath).use { it.readBytes() }
             val options = OrtSession.SessionOptions().apply {
                 // Tối ưu hóa đa luồng CPU (an toàn cho mọi thiết bị)
                 setIntraOpNumThreads(4)
                 setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
-
-                // LƯU Ý: Đã tắt NNAPI vì driver NNAPI trên Android Emulator (x86_64)
+                
+                // LƯU Ý: Đã tắt NNAPI vì driver NNAPI trên Android Emulator (x86_64) 
                 // bị lỗi C++ native (SIGFPE_INTDIV) khi load mô hình YOLO.
             }
-            session = env.createSession(bytes, options)
+            session = ortEnv.createSession(bytes, options)
             loaded = true
             Log.i(TAG, "Model loaded ($modelAssetPath), inputs=${session?.inputInfo?.keys}, outputs=${session?.outputInfo?.keys}")
             true

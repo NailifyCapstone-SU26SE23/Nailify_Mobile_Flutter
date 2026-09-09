@@ -26,7 +26,6 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
@@ -36,7 +35,6 @@ import com.google.mediapipe.examples.handlandmarker.MainViewModel
 import com.google.mediapipe.examples.handlandmarker.R
 import com.google.mediapipe.examples.handlandmarker.databinding.FragmentGalleryBinding
 import com.google.mediapipe.tasks.vision.core.RunningMode
-import java.util.Locale
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -98,8 +96,6 @@ class GalleryFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
             requireActivity().finish()
         }
 
-        // initBottomSheetControls()
-
         if (savedInstanceState == null && arguments?.getBoolean(ARG_AUTO_OPEN_PICKER) == true) {
             getContent.launch(arrayOf("image/*", "video/*"))
         }
@@ -112,24 +108,6 @@ class GalleryFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
         }
         fragmentGalleryBinding.videoView.visibility = View.GONE
         super.onPause()
-    }
-
-    private fun initBottomSheetControls() {
-        // Removed bottom sheet controls initialization
-    }
-
-    // Update the values displayed in the bottom sheet. Reset detector.
-    private fun updateControlsUi() {
-        if (fragmentGalleryBinding.videoView.isPlaying) {
-            fragmentGalleryBinding.videoView.stopPlayback()
-        }
-        fragmentGalleryBinding.videoView.visibility = View.GONE
-        fragmentGalleryBinding.imageResult.visibility = View.GONE
-        fragmentGalleryBinding.overlay.clear()
-        // Removed bottom sheet layout ui updates
-
-        fragmentGalleryBinding.overlay.clear()
-        fragmentGalleryBinding.tvPlaceholder.visibility = View.VISIBLE
     }
 
     // Load and display the image.
@@ -172,15 +150,12 @@ class GalleryFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
                             fragmentGalleryBinding.overlay.setFullDesign(viewModel.nailSetConfig.value)
                             fragmentGalleryBinding.overlay.setResults(
                                 result.results[0],
-                                result.nailDetections.firstOrNull().orEmpty(),
                                 bitmap.height,
                                 bitmap.width,
                                 RunningMode.IMAGE
                             )
 
                             setUiEnabled(true)
-                            // fragmentGalleryBinding.bottomSheetLayout.inferenceTimeVal.text =
-                            //     String.format(Locale.US, "%d ms", result.inferenceTime)
                         }
                     } ?: run { Log.e(TAG, "Error running hand landmarker.") }
 
@@ -253,16 +228,12 @@ class GalleryFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
                         fragmentGalleryBinding.overlay.setFullDesign(viewModel.nailSetConfig.value)
                         fragmentGalleryBinding.overlay.setResults(
                             result.results[resultIndex],
-                            result.nailDetections.getOrNull(resultIndex).orEmpty(),
                             result.inputImageHeight,
                             result.inputImageWidth,
                             RunningMode.VIDEO
                         )
 
                         setUiEnabled(true)
-
-                        // fragmentGalleryBinding.bottomSheetLayout.inferenceTimeVal.text =
-                        //     String.format(Locale.US, "%d ms", result.inferenceTime)
                     }
                 }
             },
@@ -294,7 +265,6 @@ class GalleryFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
 
     private fun setUiEnabled(enabled: Boolean) {
         fragmentGalleryBinding.fabGetContent.isEnabled = enabled
-        // removed bottomsheet controls state updating
     }
 
     private fun classifyingError() {
@@ -309,12 +279,6 @@ class GalleryFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
         classifyingError()
         activity?.runOnUiThread {
             Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show()
-            if (errorCode == HandLandmarkerHelper.GPU_ERROR) {
-                // fragmentGalleryBinding.bottomSheetLayout.spinnerDelegate.setSelection(
-                //     HandLandmarkerHelper.DELEGATE_CPU,
-                //     false
-                // )
-            }
         }
     }
 

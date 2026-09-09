@@ -18,7 +18,6 @@ package com.google.mediapipe.examples.handlandmarker
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Matrix
-import android.graphics.PointF
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.SystemClock
@@ -32,11 +31,6 @@ import com.google.mediapipe.tasks.core.Delegate
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarker
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.math.hypot
 
 class HandLandmarkerHelper(
     var minHandDetectionConfidence: Float = DEFAULT_HAND_DETECTION_CONFIDENCE,
@@ -53,28 +47,6 @@ class HandLandmarkerHelper(
     // For this example this needs to be a var so it can be reset on changes.
     // If the Hand Landmarker will not change, a lazy val would be preferable.
     private var handLandmarker: HandLandmarker? = null
-    private var nailRecognizer: YoloNailOnnxRecognizer? = null
-    private val liveNailDetections = ConcurrentHashMap<Long, List<YoloNailOnnxRecognizer.NailDetection>>()
-    private val liveNailExecutor: ExecutorService = Executors.newSingleThreadExecutor()
-    private val liveNailDetectionRunning = AtomicBoolean(false)
-    private var lastLiveNailDetectionTimeMs = 0L
-    @Volatile
-    private var lastLiveNailDetections: List<YoloNailOnnxRecognizer.NailDetection> = emptyList()
-
-    /**
-     * Cached output of [getFingerForwardVectors] keyed on the last result.
-     * Resets whenever a new [HandLandmarkerResult] is passed in, so stale
-     * landmarks cannot leak across frames even with throttling.
-     */
-    private var cachedVectors: Map<Int, PointF> = emptyMap()
-    private var cachedVectorsResult: HandLandmarkerResult? = null
-
-    /** Cached output of [getFingerTipPositions] keyed on result + frame size. */
-    private var cachedTipPositions: Map<Int, PointF> = emptyMap()
-    private var cachedTipResult: TipCacheKey? = null
-
-    /** Monotonic counter incremented on each accessor call; reserved for future cadence tuning. */
-    private var throttleCounter: Int = 0
 
     init {
         setupHandLandmarker()
@@ -83,21 +55,10 @@ class HandLandmarkerHelper(
     fun clearHandLandmarker() {
         handLandmarker?.close()
         handLandmarker = null
-        nailRecognizer?.close()
-        nailRecognizer = null
-        liveNailDetections.clear()
-        liveNailDetectionRunning.set(false)
-        lastLiveNailDetectionTimeMs = 0L
-        lastLiveNailDetections = emptyList()
-        cachedVectors = emptyMap()
-        cachedVectorsResult = null
-        cachedTipPositions = emptyMap()
-        cachedTipResult = null
     }
 
     fun close() {
         clearHandLandmarker()
-        liveNailExecutor.shutdownNow()
     }
 
     // Return running status of HandLandmarkerHelper
@@ -163,7 +124,6 @@ class HandLandmarkerHelper(
             val options = optionsBuilder.build()
             handLandmarker =
                 HandLandmarker.createFromOptions(context, options)
-            nailRecognizer = YoloNailOnnxRecognizer(context)
         } catch (e: IllegalStateException) {
             handLandmarkerHelperListener?.onError(
                 "Hand Landmarker failed to initialize. See error logs for " +
@@ -228,8 +188,6 @@ class HandLandmarkerHelper(
             matrix, true
         )
 
-        liveNailDetections[frameTime] = detectLiveNails(rotatedBitmap, frameTime)
-
         // Convert the input Bitmap object to an MPImage object to run inference
         val mpImage = BitmapImageBuilder(rotatedBitmap).build()
 
@@ -284,7 +242,6 @@ class HandLandmarkerHelper(
 
         // Next, we'll get one frame every frameInterval ms, then run detection on these frames.
         val resultList = mutableListOf<HandLandmarkerResult>()
-        val nailDetectionList = mutableListOf<List<YoloNailOnnxRecognizer.NailDetection>>()
         val numberOfFrameToRead = videoLengthMs.div(inferenceIntervalMs)
 
         for (i in 0..numberOfFrameToRead) {
@@ -303,13 +260,11 @@ class HandLandmarkerHelper(
 
                     // Convert the input Bitmap object to an MPImage object to run inference
                     val mpImage = BitmapImageBuilder(argb8888Frame).build()
-                    val nailDetections = detectNails(argb8888Frame)
 
                     // Run hand landmarker using MediaPipe Hand Landmarker API
                     handLandmarker?.detectForVideo(mpImage, timestampMs)
                         ?.let { detectionResult ->
                             resultList.add(detectionResult)
-                            nailDetectionList.add(nailDetections)
                         } ?: run{
                             didErrorOccurred = true
                             handLandmarkerHelperListener?.onError(
@@ -335,7 +290,7 @@ class HandLandmarkerHelper(
         return if (didErrorOccurred) {
             null
         } else {
-            ResultBundle(resultList, nailDetectionList, inferenceTimePerFrameMs, height, width)
+            ResultBundle(resultList, inferenceTimePerFrameMs, height, width)
         }
     }
 
@@ -356,14 +311,12 @@ class HandLandmarkerHelper(
 
         // Convert the input Bitmap object to an MPImage object to run inference
         val mpImage = BitmapImageBuilder(image).build()
-        val nailDetections = detectNails(image)
 
         // Run hand landmarker using MediaPipe Hand Landmarker API
         handLandmarker?.detect(mpImage)?.also { landmarkResult ->
             val inferenceTimeMs = SystemClock.uptimeMillis() - startTime
             return ResultBundle(
                 listOf(landmarkResult),
-                listOf(nailDetections),
                 inferenceTimeMs,
                 image.height,
                 image.width
@@ -385,12 +338,10 @@ class HandLandmarkerHelper(
     ) {
         val finishTimeMs = SystemClock.uptimeMillis()
         val inferenceTime = finishTimeMs - result.timestampMs()
-        val nailDetections = liveNailDetections.remove(result.timestampMs()).orEmpty()
 
         handLandmarkerHelperListener?.onResults(
             ResultBundle(
                 listOf(result),
-                listOf(nailDetections),
                 inferenceTime,
                 input.height,
                 input.width
@@ -406,42 +357,9 @@ class HandLandmarkerHelper(
         )
     }
 
-    private fun detectNails(bitmap: Bitmap): List<YoloNailOnnxRecognizer.NailDetection> {
-        return try {
-            nailRecognizer?.recognizeNails(bitmap).orEmpty()
-        } catch (error: RuntimeException) {
-            Log.e(TAG, "ONNX nail detection failed with error: ${error.message}")
-            emptyList()
-        }
-    }
-
-    private fun detectLiveNails(
-        bitmap: Bitmap,
-        frameTime: Long
-    ): List<YoloNailOnnxRecognizer.NailDetection> {
-        if (frameTime - lastLiveNailDetectionTimeMs < LIVE_NAIL_DETECTION_INTERVAL_MS) {
-            return lastLiveNailDetections
-        }
-
-        lastLiveNailDetectionTimeMs = frameTime
-        if (liveNailDetectionRunning.compareAndSet(false, true)) {
-            val detectionBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, false)
-            liveNailExecutor.execute {
-                try {
-                    lastLiveNailDetections = detectNails(detectionBitmap)
-                } finally {
-                    detectionBitmap.recycle()
-                    liveNailDetectionRunning.set(false)
-                }
-            }
-        }
-        return lastLiveNailDetections
-    }
-
     companion object {
         const val TAG = "HandLandmarkerHelper"
         private const val MP_HAND_LANDMARKER_TASK = "hand_landmarker.task"
-        private const val LIVE_NAIL_DETECTION_INTERVAL_MS = 200L
 
         const val DELEGATE_CPU = 0
         const val DELEGATE_GPU = 1
@@ -453,111 +371,8 @@ class HandLandmarkerHelper(
         const val GPU_ERROR = 1
     }
 
-    /**
-     * Per-finger forward unit vectors (base -> tip) extracted from the first
-     * detected hand in `result`. Mapping matches NailAiEngine class ids:
-     *   clsId 0=Index, 1=Middle, 2=Pinky, 3=Ring, 4=Thumb.
-     *
-     * Each value is the unit vector from PIP -> TIP landmark, in normalized
-     * image coordinates (x in [0,1], y in [0,1]).
-     *
-     * Throttling: MediaPipe runs every `THROTTLE_EVERY` calls and the result is
-     * cached; other calls return the cache. This mirrors the desktop pipeline
-     * (MediaPipe is much slower than YOLO-Seg, so calling it on every frame
-     * burns battery without changing the visible output). The cache is keyed
-     * on the result reference so stale landmarks cannot leak across frames.
-     */
-    fun getFingerForwardVectors(result: HandLandmarkerResult): Map<Int, PointF> {
-        advanceThrottle()
-        cachedVectorsResult?.let { if (it === result) return cachedVectors }
-        val out = HashMap<Int, PointF>()
-        val hands = result.landmarks()
-        if (hands.isEmpty()) return out
-        val landmarks = hands[0]
-        // (clsId, pipIdx, tipIdx)
-        val mapping = listOf(
-            Triple(0, 6, 8),    // Index
-            Triple(1, 10, 12),  // Middle
-            Triple(2, 18, 20),  // Pinky
-            Triple(3, 14, 16),  // Ring
-            Triple(4, 2, 4),    // Thumb
-        )
-        for ((clsId, pipIdx, tipIdx) in mapping) {
-            if (pipIdx >= landmarks.size || tipIdx >= landmarks.size) continue
-            val pip = landmarks[pipIdx]
-            val tip = landmarks[tipIdx]
-            val dx = tip.x() - pip.x()
-            val dy = tip.y() - pip.y()
-            val mag = hypot(dx.toDouble(), dy.toDouble())
-            if (mag < 1e-6) continue
-            out[clsId] = PointF((dx / mag).toFloat(), (dy / mag).toFloat())
-        }
-        cachedVectors = out
-        cachedVectorsResult = result
-        return out
-    }
-
-    /**
-     * Per-finger TIP landmark positions in IMAGE pixel coordinates (not normalized)
-     * extracted from the first detected hand in `result`. Used to match YOLO
-     * detections to finger names via centroid proximity.
-     *
-     * Mapping (matches NailAiEngine class ids):
-     *   clsId 0=Index, 1=Middle, 2=Pinky, 3=Ring, 4=Thumb.
-     *
-     * Throttling: same cadence as [getFingerForwardVectors]. The two methods
-     * share the throttle counter so they run on the same frames.
-     *
-     * @param imageWidth  Frame width in pixels (after rotation) to scale x.
-     * @param imageHeight Frame height in pixels (after rotation) to scale y.
-     * @return Map from clsId -> PointF(tipX, tipY) in image pixel coords.
-     */
-    fun getFingerTipPositions(
-        result: HandLandmarkerResult,
-        imageWidth: Int,
-        imageHeight: Int,
-    ): Map<Int, PointF> {
-        advanceThrottle()
-        cachedTipResult?.let {
-            if (it.result === result && it.imageWidth == imageWidth && it.imageHeight == imageHeight) {
-                return cachedTipPositions
-            }
-        }
-        val out = HashMap<Int, PointF>()
-        val hands = result.landmarks()
-        if (hands.isEmpty()) return out
-        val landmarks = hands[0]
-        val tipIdxForCls = mapOf(
-            0 to 8,    // Index
-            1 to 12,   // Middle
-            2 to 20,   // Pinky
-            3 to 16,   // Ring
-            4 to 4,    // Thumb
-        )
-        for ((clsId, tipIdx) in tipIdxForCls) {
-            if (tipIdx >= landmarks.size) continue
-            val tip = landmarks[tipIdx]
-            out[clsId] = PointF(tip.x() * imageWidth, tip.y() * imageHeight)
-        }
-        cachedTipPositions = out
-        cachedTipResult = TipCacheKey(result, imageWidth, imageHeight)
-        return out
-    }
-
-    /** Increment the shared throttle counter. Reserved for future per-method cadence tuning. */
-    private fun advanceThrottle() {
-        throttleCounter = (throttleCounter + 1) and Int.MAX_VALUE
-    }
-
-    private data class TipCacheKey(
-        val result: HandLandmarkerResult,
-        val imageWidth: Int,
-        val imageHeight: Int,
-    )
-
     data class ResultBundle(
         val results: List<HandLandmarkerResult>,
-        val nailDetections: List<List<YoloNailOnnxRecognizer.NailDetection>>,
         val inferenceTime: Long,
         val inputImageHeight: Int,
         val inputImageWidth: Int,

@@ -390,8 +390,19 @@ class NailBookingCubit extends Cubit<NailBookingState> {
     // Nếu chọn luồng "Không chọn thợ", bỏ qua việc lấy holdToken
     if (state.noArtistSelected) return true;
 
-    await _holdSlot(time, nailVariantId: nailVariantId);
-    return state.holdToken != null;
+    // Fix bug: set `isSubmitting = true` trước khi gọi API hold-slot để button
+    // "Tiếp tục" trên `service_booking_page` disable + spinner ngay, tránh
+    // user bấm nhầm nhiều lần (gọi API hold-slot trùng lặp).
+    emit(state.copyWith(isSubmitting: true));
+    try {
+      await _holdSlot(time, nailVariantId: nailVariantId);
+      return state.holdToken != null;
+    } finally {
+      // Chỉ reset isSubmitting nếu vẫn còn mounted (tránh emit sau dispose).
+      if (!isClosed) {
+        emit(state.copyWith(isSubmitting: false));
+      }
+    }
   }
 
   /// Gọi API giữ chỗ và khởi động bộ đếm thời gian.

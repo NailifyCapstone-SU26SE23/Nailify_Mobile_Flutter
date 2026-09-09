@@ -593,6 +593,16 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
   }
 
   Future<void> _handleNext() async {
+    // Fix bug: trước đây button "Tiếp tục" chỉ disable khi `_isSubmitting`
+    // (chỉ true ở `_executeBooking`). Khi user bấm "Tiếp tục" ở step "chọn
+    // ngày/giờ" → step "tổng quan", hệ thống gọi `_createHoldForSummary`
+    // (API hold-slot mất 1–3 giây) mà KHÔNG có loading. User dễ bấm nhầm
+    // nhiều lần → gọi API hold-slot trùng lặp.
+    //
+    // Sau fix: set `_isSubmitting = true` ngay từ đầu khi cần xử lý async
+    // (hold-slot hoặc submit booking). Button sẽ disable + spinner ngay.
+    if (_isSubmitting) return; // chống bấm đúp khi đang xử lý
+
     if (_currentStep == 0 && _selectedBranch == null) {
       _showSnackBar(S.of(context).bookingValidateSalon);
       return;
@@ -617,17 +627,34 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
       _showSnackBar(S.of(context).bookingValidateDateTime);
       return;
     }
+
     if (_currentStep < 4) {
+      // Bước sang step kế tiếp. Nếu từ step "chọn ngày/giờ" (index 3) →
+      // step "tổng quan" (index 4) thì cần tạo hold-slot → bật loading.
       if (_currentStep == 3) {
-        final held = await _createHoldForSummary();
-        if (!held) return;
-        _reviewPrice();
+        setState(() => _isSubmitting = true);
+        try {
+          final held = await _createHoldForSummary();
+          if (!held) {
+            if (mounted) setState(() => _isSubmitting = false);
+            return;
+          }
+          _reviewPrice();
+          _pageController.nextPage(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        } finally {
+          if (mounted) setState(() => _isSubmitting = false);
+        }
+      } else {
+        _pageController.nextPage(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
       }
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
     } else {
+      // Step cuối (index 4): thanh toán → _executeBooking tự set _isSubmitting.
       _executeBooking();
     }
   }

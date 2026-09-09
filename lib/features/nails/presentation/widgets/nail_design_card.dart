@@ -107,7 +107,7 @@ class _NailDesignCardState extends State<NailDesignCard> {
                               ),
                             )
                           : Hero(
-                              tag: 'nail_image_${design.nailDesignId}',
+                              tag: 'list_nail_image_${design.nailDesignId}',
                               child: Image.network(
                                 design.primaryImageUrl,
                                 fit: BoxFit.cover,

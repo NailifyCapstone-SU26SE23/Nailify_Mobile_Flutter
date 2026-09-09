@@ -80,84 +80,94 @@ class _BookingStylistSelectionState extends State<BookingStylistSelection>
   void _showArtistPicker(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      // Không set `shape` ở đây để tránh tạo DecoratedBox che ink splash
+      // của ListTile bên dưới. Thay vào đó, wrap Material trong child.
+      backgroundColor: Colors.transparent,
       builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                S.of(context).bookingSelectArtistTitle,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 16),
-              if (widget.isLoading)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: CircularProgressIndicator(),
-                )
-              else if (widget.artists.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 24),
-                  child: Text(S.of(context).bookingNoArtistAvailable),
-                )
-              else
-                Flexible(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      children: widget.artists.map((artist) {
-                        final bool isSelected =
-                            artist['nailArtistId'] == widget.selectedStylistId;
-                        final String displayName = _getArtistName(
-                          artist,
-                          context,
-                        );
-                        return ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: Colors.grey.shade200,
-                            backgroundImage: artist['avatarUrl'] != null
-                                ? NetworkImage(artist['avatarUrl'])
-                                : null,
-                            child: artist['avatarUrl'] == null
-                                ? const Icon(Icons.person, color: Colors.grey)
-                                : null,
-                          ),
-                          title: Text(
-                            displayName,
-                            style: TextStyle(
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                            ),
-                          ),
-                          trailing: isSelected
-                              ? const Icon(
-                                  Icons.check_circle,
-                                  color: AppColors.primary,
-                                )
-                              : null,
-                          onTap: () {
-                            // Ghi displayName vào map trước khi trả về
-                            final safeArtist = Map<String, dynamic>.from(
-                              artist as Map,
-                            );
-                            safeArtist['fullName'] = displayName;
-                            widget.onStylistSelected(safeArtist);
-                            Navigator.pop(context);
-                          },
-                        );
-                      }).toList(),
-                    ),
+        return Material(
+          color: Colors.white,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  S.of(context).bookingSelectArtistTitle,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
                   ),
                 ),
-            ],
+                const SizedBox(height: 16),
+                if (widget.isLoading)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: CircularProgressIndicator(),
+                  )
+                else if (widget.artists.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Text(S.of(context).bookingNoArtistAvailable),
+                  )
+                else
+                  Flexible(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: widget.artists.map((artist) {
+                          final bool isSelected =
+                              artist['nailArtistId'] ==
+                                  widget.selectedStylistId;
+                          final String displayName = _getArtistName(
+                            artist,
+                            context,
+                          );
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: Colors.grey.shade200,
+                              backgroundImage: artist['avatarUrl'] != null
+                                  ? NetworkImage(artist['avatarUrl'])
+                                  : null,
+                              child: artist['avatarUrl'] == null
+                                  ? const Icon(
+                                      Icons.person,
+                                      color: Colors.grey,
+                                    )
+                                  : null,
+                            ),
+                            title: Text(
+                              displayName,
+                              style: TextStyle(
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                            trailing: isSelected
+                                ? const Icon(
+                                    Icons.check_circle,
+                                    color: AppColors.primary,
+                                  )
+                                : null,
+                            onTap: () {
+                              // Ghi displayName vào map trước khi trả về
+                              final safeArtist = Map<String, dynamic>.from(
+                                artist as Map,
+                              );
+                              safeArtist['fullName'] = displayName;
+                              widget.onStylistSelected(safeArtist);
+                              Navigator.pop(context);
+                            },
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         );
       },

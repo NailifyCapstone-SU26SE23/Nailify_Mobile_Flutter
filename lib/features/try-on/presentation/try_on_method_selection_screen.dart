@@ -29,7 +29,7 @@ class _TryOnMethodSelectionScreenState
           'Virtual try-on is not available on this build.',
         );
       }
-      await service.launchCustomerLive(widget.previewNail, context: context);
+      await service.launchCustomerLive(widget.previewNail);
     } catch (error) {
       _showError(error.toString());
     } finally {

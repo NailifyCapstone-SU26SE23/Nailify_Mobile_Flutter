@@ -490,74 +490,86 @@ class BookingServiceSelection extends StatelessWidget {
                 ),
               ),
               const Divider(color: Color(0xFFFFF0F5)),
+              // Fix Flutter exception "ListTile background color or ink splashes
+              // may be invisible":
+              // - Container cha có `BoxDecoration(color: Colors.white)` → tạo
+              //   `DecoratedBox` ẩn ink splash của ListTile. Khi user bấm vào
+              //   ListTile, onTap bị ẩn hoặc không nhận → service không được
+              //   thêm → validation "Có ô dịch vụ đang bị trống" ở step tiếp
+              //   theo → user thấy "không bấm được đặt lịch".
+              // - Fix: wrap Material trước ListView để ListTile tìm được
+              //   Material ancestor cho ink splash và hit test đúng.
               ConstrainedBox(
                 constraints: BoxConstraints(
                   maxHeight: MediaQuery.of(context).size.height * 0.5,
                 ),
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 8,
+                child: Material(
+                  color: Colors.transparent,
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 8,
+                    ),
+                    itemCount: availableServices.length,
+                    separatorBuilder: (_, _) =>
+                        const Divider(height: 1, color: Color(0xFFFFF5F8)),
+                    itemBuilder: (context, index) {
+                      final s = availableServices[index];
+                      final serviceId = _serviceId(s);
+                      return ListTile(
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                        title: Text(
+                          _serviceName(s),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            DurationFormatter.format(_serviceDuration(s)),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              PriceFormatter.format(_servicePrice(s)),
+                              style: const TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFFFF5F8),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.add_rounded,
+                                size: 18,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _addService(serviceId);
+                        },
+                      );
+                    },
                   ),
-                  itemCount: availableServices.length,
-                  separatorBuilder: (_, _) =>
-                      const Divider(height: 1, color: Color(0xFFFFF5F8)),
-                  itemBuilder: (context, index) {
-                    final s = availableServices[index];
-                    final serviceId = _serviceId(s);
-                    return ListTile(
-                      contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                      title: Text(
-                        _serviceName(s),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      subtitle: Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          DurationFormatter.format(_serviceDuration(s)),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade500,
-                          ),
-                        ),
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            PriceFormatter.format(_servicePrice(s)),
-                            style: const TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFFFF5F8),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.add_rounded,
-                              size: 18,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      onTap: () {
-                        Navigator.pop(context);
-                        _addService(serviceId);
-                      },
-                    );
-                  },
                 ),
               ),
             ],

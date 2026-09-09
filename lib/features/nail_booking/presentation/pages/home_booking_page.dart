@@ -473,11 +473,15 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
   }
 
   void _handlePromotionChanged(int? id) {
+    // Fix bug "nhảy giá": KHÔNG clear _priceReview — giữ giá cũ hiển
+    // thị trong khi API tính giá mới với voucher.
     setState(() {
       _selectedPromotionId = id;
-      _priceReview = null;
+      _priceReviewKey = null;
+      _isReviewingPrice = true;
+      // _priceReview CỐ Ý KHÔNG clear
     });
-    if (_currentStep == 3) _reviewPrice();
+    if (_currentStep == 4) _reviewPrice();
   }
 
   // ── Price review ────────────────────────────────
@@ -671,7 +675,20 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
             child: PageView(
               controller: _pageController,
               physics: const NeverScrollableScrollPhysics(),
-              onPageChanged: (idx) => setState(() => _currentStep = idx),
+              // Fix bug "nhảy giá": KHÔNG clear _priceReview khi vào step 4.
+              onPageChanged: (idx) {
+                setState(() => _currentStep = idx);
+                if (idx == 4) {
+                  if (_priceReviewKey != _priceReviewRequestKey) {
+                    setState(() {
+                      _priceReviewKey = null;
+                      _isReviewingPrice = true;
+                      // _priceReview cố ý KHÔNG clear
+                    });
+                  }
+                  _reviewPrice();
+                }
+              },
               children: [
                 _buildSalonStep(),
                 _buildArtistStep(),
@@ -826,9 +843,15 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
 
   Widget _buildPaymentDetails() {
     final reviewTotal = _priceReview?['totalPrice'];
-    final totalPrice = reviewTotal is num
+    // Fix bug "nhảy giá": KHÔNG fallback _estimatedTotalPrice khi đang loading
+    // voucher. Hiển thị placeholder row thay vì giá 0.
+    final bool _isLoading = _isReviewingPrice && _priceReview == null;
+    final int totalPrice = reviewTotal is num
         ? reviewTotal.round()
-        : int.tryParse(reviewTotal?.toString() ?? '') ?? _estimatedTotalPrice;
+        : _isLoading
+            ? 0
+            : int.tryParse(reviewTotal?.toString() ?? '') ??
+                _estimatedTotalPrice;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -876,13 +899,16 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                 ),
               ),
           const Divider(height: 16),
-          _buildPaymentRow(
-            S.of(context).bookingTotal,
-            totalPrice,
-            strong: true,
-            highlight: true,
-          ),
-          if (_selectedBranch != null) ...[
+          // Fix bug "nhảy giá": hiển thị placeholder thay vì giá 0.
+          _isLoading
+              ? _buildLoadingPriceRow(S.of(context).bookingTotal)
+              : _buildPaymentRow(
+                  S.of(context).bookingTotal,
+                  totalPrice,
+                  strong: true,
+                  highlight: true,
+                ),
+          if (_selectedBranch != null && !_isLoading) ...[
             const Divider(height: 16),
             _buildDepositDetails(totalPrice),
           ],
@@ -942,6 +968,48 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
           highlight: true,
         ),
       ],
+    );
+  }
+
+  // Fix bug "nhảy giá": placeholder row khi đang tính giá voucher mới.
+  Widget _buildLoadingPriceRow(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Đang tính giá...',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade500,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

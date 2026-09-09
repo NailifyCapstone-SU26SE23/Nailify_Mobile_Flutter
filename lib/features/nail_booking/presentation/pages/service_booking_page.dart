@@ -284,7 +284,23 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                 child: PageView(
                   controller: _pageController,
                   physics: const NeverScrollableScrollPhysics(),
-                  onPageChanged: (idx) => setState(() => _currentStep = idx),
+                  // Fix bug "time slot không tự restore khi back":
+                  // Khi user back từ step 4 về step 3 (chọn giờ), _timeSlots đã bị
+                  // clear trước đó khi selectDate/switch artist được gọi. Nếu ngày
+                  // và giờ vẫn đang được chọn trong state, cần tự động reload
+                  // slots để hiển thị lại lưới giờ.
+                  onPageChanged: (idx) {
+                    setState(() => _currentStep = idx);
+                    if (idx == 3 && state.selectedDate != null) {
+                      // Nếu slots trống (bị clear do chuyển step trước đó),
+                      // reload lại. Nếu slots đã có → không làm gì.
+                      if (state.timeSlots.isEmpty &&
+                          state.timeSlotsStatus !=
+                              NailBookingLoadStatus.loading) {
+                        cubit.refreshTimeSlots();
+                      }
+                    }
+                  },
                   children: [
                     // ── STEP 0: CHỌN TIỆM ───────────────────────────
                     SingleChildScrollView(

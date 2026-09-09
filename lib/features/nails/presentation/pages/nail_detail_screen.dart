@@ -563,8 +563,8 @@ class _ImageGalleryState extends State<_ImageGallery> {
             itemBuilder: (context, index) {
               return Hero(
                 tag: index == 0
-                    ? 'nail_image_${widget.nailDesignId}'
-                    : 'nail_image_${widget.nailDesignId}_$index',
+                    ? 'detail_nail_image_${widget.nailDesignId}'
+                    : 'detail_nail_image_${widget.nailDesignId}_$index',
                 child: Image.network(
                   widget.imageUrls[index],
                   fit: BoxFit.cover,

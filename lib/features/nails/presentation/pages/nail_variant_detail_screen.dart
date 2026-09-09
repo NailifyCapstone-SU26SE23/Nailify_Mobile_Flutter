@@ -1175,8 +1175,11 @@ class _DetailContentState extends State<_DetailContent> {
               final selected =
                   _selectedShapeMethod?.shapeMethodConfigId ==
                   method.shapeMethodConfigId;
-              return Container(
-                margin: const EdgeInsets.only(bottom: 10),
+              // DecoratedBox (không phải Container) để không vẽ background color
+              // đè lên Material bên trong — nếu không RadioListTile sẽ bị
+              // ListTile background ẩn ink splash.
+              // Fix bug: "ListTile background color or ink splashes may be invisible"
+              return DecoratedBox(
                 decoration: BoxDecoration(
                   color: selected
                       ? AppColors.primary.withValues(alpha: 0.05)
@@ -1189,37 +1192,40 @@ class _DetailContentState extends State<_DetailContent> {
                     width: 1.5,
                   ),
                 ),
-                child: RadioListTile<int>(
-                  value: method.shapeMethodConfigId,
-                  groupValue: _selectedShapeMethod?.shapeMethodConfigId,
-                  onChanged: (_) {
-                    setState(() {
-                      _selectedShapeMethod = method;
-                      _priceReview = null;
-                    });
-                    _reviewTotalPrice(widget.variant);
-                  },
-                  title: Text(
-                    method.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: RadioListTile<int>(
+                    value: method.shapeMethodConfigId,
+                    groupValue: _selectedShapeMethod?.shapeMethodConfigId,
+                    onChanged: (_) {
+                      setState(() {
+                        _selectedShapeMethod = method;
+                        _priceReview = null;
+                      });
+                      _reviewTotalPrice(widget.variant);
+                    },
+                    title: Text(
+                      method.name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
-                  ),
-                  subtitle: Text(
-                    S.of(context).minutesLabel('${method.duration}'),
-                    style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
-                  ),
-                  secondary: Text(
-                    PriceFormatter.format(method.price),
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                    subtitle: Text(
+                      S.of(context).minutesLabel('${method.duration}'),
+                      style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
                     ),
+                    secondary: Text(
+                      PriceFormatter.format(method.price),
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    activeColor: AppColors.primary,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                   ),
-                  activeColor: AppColors.primary,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                 ),
               );
             }),

@@ -986,8 +986,8 @@ class _NailDesignFullWidthCardState extends State<NailDesignFullWidthCard> {
                             itemBuilder: (context, index) {
                               return Hero(
                                 tag: index == 0
-                                    ? 'nail_image_${design.nailDesignId}'
-                                    : 'nail_image_${design.nailDesignId}_$index',
+                                    ? 'list_nail_image_${design.nailDesignId}'
+                                    : 'list_nail_image_${design.nailDesignId}_$index',
                                 child: Image.network(
                                   design.imageUrls[index],
                                   fit: BoxFit.cover,

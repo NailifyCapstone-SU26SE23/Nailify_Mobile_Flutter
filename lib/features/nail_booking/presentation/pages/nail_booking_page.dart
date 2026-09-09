@@ -714,11 +714,21 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   void _handlePromotionChanged(int? promotionId) {
+    // Fix bug "nhảy giá":
+    // - Trước fix: setState clear `_priceReview = null` khiến UI lập tức fallback
+    //   `_estimatedTotalPrice` (= 740k = nail variant + shape + extras) trong
+    //   lúc chờ API tính giá mới → hiển thị nhầm giá 740k rồi mới trả 368k.
+    // - Sau fix: KHÔNG clear `_priceReview` ngay. Giữ giá cũ hiển thị + bật
+    //   spinner `_isReviewingPrice = true` cho tới khi API trả về `_priceReview`
+    //   mới (có/không voucher). Reset `_priceReviewKey = null` để `_reviewPrice()`
+    //   hiểu là cần gọi API mới thay vì trả về cache cũ.
     setState(() {
       _selectedPromotionId = promotionId;
-      _priceReview = null;
+      _priceReviewKey = null;
+      // _priceReview CỐ Ý KHÔNG clear → giữ giá cũ trong lúc loading
+      _isReviewingPrice = true;
     });
-    if (_currentStep == 3) {
+    if (_currentStep == 4) {
       _reviewPrice();
     }
   }
@@ -817,7 +827,26 @@ class _NailBookingPageState extends State<NailBookingPage> {
             child: PageView(
               controller: _pageController,
               physics: const NeverScrollableScrollPhysics(),
-              onPageChanged: (idx) => setState(() => _currentStep = idx),
+              // Fix bug "nhảy giá" lần 2:
+              // - Trước fix: nếu _priceReviewKey != requestKey thì clear
+              //   _priceReview = null → UI fallback 740k trong lúc API load.
+              // - Sau fix: KHÔNG clear _priceReview. Nếu requestKey khác key
+              //   hiện tại (voucher/extras đã đổi) thì reset _priceReviewKey
+              //   để _reviewPrice() biết cần fetch mới, nhưng giữ _priceReview
+              //   cũ hiển thị + bật spinner cho tới khi API trả.
+              onPageChanged: (idx) {
+                setState(() => _currentStep = idx);
+                if (idx == 4) {
+                  if (_priceReviewKey != _priceReviewRequestKey) {
+                    setState(() {
+                      _priceReviewKey = null;
+                      _isReviewingPrice = true;
+                      // _priceReview cố ý KHÔNG clear
+                    });
+                  }
+                  _reviewPrice();
+                }
+              },
               children: [
                 _buildSalonStep(),
                 _buildArtistStep(),
@@ -972,9 +1001,20 @@ class _NailBookingPageState extends State<NailBookingPage> {
 
   Widget _buildPaymentDetails() {
     final reviewTotal = _priceReview?['totalPrice'];
-    final totalPrice = reviewTotal is num
+
+    // Fix bug "nhảy giá":
+    // - Nếu có _priceReview → dùng trực tiếp (giá cũ vẫn OK, không fallback 740k)
+    // - Nếu KHÔNG có _priceReview VÀ đang loading → hiển thị loading indicator
+    //   thay vì fallback `_estimatedTotalPrice` (= 740k) gây nhầm lẫn.
+    // - Nếu KHÔNG có _priceReview VÀ không loading → fallback (chưa chọn time)
+    //   chỉ xảy ra khi step 4 chưa có dữ liệu để review.
+    final bool _isLoading = _isReviewingPrice && _priceReview == null;
+    final int totalPrice = reviewTotal is num
         ? reviewTotal.round()
-        : int.tryParse(reviewTotal?.toString() ?? '') ?? _estimatedTotalPrice;
+        : _isLoading
+            ? 0 // placeholder — sẽ hiển thị loading indicator
+            : int.tryParse(reviewTotal?.toString() ?? '') ??
+                _estimatedTotalPrice;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1024,13 +1064,17 @@ class _NailBookingPageState extends State<NailBookingPage> {
           const Divider(height: 16),
           ..._discountBreakdown.map(_buildDiscountRow),
           const Divider(height: 16),
-          _buildPaymentRow(
-            S.of(context).bookingTotal,
-            totalPrice,
-            strong: true,
-            highlight: true,
-          ),
-          if (_selectedBranch != null) ...[
+          // Fix bug "nhảy giá": hiển thị placeholder loading thay vì giá 0
+          // khi đang chờ API tính giá voucher mới.
+          _isLoading
+              ? _buildLoadingPriceRow(S.of(context).bookingTotal)
+              : _buildPaymentRow(
+                  S.of(context).bookingTotal,
+                  totalPrice,
+                  strong: true,
+                  highlight: true,
+                ),
+          if (_selectedBranch != null && !_isLoading) ...[
             const Divider(height: 16),
             _buildDepositDetails(totalPrice),
           ],
@@ -1109,6 +1153,50 @@ class _NailBookingPageState extends State<NailBookingPage> {
       }
     }
     return rowsByKey.values.toList();
+  }
+
+  // Fix bug "nhảy giá": placeholder row hiển thị spinner + chữ "Đang tính giá..."
+  // khi user chọn voucher và API đang load. Thay vì hiển thị giá 0 hoặc
+  // fallback 740k gây nhầm lẫn.
+  Widget _buildLoadingPriceRow(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Đang tính giá...',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade500,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildPaymentRow(

@@ -4,6 +4,7 @@ import '../../../../core/utils/paginated_response.dart';
 import '../models/nail_filters.dart';
 import '../models/nail_shape_model.dart';
 import '../models/nail_surface_model.dart';
+import '../models/nail_variant_rating_model.dart';
 import '../models/nail_variant_model.dart';
 import '../models/shape_method_config_model.dart';
 
@@ -103,6 +104,29 @@ class NailVariantRepository {
       return {'rating': averageRating, 'reviewsCount': totalRatingCount};
     } catch (e) {
       return {'rating': 0.0, 'reviewsCount': 0};
+    }
+  }
+
+  Future<NailVariantRatingPage> getRatingsByNailVariant({
+    required int nailVariantId,
+    required int page,
+    int pageSize = 5,
+    int? stars,
+  }) async {
+    try {
+      final response = await _apiClient.get<dynamic>(
+        '/BookingRatings/by-nail-variant/$nailVariantId',
+        queryParameters: {
+          'PageNumber': page,
+          'PageSize': pageSize,
+          'Stars': ?stars,
+        },
+      );
+      return NailVariantRatingPage.fromJson(
+        Map<String, dynamic>.from(response.data as Map),
+      );
+    } catch (_) {
+      return NailVariantRatingPage.empty(page: page);
     }
   }
 }

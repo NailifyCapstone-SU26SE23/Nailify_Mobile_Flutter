@@ -25,10 +25,21 @@ class MyBookingApiService {
   Future<MyBookingsPageResult> getMyBookingsPage({
     int pageNumber = 1,
     int pageSize = 5,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? status,
   }) async {
+    final queryParameters = <String, dynamic>{
+      'pageNumber': pageNumber,
+      'pageSize': pageSize,
+      if (startDate != null) 'startDate': _formatDate(startDate),
+      if (endDate != null) 'endDate': _formatDate(endDate),
+      if (status != null && status.isNotEmpty) 'status': status,
+    };
+
     final response = await _apiClient.get(
       '/Bookings/my-bookings',
-      queryParameters: {'pageNumber': pageNumber, 'pageSize': pageSize},
+      queryParameters: queryParameters,
     );
     final responseData = response.data['data'];
 
@@ -76,6 +87,12 @@ class MyBookingApiService {
       page: pageNumber,
       hasNextPage: false,
     );
+  }
+
+  String _formatDate(DateTime date) {
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '${date.year}-$month-$day';
   }
 
   int _readInt(dynamic value, int fallback) {

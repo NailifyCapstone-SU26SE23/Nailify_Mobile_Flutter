@@ -927,7 +927,7 @@ class SVi extends S {
   String get addressUpdating => 'Địa chỉ đang cập nhật';
 
   @override
-  String get statusPendingReview => 'Pending review';
+  String get statusPendingReview => 'Chờ duyệt';
 
   @override
   String get statusReview => 'Đang thẩm định';
@@ -1414,6 +1414,12 @@ class SVi extends S {
 
   @override
   String get shapeMethodLabel => 'Phương pháp tạo form';
+
+  @override
+  String get ratingsTitle => 'Đánh giá';
+
+  @override
+  String get nailNotRatedMessage => 'Mẫu móng này chưa có đánh giá.';
 
   @override
   String get decorationLabel => 'Trang trí';

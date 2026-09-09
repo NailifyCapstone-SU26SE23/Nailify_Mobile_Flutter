@@ -178,7 +178,7 @@ class _NailVariantDetailSheetState extends State<NailVariantDetailSheet> {
                             const TextSpan(text: 'Giá tham khảo: '),
                             TextSpan(
                               text: PriceFormatter.format(
-                                variant.estimatedPrice ?? variant.price,
+                                variant.price,
                               ),
                             ),
                           ],

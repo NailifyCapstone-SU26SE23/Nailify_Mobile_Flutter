@@ -1414,6 +1414,12 @@ class SEn extends S {
   String get shapeMethodLabel => 'Form shaping method';
 
   @override
+  String get ratingsTitle => 'Ratings';
+
+  @override
+  String get nailNotRatedMessage => 'This nail hasn\'t been rated.';
+
+  @override
   String get decorationLabel => 'Decoration';
 
   @override

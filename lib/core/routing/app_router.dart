@@ -42,6 +42,9 @@ import '../../features/quiz/presentation/pages/analyze_page.dart';
 import '../../features/quiz/presentation/pages/quiz_page.dart';
 import '../../features/services/presentation/pages/service_detail_page.dart';
 import '../../features/services/presentation/pages/service_list_page.dart';
+import '../../features/salon/presentation/pages/nail_artist_detail_page.dart';
+import '../../features/salon/presentation/pages/salon_detail_page.dart';
+import '../../features/salon/presentation/pages/salon_list_page.dart';
 import '../../features/nails/data/models/customer_nail_models.dart'
     as nails_models;
 import '../../features/try-on/presentation/nail_snapshot_page.dart';
@@ -267,6 +270,24 @@ class AppRouter {
             builder: (context, state) {
               final id = state.pathParameters['id'] ?? '';
               return ServiceDetailPage(serviceId: id);
+            },
+          ),
+          GoRoute(
+            path: '/salons',
+            builder: (context, state) => const SalonListPage(),
+          ),
+          GoRoute(
+            path: '/salons/:id',
+            builder: (context, state) {
+              final id = state.pathParameters['id'] ?? '';
+              return SalonDetailPage(salonId: id);
+            },
+          ),
+          GoRoute(
+            path: '/salons/:salonId/artists/:artistId',
+            builder: (context, state) {
+              final artistId = state.pathParameters['artistId'] ?? '';
+              return NailArtistDetailPage(nailArtistId: artistId);
             },
           ),
           GoRoute(

@@ -92,7 +92,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
   // ── Getters ──────────────────────────────────────
   int get _selectedNailVariantId => _selectedNailVariant?.nailVariantId ?? 0;
   double get _nailVariantPrice =>
-      _selectedNailVariant?.estimatedPrice ?? _selectedNailVariant?.price ?? 0;
+      _selectedNailVariant?.price ?? 0;
   num get _shapeMethodPrice => _selectedShapeMethod?.price ?? 0;
   int get _selectedExtraServicesTotal => _selectedExtraServices
       .whereType<String>()

@@ -11,7 +11,6 @@ class NailVariantModel {
   final int nailSurfaceId;
   final int nailDesignId;
   final double price;
-  final double? estimatedPrice;
   final int? duration;
   final String imageUrl;
   final String? colorJson;
@@ -28,7 +27,6 @@ class NailVariantModel {
     required this.nailSurfaceId,
     required this.nailDesignId,
     required this.price,
-    this.estimatedPrice,
     required this.duration,
     required this.imageUrl,
     this.colorJson,
@@ -51,7 +49,6 @@ class NailVariantModel {
       nailSurfaceId: nailSurfaceId,
       nailDesignId: nailDesignId,
       price: price,
-      estimatedPrice: estimatedPrice,
       duration: duration,
       imageUrl: imageUrl,
       colorJson: colorJson,
@@ -77,9 +74,6 @@ class NailVariantModel {
       nailSurfaceId: _asInt(json['nailSurfaceId'] ?? json['NailSurfaceId']),
       nailDesignId: _asInt(json['nailDesignId'] ?? json['NailDesignId']),
       price: _asDouble(json['price'] ?? json['Price']),
-      estimatedPrice: _asNullableDouble(
-        json['estimatedPrice'] ?? json['EstimatedPrice'],
-      ),
       duration: _asNullableInt(json['duration'] ?? json['Duration']),
       imageUrl:
           (json['imageUrl'] ??
@@ -128,12 +122,6 @@ class NailVariantModel {
   static double _asDouble(dynamic value) {
     if (value is num) return value.toDouble();
     return double.tryParse(value?.toString() ?? '') ?? 0;
-  }
-
-  static double? _asNullableDouble(dynamic value) {
-    if (value == null) return null;
-    if (value is num) return value.toDouble();
-    return double.tryParse(value.toString());
   }
 
   static String? _asNullableJsonString(dynamic value) {

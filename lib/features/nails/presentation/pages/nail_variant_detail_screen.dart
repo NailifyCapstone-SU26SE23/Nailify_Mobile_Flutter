@@ -12,8 +12,8 @@ import '../../data/models/nail_variant_model.dart';
 import '../../data/models/shape_method_config_model.dart';
 import '../../data/repositories/favorite_nail_repository.dart';
 import '../../data/repositories/nail_variant_repository.dart';
+import '../widgets/nail_variant_ratings_section.dart';
 import '../../services/ar_try_on_service.dart';
-import '../../../nail_booking/data/datasources/booking_api_service.dart';
 import '../../../../generated/l10n.dart';
 
 class NailVariantDetailScreen extends StatefulWidget {
@@ -247,14 +247,11 @@ class _DetailContent extends StatefulWidget {
 
 class _DetailContentState extends State<_DetailContent> {
   late final Future<List<ShapeMethodConfigModel>> _shapeMethodsFuture;
-  final BookingApiService _bookingApiService = BookingApiService();
   ShapeMethodConfigModel? _selectedShapeMethod;
 
   double _rating = 0.0;
   int _reviewsCount = 0;
   bool _isLoadingRating = true;
-  bool _isLoadingPriceReview = false;
-  Map<String, dynamic>? _priceReview;
 
   @override
   void initState() {
@@ -288,30 +285,6 @@ class _DetailContentState extends State<_DetailContent> {
         _isLoadingRating = false;
       });
     }
-  }
-
-  Future<void> _reviewTotalPrice(NailVariantModel variant) async {
-    final shapeMethodId = _selectedShapeMethod?.shapeMethodConfigId;
-    if (shapeMethodId == null) return;
-
-    setState(() => _isLoadingPriceReview = true);
-    try {
-      final review = await _bookingApiService.reviewNailVariantPrice(
-        nailVariantId: variant.nailVariantId,
-        shapeMethodConfigId: shapeMethodId,
-      );
-      if (!mounted) return;
-      setState(() => _priceReview = review);
-    } catch (e) {
-      debugPrint('Failed to review variant total price: $e');
-    } finally {
-      if (mounted) setState(() => _isLoadingPriceReview = false);
-    }
-  }
-
-  num? _readNum(dynamic value) {
-    if (value is num) return value;
-    return num.tryParse(value?.toString() ?? '');
   }
 
   List<Color> _parseColors(String? colorJson) {
@@ -436,10 +409,9 @@ class _DetailContentState extends State<_DetailContent> {
                       Text.rich(
                         TextSpan(
                           children: [
-                            const TextSpan(text: 'Giá tham khảo: '),
                             TextSpan(
                               text: PriceFormatter.format(
-                                variant.estimatedPrice ?? variant.price,
+                                variant.price,
                               ),
                             ),
                           ],
@@ -546,8 +518,9 @@ class _DetailContentState extends State<_DetailContent> {
                       ),
                       const SizedBox(height: 24),
                       _buildShapeMethodSelection(),
-                      _buildComponentChips(grouped),
-                      _buildComponentPriceTable(variant),
+                      NailVariantRatingsSection(
+                        nailVariantId: variant.nailVariantId,
+                      ),
                     ],
                   ),
                 ),
@@ -696,26 +669,38 @@ class _DetailContentState extends State<_DetailContent> {
                     child: SizedBox(
                       height: 50,
                       child: ElevatedButton(
-                        onPressed: () {
-                          AuthGuard.check(context, () {
-                            final Map<String, dynamic> bookingData = {
-                              'id': variant.nailVariantId.toString(),
-                              'name': variant.name,
-                              'image': variant.imageUrl,
-                              'price': variant.estimatedPrice ?? variant.price,
-                              'shapeMethodConfigId':
-                                  _selectedShapeMethod?.shapeMethodConfigId,
-                              'shapeMethodName': _selectedShapeMethod?.name,
-                              'shapeMethodPrice': _selectedShapeMethod?.price,
-                              'shapeMethodDuration':
-                                  _selectedShapeMethod?.duration,
-                            };
-                            context.push('/nail-booking', extra: bookingData);
-                          });
-                        },
+                        onPressed: _selectedShapeMethod == null
+                            ? null
+                            : () {
+                                final selectedShapeMethod =
+                                    _selectedShapeMethod!;
+                                AuthGuard.check(context, () {
+                                  final Map<String, dynamic> bookingData = {
+                                    'id': variant.nailVariantId.toString(),
+                                    'name': variant.name,
+                                    'image': variant.imageUrl,
+                                    'price': variant.price,
+                                    'shapeMethodConfigId': selectedShapeMethod
+                                        .shapeMethodConfigId,
+                                    'shapeMethodName':
+                                        selectedShapeMethod.name,
+                                    'shapeMethodPrice':
+                                        selectedShapeMethod.price,
+                                    'shapeMethodDuration':
+                                        selectedShapeMethod.duration,
+                                  };
+                                  context.push(
+                                    '/nail-booking',
+                                    extra: bookingData,
+                                  );
+                                });
+                              },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
+                          disabledBackgroundColor:
+                              AppColors.primary.withValues(alpha: 0.35),
                           foregroundColor: Colors.white,
+                          disabledForegroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
@@ -870,263 +855,6 @@ class _DetailContentState extends State<_DetailContent> {
     );
   }
 
-  Widget _buildComponentPriceTable(NailVariantModel variant) {
-    final rows = <Map<String, dynamic>>[];
-
-    if (variant.nailSurface != null) {
-      rows.add({
-        'name': variant.nailSurface!.name,
-        'price': variant.nailSurface!.price,
-        'quantity': 1,
-      });
-    }
-
-    final shapeMethod = _selectedShapeMethod;
-    if (shapeMethod != null) {
-      rows.add({
-        'name': shapeMethod.name,
-        'price': shapeMethod.price,
-        'quantity': 1,
-      });
-    }
-
-    final componentRowsByKey = <String, Map<String, dynamic>>{};
-    for (final component in variant.nailComponents) {
-      final detail = component.component;
-      final name = detail?.name ?? S.of(context).bookingComponentDefault;
-      final type = detail?.componentType.trim() ?? '';
-      final label = type.isEmpty ? name : '$type: $name';
-      final price = detail?.price ?? 0;
-      final quantity = component.fingerIndex == -1 ? 5 : 1;
-      final key =
-          '${detail?.componentId ?? component.componentId}|$label|$price';
-      final existing = componentRowsByKey[key];
-      if (existing == null) {
-        componentRowsByKey[key] = {
-          'name': label,
-          'price': price,
-          'quantity': quantity,
-        };
-      } else {
-        existing['quantity'] = (existing['quantity'] as int) + quantity;
-      }
-    }
-    rows.addAll(componentRowsByKey.values);
-
-    if (rows.isEmpty) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 28),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Bảng thành phần',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-              fontFamily: 'Georgia',
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.borderLight),
-            ),
-            child: Column(
-              children: [
-                const _ComponentTableHeader(),
-                const SizedBox(height: 6),
-                ...rows.map(_buildComponentPriceLine),
-                const Divider(height: 20),
-                _buildReviewedPriceSummary(variant),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildComponentChips(Map<int, List<NailComponentModel>> grouped) {
-    final hasComponents = grouped.values.any(
-      (components) => components.isNotEmpty,
-    );
-    if (!hasComponents) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 28),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            S.of(context).designComponentsLabel,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-              fontFamily: 'Georgia',
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 16),
-          for (var finger = 0; finger < 5; finger++)
-            _FingerComponents(
-              fingerIndex: finger,
-              components: grouped[finger] ?? const [],
-            ),
-          if (grouped[-1]?.isNotEmpty == true)
-            _FingerComponents(
-              fingerIndex: -1,
-              components: grouped[-1]!,
-              title: S.of(context).sharedLabel,
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildComponentPriceLine(Map<String, dynamic> row) {
-    final price = row['price'] as num? ?? 0;
-    final count = row['quantity'] as int? ?? 1;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            flex: 5,
-            child: Text(
-              row['name']?.toString() ?? S.of(context).bookingComponentDefault,
-              style: const TextStyle(color: Colors.grey, fontSize: 13),
-            ),
-          ),
-          const SizedBox(width: 10),
-          SizedBox(
-            width: 38,
-            child: Text(
-              'x$count',
-              style: const TextStyle(
-                color: Colors.grey,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          const SizedBox(width: 10),
-          SizedBox(
-            width: 92,
-            child: Text(
-              price > 0 ? PriceFormatter.format(price * count) : '-',
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
-              textAlign: TextAlign.right,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildReviewedPriceSummary(NailVariantModel variant) {
-    final fallbackTotal =
-        (variant.estimatedPrice ?? variant.price) +
-        (_selectedShapeMethod?.price ?? 0);
-    final basePrice = _readNum(_priceReview?['price']);
-    final discount = _readNum(_priceReview?['discount']);
-    final total = _readNum(_priceReview?['totalPrice']) ?? fallbackTotal;
-    final discountBreakdown =
-        _priceReview?['discountBreakdown'] ?? _priceReview?['discounts'];
-
-    return Column(
-      children: [
-        if (basePrice != null)
-          _buildPriceSummaryRow('Tạm tính', PriceFormatter.format(basePrice)),
-        if (discount != null && discount != 0)
-          _buildPriceSummaryRow(
-            'Giảm giá',
-            PriceFormatter.format(discount),
-            valueColor: Colors.green,
-          ),
-        // if (discountBreakdown is List && discountBreakdown.isNotEmpty)
-        //   ...discountBreakdown.whereType<Map>().map((item) {
-        //     final name = item['name']?.toString() ?? 'Giảm giá';
-        //     final amountDisplay = item['amountDisplay']?.toString();
-        //     final amount = _readNum(item['amount']);
-        //     return _buildPriceSummaryRow(
-        //       name,
-        //       _formatDiscountDisplay(amountDisplay) ??
-        //           (amount == null ? '-' : PriceFormatter.format(-amount.abs())),
-        //       muted: true,
-        //       valueColor: Colors.green,
-        //     );
-        //   }),
-        _buildPriceSummaryRow(
-          'Tổng tạm tính',
-          _isLoadingPriceReview ? '...' : PriceFormatter.format(total),
-          strong: true,
-          valueColor: AppColors.primary,
-        ),
-      ],
-    );
-  }
-
-  String? _formatDiscountDisplay(String? value) {
-    final text = value?.trim();
-    if (text == null || text.isEmpty) return null;
-    final lower = text.toLowerCase();
-    if (lower.contains('đ') || lower.contains('vnd')) return text;
-    return '$text VNĐ';
-  }
-
-  Widget _buildPriceSummaryRow(
-    String label,
-    String value, {
-    bool strong = false,
-    bool muted = false,
-    Color? valueColor,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: Text(
-                label,
-                style: TextStyle(
-                  color: muted ? Colors.grey : AppColors.textPrimary,
-                  fontSize: strong ? 14 : 13,
-                  fontWeight: strong ? FontWeight.bold : FontWeight.w500,
-                ),
-              ),
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              color: valueColor ?? AppColors.textPrimary,
-              fontSize: strong ? 14 : 13,
-              fontWeight: strong ? FontWeight.bold : FontWeight.w600,
-            ),
-            textAlign: TextAlign.right,
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildShapeMethodSelection() {
     return FutureBuilder<List<ShapeMethodConfigModel>>(
@@ -1150,86 +878,89 @@ class _DetailContentState extends State<_DetailContent> {
             .toList();
         if (methods.isEmpty) return const SizedBox.shrink();
 
-        if (_selectedShapeMethod == null) {
-          _selectedShapeMethod = methods.first;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) _reviewTotalPrice(widget.variant);
-          });
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              S.of(context).shapeMethodLabel,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-                fontFamily: 'Georgia',
-                letterSpacing: -0.5,
+        return RadioGroup<int>(
+          groupValue: _selectedShapeMethod?.shapeMethodConfigId,
+          onChanged: (shapeMethodConfigId) {
+            if (shapeMethodConfigId == null) return;
+            final selectedShapeMethod = methods.firstWhere(
+              (method) =>
+                  method.shapeMethodConfigId == shapeMethodConfigId,
+            );
+            setState(() {
+              _selectedShapeMethod = selectedShapeMethod;
+            });
+          },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                S.of(context).shapeMethodLabel,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                  fontFamily: 'Georgia',
+                  letterSpacing: -0.5,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            ...methods.map((method) {
-              final selected =
-                  _selectedShapeMethod?.shapeMethodConfigId ==
-                  method.shapeMethodConfigId;
-              // DecoratedBox (không phải Container) để không vẽ background color
-              // đè lên Material bên trong — nếu không RadioListTile sẽ bị
-              // ListTile background ẩn ink splash.
-              // Fix bug: "ListTile background color or ink splashes may be invisible"
-              return DecoratedBox(
-                decoration: BoxDecoration(
-                  color: selected
-                      ? AppColors.primary.withValues(alpha: 0.05)
-                      : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
+              const SizedBox(height: 12),
+              ...methods.map((method) {
+                final selected =
+                    _selectedShapeMethod?.shapeMethodConfigId ==
+                    method.shapeMethodConfigId;
+                // DecoratedBox (không phải Container) để không vẽ background color
+                // đè lên Material bên trong — nếu không RadioListTile sẽ bị
+                // ListTile background ẩn ink splash.
+                // Fix bug: "ListTile background color or ink splashes may be invisible"
+                return DecoratedBox(
+                  decoration: BoxDecoration(
                     color: selected
-                        ? AppColors.primary
-                        : const Color(0xFFFFF0F5),
-                    width: 1.5,
+                        ? AppColors.primary.withValues(alpha: 0.05)
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: selected
+                          ? AppColors.primary
+                          : const Color(0xFFFFF0F5),
+                      width: 1.5,
+                    ),
                   ),
-                ),
-                child: Material(
-                  type: MaterialType.transparency,
-                  child: RadioListTile<int>(
-                    value: method.shapeMethodConfigId,
-                    groupValue: _selectedShapeMethod?.shapeMethodConfigId,
-                    onChanged: (_) {
-                      setState(() {
-                        _selectedShapeMethod = method;
-                        _priceReview = null;
-                      });
-                      _reviewTotalPrice(widget.variant);
-                    },
-                    title: Text(
-                      method.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                  child: Material(
+                    type: MaterialType.transparency,
+                    child: RadioListTile<int>(
+                      value: method.shapeMethodConfigId,
+                      title: Text(
+                        method.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      subtitle: Text(
+                        S.of(context).minutesLabel('${method.duration}'),
+                        style: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontSize: 12,
+                        ),
+                      ),
+                      secondary: Text(
+                        PriceFormatter.format(method.price),
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      activeColor: AppColors.primary,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
                       ),
                     ),
-                    subtitle: Text(
-                      S.of(context).minutesLabel('${method.duration}'),
-                      style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
-                    ),
-                    secondary: Text(
-                      PriceFormatter.format(method.price),
-                      style: const TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                    activeColor: AppColors.primary,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                   ),
-                ),
-              );
-            }),
-          ],
+                );
+              }),
+            ],
+          ),
         );
       },
     );
@@ -1242,7 +973,7 @@ class _DetailContentState extends State<_DetailContent> {
       imageUrl: variant.imageUrl,
       nailShapeId: variant.nailShapeId,
       nailSurfaceId: variant.nailSurfaceId,
-      price: variant.estimatedPrice,
+      price: variant.price,
       customColor: variant.colorJson,
       duration: variant.duration,
       nailShape: variant.nailShape,
@@ -1272,173 +1003,6 @@ class _DetailContentState extends State<_DetailContent> {
             );
           })
           .toList(),
-    );
-  }
-}
-
-class _FingerComponents extends StatelessWidget {
-  final int fingerIndex;
-  final List<NailComponentModel> components;
-  final String? title;
-
-  const _FingerComponents({
-    required this.fingerIndex,
-    required this.components,
-    this.title,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (components.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 70,
-            child: Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: Text(
-                title ?? _fingerName(context, fingerIndex),
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: components
-                  .map((component) => _ComponentChip(component: component))
-                  .toList(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _fingerName(BuildContext context, int index) {
-    final s = S.of(context);
-    final names = [
-      s.fingerThumb,
-      s.fingerIndex,
-      s.fingerMiddle,
-      s.fingerRing,
-      s.fingerPinky,
-    ];
-    return index >= 0 && index < names.length
-        ? names[index]
-        : s.fingerOther(index.toString());
-  }
-}
-
-class _ComponentChip extends StatelessWidget {
-  final NailComponentModel component;
-
-  const _ComponentChip({required this.component});
-
-  @override
-  Widget build(BuildContext context) {
-    final typeText = component.component?.componentType.isNotEmpty == true
-        ? component.component!.componentType
-        : S.of(context).decorationLabel;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFF4081).withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFFFF4081).withValues(alpha: 0.06),
-          width: 1.2,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: SizedBox(
-              width: 28,
-              height: 28,
-              child: component.component?.imageUrl.isNotEmpty == true
-                  ? Image.network(
-                      component.component!.imageUrl,
-                      fit: BoxFit.contain,
-                    )
-                  : const Icon(
-                      Icons.auto_awesome,
-                      color: AppColors.primary,
-                      size: 18,
-                    ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 140),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  component.component?.name ??
-                      S
-                          .of(context)
-                          .componentNameFallback(
-                            component.componentId.toString(),
-                          ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                Text(
-                  typeText,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 10, color: Colors.grey),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ComponentTableHeader extends StatelessWidget {
-  const _ComponentTableHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    const style = TextStyle(
-      color: AppColors.textSecondary,
-      fontSize: 12,
-      fontWeight: FontWeight.bold,
-    );
-    return const Row(
-      children: [
-        Expanded(flex: 5, child: Text('Thành phần', style: style)),
-        SizedBox(width: 10),
-        SizedBox(
-          width: 38,
-          child: Text('SL', style: style, textAlign: TextAlign.center),
-        ),
-        SizedBox(width: 10),
-        SizedBox(
-          width: 92,
-          child: Text('Giá', style: style, textAlign: TextAlign.right),
-        ),
-      ],
     );
   }
 }

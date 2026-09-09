@@ -924,6 +924,10 @@ class MessageLookup extends MessageLookupByLibrary {
     "shapeMethodLabel": MessageLookupByLibrary.simpleMessage(
       "Phương pháp tạo form",
     ),
+    "ratingsTitle": MessageLookupByLibrary.simpleMessage("Đánh giá"),
+    "nailNotRatedMessage": MessageLookupByLibrary.simpleMessage(
+      "Mẫu móng này chưa có đánh giá.",
+    ),
     "decorationLabel": MessageLookupByLibrary.simpleMessage("Trang trí"),
     "componentNameFallback": (id) => "Thành phần ${id}",
     "fingerThumb": MessageLookupByLibrary.simpleMessage("Ngón cái"),

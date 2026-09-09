@@ -46,11 +46,9 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     {'key': 'Tất cả', 'label': S.of(context).allStatus},
     {'key': 'Pending', 'label': S.of(context).statusPending},
     {'key': 'Approved', 'label': S.of(context).statusApproved},
-    {'key': 'Assigned', 'label': S.of(context).statusAssigned},
     {'key': 'CheckedIn', 'label': S.of(context).statusCheckedIn},
     {'key': 'InProgress', 'label': S.of(context).statusInProgress},
     {'key': 'Completed', 'label': S.of(context).statusCompleted},
-    {'key': 'Reviewed', 'label': S.of(context).statusReviewed},
     {'key': 'Repaired', 'label': S.of(context).statusRepaired},
     {'key': 'Rejected', 'label': S.of(context).statusRejected},
     {'key': 'Cancelled', 'label': S.of(context).statusCancelled},
@@ -112,6 +110,47 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     await _fetchBookings(refresh: false);
   }
 
+  void _onFilterChanged({
+    int? month,
+    bool monthChanged = false,
+    int? year,
+    bool yearChanged = false,
+    String? status,
+  }) {
+    setState(() {
+      if (monthChanged) _selectedMonth = month;
+      if (yearChanged) _selectedYear = year;
+      if (status != null) _selectedStatus = status;
+    });
+    _fetchBookings(refresh: true);
+  }
+
+  DateTime? get _filterStartDate {
+    if (_selectedYear == null && _selectedMonth == null) return null;
+    final year = _selectedYear ?? DateTime.now().year;
+    return DateTime(year, _selectedMonth ?? 1, 1);
+  }
+
+  DateTime? get _filterEndDate {
+    if (_selectedYear == null && _selectedMonth == null) return null;
+    final year = _selectedYear ?? DateTime.now().year;
+    final month = _selectedMonth;
+    if (month == null) return DateTime(year, 12, 31);
+    return DateTime(year, month + 1, 0);
+  }
+
+  String? get _serverStatusFilter {
+    if (_selectedStatus == 'Tất cả') return null;
+    if (_requiresClientSideStatusFilter) return null;
+    return _selectedStatus;
+  }
+
+  bool get _requiresClientSideStatusFilter {
+    return _selectedStatus == 'Completed' ||
+        _selectedStatus == 'Assigned' ||
+        _selectedStatus == 'Reviewed';
+  }
+
   Future<void> _fetchBookings({bool refresh = true}) async {
     if (refresh) {
       setState(() {
@@ -125,22 +164,35 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     }
 
     try {
-      final result = await _apiService.getMyBookingsPage(
-        pageNumber: refresh ? 1 : _page + 1,
-        pageSize: _bookingPageSize,
-      );
-      final data = result.items;
+      final shouldLoadAll = refresh && _requiresClientSideStatusFilter;
+      final validBookings = <Map<String, dynamic>>[];
+      var nextPage = refresh ? 1 : _page + 1;
+      var resultPage = _page;
+      var hasNextPage = false;
 
-      final List<Map<String, dynamic>> validBookings = [];
-      for (var item in data) {
-        if (item is Map) {
-          final safeMap = <String, dynamic>{};
-          item.forEach((key, value) {
-            safeMap[key.toString()] = value;
-          });
-          validBookings.add(safeMap);
+      do {
+        final result = await _apiService.getMyBookingsPage(
+          pageNumber: nextPage,
+          pageSize: _bookingPageSize,
+          startDate: _filterStartDate,
+          endDate: _filterEndDate,
+          status: _serverStatusFilter,
+        );
+
+        for (var item in result.items) {
+          if (item is Map) {
+            final safeMap = <String, dynamic>{};
+            item.forEach((key, value) {
+              safeMap[key.toString()] = value;
+            });
+            validBookings.add(safeMap);
+          }
         }
-      }
+
+        resultPage = result.page;
+        hasNextPage = result.hasNextPage;
+        nextPage = result.page + 1;
+      } while (shouldLoadAll && hasNextPage);
 
       // SẮP XẾP: Ưu tiên ngày mới nhất
       validBookings.sort((a, b) {
@@ -160,8 +212,8 @@ class _MyBookingListPageState extends State<MyBookingListPage>
         _allBookings = refresh
             ? validBookings
             : [..._allBookings, ...validBookings];
-        _page = result.page;
-        _hasNextPage = result.hasNextPage;
+        _page = resultPage;
+        _hasNextPage = shouldLoadAll ? false : hasNextPage;
         _isLoading = false;
         _isLoadingMore = false;
       });
@@ -351,7 +403,8 @@ class _MyBookingListPageState extends State<MyBookingListPage>
                     itemLabel: (val) => val == null
                         ? S.of(context).allMonths
                         : S.of(context).monthFormat(val),
-                    onChanged: (val) => setState(() => _selectedMonth = val),
+                    onChanged: (val) =>
+                        _onFilterChanged(month: val, monthChanged: true),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -363,7 +416,8 @@ class _MyBookingListPageState extends State<MyBookingListPage>
                     itemLabel: (val) => val == null
                         ? S.of(context).allYears
                         : S.of(context).yearFormat(val),
-                    onChanged: (val) => setState(() => _selectedYear = val),
+                    onChanged: (val) =>
+                        _onFilterChanged(year: val, yearChanged: true),
                   ),
                 ),
               ],
@@ -401,7 +455,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
                     ),
                     onSelected: (selected) {
                       if (selected) {
-                        setState(() => _selectedStatus = status['key']!);
+                        _onFilterChanged(status: status['key']!);
                       }
                     },
                   ),
@@ -537,8 +591,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
         booking['artistName']?.toString() ?? S.of(context).anyArtist;
     final bookingIdStr = booking['bookingId']?.toString() ?? '';
     final canRate =
-        (rawStatus == 'Completed' || rawStatus == 'ServiceCompleted') &&
-        !bookingIsRated(booking);
+        (rawStatus == 'Completed' && booking['isRated'] == false);
 
     return GestureDetector(
       onTap: () {

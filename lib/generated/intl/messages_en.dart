@@ -755,7 +755,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "statusLabel": MessageLookupByLibrary.simpleMessage("Status"),
     "statusPending": MessageLookupByLibrary.simpleMessage("Pending Approval"),
     "statusPendingReview": MessageLookupByLibrary.simpleMessage(
-      "Pending review",
+      "Pending Review",
     ),
     "statusQuoted": MessageLookupByLibrary.simpleMessage("Quoted"),
     "statusRejected": MessageLookupByLibrary.simpleMessage("Rejected"),
@@ -904,6 +904,10 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookAppointmentNow": MessageLookupByLibrary.simpleMessage("Book now"),
     "shapeMethodLabel": MessageLookupByLibrary.simpleMessage(
       "Form shaping method",
+    ),
+    "ratingsTitle": MessageLookupByLibrary.simpleMessage("Ratings"),
+    "nailNotRatedMessage": MessageLookupByLibrary.simpleMessage(
+      "This nail hasn\'t been rated.",
     ),
     "decorationLabel": MessageLookupByLibrary.simpleMessage("Decoration"),
     "componentNameFallback": (id) => "Component ${id}",

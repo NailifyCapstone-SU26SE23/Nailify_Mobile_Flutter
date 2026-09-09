@@ -454,6 +454,8 @@
   "sharedLabel": "Shared",
   "bookAppointmentNow": "Book now",
   "shapeMethodLabel": "Form shaping method",
+  "ratingsTitle": "Ratings",
+  "nailNotRatedMessage": "This nail hasn't been rated.",
   "decorationLabel": "Decoration",
   "componentNameFallback": "Component {id}",
   "@componentNameFallback": { "placeholders": { "id": { "type": "String" } } },

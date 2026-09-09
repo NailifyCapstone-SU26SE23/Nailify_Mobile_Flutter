@@ -2683,6 +2683,18 @@ abstract class S {
   /// **'Form shaping method'**
   String get shapeMethodLabel;
 
+  /// No description provided for @ratingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ratings'**
+  String get ratingsTitle;
+
+  /// No description provided for @nailNotRatedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This nail hasn\'t been rated.'**
+  String get nailNotRatedMessage;
+
   /// No description provided for @decorationLabel.
   ///
   /// In en, this message translates to:

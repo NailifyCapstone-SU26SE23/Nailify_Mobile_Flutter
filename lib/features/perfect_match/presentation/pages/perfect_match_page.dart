@@ -907,63 +907,6 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
                   ),
                 ),
               ],
-
-              // Try Another Design Button at the very bottom (beautiful soft pink/rose gradient)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
-                child: Container(
-                  width: double.infinity,
-                  height: 54,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(27),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFFF6B9C), Color(0xFFFF8EBC)],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withOpacity(0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(27),
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        // Navigate to /nails and pass results to show them on top
-                        context.go('/nails', extra: _results);
-                      },
-                      child: Center(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.palette_outlined,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              S.of(context).tryAnotherDesign,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 16,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
             ],
           ),
         ),

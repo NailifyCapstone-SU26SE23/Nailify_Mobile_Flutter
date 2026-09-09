@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/di/injection.dart';
 import '../../nails/data/models/customer_nail_models.dart';
@@ -695,17 +697,26 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
       return;
     }
 
+    var customerNailId = nail?.customerNailId ?? 0;
+    final isNewCustomerNail = customerNailId <= 0;
+    final newCustomerNailInput = isNewCustomerNail
+        ? await _showCreateCustomerNailDialog()
+        : null;
+    if (isNewCustomerNail && newCustomerNailInput == null) {
+      return;
+    }
+    final nailName = isNewCustomerNail
+        ? newCustomerNailInput!.name
+        : nail?.name.trim().isNotEmpty == true
+        ? nail!.name
+        : 'Custom Nail';
+
     setState(() => _isSaving = true);
     try {
-      var customerNailId = nail?.customerNailId ?? 0;
-      final isNewCustomerNail = customerNailId <= 0;
-      final nailName = nail?.name.trim().isNotEmpty == true
-          ? nail!.name
-          : 'Custom Nail';
-
       if (customerNailId <= 0) {
         customerNailId = await _customerNailRepository.createCustomerNail(
           name: nailName,
+          imagePath: newCustomerNailInput?.imagePath,
         );
       }
 
@@ -768,6 +779,14 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  Future<_CreateCustomerNailInput?> _showCreateCustomerNailDialog() {
+    return showDialog<_CreateCustomerNailInput>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const _CreateCustomerNailDialog(),
+    );
   }
 
   CustomerNailModel? _buildPreviewNail() {
@@ -1262,5 +1281,184 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
+  }
+}
+
+class _CreateCustomerNailInput {
+  final String name;
+  final String? imagePath;
+
+  const _CreateCustomerNailInput({
+    required this.name,
+    this.imagePath,
+  });
+}
+
+class _CreateCustomerNailDialog extends StatefulWidget {
+  const _CreateCustomerNailDialog();
+
+  @override
+  State<_CreateCustomerNailDialog> createState() =>
+      _CreateCustomerNailDialogState();
+}
+
+class _CreateCustomerNailDialogState extends State<_CreateCustomerNailDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _picker = ImagePicker();
+
+  XFile? _imageFile;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final image = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
+    if (image != null && mounted) {
+      setState(() => _imageFile = image);
+    }
+  }
+
+  void _submit() {
+    if (!_formKey.currentState!.validate()) return;
+    Navigator.of(context).pop(
+      _CreateCustomerNailInput(
+        name: _nameController.text.trim(),
+        imagePath: _imageFile?.path,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      backgroundColor: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Tạo mẫu móng mới',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF111827),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                TextFormField(
+                  controller: _nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Tên mẫu móng *',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFFF4081),
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                  validator: (value) => value?.trim().isEmpty == true
+                      ? 'Vui lòng nhập tên'
+                      : null,
+                ),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    side: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  onPressed: _pickImage,
+                  icon: const Icon(Icons.photo_library_outlined, size: 20),
+                  label: Text(_imageFile != null ? 'Đổi ảnh' : 'Chọn ảnh móng'),
+                ),
+                if (_imageFile != null) ...[
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.file(
+                      File(_imageFile!.path),
+                      height: 180,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Ảnh mới',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey.shade600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+                const SizedBox(height: 32),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          side: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text(
+                          'Hủy',
+                          style: TextStyle(color: Color(0xFF6B7280)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Color(0xFFFF4081),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: _submit,
+                        child: const Text(
+                          'Lưu',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

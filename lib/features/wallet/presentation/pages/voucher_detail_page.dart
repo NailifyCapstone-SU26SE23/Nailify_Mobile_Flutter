@@ -157,7 +157,10 @@ class VoucherDetailPage extends StatelessWidget {
             context,
             title: context.l10n.walletVoucherRemaining(v.receivedCount),
             child: Text(
-              context.l10n.walletVoucherUsedCount(v.usageCount, v.receivedCount),
+              context.l10n.walletVoucherUsedCount(
+                v.usageCount,
+                v.receivedCount,
+              ),
               style: const TextStyle(fontSize: 13),
             ),
           ),

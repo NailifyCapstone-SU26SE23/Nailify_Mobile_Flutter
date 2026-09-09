@@ -96,8 +96,7 @@ class _PointsHistoryViewState extends State<_PointsHistoryView> {
               return IconButton(
                 onPressed: state.status == LoyaltyTransactionsStatus.loading
                     ? null
-                    : () =>
-                        context.read<LoyaltyTransactionsCubit>().refresh(),
+                    : () => context.read<LoyaltyTransactionsCubit>().refresh(),
                 icon: state.status == LoyaltyTransactionsStatus.loading
                     ? const SizedBox(
                         width: 18,
@@ -138,8 +137,7 @@ class _PointsHistoryViewState extends State<_PointsHistoryView> {
           }
 
           return RefreshIndicator(
-            onRefresh: () =>
-                context.read<LoyaltyTransactionsCubit>().refresh(),
+            onRefresh: () => context.read<LoyaltyTransactionsCubit>().refresh(),
             child: ListView.builder(
               controller: _scrollController,
               physics: const AlwaysScrollableScrollPhysics(),
@@ -172,10 +170,7 @@ class _PointsHistoryViewState extends State<_PointsHistoryView> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            AppColors.primary,
-            AppColors.primaryDark,
-          ],
+          colors: [AppColors.primary, AppColors.primaryDark],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),

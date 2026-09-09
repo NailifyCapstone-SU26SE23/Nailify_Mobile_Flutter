@@ -61,9 +61,9 @@ class RedeemResultModel {
       return '$str% off';
     }
     final str = value.round().toString().replaceAllMapped(
-          RegExp(r'\B(?=(\d{3})+(?!\d))'),
-          (_) => ',',
-        );
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (_) => ',',
+    );
     return '$str VND off';
   }
 }

@@ -766,7 +766,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "statusLabel": MessageLookupByLibrary.simpleMessage("Trạng thái"),
     "statusPending": MessageLookupByLibrary.simpleMessage("Chờ duyệt"),
     "statusPendingReview": MessageLookupByLibrary.simpleMessage(
-      "Pending review",
+      "Chờ duyệt",
     ),
     "statusQuoted": MessageLookupByLibrary.simpleMessage("Đã báo giá"),
     "statusRejected": MessageLookupByLibrary.simpleMessage("Bị từ chối"),

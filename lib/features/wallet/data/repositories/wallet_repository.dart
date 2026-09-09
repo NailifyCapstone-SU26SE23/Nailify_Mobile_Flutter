@@ -24,8 +24,8 @@ class WalletRepository {
     ApiClient apiClient, {
     WalletApiService? apiService,
     SharedPreferences? prefs,
-  })  : _apiService = apiService ?? WalletApiService(apiClient),
-        _prefs = prefs;
+  }) : _apiService = apiService ?? WalletApiService(apiClient),
+       _prefs = prefs;
 
   // ─── Cache keys ──────────────────────────────────────────────────
   static const _kCacheOverview = 'wallet_overview_cache_v1';
@@ -43,10 +43,7 @@ class WalletRepository {
     return DateTime.tryParse(ts);
   }
 
-  Future<void> _writeCache(
-    String key,
-    Map<String, dynamic> payload,
-  ) async {
+  Future<void> _writeCache(String key, Map<String, dynamic> payload) async {
     final prefs = _prefs;
     if (prefs == null) return;
     await prefs.setString(key, jsonEncode(payload));
@@ -174,7 +171,8 @@ class WalletRepository {
       if (cached != null) {
         try {
           final loyaltyJson = cached['loyalty'] as Map<String, dynamic>?;
-          final vouchersJson = (cached['vouchers'] as List?)
+          final vouchersJson =
+              (cached['vouchers'] as List?)
                   ?.whereType<Map>()
                   .map((e) => Map<String, dynamic>.from(e))
                   .toList() ??
@@ -182,8 +180,7 @@ class WalletRepository {
           if (loyaltyJson != null) {
             return WalletOverviewSnapshot(
               loyalty: LoyaltyModel.fromJson(loyaltyJson),
-              vouchers:
-                  vouchersJson.map(WalletVoucherModel.fromJson).toList(),
+              vouchers: vouchersJson.map(WalletVoucherModel.fromJson).toList(),
             );
           }
         } catch (_) {
@@ -204,21 +201,23 @@ class WalletRepository {
     await _writeCache(_kCacheOverview, {
       'loyalty': loyalty.toJson(),
       'vouchers': vouchers
-          .map((e) => <String, dynamic>{
-                'userPromotionUsageId': e.userPromotionUsageId,
-                'promotionId': e.promotionId,
-                'promotionName': e.promotionName,
-                'description': e.description,
-                'discountType': e.discountType,
-                'discountValue': e.discountValue,
-                'receivedCount': e.receivedCount,
-                'usageCount': e.usageCount,
-                'remainingCount': e.remainingCount,
-                'startDate': e.startDate?.toIso8601String(),
-                'endDate': e.endDate?.toIso8601String(),
-                'imageUrl': e.imageUrl,
-                'isValidForUse': e.isValidForUse,
-              })
+          .map(
+            (e) => <String, dynamic>{
+              'userPromotionUsageId': e.userPromotionUsageId,
+              'promotionId': e.promotionId,
+              'promotionName': e.promotionName,
+              'description': e.description,
+              'discountType': e.discountType,
+              'discountValue': e.discountValue,
+              'receivedCount': e.receivedCount,
+              'usageCount': e.usageCount,
+              'remainingCount': e.remainingCount,
+              'startDate': e.startDate?.toIso8601String(),
+              'endDate': e.endDate?.toIso8601String(),
+              'imageUrl': e.imageUrl,
+              'isValidForUse': e.isValidForUse,
+            },
+          )
           .toList(),
     });
 
@@ -243,8 +242,7 @@ class WalletRepository {
 
   // ─── Loyalty Transactions History ────────────────────────────────
   // Cache key + TTL riêng để tránh chung TTL với overview.
-  static const _kCacheTransactions =
-      'wallet_loyalty_transactions_cache_v1';
+  static const _kCacheTransactions = 'wallet_loyalty_transactions_cache_v1';
   static const Duration transactionsTtl = Duration(minutes: 2);
 
   Future<PaginatedLoyaltyTransactions> getMyLoyaltyTransactions({
@@ -272,31 +270,28 @@ class WalletRepository {
     );
 
     if (isFirstPage) {
-      await _writeCache(
-        cacheKey,
-        <String, dynamic>{
-          'data': <String, dynamic>{
-            'items': fresh.items
-                .map(
-                  (t) => <String, dynamic>{
-                    'loyaltyTransactionId': t.loyaltyTransactionId,
-                    'customerId': t.customerId,
-                    'bookingId': t.bookingId,
-                    'points': t.points,
-                    'transactionType': t.transactionType.name,
-                    'loyaltyTierIdAtTime': t.loyaltyTierIdAtTime,
-                    'createdAt': t.createdAt.toIso8601String(),
-                  },
-                )
-                .toList(),
-            'metaData': <String, dynamic>{
-              'currentPage': fresh.page,
-              'hasNext': fresh.hasNextPage,
-              'totalItems': fresh.totalItems,
-            },
+      await _writeCache(cacheKey, <String, dynamic>{
+        'data': <String, dynamic>{
+          'items': fresh.items
+              .map(
+                (t) => <String, dynamic>{
+                  'loyaltyTransactionId': t.loyaltyTransactionId,
+                  'customerId': t.customerId,
+                  'bookingId': t.bookingId,
+                  'points': t.points,
+                  'transactionType': t.transactionType.name,
+                  'loyaltyTierIdAtTime': t.loyaltyTierIdAtTime,
+                  'createdAt': t.createdAt.toIso8601String(),
+                },
+              )
+              .toList(),
+          'metaData': <String, dynamic>{
+            'currentPage': fresh.page,
+            'hasNext': fresh.hasNextPage,
+            'totalItems': fresh.totalItems,
           },
         },
-      );
+      });
     }
 
     return fresh;

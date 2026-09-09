@@ -79,10 +79,8 @@ Future<void> configureDependencies() async {
 
   // Wallet & Voucher
   getIt.registerLazySingleton<WalletRepository>(
-    () => WalletRepository(
-      getIt<ApiClient>(),
-      prefs: getIt<SharedPreferences>(),
-    ),
+    () =>
+        WalletRepository(getIt<ApiClient>(), prefs: getIt<SharedPreferences>()),
   );
 
   // 5. Services

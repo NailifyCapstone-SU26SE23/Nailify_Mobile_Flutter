@@ -185,15 +185,8 @@ class _PromotionRadioTile extends StatelessWidget {
         value: value,
         groupValue: groupValue,
         onChanged: onChanged,
-        title: Text(
-          title,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        subtitle: Text(
-          subtitle,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
         dense: true,
         contentPadding: EdgeInsets.zero,
         activeColor: AppColors.primary,

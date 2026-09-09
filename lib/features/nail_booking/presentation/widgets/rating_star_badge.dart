@@ -56,10 +56,7 @@ class RatingStarBadge extends StatelessWidget {
         );
       }
     }
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: stars,
-    );
+    return Row(mainAxisSize: MainAxisSize.min, children: stars);
   }
 
   @override
@@ -88,11 +85,7 @@ class RatingStarBadge extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.star_rounded,
-              size: 14,
-              color: Color(0xFFFFB800),
-            ),
+            const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFFB800)),
             const SizedBox(width: 3),
             Text(
               safeRating.toStringAsFixed(1),
@@ -132,11 +125,7 @@ class RatingStarBadge extends StatelessWidget {
             _buildStarRow(safeRating),
             const SizedBox(width: 5),
           ] else ...[
-            const Icon(
-              Icons.star_rounded,
-              size: 14,
-              color: Color(0xFFFFB800),
-            ),
+            const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFFB800)),
             const SizedBox(width: 3),
           ],
           Text(

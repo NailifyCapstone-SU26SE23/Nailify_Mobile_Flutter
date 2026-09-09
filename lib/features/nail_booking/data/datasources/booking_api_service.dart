@@ -63,7 +63,9 @@ class BookingApiService {
   Future<double> getSalonRating(String salonId) async {
     if (salonId.isEmpty) return 0.0;
     try {
-      final response = await _apiClient.get('/BookingRatings/by-salon/$salonId');
+      final response = await _apiClient.get(
+        '/BookingRatings/by-salon/$salonId',
+      );
       return _parseAverageRating(response.data);
     } catch (_) {
       return 0.0;

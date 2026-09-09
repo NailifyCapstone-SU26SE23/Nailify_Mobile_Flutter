@@ -85,7 +85,8 @@ class VoucherGridCard extends StatelessWidget {
                             Flexible(
                               child: Text(
                                 context.l10n.walletVoucherRemaining(
-                                    promotion.remainingCount!),
+                                  promotion.remainingCount!,
+                                ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
@@ -179,11 +180,7 @@ class VoucherGridCard extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.stars_rounded,
-            size: 12,
-            color: AppColors.primary,
-          ),
+          const Icon(Icons.stars_rounded, size: 12, color: AppColors.primary),
           const SizedBox(width: 2),
           Text(
             hasPoints
@@ -200,11 +197,7 @@ class VoucherGridCard extends StatelessWidget {
     );
   }
 
-  String _buttonLabel(
-    BuildContext context,
-    bool canRedeem,
-    bool enoughPoints,
-  ) {
+  String _buttonLabel(BuildContext context, bool canRedeem, bool enoughPoints) {
     if (!canRedeem) return context.l10n.redeemSoldOut;
     if (!enoughPoints) return context.l10n.redeemInsufficientPoints;
     return context.l10n.voucherDetail;

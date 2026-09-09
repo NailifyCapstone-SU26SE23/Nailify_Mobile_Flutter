@@ -1324,15 +1324,11 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                   onChanged: (checked) {
                     setState(() {
                       if (checked == true) {
-                        _selectedPromotions = [
-                          ..._selectedPromotions,
-                          voucher,
-                        ];
+                        _selectedPromotions = [..._selectedPromotions, voucher];
                       } else {
                         _selectedPromotions = _selectedPromotions
                             .where(
-                              (item) =>
-                                  item.promotionId != voucher.promotionId,
+                              (item) => item.promotionId != voucher.promotionId,
                             )
                             .toList();
                       }

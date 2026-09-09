@@ -98,10 +98,9 @@ class VoucherTile extends StatelessWidget {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              context
-                                  .l10n
-                                  .walletVoucherRemaining(
-                                      voucher.remainingCount),
+                              context.l10n.walletVoucherRemaining(
+                                voucher.remainingCount,
+                              ),
                               style: const TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
@@ -109,12 +108,13 @@ class VoucherTile extends StatelessWidget {
                               ),
                             ),
                           ),
-                        if (voucher.remainingCount > 0) const SizedBox(width: 6),
+                        if (voucher.remainingCount > 0)
+                          const SizedBox(width: 6),
                         if (voucher.endDate != null)
                           Text(
-                            context
-                                .l10n
-                                .expiredOn(_formatDate(voucher.endDate!)),
+                            context.l10n.expiredOn(
+                              _formatDate(voucher.endDate!),
+                            ),
                             style: TextStyle(
                               fontSize: 10,
                               color: Colors.grey.shade500,
@@ -195,11 +195,7 @@ class VoucherTile extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          color: fg,
-        ),
+        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: fg),
       ),
     );
   }

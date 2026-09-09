@@ -21,8 +21,7 @@ class WalletOverviewPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) =>
-          WalletOverviewCubit(getIt<WalletRepository>())..load(),
+      create: (_) => WalletOverviewCubit(getIt<WalletRepository>())..load(),
       child: const _WalletOverviewView(),
     );
   }
@@ -112,11 +111,9 @@ class _WalletOverviewViewState extends State<_WalletOverviewView> {
               state.snapshot == null) {
             return EmptyWalletState(
               icon: Icons.error_outline_rounded,
-              title: state.errorMessage ??
-                  context.l10n.walletOverviewLoadError,
+              title: state.errorMessage ?? context.l10n.walletOverviewLoadError,
               actionLabel: context.l10n.walletRedeem,
-              onAction: () =>
-                  context.read<WalletOverviewCubit>().refresh(),
+              onAction: () => context.read<WalletOverviewCubit>().refresh(),
             );
           }
           final snapshot = state.snapshot;
@@ -124,8 +121,7 @@ class _WalletOverviewViewState extends State<_WalletOverviewView> {
             return const SizedBox.shrink();
           }
           return RefreshIndicator(
-            onRefresh: () =>
-                context.read<WalletOverviewCubit>().refresh(),
+            onRefresh: () => context.read<WalletOverviewCubit>().refresh(),
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(20),
@@ -173,8 +169,9 @@ class _WalletOverviewViewState extends State<_WalletOverviewView> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    ...snapshot.expiringSoon
-                        .map((v) => _buildQuickVoucherTile(context, v)),
+                    ...snapshot.expiringSoon.map(
+                      (v) => _buildQuickVoucherTile(context, v),
+                    ),
                   ],
                 ],
               ),
@@ -247,13 +244,8 @@ class _WalletOverviewViewState extends State<_WalletOverviewView> {
             ),
           ),
           Text(
-            v.endDate != null
-                ? context.l10n.expiredOn(_fmt(v.endDate!))
-                : '',
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey.shade500,
-            ),
+            v.endDate != null ? context.l10n.expiredOn(_fmt(v.endDate!)) : '',
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
           ),
         ],
       ),

@@ -1,11 +1,5 @@
 /// Loại giao dịch điểm thưởng trả về từ BE.
-enum LoyaltyTransactionType {
-  earned,
-  redeemed,
-  expired,
-  adjusted,
-  unknown,
-}
+enum LoyaltyTransactionType { earned, redeemed, expired, adjusted, unknown }
 
 /// Lịch sử biến động điểm của khách hàng (GET /LoyaltyTransactions/me).
 class LoyaltyTransactionModel {
@@ -138,7 +132,8 @@ class PaginatedLoyaltyTransactions {
       if (meta is Map) {
         page = _readInt(meta['currentPage'], 1);
         final rawHasNext = meta['hasNext'];
-        hasNext = rawHasNext == true ||
+        hasNext =
+            rawHasNext == true ||
             (rawHasNext is String &&
                 (rawHasNext.toLowerCase() == 'true' || rawHasNext == '1'));
         totalItems = _readInt(meta['totalItems'], parsedItems.length);
@@ -149,9 +144,8 @@ class PaginatedLoyaltyTransactions {
       parsedItems = data
           .whereType<Map>()
           .map(
-            (e) => LoyaltyTransactionModel.fromJson(
-              Map<String, dynamic>.from(e),
-            ),
+            (e) =>
+                LoyaltyTransactionModel.fromJson(Map<String, dynamic>.from(e)),
           )
           .toList();
       totalItems = parsedItems.length;
@@ -160,9 +154,8 @@ class PaginatedLoyaltyTransactions {
       parsedItems = (json['items'] as List)
           .whereType<Map>()
           .map(
-            (e) => LoyaltyTransactionModel.fromJson(
-              Map<String, dynamic>.from(e),
-            ),
+            (e) =>
+                LoyaltyTransactionModel.fromJson(Map<String, dynamic>.from(e)),
           )
           .toList();
       totalItems = parsedItems.length;

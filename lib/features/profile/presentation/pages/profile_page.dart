@@ -634,9 +634,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         LoyaltyModel? lm;
                         try {
                           lm = LoyaltyModel.fromJson(
-                            Map<String, dynamic>.from(
-                              _loyaltyData as Map,
-                            ),
+                            Map<String, dynamic>.from(_loyaltyData as Map),
                           );
                         } catch (_) {
                           lm = null;
@@ -1004,8 +1002,7 @@ class _ProfilePageState extends State<ProfilePage> {
       } else if (_profileData?['loyaltyPoint'] != null) {
         // Fallback: dữ liệu loyalty nằm trong /Profile/customers.
         loyaltyModel = LoyaltyModel(
-          loyaltyPoint:
-              (_profileData?['loyaltyPoint'] as num?)?.toInt() ?? 0,
+          loyaltyPoint: (_profileData?['loyaltyPoint'] as num?)?.toInt() ?? 0,
           lifetimePoints:
               (_profileData?['lifetimePoints'] as num?)?.toInt() ?? 0,
         );

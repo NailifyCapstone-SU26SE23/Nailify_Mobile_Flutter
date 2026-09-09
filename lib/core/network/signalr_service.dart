@@ -171,7 +171,8 @@ class SignalRService {
             final payload = payloadMap != null
                 ? WalletPointsChangedEvent.fromJson(payloadMap)
                 : WalletPointsChangedEvent(
-                    message: rawPayload?.toString() ??
+                    message:
+                        rawPayload?.toString() ??
                         'Điểm của bạn đã được cập nhật.',
                   );
             _walletPointsCtrl.add(payload);
@@ -182,8 +183,8 @@ class SignalRService {
             final payload = payloadMap != null
                 ? VoucherReceivedEvent.fromJson(payloadMap)
                 : VoucherReceivedEvent(
-                    message: rawPayload?.toString() ??
-                        'Bạn vừa nhận một voucher.',
+                    message:
+                        rawPayload?.toString() ?? 'Bạn vừa nhận một voucher.',
                   );
             _voucherReceivedCtrl.add(payload);
             break;

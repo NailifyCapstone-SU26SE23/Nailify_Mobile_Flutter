@@ -85,9 +85,7 @@ class WalletEntryCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
-                              context
-                                  .l10n
-                                  .walletVoucherCount(voucherCount),
+                              context.l10n.walletVoucherCount(voucherCount),
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
@@ -151,11 +149,7 @@ class WalletEntryCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: tierTextColor,
-                size: 28,
-              ),
+              Icon(Icons.chevron_right_rounded, color: tierTextColor, size: 28),
             ],
           ),
         ),

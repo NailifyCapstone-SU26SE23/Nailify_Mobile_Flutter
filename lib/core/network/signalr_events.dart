@@ -116,8 +116,7 @@ class WalletPointsChangedEvent {
     return WalletPointsChangedEvent(
       loyaltyPoint: (json['loyaltyPoint'] as num?)?.toInt(),
       lifetimePoints: (json['lifetimePoints'] as num?)?.toInt(),
-      message:
-          json['message']?.toString() ?? 'Điểm của bạn đã được cập nhật.',
+      message: json['message']?.toString() ?? 'Điểm của bạn đã được cập nhật.',
     );
   }
 }
@@ -138,8 +137,7 @@ class VoucherReceivedEvent {
 
   factory VoucherReceivedEvent.fromJson(Map<String, dynamic> json) {
     return VoucherReceivedEvent(
-      userPromotionUsageId:
-          (json['userPromotionUsageId'] as num?)?.toInt(),
+      userPromotionUsageId: (json['userPromotionUsageId'] as num?)?.toInt(),
       promotionId: (json['promotionId'] as num?)?.toInt(),
       promotionName: json['promotionName']?.toString(),
       message: json['message']?.toString() ?? 'Bạn vừa nhận một voucher.',

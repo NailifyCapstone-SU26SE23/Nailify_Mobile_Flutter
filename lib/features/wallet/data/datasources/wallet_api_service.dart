@@ -41,7 +41,8 @@ class WalletApiService {
     return list
         .whereType<Map>()
         .map(
-          (json) => WalletVoucherModel.fromJson(Map<String, dynamic>.from(json)),
+          (json) =>
+              WalletVoucherModel.fromJson(Map<String, dynamic>.from(json)),
         )
         .toList();
   }
@@ -53,10 +54,7 @@ class WalletApiService {
   }) async {
     final response = await _api.get<dynamic>(
       '/Promotions/redeemable',
-      queryParameters: {
-        'pageNumber': page,
-        'pageSize': pageSize,
-      },
+      queryParameters: {'pageNumber': page, 'pageSize': pageSize},
     );
     return PaginatedResponse.fromJson(
       Map<String, dynamic>.from(response.data as Map),
@@ -110,10 +108,7 @@ class WalletApiService {
   }) async {
     final response = await _api.get<dynamic>(
       '/LoyaltyTransactions/me',
-      queryParameters: {
-        'pageNumber': pageNumber,
-        'pageSize': pageSize,
-      },
+      queryParameters: {'pageNumber': pageNumber, 'pageSize': pageSize},
     );
 
     final raw = response.data;

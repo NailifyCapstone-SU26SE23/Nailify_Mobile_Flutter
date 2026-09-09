@@ -25,8 +25,7 @@ class RedeemVoucherPage extends StatelessWidget {
               RedeemableCubit(getIt<WalletRepository>())..loadFirst(),
         ),
         BlocProvider(
-          create: (_) =>
-              WalletOverviewCubit(getIt<WalletRepository>())..load(),
+          create: (_) => WalletOverviewCubit(getIt<WalletRepository>())..load(),
         ),
       ],
       child: const _RedeemVoucherView(),
@@ -67,8 +66,7 @@ class _RedeemVoucherViewState extends State<_RedeemVoucherView> {
               return IconButton(
                 onPressed: state.status == RedeemableStatus.loading
                     ? null
-                    : () =>
-                        context.read<RedeemableCubit>().loadFirst(),
+                    : () => context.read<RedeemableCubit>().loadFirst(),
                 icon: state.status == RedeemableStatus.loading
                     ? const SizedBox(
                         width: 18,
@@ -188,8 +186,7 @@ class _RedeemVoucherViewState extends State<_RedeemVoucherView> {
         return GridView.builder(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           physics: const AlwaysScrollableScrollPhysics(),
-          gridDelegate:
-              const SliverGridDelegateWithFixedCrossAxisCount(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
@@ -199,16 +196,12 @@ class _RedeemVoucherViewState extends State<_RedeemVoucherView> {
           itemCount: filtered.length,
           itemBuilder: (context, index) {
             final promo = filtered[index];
-            final isRedeeming =
-                state.redeemStatus == RedeemStatus.redeeming;
+            final isRedeeming = state.redeemStatus == RedeemStatus.redeeming;
             return VoucherGridCard(
               promotion: promo,
               userBalance: balance,
               canRedeem: promo.canRedeem && !isRedeeming,
-              onTap: () => _openDetailSheet(
-                promotion: promo,
-                balance: balance,
-              ),
+              onTap: () => _openDetailSheet(promotion: promo, balance: balance),
             );
           },
         );
@@ -280,9 +273,7 @@ class _RedeemVoucherViewState extends State<_RedeemVoucherView> {
         overviewCubit.load(forceRefresh: true);
         if (!mounted) return;
         redeemCubit.loadFirst();
-        message = outcome.message.isNotEmpty
-            ? outcome.message
-            : successMsg;
+        message = outcome.message.isNotEmpty ? outcome.message : successMsg;
         isSuccess = true;
       } else {
         if (!mounted) return;
@@ -366,9 +357,7 @@ class _RedeemResultSheet extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                success
-                    ? Icons.check_rounded
-                    : Icons.error_outline_rounded,
+                success ? Icons.check_rounded : Icons.error_outline_rounded,
                 size: 48,
                 color: color,
               ),
@@ -397,10 +386,7 @@ class _RedeemResultSheet extends StatelessWidget {
               Text(
                 promotionName,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
               ),
             ],
             const SizedBox(height: 20),

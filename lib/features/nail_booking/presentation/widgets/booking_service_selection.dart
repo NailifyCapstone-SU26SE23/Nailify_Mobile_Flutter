@@ -119,50 +119,53 @@ class BookingServiceSelection extends StatelessWidget {
             return Material(
               type: MaterialType.transparency,
               child: Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? AppColors.primary.withOpacity(0.04)
-                    : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
                   color: isSelected
-                      ? AppColors.primary.withOpacity(0.3)
-                      : const Color(0xFFF3EFEA),
-                  width: 1.2,
-                ),
-              ),
-              child: CheckboxListTile(
-                value: isSelected,
-                activeColor: AppColors.primary,
-                selectedTileColor: Colors.transparent,
-                title: Text(
-                  name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14.5,
-                    color: AppColors.textPrimary,
+                      ? AppColors.primary.withOpacity(0.04)
+                      : Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isSelected
+                        ? AppColors.primary.withOpacity(0.3)
+                        : const Color(0xFFF3EFEA),
+                    width: 1.2,
                   ),
                 ),
-                subtitle: Text(
-                  S
-                      .of(context)
-                      .bookingWarrantyFree((item['quantity'] ?? 1).toString()),
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                child: CheckboxListTile(
+                  value: isSelected,
+                  activeColor: AppColors.primary,
+                  selectedTileColor: Colors.transparent,
+                  title: Text(
+                    name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14.5,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  subtitle: Text(
+                    S
+                        .of(context)
+                        .bookingWarrantyFree(
+                          (item['quantity'] ?? 1).toString(),
+                        ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                  onChanged: (val) {
+                    final next = List<Map<String, dynamic>>.from(
+                      selectedWarrantyItems,
+                    );
+                    if (val == true) {
+                      if (!next.any((s) => _isSameItem(s, item)))
+                        next.add(item);
+                    } else {
+                      next.removeWhere((s) => _isSameItem(s, item));
+                    }
+                    onWarrantyItemsChanged?.call(next);
+                  },
                 ),
-                onChanged: (val) {
-                  final next = List<Map<String, dynamic>>.from(
-                    selectedWarrantyItems,
-                  );
-                  if (val == true) {
-                    if (!next.any((s) => _isSameItem(s, item))) next.add(item);
-                  } else {
-                    next.removeWhere((s) => _isSameItem(s, item));
-                  }
-                  onWarrantyItemsChanged?.call(next);
-                },
               ),
-            ),
             );
           }),
           const SizedBox(height: 24),

@@ -91,7 +91,8 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
 
   // ── Getters ──────────────────────────────────────
   int get _selectedNailVariantId => _selectedNailVariant?.nailVariantId ?? 0;
-  double get _nailVariantPrice => _selectedNailVariant?.estimatedPrice ?? _selectedNailVariant?.price ?? 0;
+  double get _nailVariantPrice =>
+      _selectedNailVariant?.estimatedPrice ?? _selectedNailVariant?.price ?? 0;
   num get _shapeMethodPrice => _selectedShapeMethod?.price ?? 0;
   int get _selectedExtraServicesTotal => _selectedExtraServices
       .whereType<String>()
@@ -336,8 +337,8 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
           'quantity': 1,
         },
       ..._selectedExtraServices.whereType<String>().map(
-            (id) => {'serviceId': id, 'quantity': 1},
-          ),
+        (id) => {'serviceId': id, 'quantity': 1},
+      ),
     ];
   }
 
@@ -351,8 +352,9 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
           : _selectedStylist?['nailArtistId'] as String?,
       'holdToken': holdToken,
       'bookingItems': _buildBookingItems(),
-      'selectedPromotionIds':
-          _selectedPromotionId == null ? null : [_selectedPromotionId!],
+      'selectedPromotionIds': _selectedPromotionId == null
+          ? null
+          : [_selectedPromotionId!],
     };
   }
 
@@ -367,14 +369,11 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
       service['serviceId']?.toString() ?? service['id']?.toString() ?? '';
 
   String _serviceName(Map<String, dynamic> service) =>
-      service['serviceName']?.toString() ??
-      service['name']?.toString() ??
-      '';
+      service['serviceName']?.toString() ?? service['name']?.toString() ?? '';
 
   String _serviceNameById(String? id) {
     if (id == null) return '';
-    final matches = _availableServices
-        .where((s) => _serviceId(s) == id);
+    final matches = _availableServices.where((s) => _serviceId(s) == id);
     if (matches.isEmpty) return id;
     final name = _serviceName(matches.first);
     return name.isEmpty ? id : name;
@@ -593,9 +592,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
       _showSnackBar(S.of(context).bookingValidateSalon);
       return;
     }
-    if (_currentStep == 1 &&
-        _selectedStylist == null &&
-        !_noArtistSelected) {
+    if (_currentStep == 1 && _selectedStylist == null && !_noArtistSelected) {
       _showSnackBar('Vui lòng chọn thợ hoặc chọn "Tự động phân công"!');
       return;
     }
@@ -608,8 +605,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
         return;
       }
     }
-    if (_currentStep == 3 &&
-        (_selectedDate == null || _selectedTime == null)) {
+    if (_currentStep == 3 && (_selectedDate == null || _selectedTime == null)) {
       _showSnackBar(S.of(context).bookingValidateDateTime);
       return;
     }
@@ -634,12 +630,21 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
 
   // ── Build ───────────────────────────────────────
   List<Map<String, dynamic>> get _bookingSteps => [
-        {'title': S.of(context).bookingStepSelectSalon, 'icon': Icons.storefront_rounded},
-        {'title': 'Chọn thợ', 'icon': Icons.person_pin_rounded},
-        {'title': S.of(context).bookingStepServices, 'icon': Icons.spa_rounded},
-        {'title': S.of(context).bookingStepBook, 'icon': Icons.calendar_month_rounded},
-        {'title': S.of(context).bookingStepCompleted, 'icon': Icons.check_circle_rounded},
-      ];
+    {
+      'title': S.of(context).bookingStepSelectSalon,
+      'icon': Icons.storefront_rounded,
+    },
+    {'title': 'Chọn thợ', 'icon': Icons.person_pin_rounded},
+    {'title': S.of(context).bookingStepServices, 'icon': Icons.spa_rounded},
+    {
+      'title': S.of(context).bookingStepBook,
+      'icon': Icons.calendar_month_rounded,
+    },
+    {
+      'title': S.of(context).bookingStepCompleted,
+      'icon': Icons.check_circle_rounded,
+    },
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -647,8 +652,11 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              size: 20, color: AppColors.primaryDark),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            size: 20,
+            color: AppColors.primaryDark,
+          ),
           onPressed: _handleBack,
         ),
         title: Text(
@@ -717,8 +725,9 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: ServiceChoiceStep(
-        selectedArtistId:
-            _noArtistSelected ? null : _selectedStylist?['nailArtistId'],
+        selectedArtistId: _noArtistSelected
+            ? null
+            : _selectedStylist?['nailArtistId'],
         services: _availableServices,
         selectedExtraServices: _selectedExtraServices,
         onExtraServicesChanged: _handleExtraServicesChanged,
@@ -869,12 +878,12 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
           const SizedBox(height: 12),
           if (_selectedNailVariant != null) _buildNailVariantRow(),
           ..._selectedExtraServices.whereType<String>().map(
-                (id) => _buildPaymentRow(
-                  S.of(context).bookingExtraService(_serviceNameById(id)),
-                  _servicePriceById(id),
-                  muted: true,
-                ),
-              ),
+            (id) => _buildPaymentRow(
+              S.of(context).bookingExtraService(_serviceNameById(id)),
+              _servicePriceById(id),
+              muted: true,
+            ),
+          ),
           const Divider(height: 16),
           _buildPaymentRow(
             S.of(context).bookingTotal,
@@ -914,10 +923,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
           ),
           Text(
             PriceFormatter.format(price),
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -1002,10 +1008,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
           ),
           Text(
             value,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
           ),
         ],
       ),
@@ -1013,8 +1016,9 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
   }
 
   Widget _buildPromotionSelector() {
-    final selected = _promotions
-        .where((p) => p.promotionId == _selectedPromotionId);
+    final selected = _promotions.where(
+      (p) => p.promotionId == _selectedPromotionId,
+    );
     final selectedLabel = selected.isEmpty
         ? 'Chọn voucher từ ví của bạn'
         : '${selected.first.promotionName} (${selected.first.displayDiscount})';
@@ -1227,8 +1231,8 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                       color: index == 0
                           ? Colors.transparent
                           : (isCompleted || isActive
-                              ? AppColors.primary
-                              : Colors.grey.shade300),
+                                ? AppColors.primary
+                                : Colors.grey.shade300),
                     ),
                   ),
                 ),
@@ -1244,8 +1248,8 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                         color: isActive
                             ? Colors.white
                             : (isCompleted
-                                ? AppColors.primary
-                                : Colors.grey.shade50),
+                                  ? AppColors.primary
+                                  : Colors.grey.shade50),
                         border: Border.all(
                           color: (isActive || isCompleted)
                               ? AppColors.primary
@@ -1255,8 +1259,9 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                         boxShadow: isActive
                             ? [
                                 BoxShadow(
-                                  color: AppColors.primary
-                                      .withValues(alpha: 0.25),
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.25,
+                                  ),
                                   blurRadius: 8,
                                   spreadRadius: 1,
                                 ),
@@ -1270,8 +1275,8 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                           color: isCompleted
                               ? Colors.white
                               : (isActive
-                                  ? AppColors.primary
-                                  : Colors.grey.shade400),
+                                    ? AppColors.primary
+                                    : Colors.grey.shade400),
                         ),
                       ),
                     ),
@@ -1298,8 +1303,8 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                       color: index == _bookingSteps.length - 1
                           ? Colors.transparent
                           : (isCompleted
-                              ? AppColors.primary
-                              : Colors.grey.shade300),
+                                ? AppColors.primary
+                                : Colors.grey.shade300),
                     ),
                   ),
                 ),
@@ -1334,11 +1339,13 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                 onPressed: _isSubmitting ? null : _handleBack,
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 24, vertical: 14),
-                  side: const BorderSide(
-                      color: AppColors.primary, width: 1.5),
+                    horizontal: 24,
+                    vertical: 14,
+                  ),
+                  side: const BorderSide(color: AppColors.primary, width: 1.5),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25)),
+                    borderRadius: BorderRadius.circular(25),
+                  ),
                 ),
                 child: Text(
                   S.of(context).bookingBackBtn,
@@ -1380,7 +1387,8 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                       foregroundColor: Colors.white,
                       shadowColor: Colors.transparent,
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24)),
+                        borderRadius: BorderRadius.circular(24),
+                      ),
                       padding: const EdgeInsets.symmetric(horizontal: 32),
                       elevation: 0,
                     ),
@@ -1397,8 +1405,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                             _currentStep == 4
                                 ? S.of(context).bookingPayBtn
                                 : S.of(context).bookingContinueBtn,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                   ),
                 ),

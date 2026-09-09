@@ -15,25 +15,26 @@ class MyVouchersCubit extends Cubit<MyVouchersState> {
 
   Future<void> load({bool forceRefresh = false}) async {
     if (state.status == MyVouchersStatus.loading && !forceRefresh) return;
-    emit(state.copyWith(
-      status: MyVouchersStatus.loading,
-      errorMessage: null,
-    ));
+    emit(state.copyWith(status: MyVouchersStatus.loading, errorMessage: null));
     try {
       final items = await _repository.getMyWalletVouchers(
         forceRefresh: forceRefresh,
       );
-      emit(state.copyWith(
-        status: MyVouchersStatus.loaded,
-        items: items,
-        filter: state.filter,
-        errorMessage: null,
-      ));
+      emit(
+        state.copyWith(
+          status: MyVouchersStatus.loaded,
+          items: items,
+          filter: state.filter,
+          errorMessage: null,
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        status: MyVouchersStatus.error,
-        errorMessage: e.toString(),
-      ));
+      emit(
+        state.copyWith(
+          status: MyVouchersStatus.error,
+          errorMessage: e.toString(),
+        ),
+      );
     }
   }
 

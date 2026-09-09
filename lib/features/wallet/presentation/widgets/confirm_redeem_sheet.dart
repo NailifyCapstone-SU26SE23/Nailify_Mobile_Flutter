@@ -155,21 +155,18 @@ class _ConfirmRedeemSheetState extends State<ConfirmRedeemSheet> {
                   children: [
                     _row(
                       label: context.l10n.walletRedeem,
-                      value:
-                          context.l10n.pointsRequired(widget.pointsRequired),
+                      value: context.l10n.pointsRequired(widget.pointsRequired),
                       highlight: true,
                     ),
                     const Divider(height: 16),
                     _row(
                       label: context.l10n.walletBalance,
-                      value:
-                          context.l10n.pointsRequired(widget.userBalance),
+                      value: context.l10n.pointsRequired(widget.userBalance),
                     ),
                     const SizedBox(height: 6),
                     _row(
                       label: context.l10n.balanceHint(remaining),
-                      value:
-                          context.l10n.pointsRequired(widget.pointsRequired),
+                      value: context.l10n.pointsRequired(widget.pointsRequired),
                       dim: true,
                     ),
                   ],
@@ -241,9 +238,7 @@ class _ConfirmRedeemSheetState extends State<ConfirmRedeemSheet> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: (!_isSubmitting && canAfford)
-                          ? _submit
-                          : null,
+                      onPressed: (!_isSubmitting && canAfford) ? _submit : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: canAfford
                             ? AppColors.primary
@@ -295,9 +290,7 @@ class _ConfirmRedeemSheetState extends State<ConfirmRedeemSheet> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: highlight ? FontWeight.w800 : FontWeight.w600,
-              color: dim
-                  ? Colors.grey.shade700
-                  : AppColors.textPrimary,
+              color: dim ? Colors.grey.shade700 : AppColors.textPrimary,
             ),
           ),
         ),

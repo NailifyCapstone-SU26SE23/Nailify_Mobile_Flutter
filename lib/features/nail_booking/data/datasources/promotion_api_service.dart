@@ -66,7 +66,8 @@ class PromotionApiService {
     return items
         .whereType<Map>()
         .map(
-          (json) => WalletVoucherModel.fromJson(Map<String, dynamic>.from(json)),
+          (json) =>
+              WalletVoucherModel.fromJson(Map<String, dynamic>.from(json)),
         )
         .toList();
   }

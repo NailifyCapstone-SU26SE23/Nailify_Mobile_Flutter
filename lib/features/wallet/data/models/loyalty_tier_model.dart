@@ -81,17 +81,17 @@ class LoyaltyTierModel {
   }
 
   Map<String, dynamic> toJson() => {
-        'loyaltyTierId': loyaltyTierId,
-        'name': name,
-        'description': description,
-        'minLifetimePoints': minLifetimePoints,
-        'maxLifetimePoints': maxLifetimePoints,
-        'discountRate': discountRate,
-        'imageUrl': imageUrl,
-        'backgroundColor': backgroundColor,
-        'textColor': textColor,
-        'colorJson': colorJson,
-        'status': status,
-        'sortOrder': sortOrder,
-      };
+    'loyaltyTierId': loyaltyTierId,
+    'name': name,
+    'description': description,
+    'minLifetimePoints': minLifetimePoints,
+    'maxLifetimePoints': maxLifetimePoints,
+    'discountRate': discountRate,
+    'imageUrl': imageUrl,
+    'backgroundColor': backgroundColor,
+    'textColor': textColor,
+    'colorJson': colorJson,
+    'status': status,
+    'sortOrder': sortOrder,
+  };
 }

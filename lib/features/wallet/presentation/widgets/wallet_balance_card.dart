@@ -91,8 +91,7 @@ class WalletBalanceCard extends StatelessWidget {
               ),
               const Spacer(),
               TextButton.icon(
-                onPressed: () =>
-                    context.push('/profile/wallet/transactions'),
+                onPressed: () => context.push('/profile/wallet/transactions'),
                 icon: const Icon(
                   Icons.history_rounded,
                   size: 14,
@@ -136,7 +135,8 @@ class WalletBalanceCard extends StatelessWidget {
                   label: context.l10n.walletRedeem,
                   color: AppColors.primary,
                   background: AppColors.primary.withValues(alpha: 0.12),
-                  onTap: onRedeemPressed ??
+                  onTap:
+                      onRedeemPressed ??
                       () => context.push('/profile/wallet/redeem'),
                 ),
               ),
@@ -148,7 +148,8 @@ class WalletBalanceCard extends StatelessWidget {
                   label: context.l10n.walletMyVouchers,
                   color: AppColors.primaryDark,
                   background: AppColors.primaryDark.withValues(alpha: 0.12),
-                  onTap: onMyVouchersPressed ??
+                  onTap:
+                      onMyVouchersPressed ??
                       () => context.push('/profile/wallet/vouchers'),
                 ),
               ),

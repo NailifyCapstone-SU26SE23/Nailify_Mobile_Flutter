@@ -22,14 +22,16 @@ class RedeemableCubit extends Cubit<RedeemableState> {
   Future<void> loadFirst() async {
     _page = 1;
     _hasMore = true;
-    emit(state.copyWith(
-      status: RedeemableStatus.loading,
-      items: const [],
-      hasMore: true,
-      isLoadingMore: false,
-      errorMessage: null,
-      transientMessage: null,
-    ));
+    emit(
+      state.copyWith(
+        status: RedeemableStatus.loading,
+        items: const [],
+        hasMore: true,
+        isLoadingMore: false,
+        errorMessage: null,
+        transientMessage: null,
+      ),
+    );
     await _fetchPage();
   }
 
@@ -44,25 +46,31 @@ class RedeemableCubit extends Cubit<RedeemableState> {
 
   Future<void> _fetchPage({bool append = false}) async {
     try {
-      final response =
-          await _repository.getRedeemable(page: _page, pageSize: 10);
+      final response = await _repository.getRedeemable(
+        page: _page,
+        pageSize: 10,
+      );
       _hasMore = response.hasNext;
       final next = append
           ? [...state.items, ...response.items]
           : response.items;
-      emit(state.copyWith(
-        status: RedeemableStatus.loaded,
-        items: next,
-        hasMore: _hasMore,
-        isLoadingMore: false,
-        errorMessage: null,
-      ));
+      emit(
+        state.copyWith(
+          status: RedeemableStatus.loaded,
+          items: next,
+          hasMore: _hasMore,
+          isLoadingMore: false,
+          errorMessage: null,
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        status: RedeemableStatus.error,
-        isLoadingMore: false,
-        errorMessage: e.toString(),
-      ));
+      emit(
+        state.copyWith(
+          status: RedeemableStatus.error,
+          isLoadingMore: false,
+          errorMessage: e.toString(),
+        ),
+      );
     }
   }
 
@@ -71,24 +79,30 @@ class RedeemableCubit extends Cubit<RedeemableState> {
   Future<RedeemOutcome?> redeem(int promotionId) async {
     if (_isRedeeming) return null;
     _isRedeeming = true;
-    emit(state.copyWith(
-      redeemStatus: RedeemStatus.redeeming,
-      transientMessage: null,
-    ));
+    emit(
+      state.copyWith(
+        redeemStatus: RedeemStatus.redeeming,
+        transientMessage: null,
+      ),
+    );
     try {
       final result = await _repository.redeem(promotionId);
-      emit(state.copyWith(
-        redeemStatus: RedeemStatus.idle,
-        lastRedeemed: result,
-        transientMessage: RedeemTransient.success,
-      ));
+      emit(
+        state.copyWith(
+          redeemStatus: RedeemStatus.idle,
+          lastRedeemed: result,
+          transientMessage: RedeemTransient.success,
+        ),
+      );
       return result;
     } catch (e) {
-      emit(state.copyWith(
-        redeemStatus: RedeemStatus.idle,
-        transientMessage: RedeemTransient.failure,
-        errorMessage: e.toString(),
-      ));
+      emit(
+        state.copyWith(
+          redeemStatus: RedeemStatus.idle,
+          transientMessage: RedeemTransient.failure,
+          errorMessage: e.toString(),
+        ),
+      );
       return null;
     } finally {
       _isRedeeming = false;

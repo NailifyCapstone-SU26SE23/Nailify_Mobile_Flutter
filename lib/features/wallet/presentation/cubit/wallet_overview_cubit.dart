@@ -10,26 +10,31 @@ class WalletOverviewCubit extends Cubit<WalletOverviewState> {
   final WalletRepository _repository;
 
   WalletOverviewCubit(this._repository)
-      : super(const WalletOverviewState.initial());
+    : super(const WalletOverviewState.initial());
 
   Future<void> load({bool forceRefresh = false}) async {
     if (state.status == WalletOverviewStatus.loading && !forceRefresh) return;
-    emit(state.copyWith(
-      status: WalletOverviewStatus.loading,
-      errorMessage: null,
-    ));
+    emit(
+      state.copyWith(status: WalletOverviewStatus.loading, errorMessage: null),
+    );
     try {
-      final snapshot = await _repository.getOverview(forceRefresh: forceRefresh);
-      emit(state.copyWith(
-        status: WalletOverviewStatus.loaded,
-        snapshot: snapshot,
-        errorMessage: null,
-      ));
+      final snapshot = await _repository.getOverview(
+        forceRefresh: forceRefresh,
+      );
+      emit(
+        state.copyWith(
+          status: WalletOverviewStatus.loaded,
+          snapshot: snapshot,
+          errorMessage: null,
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        status: WalletOverviewStatus.error,
-        errorMessage: e.toString(),
-      ));
+      emit(
+        state.copyWith(
+          status: WalletOverviewStatus.error,
+          errorMessage: e.toString(),
+        ),
+      );
     }
   }
 

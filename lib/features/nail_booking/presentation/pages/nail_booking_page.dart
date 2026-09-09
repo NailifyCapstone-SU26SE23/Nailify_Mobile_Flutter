@@ -72,10 +72,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
       'title': S.of(context).bookingStepSelectSalon,
       'icon': Icons.storefront_rounded,
     },
-    {
-      'title': 'Chọn thợ',
-      'icon': Icons.person_pin_rounded,
-    },
+    {'title': 'Chọn thợ', 'icon': Icons.person_pin_rounded},
     {'title': S.of(context).bookingStepServices, 'icon': Icons.spa_rounded},
     {
       'title': S.of(context).bookingStepBook,
@@ -743,9 +740,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
       _showSnackBar(S.of(context).bookingValidateSalon);
       return;
     }
-    if (_currentStep == 1 &&
-        _selectedStylist == null &&
-        !_noArtistSelected) {
+    if (_currentStep == 1 && _selectedStylist == null && !_noArtistSelected) {
       _showSnackBar('Vui lòng chọn thợ hoặc chọn "Tự động phân công"!');
       return;
     }

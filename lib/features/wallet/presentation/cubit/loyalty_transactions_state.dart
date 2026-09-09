@@ -1,12 +1,6 @@
 part of 'loyalty_transactions_cubit.dart';
 
-enum LoyaltyTransactionsStatus {
-  initial,
-  loading,
-  loadingMore,
-  loaded,
-  error,
-}
+enum LoyaltyTransactionsStatus { initial, loading, loadingMore, loaded, error }
 
 class LoyaltyTransactionsState extends Equatable {
   final LoyaltyTransactionsStatus status;
@@ -31,13 +25,13 @@ class LoyaltyTransactionsState extends Equatable {
   });
 
   const LoyaltyTransactionsState.initial()
-      : status = LoyaltyTransactionsStatus.initial,
-        items = const [],
-        page = 1,
-        hasNextPage = false,
-        totalItems = 0,
-        errorMessage = null,
-        append = false;
+    : status = LoyaltyTransactionsStatus.initial,
+      items = const [],
+      page = 1,
+      hasNextPage = false,
+      totalItems = 0,
+      errorMessage = null,
+      append = false;
 
   LoyaltyTransactionsState copyWith({
     LoyaltyTransactionsStatus? status,
@@ -61,11 +55,11 @@ class LoyaltyTransactionsState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        items,
-        page,
-        hasNextPage,
-        totalItems,
-        errorMessage,
-      ];
+    status,
+    items,
+    page,
+    hasNextPage,
+    totalItems,
+    errorMessage,
+  ];
 }

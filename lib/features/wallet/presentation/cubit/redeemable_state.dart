@@ -26,14 +26,14 @@ class RedeemableState extends Equatable {
   });
 
   const RedeemableState.initial()
-      : status = RedeemableStatus.initial,
-        items = const [],
-        hasMore = true,
-        isLoadingMore = false,
-        redeemStatus = RedeemStatus.idle,
-        lastRedeemed = null,
-        transientMessage = null,
-        errorMessage = null;
+    : status = RedeemableStatus.initial,
+      items = const [],
+      hasMore = true,
+      isLoadingMore = false,
+      redeemStatus = RedeemStatus.idle,
+      lastRedeemed = null,
+      transientMessage = null,
+      errorMessage = null;
 
   RedeemableState copyWith({
     RedeemableStatus? status,
@@ -59,13 +59,13 @@ class RedeemableState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        items,
-        hasMore,
-        isLoadingMore,
-        redeemStatus,
-        lastRedeemed,
-        transientMessage,
-        errorMessage,
-      ];
+    status,
+    items,
+    hasMore,
+    isLoadingMore,
+    redeemStatus,
+    lastRedeemed,
+    transientMessage,
+    errorMessage,
+  ];
 }

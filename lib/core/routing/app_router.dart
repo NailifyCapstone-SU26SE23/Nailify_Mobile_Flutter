@@ -380,8 +380,9 @@ class AppRouter {
               GoRoute(
                 path: 'vouchers/:usageId',
                 builder: (context, state) {
-                  final id =
-                      int.tryParse(state.pathParameters['usageId'] ?? '');
+                  final id = int.tryParse(
+                    state.pathParameters['usageId'] ?? '',
+                  );
                   final extra = state.extra;
                   return VoucherDetailPage(
                     userVoucherUsageId: id ?? 0,

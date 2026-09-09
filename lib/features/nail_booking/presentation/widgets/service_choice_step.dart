@@ -101,10 +101,7 @@ class _ServiceChoiceStepState extends State<ServiceChoiceStep>
           child: TabBarView(
             controller: _tabController,
             physics: const NeverScrollableScrollPhysics(),
-            children: [
-              _buildNailTab(),
-              _buildServiceTab(),
-            ],
+            children: [_buildNailTab(), _buildServiceTab()],
           ),
         ),
       ],
@@ -166,10 +163,7 @@ class _ServiceChoiceStepState extends State<ServiceChoiceStep>
         dividerHeight: 0,
         labelColor: Colors.white,
         unselectedLabelColor: Colors.grey.shade700,
-        labelStyle: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-        ),
+        labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
         unselectedLabelStyle: const TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w600,
@@ -269,15 +263,19 @@ class _ServiceChoiceStepState extends State<ServiceChoiceStep>
       final active = methods
           .where((m) => m.status.toLowerCase() != 'inactive')
           .toList();
-      return active.isNotEmpty ? active.first : (methods.isNotEmpty ? methods.first : null);
+      return active.isNotEmpty
+          ? active.first
+          : (methods.isNotEmpty ? methods.first : null);
     } catch (_) {
       return null;
     }
   }
 
   void _openDetail(NailVariantModel variant) async {
-    final shapeMethod =
-        await NailVariantDetailSheet.show(context, variant: variant);
+    final shapeMethod = await NailVariantDetailSheet.show(
+      context,
+      variant: variant,
+    );
     if (shapeMethod != null && mounted) {
       widget.onNailVariantChanged(variant);
       widget.onShapeMethodChanged(shapeMethod);
@@ -353,11 +351,7 @@ class _ServiceChoiceStepState extends State<ServiceChoiceStep>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.spa_outlined,
-              size: 48,
-              color: Colors.grey.shade400,
-            ),
+            Icon(Icons.spa_outlined, size: 48, color: Colors.grey.shade400),
             const SizedBox(height: 12),
             const Text(
               'Thợ này chưa có mẫu nail nào',
@@ -370,10 +364,7 @@ class _ServiceChoiceStepState extends State<ServiceChoiceStep>
             const SizedBox(height: 4),
             Text(
               'Bạn vẫn có thể chọn dịch vụ khác ở tab bên cạnh.',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             ),
           ],
         ),
@@ -388,11 +379,7 @@ class _ServiceChoiceStepState extends State<ServiceChoiceStep>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 48,
-              color: Colors.red.shade400,
-            ),
+            Icon(Icons.error_outline, size: 48, color: Colors.red.shade400),
             const SizedBox(height: 12),
             Text(
               'Không tải được danh sách nail',
@@ -559,8 +546,7 @@ class _NailVariantCard extends StatelessWidget {
                         child: GestureDetector(
                           onTap: onDetailTap,
                           child: Container(
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 6),
+                            padding: const EdgeInsets.symmetric(vertical: 6),
                             decoration: BoxDecoration(
                               color: Colors.grey.shade100,
                               borderRadius: BorderRadius.circular(8),
@@ -582,12 +568,14 @@ class _NailVariantCard extends StatelessWidget {
                         child: GestureDetector(
                           onTap: onTap,
                           child: Container(
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 6),
+                            padding: const EdgeInsets.symmetric(vertical: 6),
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: isSelected
-                                    ? [Colors.grey.shade400, Colors.grey.shade500]
+                                    ? [
+                                        Colors.grey.shade400,
+                                        Colors.grey.shade500,
+                                      ]
                                     : const [
                                         AppColors.primary,
                                         Color(0xFFFF80AB),

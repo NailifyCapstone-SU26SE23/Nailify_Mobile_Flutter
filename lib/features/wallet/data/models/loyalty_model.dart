@@ -51,10 +51,10 @@ class LoyaltyModel {
   bool get hasNextTier => loyaltyTier?.maxLifetimePoints != null;
 
   Map<String, dynamic> toJson() => {
-        'loyaltyPoint': loyaltyPoint,
-        'lifetimePoints': lifetimePoints,
-        'loyaltyTier': loyaltyTier?.toJson(),
-      };
+    'loyaltyPoint': loyaltyPoint,
+    'lifetimePoints': lifetimePoints,
+    'loyaltyTier': loyaltyTier?.toJson(),
+  };
 
   factory LoyaltyModel.empty() =>
       const LoyaltyModel(loyaltyPoint: 0, lifetimePoints: 0);

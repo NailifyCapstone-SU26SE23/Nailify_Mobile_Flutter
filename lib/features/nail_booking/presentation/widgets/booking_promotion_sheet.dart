@@ -51,9 +51,7 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
       if (!mounted) return;
       setState(() {
         _allVouchers = vouchers
-            .where(
-              (v) => v.isValidForUse && v.hasUsagesLeft && !v.isExpired,
-            )
+            .where((v) => v.isValidForUse && v.hasUsagesLeft && !v.isExpired)
             .toList();
         _isLoading = false;
       });
@@ -78,9 +76,7 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
   void _togglePromotion(WalletVoucherModel voucher) {
     setState(() {
       if (_tempSelected.any((v) => v.promotionId == voucher.promotionId)) {
-        _tempSelected.removeWhere(
-          (v) => v.promotionId == voucher.promotionId,
-        );
+        _tempSelected.removeWhere((v) => v.promotionId == voucher.promotionId);
       } else {
         _tempSelected.add(voucher);
       }
@@ -169,41 +165,41 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : _errorMessage != null
-                        ? Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.error_outline,
-                                  color: Colors.grey.shade400,
-                                  size: 48,
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  _errorMessage!,
-                                  style: const TextStyle(color: Colors.grey),
-                                ),
-                                const SizedBox(height: 12),
-                                FilledButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      _isLoading = true;
-                                      _errorMessage = null;
-                                    });
-                                    _fetchVouchers();
-                                  },
-                                  child: Text(S.of(context).bookingRetry),
-                                ),
-                              ],
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              color: Colors.grey.shade400,
+                              size: 48,
                             ),
-                          )
-                        : TabBarView(
-                            controller: _tabController,
-                            children: [
-                              _buildList(_discounts, scrollController),
-                              _buildList(_vouchers, scrollController),
-                            ],
-                          ),
+                            const SizedBox(height: 12),
+                            Text(
+                              _errorMessage!,
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                            const SizedBox(height: 12),
+                            FilledButton(
+                              onPressed: () {
+                                setState(() {
+                                  _isLoading = true;
+                                  _errorMessage = null;
+                                });
+                                _fetchVouchers();
+                              },
+                              child: Text(S.of(context).bookingRetry),
+                            ),
+                          ],
+                        ),
+                      )
+                    : TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _buildList(_discounts, scrollController),
+                          _buildList(_vouchers, scrollController),
+                        ],
+                      ),
               ),
 
               // ──── FOOTER ────

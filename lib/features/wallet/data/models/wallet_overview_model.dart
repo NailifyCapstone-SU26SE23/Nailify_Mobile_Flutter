@@ -8,27 +8,23 @@ class WalletOverviewSnapshot {
   final LoyaltyModel loyalty;
   final List<WalletVoucherModel> vouchers;
 
-  const WalletOverviewSnapshot({
-    required this.loyalty,
-    required this.vouchers,
-  });
+  const WalletOverviewSnapshot({required this.loyalty, required this.vouchers});
 
-  int get usableVoucherCount =>
-      vouchers.where((v) => v.isUsableNow).length;
+  int get usableVoucherCount => vouchers.where((v) => v.isUsableNow).length;
 
-  int get expiredVoucherCount =>
-      vouchers.where((v) => v.isExpired).length;
+  int get expiredVoucherCount => vouchers.where((v) => v.isExpired).length;
 
-  int get usedVoucherCount =>
-      vouchers.where((v) => v.isFullyUsed).length;
+  int get usedVoucherCount => vouchers.where((v) => v.isFullyUsed).length;
 
   /// 3 voucher sắp hết hạn gần nhất (còn hiệu lực, sắp expire).
   List<WalletVoucherModel> get expiringSoon {
-    final list = vouchers
-        .where((v) => v.isUsableNow && v.endDate != null)
-        .toList()
-      ..sort((a, b) => (a.endDate ?? DateTime.now())
-          .compareTo(b.endDate ?? DateTime.now()));
+    final list =
+        vouchers.where((v) => v.isUsableNow && v.endDate != null).toList()
+          ..sort(
+            (a, b) => (a.endDate ?? DateTime.now()).compareTo(
+              b.endDate ?? DateTime.now(),
+            ),
+          );
     return list.take(3).toList();
   }
 }

@@ -14,9 +14,9 @@ class WalletOverviewState extends Equatable {
   });
 
   const WalletOverviewState.initial()
-      : status = WalletOverviewStatus.initial,
-        snapshot = null,
-        errorMessage = null;
+    : status = WalletOverviewStatus.initial,
+      snapshot = null,
+      errorMessage = null;
 
   WalletOverviewState copyWith({
     WalletOverviewStatus? status,

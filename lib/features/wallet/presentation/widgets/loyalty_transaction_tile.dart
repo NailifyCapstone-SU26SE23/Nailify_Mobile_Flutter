@@ -12,10 +12,7 @@ import '../../data/models/loyalty_transaction_model.dart';
 class LoyaltyTransactionTile extends StatelessWidget {
   final LoyaltyTransactionModel transaction;
 
-  const LoyaltyTransactionTile({
-    super.key,
-    required this.transaction,
-  });
+  const LoyaltyTransactionTile({super.key, required this.transaction});
 
   @override
   Widget build(BuildContext context) {
@@ -24,8 +21,8 @@ class LoyaltyTransactionTile extends StatelessWidget {
     final color = isCredit
         ? Colors.green.shade600
         : isDebit
-            ? Colors.deepOrange.shade600
-            : Colors.grey.shade600;
+        ? Colors.deepOrange.shade600
+        : Colors.grey.shade600;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -62,10 +59,7 @@ class LoyaltyTransactionTile extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   _formatDate(transaction.createdAt),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
                 if (transaction.bookingId != null &&
                     transaction.bookingId!.isNotEmpty) ...[
@@ -79,10 +73,7 @@ class LoyaltyTransactionTile extends StatelessWidget {
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey.shade500,
-                    ),
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                   ),
                 ],
               ],
@@ -113,10 +104,7 @@ class LoyaltyTransactionTile extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 context.l10n.pointsShort,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.grey.shade500,
-                ),
+                style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
               ),
             ],
           ),
@@ -145,10 +133,7 @@ class LoyaltyTransactionTile extends StatelessWidget {
     return Container(
       width: 44,
       height: 44,
-      decoration: BoxDecoration(
-        color: bg,
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
       child: Icon(icon, color: fg, size: 22),
     );
   }

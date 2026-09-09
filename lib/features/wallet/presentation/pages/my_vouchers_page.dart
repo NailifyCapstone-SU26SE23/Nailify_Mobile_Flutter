@@ -50,8 +50,7 @@ class _MyVouchersView extends StatelessWidget {
                   state.items.isEmpty)) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (state.status == MyVouchersStatus.error &&
-              state.items.isEmpty) {
+          if (state.status == MyVouchersStatus.error && state.items.isEmpty) {
             return EmptyWalletState(
               icon: Icons.error_outline_rounded,
               title: state.errorMessage ?? 'Lỗi tải voucher',
@@ -91,12 +90,13 @@ class _MyVouchersView extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: InkWell(
                 borderRadius: BorderRadius.circular(10),
-                onTap: () => context
-                    .read<MyVouchersCubit>()
-                    .setFilter(entry.$1),
+                onTap: () =>
+                    context.read<MyVouchersCubit>().setFilter(entry.$1),
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 10,
+                    horizontal: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: selected
                         ? AppColors.primary.withValues(alpha: 0.12)

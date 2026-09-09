@@ -16,10 +16,10 @@ class MyVouchersState extends Equatable {
   });
 
   const MyVouchersState.initial()
-      : status = MyVouchersStatus.initial,
-        items = const [],
-        filter = MyVoucherFilter.all,
-        errorMessage = null;
+    : status = MyVouchersStatus.initial,
+      items = const [],
+      filter = MyVoucherFilter.all,
+      errorMessage = null;
 
   MyVouchersState copyWith({
     MyVouchersStatus? status,

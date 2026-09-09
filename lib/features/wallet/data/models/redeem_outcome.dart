@@ -6,8 +6,5 @@ class RedeemOutcome {
   final RedeemResultModel result;
   final String message;
 
-  const RedeemOutcome({
-    required this.result,
-    required this.message,
-  });
+  const RedeemOutcome({required this.result, required this.message});
 }

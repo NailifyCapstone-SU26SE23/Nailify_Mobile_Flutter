@@ -10,7 +10,7 @@ class LoyaltyTransactionsCubit extends Cubit<LoyaltyTransactionsState> {
   final WalletRepository _repository;
 
   LoyaltyTransactionsCubit(this._repository)
-      : super(const LoyaltyTransactionsState.initial());
+    : super(const LoyaltyTransactionsState.initial());
 
   static const int pageSize = 20;
 
@@ -18,58 +18,70 @@ class LoyaltyTransactionsCubit extends Cubit<LoyaltyTransactionsState> {
     if (state.status == LoyaltyTransactionsStatus.loading && !forceRefresh) {
       return;
     }
-    emit(state.copyWith(
-      status: LoyaltyTransactionsStatus.loading,
-      errorMessage: null,
-      append: false,
-    ));
+    emit(
+      state.copyWith(
+        status: LoyaltyTransactionsStatus.loading,
+        errorMessage: null,
+        append: false,
+      ),
+    );
     try {
       final result = await _repository.getMyLoyaltyTransactions(
         pageNumber: 1,
         pageSize: pageSize,
         forceRefresh: forceRefresh,
       );
-      emit(state.copyWith(
-        status: LoyaltyTransactionsStatus.loaded,
-        items: result.items,
-        page: result.page,
-        hasNextPage: result.hasNextPage,
-        totalItems: result.totalItems,
-        errorMessage: null,
-      ));
+      emit(
+        state.copyWith(
+          status: LoyaltyTransactionsStatus.loaded,
+          items: result.items,
+          page: result.page,
+          hasNextPage: result.hasNextPage,
+          totalItems: result.totalItems,
+          errorMessage: null,
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        status: LoyaltyTransactionsStatus.error,
-        errorMessage: e.toString(),
-      ));
+      emit(
+        state.copyWith(
+          status: LoyaltyTransactionsStatus.error,
+          errorMessage: e.toString(),
+        ),
+      );
     }
   }
 
   Future<void> loadMore() async {
     if (state.status == LoyaltyTransactionsStatus.loadingMore) return;
     if (!state.hasNextPage) return;
-    emit(state.copyWith(
-      status: LoyaltyTransactionsStatus.loadingMore,
-      errorMessage: null,
-    ));
+    emit(
+      state.copyWith(
+        status: LoyaltyTransactionsStatus.loadingMore,
+        errorMessage: null,
+      ),
+    );
     try {
       final nextPage = state.page + 1;
       final result = await _repository.getMyLoyaltyTransactions(
         pageNumber: nextPage,
         pageSize: pageSize,
       );
-      emit(state.copyWith(
-        status: LoyaltyTransactionsStatus.loaded,
-        items: [...state.items, ...result.items],
-        page: result.page,
-        hasNextPage: result.hasNextPage,
-        errorMessage: null,
-      ));
+      emit(
+        state.copyWith(
+          status: LoyaltyTransactionsStatus.loaded,
+          items: [...state.items, ...result.items],
+          page: result.page,
+          hasNextPage: result.hasNextPage,
+          errorMessage: null,
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        status: LoyaltyTransactionsStatus.error,
-        errorMessage: e.toString(),
-      ));
+      emit(
+        state.copyWith(
+          status: LoyaltyTransactionsStatus.error,
+          errorMessage: e.toString(),
+        ),
+      );
     }
   }
 

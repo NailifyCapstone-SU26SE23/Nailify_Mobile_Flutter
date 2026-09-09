@@ -103,9 +103,7 @@ class ArtistSelectionList extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 14),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: noArtistSelected
-                  ? const Color(0xFFFFF2F6)
-                  : Colors.white,
+              color: noArtistSelected ? const Color(0xFFFFF2F6) : Colors.white,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: noArtistSelected
@@ -226,9 +224,7 @@ class ArtistSelectionList extends StatelessWidget {
             return GestureDetector(
               onTap: () {
                 onModeChanged(false);
-                onStylistSelected(
-                  Map<String, dynamic>.from(artist as Map),
-                );
+                onStylistSelected(Map<String, dynamic>.from(artist as Map));
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 220),

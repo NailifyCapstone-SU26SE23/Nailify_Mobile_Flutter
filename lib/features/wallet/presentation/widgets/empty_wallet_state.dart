@@ -52,10 +52,7 @@ class EmptyWalletState extends StatelessWidget {
             Text(
               hint!,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
             ),
           ],
           if (actionLabel != null && onAction != null) ...[

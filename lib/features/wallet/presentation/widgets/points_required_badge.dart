@@ -17,10 +17,7 @@ class PointsRequiredBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasPoints = pointsRequired != null;
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: 8 * size,
-        vertical: 4 * size,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: 8 * size, vertical: 4 * size),
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8 * size),
@@ -28,11 +25,7 @@ class PointsRequiredBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.stars_rounded,
-            size: 12 * size,
-            color: AppColors.primary,
-          ),
+          Icon(Icons.stars_rounded, size: 12 * size, color: AppColors.primary),
           const SizedBox(width: 4),
           Text(
             hasPoints

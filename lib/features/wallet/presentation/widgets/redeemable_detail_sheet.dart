@@ -64,8 +64,7 @@ class RedeemableDetailSheetState extends State<RedeemableDetailSheet> {
     final p = widget.promotion;
     final points = p.pointsRequired;
     final enoughPoints = points == null || points <= widget.userBalance;
-    final canDo =
-        widget.canRedeem && enoughPoints && _successMessage == null;
+    final canDo = widget.canRedeem && enoughPoints && _successMessage == null;
 
     final inset = MediaQuery.of(context).viewInsets;
 
@@ -160,9 +159,7 @@ class RedeemableDetailSheetState extends State<RedeemableDetailSheet> {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    Expanded(
-                      child: PointsInline(points: points),
-                    ),
+                    Expanded(child: PointsInline(points: points)),
                   ],
                 ),
               ),
@@ -197,7 +194,9 @@ class RedeemableDetailSheetState extends State<RedeemableDetailSheet> {
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
                         child: Text(
-                          context.l10n.walletVoucherRemaining(p.remainingCount!),
+                          context.l10n.walletVoucherRemaining(
+                            p.remainingCount!,
+                          ),
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey.shade700,
@@ -277,9 +276,7 @@ class RedeemableDetailSheetState extends State<RedeemableDetailSheet> {
                       ),
                       child: Text(
                         context.l10n.walletRedeem,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                        ),
+                        style: const TextStyle(fontWeight: FontWeight.w800),
                       ),
                     ),
                   ),
@@ -374,11 +371,7 @@ class PointsInline extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.stars_rounded,
-            size: 14,
-            color: AppColors.primary,
-          ),
+          const Icon(Icons.stars_rounded, size: 14, color: AppColors.primary),
           const SizedBox(width: 4),
           Flexible(
             child: Text(

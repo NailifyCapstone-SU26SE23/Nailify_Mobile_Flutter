@@ -109,9 +109,9 @@ class WalletVoucherModel {
       return '$value% off';
     }
     final value = discountValue.round().toString().replaceAllMapped(
-          RegExp(r'\B(?=(\d{3})+(?!\d))'),
-          (_) => ',',
-        );
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (_) => ',',
+    );
     return '$value VND off';
   }
 }

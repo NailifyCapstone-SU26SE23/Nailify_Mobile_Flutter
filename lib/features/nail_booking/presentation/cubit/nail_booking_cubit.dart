@@ -117,12 +117,19 @@ class NailBookingCubit extends Cubit<NailBookingState> {
   }
 
   void updateExtraServices(List<String?> services) {
+    // Fix bug: trước đây `updateExtraServices` xóa luôn `selectedStylist` +
+    // `artists` + `timeSlots`. Điều này khiến khi user đính kèm dịch vụ
+    // (ngâm chân thảo mộc, cắt da tay...) ở step 2 rồi sang step 3 chọn ngày,
+    // `selectDate()` thấy `selectedStylist == null` → nhảy vào `_loadSalonSlots()`
+    // → gọi SAI API `POST /api/Bookings/salon-available-slots` thay vì
+    // `GET /api/Bookings/artist-available-slots?NailArtistId=...`.
+    //
+    // Sau fix: KHÔNG xóa thợ. Chỉ clear time đã chọn + reload slots
+    // (giữ nguyên `selectedStylist` + `artists` để API gọi đúng endpoint).
     emit(
       state.copyWith(
         selectedExtraServices: services,
-        clearStylist: true,
         clearTime: true,
-        artists: [],
         timeSlots: [],
       ),
     );

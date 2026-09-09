@@ -663,9 +663,18 @@ class _NailBookingPageState extends State<NailBookingPage> {
 
   void _handleServiceChanged(List<String?> services) {
     _cancelCurrentHold();
+    // Fix bug: trước đây `_handleServiceChanged` xóa luôn `_selectedStylist`
+    // khi user đính kèm dịch vụ (ngâm chân thảo mộc, cắt da tay...). Sau đó
+    // sang step 3 chọn ngày → `_handleDateChanged` thấy `_selectedStylist
+    // == null` → nhảy vào `_loadSalonSlots()` → gọi SAI API
+    // `POST /api/Bookings/salon-available-slots` thay vì
+    // `GET /api/Bookings/artist-available-slots?NailArtistId=...`.
+    //
+    // Sau fix: KHÔNG xóa thợ. Chỉ clear time + priceReview + slots; thợ vẫn
+    // được giữ nguyên. Khi user sang step 3 chọn ngày, `_handleDateChanged`
+    // sẽ thấy `_selectedStylist != null` → gọi `_fetchTimeSlots()` đúng API.
     setState(() {
       _selectedExtraServices = services;
-      _selectedStylist = null;
       _selectedTime = null;
       _priceReview = null;
       _timeSlots = [];

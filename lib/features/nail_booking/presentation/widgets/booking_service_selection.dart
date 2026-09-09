@@ -116,7 +116,9 @@ class BookingServiceSelection extends StatelessWidget {
                 ? S.of(context).bookingWarrantyDefault
                 : names.join(' & ');
 
-            return Container(
+            return Material(
+              type: MaterialType.transparency,
+              child: Container(
               margin: const EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
                 color: isSelected
@@ -133,6 +135,7 @@ class BookingServiceSelection extends StatelessWidget {
               child: CheckboxListTile(
                 value: isSelected,
                 activeColor: AppColors.primary,
+                selectedTileColor: Colors.transparent,
                 title: Text(
                   name,
                   style: const TextStyle(
@@ -159,6 +162,7 @@ class BookingServiceSelection extends StatelessWidget {
                   onWarrantyItemsChanged?.call(next);
                 },
               ),
+            ),
             );
           }),
           const SizedBox(height: 24),

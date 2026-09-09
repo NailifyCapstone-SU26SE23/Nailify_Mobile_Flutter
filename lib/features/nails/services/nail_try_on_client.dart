@@ -72,14 +72,27 @@ class NailTryOnClient {
 
   /// Bắt đầu session. Trước đó cần dựng 1 NativeSurfaceView (AndroidView) trên UI.
   /// `config` là Map (shape, length, nails, ...) giống như config cũ.
+  ///
+  /// Throw [NailTryOnInitException] nếu native side báo lỗi init (vd: ONNX
+  /// Runtime loadLibrary thất bại, ABI mismatch, MediaPipe native lỗi). Caller
+  /// nên catch exception này để hiển thị "AR không khả dụng" thay vì crash.
   Future<void> startSession({
     Map<String, dynamic>? config,
     String mode = 'live',
   }) async {
-    await _method.invokeMethod<void>('startSession', {
-      'config': config ?? <String, dynamic>{},
-      'mode': mode,
-    });
+    try {
+      await _method.invokeMethod<void>('startSession', {
+        'config': config ?? <String, dynamic>{},
+        'mode': mode,
+      });
+    } on PlatformException catch (e) {
+      if (e.code == 'AR_INIT_FAILED') {
+        throw NailTryOnInitException(
+          e.message ?? 'AR initialization failed on native side.',
+        );
+      }
+      rethrow;
+    }
   }
 
   Future<void> stopSession() async {
@@ -143,4 +156,15 @@ class NailTryOnClient {
         });
     return _statsStream!;
   }
+}
+
+/// Exception khi native AR Try-On init thất bại (vd: ONNX Runtime loadLibrary
+/// fail, ABI mismatch, MediaPipe native lỗi). Caller nên catch và hiển thị
+/// UI fallback thay vì để throw lên Flutter framework.
+class NailTryOnInitException implements Exception {
+  final String message;
+  const NailTryOnInitException(this.message);
+
+  @override
+  String toString() => 'NailTryOnInitException: $message';
 }

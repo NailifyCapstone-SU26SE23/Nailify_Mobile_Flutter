@@ -2,8 +2,10 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/error/exceptions.dart';
 import '../../data/models/booking_mock_data.dart';
 import '../../data/models/promotion_model.dart';
+import '../../data/models/wallet_voucher_model.dart';
 import '../../data/nail_booking_repository_impl.dart';
 import '../../domain/repositories/nail_booking_repository.dart';
 
@@ -342,8 +344,23 @@ class NailBookingCubit extends Cubit<NailBookingState> {
   }
 
   void selectTime(String time) {
-    // Người dùng đổi giờ → huỷ giữ chỗ cũ (nếu có) nhưng KHÔNG gọi holdSlot mới.
-    // HoldSlot sẽ chỉ được gọi khi user bấm "Tiếp theo" sang trang Xác nhận.
+    // 1. Nếu user chọn lại đúng giờ đã chọn → bỏ chọn.
+    if (state.selectedTime == time) {
+      if (state.holdToken != null) {
+        _cancelCurrentHold(state.holdToken!);
+      }
+      emit(
+        state.copyWith(
+          clearTime: true,
+          clearHoldToken: true,
+          isHolding: false,
+          holdRemainingSeconds: 0,
+        ),
+      );
+      return;
+    }
+
+    // 2. Người dùng đổi giờ → huỷ giữ chỗ cũ (nếu có)
     if (state.holdToken != null) {
       _cancelCurrentHold(state.holdToken!);
     }
@@ -391,8 +408,27 @@ class NailBookingCubit extends Cubit<NailBookingState> {
 
     // Group extra services by ID and count duplicates for correct quantity
     final extraCounts = <String, int>{};
+
+    // 1. Service gốc (base service) — dùng cho luồng service_booking_page.
+    final baseServiceId = state.selectedBaseServiceId;
+    if (baseServiceId != null && baseServiceId.isNotEmpty) {
+      extraCounts[baseServiceId] = (extraCounts[baseServiceId] ?? 0) + 1;
+    }
+
+    // 2. Các dịch vụ thêm user chọn ở BookingServiceSelection.
     for (final id in state.selectedExtraServices.whereType<String>()) {
       extraCounts[id] = (extraCounts[id] ?? 0) + 1;
+    }
+
+    // Nếu rỗng → không thể giữ chỗ, báo lỗi ngay để khỏi spam backend.
+    if (extraCounts.isEmpty && nailVariantId == null) {
+      emit(
+        state.copyWith(
+          errorMessage:
+              'Vui lòng chọn ít nhất một dịch vụ hoặc mẫu nail trước khi giữ chỗ.',
+        ),
+      );
+      return;
     }
 
     if (isWarranty) {
@@ -454,25 +490,66 @@ class NailBookingCubit extends Cubit<NailBookingState> {
 
       _startHoldTimer(token, expiresAt);
     } catch (e) {
-      // Bắt lỗi khi giờ bị người khác đặt trước (Race Condition)
-      emit(
-        state.copyWith(
-          clearHoldToken: true,
-          isHolding: false,
-          holdRemainingSeconds: 0,
-          clearTime: true, // Xoá giờ đang chọn
-          errorMessage:
-              'Khung giờ này vừa mới có người chọn. Vui lòng chọn giờ khác.',
-        ),
-      );
-
-      // Tải lại danh sách giờ để cập nhật trạng thái isHeld mới nhất
-      if (state.noArtistSelected) {
-        _loadSalonSlots();
+      // Phân biệt lỗi race condition (slot đã bị người khác giữ) với lỗi khác
+      // (validation, auth, network). Chỉ khi là conflict (HTTP 409) mới xoá
+      // giờ đang chọn và reload slots. Các lỗi khác chỉ thông báo để user biết.
+      final isConflict = _isConflictError(e);
+      if (isConflict) {
+        emit(
+          state.copyWith(
+            clearHoldToken: true,
+            isHolding: false,
+            holdRemainingSeconds: 0,
+            clearTime: true,
+            errorMessage:
+                'Khung giờ này vừa mới có người chọn. Vui lòng chọn giờ khác.',
+          ),
+        );
+        // Tải lại danh sách giờ để cập nhật trạng thái isHeld mới nhất
+        if (state.noArtistSelected) {
+          _loadSalonSlots();
+        } else {
+          _fetchTimeSlots();
+        }
       } else {
-        _fetchTimeSlots();
+        // Các lỗi khác (validation, auth, network...) — chỉ thông báo,
+        // không xoá thời gian user đã chọn để tránh UX khó chịu.
+        emit(
+          state.copyWith(
+            clearHoldToken: true,
+            isHolding: false,
+            holdRemainingSeconds: 0,
+            errorMessage: _readableError(e),
+          ),
+        );
       }
     }
+  }
+
+  /// Kiểm tra exception có phải race condition (slot bị giữ bởi người khác)
+  /// hay không. Server hiện tại trả về các loại lỗi khác nhau tuỳ business
+  /// logic; ta ưu tiên HTTP 409 + các mã thường gặp.
+  bool _isConflictError(Object error) {
+    if (error is AppException) {
+      final code = error.code;
+      if (code == 'HTTP_409' || code == 'HTTP_410' || code == 'HTTP_423') {
+        return true;
+      }
+      final msg = error.message.toLowerCase();
+      if (msg.contains('đã được giữ') ||
+          msg.contains('slot') && msg.contains('conflict') ||
+          msg.contains('already held') ||
+          msg.contains('race condition')) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Trả về message thân thiện cho mọi lỗi không phải conflict.
+  String _readableError(Object error) {
+    if (error is AppException) return error.message;
+    return 'Lỗi giữ chỗ: $error';
   }
 
   /// Bộ đếm ngược từ máy client, không phụ thuộc vào đồng hồ hệ thống.
@@ -521,6 +598,19 @@ class NailBookingCubit extends Cubit<NailBookingState> {
 
   void selectPromotions(List<dynamic> promos) {
     emit(state.copyWith(selectedPromotions: promos));
+  }
+
+  /// Đặt dịch vụ gốc cho luồng `service_booking_page` — dịch vụ user đã chọn
+  /// từ trang trước khi vào booking flow.
+  ///
+  /// Service này sẽ tự động được thêm vào `bookingItems` của API hold-slot
+  /// và create-booking. Khác với `selectedExtraServices` (user chọn thêm).
+  void setBaseService(String? serviceId) {
+    if (serviceId == null || serviceId.isEmpty) {
+      emit(state.copyWith(clearBaseService: true));
+    } else {
+      emit(state.copyWith(selectedBaseServiceId: serviceId));
+    }
   }
 
   void clearError() {
@@ -588,6 +678,25 @@ class NailBookingCubit extends Cubit<NailBookingState> {
         total += subtotal * (p.discountValue / 100);
       } else {
         total += p.discountValue;
+      }
+    }
+    return total.toInt();
+  }
+
+  /// Tính số tiền giảm từ danh sách wallet voucher (dùng cho các luồng
+  /// booking mới dùng API /api/Promotions/my-wallet-vouchers).
+  int discountAmountFromVouchers({
+    required int subtotal,
+    required List<WalletVoucherModel> vouchers,
+  }) {
+    if (vouchers.isEmpty) return 0;
+    double total = 0;
+    for (final v in vouchers) {
+      final type = v.discountType.toLowerCase();
+      if (type == 'percentage') {
+        total += subtotal * (v.discountValue / 100);
+      } else {
+        total += v.discountValue;
       }
     }
     return total.toInt();

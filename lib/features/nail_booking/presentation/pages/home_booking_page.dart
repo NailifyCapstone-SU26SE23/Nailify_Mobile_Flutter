@@ -12,7 +12,7 @@ import '../../data/datasources/booking_api_service.dart';
 import '../../data/datasources/payment_api_service.dart';
 import '../../data/datasources/promotion_api_service.dart';
 import '../../data/models/booking_mock_data.dart';
-import '../../data/models/promotion_model.dart';
+import '../../data/models/wallet_voucher_model.dart';
 import '../widgets/artist_selection_list.dart';
 import '../widgets/booking_date_selection.dart';
 import '../widgets/booking_time_selection.dart';
@@ -59,7 +59,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
   List<dynamic> _services = [];
   List<dynamic> _artists = [];
   List<dynamic> _timeSlots = [];
-  List<PromotionModel> _promotions = [];
+  List<WalletVoucherModel> _promotions = [];
   Map<String, dynamic>? _priceReview;
 
   // ── Selection ────────────────────────────────────
@@ -147,19 +147,23 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
   Future<void> _fetchPromotions() async {
     setState(() => _isLoadingPromotions = true);
     try {
-      final data = await _promotionApiService.getTodayPromotions(
-        pageNumber: 1,
-        pageSize: 20,
-      );
+      final vouchers = await _promotionApiService.getMyWalletVouchers();
       if (!mounted) return;
       setState(() {
-        _promotions = data.where((p) => p.isSelectable).toList();
+        _promotions = vouchers
+            .where(
+              (voucher) =>
+                  voucher.isValidForUse &&
+                  voucher.hasUsagesLeft &&
+                  !voucher.isExpired,
+            )
+            .toList();
         _isLoadingPromotions = false;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoadingPromotions = false);
-      _showSnackBar('Lỗi tải khuyến mãi: $e');
+      _showSnackBar('Lỗi tải voucher trong ví: $e');
     }
   }
 
@@ -1012,8 +1016,8 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
     final selected = _promotions
         .where((p) => p.promotionId == _selectedPromotionId);
     final selectedLabel = selected.isEmpty
-        ? S.of(context).bookingNoPromotion
-        : selected.first.name;
+        ? 'Chọn voucher từ ví của bạn'
+        : '${selected.first.promotionName} (${selected.first.displayDiscount})';
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1040,7 +1044,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      S.of(context).bookingPromotion,
+                      'Voucher trong ví',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -1077,42 +1081,50 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
           ),
           if (_isPromotionExpanded) ...[
             const SizedBox(height: 8),
-            RadioListTile<int>(
-              value: 0,
-              groupValue: _selectedPromotionId ?? 0,
-              onChanged: (_) => _handlePromotionChanged(null),
-              title: Text(S.of(context).bookingNoApply),
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              activeColor: AppColors.primary,
-            ),
             if (!_isLoadingPromotions && _promotions.isEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
-                  S.of(context).bookingNoPromotionAvailable,
+                  'Ví của bạn chưa có voucher khả dụng.',
                   style: const TextStyle(color: Colors.grey, fontSize: 13),
                 ),
               ),
-            ..._promotions.map(
-              (p) => RadioListTile<int>(
-                value: p.promotionId,
+            // Lựa chọn "Không áp dụng" — phải bọc Material để hiện ink ripple.
+            Material(
+              type: MaterialType.transparency,
+              child: RadioListTile<int>(
+                value: 0,
                 groupValue: _selectedPromotionId ?? 0,
-                onChanged: _handlePromotionChanged,
-                title: Text(
-                  p.name,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                subtitle: Text(
-                  p.description.isNotEmpty
-                      ? '${p.discountLabel} - ${p.description}'
-                      : p.discountLabel,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                onChanged: (_) => _handlePromotionChanged(null),
+                title: const Text('Không áp dụng'),
                 dense: true,
                 contentPadding: EdgeInsets.zero,
                 activeColor: AppColors.primary,
+                selectedTileColor: Colors.transparent,
+              ),
+            ),
+            ..._promotions.map(
+              (v) => Material(
+                type: MaterialType.transparency,
+                child: RadioListTile<int>(
+                  value: v.promotionId,
+                  groupValue: _selectedPromotionId ?? 0,
+                  onChanged: (id) => _handlePromotionChanged(id),
+                  title: Text(
+                    v.promotionName,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    '${v.displayDiscount} • Còn ${v.remainingCount} lượt'
+                    '${v.description.isNotEmpty ? ' • ${v.description}' : ''}',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  activeColor: AppColors.primary,
+                  selectedTileColor: Colors.transparent,
+                ),
               ),
             ),
           ],

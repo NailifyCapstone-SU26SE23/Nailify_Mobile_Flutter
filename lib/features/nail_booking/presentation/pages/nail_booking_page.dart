@@ -13,10 +13,9 @@ import '../../data/datasources/booking_api_service.dart';
 import '../../data/datasources/payment_api_service.dart';
 import '../../data/datasources/promotion_api_service.dart';
 import '../../data/models/booking_mock_data.dart';
-import '../../data/models/promotion_model.dart';
+import '../../data/models/wallet_voucher_model.dart';
 import '../widgets/booking_date_selection.dart';
 import '../widgets/booking_service_selection.dart';
-import '../widgets/booking_stylist_selection.dart';
 import '../widgets/booking_time_selection.dart';
 import '../widgets/branch_selection_list.dart';
 import '../widgets/artist_selection_list.dart';
@@ -56,7 +55,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
   List<dynamic> _services = [];
   List<dynamic> _artists = [];
   List<dynamic> _timeSlots = [];
-  List<PromotionModel> _promotions = [];
+  List<WalletVoucherModel> _promotions = [];
   Map<String, dynamic>? _priceReview;
   NailVariantModel? _nailVariantDetail;
 
@@ -225,21 +224,23 @@ class _NailBookingPageState extends State<NailBookingPage> {
   Future<void> _fetchPromotions() async {
     setState(() => _isLoadingPromotions = true);
     try {
-      final data = await _promotionApiService.getTodayPromotions(
-        pageNumber: 1,
-        pageSize: 20,
-      );
+      final vouchers = await _promotionApiService.getMyWalletVouchers();
       if (!mounted) return;
       setState(() {
-        _promotions = data
-            .where((promotion) => promotion.isSelectable)
+        _promotions = vouchers
+            .where(
+              (voucher) =>
+                  voucher.isValidForUse &&
+                  voucher.hasUsagesLeft &&
+                  !voucher.isExpired,
+            )
             .toList();
         _isLoadingPromotions = false;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoadingPromotions = false);
-      _showSnackBar('Loi tai khuyen mai: $e');
+      _showSnackBar('Lỗi tải voucher trong ví: $e');
     }
   }
 
@@ -1298,11 +1299,11 @@ class _NailBookingPageState extends State<NailBookingPage> {
 
   Widget _buildPromotionSelector() {
     final selectedPromotion = _promotions.where(
-      (promotion) => promotion.promotionId == _selectedPromotionId,
+      (voucher) => voucher.promotionId == _selectedPromotionId,
     );
     final selectedLabel = selectedPromotion.isEmpty
-        ? S.of(context).bookingNoPromotion
-        : selectedPromotion.first.name;
+        ? 'Chọn voucher từ ví của bạn'
+        : '${selectedPromotion.first.promotionName} (${selectedPromotion.first.displayDiscount})';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1330,7 +1331,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      S.of(context).bookingPromotion,
+                      'Voucher trong ví',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -1367,42 +1368,49 @@ class _NailBookingPageState extends State<NailBookingPage> {
           ),
           if (_isPromotionExpanded) ...[
             const SizedBox(height: 8),
-            RadioListTile<int>(
-              value: 0,
-              groupValue: _selectedPromotionId ?? 0,
-              onChanged: (_) => _handlePromotionChanged(null),
-              title: Text(S.of(context).bookingNoApply),
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              activeColor: AppColors.primary,
-            ),
             if (!_isLoadingPromotions && _promotions.isEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
-                  S.of(context).bookingNoPromotionAvailable,
+                  'Ví của bạn chưa có voucher khả dụng.',
                   style: const TextStyle(color: Colors.grey, fontSize: 13),
                 ),
               ),
-            ..._promotions.map(
-              (promotion) => RadioListTile<int>(
-                value: promotion.promotionId,
+            Material(
+              type: MaterialType.transparency,
+              child: RadioListTile<int>(
+                value: 0,
                 groupValue: _selectedPromotionId ?? 0,
-                onChanged: _handlePromotionChanged,
-                title: Text(
-                  promotion.name,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                subtitle: Text(
-                  promotion.description.isNotEmpty
-                      ? '${promotion.discountLabel} - ${promotion.description}'
-                      : promotion.discountLabel,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                onChanged: (_) => _handlePromotionChanged(null),
+                title: const Text('Không áp dụng'),
                 dense: true,
                 contentPadding: EdgeInsets.zero,
                 activeColor: AppColors.primary,
+                selectedTileColor: Colors.transparent,
+              ),
+            ),
+            ..._promotions.map(
+              (voucher) => Material(
+                type: MaterialType.transparency,
+                child: RadioListTile<int>(
+                  value: voucher.promotionId,
+                  groupValue: _selectedPromotionId ?? 0,
+                  onChanged: (id) => _handlePromotionChanged(id),
+                  title: Text(
+                    voucher.promotionName,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    '${voucher.displayDiscount} • Còn ${voucher.remainingCount} lượt'
+                    '${voucher.description.isNotEmpty ? ' • ${voucher.description}' : ''}',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  activeColor: AppColors.primary,
+                  selectedTileColor: Colors.transparent,
+                ),
               ),
             ),
           ],

@@ -13,7 +13,7 @@ import '../../../nails/data/repositories/nail_variant_repository.dart';
 import '../../data/datasources/booking_api_service.dart';
 import '../../data/datasources/payment_api_service.dart';
 import '../../data/datasources/promotion_api_service.dart';
-import '../../data/models/promotion_model.dart';
+import '../../data/models/wallet_voucher_model.dart';
 import '../widgets/booking_date_selection.dart';
 import '../widgets/booking_service_selection.dart';
 import '../widgets/booking_time_selection.dart';
@@ -64,8 +64,8 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   Future<void>? _inFlightPriceReview;
   List<dynamic> _services = [];
   List<dynamic> _timeSlots = [];
-  List<PromotionModel> _promotions = [];
-  List<PromotionModel> _selectedPromotions = [];
+  List<WalletVoucherModel> _promotions = [];
+  List<WalletVoucherModel> _selectedPromotions = [];
   List<String?> _selectedExtraServices = [];
   DateTime? _selectedDate;
   String? _selectedTime;
@@ -204,18 +204,23 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   Future<void> _fetchPromotions() async {
     setState(() => _isLoadingPromotions = true);
     try {
-      final promotions = await _promotionApiService.getVouchers();
+      final vouchers = await _promotionApiService.getMyWalletVouchers();
       if (!mounted) return;
       setState(() {
-        _promotions = promotions
-            .where((promotion) => promotion.isSelectable)
+        _promotions = vouchers
+            .where(
+              (voucher) =>
+                  voucher.isValidForUse &&
+                  voucher.hasUsagesLeft &&
+                  !voucher.isExpired,
+            )
             .toList();
         _isLoadingPromotions = false;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoadingPromotions = false);
-      _showSnackBar('Loi tai khuyen mai: $e');
+      _showSnackBar('Lỗi tải voucher trong ví: $e');
     }
   }
 
@@ -673,41 +678,48 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
             ...methods.map((method) {
               final selected =
                   _selectedShapeMethodConfigId == method.shapeMethodConfigId;
-              return Container(
-                margin: const EdgeInsets.only(bottom: 10),
-                decoration: BoxDecoration(
-                  color: selected
-                      ? AppColors.primary.withOpacity(0.06)
-                      : Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: selected ? AppColors.primary : AppColors.borderLight,
-                  ),
-                ),
-                child: RadioListTile<int>(
-                  value: method.shapeMethodConfigId,
-                  groupValue: _selectedShapeMethodConfigId,
-                  onChanged: (_) {
-                    _cancelCurrentHold();
-                    setState(() {
-                      _selectedShapeMethod = method;
-                      _priceReview = null;
-                    });
-                    _reviewPrice();
-                  },
-                  title: Text(
-                    method.name,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  subtitle: Text('${method.duration} phút'),
-                  secondary: Text(
-                    PriceFormatter.format(method.price),
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
+              // Wrap Material để RadioListTile hiện ink ripple bình thường
+              return Material(
+                type: MaterialType.transparency,
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? AppColors.primary.withOpacity(0.06)
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: selected
+                          ? AppColors.primary
+                          : AppColors.borderLight,
                     ),
                   ),
-                  activeColor: AppColors.primary,
+                  child: RadioListTile<int>(
+                    value: method.shapeMethodConfigId,
+                    groupValue: _selectedShapeMethodConfigId,
+                    onChanged: (_) {
+                      _cancelCurrentHold();
+                      setState(() {
+                        _selectedShapeMethod = method;
+                        _priceReview = null;
+                      });
+                      _reviewPrice();
+                    },
+                    title: Text(
+                      method.name,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Text('${method.duration} phút'),
+                    secondary: Text(
+                      PriceFormatter.format(method.price),
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    activeColor: AppColors.primary,
+                    selectedTileColor: Colors.transparent,
+                  ),
                 ),
               );
             }),
@@ -1242,8 +1254,8 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
 
   Widget _buildPromotionSelector() {
     final label = _selectedPromotions.isEmpty
-        ? 'Không áp dụng khuyến mại'
-        : 'Đã chọn ${_selectedPromotions.length} khuyến mại';
+        ? 'Chọn voucher từ ví của bạn'
+        : 'Đã chọn ${_selectedPromotions.length} voucher';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1296,40 +1308,48 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
               const Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'Không có khuyến mại khả dụng.',
+                  'Ví của bạn chưa có voucher khả dụng.',
                   style: TextStyle(color: Colors.grey, fontSize: 13),
                 ),
               ),
-            ..._promotions.map((promotion) {
+            ..._promotions.map((voucher) {
               final selected = _selectedPromotions.any(
-                (item) => item.promotionId == promotion.promotionId,
+                (item) => item.promotionId == voucher.promotionId,
               );
-              return CheckboxListTile(
-                value: selected,
-                onChanged: (checked) {
-                  setState(() {
-                    if (checked == true) {
-                      _selectedPromotions = [..._selectedPromotions, promotion];
-                    } else {
-                      _selectedPromotions = _selectedPromotions
-                          .where(
-                            (item) => item.promotionId != promotion.promotionId,
-                          )
-                          .toList();
-                    }
-                    _priceReview = null;
-                  });
-                  _reviewPrice();
-                },
-                title: Text(promotion.name),
-                subtitle: Text(
-                  promotion.description.isNotEmpty
-                      ? '${promotion.discountLabel} - ${promotion.description}'
-                      : promotion.discountLabel,
+              // Wrap Material để hiện ink ripple bình thường cho CheckboxListTile
+              return Material(
+                type: MaterialType.transparency,
+                child: CheckboxListTile(
+                  value: selected,
+                  onChanged: (checked) {
+                    setState(() {
+                      if (checked == true) {
+                        _selectedPromotions = [
+                          ..._selectedPromotions,
+                          voucher,
+                        ];
+                      } else {
+                        _selectedPromotions = _selectedPromotions
+                            .where(
+                              (item) =>
+                                  item.promotionId != voucher.promotionId,
+                            )
+                            .toList();
+                      }
+                      _priceReview = null;
+                    });
+                    _reviewPrice();
+                  },
+                  title: Text(voucher.promotionName),
+                  subtitle: Text(
+                    '${voucher.displayDiscount} • Còn ${voucher.remainingCount} lượt'
+                    '${voucher.description.isNotEmpty ? ' • ${voucher.description}' : ''}',
+                  ),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  activeColor: AppColors.primary,
+                  selectedTileColor: Colors.transparent,
                 ),
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                activeColor: AppColors.primary,
               );
             }),
           ],

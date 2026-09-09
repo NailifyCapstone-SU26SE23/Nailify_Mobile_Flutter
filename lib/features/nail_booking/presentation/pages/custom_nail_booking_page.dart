@@ -517,10 +517,18 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   }
 
   Future<void> _handleBackAction() async {
-    if (_currentStep == 2) {
-      await _cancelCurrentHold();
-      if (!mounted) return;
-    }
+    // Fix bug: trước đây khi user back từ step 3 (tổng quan) về step 2
+    // (chọn ngày/giờ), hệ thống gọi `_cancelCurrentHold()` → xóa hold token
+    // và gọi API `cancelHoldSlot` lên backend. Điều này không đúng vì:
+    //  - User chỉ muốn xem lại ngày/giờ đã chọn, KHÔNG có ý định hủy booking.
+    //  - Khi bấm "Tiếp tục" trở lại step 3, hệ thống phải tạo hold mới
+    //    → tốn 1 lượt API hold-slot + có thể không còn slot đó nữa.
+    //
+    // Sau fix: KHÔNG cancel hold khi back giữa các step. Hold token chỉ bị
+    // huỷ khi:
+    //  - User đổi service/shape-method/date/time (line 508, 701, 742, 757).
+    //  - Hold timer hết hạn (line 383).
+    //  - User thoát khỏi trang custom nail booking (line 89 dispose()).
     if (_currentStep > 0) {
       _pageController.previousPage(
         duration: const Duration(milliseconds: 300),
@@ -532,6 +540,16 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   }
 
   Future<void> _handleNextAction() async {
+    // Fix bug: trước đây button "Tiếp tục" chỉ disable khi `_isSubmitting`
+    // (chỉ true ở `_executeBooking`). Khi user bấm "Tiếp tục" ở step 2 (chọn
+    // ngày/giờ) → step 3 (tổng quan), hệ thống gọi `_createHoldForSummary`
+    // (API hold-slot mất 1–3 giây) mà KHÔNG có loading. User dễ bấm nhầm
+    // nhiều lần → gọi API hold-slot trùng lặp.
+    //
+    // Sau fix: set `_isSubmitting = true` ngay từ đầu khi cần xử lý async
+    // (hold-slot hoặc submit booking). Button sẽ disable + spinner ngay.
+    if (_isSubmitting) return; // chống bấm đúp khi đang xử lý
+
     if (_currentStep == 0 && _selectedExtraServices.contains(null)) {
       _showSnackBar('Vui long chon hoac xoa dich vu dang bo trong.');
       return;
@@ -542,15 +560,31 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
     }
 
     if (_currentStep < 2) {
+      // Bước sang step kế tiếp. Nếu từ step 2 (index 1) → step 3 (index 2)
+      // thì cần tạo hold-slot (gọi API có thể mất 1-3s) → bật loading.
       if (_currentStep == 1) {
-        final held = await _createHoldForSummary();
-        if (!held) return;
+        setState(() => _isSubmitting = true);
+        try {
+          final held = await _createHoldForSummary();
+          if (!held) {
+            if (mounted) setState(() => _isSubmitting = false);
+            return;
+          }
+          _pageController.nextPage(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        } finally {
+          if (mounted) setState(() => _isSubmitting = false);
+        }
+      } else {
+        _pageController.nextPage(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
       }
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
     } else {
+      // Step 3 (index 2): thanh toán → _executeBooking tự set _isSubmitting.
       _executeBooking();
     }
   }

@@ -189,6 +189,16 @@ class SEn extends S {
   String get exploreGalleryButton => 'Explore Gallery';
 
   @override
+  String get homeSalonsTitle => 'Our Salons';
+
+  @override
+  String get homeSalonsSubtitle =>
+      'Find a Nailify salon near you, check the address, view artists, and see recent salon ratings before booking.';
+
+  @override
+  String get homeSalonsButton => 'View salons';
+
+  @override
   String get ourPromiseTitle => 'OUR PROMISE';
 
   @override
@@ -922,6 +932,93 @@ class SEn extends S {
 
   @override
   String get noSalonFound => 'No salons found';
+
+  @override
+  String get salonsTitle => 'Our Salons';
+
+  @override
+  String get salonsHeroTitle => 'Find your favorite salon';
+
+  @override
+  String get salonsHeroSubtitle =>
+      'Choose a Nailify branch with trusted artists, comfortable spaces, and ready-to-book services.';
+
+  @override
+  String salonsAvailableCount(int count) {
+    return '$count branches available';
+  }
+
+  @override
+  String salonsLoadError(String error) {
+    return 'Failed to load salons: $error';
+  }
+
+  @override
+  String get noSalonsFound => 'No salons found';
+
+  @override
+  String get noSalonsFoundDesc =>
+      'Please check back later for available Nailify branches.';
+
+  @override
+  String get salonDetailTitle => 'Salon Detail';
+
+  @override
+  String salonLoadError(String error) {
+    return 'Failed to load salon: $error';
+  }
+
+  @override
+  String get salonNotFound => 'Salon not found';
+
+  @override
+  String get salonVerified => 'Verified branch';
+
+  @override
+  String get salonRatingsTitle => 'Salon ratings';
+
+  @override
+  String get salonOffDatesTitle => 'Off dates';
+
+  @override
+  String get noOffDates => 'No off dates.';
+
+  @override
+  String get nailArtistsTitle => 'Nail artists';
+
+  @override
+  String get noArtistsFound => 'No artists found.';
+
+  @override
+  String get nailArtistDetailTitle => 'Nail Artist Detail';
+
+  @override
+  String artistLoadError(String error) {
+    return 'Failed to load artist: $error';
+  }
+
+  @override
+  String get artistNotFound => 'Artist not found';
+
+  @override
+  String get nailArtistLabel => 'Nail artist';
+
+  @override
+  String get artistSchedulesTitle => 'Schedules';
+
+  @override
+  String get noSchedules => 'No schedules.';
+
+  @override
+  String get noRatingsYet => 'No ratings yet.';
+
+  @override
+  String get noComment => 'No comment';
+
+  @override
+  String ratingScoreLabel(String score) {
+    return '$score/5';
+  }
 
   @override
   String get addressUpdating => 'Address updating';

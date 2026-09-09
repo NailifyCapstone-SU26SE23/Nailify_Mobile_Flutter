@@ -46,8 +46,6 @@ class HomePage extends StatelessWidget {
 
               const HomeOurSalons(),
 
-              const SizedBox(height: 36),
-
               const OurPromisePage(),
 
               const SizedBox(height: 36),
@@ -72,6 +70,8 @@ class HomeOurSalons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = S.of(context);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Card(
@@ -80,19 +80,22 @@ class HomeOurSalons extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Our Salons',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              Text(
+                l10n.homeSalonsTitle,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
-                'Find a Nailify salon near you, check the address, view artists, and see recent salon ratings before booking.',
+                l10n.homeSalonsSubtitle,
                 style: TextStyle(color: Colors.grey.shade700, height: 1.4),
               ),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => context.push('/salons'),
-                child: const Text('View salons'),
+                child: Text(l10n.homeSalonsButton),
               ),
             ],
           ),

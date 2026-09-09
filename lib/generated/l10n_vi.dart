@@ -191,6 +191,16 @@ class SVi extends S {
   String get exploreGalleryButton => 'Khám Phá Bộ Sưu Tập';
 
   @override
+  String get homeSalonsTitle => 'Hệ thống salon';
+
+  @override
+  String get homeSalonsSubtitle =>
+      'Tìm salon Nailify gần bạn, kiểm tra địa chỉ, xem thợ làm móng và đánh giá gần đây trước khi đặt lịch.';
+
+  @override
+  String get homeSalonsButton => 'Xem salon';
+
+  @override
   String get ourPromiseTitle => 'LỜI CAM KẾT';
 
   @override
@@ -922,6 +932,93 @@ class SVi extends S {
 
   @override
   String get noSalonFound => 'Không tìm thấy salon nào';
+
+  @override
+  String get salonsTitle => 'Hệ thống salon';
+
+  @override
+  String get salonsHeroTitle => 'Chọn salon yêu thích';
+
+  @override
+  String get salonsHeroSubtitle =>
+      'Tìm chi nhánh Nailify với thợ lành nghề, không gian thoải mái và dịch vụ sẵn sàng đặt lịch.';
+
+  @override
+  String salonsAvailableCount(int count) {
+    return '$count chi nhánh đang hoạt động';
+  }
+
+  @override
+  String salonsLoadError(String error) {
+    return 'Không thể tải danh sách salon: $error';
+  }
+
+  @override
+  String get noSalonsFound => 'Không tìm thấy salon nào';
+
+  @override
+  String get noSalonsFoundDesc =>
+      'Vui lòng quay lại sau để xem các chi nhánh Nailify khả dụng.';
+
+  @override
+  String get salonDetailTitle => 'Chi tiết salon';
+
+  @override
+  String salonLoadError(String error) {
+    return 'Không thể tải salon: $error';
+  }
+
+  @override
+  String get salonNotFound => 'Không tìm thấy salon';
+
+  @override
+  String get salonVerified => 'Chi nhánh xác thực';
+
+  @override
+  String get salonRatingsTitle => 'Đánh giá salon';
+
+  @override
+  String get salonOffDatesTitle => 'Ngày nghỉ';
+
+  @override
+  String get noOffDates => 'Không có ngày nghỉ.';
+
+  @override
+  String get nailArtistsTitle => 'Thợ làm móng';
+
+  @override
+  String get noArtistsFound => 'Không tìm thấy thợ.';
+
+  @override
+  String get nailArtistDetailTitle => 'Chi tiết thợ';
+
+  @override
+  String artistLoadError(String error) {
+    return 'Không thể tải thông tin thợ: $error';
+  }
+
+  @override
+  String get artistNotFound => 'Không tìm thấy thợ';
+
+  @override
+  String get nailArtistLabel => 'Thợ làm móng';
+
+  @override
+  String get artistSchedulesTitle => 'Lịch làm việc';
+
+  @override
+  String get noSchedules => 'Không có lịch làm việc.';
+
+  @override
+  String get noRatingsYet => 'Chưa có đánh giá.';
+
+  @override
+  String get noComment => 'Không có nhận xét';
+
+  @override
+  String ratingScoreLabel(String score) {
+    return '$score/5';
+  }
 
   @override
   String get addressUpdating => 'Địa chỉ đang cập nhật';

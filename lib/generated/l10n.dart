@@ -439,6 +439,24 @@ abstract class S {
   /// **'Explore Gallery'**
   String get exploreGalleryButton;
 
+  /// No description provided for @homeSalonsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Our Salons'**
+  String get homeSalonsTitle;
+
+  /// No description provided for @homeSalonsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Find a Nailify salon near you, check the address, view artists, and see recent salon ratings before booking.'**
+  String get homeSalonsSubtitle;
+
+  /// No description provided for @homeSalonsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'View salons'**
+  String get homeSalonsButton;
+
   /// No description provided for @ourPromiseTitle.
   ///
   /// In en, this message translates to:
@@ -1788,6 +1806,156 @@ abstract class S {
   /// In en, this message translates to:
   /// **'No salons found'**
   String get noSalonFound;
+
+  /// No description provided for @salonsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Our Salons'**
+  String get salonsTitle;
+
+  /// No description provided for @salonsHeroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Find your favorite salon'**
+  String get salonsHeroTitle;
+
+  /// No description provided for @salonsHeroSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a Nailify branch with trusted artists, comfortable spaces, and ready-to-book services.'**
+  String get salonsHeroSubtitle;
+
+  /// No description provided for @salonsAvailableCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} branches available'**
+  String salonsAvailableCount(int count);
+
+  /// No description provided for @salonsLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load salons: {error}'**
+  String salonsLoadError(String error);
+
+  /// No description provided for @noSalonsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No salons found'**
+  String get noSalonsFound;
+
+  /// No description provided for @noSalonsFoundDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Please check back later for available Nailify branches.'**
+  String get noSalonsFoundDesc;
+
+  /// No description provided for @salonDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Salon Detail'**
+  String get salonDetailTitle;
+
+  /// No description provided for @salonLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load salon: {error}'**
+  String salonLoadError(String error);
+
+  /// No description provided for @salonNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Salon not found'**
+  String get salonNotFound;
+
+  /// No description provided for @salonVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified branch'**
+  String get salonVerified;
+
+  /// No description provided for @salonRatingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Salon ratings'**
+  String get salonRatingsTitle;
+
+  /// No description provided for @salonOffDatesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Off dates'**
+  String get salonOffDatesTitle;
+
+  /// No description provided for @noOffDates.
+  ///
+  /// In en, this message translates to:
+  /// **'No off dates.'**
+  String get noOffDates;
+
+  /// No description provided for @nailArtistsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nail artists'**
+  String get nailArtistsTitle;
+
+  /// No description provided for @noArtistsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No artists found.'**
+  String get noArtistsFound;
+
+  /// No description provided for @nailArtistDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nail Artist Detail'**
+  String get nailArtistDetailTitle;
+
+  /// No description provided for @artistLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load artist: {error}'**
+  String artistLoadError(String error);
+
+  /// No description provided for @artistNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Artist not found'**
+  String get artistNotFound;
+
+  /// No description provided for @nailArtistLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Nail artist'**
+  String get nailArtistLabel;
+
+  /// No description provided for @artistSchedulesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedules'**
+  String get artistSchedulesTitle;
+
+  /// No description provided for @noSchedules.
+  ///
+  /// In en, this message translates to:
+  /// **'No schedules.'**
+  String get noSchedules;
+
+  /// No description provided for @noRatingsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No ratings yet.'**
+  String get noRatingsYet;
+
+  /// No description provided for @noComment.
+  ///
+  /// In en, this message translates to:
+  /// **'No comment'**
+  String get noComment;
+
+  /// No description provided for @ratingScoreLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{score}/5'**
+  String ratingScoreLabel(String score);
 
   /// No description provided for @addressUpdating.
   ///

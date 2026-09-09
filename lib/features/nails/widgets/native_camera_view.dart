@@ -41,6 +41,7 @@ class _NativeCameraViewState extends State<NativeCameraView> {
   NailTryOnStats? _lastStats;
 
   bool _showFps = true;
+  String? _initError;
 
   @override
   void initState() {
@@ -62,8 +63,26 @@ class _NativeCameraViewState extends State<NativeCameraView> {
           config: widget.config,
           mode: 'live',
         );
+      } on NailTryOnInitException catch (e) {
+        // Native side báo init fail (ONNX Runtime loadLibrary thất bại,
+        // MediaPipe native lỗi, ABI mismatch). Hiển thị fallback UI thay
+        // vì để exception bubble lên Flutter framework.
+        debugPrint('[NativeCameraView] AR init failed: ${e.message}');
+        if (mounted) {
+          setState(() => _initError = e.message);
+        }
       } on PlatformException catch (e) {
         debugPrint('[NativeCameraView] startSession failed: ${e.message}');
+        if (mounted) {
+          setState(() => _initError = e.message ?? 'Platform error');
+        }
+      } catch (e, st) {
+        // Catch-all: bất kỳ exception nào khác (vd: missing plugin registration
+        // trên iOS, JS engine error) cũng không được để crash app.
+        debugPrint('[NativeCameraView] unexpected error: $e\n$st');
+        if (mounted) {
+          setState(() => _initError = e.toString());
+        }
       }
     });
   }
@@ -102,6 +121,65 @@ class _NativeCameraViewState extends State<NativeCameraView> {
     // Camera fills ~95% of the screen height so users get a wide view of their hand.
     final media = MediaQuery.of(context);
     final cameraHeight = media.size.height * 0.95;
+
+    // Fallback UI khi native AR init thất bại (vd: ONNX Runtime loadLibrary
+    // fail, ABI mismatch, MediaPipe lỗi). Hiển thị thông báo + nút đóng
+    // thay vì để _NativeSurface (AndroidView) trống hoặc crash.
+    if (_initError != null) {
+      return SizedBox(
+        height: cameraHeight,
+        width: double.infinity,
+        child: Container(
+          color: Colors.black,
+          alignment: Alignment.center,
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.videocam_off_outlined,
+                size: 64,
+                color: Colors.white54,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'AR Try-On không khả dụng',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _initError!,
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
+                textAlign: TextAlign.center,
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 24),
+              OutlinedButton.icon(
+                onPressed: widget.onClose,
+                icon: const Icon(Icons.close, color: Colors.white),
+                label: const Text(
+                  'Đóng',
+                  style: TextStyle(color: Colors.white),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.white54),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return SizedBox(
       height: cameraHeight,

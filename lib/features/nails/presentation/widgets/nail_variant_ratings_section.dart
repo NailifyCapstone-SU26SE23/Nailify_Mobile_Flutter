@@ -9,18 +9,14 @@ import '../../data/repositories/nail_variant_repository.dart';
 class NailVariantRatingsSection extends StatefulWidget {
   final int nailVariantId;
 
-  const NailVariantRatingsSection({
-    super.key,
-    required this.nailVariantId,
-  });
+  const NailVariantRatingsSection({super.key, required this.nailVariantId});
 
   @override
   State<NailVariantRatingsSection> createState() =>
       _NailVariantRatingsSectionState();
 }
 
-class _NailVariantRatingsSectionState
-    extends State<NailVariantRatingsSection> {
+class _NailVariantRatingsSectionState extends State<NailVariantRatingsSection> {
   static const int _pageSize = 5;
 
   late Future<NailVariantRatingPage> _ratingsFuture;
@@ -140,10 +136,7 @@ class _StarFilterDropdown extends StatelessWidget {
   final int? value;
   final ValueChanged<int?> onChanged;
 
-  const _StarFilterDropdown({
-    required this.value,
-    required this.onChanged,
-  });
+  const _StarFilterDropdown({required this.value, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -340,10 +333,7 @@ class _ScorePill extends StatelessWidget {
   final String label;
   final int score;
 
-  const _ScorePill({
-    required this.label,
-    required this.score,
-  });
+  const _ScorePill({required this.label, required this.score});
 
   @override
   Widget build(BuildContext context) {

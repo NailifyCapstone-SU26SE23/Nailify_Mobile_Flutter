@@ -410,9 +410,7 @@ class _DetailContentState extends State<_DetailContent> {
                         TextSpan(
                           children: [
                             TextSpan(
-                              text: PriceFormatter.format(
-                                variant.price,
-                              ),
+                              text: PriceFormatter.format(variant.price),
                             ),
                           ],
                         ),
@@ -680,10 +678,9 @@ class _DetailContentState extends State<_DetailContent> {
                                     'name': variant.name,
                                     'image': variant.imageUrl,
                                     'price': variant.price,
-                                    'shapeMethodConfigId': selectedShapeMethod
-                                        .shapeMethodConfigId,
-                                    'shapeMethodName':
-                                        selectedShapeMethod.name,
+                                    'shapeMethodConfigId':
+                                        selectedShapeMethod.shapeMethodConfigId,
+                                    'shapeMethodName': selectedShapeMethod.name,
                                     'shapeMethodPrice':
                                         selectedShapeMethod.price,
                                     'shapeMethodDuration':
@@ -697,8 +694,9 @@ class _DetailContentState extends State<_DetailContent> {
                               },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
-                          disabledBackgroundColor:
-                              AppColors.primary.withValues(alpha: 0.35),
+                          disabledBackgroundColor: AppColors.primary.withValues(
+                            alpha: 0.35,
+                          ),
                           foregroundColor: Colors.white,
                           disabledForegroundColor: Colors.white,
                           elevation: 0,
@@ -855,7 +853,6 @@ class _DetailContentState extends State<_DetailContent> {
     );
   }
 
-
   Widget _buildShapeMethodSelection() {
     return FutureBuilder<List<ShapeMethodConfigModel>>(
       future: _shapeMethodsFuture,
@@ -883,8 +880,7 @@ class _DetailContentState extends State<_DetailContent> {
           onChanged: (shapeMethodConfigId) {
             if (shapeMethodConfigId == null) return;
             final selectedShapeMethod = methods.firstWhere(
-              (method) =>
-                  method.shapeMethodConfigId == shapeMethodConfigId,
+              (method) => method.shapeMethodConfigId == shapeMethodConfigId,
             );
             setState(() {
               _selectedShapeMethod = selectedShapeMethod;

@@ -34,9 +34,10 @@ class SalonModel {
       depositConfig: _readDouble(json['depositConfig']),
       operatingHours: hours
           .whereType<Map>()
-          .map((item) => SalonOperatingHour.fromJson(
-                Map<String, dynamic>.from(item),
-              ))
+          .map(
+            (item) =>
+                SalonOperatingHour.fromJson(Map<String, dynamic>.from(item)),
+          )
           .toList(),
     );
   }

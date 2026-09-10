@@ -82,8 +82,7 @@ class NailVariantRatingModel {
   factory NailVariantRatingModel.fromJson(Map<dynamic, dynamic> json) {
     return NailVariantRatingModel(
       bookingRatingId:
-          (json['bookingRatingId'] ?? json['BookingRatingId'] ?? '')
-              .toString(),
+          (json['bookingRatingId'] ?? json['BookingRatingId'] ?? '').toString(),
       overallScore: ApiResponseParser.asInt(
         json['overallScore'] ?? json['OverallScore'],
       ),

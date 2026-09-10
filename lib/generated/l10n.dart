@@ -1873,6 +1873,66 @@ abstract class S {
   /// **'Verified branch'**
   String get salonVerified;
 
+  /// No description provided for @salonOperatingHoursTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Operating hours'**
+  String get salonOperatingHoursTitle;
+
+  /// No description provided for @noOperatingHours.
+  ///
+  /// In en, this message translates to:
+  /// **'No operating hours.'**
+  String get noOperatingHours;
+
+  /// No description provided for @salonClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get salonClosed;
+
+  /// No description provided for @weekdayMonday.
+  ///
+  /// In en, this message translates to:
+  /// **'Monday'**
+  String get weekdayMonday;
+
+  /// No description provided for @weekdayTuesday.
+  ///
+  /// In en, this message translates to:
+  /// **'Tuesday'**
+  String get weekdayTuesday;
+
+  /// No description provided for @weekdayWednesday.
+  ///
+  /// In en, this message translates to:
+  /// **'Wednesday'**
+  String get weekdayWednesday;
+
+  /// No description provided for @weekdayThursday.
+  ///
+  /// In en, this message translates to:
+  /// **'Thursday'**
+  String get weekdayThursday;
+
+  /// No description provided for @weekdayFriday.
+  ///
+  /// In en, this message translates to:
+  /// **'Friday'**
+  String get weekdayFriday;
+
+  /// No description provided for @weekdaySaturday.
+  ///
+  /// In en, this message translates to:
+  /// **'Saturday'**
+  String get weekdaySaturday;
+
+  /// No description provided for @weekdaySunday.
+  ///
+  /// In en, this message translates to:
+  /// **'Sunday'**
+  String get weekdaySunday;
+
   /// No description provided for @salonRatingsTitle.
   ///
   /// In en, this message translates to:

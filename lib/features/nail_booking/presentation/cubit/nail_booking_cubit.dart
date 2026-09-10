@@ -158,62 +158,6 @@ class NailBookingCubit extends Cubit<NailBookingState> {
     }
   }
 
-  Future<void> _fetchArtists({
-    required int nailVariantId,
-    int? shapeMethodConfigId,
-    required bool useSuggestedArtists,
-  }) async {
-    final branch = state.selectedBranch;
-    final date = state.selectedDate;
-    if (branch == null || date == null) return;
-
-    final dateStr = _formatDate(date);
-
-    try {
-      List<Map<String, dynamic>> artists;
-      if (useSuggestedArtists) {
-        artists = await _repository.getSuggestedArtists(
-          salonId: branch['salonId'],
-          bookingDate: dateStr,
-          nailVariantId: nailVariantId,
-          serviceIds: state.selectedExtraServices
-              .whereType<String>()
-              .toSet()
-              .toList(),
-          shapeMethodConfigId: shapeMethodConfigId,
-        );
-      } else {
-        artists = await _repository.getArtistsBySalon(branch['salonId']);
-      }
-
-      if (artists.isEmpty) {
-        // Không có thợ → tự động chọn chế độ "không chọn thợ"
-        emit(
-          state.copyWith(
-            artists: artists,
-            artistsStatus: NailBookingLoadStatus.loaded,
-            noArtistSelected: true,
-          ),
-        );
-        await _loadSalonSlots();
-      } else {
-        emit(
-          state.copyWith(
-            artists: artists,
-            artistsStatus: NailBookingLoadStatus.loaded,
-          ),
-        );
-      }
-    } catch (e) {
-      emit(
-        state.copyWith(
-          artistsStatus: NailBookingLoadStatus.error,
-          errorMessage: 'Lỗi tải danh sách thợ: $e',
-        ),
-      );
-    }
-  }
-
   /// Gọi khi user chọn thợ cụ thể.
   Future<void> selectStylist(Map<String, dynamic> artist) async {
     emit(
@@ -494,7 +438,8 @@ class NailBookingCubit extends Cubit<NailBookingState> {
             clearHoldToken: true,
             isHolding: false,
             holdRemainingSeconds: 0,
-            errorMessage: 'Không thể giữ khung giờ này. Vui lòng chọn giờ khác.',
+            errorMessage:
+                'Không thể giữ khung giờ này. Vui lòng chọn giờ khác.',
           ),
         );
         return;

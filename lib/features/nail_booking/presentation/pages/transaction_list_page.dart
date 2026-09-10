@@ -280,7 +280,6 @@ class _TransactionListPageState extends State<TransactionListPage> {
     final statusView = transactionStatusView(status);
     final createdAt = _formatDateTime(transaction['createdAt']);
     final salonName = transaction['salonName']?.toString() ?? '';
-    final orderCode = transaction['orderCode']?.toString() ?? '';
     final transactionId = _readInt(transaction['transactionId']);
 
     return Card(

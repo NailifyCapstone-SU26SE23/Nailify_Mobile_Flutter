@@ -157,8 +157,9 @@ class BookingServiceSelection extends StatelessWidget {
                       selectedWarrantyItems,
                     );
                     if (val == true) {
-                      if (!next.any((s) => _isSameItem(s, item)))
+                      if (!next.any((s) => _isSameItem(s, item))) {
                         next.add(item);
+                      }
                     } else {
                       next.removeWhere((s) => _isSameItem(s, item));
                     }

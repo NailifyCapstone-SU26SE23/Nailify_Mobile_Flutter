@@ -12,7 +12,6 @@ import '../models/nail_variant_model.dart';
 import '../painter/advanced_nail_painter.dart';
 import '../painter/nail_debug_painter.dart';
 import '../services/nail_variant_api_service.dart';
-import '../services/roboflow_cloud_service.dart';
 
 enum _DragMode { none, move, scaleRotate }
 
@@ -36,8 +35,6 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
   List<NailPoseKeypoints?> _nailPoseKeypoints = [];
   double _imgWidth = 0;
   double _imgHeight = 0;
-
-  Duration? _lastInferenceDuration;
 
   // Backend API Nail Variants state
   List<NailVariantModel> _apiVariants = [];
@@ -718,7 +715,6 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
       setState(() {
         _nailPolygons = result.polygons;
         _nailPoseKeypoints = result.poseKeypoints;
-        _lastInferenceDuration = result.inferenceTime;
       });
 
       if (result.polygons.isEmpty && mounted) {
@@ -730,58 +726,6 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
       }
     } catch (e) {
       debugPrint("⚠️ Lỗi Inference Worker: $e");
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isProcessing = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _processSelectedImageOnline() async {
-    if (_imageFile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chọn hoặc chụp ảnh trước!')),
-      );
-      return;
-    }
-
-    setState(() {
-      _isProcessing = true;
-    });
-
-    try {
-      final imageBytes = await _imageFile!.readAsBytes();
-      final decodedImage = img.decodeImage(imageBytes);
-
-      if (decodedImage != null) {
-        setState(() {
-          _imgWidth = decodedImage.width.toDouble();
-          _imgHeight = decodedImage.height.toDouble();
-        });
-      }
-
-      final result = await RoboflowCloudService.detectNailsOnline(imageBytes);
-
-      if (!mounted) return;
-
-      setState(() {
-        _nailPolygons = result.polygons;
-        _nailLabels = result.labels;
-        _nailPoseKeypoints = result.poseKeypoints;
-        _lastInferenceDuration = result.inferenceTime;
-      });
-
-      if (result.polygons.isEmpty && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Roboflow Cloud không tìm thấy móng nào.'),
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint("⚠️ Lỗi Roboflow Online API: $e");
     } finally {
       if (mounted) {
         setState(() {

@@ -91,8 +91,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
 
   // ── Getters ──────────────────────────────────────
   int get _selectedNailVariantId => _selectedNailVariant?.nailVariantId ?? 0;
-  double get _nailVariantPrice =>
-      _selectedNailVariant?.price ?? 0;
+  double get _nailVariantPrice => _selectedNailVariant?.price ?? 0;
   num get _shapeMethodPrice => _selectedShapeMethod?.price ?? 0;
   int get _selectedExtraServicesTotal => _selectedExtraServices
       .whereType<String>()
@@ -881,13 +880,12 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
     final reviewTotal = _priceReview?['totalPrice'];
     // Fix bug "nhảy giá": KHÔNG fallback _estimatedTotalPrice khi đang loading
     // voucher. Hiển thị placeholder row thay vì giá 0.
-    final bool _isLoading = _isReviewingPrice && _priceReview == null;
+    final bool isLoading = _isReviewingPrice && _priceReview == null;
     final int totalPrice = reviewTotal is num
         ? reviewTotal.round()
-        : _isLoading
-            ? 0
-            : int.tryParse(reviewTotal?.toString() ?? '') ??
-                _estimatedTotalPrice;
+        : isLoading
+        ? 0
+        : int.tryParse(reviewTotal?.toString() ?? '') ?? _estimatedTotalPrice;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -936,7 +934,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
           ),
           const Divider(height: 16),
           // Fix bug "nhảy giá": hiển thị placeholder thay vì giá 0.
-          _isLoading
+          isLoading
               ? _buildLoadingPriceRow(S.of(context).bookingTotal)
               : _buildPaymentRow(
                   S.of(context).bookingTotal,
@@ -944,7 +942,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                   strong: true,
                   highlight: true,
                 ),
-          if (_selectedBranch != null && !_isLoading) ...[
+          if (_selectedBranch != null && !isLoading) ...[
             const Divider(height: 16),
             _buildDepositDetails(totalPrice),
           ],

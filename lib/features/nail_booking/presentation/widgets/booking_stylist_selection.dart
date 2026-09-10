@@ -120,7 +120,7 @@ class _BookingStylistSelectionState extends State<BookingStylistSelection>
                         children: widget.artists.map((artist) {
                           final bool isSelected =
                               artist['nailArtistId'] ==
-                                  widget.selectedStylistId;
+                              widget.selectedStylistId;
                           final String displayName = _getArtistName(
                             artist,
                             context,
@@ -132,10 +132,7 @@ class _BookingStylistSelectionState extends State<BookingStylistSelection>
                                   ? NetworkImage(artist['avatarUrl'])
                                   : null,
                               child: artist['avatarUrl'] == null
-                                  ? const Icon(
-                                      Icons.person,
-                                      color: Colors.grey,
-                                    )
+                                  ? const Icon(Icons.person, color: Colors.grey)
                                   : null,
                             ),
                             title: Text(

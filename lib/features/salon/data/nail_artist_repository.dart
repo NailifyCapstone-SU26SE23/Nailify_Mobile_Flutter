@@ -20,16 +20,29 @@ class NailArtistRepository {
   }) async {
     final response = await _apiClient.get(
       '/BookingRatings/by-nail-artist/$nailArtistId',
-      queryParameters: {
-        'PageNumber': pageNumber,
-        'PageSize': pageSize,
-      },
+      queryParameters: {'PageNumber': pageNumber, 'PageSize': pageSize},
     );
 
     return _readItems(response.data)
         .whereType<Map>()
-        .map((item) =>
-            BookingRatingModel.fromJson(Map<String, dynamic>.from(item)))
+        .map(
+          (item) =>
+              BookingRatingModel.fromJson(Map<String, dynamic>.from(item)),
+        )
+        .toList();
+  }
+
+  Future<List<NailArtistSchedule>> getNailArtistSchedules(
+    String nailArtistId,
+  ) async {
+    final response = await _apiClient.get('/Schedules/artist/$nailArtistId');
+
+    return _readItems(response.data)
+        .whereType<Map>()
+        .map(
+          (item) =>
+              NailArtistSchedule.fromJson(Map<String, dynamic>.from(item)),
+        )
         .toList();
   }
 }

@@ -14,10 +14,7 @@ class SalonRepository {
   }) async {
     final response = await _apiClient.get(
       '/Salons',
-      queryParameters: {
-        'PageNumber': pageNumber,
-        'PageSize': pageSize,
-      },
+      queryParameters: {'PageNumber': pageNumber, 'PageSize': pageSize},
     );
 
     return _readItems(response.data)
@@ -47,16 +44,15 @@ class SalonRepository {
   }) async {
     final response = await _apiClient.get(
       '/BookingRatings/by-salon/$salonId',
-      queryParameters: {
-        'PageNumber': pageNumber,
-        'PageSize': pageSize,
-      },
+      queryParameters: {'PageNumber': pageNumber, 'PageSize': pageSize},
     );
 
     return _readItems(response.data)
         .whereType<Map>()
-        .map((item) =>
-            BookingRatingModel.fromJson(Map<String, dynamic>.from(item)))
+        .map(
+          (item) =>
+              BookingRatingModel.fromJson(Map<String, dynamic>.from(item)),
+        )
         .toList();
   }
 
@@ -76,8 +72,9 @@ class SalonRepository {
 
     return _readItems(response.data)
         .whereType<Map>()
-        .map((item) =>
-            NailArtistModel.fromJson(Map<String, dynamic>.from(item)))
+        .map(
+          (item) => NailArtistModel.fromJson(Map<String, dynamic>.from(item)),
+        )
         .toList();
   }
 }

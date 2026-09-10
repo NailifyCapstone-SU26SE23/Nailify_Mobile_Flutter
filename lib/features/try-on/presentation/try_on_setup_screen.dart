@@ -236,8 +236,8 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
         }
       }
       selectedSurface ??= data.nailSurfaces.isEmpty
-            ? null
-            : data.nailSurfaces.first;
+          ? null
+          : data.nailSurfaces.first;
 
       final List<PlacedComponentDraft> initialPlacements = [];
       if (customerNail != null) {
@@ -529,8 +529,9 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
           );
         }
       }
-      selectedShape ??= _selectedNailShape ??
-            (data.nailShapes.isEmpty ? null : data.nailShapes.first);
+      selectedShape ??=
+          _selectedNailShape ??
+          (data.nailShapes.isEmpty ? null : data.nailShapes.first);
 
       NailSurfaceModel? selectedSurface;
       final surfaceData = res['nailSurface'];
@@ -550,8 +551,9 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
           );
         }
       }
-      selectedSurface ??= _selectedNailSurface ??
-            (data.nailSurfaces.isEmpty ? null : data.nailSurfaces.first);
+      selectedSurface ??=
+          _selectedNailSurface ??
+          (data.nailSurfaces.isEmpty ? null : data.nailSurfaces.first);
 
       final List<PlacedComponentDraft> newPlacements = [];
       final recComponents = res['components'];

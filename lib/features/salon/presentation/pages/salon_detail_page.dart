@@ -12,6 +12,7 @@ import '../../data/salon_repository.dart';
 import '../widgets/basic_network_image.dart';
 import '../widgets/rating_list.dart';
 import '../widgets/salon_ui.dart';
+import '../widgets/salon_operating_hours_section.dart';
 
 class SalonDetailPage extends StatefulWidget {
   final String salonId;
@@ -104,6 +105,9 @@ class _SalonDetailPageState extends State<SalonDetailPage> {
                     color: AppColors.success,
                   ),
                 ],
+              ),
+              SalonOperatingHoursSection(
+                operatingHours: data.salon.operatingHours,
               ),
               SalonSectionHeader(
                 title: l10n.salonRatingsTitle,
@@ -314,8 +318,9 @@ class _ArtistTile extends StatelessWidget {
         leading: CircleAvatar(
           radius: 24,
           backgroundColor: AppColors.primary.withValues(alpha: 0.08),
-          backgroundImage:
-              artist.avatarUrl.isEmpty ? null : NetworkImage(artist.avatarUrl),
+          backgroundImage: artist.avatarUrl.isEmpty
+              ? null
+              : NetworkImage(artist.avatarUrl),
           child: artist.avatarUrl.isEmpty
               ? const Icon(Icons.person_outline, color: AppColors.primary)
               : null,

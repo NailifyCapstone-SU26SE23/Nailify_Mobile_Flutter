@@ -152,11 +152,16 @@ class _NailVariantDetailSheetState extends State<NailVariantDetailSheet> {
                           child: variant.imageUrl.isEmpty
                               ? Container(
                                   color: const Color(0xFFF5F5F7),
-                                  child: const Icon(Icons.spa_rounded,
-                                      size: 64, color: AppColors.primary),
+                                  child: const Icon(
+                                    Icons.spa_rounded,
+                                    size: 64,
+                                    color: AppColors.primary,
+                                  ),
                                 )
-                              : Image.network(variant.imageUrl,
-                                  fit: BoxFit.cover),
+                              : Image.network(
+                                  variant.imageUrl,
+                                  fit: BoxFit.cover,
+                                ),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -177,9 +182,7 @@ class _NailVariantDetailSheetState extends State<NailVariantDetailSheet> {
                           children: [
                             const TextSpan(text: 'Giá tham khảo: '),
                             TextSpan(
-                              text: PriceFormatter.format(
-                                variant.price,
-                              ),
+                              text: PriceFormatter.format(variant.price),
                             ),
                           ],
                         ),
@@ -230,7 +233,8 @@ class _NailVariantDetailSheetState extends State<NailVariantDetailSheet> {
                     width: double.infinity,
                     height: 52,
                     child: ElevatedButton(
-                      onPressed: () => Navigator.pop(context, _selectedShapeMethod),
+                      onPressed: () =>
+                          Navigator.pop(context, _selectedShapeMethod),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
@@ -260,25 +264,31 @@ class _NailVariantDetailSheetState extends State<NailVariantDetailSheet> {
   Widget _buildSpecsGrid(NailVariantModel variant) {
     final specItems = <Widget>[];
     if (variant.nailShape != null) {
-      specItems.add(_buildSpecCard(
-        icon: Icons.gesture_rounded,
-        label: S.of(context).nailFormLabel,
-        value: variant.nailShape!.name,
-      ));
+      specItems.add(
+        _buildSpecCard(
+          icon: Icons.gesture_rounded,
+          label: S.of(context).nailFormLabel,
+          value: variant.nailShape!.name,
+        ),
+      );
     }
     if (variant.nailSurface != null) {
-      specItems.add(_buildSpecCard(
-        icon: Icons.layers_rounded,
-        label: S.of(context).nailSurfaceLabel,
-        value: variant.nailSurface!.name,
-      ));
+      specItems.add(
+        _buildSpecCard(
+          icon: Icons.layers_rounded,
+          label: S.of(context).nailSurfaceLabel,
+          value: variant.nailSurface!.name,
+        ),
+      );
     }
     if (variant.duration != null) {
-      specItems.add(_buildSpecCard(
-        icon: Icons.access_time_filled_rounded,
-        label: S.of(context).bookingDurationLabel,
-        value: S.of(context).minutesLabel('${variant.duration}'),
-      ));
+      specItems.add(
+        _buildSpecCard(
+          icon: Icons.access_time_filled_rounded,
+          label: S.of(context).bookingDurationLabel,
+          value: S.of(context).minutesLabel('${variant.duration}'),
+        ),
+      );
     }
     final colors = _parseColors(variant.colorJson);
     if (colors.isNotEmpty) {
@@ -369,8 +379,11 @@ class _NailVariantDetailSheetState extends State<NailVariantDetailSheet> {
         children: [
           Row(
             children: [
-              const Icon(Icons.palette_rounded,
-                  color: Color(0xFFFF4081), size: 20),
+              const Icon(
+                Icons.palette_rounded,
+                color: Color(0xFFFF4081),
+                size: 20,
+              ),
               const SizedBox(width: 6),
               Text(
                 S.of(context).colorLabel,
@@ -395,7 +408,10 @@ class _NailVariantDetailSheetState extends State<NailVariantDetailSheet> {
                       decoration: BoxDecoration(
                         color: color,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.grey.shade300, width: 1),
+                        border: Border.all(
+                          color: Colors.grey.shade300,
+                          width: 1,
+                        ),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: 0.1),
@@ -431,9 +447,7 @@ class _NailVariantDetailSheetState extends State<NailVariantDetailSheet> {
             .where((m) => m.status.toLowerCase() != 'inactive')
             .toList();
         if (methods.isEmpty) return const SizedBox.shrink();
-        if (_selectedShapeMethod == null) {
-          _selectedShapeMethod = methods.first;
-        }
+        _selectedShapeMethod ??= methods.first;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -459,7 +473,9 @@ class _NailVariantDetailSheetState extends State<NailVariantDetailSheet> {
                       : Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: selected ? AppColors.primary : const Color(0xFFFFF0F5),
+                    color: selected
+                        ? AppColors.primary
+                        : const Color(0xFFFFF0F5),
                     width: 1.5,
                   ),
                 ),
@@ -471,7 +487,10 @@ class _NailVariantDetailSheetState extends State<NailVariantDetailSheet> {
                   },
                   title: Text(
                     method.name,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
                   ),
                   subtitle: Text(
                     S.of(context).minutesLabel('${method.duration}'),
@@ -514,14 +533,16 @@ class _NailVariantDetailSheetState extends State<NailVariantDetailSheet> {
           if (grouped[finger]?.isNotEmpty == true)
             _buildFingerRow(finger, grouped[finger]!),
         if (grouped[-1]?.isNotEmpty == true)
-          _buildFingerRow(-1, grouped[-1]!,
-              title: S.of(context).sharedLabel),
+          _buildFingerRow(-1, grouped[-1]!, title: S.of(context).sharedLabel),
       ],
     );
   }
 
-  Widget _buildFingerRow(int fingerIndex, List<dynamic> components,
-      {String? title}) {
+  Widget _buildFingerRow(
+    int fingerIndex,
+    List<dynamic> components, {
+    String? title,
+  }) {
     final fingerNames = [
       S.of(context).fingerThumb,
       S.of(context).fingerIndex,
@@ -529,7 +550,8 @@ class _NailVariantDetailSheetState extends State<NailVariantDetailSheet> {
       S.of(context).fingerRing,
       S.of(context).fingerPinky,
     ];
-    final name = title ??
+    final name =
+        title ??
         (fingerIndex >= 0 && fingerIndex < fingerNames.length
             ? fingerNames[fingerIndex]
             : S.of(context).fingerOther(fingerIndex.toString()));
@@ -558,13 +580,14 @@ class _NailVariantDetailSheetState extends State<NailVariantDetailSheet> {
               runSpacing: 8,
               children: components.map((component) {
                 final comp = component.component;
-                final typeText =
-                    comp?.componentType?.isNotEmpty == true
-                        ? comp!.componentType
-                        : S.of(context).decorationLabel;
+                final typeText = comp?.componentType?.isNotEmpty == true
+                    ? comp!.componentType
+                    : S.of(context).decorationLabel;
                 return Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFF4081).withValues(alpha: 0.03),
                     borderRadius: BorderRadius.circular(12),
@@ -582,9 +605,15 @@ class _NailVariantDetailSheetState extends State<NailVariantDetailSheet> {
                           width: 28,
                           height: 28,
                           child: comp?.imageUrl?.isNotEmpty == true
-                              ? Image.network(comp!.imageUrl!, fit: BoxFit.contain)
-                              : const Icon(Icons.auto_awesome,
-                                  color: AppColors.primary, size: 18),
+                              ? Image.network(
+                                  comp!.imageUrl!,
+                                  fit: BoxFit.contain,
+                                )
+                              : const Icon(
+                                  Icons.auto_awesome,
+                                  color: AppColors.primary,
+                                  size: 18,
+                                ),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -596,8 +625,11 @@ class _NailVariantDetailSheetState extends State<NailVariantDetailSheet> {
                           children: [
                             Text(
                               comp?.name ??
-                                  S.of(context).componentNameFallback(
-                                      component.componentId.toString()),
+                                  S
+                                      .of(context)
+                                      .componentNameFallback(
+                                        component.componentId.toString(),
+                                      ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
@@ -611,7 +643,9 @@ class _NailVariantDetailSheetState extends State<NailVariantDetailSheet> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                  fontSize: 10, color: Colors.grey),
+                                fontSize: 10,
+                                color: Colors.grey,
+                              ),
                             ),
                           ],
                         ),

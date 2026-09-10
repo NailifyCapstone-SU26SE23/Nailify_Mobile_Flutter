@@ -24,37 +24,38 @@ class BasicNetworkImage extends StatelessWidget {
     }
 
     if (imageUrl.isEmpty) {
-      return wrap(Container(
-        height: height,
-        width: width,
-        decoration: BoxDecoration(
-          color: const Color(0xFFF5F5F7),
-          gradient: LinearGradient(
-            colors: [
-              const Color(0xFFFFF0F5),
-              Colors.grey.shade100,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+      return wrap(
+        Container(
+          height: height,
+          width: width,
+          decoration: BoxDecoration(
+            color: const Color(0xFFF5F5F7),
+            gradient: LinearGradient(
+              colors: [const Color(0xFFFFF0F5), Colors.grey.shade100],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
           ),
+          alignment: Alignment.center,
+          child: Icon(placeholderIcon, size: 40, color: Colors.grey.shade500),
         ),
-        alignment: Alignment.center,
-        child: Icon(placeholderIcon, size: 40, color: Colors.grey.shade500),
-      ));
+      );
     }
 
-    return wrap(Image.network(
-      imageUrl,
-      height: height,
-      width: width,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) => Container(
+    return wrap(
+      Image.network(
+        imageUrl,
         height: height,
         width: width,
-        color: Colors.grey.shade200,
-        alignment: Alignment.center,
-        child: const Icon(Icons.broken_image_outlined, size: 40),
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => Container(
+          height: height,
+          width: width,
+          color: Colors.grey.shade200,
+          alignment: Alignment.center,
+          child: const Icon(Icons.broken_image_outlined, size: 40),
+        ),
       ),
-    ));
+    );
   }
 }

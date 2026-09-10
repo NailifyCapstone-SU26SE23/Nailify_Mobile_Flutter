@@ -132,7 +132,7 @@ class _GeneratorScreenState extends State<_GeneratorScreen> {
           try {
             final config = jsonDecode(c.configJson);
             return PlacedComponentDraft(
-              localId: c.customerNailComponentId ?? 0,
+              localId: c.customerNailComponentId,
               component:
                   null, // Since we don't have CombinedComponent, we rely on imageUrl directly
               componentId: c.componentId,

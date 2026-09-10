@@ -45,9 +45,10 @@ class NailArtistModel {
       avatarUrl: _readString(json['avatarUrl'] ?? json['imageUrl']),
       schedules: schedules
           .whereType<Map>()
-          .map((item) => NailArtistSchedule.fromJson(
-                Map<String, dynamic>.from(item),
-              ))
+          .map(
+            (item) =>
+                NailArtistSchedule.fromJson(Map<String, dynamic>.from(item)),
+          )
           .toList(),
     );
   }

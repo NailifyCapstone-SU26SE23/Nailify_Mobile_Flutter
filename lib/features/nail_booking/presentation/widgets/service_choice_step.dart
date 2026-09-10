@@ -530,9 +530,7 @@ class _NailVariantCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    PriceFormatter.format(
-                      variant.price,
-                    ),
+                    PriceFormatter.format(variant.price),
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,

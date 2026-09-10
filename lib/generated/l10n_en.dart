@@ -975,6 +975,36 @@ class SEn extends S {
   String get salonVerified => 'Verified branch';
 
   @override
+  String get salonOperatingHoursTitle => 'Operating hours';
+
+  @override
+  String get noOperatingHours => 'No operating hours.';
+
+  @override
+  String get salonClosed => 'Closed';
+
+  @override
+  String get weekdayMonday => 'Monday';
+
+  @override
+  String get weekdayTuesday => 'Tuesday';
+
+  @override
+  String get weekdayWednesday => 'Wednesday';
+
+  @override
+  String get weekdayThursday => 'Thursday';
+
+  @override
+  String get weekdayFriday => 'Friday';
+
+  @override
+  String get weekdaySaturday => 'Saturday';
+
+  @override
+  String get weekdaySunday => 'Sunday';
+
+  @override
   String get salonRatingsTitle => 'Salon ratings';
 
   @override

@@ -341,7 +341,7 @@ class SVi extends S {
       'Nếu bạn chưa tìm thấy mẫu móng phù hợp, Nailify có thể giúp bạn.';
 
   @override
-  String get quizBannerViewResults => 'XEM KẾT QUẢ PERFECT MATCH';
+  String get quizBannerViewResults => 'Perfect Match';
 
   @override
   String get quizBannerRetake => 'Làm lại trắc nghiệm';
@@ -973,6 +973,36 @@ class SVi extends S {
 
   @override
   String get salonVerified => 'Chi nhánh xác thực';
+
+  @override
+  String get salonOperatingHoursTitle => 'Giờ hoạt động';
+
+  @override
+  String get noOperatingHours => 'Không có giờ hoạt động.';
+
+  @override
+  String get salonClosed => 'Đóng cửa';
+
+  @override
+  String get weekdayMonday => 'Thứ hai';
+
+  @override
+  String get weekdayTuesday => 'Thứ ba';
+
+  @override
+  String get weekdayWednesday => 'Thứ tư';
+
+  @override
+  String get weekdayThursday => 'Thứ năm';
+
+  @override
+  String get weekdayFriday => 'Thứ sáu';
+
+  @override
+  String get weekdaySaturday => 'Thứ bảy';
+
+  @override
+  String get weekdaySunday => 'Chủ nhật';
 
   @override
   String get salonRatingsTitle => 'Đánh giá salon';

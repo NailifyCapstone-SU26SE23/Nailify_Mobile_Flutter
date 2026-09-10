@@ -255,40 +255,6 @@ class _NailBookingPageState extends State<NailBookingPage> {
     }
   }
 
-  Future<void> _fetchArtists() async {
-    if (_selectedBranch == null || _selectedDate == null) return;
-    setState(() {
-      _isLoadingArtists = true;
-      _artists = [];
-      _selectedStylist = null;
-      _selectedTime = null;
-      _noArtistSelected = false;
-    });
-
-    try {
-      final data = await _apiService.getSuggestedArtists(
-        _selectedBranch!['salonId'],
-        _formatBookingDate(_selectedDate!),
-        _nailVariantId,
-        _selectedExtraServices.whereType<String>().toList(),
-        _shapeMethodConfigId,
-      );
-      if (!mounted) return;
-      setState(() {
-        _artists = data;
-        _isLoadingArtists = false;
-        _noArtistSelected = _artists.isEmpty;
-      });
-      if (_artists.isEmpty) {
-        _loadSalonSlots();
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isLoadingArtists = false);
-      _showSnackBar('Loi tai danh sach tho: $e');
-    }
-  }
-
   Future<void> _fetchTimeSlots() async {
     if (_noArtistSelected) {
       _loadSalonSlots();
@@ -1038,13 +1004,12 @@ class _NailBookingPageState extends State<NailBookingPage> {
     //   thay vì fallback `_estimatedTotalPrice` (= 740k) gây nhầm lẫn.
     // - Nếu KHÔNG có _priceReview VÀ không loading → fallback (chưa chọn time)
     //   chỉ xảy ra khi step 4 chưa có dữ liệu để review.
-    final bool _isLoading = _isReviewingPrice && _priceReview == null;
+    final bool isLoading = _isReviewingPrice && _priceReview == null;
     final int totalPrice = reviewTotal is num
         ? reviewTotal.round()
-        : _isLoading
-            ? 0 // placeholder — sẽ hiển thị loading indicator
-            : int.tryParse(reviewTotal?.toString() ?? '') ??
-                _estimatedTotalPrice;
+        : isLoading
+        ? 0 // placeholder — sẽ hiển thị loading indicator
+        : int.tryParse(reviewTotal?.toString() ?? '') ?? _estimatedTotalPrice;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1096,7 +1061,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
           const Divider(height: 16),
           // Fix bug "nhảy giá": hiển thị placeholder loading thay vì giá 0
           // khi đang chờ API tính giá voucher mới.
-          _isLoading
+          isLoading
               ? _buildLoadingPriceRow(S.of(context).bookingTotal)
               : _buildPaymentRow(
                   S.of(context).bookingTotal,
@@ -1104,7 +1069,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                   strong: true,
                   highlight: true,
                 ),
-          if (_selectedBranch != null && !_isLoading) ...[
+          if (_selectedBranch != null && !isLoading) ...[
             const Divider(height: 16),
             _buildDepositDetails(totalPrice),
           ],

@@ -489,7 +489,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "quizBannerTake": MessageLookupByLibrary.simpleMessage("Làm trắc nghiệm"),
     "quizBannerViewResults": MessageLookupByLibrary.simpleMessage(
-      "XEM KẾT QUẢ PERFECT MATCH",
+      "Perfect Match",
     ),
     "quizDiscoverDesign": MessageLookupByLibrary.simpleMessage(
       "Khám phá thiết kế sinh ra là dành cho bạn",
@@ -765,9 +765,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "statusInProgress": MessageLookupByLibrary.simpleMessage("Đang thực hiện"),
     "statusLabel": MessageLookupByLibrary.simpleMessage("Trạng thái"),
     "statusPending": MessageLookupByLibrary.simpleMessage("Chờ duyệt"),
-    "statusPendingReview": MessageLookupByLibrary.simpleMessage(
-      "Chờ duyệt",
-    ),
+    "statusPendingReview": MessageLookupByLibrary.simpleMessage("Chờ duyệt"),
     "statusQuoted": MessageLookupByLibrary.simpleMessage("Đã báo giá"),
     "statusRejected": MessageLookupByLibrary.simpleMessage("Bị từ chối"),
     "statusRepaired": MessageLookupByLibrary.simpleMessage("Đã bảo hành"),

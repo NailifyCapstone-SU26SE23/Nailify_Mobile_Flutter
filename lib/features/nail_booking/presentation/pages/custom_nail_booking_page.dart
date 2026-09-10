@@ -140,12 +140,6 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
         .toList();
   }
 
-  int? get _reviewSubtotal {
-    final value = _priceReview?['price'];
-    if (value is num) return value.round();
-    return int.tryParse(value?.toString() ?? '');
-  }
-
   String get _priceReviewRequestKey {
     final serviceEntries = _groupedServicesMap.entries.toList()
       ..sort((a, b) => a.key.compareTo(b.key));

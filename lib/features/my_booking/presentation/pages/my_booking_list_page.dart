@@ -590,8 +590,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     final artistName =
         booking['artistName']?.toString() ?? S.of(context).anyArtist;
     final bookingIdStr = booking['bookingId']?.toString() ?? '';
-    final canRate =
-        (rawStatus == 'Completed' && booking['isRated'] == false);
+    final canRate = (rawStatus == 'Completed' && booking['isRated'] == false);
 
     return GestureDetector(
       onTap: () {

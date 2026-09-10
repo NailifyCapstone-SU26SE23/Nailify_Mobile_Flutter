@@ -30,7 +30,7 @@ class NailBookingPage extends StatefulWidget {
 }
 
 class _NailBookingPageState extends State<NailBookingPage> {
-  final PageController _pageController = PageController();
+  late final PageController _pageController;
   final BookingApiService _apiService = BookingApiService();
   final PaymentApiService _paymentApiService = PaymentApiService();
   final PromotionApiService _promotionApiService = PromotionApiService();
@@ -43,6 +43,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
   bool _isLoadingPromotions = false;
   bool _isPromotionExpanded = false;
   bool _isReviewingPrice = false;
+  bool _sourceSelectionFallback = false;
   String? _holdToken;
   Timer? _holdTimer;
   int _holdRemainingSeconds = 0;
@@ -87,6 +88,8 @@ class _NailBookingPageState extends State<NailBookingPage> {
   @override
   void initState() {
     super.initState();
+    _currentStep = _skipSalonArtistSelection ? 2 : 0;
+    _pageController = PageController(initialPage: _currentStep);
     _fetchSalons();
     _fetchServices();
     _fetchPromotions();
@@ -122,6 +125,19 @@ class _NailBookingPageState extends State<NailBookingPage> {
     if (value is num) return value.toInt();
     return int.tryParse(value.toString());
   }
+
+  String get _sourceSalonId {
+    return widget.nailData?['sourceSalonId']?.toString().trim() ?? '';
+  }
+
+  String get _sourceArtistId {
+    return widget.nailData?['sourceArtistId']?.toString().trim() ?? '';
+  }
+
+  bool get _skipSalonArtistSelection =>
+      !_sourceSelectionFallback &&
+      _sourceSalonId.isNotEmpty &&
+      _sourceArtistId.isNotEmpty;
 
   num get _shapeMethodPrice {
     final value = widget.nailData?['shapeMethodPrice'];
@@ -196,10 +212,19 @@ class _NailBookingPageState extends State<NailBookingPage> {
     try {
       final data = await _apiService.getSalons();
       if (!mounted) return;
+      final initialBranch = _findById(data, 'salonId', _sourceSalonId);
       setState(() {
         _salons = data;
+        if (_skipSalonArtistSelection && initialBranch != null) {
+          _selectedBranch = initialBranch;
+        }
         _isLoadingSalons = false;
       });
+      if (_skipSalonArtistSelection && initialBranch != null) {
+        _fetchSalonArtists(_sourceSalonId);
+      } else if (_skipSalonArtistSelection) {
+        _fallbackToSelectionStep(0);
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoadingSalons = false);
@@ -598,10 +623,18 @@ class _NailBookingPageState extends State<NailBookingPage> {
     try {
       final data = await _apiService.getNailArtistsBySalon(salonId);
       if (!mounted) return;
+      final initialArtist = _findById(data, 'nailArtistId', _sourceArtistId);
       setState(() {
         _artists = data;
+        if (_skipSalonArtistSelection && initialArtist != null) {
+          _selectedStylist = initialArtist;
+          _noArtistSelected = false;
+        }
         _isLoadingArtists = false;
       });
+      if (_skipSalonArtistSelection && initialArtist == null) {
+        _fallbackToSelectionStep(1);
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() => _isLoadingArtists = false);
@@ -710,13 +743,40 @@ class _NailBookingPageState extends State<NailBookingPage> {
       await _cancelCurrentHold();
       if (!mounted) return;
     }
-    if (_currentStep > 0) {
+    if (_skipSalonArtistSelection && _currentStep <= 2) {
+      context.pop();
+    } else if (_currentStep > 0) {
       _pageController.previousPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
     } else {
       context.pop();
+    }
+  }
+
+  Map<String, dynamic>? _findById(
+    List<dynamic> items,
+    String key,
+    String targetId,
+  ) {
+    if (targetId.isEmpty) return null;
+    for (final item in items.whereType<Map>()) {
+      final map = Map<String, dynamic>.from(item);
+      final id = map[key]?.toString() ?? map['id']?.toString() ?? '';
+      if (id == targetId) return map;
+    }
+    return null;
+  }
+
+  void _fallbackToSelectionStep(int step) {
+    if (!mounted) return;
+    setState(() {
+      _sourceSelectionFallback = true;
+      _currentStep = step;
+    });
+    if (_pageController.hasClients) {
+      _pageController.jumpToPage(step);
     }
   }
 

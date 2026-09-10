@@ -244,9 +244,16 @@ class AppRouter {
             path: '/nail-variants/:id',
             pageBuilder: (context, state) {
               final id = int.tryParse(state.pathParameters['id'] ?? '');
+              final extra = state.extra is Map
+                  ? Map<String, dynamic>.from(state.extra as Map)
+                  : const <String, dynamic>{};
               return CustomTransitionPage<void>(
                 key: state.pageKey,
-                child: NailVariantDetailScreen(nailVariantId: id ?? 0),
+                child: NailVariantDetailScreen(
+                  nailVariantId: id ?? 0,
+                  sourceSalonId: extra['sourceSalonId']?.toString(),
+                  sourceArtistId: extra['sourceArtistId']?.toString(),
+                ),
                 transitionsBuilder:
                     (context, animation, secondaryAnimation, child) {
                       final offset = Tween<Offset>(

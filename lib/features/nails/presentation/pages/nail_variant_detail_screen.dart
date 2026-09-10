@@ -19,11 +19,15 @@ import '../../../../generated/l10n.dart';
 class NailVariantDetailScreen extends StatefulWidget {
   final int nailVariantId;
   final String? designName;
+  final String? sourceSalonId;
+  final String? sourceArtistId;
 
   const NailVariantDetailScreen({
     super.key,
     required this.nailVariantId,
     this.designName,
+    this.sourceSalonId,
+    this.sourceArtistId,
   });
 
   @override
@@ -166,6 +170,8 @@ class _NailVariantDetailScreenState extends State<NailVariantDetailScreen> {
           return _DetailContent(
             variant: variant,
             designName: widget.designName,
+            sourceSalonId: widget.sourceSalonId,
+            sourceArtistId: widget.sourceArtistId,
             launching: _launching,
             onTryOn: _openTryOn,
             onPhotoTryOn: _openPhotoTryOn,
@@ -223,6 +229,8 @@ class _NailVariantDetailScreenState extends State<NailVariantDetailScreen> {
 class _DetailContent extends StatefulWidget {
   final NailVariantModel variant;
   final String? designName;
+  final String? sourceSalonId;
+  final String? sourceArtistId;
   final bool launching;
   final Future<void> Function(nails_model.CustomerNailModel customerNail)
   onTryOn;
@@ -234,6 +242,8 @@ class _DetailContent extends StatefulWidget {
   const _DetailContent({
     required this.variant,
     this.designName,
+    this.sourceSalonId,
+    this.sourceArtistId,
     required this.launching,
     required this.onTryOn,
     required this.onPhotoTryOn,
@@ -685,6 +695,12 @@ class _DetailContentState extends State<_DetailContent> {
                                         selectedShapeMethod.price,
                                     'shapeMethodDuration':
                                         selectedShapeMethod.duration,
+                                    if (widget.sourceSalonId?.isNotEmpty ==
+                                        true)
+                                      'sourceSalonId': widget.sourceSalonId,
+                                    if (widget.sourceArtistId?.isNotEmpty ==
+                                        true)
+                                      'sourceArtistId': widget.sourceArtistId,
                                   };
                                   context.push(
                                     '/nail-booking',

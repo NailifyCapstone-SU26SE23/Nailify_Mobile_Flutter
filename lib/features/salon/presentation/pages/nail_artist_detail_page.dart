@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection.dart';
@@ -129,7 +130,16 @@ class _NailArtistDetailPageState extends State<NailArtistDetailPage> {
                 )
               else
                 ...data.capableNailVariants.map(
-                  (variant) => _NailVariantTile(variant: variant),
+                  (variant) => _NailVariantTile(
+                    variant: variant,
+                    onTap: () => context.push(
+                      '/nail-variants/${variant.nailVariantId}',
+                      extra: {
+                        'sourceSalonId': data.artist.salonId,
+                        'sourceArtistId': data.artist.nailArtistId,
+                      },
+                    ),
+                  ),
                 ),
             ],
           );
@@ -219,8 +229,9 @@ String _formatPrice(double price) {
 
 class _NailVariantTile extends StatelessWidget {
   final NailVariantModel variant;
+  final VoidCallback? onTap;
 
-  const _NailVariantTile({required this.variant});
+  const _NailVariantTile({required this.variant, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -241,50 +252,56 @@ class _NailVariantTile extends StatelessWidget {
         border: Border.all(color: AppColors.primary.withValues(alpha: 0.10)),
       ),
       clipBehavior: Clip.antiAlias,
-      child: Row(
-        children: [
-          BasicNetworkImage(
-            imageUrl: variant.imageUrl,
-            width: 92,
-            height: 92,
-            placeholderIcon: Icons.auto_awesome_rounded,
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    variant.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w800),
-                  ),
-                  if (specs.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      specs.join(' • '),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 12,
-                        height: 1.3,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 8),
-                  SalonInfoChip(
-                    icon: Icons.payments_rounded,
-                    label: _formatPrice(variant.price),
-                    color: AppColors.primaryDark,
-                  ),
-                ],
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: Row(
+            children: [
+              BasicNetworkImage(
+                imageUrl: variant.imageUrl,
+                width: 92,
+                height: 92,
+                placeholderIcon: Icons.auto_awesome_rounded,
               ),
-            ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        variant.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                      if (specs.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          specs.join(' • '),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 8),
+                      SalonInfoChip(
+                        icon: Icons.payments_rounded,
+                        label: _formatPrice(variant.price),
+                        color: AppColors.primaryDark,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

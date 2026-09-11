@@ -52,7 +52,16 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
     private val fragmentCameraBinding
         get() = _fragmentCameraBinding!!
 
+    /** Helper cho Live mode (LIVE_STREAM). Khởi tạo trên background thread. */
     private lateinit var handLandmarkerHelper: HandLandmarkerHelper
+
+    /**
+     * Helper cho Snapshot mode (IMAGE) — khởi tạo lười, TÁI SỬ DỤNG qua nhiều lần chụp.
+     * Trước đây mỗi lần chụp snapshot tạo mới helper → reload model (~200ms).
+     * Giờ model load 1 lần duy nhất khi vào fragment.
+     */
+    @Volatile private var snapshotHandLandmarkerHelper: HandLandmarkerHelper? = null
+    private val snapshotHelperLock = Any()
     private val viewModel: MainViewModel by activityViewModels()
     private var preview: Preview? = null
     private var imageAnalyzer: ImageAnalysis? = null
@@ -84,6 +93,12 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
             if (handLandmarkerHelper.isClose()) {
                 handLandmarkerHelper.setupHandLandmarker()
             }
+            // Re-setup snapshot helper nếu đã bị clear trong onPause
+            synchronized(snapshotHelperLock) {
+                snapshotHandLandmarkerHelper?.let { helper ->
+                    if (helper.isClose()) helper.setupHandLandmarker()
+                }
+            }
         }
     }
 
@@ -99,6 +114,15 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
             // Close the HandLandmarkerHelper and release resources
             backgroundExecutor.execute { handLandmarkerHelper.clearHandLandmarker() }
         }
+        // Snapshot helper giữ nguyên model trong bộ nhớ—chỉ clear để giải phóng bộ nhớ GPU/CPU
+        // khi rời fragment, sẽ setup lại khi onResume nếu cần.
+        backgroundExecutor.execute {
+            synchronized(snapshotHelperLock) {
+                snapshotHandLandmarkerHelper?.let { helper ->
+                    if (!helper.isClose()) helper.clearHandLandmarker()
+                }
+            }
+        }
     }
 
     override fun onDestroyView() {
@@ -112,6 +136,30 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
         backgroundExecutor.shutdown()
         if (!backgroundExecutor.awaitTermination(1000, TimeUnit.MILLISECONDS)) {
             backgroundExecutor.shutdownNow()
+        }
+    }
+
+    /**
+     * Lấy (hoặc khởi tạo lười) HandLandmarkerHelper cho Snapshot mode (IMAGE).
+     * Phải được gọi từ background thread — tạo mới helper sẽ reload model (~200ms).
+     * Sau lần đầu, các lần sau trả về instance cached.
+     */
+    private fun getOrCreateSnapshotHelper(): HandLandmarkerHelper {
+        synchronized(snapshotHelperLock) {
+            snapshotHandLandmarkerHelper?.let { existing ->
+                if (!existing.isClose()) return existing
+            }
+            val helper = HandLandmarkerHelper(
+                context = requireContext(),
+                runningMode = RunningMode.IMAGE,
+                minHandDetectionConfidence = 0.15f,
+                minHandTrackingConfidence  = 0.15f,
+                minHandPresenceConfidence  = 0.15f,
+                maxNumHands = 2,
+                currentDelegate = HandLandmarkerHelper.DELEGATE_CPU
+            )
+            snapshotHandLandmarkerHelper = helper
+            return helper
         }
     }
 
@@ -435,6 +483,7 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
     }
 
     override fun onError(error: String, errorCode: Int) {
+        if (DEBUG_LOG) Log.e(TAG, "onError: error=\"$error\" code=$errorCode")
         activity?.runOnUiThread {
             val context = context ?: return@runOnUiThread
             val binding = _fragmentCameraBinding ?: return@runOnUiThread

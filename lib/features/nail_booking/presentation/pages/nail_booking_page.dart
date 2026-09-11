@@ -68,6 +68,19 @@ class _NailBookingPageState extends State<NailBookingPage> {
   int? _selectedPromotionId;
   bool _noArtistSelected = false;
 
+  // ── Warranty state ────────────────────────────────────────────────────
+  // Fix bug: `BookingServiceSelection` widget cho phép user tick/bỏ tick
+  // warranty items. Trước đây `nail_booking_page.dart` không truyền callback
+  // `onWarrantyItemsChanged` → state trong page không đồng bộ với UI.
+  // Khởi tạo từ `nailData['warrantyBookingItems']` (đã build sẵn từ
+  // `my_booking_list_page._handleWarrantyAction`).
+  List<Map<String, dynamic>> _selectedWarrantyItems = const [];
+
+  bool get _isWarrantyFlow {
+    final id = widget.nailData?['warrantyForBookingId']?.toString();
+    return id != null && id.isNotEmpty;
+  }
+
   List<Map<String, dynamic>> get _bookingSteps => [
     {
       'title': S.of(context).bookingStepSelectSalon,
@@ -88,6 +101,15 @@ class _NailBookingPageState extends State<NailBookingPage> {
   @override
   void initState() {
     super.initState();
+    // Fix bug: nếu là luồng warranty, khởi tạo `_selectedWarrantyItems`
+    // từ `nailData['warrantyBookingItems']` (đã build sẵn từ booking gốc).
+    final rawWarranty = widget.nailData?['warrantyBookingItems'];
+    if (rawWarranty is List) {
+      _selectedWarrantyItems = rawWarranty
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    }
     _currentStep = _skipSalonArtistSelection ? 2 : 0;
     _pageController = PageController(initialPage: _currentStep);
     _fetchSalons();
@@ -544,6 +566,10 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   Map<String, dynamic> _buildBookingRequestPayload({String? holdToken}) {
+    // Fix bug: trước đây payload gửi xuống `/payments/create-for-request`
+    // không kèm `warrantyForBookingId` → backend không biết đây là booking
+    // bảo hành → có thể tính tiền bình thường thay vì miễn phí, và không
+    // liên kết được booking mới ↔ booking gốc.
     return {
       'salonId': _selectedBranch!['salonId'],
       'bookingDate': _formatBookingDate(_selectedDate!),
@@ -554,10 +580,41 @@ class _NailBookingPageState extends State<NailBookingPage> {
       'holdToken': holdToken,
       'bookingItems': _buildBookingItems(),
       'selectedPromotionIds': _selectedPromotionIds,
+      if (_isWarrantyFlow)
+        'warrantyForBookingId':
+            widget.nailData!['warrantyForBookingId'].toString(),
     };
   }
 
   List<Map<String, dynamic>> _buildBookingItems() {
+    // Fix bug: trước đây luồng bảo hành (warrantyForBookingId != null) build
+    // bookingItems chỉ dựa trên `_nailVariantId` (lấy từ `nailData['id']`).
+    // Hệ quả:
+    //  - Nếu booking gốc là service-only (không có nail variant) →
+    //    `_nailVariantId = 0` → bookingItems rỗng → BE reject.
+    //  - Các booking items gốc (customerNail, shapeMethod, …) bị bỏ qua.
+    //
+    // Sau fix: nếu là luồng bảo hành, dùng `_selectedWarrantyItems` (state đã
+    // được user tick/bỏ tick qua `BookingServiceSelection.onWarrantyItemsChanged`)
+    // làm danh sách chính, rồi merge thêm các extra services ở
+    // `_selectedExtraServices`.
+    if (_isWarrantyFlow) {
+      final items = <Map<String, dynamic>>[
+        ..._selectedWarrantyItems,
+      ];
+      // Append extra services user chọn thêm ở step "Dịch vụ đi kèm".
+      for (final sId in _selectedExtraServices.whereType<String>()) {
+        items.add({
+          'nailVariantId': null,
+          'serviceId': sId,
+          'customerNailId': null,
+          'quantity': 1,
+        });
+      }
+      return items;
+    }
+
+    // Luồng bình thường (giữ nguyên).
     return [
       if (_nailVariantId > 0)
         {
@@ -675,6 +732,13 @@ class _NailBookingPageState extends State<NailBookingPage> {
       _priceReview = null;
       _timeSlots = [];
     });
+  }
+
+  void _handleWarrantyItemsChanged(List<Map<String, dynamic>> items) {
+    // Cập nhật state khi user tick/bỏ tick warranty items ở
+    // `BookingServiceSelection`. Trước đây page không truyền callback này
+    // → state trong page lệch với UI.
+    setState(() => _selectedWarrantyItems = items);
   }
 
   void _handleDateChanged(DateTime date) {
@@ -955,6 +1019,10 @@ class _NailBookingPageState extends State<NailBookingPage> {
             services: _availableServices,
             selectedExtraServices: _selectedExtraServices,
             onChanged: _handleServiceChanged,
+            // Fix bug: trước đây page không truyền callback → state không
+            // đồng bộ khi user tick/bỏ tick warranty items.
+            selectedWarrantyItems: _selectedWarrantyItems,
+            onWarrantyItemsChanged: _handleWarrantyItemsChanged,
           ),
         ],
       ),

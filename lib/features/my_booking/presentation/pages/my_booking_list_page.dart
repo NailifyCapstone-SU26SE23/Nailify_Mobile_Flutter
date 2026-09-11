@@ -836,6 +836,31 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     final bookingIdStr = booking['bookingId']?.toString() ?? '';
     final salonId = booking['salonId']?.toString() ?? '';
 
+    // Resolve nailArtistId từ response. Cấu trúc response có thể là:
+    //  - Flat:    booking['nailArtistId']
+    //  - Nested:  booking['nailArtist']['nailArtistId']
+    //  - Nested alt: booking['artist']['nailArtistId']
+    // Nếu không resolve được → truyền rỗng, user sẽ chọn lại artist.
+    String nailArtistId = '';
+    final flatArtistId = booking['nailArtistId']?.toString();
+    if (flatArtistId != null && flatArtistId.trim().isNotEmpty) {
+      nailArtistId = flatArtistId.trim();
+    } else {
+      for (final key in const ['nailArtist', 'artist']) {
+        final nested = booking[key];
+        if (nested is Map) {
+          final id =
+              nested['nailArtistId']?.toString() ??
+              nested['id']?.toString() ??
+              '';
+          if (id.trim().isNotEmpty) {
+            nailArtistId = id.trim();
+            break;
+          }
+        }
+      }
+    }
+
     final nailData = {
       'id': nailVariantId ?? 0,
       'name': '${S.of(context).warrantyPrefix}: $displayName',
@@ -844,7 +869,13 @@ class _MyBookingListPageState extends State<MyBookingListPage>
       'shapeMethodPrice': 0.0, // Bảo hành tạo form miễn phí
       'shapeMethodName': shapeMethodName,
       'warrantyForBookingId': bookingIdStr,
-      'salonId': salonId,
+      // Fix bug: key phải là `sourceSalonId` / `sourceArtistId` để match
+      // getter `_sourceSalonId` / `_sourceArtistId` của `NailBookingPage`
+      // → kích hoạt `_skipSalonArtistSelection = true` → user không phải
+      // chọn lại salon/artist. Trước đây dùng `salonId` → getter rỗng
+      // → user phải chọn lại từ đầu.
+      'sourceSalonId': salonId,
+      'sourceArtistId': nailArtistId,
       'extraServiceIds': extraServiceIds,
       'warrantyBookingItems':
           bookingItemsForApi, // Truyền chuẩn mảng bookingItems cũ

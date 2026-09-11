@@ -21,6 +21,7 @@ import '../../features/nail_booking/presentation/pages/payment_qr_page.dart';
 import '../../features/nail_booking/presentation/pages/payment_result_page.dart';
 import '../../features/nail_booking/presentation/pages/refund_bank_info_page.dart';
 import '../../features/nail_booking/presentation/pages/service_booking_page.dart';
+import '../../features/nail_booking/presentation/pages/warranty_booking_page.dart';
 import '../../features/nail_booking/presentation/pages/transaction_detail_page.dart';
 import '../../features/nail_booking/presentation/pages/transaction_list_page.dart';
 import '../../features/my_studio/presentation/pages/my_studio_tab_page.dart';
@@ -109,6 +110,15 @@ class AppRouter {
         builder: (context, state) {
           final serviceData = state.extra as Map<String, dynamic>;
           return ServiceBookingPage(baseService: serviceData);
+        },
+      ),
+      GoRoute(
+        path: '/warranty-booking',
+        builder: (context, state) {
+          final extra = state.extra is Map
+              ? Map<String, dynamic>.from(state.extra as Map)
+              : const <String, dynamic>{};
+          return WarrantyBookingPage(warrantyData: extra);
         },
       ),
       GoRoute(

@@ -1838,4 +1838,42 @@ class SEn extends S {
   String balanceHint(int points) {
     return 'You have $points points to redeem';
   }
+
+  @override
+  String get bookingInfoSalon => 'Branch';
+
+  @override
+  String get warrantyBookingTitle => 'Warranty booking';
+
+  @override
+  String get warrantyStepArtist => 'Choose artist';
+
+  @override
+  String get warrantyStepServices => 'Warranty services';
+
+  @override
+  String get warrantyStepSchedule => 'Date & time';
+
+  @override
+  String get warrantyStepConfirm => 'Confirm';
+
+  @override
+  String get warrantyPinnedArtist => 'Previously worked with';
+
+  @override
+  String get warrantyFree => 'Free';
+
+  @override
+  String get warrantyConfirmBtn => 'Confirm warranty';
+
+  @override
+  String get warrantyServiceNote =>
+      'Warranty items are listed from your previous appointment. You can uncheck any service you don\'t need to maintain.';
+
+  @override
+  String get warrantySuccessTitle => 'Warranty booking successful!';
+
+  @override
+  String get warrantySuccessSubtitle =>
+      'Your warranty appointment has been recorded.';
 }

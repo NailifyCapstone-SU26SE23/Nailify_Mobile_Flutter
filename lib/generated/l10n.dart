@@ -3444,6 +3444,78 @@ abstract class S {
   /// In en, this message translates to:
   /// **'You have {points} points to redeem'**
   String balanceHint(int points);
+
+  /// No description provided for @bookingInfoSalon.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch'**
+  String get bookingInfoSalon;
+
+  /// No description provided for @warrantyBookingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Warranty booking'**
+  String get warrantyBookingTitle;
+
+  /// No description provided for @warrantyStepArtist.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose artist'**
+  String get warrantyStepArtist;
+
+  /// No description provided for @warrantyStepServices.
+  ///
+  /// In en, this message translates to:
+  /// **'Warranty services'**
+  String get warrantyStepServices;
+
+  /// No description provided for @warrantyStepSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Date & time'**
+  String get warrantyStepSchedule;
+
+  /// No description provided for @warrantyStepConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get warrantyStepConfirm;
+
+  /// No description provided for @warrantyPinnedArtist.
+  ///
+  /// In en, this message translates to:
+  /// **'Previously worked with'**
+  String get warrantyPinnedArtist;
+
+  /// No description provided for @warrantyFree.
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get warrantyFree;
+
+  /// No description provided for @warrantyConfirmBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm warranty'**
+  String get warrantyConfirmBtn;
+
+  /// No description provided for @warrantyServiceNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Warranty items are listed from your previous appointment. You can uncheck any service you don\'t need to maintain.'**
+  String get warrantyServiceNote;
+
+  /// No description provided for @warrantySuccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Warranty booking successful!'**
+  String get warrantySuccessTitle;
+
+  /// No description provided for @warrantySuccessSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your warranty appointment has been recorded.'**
+  String get warrantySuccessSubtitle;
 }
 
 class _SDelegate extends LocalizationsDelegate<S> {

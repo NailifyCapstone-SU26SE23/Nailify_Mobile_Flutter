@@ -711,5 +711,17 @@
     "placeholders": {
       "points": { "type": "int" }
     }
-  }
+  },
+  "bookingInfoSalon": "Chi nhánh",
+  "warrantyBookingTitle": "Đặt lịch bảo hành",
+  "warrantyStepArtist": "Chọn thợ",
+  "warrantyStepServices": "Dịch vụ bảo hành",
+  "warrantyStepSchedule": "Chọn ngày/giờ",
+  "warrantyStepConfirm": "Xác nhận",
+  "warrantyPinnedArtist": "Thợ đã làm trước đây",
+  "warrantyFree": "Miễn phí",
+  "warrantyConfirmBtn": "Xác nhận bảo hành",
+  "warrantyServiceNote": "Các dịch vụ bảo hành đã được liệt kê sẵn từ lịch hẹn trước. Bạn có thể bỏ chọn nếu không cần bảo hành mục nào.",
+  "warrantySuccessTitle": "Đặt lịch bảo hành thành công!",
+  "warrantySuccessSubtitle": "Lịch bảo hành của bạn đã được ghi nhận."
 }

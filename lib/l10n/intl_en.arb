@@ -732,5 +732,17 @@
     "placeholders": {
       "points": { "type": "int" }
     }
-  }
+  },
+  "bookingInfoSalon": "Branch",
+  "warrantyBookingTitle": "Warranty booking",
+  "warrantyStepArtist": "Choose artist",
+  "warrantyStepServices": "Warranty services",
+  "warrantyStepSchedule": "Date & time",
+  "warrantyStepConfirm": "Confirm",
+  "warrantyPinnedArtist": "Previously worked with",
+  "warrantyFree": "Free",
+  "warrantyConfirmBtn": "Confirm warranty",
+  "warrantyServiceNote": "Warranty items are listed from your previous appointment. You can uncheck any service you don't need to maintain.",
+  "warrantySuccessTitle": "Warranty booking successful!",
+  "warrantySuccessSubtitle": "Your warranty appointment has been recorded."
 }

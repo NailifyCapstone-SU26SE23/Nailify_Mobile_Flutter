@@ -1840,4 +1840,42 @@ class SVi extends S {
   String balanceHint(int points) {
     return 'Bạn có $points điểm để đổi';
   }
+
+  @override
+  String get bookingInfoSalon => 'Chi nhánh';
+
+  @override
+  String get warrantyBookingTitle => 'Đặt lịch bảo hành';
+
+  @override
+  String get warrantyStepArtist => 'Chọn thợ';
+
+  @override
+  String get warrantyStepServices => 'Dịch vụ bảo hành';
+
+  @override
+  String get warrantyStepSchedule => 'Chọn ngày/giờ';
+
+  @override
+  String get warrantyStepConfirm => 'Xác nhận';
+
+  @override
+  String get warrantyPinnedArtist => 'Thợ đã làm trước đây';
+
+  @override
+  String get warrantyFree => 'Miễn phí';
+
+  @override
+  String get warrantyConfirmBtn => 'Xác nhận bảo hành';
+
+  @override
+  String get warrantyServiceNote =>
+      'Các dịch vụ bảo hành đã được liệt kê sẵn từ lịch hẹn trước. Bạn có thể bỏ chọn nếu không cần bảo hành mục nào.';
+
+  @override
+  String get warrantySuccessTitle => 'Đặt lịch bảo hành thành công!';
+
+  @override
+  String get warrantySuccessSubtitle =>
+      'Lịch bảo hành của bạn đã được ghi nhận.';
 }

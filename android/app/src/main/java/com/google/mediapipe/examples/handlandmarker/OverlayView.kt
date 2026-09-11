@@ -143,6 +143,14 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
     private var imageWidth: Int = 1
     private var imageHeight: Int = 1
 
+    // Optional CV (nail detection) pipeline hooks. Left uninitialized because
+    // the original MainActivity-based AR flow doesn't wire them up; the
+    // setResults() guard checks for null before dispatching.
+    private var sourceBitmap: Bitmap? = null
+    private var cvExecutor: java.util.concurrent.ExecutorService? = null
+    private var nailDetectionPipeline: Any? = null
+    private var cvResults: Any? = null
+
     init {
         initPaints()
         ballerinaBitmap = BitmapFactory.decodeResource(resources, R.drawable.ballerina)
@@ -243,25 +251,16 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                     }
                 }
 
-                stats["OK"] = (stats["OK"] ?: 0) + 1
-                if (DEBUG_LOG) {
-                    Log.i(TAG, "  RENDER hand=$handIdx ${FingerMetrics.FINGER_NAMES[fingerIndex]}: " +
-                        "center=(${String.format("%.1f", finalPx)},${String.format("%.1f", finalPy)}) " +
-                        "rotation=${String.format("%.1f", rotation)}° " +
-                        "size=${String.format("%.1f", nailWidth)}x${String.format("%.1f", nailHeight)} " +
-                        "color=${design.color} shape=${nailSetConfig.shape} " +
-                        "decorationCount=${design.decorations.size} " +
-                        "bentRatio=${String.format("%.3f", metrics.bentRatio)} " +
-                        "foldAngle=${String.format("%.1f", metrics.foldAngleDeg)}° " +
-                        "nailWidthPx=${String.format("%.1f", metrics.nailWidthPx)}" +
-                        (if (cvDetected) " cvConf=${String.format("%.2f", cvConf)}" else ""))
-                }
+                // Per-hand / per-finger render metrics are intentionally NOT
+                // recomputed here: this draw() path renders the basic nail
+                // bitmap directly from landmarks. The richer metric-based
+                // rendering (computeFingerMetrics + physical rule checks) is
+                // a separate code path used by the Snapshot try-on flow.
+                //
+                // The debug-log block that previously lived here referenced
+                // handIdx / finalPx / finalPy / metrics / cvDetected / cvConf,
+                // which are only meaningful inside the metric pipeline.
             }
-        }
-
-        if (DEBUG_LOG && stats.isNotEmpty()) {
-            val summary = stats.entries.joinToString(" ") { "${it.key}=${it.value}" }
-            Log.v(TAG, "drawNails done: $summary")
         }
     }
 
@@ -291,19 +290,40 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
                 "viewSize=${width}x${height} scaleFactor=$scaleFactor hands=${handLandmarkerResults.landmarks().size}")
         }
 
-        // Phase 6: Trigger async CV detection for live mode (throttled by pipeline)
-        if (runningMode == RunningMode.LIVE_STREAM && sourceBitmap != null) {
+        // Phase 6: Trigger async CV detection for live mode (throttled by pipeline).
+        // The CV pipeline is optional — only the YOLO nail-detection branch wires
+        // these up. The main OverlayView used by the MediaPipe-only flow leaves
+        // them null, so we guard every access.
+        if (runningMode == RunningMode.LIVE_STREAM &&
+            sourceBitmap != null &&
+            cvExecutor != null &&
+            nailDetectionPipeline != null
+        ) {
             val bmp = sourceBitmap!!
             val imgW = this.imageWidth
             val imgH = this.imageHeight
+            val pipeline = nailDetectionPipeline!!
+            val executor = cvExecutor!!
             val firstHand = handLandmarkerResults.landmarks().firstOrNull()
             if (firstHand != null) {
-                cvExecutor.execute {
+                executor.execute {
                     try {
-                        val handResult = nailDetectionPipeline.detect(
-                            bmp, firstHand, imgW, imgH, isLiveMode = true
+                        // Reflective call: pipeline.detect(bmp, hand, w, h, isLiveMode)
+                        // We invoke via reflection because the pipeline type isn't
+                        // available in the MediaPipe-only build path.
+                        val detectMethod = pipeline.javaClass.getMethod(
+                            "detect",
+                            Bitmap::class.java,
+                            List::class.java,
+                            Int::class.javaPrimitiveType,
+                            Int::class.javaPrimitiveType,
+                            Boolean::class.javaPrimitiveType,
                         )
-                        cvResults = handResult.results
+                        @Suppress("UNCHECKED_CAST")
+                        val handResult = detectMethod.invoke(
+                            pipeline, bmp, firstHand, imgW, imgH, true
+                        ) as? Map<String, Any?>
+                        cvResults = handResult?.get("results")
                         post { invalidate() }
                     } catch (e: Exception) {
                         if (DEBUG_LOG) Log.e(TAG, "CV detection error", e)
@@ -935,5 +955,31 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
         private const val FingerColorFallback = "#FF4081"
         private const val NAIL_LANDMARK_WIDTH_SCALE = 2.5F
         private const val NAIL_LANDMARK_HEIGHT_SCALE = 1.5F
+
+        // Debug logging
+        private const val DEBUG_LOG = false
+        private const val TAG = "OverlayView"
+
+        // ── Bent/curl detection thresholds ───────────────────────────────────
+        // Live mode (real-time, more permissive).
+        private const val FOLD_BENT_ANGLE = 60f
+        private const val BENT_RATIO_THRESHOLD = 1.4f
+        private const val DIP_RATIO_THRESHOLD = 1.2f
+
+        // Snapshot mode (offline image, stricter / different signal balance).
+        private const val SNAP_FOLD_BENT_ANGLE = 90f
+        private const val SNAP_BENT_RATIO_THRESHOLD = 1.6f
+        private const val SNAP_DIP_RATIO_THRESHOLD = 1.4f
+        private const val SNAP_CURL_RATIO = 1.0f
+
+        // ── Nail geometry / occlusion thresholds ─────────────────────────────
+        private const val MAX_NAIL_TO_FINGER_WIDTH_RATIO = 1.8f
+        private const val MAX_DEPTH_GAP = 0.05f
+        private const val SNAP_DEPTH_GAP = 0.02f
+
+        // ── Visibility / minimum-length thresholds ───────────────────────────
+        private const val MIN_LANDMARK_VISIBILITY = 0.5f
+        private const val SNAP_VISIBILITY = 0.5f
+        private const val SNAP_MIN_PIPTIP_LENGTH = 0.02f
     }
 }

@@ -39,6 +39,7 @@ class CameraFragment : Fragment(), HandLandmarkerHelper.LandmarkerListener {
 
     companion object {
         private const val TAG = "Hand Landmarker"
+        private const val DEBUG_LOG = false
         const val RESULT_IMAGE_PATH = "imagePath"
         const val RESULT_LANDMARKS_JSON = "landmarksJson"
         private const val LIVE_ANALYSIS_WIDTH = 640

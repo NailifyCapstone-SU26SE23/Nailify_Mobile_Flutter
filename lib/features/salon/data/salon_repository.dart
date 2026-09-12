@@ -14,7 +14,7 @@ class SalonRepository {
   }) async {
     final response = await _apiClient.get(
       '/Salons',
-      queryParameters: {'PageNumber': pageNumber, 'PageSize': pageSize},
+      queryParameters: {'PageNumber': pageNumber, 'PageSize': pageSize, 'Status': 'Open'},
     );
 
     return _readItems(response.data)
@@ -67,6 +67,7 @@ class SalonRepository {
         'PageNumber': pageNumber,
         'PageSize': pageSize,
         'salonId': salonId,
+        'status': 'Active'
       },
     );
 

@@ -20,6 +20,7 @@ class NailDesignRepository {
       queryParameters: {
         'pageNumber': page,
         'pageSize': pageSize,
+        'status': 'Active',
         if (filters.name != null && filters.name!.trim().isNotEmpty)
           'name': filters.name!.trim(),
         if (filters.categoryIds.isNotEmpty) 'categoryIds': filters.categoryIds,

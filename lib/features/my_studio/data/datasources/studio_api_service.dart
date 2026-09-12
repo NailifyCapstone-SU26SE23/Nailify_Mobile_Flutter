@@ -35,7 +35,7 @@ class StudioApiService {
   Future<List<dynamic>> getSalons() async {
     final response = await _apiClient.get(
       '/Salons',
-      queryParameters: {'PageIndex': 1, 'PageSize': 20},
+      queryParameters: {'PageIndex': 1, 'PageSize': 20, 'Status': 'Open'},
     );
     return response.data['data']['items'] ?? [];
   }

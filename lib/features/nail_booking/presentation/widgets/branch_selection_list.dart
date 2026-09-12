@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../generated/l10n.dart';
 
-import 'rating_star_badge.dart';
-
 class BranchSelectionList extends StatelessWidget {
   final List<dynamic> salons;
   final bool isLoading;
@@ -60,7 +58,6 @@ class BranchSelectionList extends StatelessWidget {
         // --- DANH SÁCH SALON ---
         ...salons.map((salon) {
           final bool isSelected = selectedBranchId == salon['salonId'];
-          final num rawRating = (salon['rating'] as num?) ?? 0;
 
           return GestureDetector(
             onTap: () => onBranchSelected(salon),
@@ -125,31 +122,6 @@ class BranchSelectionList extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 6),
-                            // Rating Badge Salon
-                            RatingStarBadge(
-                              rating: rawRating.toDouble(),
-                              isCompact: true,
-                            ),
-                            const SizedBox(width: 6),
-                            // Status Badge
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.green.shade50,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                salon['status']?.toString() ?? 'Hoạt động',
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green.shade800,
-                                ),
-                              ),
-                            ),
                           ],
                         ),
                         const SizedBox(height: 6),

@@ -23,6 +23,7 @@ class NailVariantRepository {
       queryParameters: {
         'pageNumber': page,
         'pageSize': pageSize,
+        'status': 'Active',
         if (filters.shapeId != null) 'nailShapeId': filters.shapeId,
         if (filters.surfaceId != null) 'nailSurfaceId': filters.surfaceId,
         if (filters.minPrice != null) 'minPrice': filters.minPrice,
@@ -42,13 +43,13 @@ class NailVariantRepository {
   }
 
   Future<List<NailShapeModel>> getNailShapes() async {
-    final response = await _apiClient.get<dynamic>('/NailShapes');
+    final response = await _apiClient.get<dynamic>('/NailShapes?status=Active');
     final list = ApiResponseParser.unwrapList(response.data);
     return list.map(NailShapeModel.fromJson).toList();
   }
 
   Future<List<NailSurfaceModel>> getNailSurfaces() async {
-    final response = await _apiClient.get<dynamic>('/NailSurfaces');
+    final response = await _apiClient.get<dynamic>('/NailSurfaces?status=Active');
     final list = ApiResponseParser.unwrapList(response.data);
     return list.map(NailSurfaceModel.fromJson).toList();
   }
@@ -57,7 +58,7 @@ class NailVariantRepository {
     int nailShapeId,
   ) async {
     final response = await _apiClient.get<dynamic>(
-      '/ShapeMethodConfigs/nail-shape/$nailShapeId',
+      '/ShapeMethodConfigs/nail-shape/$nailShapeId?status=Active',
     );
     final list = ApiResponseParser.unwrapList(response.data);
     return list.map(ShapeMethodConfigModel.fromJson).toList();

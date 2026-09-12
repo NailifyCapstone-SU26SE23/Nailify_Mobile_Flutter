@@ -87,7 +87,7 @@ class BookingApiService {
   Future<List<dynamic>> getSalons() async {
     final response = await _apiClient.get(
       '/Salons',
-      queryParameters: {'PageIndex': 1, 'PageSize': 10},
+      queryParameters: {'PageIndex': 1, 'PageSize': 10, 'Status': 'Open'},
     );
     final items = (response.data['data']['items'] as List<dynamic>?) ?? [];
 
@@ -490,7 +490,8 @@ class BookingApiService {
   Future<List<dynamic>> getNailArtistsBySalon(String salonId) async {
     final response = await _apiClient.get(
       '/NailArtists',
-      queryParameters: {'PageNumber': 1, 'PageSize': 50, 'salonId': salonId},
+      queryParameters: {'PageNumber': 1, 'PageSize': 50, 'salonId': salonId, 'status': 'Active'
+      },
     );
     final items = response.data['data']['items'] as List<dynamic>? ?? [];
 

@@ -49,6 +49,8 @@ import '../../features/nails/data/models/customer_nail_models.dart'
     as nails_models;
 import '../../features/try-on/presentation/nail_snapshot_page.dart';
 import '../../features/try-on/presentation/try_on_setup_screen.dart';
+import '../../features/try-on/models/nail_variant_model.dart'
+    as snapshot_models;
 import '../widgets/main_shell.dart';
 
 class AppRouter {
@@ -345,7 +347,16 @@ class AppRouter {
           ),
           GoRoute(
             path: '/snapshot-try-on',
-            builder: (context, state) => const NailSnapshotPage(),
+            builder: (context, state) {
+              final extra = state.extra;
+              return NailSnapshotPage(
+                initialVariant: extra is snapshot_models.NailVariantModel
+                    ? extra
+                    : null,
+                lockVariantSelection:
+                    extra is snapshot_models.NailVariantModel,
+              );
+            },
           ),
           GoRoute(
             path: '/profile',

@@ -16,7 +16,14 @@ import '../services/nail_variant_api_service.dart';
 enum _DragMode { none, move, scaleRotate }
 
 class NailSnapshotPage extends StatefulWidget {
-  const NailSnapshotPage({super.key});
+  final NailVariantModel? initialVariant;
+  final bool lockVariantSelection;
+
+  const NailSnapshotPage({
+    super.key,
+    this.initialVariant,
+    this.lockVariantSelection = false,
+  });
 
   @override
   State<NailSnapshotPage> createState() => _NailSnapshotPageState();
@@ -69,7 +76,13 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
       duration: const Duration(milliseconds: 350),
     );
     _worker.init();
-    _fetchApiVariants();
+    if (widget.initialVariant != null) {
+      _apiVariants = [widget.initialVariant!];
+      _onSelectVariant(widget.initialVariant!);
+    }
+    if (!widget.lockVariantSelection) {
+      _fetchApiVariants();
+    }
     _fetchCustomizationData();
   }
 
@@ -917,32 +930,34 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
                     ),
                     const SizedBox(height: 8),
                     DefaultTabController(
-                      length: 4,
+                      length: widget.lockVariantSelection ? 3 : 4,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const TabBar(
+                          TabBar(
                             labelColor: AppColors.primary,
                             unselectedLabelColor: Colors.black54,
                             indicatorColor: AppColors.primary,
                             indicatorSize: TabBarIndicatorSize.label,
-                            labelStyle: TextStyle(
+                            labelStyle: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
                             ),
-                            unselectedLabelStyle: TextStyle(fontSize: 13),
+                            unselectedLabelStyle: const TextStyle(fontSize: 13),
                             tabs: [
-                              Tab(text: "Mẫu"),
-                              Tab(text: "Dáng móng"),
-                              Tab(text: "Bề mặt"),
-                              Tab(text: "Phụ kiện"),
+                              if (!widget.lockVariantSelection)
+                                const Tab(text: "Mẫu"),
+                              const Tab(text: "Dáng móng"),
+                              const Tab(text: "Bề mặt"),
+                              const Tab(text: "Phụ kiện"),
                             ],
                           ),
                           SizedBox(
                             height: 155,
                             child: TabBarView(
                               children: [
-                                _buildVariantsList(),
+                                if (!widget.lockVariantSelection)
+                                  _buildVariantsList(),
                                 _buildShapesList(),
                                 _buildSurfacesList(),
                                 _buildComponentsList(),

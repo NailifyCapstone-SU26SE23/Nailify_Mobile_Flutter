@@ -813,6 +813,11 @@ class _MyBookingListPageState extends State<MyBookingListPage>
 
     final bookingIdStr = booking['bookingId']?.toString() ?? '';
     final salonId = booking['salonId']?.toString() ?? '';
+    final dateStr = booking['bookingDate']?.toString() ?? '';
+    // Sử dụng `bookingDate` làm mốc bảo hành (booking gốc đã hoàn thành,
+    // nên bookingDate là ngày khách đến). WarrantyBookingCubit sẽ tự
+    // check deadline 7 ngày.
+    final sourceBookingDate = DateTime.tryParse(dateStr);
 
     // Resolve nailArtistId từ response. Cấu trúc response có thể là:
     //  - Flat:    booking['nailArtistId']
@@ -869,6 +874,8 @@ class _MyBookingListPageState extends State<MyBookingListPage>
       'sourceStylist': sourceStylist,
       'noArtistSelected': nailArtistId.isEmpty,
       'bookingItems': bookingItemsForApi,
+      if (sourceBookingDate != null)
+        'sourceBookingDate': sourceBookingDate.toIso8601String(),
     };
 
     if (!mounted) return;

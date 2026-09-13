@@ -1867,6 +1867,27 @@ class SEn extends S {
   String get warrantyConfirmBtn => 'Confirm warranty';
 
   @override
+  String get warrantyConfirmDepositBtn => 'Pay deposit & confirm';
+
+  @override
+  String get warrantyAddonNote =>
+      'You can add extra services (if any). This will be charged.';
+
+  @override
+  String get warrantyDepositNote =>
+      'Your warranty includes paid extra services. A deposit is required before completing.';
+
+  @override
+  String get warrantyExpiredTitle => 'Warranty has expired';
+
+  @override
+  String get warrantyExpiredDesc =>
+      'The maximum warranty period is 7 days from the original booking\'s completion date. Please contact the salon for support.';
+
+  @override
+  String get warrantyExpiredBackBtn => 'Back';
+
+  @override
   String get warrantyServiceNote =>
       'Warranty items are listed from your previous appointment. You can uncheck any service you don\'t need to maintain.';
 

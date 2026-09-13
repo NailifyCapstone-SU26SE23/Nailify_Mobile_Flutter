@@ -3499,6 +3499,42 @@ abstract class S {
   /// **'Confirm warranty'**
   String get warrantyConfirmBtn;
 
+  /// No description provided for @warrantyConfirmDepositBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay deposit & confirm'**
+  String get warrantyConfirmDepositBtn;
+
+  /// No description provided for @warrantyAddonNote.
+  ///
+  /// In en, this message translates to:
+  /// **'You can add extra services (if any). This will be charged.'**
+  String get warrantyAddonNote;
+
+  /// No description provided for @warrantyDepositNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Your warranty includes paid extra services. A deposit is required before completing.'**
+  String get warrantyDepositNote;
+
+  /// No description provided for @warrantyExpiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Warranty has expired'**
+  String get warrantyExpiredTitle;
+
+  /// No description provided for @warrantyExpiredDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'The maximum warranty period is 7 days from the original booking\'s completion date. Please contact the salon for support.'**
+  String get warrantyExpiredDesc;
+
+  /// No description provided for @warrantyExpiredBackBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get warrantyExpiredBackBtn;
+
   /// No description provided for @warrantyServiceNote.
   ///
   /// In en, this message translates to:

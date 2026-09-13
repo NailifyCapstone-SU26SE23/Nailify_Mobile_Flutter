@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/price_formatter.dart';
 import '../../../../generated/l10n.dart';
 
 import '../cubit/warranty_booking_cubit.dart';
@@ -48,7 +49,6 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
   DateTime? _selectedDate;
   String? _selectedTime;
   List<dynamic> _timeSlots = [];
-  bool _isLoadingTimes = false;
   bool _isHolding = false;
   int _holdRemainingSeconds = 0;
   Timer? _holdTimer;
@@ -78,6 +78,7 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
     _currentStep = 0;
     _pageController = PageController(initialPage: _currentStep);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       context.read<WarrantyBookingCubit>().loadWarrantyContext(
             widget.warrantyData,
           );
@@ -135,7 +136,8 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
 
   Future<void> _fetchTimeSlots() async {
     if (_selectedDate == null) return;
-    final state = context.read<WarrantyBookingCubit>().state;
+    final cubit = context.read<WarrantyBookingCubit>();
+    final state = cubit.state;
     final salonId = state.selectedBranch?['salonId']?.toString() ?? '';
     final artistId = _noArtistSelected
         ? null
@@ -144,42 +146,18 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
     if (salonId.isEmpty) return;
     if (!_noArtistSelected && (artistId == null || artistId.isEmpty)) return;
 
-    setState(() => _isLoadingTimes = true);
-    try {
-      final cubit = context.read<WarrantyBookingCubit>();
-      // Dùng repository thông qua cubit: gọi thẳng cubit service qua helper
-      // tạm — thực tế ta dùng cubit.holdSelectedSlot() sau khi user chọn giờ,
-      // còn việc fetch slot list tạm thời dùng qua cubit thông qua public API.
-      final bookingItems = state.selectedWarrantyItems
-          .map((e) => Map<String, dynamic>.from(e))
-          .toList();
-      final List<dynamic> slots;
-      if (_noArtistSelected || artistId == null) {
-        // Không có artist → lấy slot của salon.
-        // Sử dụng repo của cubit thông qua helper public (xem bên dưới).
-        slots = await cubit.loadSalonAvailableSlots(
-          salonId: salonId,
-          bookingDate: _formatDate(_selectedDate!),
-          bookingItems: bookingItems,
-        );
-      } else {
-        slots = await cubit.loadArtistAvailableSlots(
-          artistId: artistId,
-          bookingDate: _formatDate(_selectedDate!),
-        );
-      }
-      if (!mounted) return;
-      setState(() {
-        _timeSlots = slots;
-        _isLoadingTimes = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _timeSlots = [];
-        _isLoadingTimes = false;
-      });
-    }
+    setState(() => _timeSlots = []);
+    final slots = await cubit.loadTimeSlots(
+      salonId: salonId,
+      artistId: artistId,
+      date: _selectedDate!,
+    );
+    if (!mounted) return;
+    setState(() => _timeSlots = slots);
+  }
+
+  Future<void> _handleRetryTimes() async {
+    await _fetchTimeSlots();
   }
 
   Future<void> _handleTimeChanged(String time) async {
@@ -194,7 +172,6 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
     final artistObj = _noArtistSelected
         ? null
         : _findArtistById(state.artists, stylistId);
-    // Sync state với cubit để holdSelectedSlot dùng được.
     cubit.selectDateForHolder(_selectedDate!);
     cubit.selectStylistForHolder(artistObj, noArtist: _noArtistSelected);
     cubit.selectTimeForHolder(time);
@@ -203,7 +180,7 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
     if (ok) {
       _startHoldCountdown();
     } else {
-      // hold thất bại -> reset time
+      // hold thất bại -> reset time (cubit đã emit errorMessage + clearTime)
       setState(() {
         _selectedTime = null;
       });
@@ -224,17 +201,16 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
 
   void _startHoldCountdown() {
     _holdTimer?.cancel();
-    // Lắng nghe state holdToken + holdRemainingSeconds từ cubit.
     _holdTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
       final s = context.read<WarrantyBookingCubit>().state;
       if (s.holdToken == null) {
         _holdTimer?.cancel();
         if (_selectedTime != null) {
-          setState(() {
-            _selectedTime = null;
-          });
-          _showSnackBar('Thời gian giữ chỗ đã hết. Vui lòng chọn lại khung giờ.');
+          setState(() => _selectedTime = null);
+          _showSnackBar(
+            'Thời gian giữ chỗ đã hết. Vui lòng chọn lại khung giờ.',
+          );
         }
         return;
       }
@@ -260,12 +236,35 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
     });
   }
 
+  // ── Extra services handlers (Step 2) ────────────────────────────
+  void _handleExtraServiceIncrement(String serviceId) {
+    final cubit = context.read<WarrantyBookingCubit>();
+    final next = List<String?>.from(cubit.state.selectedExtraServices)
+      ..add(serviceId);
+    cubit.setExtraServices(next);
+  }
+
+  void _handleExtraServiceDecrement(String serviceId) {
+    final cubit = context.read<WarrantyBookingCubit>();
+    final next = List<String?>.from(cubit.state.selectedExtraServices);
+    final idx = next.lastIndexOf(serviceId);
+    if (idx >= 0) next.removeAt(idx);
+    cubit.setExtraServices(next);
+  }
+
+  void _handleExtraServiceRemoveAll(String serviceId) {
+    final cubit = context.read<WarrantyBookingCubit>();
+    final next = List<String?>.from(cubit.state.selectedExtraServices)
+      ..removeWhere((id) => id == serviceId);
+    cubit.setExtraServices(next);
+  }
+
   // ── Submit ───────────────────────────────────────────────────────
   Future<void> _handleSubmit() async {
     if (_selectedTime == null || _selectedDate == null) return;
     final cubit = context.read<WarrantyBookingCubit>();
     try {
-      final response = await cubit.submitWarrantyBooking();
+      final result = await cubit.submitWarrantyBooking();
       if (!mounted) return;
       final state = cubit.state;
       final time = _selectedTime!;
@@ -273,21 +272,31 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
       final stylistName = _noArtistSelected
           ? 'Tự động phân công'
           : (state.selectedStylist?['fullName']?.toString() ?? '');
+      final mode = result['__mode']?.toString() ?? 'free';
+      final totalPrice = cubit.estimatedTotalPrice;
+
+      if (mode == 'paid') {
+        // Có phát sinh phí → qua payment-qr.
+        context.go('/payment-qr', extra: result);
+        return;
+      }
+
+      // Free flow → success.
       final serviceName = _buildWarrantyServiceSummary(state);
       context.go(
         '/booking-success',
         extra: {
-          'bookingId': response['bookingId']?.toString() ?? '',
+          'bookingId': result['bookingId']?.toString() ?? '',
           'serviceName': serviceName,
           'date': _selectedDate,
           'time': formattedTime,
           'stylistName': stylistName,
-          'totalPrice': 0,
+          'totalPrice': totalPrice,
         },
       );
     } catch (e) {
       if (!mounted) return;
-      _showSnackBar('Đặt lịch thất bại: $e');
+      _showSnackBar('Đặt lịch thất bại: $e', isError: true);
     }
   }
 
@@ -305,22 +314,13 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
   }
 
   // ── UI helpers ───────────────────────────────────────────────────
-  void _showSnackBar(String msg) {
-    final isError =
-        msg.contains('chọn') || msg.contains('Lỗi') || msg.contains('hết');
+  void _showSnackBar(String msg, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
         backgroundColor: isError ? Colors.red : null,
       ),
     );
-  }
-
-  String _formatDate(DateTime date) {
-    final y = date.year.toString().padLeft(4, '0');
-    final m = date.month.toString().padLeft(2, '0');
-    final d = date.day.toString().padLeft(2, '0');
-    return '$y-$m-${d}T00:00:00';
   }
 
   // ── BUILD ────────────────────────────────────────────────────────
@@ -330,10 +330,38 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
       listenWhen: (prev, curr) =>
           curr.errorMessage != null && prev.errorMessage != curr.errorMessage,
       listener: (context, state) {
-        _showSnackBar(state.errorMessage!);
+        _showSnackBar(state.errorMessage!, isError: true);
         context.read<WarrantyBookingCubit>().clearError();
       },
       builder: (context, state) {
+        // ── Guard: quá 7 ngày → block toàn bộ flow ──────────────
+        if (!state.isWithinWarrantyWindow) {
+          return Scaffold(
+            backgroundColor: AppColors.background,
+            appBar: AppBar(
+              leading: IconButton(
+                icon: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 20,
+                  color: AppColors.primaryDark,
+                ),
+                onPressed: () => context.pop(),
+              ),
+              title: Text(
+                S.of(context).warrantyBookingTitle,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontFamily: 'Georgia',
+                  color: AppColors.primaryDark,
+                ),
+              ),
+              backgroundColor: const Color(0xFFFDFBF7),
+              elevation: 0,
+              centerTitle: true,
+            ),
+            body: _buildExpiredView(),
+          );
+        }
         final canProceed = _canProceedForStep(state);
         return Scaffold(
           backgroundColor: AppColors.background,
@@ -381,7 +409,7 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
                   ],
                 ),
               ),
-              _buildBottomBar(canProceed),
+              _buildBottomBar(canProceed, state),
             ],
           ),
         );
@@ -389,7 +417,64 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
     );
   }
 
+  Widget _buildExpiredView() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.access_time_filled_rounded,
+              size: 72,
+              color: Colors.orange,
+            ),
+            const SizedBox(height: 20),
+            Text(
+              S.of(context).warrantyExpiredTitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primaryDark,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              S.of(context).warrantyExpiredDesc,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade700,
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: () => context.pop(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: Text(
+                  S.of(context).warrantyExpiredBackBtn,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   bool _canProceedForStep(WarrantyBookingState state) {
+    if (state.isSubmitting) return false;
     switch (_currentStep) {
       case 0:
         return _noArtistSelected || _selectedStylistId != null;
@@ -499,7 +584,27 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
     );
   }
 
+  // ── Step 1: Artist ────────────────────────────────────────────────
   Widget _buildArtistStep(WarrantyBookingState state) {
+    if (state.artistsStatus == WarrantyLoadStatus.loading) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
+    }
+    if (state.artistsStatus == WarrantyLoadStatus.error) {
+      return _buildRetryView(
+        message: 'Không tải được danh sách thợ.',
+        onRetry: () => context.read<WarrantyBookingCubit>().reloadArtists(),
+      );
+    }
+    if (state.artists.isEmpty) {
+      return Center(
+        child: Text(
+          'Không có thợ nào trong salon này.',
+          style: TextStyle(color: Colors.grey.shade600),
+        ),
+      );
+    }
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: ArtistSelectionList(
@@ -514,10 +619,48 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
     );
   }
 
+  Widget _buildRetryView({
+    required String message,
+    required Future<void> Function() onRetry,
+  }) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.cloud_off_rounded,
+              size: 64,
+              color: Colors.grey,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: Text(S.of(context).bookingRetry),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Step 2: Service ───────────────────────────────────────────────
   Widget _buildServiceStep(WarrantyBookingState state) {
-    if (state.warrantyItems.isEmpty) {
-      return const Center(child: Text('Không có dịch vụ bảo hành.'));
-    }
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -534,15 +677,26 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
           const SizedBox(height: 8),
           Text(
             S.of(context).warrantyServiceNote,
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey.shade700,
-            ),
+            style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
           ),
           const SizedBox(height: 16),
-          ...state.warrantyItems.map((item) {
-            return _buildWarrantyItemTile(item, state);
-          }),
+          if (state.warrantyItems.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Text(
+                'Không có dịch vụ bảo hành.',
+                style: TextStyle(color: Colors.grey.shade700),
+              ),
+            )
+          else
+            ...state.warrantyItems.map((item) => _buildWarrantyItemTile(item, state)),
+          const SizedBox(height: 24),
+          _buildExtraServicesSection(state),
         ],
       ),
     );
@@ -621,6 +775,169 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
     );
   }
 
+  Widget _buildExtraServicesSection(WarrantyBookingState state) {
+    if (state.services.isEmpty && !state.isLoadingServices) {
+      return const SizedBox.shrink();
+    }
+    if (state.isLoadingServices) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      );
+    }
+    final selected = state.selectedExtraServices;
+    final counts = <String, int>{};
+    for (final id in selected.whereType<String>()) {
+      counts[id] = (counts[id] ?? 0) + 1;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFF3EFEA), width: 1.2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.add_circle_outline_rounded,
+                      color: AppColors.primary,
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    S.of(context).bookingAddonServices,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      color: AppColors.primaryDark,
+                    ),
+                  ),
+                ],
+              ),
+              if (counts.isNotEmpty)
+                Text(
+                  '${S.of(context).bookingSelectedCount(counts.values.fold<int>(0, (s, c) => s + c).toString())}',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            S.of(context).warrantyAddonNote,
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          ),
+          const SizedBox(height: 12),
+          ...state.services.whereType<Map>().map((service) {
+            final sMap = Map<String, dynamic>.from(service);
+            final sId =
+                sMap['serviceId']?.toString() ?? sMap['id']?.toString() ?? '';
+            final name = sMap['serviceName']?.toString() ?? '';
+            final price =
+                sMap['price'] ?? sMap['basePrice'] ?? 0;
+            final count = counts[sId] ?? 0;
+            return _buildExtraServiceRow(sId, name, price, count);
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExtraServiceRow(
+    String serviceId,
+    String name,
+    dynamic price,
+    int count,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: count > 0
+            ? AppColors.primary.withValues(alpha: 0.05)
+            : Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: count > 0
+              ? AppColors.primary.withValues(alpha: 0.3)
+              : Colors.grey.shade200,
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name.isEmpty ? serviceId : name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  PriceFormatter.format(price),
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (count > 0)
+                IconButton(
+                  onPressed: () =>
+                      _handleExtraServiceRemoveAll(serviceId),
+                  icon: const Icon(Icons.delete_outline, size: 20),
+                  color: Colors.red,
+                ),
+              if (count > 0)
+                IconButton(
+                  onPressed: () =>
+                      _handleExtraServiceDecrement(serviceId),
+                  icon: const Icon(Icons.remove_circle_outline, size: 22),
+                  color: AppColors.primary,
+                ),
+              IconButton(
+                onPressed: () => _handleExtraServiceIncrement(serviceId),
+                icon: const Icon(Icons.add_circle_rounded, size: 22),
+                color: AppColors.primary,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Step 3: Schedule ──────────────────────────────────────────────
   Widget _buildScheduleStep(WarrantyBookingState state) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -632,25 +949,39 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
             onDateChanged: _handleDateChanged,
           ),
           const SizedBox(height: 28),
-          BookingTimeSelection(
-            timeSlots: _timeSlots,
-            isLoading: _isLoadingTimes,
-            selectedTime: _selectedTime,
-            canSelect: _selectedDate != null,
-            selectedDate: _selectedDate,
-            salonId: state.selectedBranch?['salonId'],
-            artistId: _noArtistSelected
-                ? null
-                : (_selectedStylistId ??
-                    state.selectedStylist?['nailArtistId']),
-            onTimeChanged: _handleTimeChanged,
-          ),
+          if (state.timeSlotsStatus == WarrantyLoadStatus.error &&
+              _timeSlots.isEmpty &&
+              _selectedDate != null)
+            _buildRetryView(
+              message: state.timeSlotsLoadError ??
+                  'Không tải được khung giờ. Vui lòng thử lại.',
+              onRetry: _handleRetryTimes,
+            )
+          else
+            BookingTimeSelection(
+              timeSlots: _timeSlots,
+              isLoading: state.timeSlotsStatus == WarrantyLoadStatus.loading,
+              selectedTime: _selectedTime,
+              canSelect: _selectedDate != null,
+              selectedDate: _selectedDate,
+              salonId: state.selectedBranch?['salonId'],
+              artistId: _noArtistSelected
+                  ? null
+                  : (_selectedStylistId ??
+                      state.selectedStylist?['nailArtistId']),
+              onTimeChanged: _handleTimeChanged,
+            ),
         ],
       ),
     );
   }
 
+  // ── Step 4: Summary ───────────────────────────────────────────────
   Widget _buildSummaryStep(WarrantyBookingState state) {
+    final cubit = context.read<WarrantyBookingCubit>();
+    final totalPrice = cubit.estimatedTotalPrice;
+    final extraTotal = cubit.extraServicesTotal;
+    final isFree = totalPrice == 0;
     final salon = state.selectedBranch;
     final stylist = state.selectedStylist;
     final time = _selectedTime != null
@@ -664,7 +995,6 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Salon ────────────────────────────────────────────────
           _buildSummaryCard(
             icon: Icons.storefront_rounded,
             title: S.of(context).bookingInfoSalon,
@@ -676,7 +1006,6 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
                 '',
           ),
           const SizedBox(height: 12),
-          // ── Stylist ──────────────────────────────────────────────
           _buildSummaryCard(
             icon: Icons.person_rounded,
             title: S.of(context).bookingInfoStaff,
@@ -686,7 +1015,6 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
                     state.sourceArtistName),
           ),
           const SizedBox(height: 12),
-          // ── Schedule ─────────────────────────────────────────────
           _buildSummaryCard(
             icon: Icons.calendar_today_rounded,
             title: S.of(context).bookingInfoTime,
@@ -695,101 +1023,179 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
                 : '${date.day}/${date.month}/${date.year} • $time',
           ),
           const SizedBox(height: 12),
-          // ── Warranty items ───────────────────────────────────────
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade100),
+          _buildPaymentDetails(state, extraTotal, totalPrice, isFree),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentDetails(
+    WarrantyBookingState state,
+    int extraTotal,
+    int totalPrice,
+    bool isFree,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade100),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.shield_outlined, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text(
+                S.of(context).bookingPaymentDetails,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // ── Warranty items (miễn phí) ──────────────────────────
+          ...state.selectedWarrantyItems.map((item) {
+            final names = [
+              item['nailVariantName']?.toString().trim() ?? '',
+              item['customerNailName']?.toString().trim() ?? '',
+              item['serviceName']?.toString().trim() ?? '',
+            ].where((n) => n.isNotEmpty).toList();
+            final name = names.isEmpty
+                ? S.of(context).bookingWarrantyDefault
+                : names.join(' & ');
+            return _buildPaymentRow(name, 0, muted: true);
+          }),
+          if (state.selectedExtraServices
+              .whereType<String>()
+              .isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              S.of(context).bookingAddonServices,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.shield_outlined,
-                        color: AppColors.primary,
-                        size: 18,
+            const SizedBox(height: 6),
+            ..._buildExtraServiceRows(state),
+          ],
+          const Divider(height: 16),
+          // ── Subtotal (chỉ extra services, warranty = 0) ──────
+          _buildPaymentRow(
+            'Tạm tính (dịch vụ phát sinh)',
+            extraTotal,
+            muted: true,
+          ),
+          // ── Discount (giữ chỗ hiển thị — hiện chưa có) ────────
+          // Nếu tương lai tích hợp voucher sẽ hiện ở đây.
+          // ── Total ─────────────────────────────────────────────
+          const Divider(height: 16),
+          _buildPaymentRow(
+            S.of(context).bookingTotal,
+            totalPrice,
+            strong: true,
+            highlight: true,
+          ),
+          if (!isFree) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade50,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.amber.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline,
+                      color: Colors.amber.shade800, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      S.of(context).warrantyDepositNote,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: Colors.amber.shade900,
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    Text(
-                      S.of(context).warrantyStepServices,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14.5,
-                        color: AppColors.primaryDark,
-                      ),
-                    ),
-                  ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildExtraServiceRows(WarrantyBookingState state) {
+    final cubit = context.read<WarrantyBookingCubit>();
+    final counts = <String, int>{};
+    for (final id in state.selectedExtraServices.whereType<String>()) {
+      counts[id] = (counts[id] ?? 0) + 1;
+    }
+    return counts.entries.map((entry) {
+      final id = entry.key;
+      final count = entry.value;
+      final unit = cubit.servicePriceById(id);
+      final name = cubit.serviceNameById(id);
+      final lineTotal = unit * count;
+      final label = count > 1 ? '$name × $count' : name;
+      return _buildPaymentRow(
+        S.of(context).bookingExtraService(label),
+        lineTotal,
+        muted: true,
+      );
+    }).toList();
+  }
+
+  Widget _buildPaymentRow(
+    String label,
+    num price, {
+    bool strong = false,
+    bool muted = false,
+    bool highlight = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: highlight ? 16 : 14,
+                  color: muted ? Colors.grey : AppColors.textPrimary,
+                  fontWeight: strong ? FontWeight.bold : FontWeight.normal,
                 ),
-                const SizedBox(height: 12),
-                ...state.selectedWarrantyItems.map((item) {
-                  final names = [
-                    item['nailVariantName']?.toString().trim() ?? '',
-                    item['customerNailName']?.toString().trim() ?? '',
-                    item['serviceName']?.toString().trim() ?? '',
-                  ].where((n) => n.isNotEmpty).toList();
-                  final name = names.isEmpty
-                      ? S.of(context).bookingWarrantyDefault
-                      : names.join(' & ');
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.check_circle,
-                          color: AppColors.primary,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            name,
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                        ),
-                        Text(
-                          S.of(context).warrantyFree,
-                          style: const TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-                const Divider(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      S.of(context).bookingInfoTotal,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                    Text(
-                      S.of(context).warrantyFree,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 17,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              ),
+            ),
+          ),
+          Text(
+            price == 0 ? S.of(context).warrantyFree : PriceFormatter.format(price),
+            style: TextStyle(
+              fontWeight: strong ? FontWeight.bold : FontWeight.w600,
+              color: price == 0
+                  ? Colors.green
+                  : (highlight ? AppColors.primary : AppColors.textPrimary),
+              fontSize: highlight ? 18 : 14,
             ),
           ),
         ],
@@ -860,10 +1266,9 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
     );
   }
 
-  Widget _buildBottomBar(bool canProceed) {
+  Widget _buildBottomBar(bool canProceed, WarrantyBookingState state) {
     final isLastStep = _currentStep == 3;
-    final isSubmitting =
-        context.read<WarrantyBookingCubit>().state.isSubmitting;
+    final totalPrice = context.read<WarrantyBookingCubit>().estimatedTotalPrice;
     return SafeArea(
       top: false,
       child: Container(
@@ -882,7 +1287,7 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
           width: double.infinity,
           height: 52,
           child: ElevatedButton(
-            onPressed: (canProceed && !isSubmitting)
+            onPressed: (canProceed && !state.isSubmitting)
                 ? () {
                     if (isLastStep) {
                       _handleSubmit();
@@ -903,7 +1308,7 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
               ),
               elevation: 0,
             ),
-            child: isSubmitting
+            child: state.isSubmitting
                 ? const SizedBox(
                     width: 22,
                     height: 22,
@@ -914,7 +1319,9 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
                   )
                 : Text(
                     isLastStep
-                        ? S.of(context).warrantyConfirmBtn
+                        ? (totalPrice == 0
+                            ? S.of(context).warrantyConfirmBtn
+                            : S.of(context).warrantyConfirmDepositBtn)
                         : S.of(context).bookingContinueBtn,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,

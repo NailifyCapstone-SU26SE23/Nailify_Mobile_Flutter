@@ -1869,6 +1869,27 @@ class SVi extends S {
   String get warrantyConfirmBtn => 'Xác nhận bảo hành';
 
   @override
+  String get warrantyConfirmDepositBtn => 'Đặt cọc & xác nhận';
+
+  @override
+  String get warrantyAddonNote =>
+      'Có thể chọn thêm dịch vụ phát sinh (nếu có). Phần này sẽ tính phí.';
+
+  @override
+  String get warrantyDepositNote =>
+      'Bảo hành có phát sinh dịch vụ trả phí. Bạn cần đặt cọc trước khi hoàn tất.';
+
+  @override
+  String get warrantyExpiredTitle => 'Đã quá hạn bảo hành';
+
+  @override
+  String get warrantyExpiredDesc =>
+      'Thời hạn bảo hành tối đa là 7 ngày kể từ ngày hoàn thành lịch hẹn gốc. Vui lòng liên hệ salon để được hỗ trợ.';
+
+  @override
+  String get warrantyExpiredBackBtn => 'Quay lại';
+
+  @override
   String get warrantyServiceNote =>
       'Các dịch vụ bảo hành đã được liệt kê sẵn từ lịch hẹn trước. Bạn có thể bỏ chọn nếu không cần bảo hành mục nào.';
 

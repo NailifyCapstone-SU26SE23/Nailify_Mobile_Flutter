@@ -7,6 +7,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/utils/auth_guard.dart';
 import '../../../../core/utils/price_formatter.dart';
+import '../../../../core/utils/retry_helper.dart';
 import '../../../nails/data/models/nail_variant_model.dart';
 import '../../../nails/data/repositories/nail_variant_repository.dart';
 import '../../data/datasources/booking_api_service.dart';
@@ -44,6 +45,11 @@ class _NailBookingPageState extends State<NailBookingPage> {
   bool _isPromotionExpanded = false;
   bool _isReviewingPrice = false;
   bool _sourceSelectionFallback = false;
+
+  // ── Load-error fields (để hiển thị retry view khi API fail) ──────
+  String? _salonsLoadError;
+  String? _timesLoadError;
+
   String? _holdToken;
   Timer? _holdTimer;
   int _holdRemainingSeconds = 0;
@@ -209,8 +215,12 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   Future<void> _fetchSalons() async {
+    setState(() => _salonsLoadError = null);
     try {
-      final data = await _apiService.getSalons();
+      final data = await RetryHelper.run(
+        () => _apiService.getSalons(),
+        shouldRetry: RetryHelper.defaultShouldRetry,
+      );
       if (!mounted) return;
       final initialBranch = _findById(data, 'salonId', _sourceSalonId);
       setState(() {
@@ -227,14 +237,22 @@ class _NailBookingPageState extends State<NailBookingPage> {
       }
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isLoadingSalons = false);
-      _showSnackBar('Loi tai danh sach salon: $e');
+      setState(() {
+        _isLoadingSalons = false;
+        _salonsLoadError = 'Không tải được danh sách salon: $e';
+      });
+      _showSnackBar(
+        'Không tải được danh sách salon. Bấm "Thử lại" để tải lại.',
+      );
     }
   }
 
   Future<void> _fetchServices() async {
     try {
-      final data = await _apiService.getServices();
+      final data = await RetryHelper.run(
+        () => _apiService.getServices(),
+        shouldRetry: RetryHelper.defaultShouldRetry,
+      );
       if (!mounted) return;
       setState(() => _services = data);
     } catch (_) {
@@ -246,7 +264,10 @@ class _NailBookingPageState extends State<NailBookingPage> {
   Future<void> _fetchPromotions() async {
     setState(() => _isLoadingPromotions = true);
     try {
-      final vouchers = await _promotionApiService.getMyWalletVouchers();
+      final vouchers = await RetryHelper.run(
+        () => _promotionApiService.getMyWalletVouchers(),
+        shouldRetry: RetryHelper.defaultShouldRetry,
+      );
       if (!mounted) return;
       setState(() {
         _promotions = vouchers
@@ -270,8 +291,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
     final id = _nailVariantId;
     if (id <= 0) return;
     try {
-      final variant = await getIt<NailVariantRepository>().getNailVariantById(
-        id,
+      final variant = await RetryHelper.run(
+        () => getIt<NailVariantRepository>().getNailVariantById(id),
+        shouldRetry: RetryHelper.defaultShouldRetry,
       );
       if (!mounted) return;
       setState(() => _nailVariantDetail = variant);
@@ -291,12 +313,16 @@ class _NailBookingPageState extends State<NailBookingPage> {
       _isLoadingTimes = true;
       _timeSlots = [];
       _selectedTime = null;
+      _timesLoadError = null;
     });
 
     try {
-      final data = await _apiService.getArtistAvailableSlots(
-        _selectedStylist!['nailArtistId'],
-        _formatBookingDate(_selectedDate!),
+      final data = await RetryHelper.run(
+        () => _apiService.getArtistAvailableSlots(
+          _selectedStylist!['nailArtistId'],
+          _formatBookingDate(_selectedDate!),
+        ),
+        shouldRetry: RetryHelper.defaultShouldRetry,
       );
       if (!mounted) return;
       setState(() {
@@ -309,8 +335,11 @@ class _NailBookingPageState extends State<NailBookingPage> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isLoadingTimes = false);
-      _showSnackBar('Loi tai khung gio: $e');
+      setState(() {
+        _isLoadingTimes = false;
+        _timesLoadError = 'Không tải được khung giờ: $e';
+      });
+      _showSnackBar('Không tải được khung giờ. Bấm "Thử lại" để tải lại.');
     }
   }
 
@@ -338,10 +367,13 @@ class _NailBookingPageState extends State<NailBookingPage> {
         bookingItems.add({'serviceId': sId, 'quantity': 1});
       }
 
-      final data = await _apiService.getSalonAvailableSlots(
-        salonId: _selectedBranch!['salonId'],
-        bookingDate: _formatBookingDate(_selectedDate!),
-        bookingItems: bookingItems,
+      final data = await RetryHelper.run(
+        () => _apiService.getSalonAvailableSlots(
+          salonId: _selectedBranch!['salonId'],
+          bookingDate: _formatBookingDate(_selectedDate!),
+          bookingItems: bookingItems,
+        ),
+        shouldRetry: RetryHelper.defaultShouldRetry,
       );
 
       if (!mounted) return;
@@ -355,8 +387,13 @@ class _NailBookingPageState extends State<NailBookingPage> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isLoadingTimes = false);
-      _showSnackBar('Lỗi tải khung giờ salon: $e');
+      setState(() {
+        _isLoadingTimes = false;
+        _timesLoadError = 'Không tải được khung giờ salon: $e';
+      });
+      _showSnackBar(
+        'Không tải được khung giờ salon. Bấm "Thử lại" để tải lại.',
+      );
     }
   }
 
@@ -919,6 +956,12 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   Widget _buildSalonStep() {
+    if (_salonsLoadError != null && !_isLoadingSalons) {
+      return _buildRetryView(
+        message: _salonsLoadError!,
+        onRetry: _fetchSalons,
+      );
+    }
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: BranchSelectionList(
@@ -926,6 +969,46 @@ class _NailBookingPageState extends State<NailBookingPage> {
         isLoading: _isLoadingSalons,
         selectedBranchId: _selectedBranch?['salonId'],
         onBranchSelected: _handleBranchSelected,
+      ),
+    );
+  }
+
+  Widget _buildRetryView({
+    required String message,
+    required Future<void> Function() onRetry,
+  }) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.cloud_off_rounded,
+              size: 64,
+              color: Colors.grey,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Thử lại'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -972,22 +1055,30 @@ class _NailBookingPageState extends State<NailBookingPage> {
             onDateChanged: _handleDateChanged,
           ),
           const SizedBox(height: 28),
-          BookingTimeSelection(
-            timeSlots: _timeSlots,
-            isLoading: _isLoadingTimes,
-            selectedTime: _selectedTime,
-            canSelect: _selectedDate != null,
-            selectedDate: _selectedDate,
-            salonId: _selectedBranch?['salonId'],
-            artistId: _selectedStylist?['nailArtistId'],
-            onTimeChanged: (time) {
-              _cancelCurrentHold();
-              setState(() {
-                _selectedTime = time;
-                _priceReview = null;
-              });
-            },
-          ),
+          if (_timesLoadError != null &&
+              !_isLoadingTimes &&
+              _selectedDate != null)
+            _buildRetryView(
+              message: _timesLoadError!,
+              onRetry: _fetchTimeSlots,
+            )
+          else
+            BookingTimeSelection(
+              timeSlots: _timeSlots,
+              isLoading: _isLoadingTimes,
+              selectedTime: _selectedTime,
+              canSelect: _selectedDate != null,
+              selectedDate: _selectedDate,
+              salonId: _selectedBranch?['salonId'],
+              artistId: _selectedStylist?['nailArtistId'],
+              onTimeChanged: (time) {
+                _cancelCurrentHold();
+                setState(() {
+                  _selectedTime = time;
+                  _priceReview = null;
+                });
+              },
+            ),
         ],
       ),
     );

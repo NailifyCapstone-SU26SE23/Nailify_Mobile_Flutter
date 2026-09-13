@@ -21,6 +21,11 @@ class ArtistSelectionList extends StatelessWidget {
   /// "Thợ đã làm trước đây").
   final String? pinnedLabel;
 
+  /// Khi `true`: ẩn option "Tự động phân công" ở đầu danh sách. Dùng cho
+  /// các luồng BẮT BUỘC phải chọn thợ (vd: home booking — cần thợ để
+  /// list mẫu nail).
+  final bool hideAutoAssign;
+
   const ArtistSelectionList({
     super.key,
     required this.artists,
@@ -31,6 +36,7 @@ class ArtistSelectionList extends StatelessWidget {
     required this.onModeChanged,
     this.pinnedArtistId,
     this.pinnedLabel,
+    this.hideAutoAssign = false,
   });
 
   /// Tách thợ được pin ra khỏi list (giữ nguyên thứ tự rating ở phần còn
@@ -131,13 +137,15 @@ class ArtistSelectionList extends StatelessWidget {
         const SizedBox(height: 18),
 
         // ── OPTION 1: TỰ ĐỘNG PHÂN CÔNG ───────────────────────────
-        GestureDetector(
-          onTap: () {
-            onModeChanged(true);
-            onStylistSelected(null);
-          },
-          child: _buildAutoAssignTile(),
-        ),
+        // Ẩn khi page yêu cầu chọn thợ bắt buộc (vd: home booking).
+        if (!hideAutoAssign)
+          GestureDetector(
+            onTap: () {
+              onModeChanged(true);
+              onStylistSelected(null);
+            },
+            child: _buildAutoAssignTile(),
+          ),
 
         // ── OPTION 2: THỢ ĐƯỢC GIM (nếu có) ──────────────────────
         if (pinned != null) ...[

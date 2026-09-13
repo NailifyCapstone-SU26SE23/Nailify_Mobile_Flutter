@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/error/exceptions.dart';
+import '../../data/datasources/payment_api_service.dart';
 import '../../data/nail_booking_repository_impl.dart';
 import '../../domain/repositories/nail_booking_repository.dart';
 
@@ -12,28 +13,38 @@ part 'warranty_booking_state.dart';
 ///
 /// Khác với `NailBookingCubit` (luồng booking thường):
 ///  - Salon được fix cứng từ booking gốc (không cho chọn lại).
-///  - Không có nail variant / shape method.
-///  - Không cho chọn thêm dịch vụ phát sinh.
-///  - Submit gọi thẳng `POST /Bookings` với `warrantyForBookingId` (KHÔNG
-///    qua `/payments/create-for-request`).
-///  - Tổng tiền = 0, navigate sang `/booking-success`.
+///  - Có thể chọn thêm dịch vụ phát sinh (cắt móng, ngâm chân...) → có phí.
+///  - Submit: nếu tổng = 0 → POST /Bookings thẳng; nếu > 0 → qua
+///    `/payments/create-for-request` → `/payment-qr`.
 class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
+  static const Duration warrantyWindow = Duration(days: 7);
+
   final NailBookingRepository _repository;
+  final PaymentApiService _paymentApiService;
   Timer? _holdTimer;
 
-  WarrantyBookingCubit({NailBookingRepository? repository})
-      : _repository = repository ?? NailBookingRepositoryImpl(),
+  /// Số lần retry tối đa khi load salon / artists / timeSlots bị lỗi
+  /// (timeout, network, 5xx). Sau khi hết retry, page sẽ hiện nút
+  /// "Thử lại" cho user bấm tay.
+  static const int _maxLoadRetries = 2;
+
+  WarrantyBookingCubit({
+    NailBookingRepository? repository,
+    PaymentApiService? paymentApiService,
+  })  : _repository = repository ?? NailBookingRepositoryImpl(),
+        _paymentApiService = paymentApiService ?? PaymentApiService(),
         super(const WarrantyBookingState());
 
   // ══════════════════════════════════════════════════════════════
   // LOAD CONTEXT
   // ══════════════════════════════════════════════════════════════
 
-  /// Load context từ booking gốc: salon + danh sách thợ + danh sách
+  /// Load context từ booking gốc: salon + artists + services +
   /// booking items sẽ được bảo hành.
   ///
-  /// `sourceBooking` chứa các key: `salonId`, `salonName?`,
-  /// `sourceArtistId?`, `sourceArtistName?`, `bookingItems` (List<Map>).
+  /// `sourceBooking` chứa các key: `sourceBookingId`, `salonId`,
+  /// `salonName?`, `sourceArtistId?`, `sourceArtistName?`,
+  /// `sourceBookingDate?` (DateTime ISO), `bookingItems` (List<Map>).
   Future<void> loadWarrantyContext(Map<String, dynamic> sourceBooking) async {
     final salonId = sourceBooking['salonId']?.toString() ?? '';
     final rawItems = sourceBooking['bookingItems'];
@@ -44,26 +55,22 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
       }
     }
 
-    // Tìm thông tin salon từ API để hiển thị (tên, địa chỉ) — dù là luồng
-    // bảo hành, page Summary vẫn cần show tên salon + địa chỉ.
+    // Validate deadline 7 ngày.
+    DateTime? sourceDate;
+    final rawDate = sourceBooking['sourceBookingDate'];
+    if (rawDate is DateTime) {
+      sourceDate = rawDate;
+    } else if (rawDate is String && rawDate.isNotEmpty) {
+      sourceDate = DateTime.tryParse(rawDate);
+    }
+    final withinWindow = sourceDate == null
+        ? true
+        : DateTime.now().difference(sourceDate) <= warrantyWindow;
+
+    // Tìm thông tin salon từ API (kèm retry).
     Map<String, dynamic>? branch;
     if (salonId.isNotEmpty) {
-      try {
-        final salons = await _repository.getSalons();
-        for (final s in salons) {
-          if (s['salonId']?.toString() == salonId) {
-            branch = s;
-            break;
-          }
-        }
-      } catch (_) {
-        branch = {
-          'salonId': salonId,
-          'name': sourceBooking['salonName']?.toString() ?? '',
-          if (sourceBooking['salonAddress'] != null)
-            'salonAddress': sourceBooking['salonAddress'],
-        };
-      }
+      branch = await _loadBranchWithRetry(salonId, sourceBooking);
     }
 
     emit(
@@ -71,6 +78,8 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
         sourceBookingId: sourceBooking['sourceBookingId']?.toString() ?? '',
         sourceArtistId: sourceBooking['sourceArtistId']?.toString() ?? '',
         sourceArtistName: sourceBooking['sourceArtistName']?.toString() ?? '',
+        sourceBookingDate: sourceDate,
+        isWithinWarrantyWindow: withinWindow,
         selectedBranch: branch,
         selectedStylist: sourceBooking['sourceStylist'] is Map
             ? Map<String, dynamic>.from(sourceBooking['sourceStylist'] as Map)
@@ -82,29 +91,204 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
       ),
     );
 
-    // Load artists của salon để user chọn (nếu chưa pre-select từ sourceArtistId).
+    if (salonId.isNotEmpty) {
+      // Fire-and-forget — page sẽ theo dõi state.
+      // ignore: discarded_futures
+      loadArtists(salonId);
+    }
+    // ignore: discarded_futures
+    loadServices();
+  }
+
+  /// Load thông tin salon với retry. Trả về `null` nếu thất bại hết retry
+  /// (page sẽ dùng thông tin fallback từ payload).
+  Future<Map<String, dynamic>?> _loadBranchWithRetry(
+    String salonId,
+    Map<String, dynamic> fallbackPayload,
+  ) async {
+    for (int attempt = 0; attempt <= _maxLoadRetries; attempt++) {
+      try {
+        final salons = await _repository.getSalons();
+        for (final s in salons) {
+          if (s['salonId']?.toString() == salonId) {
+            return Map<String, dynamic>.from(s);
+          }
+        }
+        // API trả 200 nhưng không có salon match → dùng fallback.
+        return _fallbackBranch(salonId, fallbackPayload);
+      } catch (e) {
+        if (attempt >= _maxLoadRetries) {
+          // Hết retry → fallback + báo lỗi để page có thể hiển thị nút
+          // "Thử lại".
+          if (!isClosed) {
+            emit(
+              state.copyWith(
+                errorMessage:
+                    'Không tải được thông tin salon (đã thử ${attempt + 1} lần)',
+              ),
+            );
+          }
+          return _fallbackBranch(salonId, fallbackPayload);
+        }
+        await Future<void>.delayed(
+          Duration(milliseconds: 400 * (attempt + 1)),
+        );
+      }
+    }
+    return _fallbackBranch(salonId, fallbackPayload);
+  }
+
+  Map<String, dynamic> _fallbackBranch(
+    String salonId,
+    Map<String, dynamic> payload,
+  ) {
+    return {
+      'salonId': salonId,
+      'name': payload['salonName']?.toString() ?? '',
+      'address': payload['salonAddress']?.toString() ?? '',
+      if (payload['salonAddress'] != null)
+        'salonAddress': payload['salonAddress'],
+    };
+  }
+
+  /// Public cho page gọi retry khi user bấm nút "Thử lại".
+  Future<void> reloadArtists() async {
+    final s = state.selectedBranch;
+    final salonId = s?['salonId']?.toString() ?? '';
+    if (salonId.isEmpty) return;
     await loadArtists(salonId);
   }
 
   Future<void> loadArtists(String salonId) async {
     if (salonId.isEmpty) return;
-    emit(state.copyWith(artistsStatus: WarrantyLoadStatus.loading));
-    try {
-      final artists = await _repository.getArtistsBySalon(salonId);
+    if (!isClosed) {
+      emit(state.copyWith(artistsStatus: WarrantyLoadStatus.loading));
+    }
+    List<Map<String, dynamic>> lastArtists = const [];
+    for (int attempt = 0; attempt <= _maxLoadRetries; attempt++) {
+      try {
+        final artists = await _repository.getArtistsBySalon(salonId);
+        if (isClosed) return;
+        emit(
+          state.copyWith(
+            artists: artists,
+            artistsStatus: WarrantyLoadStatus.loaded,
+          ),
+        );
+        return;
+      } catch (e) {
+        if (attempt >= _maxLoadRetries) {
+          if (isClosed) return;
+          emit(
+            state.copyWith(
+              artists: lastArtists,
+              artistsStatus: WarrantyLoadStatus.error,
+              errorMessage:
+                  'Không tải được danh sách thợ (đã thử ${attempt + 1} lần): $e',
+            ),
+          );
+          return;
+        }
+        await Future<void>.delayed(
+          Duration(milliseconds: 400 * (attempt + 1)),
+        );
+      }
+    }
+  }
+
+  Future<void> loadServices() async {
+    if (!isClosed) {
+      emit(state.copyWith(servicesStatus: WarrantyLoadStatus.loading));
+    }
+    for (int attempt = 0; attempt <= _maxLoadRetries; attempt++) {
+      try {
+        final services = await _repository.getServices();
+        if (isClosed) return;
+        emit(
+          state.copyWith(
+            services: services,
+            servicesStatus: WarrantyLoadStatus.loaded,
+          ),
+        );
+        return;
+      } catch (e) {
+        if (attempt >= _maxLoadRetries) {
+          if (isClosed) return;
+          emit(
+            state.copyWith(
+              servicesStatus: WarrantyLoadStatus.error,
+              errorMessage:
+                  'Không tải được danh sách dịch vụ (đã thử ${attempt + 1} lần): $e',
+            ),
+          );
+          return;
+        }
+        await Future<void>.delayed(
+          Duration(milliseconds: 400 * (attempt + 1)),
+        );
+      }
+    }
+  }
+
+  /// Public cho page gọi reload time slots khi user đổi ngày/giờ hoặc
+  /// bấm nút "Thử lại".
+  Future<List<dynamic>> loadTimeSlots({
+    required String salonId,
+    String? artistId,
+    required DateTime date,
+  }) async {
+    if (!isClosed) {
       emit(
         state.copyWith(
-          artists: artists,
-          artistsStatus: WarrantyLoadStatus.loaded,
-        ),
-      );
-    } catch (e) {
-      emit(
-        state.copyWith(
-          artistsStatus: WarrantyLoadStatus.error,
-          errorMessage: 'Lỗi tải danh sách thợ: $e',
+          timeSlotsStatus: WarrantyLoadStatus.loading,
+          clearTimeSlotsError: true,
         ),
       );
     }
+    final bookingItems = state.selectedWarrantyItems
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+    for (int attempt = 0; attempt <= _maxLoadRetries; attempt++) {
+      try {
+        final List<dynamic> slots;
+        if (artistId == null || artistId.isEmpty) {
+          slots = await _repository.getSalonAvailableSlots(
+            salonId: salonId,
+            bookingDate: _formatDate(date),
+            bookingItems: bookingItems,
+          );
+        } else {
+          slots = await _repository.getArtistAvailableSlots(
+            artistId: artistId,
+            bookingDate: _formatDate(date),
+          );
+        }
+        if (isClosed) return slots;
+        emit(
+          state.copyWith(
+            timeSlotsStatus: WarrantyLoadStatus.loaded,
+            clearTimeSlotsError: true,
+          ),
+        );
+        return slots;
+      } catch (e) {
+        if (attempt >= _maxLoadRetries) {
+          if (isClosed) return const [];
+          emit(
+            state.copyWith(
+              timeSlotsStatus: WarrantyLoadStatus.error,
+              timeSlotsLoadError:
+                  'Không tải được khung giờ (đã thử ${attempt + 1} lần): $e',
+            ),
+          );
+          return const [];
+        }
+        await Future<void>.delayed(
+          Duration(milliseconds: 400 * (attempt + 1)),
+        );
+      }
+    }
+    return const [];
   }
 
   // ══════════════════════════════════════════════════════════════
@@ -155,6 +339,7 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
         clearHoldToken: true,
         isHolding: false,
         holdRemainingSeconds: 0,
+        clearTimeSlotsError: true,
       ),
     );
     _cancelHoldTimer();
@@ -165,7 +350,6 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
   }
 
   Future<void> selectTime(String time) async {
-    // Đổi giờ -> huỷ hold cũ nếu có.
     final oldToken = state.holdToken;
     if (oldToken != null && oldToken.isNotEmpty) {
       _cancelHoldTimer();
@@ -179,7 +363,6 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
         holdRemainingSeconds: 0,
       ),
     );
-    // Tự động giữ chỗ khi user chọn giờ.
     await holdSelectedSlot();
   }
 
@@ -206,6 +389,10 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
     emit(state.copyWith(selectedWarrantyItems: next));
   }
 
+  void setExtraServices(List<String?> services) {
+    emit(state.copyWith(selectedExtraServices: services));
+  }
+
   // ══════════════════════════════════════════════════════════════
   // HOLD SLOT
   // ══════════════════════════════════════════════════════════════
@@ -216,7 +403,6 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
     if (time == null) return false;
 
     if (state.noArtistSelected) {
-      // Không cần hold slot cho luồng "tự động phân công".
       return true;
     }
 
@@ -229,7 +415,7 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
     final artistId = stylist['nailArtistId']?.toString() ?? '';
     if (salonId.isEmpty || artistId.isEmpty) return false;
 
-    emit(state.copyWith(isSubmitting: true));
+    emit(state.copyWith(isSubmitting: true, clearError: true));
     try {
       final formattedTime = time.length == 5 ? '$time:00' : time;
       final bookingItems = _buildBookingItemsForHold();
@@ -244,41 +430,49 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
 
       final token = data['holdToken']?.toString();
       if (token == null || token.isEmpty) {
+        if (!isClosed) {
+          emit(
+            state.copyWith(
+              isSubmitting: false,
+              clearHoldToken: true,
+              isHolding: false,
+              holdRemainingSeconds: 0,
+              clearTime: true,
+              errorMessage:
+                  'Khung giờ này vừa có người chọn. Vui lòng chọn giờ khác.',
+            ),
+          );
+        }
+        return false;
+      }
+
+      final remaining =
+          (data['remainingSeconds'] as num?)?.toInt() ?? 300;
+      if (!isClosed) {
+        emit(
+          state.copyWith(
+            isSubmitting: false,
+            holdToken: token,
+            holdRemainingSeconds: remaining,
+            isHolding: true,
+          ),
+        );
+        _startHoldTimer(token);
+      }
+      return true;
+    } catch (e) {
+      if (!isClosed) {
         emit(
           state.copyWith(
             isSubmitting: false,
             clearHoldToken: true,
             isHolding: false,
             holdRemainingSeconds: 0,
-            errorMessage:
-                'Không thể giữ khung giờ này. Vui lòng chọn giờ khác.',
+            clearTime: true,
+            errorMessage: _readableError(e),
           ),
         );
-        return false;
       }
-
-      final remaining =
-          (data['remainingSeconds'] as num?)?.toInt() ?? 300;
-      emit(
-        state.copyWith(
-          isSubmitting: false,
-          holdToken: token,
-          holdRemainingSeconds: remaining,
-          isHolding: true,
-        ),
-      );
-      _startHoldTimer(token);
-      return true;
-    } catch (e) {
-      emit(
-        state.copyWith(
-          isSubmitting: false,
-          clearHoldToken: true,
-          isHolding: false,
-          holdRemainingSeconds: 0,
-          errorMessage: _readableError(e),
-        ),
-      );
       return false;
     }
   }
@@ -303,7 +497,8 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
             isHolding: false,
             holdRemainingSeconds: 0,
             clearTime: true,
-            errorMessage: 'Thời gian giữ chỗ đã hết. Vui lòng chọn lại khung giờ.',
+            errorMessage:
+                'Thời gian giữ chỗ đã hết. Vui lòng chọn lại khung giờ.',
           ),
         );
       } else {
@@ -333,10 +528,114 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
   }
 
   // ══════════════════════════════════════════════════════════════
-  // SUBMIT
+  // HOLD/SLOT WRAPPERS — trả lại cho page dùng giữ nguyên flow cũ
+  // (tái sử dụng với code đã viết ở warranty_booking_page.dart).
   // ══════════════════════════════════════════════════════════════
 
-  /// Tạo booking bảo hành. Trả về response map từ backend (chứa bookingId).
+  Future<List<dynamic>> loadArtistAvailableSlots({
+    required String artistId,
+    required String bookingDate,
+  }) {
+    return _repository.getArtistAvailableSlots(
+      artistId: artistId,
+      bookingDate: bookingDate,
+    );
+  }
+
+  Future<List<dynamic>> loadSalonAvailableSlots({
+    required String salonId,
+    required String bookingDate,
+    required List<Map<String, dynamic>> bookingItems,
+  }) {
+    return _repository.getSalonAvailableSlots(
+      salonId: salonId,
+      bookingDate: bookingDate,
+      bookingItems: bookingItems,
+    );
+  }
+
+  void selectDateForHolder(DateTime date) {
+    emit(state.copyWith(selectedDate: date));
+  }
+
+  void selectStylistForHolder(
+    Map<String, dynamic>? stylist, {
+    bool noArtist = false,
+  }) {
+    emit(
+      state.copyWith(
+        selectedStylist: stylist,
+        noArtistSelected: noArtist,
+        clearStylist: stylist == null,
+      ),
+    );
+  }
+
+  void selectTimeForHolder(String time) {
+    emit(state.copyWith(selectedTime: time));
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // PRICE COMPUTATION (offline estimate)
+  // ══════════════════════════════════════════════════════════════
+
+  /// Giá ước tính cho các dịch vụ phát sinh (extra services). Trả về 0
+  /// nếu user không chọn dịch vụ phát sinh nào.
+  int get extraServicesTotal {
+    int total = 0;
+    for (final id in state.selectedExtraServices.whereType<String>()) {
+      total += servicePriceById(id);
+    }
+    return total;
+  }
+
+  /// Tổng tiền phải trả cho booking bảo hành. Luồng bảo hành luôn
+  /// MIỄN PHÍ phần gốc — chỉ cộng thêm phần dịch vụ phát sinh.
+  ///
+  /// `clamp(0, 1<<31)` đảm bảo không bao giờ xuống dưới 0 đồng (kể cả
+  /// khi user áp dụng giảm giá hay discount nào đó trong tương lai).
+  int get estimatedTotalPrice {
+    return extraServicesTotal.clamp(0, 1 << 30);
+  }
+
+  /// Trả về `true` nếu booking hoàn toàn miễn phí (không có dịch vụ
+  /// phát sinh nào được chọn) → submit thẳng, không qua payment.
+  bool get isFreeFlow => estimatedTotalPrice == 0;
+
+  /// Helper lấy giá 1 service theo id từ danh sách services của cubit
+  /// (ưu tiên) hoặc fallback.
+  int servicePriceById(String? id) {
+    if (id == null) return 0;
+    for (final s in state.services) {
+      if (s['serviceId']?.toString() == id || s['id']?.toString() == id) {
+        final price = s['price'] ?? s['basePrice'];
+        if (price is num) return price.round();
+        return int.tryParse(price?.toString() ?? '') ?? 0;
+      }
+    }
+    return 0;
+  }
+
+  String serviceNameById(String? id) {
+    if (id == null) return '';
+    for (final s in state.services) {
+      if (s['serviceId']?.toString() == id || s['id']?.toString() == id) {
+        final name = s['serviceName']?.toString() ?? s['name']?.toString();
+        if (name != null && name.isNotEmpty) return name;
+        return id;
+      }
+    }
+    return id;
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // SUBMIT — 2 mode: free-flow vs payment-qr
+  // ══════════════════════════════════════════════════════════════
+
+  /// Result của submit: nếu miễn phí → trả về `response` (đã tạo
+  /// booking); nếu trả phí → trả về `paymentData` để page navigate
+  /// sang `/payment-qr`. Page sẽ xử lý navigate dựa trên 2 mode này.
+  ///
   /// Throw nếu lỗi — page sẽ catch và hiển thị snackbar.
   Future<Map<String, dynamic>> submitWarrantyBooking() async {
     final branch = state.selectedBranch;
@@ -354,22 +653,20 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
 
     emit(state.copyWith(isSubmitting: true, clearError: true));
     try {
-      final formattedTime = time.length == 5 ? '$time:00' : time;
-      final artistId = state.noArtistSelected
-          ? null
-          : state.selectedStylist?['nailArtistId']?.toString();
+      final total = estimatedTotalPrice;
+      final Map<String, dynamic> result;
 
-      final response = await _repository.createBooking(
-        salonId: branch['salonId']?.toString() ?? '',
-        bookingDate: _formatDate(date),
-        startTime: formattedTime,
-        artistId: artistId,
-        nailVariantId: 0,
-        serviceIds: const [],
-        holdToken: state.holdToken,
-        warrantyForBookingId: state.sourceBookingId,
-        warrantyBookingItems: state.selectedWarrantyItems,
-      );
+      if (total == 0) {
+        // Free flow: gọi thẳng createBooking, không qua payment.
+        result = await _createBookingOnly();
+        result['__mode'] = 'free';
+      } else {
+        // Có phát sinh phí: gọi createPaymentForRequest để tạo order
+        // trên cổng thanh toán. Khi user thanh toán xong → backend tự
+        // tạo booking.
+        result = await _createPaymentForRequest();
+        result['__mode'] = 'paid';
+      }
 
       _cancelHoldTimer();
       emit(
@@ -380,7 +677,7 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
           holdRemainingSeconds: 0,
         ),
       );
-      return response;
+      return result;
     } catch (e) {
       emit(
         state.copyWith(
@@ -392,71 +689,72 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
     }
   }
 
+  Future<Map<String, dynamic>> _createBookingOnly() async {
+    final branch = state.selectedBranch!;
+    final date = state.selectedDate!;
+    final time = state.selectedTime!;
+    final formattedTime = time.length == 5 ? '$time:00' : time;
+    final artistId = state.noArtistSelected
+        ? null
+        : state.selectedStylist?['nailArtistId']?.toString();
+
+    return _repository.createBooking(
+      salonId: branch['salonId']?.toString() ?? '',
+      bookingDate: _formatDate(date),
+      startTime: formattedTime,
+      artistId: artistId,
+      nailVariantId: 0,
+      serviceIds: const [],
+      holdToken: state.holdToken,
+      warrantyForBookingId: state.sourceBookingId,
+      warrantyBookingItems: state.selectedWarrantyItems,
+    );
+  }
+
+  Future<Map<String, dynamic>> _createPaymentForRequest() async {
+    final branch = state.selectedBranch!;
+    final date = state.selectedDate!;
+    final time = state.selectedTime!;
+    final formattedTime = time.length == 5 ? '$time:00' : time;
+    final artistId = state.noArtistSelected
+        ? null
+        : state.selectedStylist?['nailArtistId']?.toString();
+
+    // Gộp các dịch vụ phát sinh (extra services) vào warrantyBookingItems
+    // để backend có thể tính duration + giá đúng.
+    final mergedItems = <Map<String, dynamic>>[
+      ...state.selectedWarrantyItems,
+      ...state.selectedExtraServices.whereType<String>().map(
+            (id) => <String, dynamic>{
+              'serviceId': id,
+              'quantity': 1,
+            },
+          ),
+    ];
+
+    final payload = <String, dynamic>{
+      'salonId': branch['salonId']?.toString() ?? '',
+      'bookingDate': _formatDate(date),
+      'startTime': formattedTime,
+      'nailArtistId': artistId,
+      'holdToken': state.holdToken,
+      'bookingItems': mergedItems,
+      'warrantyForBookingId': state.sourceBookingId,
+    };
+
+    return _paymentApiService.createPaymentForRequest(payload);
+  }
+
   void clearError() {
     emit(state.copyWith(clearError: true));
-  }
-
-  // ══════════════════════════════════════════════════════════════
-  // INTERNAL HELPERS (cho WarrantyBookingPage)
-  // ══════════════════════════════════════════════════════════════
-
-  /// Wrapper public cho page gọi fetch slots khi user chọn ngày ở step 3.
-  Future<List<dynamic>> loadArtistAvailableSlots({
-    required String artistId,
-    required String bookingDate,
-  }) async {
-    return _repository.getArtistAvailableSlots(
-      artistId: artistId,
-      bookingDate: bookingDate,
-    );
-  }
-
-  /// Wrapper public cho page gọi fetch slots khi user chọn ngày ở step 3
-  /// (luồng "tự động phân công" - không chọn thợ).
-  Future<List<dynamic>> loadSalonAvailableSlots({
-    required String salonId,
-    required String bookingDate,
-    required List<Map<String, dynamic>> bookingItems,
-  }) async {
-    return _repository.getSalonAvailableSlots(
-      salonId: salonId,
-      bookingDate: bookingDate,
-      bookingItems: bookingItems,
-    );
-  }
-
-  /// Sync page-local date với cubit (chỉ dùng cho warranty flow).
-  void selectDateForHolder(DateTime date) {
-    emit(state.copyWith(selectedDate: date));
-  }
-
-  /// Sync page-local stylist với cubit (chỉ dùng cho warranty flow).
-  void selectStylistForHolder(
-    Map<String, dynamic>? stylist, {
-    bool noArtist = false,
-  }) {
-    emit(
-      state.copyWith(
-        selectedStylist: stylist,
-        noArtistSelected: noArtist,
-        clearStylist: stylist == null,
-      ),
-    );
-  }
-
-  /// Sync page-local time với cubit (chỉ dùng cho warranty flow).
-  void selectTimeForHolder(String time) {
-    emit(state.copyWith(selectedTime: time));
   }
 
   // ══════════════════════════════════════════════════════════════
   // HELPERS
   // ══════════════════════════════════════════════════════════════
 
-  /// Build payload bookingItems cho API hold-slot — dùng các items user
-  /// đã tick ở bước "Dịch vụ bảo hành" để backend tính duration.
   List<Map<String, dynamic>> _buildBookingItemsForHold() {
-    return state.selectedWarrantyItems
+    final items = state.selectedWarrantyItems
         .map(
           (e) => Map<String, dynamic>.from(e)
             ..['quantity'] = (e['quantity'] is num)
@@ -464,6 +762,11 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
                 : (int.tryParse(e['quantity']?.toString() ?? '1') ?? 1),
         )
         .toList();
+    // Append extra services để backend tính duration chính xác.
+    for (final sId in state.selectedExtraServices.whereType<String>()) {
+      items.add({'serviceId': sId, 'quantity': 1});
+    }
+    return items;
   }
 
   String _formatDate(DateTime date) {

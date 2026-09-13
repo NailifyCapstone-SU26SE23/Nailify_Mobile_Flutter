@@ -1195,6 +1195,9 @@ class SEn extends S {
   String get bookingAddServiceTitle => 'Add Add-on Service';
 
   @override
+  String get bookingAddServiceBtn => 'Add service';
+
+  @override
   String get bookingSelectArtistTitle => 'Select Artist';
 
   @override

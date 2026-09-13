@@ -406,6 +406,7 @@
   "bookingQtyLabel": "Số lượng",
   "bookingAddService": "Thêm dịch vụ",
   "bookingAddServiceTitle": "Thêm Dịch Vụ Phụ Trợ",
+  "bookingAddServiceBtn": "Thêm dịch vụ",
   "bookingSelectArtistTitle": "Chọn thợ làm móng",
   "bookingArtistNoDate": "Vui lòng chọn ngày hẹn trước",
   "bookingNoArtistAvailable": "Không có thợ nào khả dụng cho ngày này.",

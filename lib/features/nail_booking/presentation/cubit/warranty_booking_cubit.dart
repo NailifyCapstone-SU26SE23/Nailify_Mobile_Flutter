@@ -607,7 +607,7 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
   int servicePriceById(String? id) {
     if (id == null) return 0;
     for (final s in state.services) {
-      if (s['serviceId']?.toString() == id || s['id']?.toString() == id) {
+      if (_matchServiceId(s, id)) {
         final price = s['price'] ?? s['basePrice'];
         if (price is num) return price.round();
         return int.tryParse(price?.toString() ?? '') ?? 0;
@@ -616,16 +616,69 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
     return 0;
   }
 
+  /// Helper lấy tên dịch vụ. Thử nhiều field name phổ biến (name,
+  /// serviceName, ServiceName, title, displayName) để tương thích với
+  /// cả mock data lẫn API response thực tế.
   String serviceNameById(String? id) {
     if (id == null) return '';
     for (final s in state.services) {
-      if (s['serviceId']?.toString() == id || s['id']?.toString() == id) {
-        final name = s['serviceName']?.toString() ?? s['name']?.toString();
-        if (name != null && name.isNotEmpty) return name;
-        return id;
+      if (_matchServiceId(s, id)) {
+        final name = _firstNonEmptyString(
+              s,
+              const ['name', 'serviceName', 'ServiceName', 'title', 'displayName'],
+            ) ??
+            id;
+        return name;
       }
     }
+    // Fallback: tìm trong mock data.
+    final mockName = _mockServiceName(id);
+    if (mockName != null) return mockName;
     return id;
+  }
+
+  /// Map UUID → tên đẹp từ `BookingMockData.extraServices` (dùng làm
+  /// fallback khi API response thiếu field name).
+  static String? _mockServiceName(String id) {
+    for (final s in _mockFallback) {
+      if (_matchServiceId(s, id)) {
+        final name = _firstNonEmptyString(
+          s,
+          const ['name', 'serviceName', 'ServiceName', 'title', 'displayName'],
+        );
+        if (name != null && name.isNotEmpty) return name;
+      }
+    }
+    return null;
+  }
+
+  /// Danh sách fallback mirror theo `BookingMockData.extraServices`. Dùng
+  /// khi API trả về service không có trường tên → tránh hiển thị UUID.
+  static const List<Map<String, dynamic>> _mockFallback = [
+    {'id': 'f512b732-231c-4584-b3f0-647603b1f167', 'name': 'Chà gót chân', 'price': 12000},
+    {'id': 'tay-gel', 'name': 'Tẩy gel', 'price': 30000},
+    {'id': 'lam-sach-mong', 'name': 'Làm sạch móng (Cắt da)', 'price': 40000},
+    {'id': 'duong-mong-co-ban', 'name': 'Dưỡng móng cơ bản', 'price': 50000},
+    {'id': 'phuc-hoi-mong', 'name': 'Phục hồi móng hư tổn', 'price': 100000},
+  ];
+
+  /// Match id linh hoạt: so sánh cả `id` và `serviceId`.
+  static bool _matchServiceId(Map<String, dynamic> s, String id) {
+    final sid = s['serviceId']?.toString();
+    final sIdAlt = s['id']?.toString();
+    return sid == id || sIdAlt == id;
+  }
+
+  /// Lấy giá trị string đầu tiên không rỗng từ các key được liệt kê.
+  static String? _firstNonEmptyString(
+    Map<String, dynamic> map,
+    List<String> keys,
+  ) {
+    for (final k in keys) {
+      final v = map[k]?.toString();
+      if (v != null && v.isNotEmpty) return v;
+    }
+    return null;
   }
 
   // ══════════════════════════════════════════════════════════════

@@ -413,6 +413,7 @@
   "bookingQtyLabel": "Quantity",
   "bookingAddService": "Add Service",
   "bookingAddServiceTitle": "Add Add-on Service",
+  "bookingAddServiceBtn": "Add service",
   "bookingSelectArtistTitle": "Select Artist",
   "bookingArtistNoDate": "Please select a date first",
   "bookingNoArtistAvailable": "No artists available on this date.",

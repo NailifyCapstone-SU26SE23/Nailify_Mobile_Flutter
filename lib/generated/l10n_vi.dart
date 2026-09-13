@@ -1195,6 +1195,9 @@ class SVi extends S {
   String get bookingAddServiceTitle => 'Thêm Dịch Vụ Phụ Trợ';
 
   @override
+  String get bookingAddServiceBtn => 'Thêm dịch vụ';
+
+  @override
   String get bookingSelectArtistTitle => 'Chọn thợ làm móng';
 
   @override

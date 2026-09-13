@@ -2281,6 +2281,12 @@ abstract class S {
   /// **'Add Add-on Service'**
   String get bookingAddServiceTitle;
 
+  /// No description provided for @bookingAddServiceBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Add service'**
+  String get bookingAddServiceBtn;
+
   /// No description provided for @bookingSelectArtistTitle.
   ///
   /// In en, this message translates to:

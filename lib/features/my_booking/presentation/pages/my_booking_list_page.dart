@@ -765,6 +765,21 @@ class _MyBookingListPageState extends State<MyBookingListPage>
   void _handleWarrantyAction(Map<String, dynamic> booking) {
     final items = booking['bookingItems'] as List<dynamic>? ?? [];
 
+    // ── Guard: thời hạn bảo hành tối đa 7 ngày từ ngày hoàn thành ──
+    // Check sớm ngay tại list page để hiện popup ngay, không nhảy qua
+    // page trung gian (như trước đây vẫn navigate sang warranty page
+    // khoảng 2s rồi mới hiện thông báo).
+    final bookingIdStr = booking['bookingId']?.toString() ?? '';
+    final salonId = booking['salonId']?.toString() ?? '';
+    final dateStr = booking['bookingDate']?.toString() ?? '';
+    final sourceBookingDate = DateTime.tryParse(dateStr);
+    if (sourceBookingDate != null &&
+        DateTime.now().difference(sourceBookingDate) >
+            const Duration(days: 7)) {
+      _showWarrantyExpiredDialog();
+      return;
+    }
+
     // Build booking items cho API chính xác — ép kiểu tất cả field cần thiết.
     final List<Map<String, dynamic>> bookingItemsForApi = items.map((item) {
       final map = <String, dynamic>{};
@@ -810,14 +825,6 @@ class _MyBookingListPageState extends State<MyBookingListPage>
       }
       return map;
     }).toList();
-
-    final bookingIdStr = booking['bookingId']?.toString() ?? '';
-    final salonId = booking['salonId']?.toString() ?? '';
-    final dateStr = booking['bookingDate']?.toString() ?? '';
-    // Sử dụng `bookingDate` làm mốc bảo hành (booking gốc đã hoàn thành,
-    // nên bookingDate là ngày khách đến). WarrantyBookingCubit sẽ tự
-    // check deadline 7 ngày.
-    final sourceBookingDate = DateTime.tryParse(dateStr);
 
     // Resolve nailArtistId từ response. Cấu trúc response có thể là:
     //  - Flat:    booking['nailArtistId']
@@ -880,5 +887,73 @@ class _MyBookingListPageState extends State<MyBookingListPage>
 
     if (!mounted) return;
     context.push('/warranty-booking', extra: warrantyData);
+  }
+
+  /// Hiện popup "Đã quá hạn bảo hành" ngay tại list page, không
+  /// navigate sang trang trung gian. Được gọi khi `DateTime.now()` trừ
+  /// đi `sourceBookingDate` > 7 ngày.
+  void _showWarrantyExpiredDialog() {
+    if (!mounted) return;
+    showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        contentPadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.access_time_filled_rounded,
+                size: 40,
+                color: Colors.orange.shade700,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              S.of(context).warrantyExpiredTitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primaryDark,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              S.of(context).warrantyExpiredDesc,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13.5,
+                color: Colors.grey.shade700,
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+            ),
+            child: Text(
+              S.of(context).warrantyExpiredBackBtn,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

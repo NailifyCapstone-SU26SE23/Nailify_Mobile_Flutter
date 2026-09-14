@@ -732,5 +732,37 @@
     "placeholders": {
       "points": { "type": "int" }
     }
-  }
+  },
+  "galleryHeaderTag": "NAIL ART COLLECTION 2026",
+  "@galleryHeaderTag": {},
+  "galleryHeaderTitle": "Find your next signature look",
+  "@galleryHeaderTitle": {},
+  "galleryHeaderSubtitle": "Explore curated nail designs from classics to modern trends.",
+  "@galleryHeaderSubtitle": {},
+  "gallerySearchHint": "Search designs...",
+  "@gallerySearchHint": {},
+  "galleryShowingCount": "Showing {count} designs",
+  "@galleryShowingCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "gallerySortNewest": "Newest",
+  "@gallerySortNewest": {},
+  "gallerySortOldest": "Oldest",
+  "@gallerySortOldest": {},
+  "gallerySortAZ": "A - Z",
+  "@gallerySortAZ": {},
+  "galleryNoDesigns": "No designs match your criteria",
+  "@galleryNoDesigns": {},
+  "galleryCtaTitle": "Can't find your dream design?",
+  "@galleryCtaTitle": {},
+  "galleryCtaSubtitle": "Upload your inspiration image or generate a personalized AI design.",
+  "@galleryCtaSubtitle": {},
+  "galleryBookBtn": "Book Now",
+  "@galleryBookBtn": {},
+  "galleryCustomBtn": "Custom Design ↗",
+  "@galleryCustomBtn": {},
+  "galleryTryOn": "Try On",
+  "@galleryTryOn": {}
 }

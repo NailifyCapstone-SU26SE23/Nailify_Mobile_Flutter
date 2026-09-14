@@ -1838,4 +1838,50 @@ class SEn extends S {
   String balanceHint(int points) {
     return 'You have $points points to redeem';
   }
+
+  @override
+  String get galleryHeaderTag => 'NAIL ART COLLECTION 2026';
+
+  @override
+  String get galleryHeaderTitle => 'Find your next signature look';
+
+  @override
+  String get galleryHeaderSubtitle =>
+      'Explore curated nail designs from classics to modern trends.';
+
+  @override
+  String get gallerySearchHint => 'Search designs...';
+
+  @override
+  String galleryShowingCount(int count) {
+    return 'Showing $count designs';
+  }
+
+  @override
+  String get gallerySortNewest => 'Newest';
+
+  @override
+  String get gallerySortOldest => 'Oldest';
+
+  @override
+  String get gallerySortAZ => 'A - Z';
+
+  @override
+  String get galleryNoDesigns => 'No designs match your criteria';
+
+  @override
+  String get galleryCtaTitle => 'Can\'t find your dream design?';
+
+  @override
+  String get galleryCtaSubtitle =>
+      'Upload your inspiration image or generate a personalized AI design.';
+
+  @override
+  String get galleryBookBtn => 'Book Now';
+
+  @override
+  String get galleryCustomBtn => 'Custom Design ↗';
+
+  @override
+  String get galleryTryOn => 'Try On';
 }

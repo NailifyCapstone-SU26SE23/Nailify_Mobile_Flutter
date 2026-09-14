@@ -15,7 +15,9 @@ import '../../features/nails/services/ar_try_on_service.dart';
 import '../../features/nail_booking/data/repositories/transaction_repository.dart';
 import '../../features/wallet/data/repositories/wallet_repository.dart';
 import '../../features/auth/data/repositories/auth_repository.dart';
+import '../../features/home/data/repositories/home_repository.dart';
 import '../network/signalr_service.dart';
+
 
 final GetIt getIt = GetIt.instance;
 
@@ -82,6 +84,12 @@ Future<void> configureDependencies() async {
     () =>
         WalletRepository(getIt<ApiClient>(), prefs: getIt<SharedPreferences>()),
   );
+
+  // Home Repository
+  getIt.registerLazySingleton<HomeRepository>(
+    () => HomeRepository(getIt<ApiClient>()),
+  );
+
 
   // 5. Services
   getIt.registerLazySingleton<ArTryOnService>(ArTryOnService.new);

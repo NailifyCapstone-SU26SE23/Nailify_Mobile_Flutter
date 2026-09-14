@@ -1840,4 +1840,50 @@ class SVi extends S {
   String balanceHint(int points) {
     return 'Bạn có $points điểm để đổi';
   }
+
+  @override
+  String get galleryHeaderTag => 'BỘ SƯU TẬP MÓNG NGHỆ THUẬT 2026';
+
+  @override
+  String get galleryHeaderTitle => 'Khám phá phong cách kiệt tác cá nhân';
+
+  @override
+  String get galleryHeaderSubtitle =>
+      'Tuyển tập những thiết kế móng xu hướng đỉnh cao và quyến rũ nhất.';
+
+  @override
+  String get gallerySearchHint => 'Tìm kiếm mẫu móng...';
+
+  @override
+  String galleryShowingCount(int count) {
+    return 'Hiển thị $count mẫu thiết kế';
+  }
+
+  @override
+  String get gallerySortNewest => 'Mới nhất';
+
+  @override
+  String get gallerySortOldest => 'Cũ nhất';
+
+  @override
+  String get gallerySortAZ => 'A - Z';
+
+  @override
+  String get galleryNoDesigns => 'Không có mẫu móng nào phù hợp với bộ lọc';
+
+  @override
+  String get galleryCtaTitle => 'Chưa tìm thấy mẫu móng mong muốn?';
+
+  @override
+  String get galleryCtaSubtitle =>
+      'Tải lên hình ảnh ý tưởng của bạn hoặc sử dụng AI để tạo mẫu móng độc bản.';
+
+  @override
+  String get galleryBookBtn => 'Đặt Lịch Ngay';
+
+  @override
+  String get galleryCustomBtn => 'Thiết Kế Riêng AI ↗';
+
+  @override
+  String get galleryTryOn => 'Thử Móng';
 }

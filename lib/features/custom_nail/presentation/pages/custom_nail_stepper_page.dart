@@ -129,7 +129,7 @@ class _CustomNailStepperPageState extends State<CustomNailStepperPage> {
                       boxShadow: _nailDesign.isApplyAll
                           ? [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: Colors.black.withValues(alpha: 0.05),
                                 blurRadius: 4,
                               ),
                             ]
@@ -162,7 +162,7 @@ class _CustomNailStepperPageState extends State<CustomNailStepperPage> {
                       boxShadow: !_nailDesign.isApplyAll
                           ? [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: Colors.black.withValues(alpha: 0.05),
                                 blurRadius: 4,
                               ),
                             ]
@@ -486,7 +486,7 @@ class _CustomNailStepperPageState extends State<CustomNailStepperPage> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),

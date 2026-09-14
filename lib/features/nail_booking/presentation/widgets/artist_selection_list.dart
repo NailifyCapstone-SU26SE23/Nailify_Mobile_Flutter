@@ -103,29 +103,30 @@ class ArtistSelectionList extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 14),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: noArtistSelected ? const Color(0xFFFFF2F6) : Colors.white,
-              borderRadius: BorderRadius.circular(20),
+              color: noArtistSelected ? const Color(0xFFFFF5F8) : Colors.white,
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: noArtistSelected
                     ? AppColors.primary
                     : const Color(0xFFF2ECE6),
-                width: noArtistSelected ? 2 : 1,
+                width: noArtistSelected ? 1.5 : 1,
               ),
               boxShadow: [
                 BoxShadow(
                   color: noArtistSelected
-                      ? AppColors.primary.withValues(alpha: 0.15)
+                      ? AppColors.primary.withValues(alpha: 0.12)
                       : Colors.black.withValues(alpha: 0.02),
-                  blurRadius: noArtistSelected ? 14 : 8,
-                  offset: const Offset(0, 4),
+                  blurRadius: noArtistSelected ? 12 : 6,
+                  offset: const Offset(0, 3),
                 ),
               ],
             ),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: LinearGradient(
@@ -137,7 +138,7 @@ class ArtistSelectionList extends StatelessWidget {
                   child: Icon(
                     Icons.auto_awesome_rounded,
                     color: noArtistSelected ? Colors.white : AppColors.primary,
-                    size: 22,
+                    size: 20,
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -232,25 +233,26 @@ class ArtistSelectionList extends StatelessWidget {
                 margin: const EdgeInsets.only(bottom: 14),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFFFFF2F6) : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  color: isSelected ? const Color(0xFFFFF5F8) : Colors.white,
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isSelected
                         ? AppColors.primary
                         : const Color(0xFFF2ECE6),
-                    width: isSelected ? 2 : 1,
+                    width: isSelected ? 1.5 : 1,
                   ),
                   boxShadow: [
                     BoxShadow(
                       color: isSelected
-                          ? AppColors.primary.withValues(alpha: 0.15)
+                          ? AppColors.primary.withValues(alpha: 0.12)
                           : Colors.black.withValues(alpha: 0.02),
-                      blurRadius: isSelected ? 14 : 8,
-                      offset: const Offset(0, 4),
+                      blurRadius: isSelected ? 12 : 6,
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // Avatar Ring
                     Container(
@@ -265,7 +267,7 @@ class ArtistSelectionList extends StatelessWidget {
                         ),
                       ),
                       child: CircleAvatar(
-                        radius: 22,
+                        radius: 20,
                         backgroundColor: Colors.grey.shade100,
                         backgroundImage: artist['avatarUrl'] != null
                             ? NetworkImage(artist['avatarUrl'])
@@ -274,7 +276,7 @@ class ArtistSelectionList extends StatelessWidget {
                             ? const Icon(
                                 Icons.person_rounded,
                                 color: Colors.grey,
-                                size: 26,
+                                size: 24,
                               )
                             : null,
                       ),

@@ -1,247 +1,299 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../generated/l10n.dart';
+import '../../data/models/home_data_models.dart';
 
+/// Khối Đánh Giá Khách Hàng (Customer Reviews):
+/// - Dạng thẻ mini vuốt ngang (Horizontal Scroll Carousel), bo tròn mềm mại
+/// - Hỗ trợ nạp dữ liệu động từ API hoặc danh sách mặc định
 class CustomerReviews extends StatelessWidget {
-  const CustomerReviews({super.key});
+  final List<HomeReviewItem> reviews;
+
+  const CustomerReviews({
+    super.key,
+    this.reviews = const [],
+  });
 
   @override
   Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> reviews = [
-      {
-        'initials': 'LM',
-        'name': 'Linh Mai',
-        'type': S.of(context).loyalCustomer,
-        'review': S.of(context).reviewLinhMai,
-        'gradientColors': [
-          const Color(0xFFFF66C4),
-          const Color(0xFFFFB347),
-        ], // Hồng sang Cam
-      },
-      {
-        'initials': 'TN',
-        'name': 'Thu Nga',
-        'type': S.of(context).newCustomer,
-        'review': S.of(context).reviewThuNga,
-        'gradientColors': [
-          const Color(0xFFB39DDB),
-          const Color(0xFF7E57C2),
-        ], // Tím nhạt sang Tím đậm
-      },
-      {
-        'initials': 'HA',
-        'name': 'Hoàng Anh',
-        'type': S.of(context).vipCustomer,
-        'review': S.of(context).reviewHoangAnh,
-        'gradientColors': [
-          const Color(0xFF81D4FA),
-          const Color(0xFF29B6F6),
-        ], // Xanh dương
-      },
+    final List<HomeReviewItem> displayList = reviews.isNotEmpty
+        ? reviews
+        : [
+            HomeReviewItem(
+              id: '1',
+              name: 'Linh Mai',
+              initials: 'LM',
+              review: S.of(context).reviewLinhMai,
+              stars: 5,
+              timeAgo: '2 ngày trước',
+            ),
+            HomeReviewItem(
+              id: '2',
+              name: 'Thu Nga',
+              initials: 'TN',
+              review: S.of(context).reviewThuNga,
+              stars: 4,
+              timeAgo: '5 ngày trước',
+            ),
+            HomeReviewItem(
+              id: '3',
+              name: 'Hoàng Anh',
+              initials: 'HA',
+              review: S.of(context).reviewHoangAnh,
+              stars: 5,
+              timeAgo: '1 tuần trước',
+            ),
+            const HomeReviewItem(
+              id: '4',
+              name: 'Phương Thảo',
+              initials: 'PT',
+              review: 'Nhân viên tư vấn nhiệt tình, làm móng tay rất sạch sẽ và cẩn thận.',
+              stars: 4,
+              timeAgo: '2 tuần trước',
+            ),
+            const HomeReviewItem(
+              id: '5',
+              name: 'Bích Ngọc',
+              initials: 'BN',
+              review: 'Dịch vụ nhanh chóng, màu sơn tươi tắn đúng như thiết kế tôi chọn.',
+              stars: 3,
+              timeAgo: '3 tuần trước',
+            ),
+          ];
+
+    final gradients = [
+      [const Color(0xFFFF4B72), const Color(0xFFFF7E53)],
+      [const Color(0xFFB39DDB), const Color(0xFF7E57C2)],
+      [const Color(0xFF81D4FA), const Color(0xFF29B6F6)],
     ];
 
-    return Container(
-      color: const Color(0xFFFFF5F8), // Màu nền hồng phấn cực kỳ dịu mắt
-      padding: const EdgeInsets.symmetric(vertical: 48.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // --- Phần Tiêu đề ---
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.favorite_rounded,
-                  color: AppColors.primary,
-                  size: 16,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  S.of(context).reviewsTitle,
-                  style: const TextStyle(
-                    color: AppColors.primaryDark,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 2.0,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Text(
-              S.of(context).reviewsHeading,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                letterSpacing: -0.5,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Tiêu đề khối Reviews
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.favorite_rounded,
+                color: Color(0xFFFF4B72),
+                size: 16,
               ),
-            ),
+              const SizedBox(width: 6),
+              Text(
+                S.of(context).reviewsTitle,
+                style: const TextStyle(
+                  color: Color(0xFFE02B6D),
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                  fontSize: 12,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 24),
+        ),
+        const SizedBox(height: 10),
 
-          // --- Carousel ---
-          SizedBox(
-            height: 250, // chiều cao danh sách ngang
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              itemCount: reviews.length,
-              itemBuilder: (context, index) {
-                final review = reviews[index];
-                return _buildReviewCard(
-                  initials: review['initials'],
-                  name: review['name'],
-                  type: review['type'],
-                  reviewText: review['review'],
-                  gradientColors: review['gradientColors'],
-                );
-              },
-            ),
+        // Danh sách Card mini vuốt ngang (Social Media Review Style)
+        SizedBox(
+          height: 155,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            itemCount: displayList.length,
+            itemBuilder: (context, index) {
+              final review = displayList[index];
+              return _buildMiniReviewCard(
+                context: context,
+                initials: review.initials,
+                name: review.name,
+                reviewText: review.review,
+                stars: review.stars,
+                gradientColors: gradients[index % gradients.length],
+                timeAgo: review.timeAgo,
+                imageUrl: review.imageUrl,
+              );
+            },
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildReviewCard({
+  Widget _buildMiniReviewCard({
+    required BuildContext context,
     required String initials,
     required String name,
-    required String type,
     required String reviewText,
+    required int stars,
     required List<Color> gradientColors,
+    required String timeAgo,
+    String? imageUrl,
   }) {
+    final hasImage = imageUrl != null && imageUrl.trim().isNotEmpty;
+
     return Container(
-      width: 290,
-      margin: const EdgeInsets.only(right: 18.0),
-      padding: const EdgeInsets.all(24.0),
+      width: 255,
+      margin: const EdgeInsets.only(right: 12.0),
+      padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFFFF0F5), width: 1.5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFFE3ED), width: 1),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primaryDark.withValues(alpha: 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            spreadRadius: 1,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
-      child: Stack(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Watermark Quote Icon trang nhã ở góc trên bên phải
-          Positioned(
-            top: -10,
-            right: -10,
-            child: Icon(
-              Icons.format_quote_rounded,
-              size: 70,
-              color: AppColors.primary.withValues(alpha: 0.12),
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          // Header: Avatar + Tên + Badge xác minh
+          Row(
             children: [
-              // 5 Ngôi sao
+              Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: gradientColors,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: gradientColors.first.withValues(alpha: 0.25),
+                      blurRadius: 4,
+                    ),
+                  ],
+                ),
+                child: Text(
+                  initials,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            name,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(
+                          Icons.verified_rounded,
+                          color: Color(0xFFFF4B72),
+                          size: 13,
+                        ),
+                      ],
+                    ),
+                    Text(
+                      timeAgo,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Rating 5 sao (filled & outline)
               Row(
                 children: List.generate(
                   5,
-                  (index) => const Icon(
-                    Icons.star_rounded,
-                    color: Color(0xFFFFD54F),
-                    size: 18,
+                  (index) => Icon(
+                    index < stars ? Icons.star_rounded : Icons.star_outline_rounded,
+                    color: index < stars ? const Color(0xFFFFD54F) : Colors.grey.shade300,
+                    size: 12,
                   ),
                 ),
               ),
-              const SizedBox(height: 14),
+            ],
+          ),
 
-              // Nội dung đánh giá
-              Expanded(
-                child: Text(
-                  reviewText,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 14,
-                    fontStyle: FontStyle.italic,
-                    height: 1.5,
+          const SizedBox(height: 8),
+
+          // Nội dung review + Ảnh đính kèm (nếu có)
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    '"$reviewText"',
+                    style: TextStyle(
+                      color: Colors.grey.shade800,
+                      fontSize: 11,
+                      fontStyle: FontStyle.italic,
+                      height: 1.3,
+                    ),
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  overflow: TextOverflow.fade,
                 ),
-              ),
-              const SizedBox(height: 14),
-
-              // Thông tin khách hàng
-              Row(
-                children: [
-                  // Avatar Gradient bo tròn tinh tế
-                  Container(
-                    width: 44,
-                    height: 44,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: gradientColors,
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: gradientColors.last.withValues(alpha: 0.3),
-                          blurRadius: 6,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      initials,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-
-                  // Tên và Loại khách hàng
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          name,
-                          style: const TextStyle(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          type,
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 12,
+                if (hasImage) ...[
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => Dialog(
+                          backgroundColor: Colors.transparent,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Image.network(imageUrl, fit: BoxFit.contain),
                           ),
                         ),
-                      ],
+                      );
+                    },
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: SizedBox(
+                        width: 54,
+                        height: 54,
+                        child: Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: Colors.grey.shade200,
+                            child: const Icon(Icons.broken_image_rounded, size: 20, color: Colors.grey),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ],
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 }
+
+

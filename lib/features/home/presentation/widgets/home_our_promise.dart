@@ -8,7 +8,6 @@ class OurPromisePage extends StatelessWidget {
   }); // hoặc const OurPromiseSection({Key? key}) : super(key: key);
 
   @override
-  @override
   Widget build(BuildContext context) {
     return Container(
       color: const Color(

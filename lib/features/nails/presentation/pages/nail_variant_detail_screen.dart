@@ -326,10 +326,17 @@ class _DetailContent extends StatefulWidget {
 class _DetailContentState extends State<_DetailContent> {
   late final Future<List<ShapeMethodConfigModel>> _shapeMethodsFuture;
   ShapeMethodConfigModel? _selectedShapeMethod;
+  final ScrollController _scrollController = ScrollController();
 
   double _rating = 0.0;
   int _reviewsCount = 0;
   bool _isLoadingRating = true;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -365,8 +372,44 @@ class _DetailContentState extends State<_DetailContent> {
     }
   }
 
-  List<Color> _parseColors(String? colorJson) {
-    if (colorJson == null || colorJson.trim().isEmpty) return [];
+  String _formatDurationText(BuildContext context, int? minutes) {
+    if (minutes == null || minutes <= 0) {
+      return Localizations.localeOf(context).languageCode == 'vi'
+          ? '30 phút'
+          : '30 mins';
+    }
+    final hours = minutes ~/ 60;
+    final remainingMins = minutes % 60;
+    final isVi = Localizations.localeOf(context).languageCode == 'vi';
+
+    if (isVi) {
+      if (hours > 0 && remainingMins > 0) {
+        return '$hours giờ $remainingMins phút';
+      } else if (hours > 0) {
+        return '$hours giờ';
+      } else {
+        return '$remainingMins phút';
+      }
+    } else {
+      if (hours > 0 && remainingMins > 0) {
+        return '${hours}h${remainingMins}m';
+      } else if (hours > 0) {
+        return '${hours}h';
+      } else {
+        return '${remainingMins}m';
+      }
+    }
+  }
+
+  Map<String, dynamic> _parseColorsWithDetails(
+    BuildContext context,
+    String? colorJson,
+  ) {
+    final isVi = Localizations.localeOf(context).languageCode == 'vi';
+    final fallbackText = isVi ? 'Màu hồng' : 'Pink';
+    if (colorJson == null || colorJson.trim().isEmpty) {
+      return {'colors': <Color>[], 'colorNames': fallbackText};
+    }
     try {
       final decoded = jsonDecode(colorJson);
       final hexStrings = <String>[];
@@ -392,18 +435,110 @@ class _DetailContentState extends State<_DetailContent> {
       }
 
       final colors = <Color>[];
+      final colorNameSet = <String>{};
+
       for (final hex in hexStrings.toSet()) {
         final cleanHex = hex.replaceAll('#', '').trim();
+        Color? colorObj;
         if (cleanHex.length == 6) {
-          colors.add(Color(int.parse('FF$cleanHex', radix: 16)));
+          colorObj = Color(int.parse('FF$cleanHex', radix: 16));
         } else if (cleanHex.length == 8) {
-          colors.add(Color(int.parse(cleanHex, radix: 16)));
+          colorObj = Color(int.parse(cleanHex, radix: 16));
+        }
+        if (colorObj != null) {
+          colors.add(colorObj);
+          colorNameSet.add(_getColorNameText(context, colorObj, cleanHex));
         }
       }
-      return colors;
+      return {
+        'colors': colors,
+        'colorNames':
+            colorNameSet.isEmpty ? fallbackText : colorNameSet.join(', '),
+      };
     } catch (_) {
-      return [];
+      return {'colors': <Color>[], 'colorNames': fallbackText};
     }
+  }
+
+  String _getColorNameText(BuildContext context, Color color, String hexCode) {
+    final isVi = Localizations.localeOf(context).languageCode == 'vi';
+    final clean = hexCode.toUpperCase().replaceAll('#', '').trim();
+
+    String rawName = '';
+    if (clean == 'FFFFFF' || clean == 'FFF') {
+      rawName = isVi ? 'Trắng' : 'White';
+    } else if (clean == '000000' || clean == '000') {
+      rawName = isVi ? 'Đen' : 'Black';
+    } else if (clean.startsWith('FF66') ||
+        clean.startsWith('FF40') ||
+        clean.startsWith('FFC0') ||
+        clean.startsWith('FF14')) {
+      rawName = isVi ? 'Hồng' : 'Pink';
+    } else if (clean.startsWith('FF00') ||
+        clean.startsWith('F443') ||
+        clean.startsWith('E539')) {
+      rawName = isVi ? 'Đỏ' : 'Red';
+    } else if (clean.startsWith('0000') ||
+        clean.startsWith('2196') ||
+        clean.startsWith('1E88')) {
+      rawName = isVi ? 'Xanh dương' : 'Blue';
+    } else if (clean.startsWith('0080') ||
+        clean.startsWith('4CAF') ||
+        clean.startsWith('2E7D')) {
+      rawName = isVi ? 'Xanh lá' : 'Green';
+    } else if (clean.startsWith('FFFF') ||
+        clean.startsWith('FFEB') ||
+        clean.startsWith('FDD8')) {
+      rawName = isVi ? 'Vàng' : 'Yellow';
+    } else if (clean.startsWith('8000') ||
+        clean.startsWith('9C27') ||
+        clean.startsWith('8E24')) {
+      rawName = isVi ? 'Tím' : 'Purple';
+    } else if (clean.startsWith('FFA5') ||
+        clean.startsWith('FF98') ||
+        clean.startsWith('FB8C')) {
+      rawName = isVi ? 'Cam' : 'Orange';
+    } else if (clean.startsWith('8080') ||
+        clean.startsWith('9E9E') ||
+        clean.startsWith('7575')) {
+      rawName = isVi ? 'Xám' : 'Grey';
+    } else if (clean.startsWith('A52A') ||
+        clean.startsWith('7955') ||
+        clean.startsWith('6D4C')) {
+      rawName = isVi ? 'Nâu' : 'Brown';
+    } else if (clean.startsWith('F5F5') ||
+        clean.startsWith('FFF8') ||
+        clean.startsWith('FEF9')) {
+      rawName = isVi ? 'Kem' : 'Beige';
+    } else {
+      final hsv = HSVColor.fromColor(color);
+      if (hsv.value < 0.15) {
+        rawName = isVi ? 'Đen' : 'Black';
+      } else if (hsv.value > 0.92 && hsv.saturation < 0.1) {
+        rawName = isVi ? 'Trắng' : 'White';
+      } else if (hsv.saturation < 0.15) {
+        rawName = isVi ? 'Xám' : 'Grey';
+      } else {
+        final hue = hsv.hue;
+        if (hue >= 330 || hue < 15) {
+          rawName = isVi ? 'Hồng' : 'Pink';
+        } else if (hue >= 15 && hue < 45) {
+          rawName = isVi ? 'Cam' : 'Orange';
+        } else if (hue >= 45 && hue < 70) {
+          rawName = isVi ? 'Vàng' : 'Yellow';
+        } else if (hue >= 70 && hue < 165) {
+          rawName = isVi ? 'Xanh lá' : 'Green';
+        } else if (hue >= 165 && hue < 260) {
+          rawName = isVi ? 'Xanh dương' : 'Blue';
+        } else if (hue >= 260 && hue < 330) {
+          rawName = isVi ? 'Tím' : 'Purple';
+        } else {
+          rawName = isVi ? 'Hồng' : 'Pink';
+        }
+      }
+    }
+
+    return isVi ? 'Màu $rawName' : rawName;
   }
 
   @override
@@ -420,6 +555,7 @@ class _DetailContentState extends State<_DetailContent> {
       children: [
         // 1. Body content
         SingleChildScrollView(
+          controller: _scrollController,
           physics: const BouncingScrollPhysics(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -455,8 +591,8 @@ class _DetailContentState extends State<_DetailContent> {
                     20,
                     24,
                     20,
-                    100,
-                  ), // padding bottom 100 to avoid sticky bottom bar overlapping
+                    130,
+                  ), // generous bottom padding to prevent bottom bar overlapping
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -499,36 +635,102 @@ class _DetailContentState extends State<_DetailContent> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      // Rating block
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.star_rounded,
-                            color: Color(0xFFFFB300),
-                            size: 20,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            ratingStr,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
+                      // Rating block (Premium Interactive Pill)
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
+                            if (_scrollController.hasClients) {
+                              _scrollController.animateTo(
+                                _scrollController.position.maxScrollExtent,
+                                duration: const Duration(milliseconds: 500),
+                                curve: Curves.easeInOut,
+                              );
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFFFF4F8), Color(0xFFFFF0F5)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: AppColors.primary.withValues(alpha: 0.22),
+                                width: 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primary.withValues(alpha: 0.05),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(3),
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFFFF0B3),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.star_rounded,
+                                    color: Color(0xFFFFB300),
+                                    size: 14,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  ratingStr,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Container(
+                                  width: 3,
+                                  height: 3,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade400,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  Localizations.localeOf(context).languageCode == 'vi'
+                                      ? '$reviewsCountStr đánh giá'
+                                      : '$reviewsCountStr reviews',
+                                  style: const TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primaryDark,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                const Icon(
+                                  Icons.keyboard_arrow_down_rounded,
+                                  size: 16,
+                                  color: AppColors.primary,
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '($reviewsCountStr)',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey.shade500,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                       const SizedBox(height: 24),
 
-                      // Specs Grid
+                      // Specs Grid (Forms, Surface, Duration formatted to 2h20m, Colors with names & swatches)
                       Builder(
                         builder: (context) {
                           final specItems = <Widget>[];
@@ -558,19 +760,26 @@ class _DetailContentState extends State<_DetailContent> {
                                 context,
                                 icon: Icons.access_time_filled_rounded,
                                 label: S.of(context).bookingDurationLabel,
-                                value: S
-                                    .of(context)
-                                    .minutesLabel('${variant.duration}'),
+                                value: _formatDurationText(
+                                  context,
+                                  variant.duration,
+                                ),
                               ),
                             );
                           }
-                          final colors = _parseColors(variant.colorJson);
-                          if (colors.isNotEmpty) {
+                          final colorDetails = _parseColorsWithDetails(
+                            context,
+                            variant.colorJson,
+                          );
+                          final colors = colorDetails['colors'] as List<Color>;
+                          final colorNames = colorDetails['colorNames'] as String;
+                          if (colors.isNotEmpty || colorNames.isNotEmpty) {
                             specItems.add(
                               _buildSpecColorsCard(
                                 context,
                                 label: S.of(context).colorLabel,
                                 colors: colors,
+                                colorNames: colorNames,
                               ),
                             );
                           }
@@ -586,7 +795,7 @@ class _DetailContentState extends State<_DetailContent> {
                                   crossAxisCount: 2,
                                   crossAxisSpacing: 12,
                                   mainAxisSpacing: 12,
-                                  childAspectRatio: 1.85,
+                                  childAspectRatio: 1.65,
                                 ),
                             itemBuilder: (context, index) => specItems[index],
                           );
@@ -653,87 +862,92 @@ class _DetailContentState extends State<_DetailContent> {
           ),
         ),
 
-        // 3. Sticky footer buttons
+        // 3. Floating sticky footer buttons
         Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
+          bottom: 12,
+          left: 16,
+          right: 16,
           child: Container(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -4),
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 18,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 4),
                 ),
               ],
+              border: Border.all(
+                color: const Color(0xFFF2F2F7),
+                width: 1.2,
+              ),
             ),
             child: SafeArea(
+              top: false,
               child: Row(
                 children: [
                   // Live camera try-on
-                  Expanded(
-                    flex: 1,
-                    child: SizedBox(
-                      height: 50,
-                      child: OutlinedButton(
-                        onPressed: widget.launching
-                            ? null
-                            : () {
-                                widget.onTryOn(_toCustomerNail(variant));
-                              },
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.primary,
-                          side: const BorderSide(
-                            color: AppColors.primary,
-                            width: 1.5,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
+                  SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: OutlinedButton(
+                      onPressed: widget.launching
+                          ? null
+                          : () {
+                              widget.onTryOn(_toCustomerNail(variant));
+                            },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        padding: EdgeInsets.zero,
+                        side: const BorderSide(
+                          color: AppColors.primary,
+                          width: 1.5,
                         ),
-                        child: widget.launching
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: AppColors.primary,
-                                ),
-                              )
-                            : const Icon(Icons.videocam_outlined, size: 24),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
+                      child: widget.launching
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.primary,
+                              ),
+                            )
+                          : const Icon(Icons.videocam_rounded, size: 22),
                     ),
                   ),
                   const SizedBox(width: 8),
 
                   // Photo try-on
-                  Expanded(
-                    flex: 1,
-                    child: SizedBox(
-                      height: 50,
-                      child: OutlinedButton(
-                        onPressed: widget.launching
-                            ? null
-                            : () {
-                                widget.onPhotoTryOn(_toCustomerNail(variant));
-                              },
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.primary,
-                          side: const BorderSide(
-                            color: AppColors.primary,
-                            width: 1.5,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
+                  SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: OutlinedButton(
+                      onPressed: widget.launching
+                          ? null
+                          : () {
+                              widget.onPhotoTryOn(_toCustomerNail(variant));
+                            },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        padding: EdgeInsets.zero,
+                        side: const BorderSide(
+                          color: AppColors.primary,
+                          width: 1.5,
                         ),
-                        child: const Icon(
-                          Icons.photo_camera_outlined,
-                          size: 24,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
                         ),
+                      ),
+                      child: const Icon(
+                        Icons.photo_camera_rounded,
+                        size: 22,
                       ),
                     ),
                   ),
@@ -741,9 +955,8 @@ class _DetailContentState extends State<_DetailContent> {
 
                   // Book Appointment Button
                   Expanded(
-                    flex: 3,
                     child: SizedBox(
-                      height: 50,
+                      height: 44,
                       child: ElevatedButton(
                         onPressed: _selectedShapeMethod == null
                             ? null
@@ -785,14 +998,14 @@ class _DetailContentState extends State<_DetailContent> {
                           disabledForegroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(14),
                           ),
                         ),
                         child: Text(
                           S.of(context).bookAppointmentNow,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 15,
+                            fontSize: 14,
                           ),
                         ),
                       ),
@@ -814,14 +1027,21 @@ class _DetailContentState extends State<_DetailContent> {
     required String value,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFF4081).withValues(alpha: 0.02),
-        borderRadius: BorderRadius.circular(16),
+        color: const Color(0xFFFAFAFC),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: const Color(0xFFFF4081).withValues(alpha: 0.08),
-          width: 1.2,
+          color: AppColors.primary.withValues(alpha: 0.14),
+          width: 1.0,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -829,15 +1049,22 @@ class _DetailContentState extends State<_DetailContent> {
         children: [
           Row(
             children: [
-              Icon(icon, color: const Color(0xFFFF4081), size: 20),
-              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.all(5),
+                decoration: const BoxDecoration(
+                  color: AppColors.primarySurface,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: AppColors.primary, size: 14),
+              ),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   label,
                   style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade500,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 11.5,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w600,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -845,15 +1072,16 @@ class _DetailContentState extends State<_DetailContent> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             value,
             style: const TextStyle(
-              fontSize: 14,
+              fontSize: 13.5,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
+              height: 1.2,
             ),
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
         ],
@@ -865,16 +1093,24 @@ class _DetailContentState extends State<_DetailContent> {
     BuildContext context, {
     required String label,
     required List<Color> colors,
+    required String colorNames,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFF4081).withValues(alpha: 0.02),
-        borderRadius: BorderRadius.circular(16),
+        color: const Color(0xFFFAFAFC),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: const Color(0xFFFF4081).withValues(alpha: 0.08),
-          width: 1.2,
+          color: AppColors.primary.withValues(alpha: 0.14),
+          width: 1.0,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -882,19 +1118,26 @@ class _DetailContentState extends State<_DetailContent> {
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.palette_rounded,
-                color: Color(0xFFFF4081),
-                size: 20,
+              Container(
+                padding: const EdgeInsets.all(5),
+                decoration: const BoxDecoration(
+                  color: AppColors.primarySurface,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.palette_rounded,
+                  color: AppColors.primary,
+                  size: 14,
+                ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   label,
                   style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade500,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 11.5,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w600,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -902,35 +1145,45 @@ class _DetailContentState extends State<_DetailContent> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: colors
-                  .map(
-                    (color) => Container(
-                      margin: const EdgeInsets.only(right: 6),
-                      width: 18,
-                      height: 18,
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.grey.shade300,
-                          width: 1,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 3,
-                            offset: const Offset(0, 1),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              if (colors.isNotEmpty) ...[
+                Row(
+                  children: colors
+                      .take(3)
+                      .map(
+                        (color) => Container(
+                          margin: const EdgeInsets.only(right: 4),
+                          width: 15,
+                          height: 15,
+                          decoration: BoxDecoration(
+                            color: color,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.grey.shade300,
+                              width: 1,
+                            ),
                           ),
-                        ],
-                      ),
-                    ),
-                  )
-                  .toList(),
-            ),
+                        ),
+                      )
+                      .toList(),
+                ),
+                const SizedBox(width: 4),
+              ],
+              Expanded(
+                child: Text(
+                  colorNames,
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -959,88 +1212,149 @@ class _DetailContentState extends State<_DetailContent> {
             .toList();
         if (methods.isEmpty) return const SizedBox.shrink();
 
-        return RadioGroup<int>(
-          groupValue: _selectedShapeMethod?.shapeMethodConfigId,
-          onChanged: (shapeMethodConfigId) {
-            if (shapeMethodConfigId == null) return;
-            final selectedShapeMethod = methods.firstWhere(
-              (method) => method.shapeMethodConfigId == shapeMethodConfigId,
-            );
-            setState(() {
-              _selectedShapeMethod = selectedShapeMethod;
-            });
-          },
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                S.of(context).shapeMethodLabel,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                  fontFamily: 'Georgia',
-                  letterSpacing: -0.5,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  S.of(context).shapeMethodLabel,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                    fontFamily: 'Georgia',
+                    letterSpacing: -0.5,
+                  ),
                 ),
+                const SizedBox(width: 6),
+                Text(
+                  '(Chọn 1)',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade500,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: methods.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                childAspectRatio: 2.1,
               ),
-              const SizedBox(height: 12),
-              ...methods.map((method) {
+              itemBuilder: (context, index) {
+                final method = methods[index];
                 final selected =
                     _selectedShapeMethod?.shapeMethodConfigId ==
                     method.shapeMethodConfigId;
-                // DecoratedBox (không phải Container) để không vẽ background color
-                // đè lên Material bên trong — nếu không RadioListTile sẽ bị
-                // ListTile background ẩn ink splash.
-                // Fix bug: "ListTile background color or ink splashes may be invisible"
-                return DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? AppColors.primary.withValues(alpha: 0.05)
-                        : Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: selected
-                          ? AppColors.primary
-                          : const Color(0xFFFFF0F5),
-                      width: 1.5,
+                return InkWell(
+                  onTap: () {
+                    setState(() {
+                      _selectedShapeMethod = method;
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
                     ),
-                  ),
-                  child: Material(
-                    type: MaterialType.transparency,
-                    child: RadioListTile<int>(
-                      value: method.shapeMethodConfigId,
-                      title: Text(
-                        method.name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? AppColors.primarySurface
+                          : Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: selected
+                            ? AppColors.primary
+                            : const Color(0xFFF2F2F7),
+                        width: selected ? 1.8 : 1.0,
+                      ),
+                      boxShadow: selected
+                          ? [
+                              BoxShadow(
+                                color: AppColors.primary.withValues(
+                                  alpha: 0.12,
+                                ),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ]
+                          : [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.02),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                method.name,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: selected
+                                      ? AppColors.primary
+                                      : AppColors.textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Icon(
+                              selected
+                                  ? Icons.check_circle_rounded
+                                  : Icons.radio_button_unchecked_rounded,
+                              size: 16,
+                              color: selected
+                                  ? AppColors.primary
+                                  : Colors.grey.shade400,
+                            ),
+                          ],
                         ),
-                      ),
-                      subtitle: Text(
-                        S.of(context).minutesLabel('${method.duration}'),
-                        style: TextStyle(
-                          color: Colors.grey.shade500,
-                          fontSize: 12,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              S.of(context).minutesLabel('${method.duration}'),
+                              style: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Text(
+                              PriceFormatter.format(method.price),
+                              style: const TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      secondary: Text(
-                        PriceFormatter.format(method.price),
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      activeColor: AppColors.primary,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                      ),
+                      ],
                     ),
                   ),
                 );
-              }),
-            ],
-          ),
+              },
+            ),
+          ],
         );
       },
     );

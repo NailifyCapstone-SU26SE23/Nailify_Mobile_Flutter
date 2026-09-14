@@ -87,7 +87,12 @@ class BookingApiService {
   Future<List<dynamic>> getSalons() async {
     final response = await _apiClient.get(
       '/Salons',
-      queryParameters: {'PageIndex': 1, 'PageSize': 10, 'Status': 'Open'},
+      queryParameters: {
+        'PageNumber': 1,
+        'PageIndex': 1,
+        'PageSize': 10,
+        'Status': 'Open',
+      },
     );
     final items = (response.data['data']['items'] as List<dynamic>?) ?? [];
 
@@ -100,7 +105,13 @@ class BookingApiService {
         return {...map, 'rating': rating};
       }),
     );
-    return listWithRatings;
+
+    // Lọc nghiêm ngặt chỉ giữ lại các salon đang MỞ cửa (Status: Open / Active)
+    return listWithRatings.where((salon) {
+      if (salon is! Map) return false;
+      final status = salon['status']?.toString().toLowerCase() ?? '';
+      return status.isEmpty || status == 'open' || status == 'active';
+    }).toList();
   }
 
   Future<Map<String, dynamic>?> getSalonDetail(String salonId) async {

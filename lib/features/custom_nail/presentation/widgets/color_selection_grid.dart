@@ -39,7 +39,7 @@ class _ColorSelectionGridState extends State<ColorSelectionGrid> {
                 child: ChoiceChip(
                   label: Text(category),
                   selected: isSelected,
-                  selectedColor: AppColors.primary.withOpacity(0.15),
+                  selectedColor: AppColors.primary.withValues(alpha: 0.15),
                   backgroundColor: Colors.white,
                   labelStyle: TextStyle(
                     color: isSelected
@@ -102,7 +102,7 @@ class _ColorSelectionGridState extends State<ColorSelectionGrid> {
                       boxShadow: [
                         if (isSelected)
                           BoxShadow(
-                            color: AppColors.primary.withOpacity(0.3),
+                            color: AppColors.primary.withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 4),
                           ),

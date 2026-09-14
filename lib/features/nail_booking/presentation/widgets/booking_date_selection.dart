@@ -131,8 +131,8 @@ class _BookingDateSelectionState extends State<BookingDateSelection> {
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 7,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 6,
             childAspectRatio: 1,
           ),
           itemCount: daysInMonth + firstWeekday - 1,
@@ -152,7 +152,8 @@ class _BookingDateSelectionState extends State<BookingDateSelection> {
 
             return GestureDetector(
               onTap: isPastDate ? null : () => widget.onDateChanged(thisDay),
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isSelected ? AppColors.primary : Colors.transparent,
@@ -161,22 +162,32 @@ class _BookingDateSelectionState extends State<BookingDateSelection> {
                       : Border.all(
                           color: isPastDate
                               ? Colors.grey.shade100
-                              : AppColors.borderLight,
+                              : const Color(0xFFF2ECE6),
+                          width: 1,
                         ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.35),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Center(
                   child: Text(
                     '$day',
                     style: TextStyle(
-                      fontSize: 15,
+                      fontSize: 14,
                       fontWeight: isSelected
                           ? FontWeight.bold
                           : FontWeight.w500,
                       color: isSelected
                           ? Colors.white
                           : (isPastDate
-                                ? Colors.grey.shade300
-                                : AppColors.textPrimary),
+                              ? Colors.grey.shade300
+                              : AppColors.textPrimary),
                     ),
                   ),
                 ),

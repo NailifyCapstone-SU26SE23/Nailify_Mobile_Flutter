@@ -1,12 +1,22 @@
-import 'package:flutter_gen/gen_l10n.dart';
-
+/// Format thoi gian thanh chuoi human-readable.
+///
+/// Su dung:
+/// ```dart
+/// DurationFormatter.format(45);           // "45 phut"
+/// DurationFormatter.format(90);           // "1 gio 30 phut"
+/// DurationFormatter.format(150);          // "2 gio 30 phut"
+/// DurationFormatter.format(-419);        // "-419 phut" (loi timezone server)
+/// DurationFormatter.formatDiff(duration); // "2 gio 30 phut"
+/// ```
 class DurationFormatter {
   /// Format mot so phut (int/double/String) thanh chuoi human-readable.
-  /// - Ho tro so am (dang ky tuong lai / loi timezone) -> hien thi gia tri tuyet doi.
-  /// - Tren 24 gio -> format ngay.
-  /// - Duoi 24 gio -> format gio + phut.
-  /// - Duoi 60 phut -> format phut.
-  static String format(dynamic minutesRaw, {bool useLocalization = false}) {
+  ///
+  /// - Xu ly so am: lay gia tri tuyet doi + prefix "-"
+  ///   (vi du: server tra ve -419 phut do loi timezone)
+  /// - Tren 24 gio: hien thi "X ngay Y gio Z phut"
+  /// - Tren 60 phut: hien thi "X gio Y phut"
+  /// - Duoi 60 phut: hien thi "X phut"
+  static String format(dynamic minutesRaw) {
     if (minutesRaw == null) return '0 phut';
 
     int minutes = 0;
@@ -27,47 +37,33 @@ class DurationFormatter {
       final int days = minutes ~/ 1440;
       final int remainingMinutes = minutes % 1440;
       if (remainingMinutes == 0) {
-        final String base = useLocalization
-            ? S.current.durationDays(days)
-            : '$days ngay';
-        return isNegative ? '-$base' : base;
+        return isNegative ? '-$days ngay' : '$days ngay';
       }
       final int hours = remainingMinutes ~/ 60;
       final int mins = remainingMinutes % 60;
-      if (useLocalization) {
-        return isNegative
-            ? '-${S.current.durationDaysHours(days, hours)}'
-            : S.current.durationDaysHours(days, hours);
-      }
       final hoursStr = hours > 0 ? '$hours gio ' : '';
-      return isNegative ? '-$days ngay $hoursStr$mins phut' : '$days ngay $hoursStr$mins phut';
+      return isNegative
+          ? '-$days ngay $hoursStr$mins phut'
+          : '$days ngay $hoursStr$mins phut';
     }
 
-    // Duoi 24 gio: hien thi gio + phut
+    // Tren 60 phut: hien thi gio + phut
     if (minutes >= 60) {
       final int hours = minutes ~/ 60;
       final int mins = minutes % 60;
       if (mins == 0) {
-        final String base =
-            useLocalization ? S.current.durationHours(hours) : '$hours gio';
-        return isNegative ? '-$base' : base;
+        return isNegative ? '-$hours gio' : '$hours gio';
       }
-      final String base = useLocalization
-          ? S.current.durationHoursMinutes(hours, mins)
-          : '$hours gio $mins phut';
-      return isNegative ? '-$base' : base;
+      return isNegative ? '-$hours gio $mins phut' : '$hours gio $mins phut';
     }
 
     // Duoi 60 phut: hien thi phut
-    final String base =
-        useLocalization ? S.current.durationMinutes(minutes) : '$minutes phut';
-    return isNegative ? '-$base' : base;
+    return isNegative ? '-$minutes phut' : '$minutes phut';
   }
 
   /// Format mot Duration (tu DateTime.difference) thanh chuoi human-readable.
   /// Tu dong xu ly negative (Duration am -> lay tuyet doi).
-  static String formatDiff(Duration diff, {bool useLocalization = false}) {
-    final int totalMinutes = diff.inMinutes;
-    return format(totalMinutes, useLocalization: useLocalization);
+  static String formatDiff(Duration diff) {
+    return format(diff.inMinutes);
   }
 }

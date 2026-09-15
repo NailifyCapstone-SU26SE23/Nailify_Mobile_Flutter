@@ -764,28 +764,37 @@ class _MyBookingListPageState extends State<MyBookingListPage>
 
   void _handleWarrantyAction(Map<String, dynamic> booking) {
     final items = booking['bookingItems'] as List<dynamic>? ?? [];
-    int? nailVariantId;
-    int? shapeMethodConfigId;
-    String? shapeMethodName;
-    final extraServiceIds = <String>[];
 
-    // Build booking items cho API chính xác
+    // ── Guard: thời hạn bảo hành tối đa 7 ngày từ ngày hoàn thành ──
+    // Check sớm ngay tại list page để hiện popup ngay, không nhảy qua
+    // page trung gian (như trước đây vẫn navigate sang warranty page
+    // khoảng 2s rồi mới hiện thông báo).
+    final bookingIdStr = booking['bookingId']?.toString() ?? '';
+    final salonId = booking['salonId']?.toString() ?? '';
+    final dateStr = booking['bookingDate']?.toString() ?? '';
+    final sourceBookingDate = DateTime.tryParse(dateStr);
+    if (sourceBookingDate != null &&
+        DateTime.now().difference(sourceBookingDate) >
+            const Duration(days: 7)) {
+      _showWarrantyExpiredDialog();
+      return;
+    }
+
+    // Build booking items cho API chính xác — ép kiểu tất cả field cần thiết.
     final List<Map<String, dynamic>> bookingItemsForApi = items.map((item) {
       final map = <String, dynamic>{};
       if (item is Map) {
-        if (item['nailVariantId'] != null) {
-          final idVal = int.tryParse(item['nailVariantId'].toString());
-          if (idVal != null && idVal > 0) {
-            nailVariantId = idVal;
-            map['nailVariantId'] = idVal;
-          }
+        final nailVariantIdRaw = item['nailVariantId']?.toString();
+        if (nailVariantIdRaw != null &&
+            int.tryParse(nailVariantIdRaw) != null &&
+            int.tryParse(nailVariantIdRaw)! > 0) {
+          map['nailVariantId'] = int.parse(nailVariantIdRaw);
         }
         map['nailVariantName'] = item['nailVariantName']?.toString();
 
-        if (item['serviceId'] != null) {
-          final sId = item['serviceId'].toString();
-          extraServiceIds.add(sId);
-          map['serviceId'] = sId;
+        final serviceId = item['serviceId']?.toString();
+        if (serviceId != null && serviceId.isNotEmpty) {
+          map['serviceId'] = serviceId;
         }
         map['serviceName'] = item['serviceName']?.toString();
 
@@ -793,22 +802,22 @@ class _MyBookingListPageState extends State<MyBookingListPage>
             item['shapeMethodConfigId'] ?? item['ShapeMethodConfigId'];
         if (shapeConfigVal != null) {
           final configId = int.tryParse(shapeConfigVal.toString());
-          shapeMethodConfigId = configId;
-          map['shapeMethodConfigId'] = configId;
+          if (configId != null) {
+            map['shapeMethodConfigId'] = configId;
+          }
         }
-        shapeMethodName = item['shapeMethodName']?.toString();
-        map['shapeMethodName'] = shapeMethodName;
+        map['shapeMethodName'] = item['shapeMethodName']?.toString();
 
-        if (item['customerNailId'] != null) {
-          map['customerNailId'] = int.tryParse(
-            item['customerNailId'].toString(),
-          );
+        final customerNailIdRaw = item['customerNailId']?.toString();
+        if (customerNailIdRaw != null) {
+          map['customerNailId'] = int.tryParse(customerNailIdRaw);
         }
         map['customerNailName'] = item['customerNailName']?.toString();
 
-        if (item['customerNailRequestId'] != null) {
-          map['customerNailRequestId'] = item['customerNailRequestId']
-              .toString();
+        final customerNailRequestId =
+            item['customerNailRequestId']?.toString();
+        if (customerNailRequestId != null) {
+          map['customerNailRequestId'] = customerNailRequestId;
         }
         map['quantity'] =
             int.tryParse(item['quantity']?.toString() ?? '1') ?? 1;
@@ -817,39 +826,134 @@ class _MyBookingListPageState extends State<MyBookingListPage>
       return map;
     }).toList();
 
-    var displayName = S.of(context).warrantyServiceDefault;
-    if (items.isNotEmpty && items.first is Map) {
-      final firstItem = items.first as Map;
-      final variantName = firstItem['nailVariantName']?.toString().trim() ?? '';
-      final customNailName =
-          firstItem['customerNailName']?.toString().trim() ?? '';
-      final serviceName = firstItem['serviceName']?.toString().trim() ?? '';
-      if (variantName.isNotEmpty) {
-        displayName = variantName;
-      } else if (customNailName.isNotEmpty) {
-        displayName = customNailName;
-      } else if (serviceName.isNotEmpty) {
-        displayName = serviceName;
+    // Resolve nailArtistId từ response. Cấu trúc response có thể là:
+    //  - Flat:    booking['nailArtistId']
+    //  - Nested:  booking['nailArtist']['nailArtistId']
+    //  - Nested alt: booking['artist']['nailArtistId']
+    // Nếu không resolve được → truyền rỗng, user sẽ chọn lại artist.
+    String nailArtistId = '';
+    final flatArtistId = booking['nailArtistId']?.toString();
+    if (flatArtistId != null && flatArtistId.trim().isNotEmpty) {
+      nailArtistId = flatArtistId.trim();
+    } else {
+      for (final key in const ['nailArtist', 'artist']) {
+        final nested = booking[key];
+        if (nested is Map) {
+          final id =
+              nested['nailArtistId']?.toString() ??
+              nested['id']?.toString() ??
+              '';
+          if (id.trim().isNotEmpty) {
+            nailArtistId = id.trim();
+            break;
+          }
+        }
       }
     }
 
-    final bookingIdStr = booking['bookingId']?.toString() ?? '';
-    final salonId = booking['salonId']?.toString() ?? '';
+    // Build payload mới cho WarrantyBookingPage — flow riêng, KHÔNG dùng
+    // lại NailBookingPage. Salon, thợ cũ (nếu resolve được) được truyền
+    // để page pre-select + pin lên đầu. Booking items từ booking gốc
+    // được truyền để page render danh sách bảo hành.
+    Map<String, dynamic>? sourceStylist;
+    for (final key in const ['nailArtist', 'artist']) {
+      final nested = booking[key];
+      if (nested is Map) {
+        sourceStylist = Map<String, dynamic>.from(nested);
+        break;
+      }
+    }
+    if (sourceStylist != null) {
+      sourceStylist['nailArtistId'] ??= nailArtistId;
+      final existingName = sourceStylist['fullName']?.toString() ?? '';
+      if (existingName.isEmpty) {
+        sourceStylist['fullName'] = booking['artistName']?.toString() ?? '';
+      }
+    }
 
-    final nailData = {
-      'id': nailVariantId ?? 0,
-      'name': '${S.of(context).warrantyPrefix}: $displayName',
-      'price': 0, // Bảo hành miễn phí
-      'shapeMethodConfigId': shapeMethodConfigId,
-      'shapeMethodPrice': 0.0, // Bảo hành tạo form miễn phí
-      'shapeMethodName': shapeMethodName,
-      'warrantyForBookingId': bookingIdStr,
+    final warrantyData = {
+      'sourceBookingId': bookingIdStr,
       'salonId': salonId,
-      'extraServiceIds': extraServiceIds,
-      'warrantyBookingItems':
-          bookingItemsForApi, // Truyền chuẩn mảng bookingItems cũ
+      'salonName': booking['salonName']?.toString() ?? '',
+      'salonAddress': booking['salonAddress']?.toString() ?? '',
+      'sourceArtistId': nailArtistId,
+      'sourceArtistName': booking['artistName']?.toString() ?? '',
+      'sourceStylist': sourceStylist,
+      'noArtistSelected': nailArtistId.isEmpty,
+      'bookingItems': bookingItemsForApi,
+      if (sourceBookingDate != null)
+        'sourceBookingDate': sourceBookingDate.toIso8601String(),
     };
 
-    context.push('/nail-booking', extra: nailData);
+    if (!mounted) return;
+    context.push('/warranty-booking', extra: warrantyData);
+  }
+
+  /// Hiện popup "Đã quá hạn bảo hành" ngay tại list page, không
+  /// navigate sang trang trung gian. Được gọi khi `DateTime.now()` trừ
+  /// đi `sourceBookingDate` > 7 ngày.
+  void _showWarrantyExpiredDialog() {
+    if (!mounted) return;
+    showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        contentPadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.access_time_filled_rounded,
+                size: 40,
+                color: Colors.orange.shade700,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              S.of(context).warrantyExpiredTitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primaryDark,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              S.of(context).warrantyExpiredDesc,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13.5,
+                color: Colors.grey.shade700,
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+            ),
+            child: Text(
+              S.of(context).warrantyExpiredBackBtn,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

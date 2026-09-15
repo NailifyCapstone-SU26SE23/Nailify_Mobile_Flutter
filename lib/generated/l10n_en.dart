@@ -1195,6 +1195,9 @@ class SEn extends S {
   String get bookingAddServiceTitle => 'Add Add-on Service';
 
   @override
+  String get bookingAddServiceBtn => 'Add service';
+
+  @override
   String get bookingSelectArtistTitle => 'Select Artist';
 
   @override
@@ -1840,6 +1843,63 @@ class SEn extends S {
   }
 
   @override
+  String get bookingInfoSalon => 'Branch';
+
+  @override
+  String get warrantyBookingTitle => 'Warranty booking';
+
+  @override
+  String get warrantyStepArtist => 'Choose artist';
+
+  @override
+  String get warrantyStepServices => 'Warranty services';
+
+  @override
+  String get warrantyStepSchedule => 'Date & time';
+
+  @override
+  String get warrantyStepConfirm => 'Confirm';
+
+  @override
+  String get warrantyPinnedArtist => 'Previously worked with';
+
+  @override
+  String get warrantyFree => 'Free';
+
+  @override
+  String get warrantyConfirmBtn => 'Confirm warranty';
+
+  @override
+  String get warrantyConfirmDepositBtn => 'Pay deposit & confirm';
+
+  @override
+  String get warrantyAddonNote =>
+      'You can add extra services (if any). This will be charged.';
+
+  @override
+  String get warrantyDepositNote =>
+      'Your warranty includes paid extra services. A deposit is required before completing.';
+
+  @override
+  String get warrantyExpiredTitle => 'Warranty has expired';
+
+  @override
+  String get warrantyExpiredDesc =>
+      'The maximum warranty period is 7 days from the original booking\'s completion date. Please contact the salon for support.';
+
+  @override
+  String get warrantyExpiredBackBtn => 'Back';
+
+  @override
+  String get warrantyServiceNote =>
+      'Warranty items are listed from your previous appointment. You can uncheck any service you don\'t need to maintain.';
+
+  @override
+  String get warrantySuccessTitle => 'Warranty booking successful!';
+
+  @override
+  String get warrantySuccessSubtitle =>
+      'Your warranty appointment has been recorded.';
   String get galleryHeaderTag => 'NAIL ART COLLECTION 2026';
 
   @override

@@ -3558,6 +3558,7 @@ abstract class S {
   /// In en, this message translates to:
   /// **'Your warranty appointment has been recorded.'**
   String get warrantySuccessSubtitle;
+
   /// No description provided for @galleryHeaderTag.
   ///
   /// In en, this message translates to:

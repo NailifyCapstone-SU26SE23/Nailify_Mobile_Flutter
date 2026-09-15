@@ -10,6 +10,7 @@ import '../../data/datasources/my_booking_api_service.dart';
 import '../utils/booking_status_utils.dart';
 import '../widgets/waitlist_tab.dart';
 import '../widgets/reschedule_tab.dart';
+import '../widgets/reschedule_booking_dialog.dart';
 
 class MyBookingListPage extends StatefulWidget {
   final int initialTab;
@@ -592,6 +593,21 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     final bookingIdStr = booking['bookingId']?.toString() ?? '';
     final canRate = (rawStatus == 'Completed' && booking['isRated'] == false);
 
+    final canReschedule =
+        (rawStatus == 'Pending' ||
+            rawStatus == 'Approved' ||
+            rawStatus == 'Assigned') &&
+        bookingIdStr.isNotEmpty;
+
+    final warrantyForBookingId = booking['warrantyForBookingId']?.toString() ??
+        booking['WarrantyForBookingId']?.toString();
+    final isWarrantyBooking =
+        warrantyForBookingId != null && warrantyForBookingId.isNotEmpty;
+    final hasWarrantyRequested = _readBool(
+          booking['isWarrantied'] ?? booking['IsWarrantied'],
+        ) ||
+        _hasWarranty(bookingIdStr);
+
     return GestureDetector(
       onTap: () {
         if (bookingIdStr.isNotEmpty) {
@@ -623,34 +639,81 @@ class _MyBookingListPageState extends State<MyBookingListPage>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: status.backgroundColor,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: status.textColor.withValues(alpha: 0.15),
-                      width: 1,
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: status.backgroundColor,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: status.textColor.withValues(alpha: 0.15),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(status.icon, color: status.textColor, size: 13),
+                          const SizedBox(width: 4),
+                          Text(
+                            status.label,
+                            style: TextStyle(
+                              color: status.textColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(status.icon, color: status.textColor, size: 13),
-                      const SizedBox(width: 4),
-                      Text(
-                        status.label,
-                        style: TextStyle(
-                          color: status.textColor,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
+                    if (isWarrantyBooking) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.blue.shade200),
+                        ),
+                        child: Text(
+                          'Đơn bảo hành',
+                          style: TextStyle(
+                            color: Colors.blue.shade800,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ] else if (hasWarrantyRequested) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.teal.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.teal.shade200),
+                        ),
+                        child: Text(
+                          'Đã bảo hành',
+                          style: TextStyle(
+                            color: Colors.teal.shade800,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
-                  ),
+                  ],
                 ),
                 Text(
                   '${bookingDate.day}/${bookingDate.month}/${bookingDate.year}',
@@ -696,6 +759,36 @@ class _MyBookingListPageState extends State<MyBookingListPage>
                 ),
               ],
             ),
+            if (canReschedule) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _openRescheduleDialog(bookingIdStr),
+                  icon: const Icon(
+                    Icons.edit_calendar_rounded,
+                    size: 18,
+                    color: AppColors.primary,
+                  ),
+                  label: Text(
+                    S.of(context).bookingRescheduleBtnLabel,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary, width: 1.2),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                ),
+              ),
+            ],
             if (canRate && bookingIdStr.isNotEmpty) ...[
               const SizedBox(height: 12),
               SizedBox(
@@ -744,6 +837,55 @@ class _MyBookingListPageState extends State<MyBookingListPage>
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  void _openRescheduleDialog(String bookingIdStr) {
+    showDialog(
+      context: context,
+      builder: (context) => RescheduleBookingDialog(
+        bookingId: bookingIdStr,
+        onConfirm: (newDate, newTime, reason) async {
+          try {
+            final success = await _apiService.requestRescheduleBooking(
+              bookingIdStr,
+              newDate: newDate,
+              newTime: newTime,
+              reason: reason,
+            );
+            if (!context.mounted) return false;
+            if (success) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(S.of(context).bookingRescheduleSuccess),
+                  backgroundColor: Colors.green,
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+              _fetchBookings(refresh: true);
+              _tabController.animateTo(2);
+              return true;
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(S.of(context).bookingRescheduleFail),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return false;
+            }
+          } catch (e) {
+            if (!context.mounted) return false;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Lỗi: ${e.toString()}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            return false;
+          }
+        },
       ),
     );
   }

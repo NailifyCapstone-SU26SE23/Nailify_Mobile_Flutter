@@ -190,6 +190,13 @@ class AppRouter {
       GoRoute(
         path: '/booking-transactions',
         builder: (context, state) {
+          if (state.extra is Map) {
+            final map = Map<String, dynamic>.from(state.extra as Map);
+            return TransactionListPage(
+              bookingId: map['bookingId']?.toString(),
+              bookingData: map['booking'] as Map<String, dynamic>?,
+            );
+          }
           final bookingId = state.extra?.toString() ?? '';
           return TransactionListPage(bookingId: bookingId);
         },

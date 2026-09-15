@@ -18,6 +18,7 @@ import '../widgets/artist_selection_list.dart';
 import '../widgets/booking_date_selection.dart';
 import '../widgets/booking_time_selection.dart';
 import '../widgets/branch_selection_list.dart';
+import '../widgets/payment_detail_table.dart';
 import '../widgets/service_choice_step.dart';
 
 /// Trang đặt lịch mới từ HomeBanner.
@@ -878,20 +879,17 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
   }
 
   Widget _buildServiceStep() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: ServiceChoiceStep(
-        selectedArtistId: _noArtistSelected
-            ? null
-            : _selectedStylist?['nailArtistId'],
-        services: _availableServices,
-        selectedExtraServices: _selectedExtraServices,
-        onExtraServicesChanged: _handleExtraServicesChanged,
-        selectedNailVariant: _selectedNailVariant,
-        onNailVariantChanged: _handleNailVariantChanged,
-        selectedShapeMethod: _selectedShapeMethod,
-        onShapeMethodChanged: _handleShapeMethodChanged,
-      ),
+    return ServiceChoiceStep(
+      selectedArtistId: _noArtistSelected
+          ? null
+          : _selectedStylist?['nailArtistId'],
+      services: _availableServices,
+      selectedExtraServices: _selectedExtraServices,
+      onExtraServicesChanged: _handleExtraServicesChanged,
+      selectedNailVariant: _selectedNailVariant,
+      onNailVariantChanged: _handleNailVariantChanged,
+      selectedShapeMethod: _selectedShapeMethod,
+      onShapeMethodChanged: _handleShapeMethodChanged,
     );
   }
 
@@ -1045,26 +1043,12 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
             ],
           ),
           const SizedBox(height: 12),
-          if (_selectedNailVariant != null) _buildNailVariantRow(),
-          ..._selectedExtraServices.whereType<String>().map(
-            (id) => _buildPaymentRow(
-              S.of(context).bookingExtraService(_serviceNameById(id)),
-              _servicePriceById(id),
-              muted: true,
-            ),
-          ),
-          // Subtotal: nail variant (đã bao gồm shape method nếu có) +
-          // các dịch vụ đi kèm. Fix bug "tổng tiền 390k -> 386k không
-          // giải thích": tách thành 2 dòng riêng để user thấy từng khoản.
-          if (_selectedNailVariant != null ||
-              _selectedExtraServices.whereType<String>().isNotEmpty) ...[
+          PaymentDetailTable(items: _paymentTableItems),
+          if (_discountBreakdown.isNotEmpty) ...[
             const Divider(height: 16),
-            // Fix: hiển thị rõ "Phí dịch vụ" + "Tạm tính" trước khi
-            // áp dụng giảm giá để khách hiểu từng dòng tiền.
-            ..._buildSubtotalRows(),
             ..._discountBreakdown.map(_buildDiscountRow),
-            const Divider(height: 16),
           ],
+          const Divider(height: 16),
           // Fix bug "nhảy giá": hiển thị placeholder thay vì giá 0.
           isLoading
               ? _buildLoadingPriceRow(S.of(context).bookingTotal)
@@ -1083,24 +1067,33 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
     );
   }
 
-  /// Tách các dòng "Phí dịch vụ" (đã bao gồm nail variant + shape method)
-  /// + từng dịch vụ đi kèm để khách thấy rõ từng khoản. Trước fix:
-  /// 1 dòng nail variant + N dòng extras (mỗi dòng là giá đơn lẻ,
-  /// tổng = 390k) rồi apply discount ra 386k → khách không biết lý do.
-  /// Sau fix: tách rõ + áp dụng discount có dòng giảm giá riêng + total.
-  List<Widget> _buildSubtotalRows() {
-    final rows = <Widget>[];
+  List<PaymentTableItem> get _paymentTableItems {
+    final items = <PaymentTableItem>[];
     final variantPrice = (_nailVariantPrice + _shapeMethodPrice).round();
     if (_selectedNailVariant != null && variantPrice > 0) {
-      rows.add(
-        _buildPaymentRow(
-          _selectedNailVariant?.name ?? 'Mẫu nail',
-          variantPrice,
-          muted: true,
+      items.add(
+        PaymentTableItem(
+          name: _selectedNailVariant?.name ?? 'Mẫu nail',
+          quantity: 1,
+          unitPrice: variantPrice,
         ),
       );
     }
-    return rows;
+    final counts = <String, int>{};
+    for (final id in _selectedExtraServices.whereType<String>()) {
+      counts[id] = (counts[id] ?? 0) + 1;
+    }
+    for (final entry in counts.entries) {
+      final unit = _servicePriceById(entry.key);
+      items.add(
+        PaymentTableItem(
+          name: _serviceNameById(entry.key),
+          quantity: entry.value,
+          unitPrice: unit,
+        ),
+      );
+    }
+    return items;
   }
 
   List<Map<String, dynamic>> get _discountBreakdown {
@@ -1115,8 +1108,11 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
 
   Widget _buildDiscountRow(Map<String, dynamic> discount) {
     final name = discount['name']?.toString() ?? 'Giảm giá';
-    final amount = discount['amount'] ?? 0;
+    final amount = discount['amount'];
     final amountDisplay = discount['amountDisplay']?.toString();
+    final rawDisplay = (amountDisplay?.isNotEmpty == true)
+        ? amountDisplay!
+        : (amount != null ? PriceFormatter.format(amount) : '');
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -1133,9 +1129,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
             ),
           ),
           Text(
-            amountDisplay != null && amountDisplay.isNotEmpty
-                ? '-$amountDisplay'
-                : '-${PriceFormatter.format(amount)}',
+            _formatDiscountDisplay(rawDisplay),
             style: const TextStyle(
               fontWeight: FontWeight.bold,
               color: Colors.green,
@@ -1146,34 +1140,14 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
     );
   }
 
-  Widget _buildNailVariantRow() {
-    final name = _selectedNailVariant?.name ?? 'Mẫu nail';
-    final price = (_nailVariantPrice + _shapeMethodPrice).round();
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: Text(
-                name,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-          ),
-          Text(
-            PriceFormatter.format(price),
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-          ),
-        ],
-      ),
-    );
+  String _formatDiscountDisplay(String value) {
+    var text = value.trim();
+    if (text.isEmpty) return text;
+    text = text.replaceAll(RegExp(r'^-+'), '');
+    text = '-$text';
+    final lower = text.toLowerCase();
+    if (lower.contains('đ') || lower.contains('vnd')) return text;
+    return '$text VNĐ';
   }
 
   Widget _buildDepositDetails(int totalPrice) {

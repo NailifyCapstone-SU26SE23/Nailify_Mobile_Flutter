@@ -84,13 +84,89 @@ class BookingApiService {
     }
   }
 
+  static bool _isSalonOpen(dynamic salon) {
+    if (salon == null || salon is! Map) return false;
+
+    // 1. Status string check
+    final status = (salon['status'] ?? salon['salonStatus'] ?? salon['state'])
+        ?.toString()
+        .trim()
+        .toLowerCase() ?? '';
+    if (status == 'closed' ||
+        status == 'close' ||
+        status == 'inactive' ||
+        status == 'disabled' ||
+        status == 'off' ||
+        status == 'maintenance' ||
+        status == 'đóng cửa' ||
+        status == 'dong cua' ||
+        status == 'ngừng hoạt động') {
+      return false;
+    }
+
+    // 2. Explicit boolean flags
+    final isClosedVal = salon['isClosed'];
+    if (isClosedVal == true || isClosedVal == 1 || isClosedVal == 'true') {
+      return false;
+    }
+    final isOpenVal = salon['isOpen'];
+    if (isOpenVal == false || isOpenVal == 0 || isOpenVal == 'false') {
+      return false;
+    }
+    final isOperatingVal = salon['isOperating'];
+    if (isOperatingVal == false ||
+        isOperatingVal == 0 ||
+        isOperatingVal == 'false') {
+      return false;
+    }
+    final isActiveVal = salon['isActive'];
+    if (isActiveVal == false || isActiveVal == 0 || isActiveVal == 'false') {
+      return false;
+    }
+
+    // 3. Operating hours check for current day
+    final operatingHours = salon['operatingHours'];
+    if (operatingHours is List && operatingHours.isNotEmpty) {
+      final now = DateTime.now();
+      final currentDayOfWeek = now.weekday % 7;
+
+      final todayHours = operatingHours
+          .whereType<Map>()
+          .where((h) {
+            final day = h['dayOfWeek'];
+            if (day == null) return false;
+            final d = day is num ? day.toInt() : int.tryParse(day.toString());
+            return d == currentDayOfWeek;
+          })
+          .toList();
+
+      if (todayHours.isNotEmpty) {
+        final allClosedToday = todayHours.every((h) {
+          final isClosed = h['isClosed'];
+          final isOpen = h['isOpen'];
+          return isClosed == true ||
+              isClosed == 1 ||
+              isClosed == 'true' ||
+              isOpen == false ||
+              isOpen == 0 ||
+              isOpen == 'false';
+        });
+        if (allClosedToday) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
   Future<List<dynamic>> getSalons() async {
     final response = await _apiClient.get(
       '/Salons',
       queryParameters: {
         'PageNumber': 1,
         'PageIndex': 1,
-        'PageSize': 10,
+        'PageSize': 100,
         'Status': 'Open',
       },
     );
@@ -106,11 +182,10 @@ class BookingApiService {
       }),
     );
 
-    // Lọc nghiêm ngặt chỉ giữ lại các salon đang MỞ cửa (Status: Open / Active)
+    // Lọc nghiêm ngặt chỉ giữ lại các salon đang MỞ cửa (loại bỏ hoàn toàn salon đóng cửa)
     return listWithRatings.where((salon) {
       if (salon is! Map) return false;
-      final status = salon['status']?.toString().toLowerCase() ?? '';
-      return status.isEmpty || status == 'open' || status == 'active';
+      return _isSalonOpen(salon);
     }).toList();
   }
 

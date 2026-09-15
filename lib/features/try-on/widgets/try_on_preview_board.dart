@@ -643,9 +643,9 @@ class _FingerSlot extends StatelessWidget {
           ...placements.map((placement) {
             final nailWidth = width;
             final nailHeight = height;
-            final size = (nailWidth * placement.scale.clamp(0.1, 2.5)).clamp(
+            final size = (nailWidth * placement.scale.clamp(0.1, 0.75)).clamp(
               4.0,
-              double.infinity,
+              nailWidth * 0.75,
             );
             final centerX = nailWidth / 2 + placement.posX * nailWidth;
             final centerY = nailHeight / 2 + placement.posY * nailHeight;
@@ -762,13 +762,18 @@ class _PlacedComponentPreviewState extends State<_PlacedComponentPreview> {
     return alpha > 10; // Non-transparent pixel (threshold > 10)
   }
 
-  bool _isPlacementOnNail(double posX, double posY, CachedNailImage cached) {
+  bool _isPlacementOnNail(
+    double posX,
+    double posY,
+    CachedNailImage cached, {
+    double? scale,
+  }) {
     // 1. Check center point
     if (!_isPixelOnNail(posX, posY, cached)) return false;
 
     // 2. Check 4 edge points based on accessory scale to prevent overflowing the boundary.
-    // We check points at 30% of the accessory's relative radius for a balanced margin.
-    final double radius = widget.placement.scale * 0.5 * 0.3;
+    // We check points at 75% of the accessory's relative radius for edge collision enforcement.
+    final double radius = (scale ?? widget.placement.scale) * 0.5 * 0.75;
 
     if (!_isPixelOnNail(posX - radius, posY, cached)) return false;
     if (!_isPixelOnNail(posX + radius, posY, cached)) return false;
@@ -969,7 +974,20 @@ class _PlacedComponentPreviewState extends State<_PlacedComponentPreview> {
                 final scaleFactor = _initialDistance > 0
                     ? (currentDistance / _initialDistance)
                     : 1.0;
-                final newScale = (_initialScale * scaleFactor).clamp(0.15, 2.5);
+                final newScale = (_initialScale * scaleFactor).clamp(0.1, 0.75);
+                final cached = widget.selectedShape != null
+                    ? _NailImageCache._resolved[widget.selectedShape!.imageUrl]
+                    : null;
+
+                final validScale = (cached == null ||
+                        _isPlacementOnNail(
+                          widget.placement.posX,
+                          widget.placement.posY,
+                          cached,
+                          scale: newScale,
+                        ))
+                    ? newScale
+                    : widget.placement.scale;
 
                 final angleDiffRad = currentAngle - _initialAngle;
                 final angleDiffDeg = angleDiffRad * 180 / math.pi;
@@ -977,7 +995,7 @@ class _PlacedComponentPreviewState extends State<_PlacedComponentPreview> {
 
                 widget.onUpdate(
                   widget.placement.copyWith(
-                    scale: newScale,
+                    scale: validScale,
                     rotation: newRotation,
                   ),
                 );
@@ -1658,8 +1676,8 @@ class _NailOverlayPreview extends StatelessWidget {
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: placements.map((placement) {
-                    final size = (nailWidth * placement.scale.clamp(0.1, 1.5))
-                        .clamp(2.0, nailWidth);
+                    final size = (nailWidth * placement.scale.clamp(0.1, 0.75))
+                        .clamp(2.0, nailWidth * 0.75);
                     final centerX = (nailWidth / 2 + placement.posX * nailWidth)
                         .clamp(0.0, nailWidth);
                     final centerY =

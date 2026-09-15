@@ -1902,6 +1902,8 @@ class SVi extends S {
   @override
   String get warrantySuccessSubtitle =>
       'Lịch bảo hành của bạn đã được ghi nhận.';
+
+  @override
   String get galleryHeaderTag => 'BỘ SƯU TẬP MÓNG NGHỆ THUẬT 2026';
 
   @override

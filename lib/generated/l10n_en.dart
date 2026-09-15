@@ -1900,6 +1900,8 @@ class SEn extends S {
   @override
   String get warrantySuccessSubtitle =>
       'Your warranty appointment has been recorded.';
+
+  @override
   String get galleryHeaderTag => 'NAIL ART COLLECTION 2026';
 
   @override

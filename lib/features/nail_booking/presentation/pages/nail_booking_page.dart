@@ -18,6 +18,7 @@ import '../../data/models/wallet_voucher_model.dart';
 import '../widgets/booking_date_selection.dart';
 import '../widgets/booking_service_selection.dart';
 import '../widgets/booking_time_selection.dart';
+import '../widgets/payment_detail_table.dart';
 import '../widgets/branch_selection_list.dart';
 import '../widgets/artist_selection_list.dart';
 
@@ -1184,20 +1185,12 @@ class _NailBookingPageState extends State<NailBookingPage> {
             ],
           ),
           const SizedBox(height: 14),
-          const Divider(height: 1, color: Color(0xFFFFF0F5)),
-          const SizedBox(height: 14),
-          if (widget.nailData != null) _buildNailVariantPaymentItem(),
-          ..._selectedExtraServices.whereType<String>().map((serviceId) {
-            return _buildPaymentRow(
-              S.of(context).bookingExtraService(_serviceNameById(serviceId)),
-              _servicePriceById(serviceId),
-              muted: true,
-            );
-          }),
-          const Divider(height: 16, color: Color(0xFFFFF0F5)),
-          ..._discountBreakdown.map(_buildDiscountRow),
-          if (_discountBreakdown.isNotEmpty)
+          PaymentDetailTable(items: _paymentTableItems),
+          if (_discountBreakdown.isNotEmpty) ...[
             const Divider(height: 16, color: Color(0xFFFFF0F5)),
+            ..._discountBreakdown.map(_buildDiscountRow),
+          ],
+          const Divider(height: 16, color: Color(0xFFFFF0F5)),
           isLoading
               ? _buildLoadingPriceRow(S.of(context).bookingTotal)
               : _buildPaymentRow(
@@ -1477,10 +1470,47 @@ class _NailBookingPageState extends State<NailBookingPage> {
     );
   }
 
+  List<PaymentTableItem> get _paymentTableItems {
+    final items = <PaymentTableItem>[];
+    if (widget.nailData != null) {
+      final reviewedNailPrice = _reviewSubtotal == null
+          ? null
+          : (_reviewSubtotal! - _selectedExtraServicesTotal).clamp(0, 1 << 31);
+      final displayPrice =
+          reviewedNailPrice ?? _nailVariantPrice + _shapeMethodPrice.round();
+      items.add(
+        PaymentTableItem(
+          name: widget.nailData!['name']?.toString() ??
+              S.of(context).bookingNailVariantDefault,
+          quantity: 1,
+          unitPrice: displayPrice,
+        ),
+      );
+    }
+    final counts = <String, int>{};
+    for (final serviceId in _selectedExtraServices.whereType<String>()) {
+      counts[serviceId] = (counts[serviceId] ?? 0) + 1;
+    }
+    for (final entry in counts.entries) {
+      final unit = _servicePriceById(entry.key);
+      items.add(
+        PaymentTableItem(
+          name: _serviceNameById(entry.key),
+          quantity: entry.value,
+          unitPrice: unit,
+        ),
+      );
+    }
+    return items;
+  }
+
   Widget _buildDiscountRow(Map<String, dynamic> discount) {
-    final name = discount['name']?.toString() ?? 'Giam gia';
-    final amount = discount['amount'] ?? 0;
+    final name = discount['name']?.toString() ?? 'Giảm giá';
+    final amount = discount['amount'];
     final amountDisplay = discount['amountDisplay']?.toString();
+    final rawDisplay = (amountDisplay?.isNotEmpty == true)
+        ? amountDisplay!
+        : (amount != null ? PriceFormatter.format(amount) : '');
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -1493,9 +1523,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
             ),
           ),
           Text(
-            amountDisplay?.isNotEmpty == true
-                ? _formatDiscountDisplay(amountDisplay!)
-                : '-${PriceFormatter.format(amount)}',
+            _formatDiscountDisplay(rawDisplay),
             style: const TextStyle(
               fontWeight: FontWeight.bold,
               color: Colors.green,
@@ -1507,8 +1535,10 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   String _formatDiscountDisplay(String value) {
-    final text = value.trim();
+    var text = value.trim();
     if (text.isEmpty) return text;
+    text = text.replaceAll(RegExp(r'^-+'), '');
+    text = '-$text';
     final lower = text.toLowerCase();
     if (lower.contains('đ') || lower.contains('vnd')) return text;
     return '$text VNĐ';

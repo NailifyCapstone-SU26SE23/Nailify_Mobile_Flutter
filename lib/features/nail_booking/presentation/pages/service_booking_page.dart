@@ -7,6 +7,8 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../../../core/utils/duration_formatter.dart';
 
+import '../../../../core/utils/auth_guard.dart';
+import '../../data/datasources/payment_api_service.dart';
 import '../../data/models/wallet_voucher_model.dart';
 import '../cubit/nail_booking_cubit.dart';
 import '../widgets/branch_selection_list.dart';
@@ -15,6 +17,7 @@ import '../widgets/booking_service_selection.dart';
 import '../widgets/booking_date_selection.dart';
 import '../widgets/booking_promotion_sheet.dart';
 import '../widgets/booking_time_selection.dart';
+import '../widgets/payment_detail_table.dart';
 
 /// Entry point: bọc page trong BlocProvider.
 class ServiceBookingPage extends StatelessWidget {
@@ -41,6 +44,7 @@ class _ServiceBookingView extends StatefulWidget {
 }
 
 class _ServiceBookingViewState extends State<_ServiceBookingView> {
+  final PaymentApiService _paymentApiService = PaymentApiService();
   final PageController _pageController = PageController();
   int _currentStep = 0;
 
@@ -140,58 +144,49 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
     NailBookingState state,
     NailBookingCubit cubit,
   ) async {
-    final promos = state.selectedPromotions
-        .whereType<WalletVoucherModel>()
-        .toList();
-    final grouped = _groupedServicesMap(state.selectedExtraServices);
-    final formattedDate = cubit.formatBookingDate(state.selectedDate!);
-    final formattedTime = state.selectedTime!.length == 5
-        ? '${state.selectedTime}:00'
-        : state.selectedTime!;
+    AuthGuard.check(context, () async {
+      final promos = state.selectedPromotions
+          .whereType<WalletVoucherModel>()
+          .toList();
+      final grouped = _groupedServicesMap(state.selectedExtraServices);
+      final formattedDate = cubit.formatBookingDate(state.selectedDate!);
+      final formattedTime = state.selectedTime!.length == 5
+          ? '${state.selectedTime}:00'
+          : state.selectedTime!;
 
-    final payload = {
-      'salonId': state.selectedBranch!['salonId'],
-      'bookingDate': formattedDate,
-      'startTime': formattedTime,
-      'nailArtistId': state.noArtistSelected
-          ? null
-          : state.selectedStylist!['nailArtistId'],
-      'holdToken': null,
-      'bookingItems': grouped.entries
-          .map(
-            (e) => {
-              'nailVariantId': null,
-              'serviceId': e.key,
-              'customerNailId': null,
-              'quantity': e.value,
-            },
-          )
-          .toList(),
-    };
-
-    try {
-      final response = await cubit.createServiceBookingFromState(
-        payload: payload,
-        selectedPromotionIds: promos.isEmpty
+      final payload = {
+        'salonId': state.selectedBranch!['salonId'],
+        'bookingDate': formattedDate,
+        'startTime': formattedTime,
+        'nailArtistId': state.noArtistSelected
+            ? null
+            : state.selectedStylist!['nailArtistId'],
+        'holdToken': state.holdToken,
+        'selectedPromotionIds': promos.isEmpty
             ? null
             : promos.map((p) => p.promotionId).toList(),
-      );
-      if (!mounted) return;
-      context.go(
-        '/booking-success',
-        extra: {
-          'bookingId': response['bookingId']?.toString() ?? '',
-          'serviceName': _baseServiceName,
-          'date': state.selectedDate,
-          'time': formattedTime,
-          'stylistName': state.noArtistSelected
-              ? 'Tự động phân công'
-              : state.selectedStylist!['fullName'],
-        },
-      );
-    } catch (_) {
-      // Error đã được emit vào state.errorMessage và xử lý bởi BlocConsumer
-    }
+        'bookingItems': grouped.entries
+            .map(
+              (e) => {
+                'nailVariantId': null,
+                'serviceId': e.key,
+                'customerNailId': null,
+                'quantity': e.value,
+              },
+            )
+            .toList(),
+      };
+
+      try {
+        final paymentData = await _paymentApiService.createPaymentForRequest(
+          payload,
+        );
+        if (!mounted) return;
+        context.go('/payment-qr', extra: paymentData);
+      } catch (e) {
+        _showSnackBar(S.of(context).bookingPaymentError(e.toString()));
+      }
+    });
   }
 
   void _showSnackBar(String msg) {
@@ -355,7 +350,12 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
 
                     // ── STEP 2: DỊCH VỤ ───────────────────────────────
                     SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.only(
+                        left: 20,
+                        right: 20,
+                        top: 20,
+                        bottom: 80,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -529,37 +529,19 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                 'Chi tiết thanh toán',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
-              const SizedBox(height: 16),
-              ...grouped.entries.map((entry) {
-                final svc = _getServiceDetail(entry.key, cubit);
-                final name = svc?['name'] ?? cubit.serviceNameById(entry.key);
-                final price =
-                    (svc?['price'] as num?)?.toInt() ??
-                    cubit.servicePriceById(entry.key);
-                final qty = entry.value;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 12.0),
-                          child: Text(
-                            '${qty}x $name',
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                        ),
-                      ),
-                      Text(
-                        PriceFormatter.format(price * qty),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                );
-              }),
+              const SizedBox(height: 12),
+              PaymentDetailTable(
+                items: [
+                  for (final entry in grouped.entries)
+                    PaymentTableItem(
+                      name: _getServiceDetail(entry.key, cubit)?['name'] ??
+                          cubit.serviceNameById(entry.key),
+                      quantity: entry.value,
+                      unitPrice: (_getServiceDetail(entry.key, cubit)?['price'] as num?)?.toInt() ??
+                          cubit.servicePriceById(entry.key),
+                    ),
+                ],
+              ),
               const Divider(height: 24),
               _buildPromotionSelector(context, state, cubit),
               const SizedBox(height: 16),
@@ -1079,7 +1061,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                           )
                         : Text(
                             _currentStep == 4
-                                ? 'Xác nhận đặt lịch'
+                                ? 'Thanh toán cọc'
                                 : 'Tiếp tục',
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),

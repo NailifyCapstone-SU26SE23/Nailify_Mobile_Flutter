@@ -9,8 +9,13 @@ import '../utils/transaction_status_utils.dart';
 
 class TransactionListPage extends StatefulWidget {
   final String? bookingId;
+  final Map<String, dynamic>? bookingData;
 
-  const TransactionListPage({super.key, this.bookingId});
+  const TransactionListPage({
+    super.key,
+    this.bookingId,
+    this.bookingData,
+  });
 
   @override
   State<TransactionListPage> createState() => _TransactionListPageState();
@@ -74,11 +79,54 @@ class _TransactionListPageState extends State<TransactionListPage> {
         final items = await _repository.getTransactionsByBooking(
           widget.bookingId!,
         );
+
+        var resultList = List<Map<String, dynamic>>.from(items);
+
+        if (resultList.isEmpty && widget.bookingData != null) {
+          final bData = widget.bookingData!;
+          final bTransactions =
+              bData['transactions'] ?? bData['paymentTransactions'];
+          if (bTransactions is List && bTransactions.isNotEmpty) {
+            resultList = bTransactions
+                .map((e) => Map<String, dynamic>.from(e as Map))
+                .toList();
+          } else {
+            final amountPaid = bData['amountPaid'];
+            if (amountPaid != null) {
+              final numAmount = amountPaid is num
+                  ? amountPaid
+                  : (double.tryParse(amountPaid.toString()) ?? 0);
+              if (numAmount > 0) {
+                final salonName = bData['salonName']?.toString() ??
+                    (bData['salon'] is Map
+                        ? bData['salon']['name']?.toString()
+                        : null) ??
+                    '';
+                resultList = [
+                  {
+                    'transactionId': bData['bookingId'] ?? widget.bookingId,
+                    'amount': numAmount,
+                    'status': 'Paid',
+                    'salonName': salonName,
+                    'createdAt': bData['updatedAt'] ??
+                        bData['createdAt'] ??
+                        bData['bookingDate'],
+                    'orderCode': bData['orderCode'] ?? bData['paymentOrderCode'],
+                    'customerName':
+                        bData['customerName'] ?? bData['user']?['fullName'],
+                    'bookingId': widget.bookingId,
+                  }
+                ];
+              }
+            }
+          }
+        }
+
         if (!mounted) return;
         setState(() {
           _transactions
             ..clear()
-            ..addAll(items);
+            ..addAll(resultList);
           _isLoading = false;
           _isLoadingMore = false;
           _hasNextPage = false;
@@ -153,10 +201,21 @@ class _TransactionListPageState extends State<TransactionListPage> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.primaryDark,
+            size: 20,
+          ),
           onPressed: () => context.pop(),
         ),
-        title: Text(title),
+        title: Text(
+          title,
+          style: const TextStyle(
+            color: AppColors.primaryDark,
+            fontWeight: FontWeight.w800,
+            fontFamily: 'Georgia',
+          ),
+        ),
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
@@ -169,14 +228,18 @@ class _TransactionListPageState extends State<TransactionListPage> {
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
             if (widget.bookingId == null) _buildFilters(),
+            if (!_isLoading && _errorMessage == null && _transactions.isNotEmpty)
+              _buildSummaryHeader(),
             if (_isLoading)
               const Padding(
                 padding: EdgeInsets.only(top: 120),
-                child: Center(child: CircularProgressIndicator()),
+                child: Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                ),
               )
             else if (_errorMessage != null)
               _MessageState(
-                icon: Icons.error_outline,
+                icon: Icons.error_outline_rounded,
                 message: _errorMessage!,
                 actionLabel: 'Thử lại',
                 onAction: () => _loadTransactions(refresh: true),
@@ -184,18 +247,108 @@ class _TransactionListPageState extends State<TransactionListPage> {
             else if (_transactions.isEmpty)
               const _MessageState(
                 icon: Icons.receipt_long_outlined,
-                message: 'Chưa có giao dịch nào.',
+                message: 'Chưa có giao dịch nào cho lịch hẹn này.',
               )
             else ...[
               ..._transactions.map(_buildTransactionCard),
               if (_isLoadingMore)
                 const Padding(
                   padding: EdgeInsets.all(16),
-                  child: Center(child: CircularProgressIndicator()),
+                  child: Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  ),
                 ),
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryHeader() {
+    num totalAmount = 0;
+    for (final tx in _transactions) {
+      final status = tx['status']?.toString().toLowerCase();
+      if (status == 'paid' || status == 'success') {
+        totalAmount += (tx['amount'] as num? ?? 0);
+      }
+    }
+    if (totalAmount == 0 && _transactions.isNotEmpty) {
+      for (final tx in _transactions) {
+        totalAmount += (tx['amount'] as num? ?? 0);
+      }
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFF0EAE1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(
+              Icons.account_balance_wallet_rounded,
+              color: AppColors.primary,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Tổng tiền giao dịch',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  PriceFormatter.format(totalAmount),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              '${_transactions.length} giao dịch',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade700,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -281,48 +434,133 @@ class _TransactionListPageState extends State<TransactionListPage> {
     final createdAt = _formatDateTime(transaction['createdAt']);
     final salonName = transaction['salonName']?.toString() ?? '';
     final transactionId = _readInt(transaction['transactionId']);
+    final orderCode = transaction['orderCode']?.toString();
+    final amount = transaction['amount'] ?? 0;
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppColors.borderLight),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFF0EAE1), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: transactionId == null
-            ? null
-            : () => context.push('/transaction-detail', extra: transaction),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    PriceFormatter.format(transaction['amount'] ?? 0),
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: transactionId == null && (orderCode == null || orderCode.isEmpty)
+              ? null
+              : () => context.push('/transaction-detail', extra: transaction),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header row: Icon + Salon Name + Status Pill
+                Row(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: statusView.color.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        statusView.icon,
+                        color: statusView.color,
+                        size: 22,
+                      ),
                     ),
-                  ),
-                  _StatusChip(statusView: statusView),
-                ],
-              ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            salonName.isNotEmpty ? salonName : 'Nailify Salon',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (orderCode != null && orderCode.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              'Mã HĐ: #$orderCode',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _StatusChip(statusView: statusView),
+                  ],
+                ),
 
-              if (salonName.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Text(salonName, style: const TextStyle(color: Colors.grey)),
+                const SizedBox(height: 12),
+                Divider(height: 1, color: Colors.grey.shade200),
+                const SizedBox(height: 12),
+
+                // Bottom row: Date/Time + Amount + Chevron
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.access_time_rounded,
+                          size: 14,
+                          color: Colors.grey.shade500,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          createdAt,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Text(
+                          PriceFormatter.format(amount),
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          size: 18,
+                          color: Colors.grey.shade400,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ],
-              if (createdAt.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Text(createdAt, style: const TextStyle(color: Colors.grey)),
-              ],
-            ],
+            ),
           ),
         ),
       ),
@@ -390,15 +628,33 @@ class _StatusChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: statusView.color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        statusView.label,
-        style: TextStyle(
-          color: statusView.color,
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: statusView.color.withValues(alpha: 0.2),
+          width: 1,
         ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: statusView.color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            statusView.label,
+            style: TextStyle(
+              color: statusView.color,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -420,16 +676,42 @@ class _MessageState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 120),
+      padding: const EdgeInsets.only(top: 80),
       child: Center(
         child: Column(
           children: [
-            Icon(icon, size: 42, color: Colors.grey),
-            const SizedBox(height: 12),
-            Text(message, textAlign: TextAlign.center),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 40, color: AppColors.primary),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
             if (actionLabel != null && onAction != null) ...[
-              const SizedBox(height: 12),
-              FilledButton(onPressed: onAction, child: Text(actionLabel!)),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: onAction,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: Text(actionLabel!),
+              ),
             ],
           ],
         ),

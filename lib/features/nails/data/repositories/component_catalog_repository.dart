@@ -9,7 +9,7 @@ class ComponentCatalogRepository {
   Future<List<ComponentModel>> getComponents() async {
     final response = await _apiClient.get<dynamic>(
       '/Components',
-      queryParameters: {'pageNumber': 1, 'pageSize': 100},
+      queryParameters: {'pageNumber': 1, 'pageSize': 100, 'status': 'Active'},
     );
     return _unwrapList(response.data).map(ComponentModel.fromJson).toList();
   }

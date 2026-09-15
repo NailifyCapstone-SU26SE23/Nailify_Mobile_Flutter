@@ -732,4 +732,36 @@
   "warrantyServiceNote": "Các dịch vụ bảo hành đã được liệt kê sẵn từ lịch hẹn trước. Bạn có thể bỏ chọn nếu không cần bảo hành mục nào.",
   "warrantySuccessTitle": "Đặt lịch bảo hành thành công!",
   "warrantySuccessSubtitle": "Lịch bảo hành của bạn đã được ghi nhận."
+  "galleryHeaderTag": "BỘ SƯU TẬP MÓNG NGHỆ THUẬT 2026",
+  "@galleryHeaderTag": {},
+  "galleryHeaderTitle": "Khám phá phong cách kiệt tác cá nhân",
+  "@galleryHeaderTitle": {},
+  "galleryHeaderSubtitle": "Tuyển tập những thiết kế móng xu hướng đỉnh cao và quyến rũ nhất.",
+  "@galleryHeaderSubtitle": {},
+  "gallerySearchHint": "Tìm kiếm mẫu móng...",
+  "@gallerySearchHint": {},
+  "galleryShowingCount": "Hiển thị {count} mẫu thiết kế",
+  "@galleryShowingCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "gallerySortNewest": "Mới nhất",
+  "@gallerySortNewest": {},
+  "gallerySortOldest": "Cũ nhất",
+  "@gallerySortOldest": {},
+  "gallerySortAZ": "A - Z",
+  "@gallerySortAZ": {},
+  "galleryNoDesigns": "Không có mẫu móng nào phù hợp với bộ lọc",
+  "@galleryNoDesigns": {},
+  "galleryCtaTitle": "Chưa tìm thấy mẫu móng mong muốn?",
+  "@galleryCtaTitle": {},
+  "galleryCtaSubtitle": "Tải lên hình ảnh ý tưởng của bạn hoặc sử dụng AI để tạo mẫu móng độc bản.",
+  "@galleryCtaSubtitle": {},
+  "galleryBookBtn": "Đặt Lịch Ngay",
+  "@galleryBookBtn": {},
+  "galleryCustomBtn": "Thiết Kế Riêng AI ↗",
+  "@galleryCustomBtn": {},
+  "galleryTryOn": "Thử Móng",
+  "@galleryTryOn": {}
 }

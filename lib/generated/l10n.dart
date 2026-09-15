@@ -3558,6 +3558,89 @@ abstract class S {
   /// In en, this message translates to:
   /// **'Your warranty appointment has been recorded.'**
   String get warrantySuccessSubtitle;
+  /// No description provided for @galleryHeaderTag.
+  ///
+  /// In en, this message translates to:
+  /// **'NAIL ART COLLECTION 2026'**
+  String get galleryHeaderTag;
+
+  /// No description provided for @galleryHeaderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Find your next signature look'**
+  String get galleryHeaderTitle;
+
+  /// No description provided for @galleryHeaderSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore curated nail designs from classics to modern trends.'**
+  String get galleryHeaderSubtitle;
+
+  /// No description provided for @gallerySearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search designs...'**
+  String get gallerySearchHint;
+
+  /// No description provided for @galleryShowingCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing {count} designs'**
+  String galleryShowingCount(int count);
+
+  /// No description provided for @gallerySortNewest.
+  ///
+  /// In en, this message translates to:
+  /// **'Newest'**
+  String get gallerySortNewest;
+
+  /// No description provided for @gallerySortOldest.
+  ///
+  /// In en, this message translates to:
+  /// **'Oldest'**
+  String get gallerySortOldest;
+
+  /// No description provided for @gallerySortAZ.
+  ///
+  /// In en, this message translates to:
+  /// **'A - Z'**
+  String get gallerySortAZ;
+
+  /// No description provided for @galleryNoDesigns.
+  ///
+  /// In en, this message translates to:
+  /// **'No designs match your criteria'**
+  String get galleryNoDesigns;
+
+  /// No description provided for @galleryCtaTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t find your dream design?'**
+  String get galleryCtaTitle;
+
+  /// No description provided for @galleryCtaSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload your inspiration image or generate a personalized AI design.'**
+  String get galleryCtaSubtitle;
+
+  /// No description provided for @galleryBookBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Book Now'**
+  String get galleryBookBtn;
+
+  /// No description provided for @galleryCustomBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Design ↗'**
+  String get galleryCustomBtn;
+
+  /// No description provided for @galleryTryOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Try On'**
+  String get galleryTryOn;
 }
 
 class _SDelegate extends LocalizationsDelegate<S> {

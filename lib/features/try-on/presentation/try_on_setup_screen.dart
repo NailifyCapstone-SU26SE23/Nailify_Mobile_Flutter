@@ -12,6 +12,7 @@ import '../../nails/data/repositories/nail_component_repository.dart';
 import '../../nails/services/ar_try_on_service.dart';
 import '../../../core/network/api_client.dart';
 import '../../quiz/data/datasources/quiz_repository.dart';
+import '../models/nail_variant_model.dart' as snapshot_models;
 import '../models/placed_component_draft.dart';
 import '../models/try_on_data.dart';
 import '../services/try_on_setup_service.dart';
@@ -653,7 +654,14 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
         );
       }
       if (photo) {
-        await service.launchCustomerPhoto(preview);
+        // Photo try-on uses Snapshot so the user can choose camera/gallery,
+        // while keeping this custom nail selected in the editor.
+        if (mounted) {
+          context.push(
+            '/snapshot-try-on',
+            extra: _toSnapshotVariant(preview),
+          );
+        }
       } else {
         await service.launchCustomerLive(preview);
       }
@@ -792,6 +800,64 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
           )
           .toList(),
     );
+  }
+
+  snapshot_models.NailVariantModel _toSnapshotVariant(CustomerNailModel nail) {
+    return snapshot_models.NailVariantModel(
+      nailVariantId: nail.customerNailId,
+      name: nail.name,
+      imageUrl: nail.imageUrl,
+      colorConfig: snapshot_models.ColorJsonConfig.fromJson(
+        nail.customColor ?? '{}',
+      ),
+      nailShape: snapshot_models.NailShape(
+        nailShapeId: nail.nailShapeId ?? nail.nailShape?.nailShapeId ?? 0,
+        name: nail.nailShape?.name ?? '',
+        imageUrl: nail.nailShape?.imageUrl ?? '',
+      ),
+      nailSurface: snapshot_models.NailSurface(
+        nailSurfaceId:
+            nail.nailSurfaceId ?? nail.nailSurface?.nailSurfaceId ?? 0,
+        name: nail.nailSurface?.name ?? '',
+        shaderParam: nail.nailSurface?.shaderParam ?? '{}',
+        lightnessOffset: nail.nailSurface?.lightnessOffset ?? 0,
+        saturationOffset: nail.nailSurface?.saturationOffset ?? 0,
+        hueOffset: nail.nailSurface?.hueOffset ?? 0,
+      ),
+      nailComponents: nail.customerNailComponents.map((component) {
+        final source = component.component;
+        final customerSource = component.customerComponent;
+        final config = _decodeComponentConfig(component.configJson);
+        return snapshot_models.NailComponentItem(
+          nailComponentId: component.customerNailComponentId,
+          posX: component.posX,
+          posY: component.posY,
+          fingerIndex: component.fingerIndex,
+          scale: (config['scale'] as num?)?.toDouble() ?? 1.0,
+          rotation: (config['rotation'] as num?)?.toDouble() ?? 0.0,
+          component: snapshot_models.ComponentDetail(
+            componentId:
+                component.componentId ??
+                component.customerComponentId ??
+                component.customerNailComponentId,
+            name: source?.name ?? customerSource?.name ?? '',
+            imageUrl: source?.imageUrl ?? customerSource?.imageUrl ?? '',
+            componentType:
+                source?.componentType ?? customerSource?.componentType ?? '',
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Map<String, dynamic> _decodeComponentConfig(String rawConfig) {
+    if (rawConfig.trim().isEmpty) return const <String, dynamic>{};
+    try {
+      final decoded = jsonDecode(rawConfig);
+      if (decoded is Map<String, dynamic>) return decoded;
+      if (decoded is Map) return Map<String, dynamic>.from(decoded);
+    } catch (_) {}
+    return const <String, dynamic>{};
   }
 
   String get _activeFingerColor {

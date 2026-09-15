@@ -130,6 +130,7 @@ class _MainShellState extends State<MainShell> {
     final uuidRegex = RegExp(
       r'#?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}',
     );
+    
 
     String cleaned = msg
         .replaceAll(uuidRegex, '')
@@ -191,17 +192,20 @@ class _MainShellState extends State<MainShell> {
         margin: margin,
         padding: EdgeInsets.zero,
         content: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: const Color(
-              0xFFFFF8FB,
-            ), // Hồng ngọc trai nhẹ, siêu nữ tính & sang trọng
-            borderRadius: BorderRadius.circular(16),
+            color: const Color(0xFFFFF8FB), // Hồng ngọc trai ngọc lụa
+            borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: color.withValues(alpha: 0.15),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
+                color: color.withValues(alpha: 0.18),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
             ],
             border: Border.all(
@@ -213,41 +217,39 @@ class _MainShellState extends State<MainShell> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                width: 38,
-                height: 38,
+                width: 42,
+                height: 42,
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: color, size: 20),
+                child: Icon(icon, color: color, size: 22),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Text(
                   cleanedMessage,
                   style: const TextStyle(
-                    color: Color(
-                      0xFF4A3543,
-                    ), // Màu mận/nâu sẫm ấm áp, dễ đọc trên nền hồng nhạt
+                    color: Color(0xFF4A3543),
                     fontSize: 13.5,
                     fontWeight: FontWeight.w600,
-                    height: 1.35,
+                    height: 1.38,
                   ),
                 ),
               ),
               if (actionLabel != null && onAction != null) ...[
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 TextButton(
                   onPressed: onAction,
                   style: TextButton.styleFrom(
-                    backgroundColor: color.withValues(alpha: 0.12),
+                    backgroundColor: color.withValues(alpha: 0.14),
                     foregroundColor: color,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,
                       vertical: 8,
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -345,27 +347,48 @@ class _MainShellState extends State<MainShell> {
     ScaffoldMessenger.of(context).clearMaterialBanners();
     ScaffoldMessenger.of(context).showMaterialBanner(
       MaterialBanner(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        backgroundColor: AppColors.primary.withValues(alpha: 0.95),
-        leading: const Icon(Icons.notifications_active, color: Colors.white),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        backgroundColor: AppColors.primary,
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.2),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.notifications_active_rounded,
+            color: Colors.white,
+            size: 22,
+          ),
+        ),
         content: Text(
           cleanedMessage,
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
+            fontSize: 13.5,
           ),
         ),
         actions: [
-          TextButton(
+          ElevatedButton(
             onPressed: () {
               ScaffoldMessenger.of(context).clearMaterialBanners();
               context.go('/my-bookings');
             },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: AppColors.primary,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
             child: const Text(
               'Xác nhận ngay',
               style: TextStyle(
-                color: Colors.white,
                 fontWeight: FontWeight.bold,
+                fontSize: 12.5,
               ),
             ),
           ),
@@ -374,7 +397,10 @@ class _MainShellState extends State<MainShell> {
                 ScaffoldMessenger.of(context).clearMaterialBanners(),
             child: Text(
               'Đóng',
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.8),
+                fontSize: 12.5,
+              ),
             ),
           ),
         ],
@@ -424,6 +450,11 @@ class _MainShellState extends State<MainShell> {
     }
   }
 
+  bool get _hideBottomNav {
+    final loc = widget.currentLocation;
+    return loc.startsWith('/nails/') || loc.startsWith('/nail-variants/');
+  }
+
   Widget _buildShellBody(Widget child) {
     return child;
   }
@@ -435,244 +466,7 @@ class _MainShellState extends State<MainShell> {
       children: [
         Scaffold(
           backgroundColor: AppColors.background,
-
-          // Conditional AppBar - only show header if showHeader is true
-          appBar: widget.showHeader
-              ? AppBar(
-                  backgroundColor: AppColors.background,
-                  surfaceTintColor: Colors.transparent,
-                  elevation: 0,
-                  toolbarHeight: 80,
-                  title: GestureDetector(
-                    onTap: () => context.go('/'),
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 8.0),
-                      child: Image.asset(
-                        'assets/images/pink.png',
-                        height: 40,
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Text(
-                              'Nailify',
-                              style: TextStyle(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                      ),
-                    ),
-                  ),
-                  actions: _isLoggedIn
-                      ? [
-                          IconButton(
-                            icon: const Icon(
-                              Icons.camera_alt_outlined,
-                              color: AppColors.primary,
-                            ),
-                            tooltip: 'Snapshot Try-on',
-                            onPressed: () => context.push('/snapshot-try-on'),
-                          ),
-                          PopupMenuButton<void>(
-                            offset: const Offset(0, 48),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              side: const BorderSide(
-                                color: Color(0xFFFFF0F5),
-                                width: 1,
-                              ),
-                            ),
-                            color: Colors.white,
-                            elevation: 4,
-                            child: Stack(
-                              clipBehavior: Clip.none,
-                              alignment: Alignment.center,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Icon(
-                                    _hasRecommendations
-                                        ? Icons.notifications_active_outlined
-                                        : Icons.notifications_outlined,
-                                    color: AppColors.primaryDark,
-                                    size: 26,
-                                  ),
-                                ),
-                                if (_hasRecommendations)
-                                  Positioned(
-                                    right: 6,
-                                    top: 6,
-                                    child: Container(
-                                      width: 8,
-                                      height: 8,
-                                      decoration: const BoxDecoration(
-                                        color: Colors.red,
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            itemBuilder: (context) => [
-                              PopupMenuItem<void>(
-                                enabled: false,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      S.of(context).notifications,
-                                      style: TextStyle(
-                                        fontFamily: 'Georgia',
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.primaryDark,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    const Divider(
-                                      height: 1,
-                                      color: Color(0xFFFFF0F5),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              if (_hasRecommendations)
-                                PopupMenuItem<void>(
-                                  onTap: () {
-                                    Future.delayed(
-                                      const Duration(milliseconds: 100),
-                                      () {
-                                        if (context.mounted) {
-                                          context.go('/perfect-match');
-                                        }
-                                      },
-                                    );
-                                  },
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(6),
-                                        decoration: const BoxDecoration(
-                                          color: Color(0xFFFFF5F8),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                          Icons.auto_awesome_rounded,
-                                          size: 16,
-                                          color: AppColors.primary,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              S.of(context).nailRecommendation,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 12.5,
-                                                color: AppColors.textPrimary,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              S.of(context).viewDetail,
-                                              style: const TextStyle(
-                                                fontSize: 11,
-                                                color: AppColors.primary,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              else
-                                const PopupMenuItem<void>(
-                                  enabled: false,
-                                  child: Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      vertical: 8.0,
-                                    ),
-                                    child: Text(
-                                      'Không có thông báo mới.',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey,
-                                        fontStyle: FontStyle.italic,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(width: 12),
-                        ]
-                      : [
-                          IconButton(
-                            icon: const Icon(
-                              Icons.camera_alt_outlined,
-                              color: AppColors.primary,
-                            ),
-                            tooltip: 'Snapshot Try-on',
-                            onPressed: () => context.push('/snapshot-try-on'),
-                          ),
-                          // HIỂN THỊ NÚT ĐĂNG NHẬP/ĐĂNG KÝ KHI CHƯA CÓ TOKEN
-                          OutlinedButton(
-                            onPressed: () => context.push('/login'),
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(
-                                color: AppColors.primary,
-                                width: 1.2,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(24),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                              ),
-                            ),
-                            child: Text(
-                              S.of(context).login,
-                              style: const TextStyle(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          ElevatedButton(
-                            onPressed: () => context.push('/register'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(24),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                              ),
-                            ),
-                            child: Text(
-                              S.of(context).register,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w500,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                        ],
-                )
-              : null, // No AppBar when showHeader is false
-          // Wrap the body with SafeArea when header is hidden
+          appBar: widget.showHeader ? _buildHeaderAppBar(context) : null,
           body: ListenableBuilder(
             listenable: GlobalBookingManager.instance,
             builder: (context, _) {
@@ -682,7 +476,7 @@ class _MainShellState extends State<MainShell> {
                   if (manager.isHolding)
                     _buildGlobalHoldCountdownBanner(context, manager),
                   Expanded(
-                    child: widget.showHeader
+                    child: (widget.showHeader || _hideBottomNav)
                         ? _buildShellBody(widget.child)
                         : SafeArea(child: _buildShellBody(widget.child)),
                   ),
@@ -690,32 +484,35 @@ class _MainShellState extends State<MainShell> {
               );
             },
           ),
-
-          bottomNavigationBar: _buildCustomBottomBar(context),
+          bottomNavigationBar: _hideBottomNav ? null : _buildCustomBottomBar(context),
         ),
         if (_showNewNotificationTip)
           Positioned(
-            top: MediaQuery.of(context).padding.top + 68,
+            top: MediaQuery.of(context).padding.top + 72,
             right: 16,
             child: Material(
               color: Colors.transparent,
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 14,
-                  vertical: 8,
+                  vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF5F8),
-                  borderRadius: BorderRadius.circular(12),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFFF5F8), Color(0xFFFFEBF3)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: const Color(0xFFFFD1E3),
+                    color: AppColors.primary.withValues(alpha: 0.3),
                     width: 1.2,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+                      color: AppColors.primary.withValues(alpha: 0.15),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
                     ),
                   ],
                 ),
@@ -723,10 +520,10 @@ class _MainShellState extends State<MainShell> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      width: 7,
-                      height: 7,
+                      width: 8,
+                      height: 8,
                       decoration: const BoxDecoration(
-                        color: Colors.red,
+                        color: Colors.redAccent,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -734,7 +531,7 @@ class _MainShellState extends State<MainShell> {
                     Text(
                       S.of(context).newNotification,
                       style: const TextStyle(
-                        color: Color(0xFFC44569),
+                        color: AppColors.primaryDark,
                         fontSize: 12.5,
                         fontWeight: FontWeight.bold,
                       ),
@@ -748,15 +545,348 @@ class _MainShellState extends State<MainShell> {
     );
   }
 
+  PreferredSizeWidget _buildHeaderAppBar(BuildContext context) {
+    return AppBar(
+      backgroundColor: AppColors.background,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      toolbarHeight: 52,
+      titleSpacing: 16,
+      flexibleSpace: Container(
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          border: Border(
+            bottom: BorderSide(
+              color: AppColors.primary.withValues(alpha: 0.06),
+              width: 1.0,
+            ),
+          ),
+        ),
+      ),
+      title: GestureDetector(
+        onTap: () => context.go('/'),
+        child: Image.asset(
+          'assets/images/pink.png',
+          height: 28,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AppColors.primary, AppColors.secondary],
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.style_rounded,
+                  color: Colors.white,
+                  size: 16,
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Text(
+                'Nailify',
+                style: TextStyle(
+                  fontFamily: 'Georgia',
+                  color: AppColors.primaryDark,
+                  fontSize: 19,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: _isLoggedIn ? _buildLoggedInActions(context) : _buildLoggedOutActions(context),
+    );
+  }
+
+  List<Widget> _buildLoggedInActions(BuildContext context) {
+    return [
+      Container(
+        margin: const EdgeInsets.only(right: 8),
+        decoration: BoxDecoration(
+          color: AppColors.primarySurface.withValues(alpha: 0.6),
+          shape: BoxShape.circle,
+        ),
+        child: IconButton(
+          icon: const Icon(
+            Icons.camera_alt_outlined,
+            color: AppColors.primary,
+            size: 22,
+          ),
+          tooltip: 'Snapshot Try-on',
+          onPressed: () => context.push('/snapshot-try-on'),
+        ),
+      ),
+      Container(
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          color: AppColors.primarySurface.withValues(alpha: 0.6),
+          shape: BoxShape.circle,
+        ),
+        child: PopupMenuButton<void>(
+          offset: const Offset(0, 50),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(
+              color: AppColors.primary.withValues(alpha: 0.15),
+              width: 1,
+            ),
+          ),
+          color: Colors.white,
+          elevation: 8,
+          shadowColor: AppColors.primary.withValues(alpha: 0.2),
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Icon(
+                  _hasRecommendations
+                      ? Icons.notifications_active_rounded
+                      : Icons.notifications_outlined,
+                  color: _hasRecommendations
+                      ? AppColors.primary
+                      : AppColors.primaryDark,
+                  size: 24,
+                ),
+              ),
+              if (_hasRecommendations)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    width: 9,
+                    height: 9,
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 1.5),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          itemBuilder: (context) => [
+            PopupMenuItem<void>(
+              enabled: false,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.notifications_rounded,
+                        color: AppColors.primary,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        S.of(context).notifications,
+                        style: const TextStyle(
+                          fontFamily: 'Georgia',
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Divider(
+                    height: 1,
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                  ),
+                ],
+              ),
+            ),
+            if (_hasRecommendations)
+              PopupMenuItem<void>(
+                onTap: () {
+                  Future.delayed(
+                    const Duration(milliseconds: 100),
+                    () {
+                      if (context.mounted) {
+                        context.go('/perfect-match');
+                      }
+                    },
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF5F8),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 18,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              S.of(context).nailRecommendation,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12.5,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              S.of(context).viewDetail,
+                              style: const TextStyle(
+                                fontSize: 11.5,
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              const PopupMenuItem<void>(
+                enabled: false,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12.0),
+                  child: Center(
+                    child: Text(
+                      'Không có thông báo mới.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    ];
+  }
+
+  List<Widget> _buildLoggedOutActions(BuildContext context) {
+    return [
+      IconButton(
+        icon: const Icon(
+          Icons.camera_alt_outlined,
+          color: AppColors.primary,
+        ),
+        tooltip: 'Snapshot Try-on',
+        onPressed: () => context.push('/snapshot-try-on'),
+      ),
+                          // HIỂN THỊ NÚT ĐĂNG NHẬP/ĐĂNG KÝ KHI CHƯA CÓ TOKEN
+      OutlinedButton(
+        onPressed: () => context.push('/login'),
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(
+            color: AppColors.primary,
+            width: 1.2,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
+          ),
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        child: Text(
+          S.of(context).login,
+          style: const TextStyle(
+            color: AppColors.primary,
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
+        ),
+      ),
+      const SizedBox(width: 8),
+      Container(
+        decoration: BoxDecoration(
+          gradient: AppColors.quizGradient,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: ElevatedButton(
+          onPressed: () => context.push('/register'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 8,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: Text(
+            S.of(context).register,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ),
+      const SizedBox(width: 14),
+    ];
+  }
+
   Widget _buildCustomBottomBar(BuildContext context) {
     final currentIndex = _calculateCurrentIndex();
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return CustomPaint(
-      size: Size(double.infinity, 64 + bottomPadding),
+      size: Size(double.infinity, 66 + bottomPadding),
       painter: BottomNavPainter(bottomPadding: bottomPadding),
       child: Container(
-        height: 64 + bottomPadding,
+        height: 66 + bottomPadding,
         color: Colors.transparent,
         child: Stack(
           clipBehavior: Clip.none,
@@ -770,7 +900,7 @@ class _MainShellState extends State<MainShell> {
                     context,
                     index: 0,
                     icon: Icons.home_outlined,
-                    activeIcon: Icons.home,
+                    activeIcon: Icons.home_rounded,
                     label: S.of(context).home,
                     isSelected: currentIndex == 0,
                   ),
@@ -778,24 +908,24 @@ class _MainShellState extends State<MainShell> {
                     context,
                     index: 1,
                     icon: Icons.calendar_month_outlined,
-                    activeIcon: Icons.calendar_month,
+                    activeIcon: Icons.calendar_month_rounded,
                     label: S.of(context).myBooking,
                     isSelected: currentIndex == 1,
                   ),
-                  const SizedBox(width: 56), // Chừa chỗ cho nút nhô lên
+                  const SizedBox(width: 58), // Chừa chỗ cho nút nhô lên ở giữa
                   _buildBarItem(
                     context,
                     index: 2,
                     icon: Icons.palette_outlined,
-                    activeIcon: Icons.palette,
+                    activeIcon: Icons.palette_rounded,
                     label: S.of(context).myStudio,
                     isSelected: currentIndex == 2,
                   ),
                   _buildBarItem(
                     context,
                     index: 3,
-                    icon: Icons.person_outline,
-                    activeIcon: Icons.person,
+                    icon: Icons.person_outline_rounded,
+                    activeIcon: Icons.person_rounded,
                     label: S.of(context).account,
                     isSelected: currentIndex == 3,
                   ),
@@ -805,7 +935,7 @@ class _MainShellState extends State<MainShell> {
 
             // Nút tròn nhô lên ở giữa (Shortcut đi tới màn hình đặt lịch mới /nail-booking)
             Positioned(
-              top: -24, // Nhô lên 24px để tạo đường cong nhô lên đẹp mắt
+              top: -26,
               left: 0,
               right: 0,
               child: Column(
@@ -818,8 +948,8 @@ class _MainShellState extends State<MainShell> {
                       });
                     },
                     child: Container(
-                      width: 54,
-                      height: 54,
+                      width: 56,
+                      height: 56,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: const LinearGradient(
@@ -829,20 +959,29 @@ class _MainShellState extends State<MainShell> {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.4),
-                            blurRadius: 12,
-                            offset: const Offset(0, 5),
+                            color: AppColors.primary.withValues(alpha: 0.45),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
+                          ),
+                          BoxShadow(
+                            color: AppColors.secondary.withValues(alpha: 0.25),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
                           ),
                         ],
+                        border: Border.all(
+                          color: Colors.white,
+                          width: 2.5,
+                        ),
                       ),
                       child: const Icon(
-                        Icons.calendar_today_outlined,
+                        Icons.calendar_today_rounded,
                         color: Colors.white,
                         size: 24,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3),
                   GestureDetector(
                     onTap: () {
                       AuthGuard.check(context, () {
@@ -854,9 +993,8 @@ class _MainShellState extends State<MainShell> {
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
-                        color: Color(
-                          0xFFFF66C4,
-                        ), // Luôn hiển thị màu hồng chủ đạo
+                        color: AppColors.primary,
+                        letterSpacing: -0.2,
                       ),
                     ),
                   ),
@@ -877,26 +1015,45 @@ class _MainShellState extends State<MainShell> {
     required String label,
     required bool isSelected,
   }) {
-    final color = isSelected ? const Color(0xFFFF66C4) : Colors.grey.shade400;
+    final color = isSelected ? AppColors.primary : AppColors.textSecondary.withValues(alpha: 0.7);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => _onTabTapped(context, index),
       child: SizedBox(
-        width: 60,
+        width: 64,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(isSelected ? activeIcon : icon, color: color, size: 24),
-            const SizedBox(height: 4),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              padding: EdgeInsets.symmetric(
+                horizontal: isSelected ? 12 : 0,
+                vertical: isSelected ? 4 : 0,
+              ),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.primarySurface.withValues(alpha: 0.8)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                isSelected ? activeIcon : icon,
+                color: color,
+                size: 24,
+              ),
+            ),
+            const SizedBox(height: 3),
             Text(
               label,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 10.5,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 color: color,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -926,12 +1083,34 @@ class _MainShellState extends State<MainShell> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        color: isUrgent ? Colors.red.shade600 : Colors.orange.shade700,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isUrgent
+                ? [const Color(0xFFE53935), const Color(0xFFC62828)]
+                : [const Color(0xFFF57C00), const Color(0xFFE65100)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: (isUrgent ? Colors.red : Colors.orange).withValues(alpha: 0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
         child: Row(
           children: [
-            const Icon(Icons.lock_clock, color: Colors.white, size: 18),
-            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.all(5),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.25),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.timer_outlined, color: Colors.white, size: 16),
+            ),
+            const SizedBox(width: 10),
             Expanded(
               child: Text(
                 isUrgent
@@ -939,15 +1118,15 @@ class _MainShellState extends State<MainShell> {
                     : 'Slot đang được giữ chỗ – còn $min:$sec để hoàn tất. Nhấp để quay lại.',
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
             const Icon(
               Icons.arrow_forward_ios_rounded,
               color: Colors.white,
-              size: 12,
+              size: 13,
             ),
           ],
         ),
@@ -999,7 +1178,7 @@ class _BlinkingPerfectMatchButtonState extends State<BlinkingPerfectMatchButton>
         child: GestureDetector(
           onTap: () => context.push('/perfect-match'),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 colors: [AppColors.primary, AppColors.secondary],
@@ -1009,23 +1188,23 @@ class _BlinkingPerfectMatchButtonState extends State<BlinkingPerfectMatchButton>
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.3),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
+                  color: AppColors.primary.withValues(alpha: 0.35),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
                 ),
               ],
             ),
             child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.auto_awesome, size: 13, color: Colors.white),
-                SizedBox(width: 4),
+                Icon(Icons.auto_awesome_rounded, size: 14, color: Colors.white),
+                SizedBox(width: 5),
                 Text(
                   'Perfect Match',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontSize: 11,
+                    fontSize: 11.5,
                   ),
                 ),
               ],
@@ -1055,31 +1234,28 @@ class BottomNavPainter extends CustomPainter {
     final height = size.height;
 
     final cx = width / 2;
-    // Điểm cao nhất của đường cong là -20px (hướng lên trên, nằm gọn dưới đỉnh nút đặt lịch ở -24px)
-    // Khoảng cách bắt đầu lượn cong từ cx - 36 đến cx + 36 (Clearance 72px bao trùm nút đặt lịch 54px)
-    const radiusX = 36.0;
-    const radiusY = -20.0;
+    const radiusX = 38.0;
+    const radiusY = -22.0;
 
     path.moveTo(0, 0);
-    // Vẽ đường thẳng đến điểm bắt đầu cong
     path.lineTo(cx - radiusX, 0);
 
     // Tạo đường cong mái vòm hình chữ U ngược (dome) lồi lên bao quanh nút Đặt lịch
     path.cubicTo(
       cx - 20,
-      0, // Điểm kiểm soát 1
+      0,
       cx - 18,
-      radiusY, // Điểm kiểm soát 2
+      radiusY,
       cx,
-      radiusY, // Điểm cực đại phía trên cùng
+      radiusY,
     );
     path.cubicTo(
       cx + 18,
-      radiusY, // Điểm kiểm soát 1
+      radiusY,
       cx + 20,
-      0, // Điểm kiểm soát 2
+      0,
       cx + radiusX,
-      0, // Điểm kết thúc cong
+      0,
     );
 
     path.lineTo(width, 0);
@@ -1091,8 +1267,8 @@ class BottomNavPainter extends CustomPainter {
     canvas.drawPath(
       path,
       Paint()
-        ..color = Colors.black.withValues(alpha: 0.03)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.outer, 8),
+        ..color = AppColors.primary.withValues(alpha: 0.08)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.outer, 10),
     );
 
     // Tô nền màu trắng
@@ -1100,7 +1276,7 @@ class BottomNavPainter extends CustomPainter {
 
     // Vẽ viền mảnh màu xám nhạt chạy theo đường cong
     final borderPaint = Paint()
-      ..color = Colors.grey.shade200
+      ..color = AppColors.primary.withValues(alpha: 0.12)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 

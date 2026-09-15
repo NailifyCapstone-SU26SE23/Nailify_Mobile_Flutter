@@ -557,11 +557,23 @@ class _NailBookingPageState extends State<NailBookingPage> {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      color: isUrgent ? Colors.red.shade600 : Colors.orange.shade700,
+      decoration: BoxDecoration(
+        color: isUrgent ? Colors.red.shade600 : Colors.orange.shade700,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: (isUrgent ? Colors.red.shade600 : Colors.orange.shade700)
+                .withValues(alpha: 0.25),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
       child: Row(
         children: [
-          const Icon(Icons.lock_clock, color: Colors.white, size: 18),
+          const Icon(Icons.timer_outlined, color: Colors.white, size: 18),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -696,16 +708,6 @@ class _NailBookingPageState extends State<NailBookingPage> {
 
   void _handleServiceChanged(List<String?> services) {
     _cancelCurrentHold();
-    // Fix bug: trước đây `_handleServiceChanged` xóa luôn `_selectedStylist`
-    // khi user đính kèm dịch vụ (ngâm chân thảo mộc, cắt da tay...). Sau đó
-    // sang step 3 chọn ngày → `_handleDateChanged` thấy `_selectedStylist
-    // == null` → nhảy vào `_loadSalonSlots()` → gọi SAI API
-    // `POST /api/Bookings/salon-available-slots` thay vì
-    // `GET /api/Bookings/artist-available-slots?NailArtistId=...`.
-    //
-    // Sau fix: KHÔNG xóa thợ. Chỉ clear time + priceReview + slots; thợ vẫn
-    // được giữ nguyên. Khi user sang step 3 chọn ngày, `_handleDateChanged`
-    // sẽ thấy `_selectedStylist != null` → gọi `_fetchTimeSlots()` đúng API.
     setState(() {
       _selectedExtraServices = services;
       _selectedTime = null;
@@ -756,18 +758,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   void _handlePromotionChanged(int? promotionId) {
-    // Fix bug "nhảy giá":
-    // - Trước fix: setState clear `_priceReview = null` khiến UI lập tức fallback
-    //   `_estimatedTotalPrice` (= 740k = nail variant + shape + extras) trong
-    //   lúc chờ API tính giá mới → hiển thị nhầm giá 740k rồi mới trả 368k.
-    // - Sau fix: KHÔNG clear `_priceReview` ngay. Giữ giá cũ hiển thị + bật
-    //   spinner `_isReviewingPrice = true` cho tới khi API trả về `_priceReview`
-    //   mới (có/không voucher). Reset `_priceReviewKey = null` để `_reviewPrice()`
-    //   hiểu là cần gọi API mới thay vì trả về cache cũ.
     setState(() {
       _selectedPromotionId = promotionId;
       _priceReviewKey = null;
-      // _priceReview CỐ Ý KHÔNG clear → giữ giá cũ trong lúc loading
       _isReviewingPrice = true;
     });
     if (_currentStep == 4) {
@@ -818,15 +811,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   Future<void> _handleNextAction() async {
-    // Fix bug: trước đây button "Tiếp tục" chỉ disable khi `_isSubmitting`
-    // (chỉ true ở `_executeBooking`). Khi user bấm "Tiếp tục" ở step "chọn
-    // ngày/giờ" → step "tổng quan", hệ thống gọi `_createHoldForSummary`
-    // (API hold-slot mất 1–3 giây) mà KHÔNG có loading. User dễ bấm nhầm
-    // nhiều lần → gọi API hold-slot trùng lặp.
-    //
-    // Sau fix: set `_isSubmitting = true` ngay từ đầu khi cần xử lý async
-    // (hold-slot hoặc submit booking). Button sẽ disable + spinner ngay.
-    if (_isSubmitting) return; // chống bấm đúp khi đang xử lý
+    if (_isSubmitting) return;
 
     if (_currentStep == 0 && _selectedBranch == null) {
       _showSnackBar(S.of(context).bookingValidateSalon);
@@ -853,8 +838,6 @@ class _NailBookingPageState extends State<NailBookingPage> {
     }
 
     if (_currentStep < 4) {
-      // Bước sang step kế tiếp. Nếu từ step "chọn ngày/giờ" (index 3) →
-      // step "tổng quan" (index 4) thì cần tạo hold-slot → bật loading.
       if (_currentStep == 3) {
         setState(() => _isSubmitting = true);
         try {
@@ -878,7 +861,6 @@ class _NailBookingPageState extends State<NailBookingPage> {
         );
       }
     } else {
-      // Step cuối (index 4): thanh toán → _executeBooking tự set _isSubmitting.
       _executeBooking();
     }
   }
@@ -920,13 +902,6 @@ class _NailBookingPageState extends State<NailBookingPage> {
             child: PageView(
               controller: _pageController,
               physics: const NeverScrollableScrollPhysics(),
-              // Fix bug "nhảy giá" lần 2:
-              // - Trước fix: nếu _priceReviewKey != requestKey thì clear
-              //   _priceReview = null → UI fallback 740k trong lúc API load.
-              // - Sau fix: KHÔNG clear _priceReview. Nếu requestKey khác key
-              //   hiện tại (voucher/extras đã đổi) thì reset _priceReviewKey
-              //   để _reviewPrice() biết cần fetch mới, nhưng giữ _priceReview
-              //   cũ hiển thị + bật spinner cho tới khi API trả.
               onPageChanged: (idx) {
                 setState(() => _currentStep = idx);
                 if (idx == 4) {
@@ -934,7 +909,6 @@ class _NailBookingPageState extends State<NailBookingPage> {
                     setState(() {
                       _priceReviewKey = null;
                       _isReviewingPrice = true;
-                      // _priceReview cố ý KHÔNG clear
                     });
                   }
                   _reviewPrice();
@@ -1106,10 +1080,10 @@ class _NailBookingPageState extends State<NailBookingPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade100),
+        border: Border.all(color: const Color(0xFFF2ECE6)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1135,7 +1109,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
             _selectedTime == null ? '' : _selectedTime!.substring(0, 5),
           ),
           _buildSummaryRow(
-            Icons.face_3_rounded,
+            Icons.person_pin_rounded,
             S.of(context).bookingSummaryArtist,
             _noArtistSelected
                 ? S.of(context).bookingAutoAssign
@@ -1148,29 +1122,22 @@ class _NailBookingPageState extends State<NailBookingPage> {
 
   Widget _buildPaymentDetails() {
     final reviewTotal = _priceReview?['totalPrice'];
-
-    // Fix bug "nhảy giá":
-    // - Nếu có _priceReview → dùng trực tiếp (giá cũ vẫn OK, không fallback 740k)
-    // - Nếu KHÔNG có _priceReview VÀ đang loading → hiển thị loading indicator
-    //   thay vì fallback `_estimatedTotalPrice` (= 740k) gây nhầm lẫn.
-    // - Nếu KHÔNG có _priceReview VÀ không loading → fallback (chưa chọn time)
-    //   chỉ xảy ra khi step 4 chưa có dữ liệu để review.
     final bool isLoading = _isReviewingPrice && _priceReview == null;
     final int totalPrice = reviewTotal is num
         ? reviewTotal.round()
         : isLoading
-        ? 0 // placeholder — sẽ hiển thị loading indicator
+        ? 0
         : int.tryParse(reviewTotal?.toString() ?? '') ?? _estimatedTotalPrice;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade100),
+        border: Border.all(color: const Color(0xFFF2ECE6)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1181,12 +1148,27 @@ class _NailBookingPageState extends State<NailBookingPage> {
         children: [
           Row(
             children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFFF5F8),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.receipt_long_rounded,
+                  size: 18,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   S.of(context).bookingPaymentDetails,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
+                    fontFamily: 'Georgia',
+                    color: AppColors.primaryDark,
                   ),
                 ),
               ),
@@ -1194,11 +1176,16 @@ class _NailBookingPageState extends State<NailBookingPage> {
                 const SizedBox(
                   width: 18,
                   height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.primary,
+                  ),
                 ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
+          const Divider(height: 1, color: Color(0xFFFFF0F5)),
+          const SizedBox(height: 14),
           if (widget.nailData != null) _buildNailVariantPaymentItem(),
           ..._selectedExtraServices.whereType<String>().map((serviceId) {
             return _buildPaymentRow(
@@ -1207,11 +1194,10 @@ class _NailBookingPageState extends State<NailBookingPage> {
               muted: true,
             );
           }),
-          const Divider(height: 16),
+          const Divider(height: 16, color: Color(0xFFFFF0F5)),
           ..._discountBreakdown.map(_buildDiscountRow),
-          const Divider(height: 16),
-          // Fix bug "nhảy giá": hiển thị placeholder loading thay vì giá 0
-          // khi đang chờ API tính giá voucher mới.
+          if (_discountBreakdown.isNotEmpty)
+            const Divider(height: 16, color: Color(0xFFFFF0F5)),
           isLoading
               ? _buildLoadingPriceRow(S.of(context).bookingTotal)
               : _buildPaymentRow(
@@ -1221,7 +1207,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                   highlight: true,
                 ),
           if (_selectedBranch != null && !isLoading) ...[
-            const Divider(height: 16),
+            const Divider(height: 16, color: Color(0xFFFFF0F5)),
             _buildDepositDetails(totalPrice),
           ],
         ],
@@ -1301,9 +1287,6 @@ class _NailBookingPageState extends State<NailBookingPage> {
     return rowsByKey.values.toList();
   }
 
-  // Fix bug "nhảy giá": placeholder row hiển thị spinner + chữ "Đang tính giá..."
-  // khi user chọn voucher và API đang load. Thay vì hiển thị giá 0 hoặc
-  // fallback 740k gây nhầm lẫn.
   Widget _buildLoadingPriceRow(String label) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -1365,7 +1348,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                 label,
                 style: TextStyle(
                   fontSize: highlight ? 16 : 14,
-                  color: muted ? Colors.grey : AppColors.textPrimary,
+                  color: muted ? Colors.grey.shade600 : AppColors.textPrimary,
                   fontWeight: strong ? FontWeight.bold : FontWeight.normal,
                 ),
               ),
@@ -1376,7 +1359,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
             style: TextStyle(
               fontWeight: strong ? FontWeight.bold : FontWeight.w600,
               color: highlight ? AppColors.primary : AppColors.textPrimary,
-              fontSize: highlight ? 18 : 14,
+              fontSize: highlight ? 17 : 14,
             ),
           ),
         ],
@@ -1404,7 +1387,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                 label,
                 style: TextStyle(
                   fontSize: highlight ? 16 : 14,
-                  color: muted ? Colors.grey : AppColors.textPrimary,
+                  color: muted ? Colors.grey.shade600 : AppColors.textPrimary,
                   fontWeight: strong ? FontWeight.bold : FontWeight.normal,
                 ),
               ),
@@ -1415,7 +1398,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
             style: TextStyle(
               fontWeight: strong ? FontWeight.bold : FontWeight.w600,
               color: highlight ? AppColors.primary : AppColors.textPrimary,
-              fontSize: highlight ? 18 : 14,
+              fontSize: highlight ? 17 : 14,
             ),
           ),
         ],
@@ -1544,10 +1527,10 @@ class _NailBookingPageState extends State<NailBookingPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade100),
+        border: Border.all(color: const Color(0xFFF2ECE6)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1558,7 +1541,18 @@ class _NailBookingPageState extends State<NailBookingPage> {
         children: [
           Row(
             children: [
-              const Icon(Icons.local_offer_outlined, color: AppColors.primary),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFFF5F8),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.local_offer_rounded,
+                  size: 18,
+                  color: AppColors.primary,
+                ),
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
@@ -1568,7 +1562,8 @@ class _NailBookingPageState extends State<NailBookingPage> {
                       'Voucher trong ví',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                        fontSize: 15.5,
+                        color: AppColors.primaryDark,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -1585,7 +1580,10 @@ class _NailBookingPageState extends State<NailBookingPage> {
                 const SizedBox(
                   width: 18,
                   height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.primary,
+                  ),
                 )
               else
                 IconButton(
@@ -1596,6 +1594,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                     _isPromotionExpanded
                         ? Icons.keyboard_arrow_up
                         : Icons.keyboard_arrow_down,
+                    color: AppColors.primary,
                   ),
                 ),
             ],
@@ -1657,9 +1656,16 @@ class _NailBookingPageState extends State<NailBookingPage> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(icon, size: 20, color: AppColors.primary),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: const BoxDecoration(
+              color: Color(0xFFFFF5F8),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 16, color: AppColors.primary),
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -1667,12 +1673,14 @@ class _NailBookingPageState extends State<NailBookingPage> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
                 ),
+                const SizedBox(height: 2),
                 Text(
                   value,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
+                    fontSize: 14,
                     color: AppColors.textPrimary,
                   ),
                 ),
@@ -1686,14 +1694,14 @@ class _NailBookingPageState extends State<NailBookingPage> {
 
   Widget _buildStepIndicator() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -1712,9 +1720,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
                 // Left connector line
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.only(top: 17),
+                    padding: const EdgeInsets.only(top: 14),
                     child: Container(
-                      height: 2,
+                      height: 1.5,
                       color: index == 0
                           ? Colors.transparent
                           : (isCompleted || isActive
@@ -1729,8 +1737,8 @@ class _NailBookingPageState extends State<NailBookingPage> {
                   children: [
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
-                      width: 36,
-                      height: 36,
+                      width: 30,
+                      height: 30,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: isActive
@@ -1742,12 +1750,12 @@ class _NailBookingPageState extends State<NailBookingPage> {
                           color: (isActive || isCompleted)
                               ? AppColors.primary
                               : Colors.grey.shade300,
-                          width: isActive ? 2.5 : 1.5,
+                          width: isActive ? 2 : 1.2,
                         ),
                         boxShadow: isActive
                             ? [
                                 BoxShadow(
-                                  color: AppColors.primary.withOpacity(0.25),
+                                  color: AppColors.primary.withValues(alpha: 0.35),
                                   blurRadius: 8,
                                   spreadRadius: 1,
                                 ),
@@ -1757,7 +1765,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                       child: Center(
                         child: Icon(
                           step['icon'] as IconData,
-                          size: 16,
+                          size: 14,
                           color: isCompleted
                               ? Colors.white
                               : (isActive
@@ -1766,10 +1774,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 5),
                     Text(
                       step['title'] as String,
-                      // Already localized from getter
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: (isActive || isCompleted)
@@ -1785,9 +1792,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
                 // Right connector line
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.only(top: 17),
+                    padding: const EdgeInsets.only(top: 14),
                     child: Container(
-                      height: 2,
+                      height: 1.5,
                       color: index == _bookingSteps.length - 1
                           ? Colors.transparent
                           : (isCompleted
@@ -1806,14 +1813,14 @@ class _NailBookingPageState extends State<NailBookingPage> {
 
   Widget _buildFooter() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
-            offset: const Offset(0, -5),
+            offset: const Offset(0, -4),
           ),
         ],
       ),
@@ -1832,7 +1839,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                   ),
                   side: const BorderSide(color: AppColors.primary, width: 1.5),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
+                    borderRadius: BorderRadius.circular(24),
                   ),
                 ),
                 child: Text(
@@ -1862,7 +1869,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                     boxShadow: [
                       if (!_isSubmitting)
                         BoxShadow(
-                          color: AppColors.primary.withOpacity(0.3),
+                          color: AppColors.primary.withValues(alpha: 0.3),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),

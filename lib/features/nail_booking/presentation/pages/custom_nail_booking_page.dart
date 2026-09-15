@@ -323,7 +323,27 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   }
 
   Future<bool> _createHoldForSummary() async {
-    await _cancelCurrentHold();
+    // Fix bug: trước đây khi user back từ step tổng quan (3) về step chọn
+    // ngày/giờ (2) rồi chọn lại giờ, _handleTimeChanged đã tạo hold token
+    // mới → đến khi bấm "Tiếp tục" sang step tổng quan, _createHoldForSummary
+    // lại gọi _cancelCurrentHold() + _createHold() → backend log cho thấy
+    // 2 lần DELETE hold-slot + 1 lần POST hold-slot (cancel hold cũ trước
+    // khi tạo mới mặc dù hold cũ vẫn còn hiệu lực).
+    //
+    // Sau fix: nếu đã có hold token còn hiệu lực (_isHolding == true +
+    // _holdToken != null + remaining > 0) thì GIỮ NGUYÊN, không tạo lại.
+    // Chỉ tạo hold mới khi:
+    //  - Chưa có token (_holdToken == null).
+    //  - Hold đã hết hạn local (_isHolding == false).
+    //  - User đổi ngày / shape method / giờ (đã cancel thủ công ở đó).
+    if (_isHolding && _holdToken != null && _holdRemainingSeconds > 0) {
+      // Đảm bảo timer vẫn chạy (có thể bị dispose khi rebuild widget).
+      if (_holdTimer == null || !_holdTimer!.isActive) {
+        _startHoldTimer(_holdToken!);
+      }
+      return true;
+    }
+
     final hold = await _createHold();
     final token = hold?['holdToken']?.toString();
     if (token == null || token.isEmpty) {
@@ -500,15 +520,20 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   }
 
   void _handleServiceChanged(List<String?> services) {
-    _cancelCurrentHold();
+    // Fix bug: trước đây `_handleServiceChanged` gọi `_cancelCurrentHold()` +
+    // clear giờ + clear timeSlots khi user đính kèm dịch vụ (ngâm chân thảo
+    // mộc, cắt da tay...) ở step 1. Điều này khiến user đã tạo hold token
+    // cho slot ở step 2 rồi mà back về step 1 thêm dịch vụ thì mất luôn slot.
+    //
+    // Sau fix: dịch vụ đi kèm là addon SONG SONG với dịch vụ chính, KHÔNG
+    // ảnh hưởng đến duration slot đã chọn. Hold token vẫn hợp lệ và nên
+    // được giữ nguyên. Khi user forward trở lại step 2, nếu chưa chọn giờ
+    // hoặc đổi ngày thì _fetchTimeSlots() sẽ tự load lại.
     setState(() {
       _selectedExtraServices = services;
-      _selectedTime = null;
-      _timeSlots = [];
       _priceReview = null;
     });
     _reviewPrice();
-    if (_selectedDate != null) _fetchTimeSlots();
   }
 
   Future<void> _handleBackAction() async {

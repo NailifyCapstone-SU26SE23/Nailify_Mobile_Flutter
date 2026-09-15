@@ -8,6 +8,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/duration_formatter.dart';
 import '../../../../generated/l10n.dart';
 import '../../data/models/waitlist_model.dart';
 
@@ -51,14 +52,14 @@ class _WaitlistPendingCard extends StatelessWidget {
   const _WaitlistPendingCard({required this.item, required this.onCancel});
 
   String _timeSince(BuildContext context, DateTime from) {
+    // DurationFormatter.formatDiff tu dong xu ly:
+    //  - Negative Duration (registeredAt > now) -> lay gia tri tuyet doi + prefix "-"
+    //  - Positive Duration (registeredAt < now) -> hien thi binh thuong
+    //  - Tren 24h -> hien thi "X ngay Y gio"
+    //  - Duoi 24h, tren 60p -> hien thi "X gio Y phut"
+    //  - Duoi 60p -> hien thi "X phut"
     final diff = DateTime.now().difference(from);
-    if (diff.inMinutes < 60) {
-      return S.of(context).waitlistMinutesAgo(diff.inMinutes.toString());
-    }
-    if (diff.inHours < 24) {
-      return S.of(context).waitlistHoursAgo(diff.inHours.toString());
-    }
-    return S.of(context).waitlistDaysAgo(diff.inDays.toString());
+    return DurationFormatter.formatDiff(diff);
   }
 
   @override

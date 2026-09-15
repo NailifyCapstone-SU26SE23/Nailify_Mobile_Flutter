@@ -171,6 +171,48 @@ class ApiClient {
   AppException _handleDioError(DioException error) {
     final path = error.requestOptions.path;
     final statusCode = error.response?.statusCode;
+
+    // Ưu tiên 1: Nếu server trả body có `message`/`error` (kể cả khi
+    // status code là 200/400/401), trả message gốc để UI hiển thị.
+    // Đặc biệt fix cho backend .NET dùng ApiResponse wrapper:
+    // `{ "isSucceeded": false, "message": "...", "data": null }`
+    // trả về HTTP 200 với DioExceptionType.badResponse.
+    final responseData = error.response?.data;
+    if (responseData is Map) {
+      final isSucceeded =
+          responseData['isSucceeded'] ?? responseData['IsSucceeded'];
+      final serverMessage =
+          responseData['message'] ??
+          responseData['Message'] ??
+          responseData['error'] ??
+          responseData['Error'];
+      if (isSucceeded == false && serverMessage != null) {
+        final msg = serverMessage.toString().trim();
+        if (msg.isNotEmpty) {
+          // Phân loại lỗi INVALID_CREDENTIALS cho endpoint login
+          if (path.contains('/Auth/login') &&
+              (statusCode == 400 || statusCode == 401 ||
+                  msg.toLowerCase().contains('không chính xác') ||
+                  msg.toLowerCase().contains('invalid') ||
+                  msg.toLowerCase().contains('credentials'))) {
+            return AppException(
+              message:
+                  'Email hoặc mật khẩu không chính xác, vui lòng kiểm tra lại',
+              code: 'INVALID_CREDENTIALS',
+              data: responseData,
+            );
+          }
+          // Trả message gốc từ server để UI hiển thị cho user
+          return AppException(
+            message: msg,
+            code: statusCode != null ? 'HTTP_$statusCode' : 'SERVER_MESSAGE',
+            data: responseData,
+          );
+        }
+      }
+    }
+
+    // Ưu tiên 2: Endpoint login với status 400/401 không có body message
     if (path.contains('/Auth/login') &&
         (statusCode == 400 || statusCode == 401)) {
       return const AppException(

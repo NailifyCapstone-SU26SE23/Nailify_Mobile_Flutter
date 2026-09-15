@@ -69,6 +69,8 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
 
   @override
   void dispose() {
+    // Không cần cancel hold ở đây vì BlocProvider sẽ tự dispose Cubit
+    // (Cubit.close() đã handle việc cancel hold slot + holdTimer).
     _pageController.dispose();
     super.dispose();
   }
@@ -94,6 +96,36 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
   }
 
   // ── Navigation ────────────────────────────────────────────────────────────
+
+  /// Xử lý back action.
+  ///
+  /// QUAN TRỌNG: KHÔNG huỷ hold token khi back giữa các step — hold token
+  /// chỉ nên bị huỷ khi:
+  ///   1. User đổi selection (chọn giờ khác / thợ khác / salon khác) —
+  ///      đã được cubit `selectTime`, `selectStylist`, `selectBranch` xử lý.
+  ///   2. User thoát hẳn khỏi màn hình đặt lịch (đóng page) — được
+  ///      `Cubit.close()` xử lý tự động (gọi cancelHoldSlot + holdTimer).
+  ///
+  /// Lý do: hold token có hiệu lực 5 phút, nếu user back giữa các step
+  /// rồi forward lại thì không cần tạo hold mới → tiết kiệm API call,
+  /// tránh reset timer, và giữ slot cho user đến khi hết hạn tự nhiên.
+  Future<void> _handleBackAction(NailBookingState state) async {
+    if (_currentStep > 0) {
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    } else {
+      // Thoát hẳn khỏi màn hình đặt lịch — huỷ hold token (nếu có).
+      // (Cubit.close() cũng sẽ cancel, nhưng gọi thêm ở đây để chắc chắn
+      // backend được báo huỷ ngay, không đợi hết 5 phút.)
+      if (state.holdToken != null) {
+        context.read<NailBookingCubit>().cancelCurrentHold();
+      }
+      if (mounted) context.pop();
+    }
+  }
+
   Future<void> _handleNextAction(
     NailBookingState state,
     NailBookingCubit cubit,
@@ -121,12 +153,13 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
         _showSnackBar('Vui lòng chọn khung giờ!');
         return;
       }
-      // Chỉ tạo hold mới nếu chưa có token (tránh reset timer khi back/forward)
-      if (!state.noArtistSelected) {
-        if (state.holdToken == null || !state.isHolding) {
-          final held = await cubit.holdSelectedSlot();
-          if (!held || !mounted) return;
-        }
+      // Luôn tạo hold mới (kể cả "Không chọn thợ") — backend cần token này
+      // để tránh race condition giữa nhiều user cùng chọn 1 slot salon.
+      // Chỉ skip khi đã có token hợp lệ (tránh reset timer khi back/forward
+      // và forward lại trong cùng 1 phiên).
+      if (state.holdToken == null || !state.isHolding) {
+        final held = await cubit.holdSelectedSlot();
+        if (!held || !mounted) return;
       }
     }
 
@@ -235,12 +268,10 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
             size: 20,
             color: AppColors.primaryDark,
           ),
-          onPressed: () => _currentStep > 0
-              ? _pageController.previousPage(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                )
-              : context.pop(),
+          onPressed: () {
+            final state = context.read<NailBookingCubit>().state;
+            _handleBackAction(state);
+          },
         ),
         title: Text(
           S.of(context).bookServiceTitle,
@@ -989,10 +1020,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
               OutlinedButton(
                 onPressed: state.isSubmitting
                     ? null
-                    : () => _pageController.previousPage(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      ),
+                    : () => _handleBackAction(state),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,

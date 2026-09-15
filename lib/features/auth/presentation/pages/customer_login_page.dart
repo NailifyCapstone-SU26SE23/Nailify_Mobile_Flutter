@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +9,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/error/exceptions.dart';
 import '../../../../core/localization/locale_service.dart';
 import '../../data/repositories/auth_repository.dart';
 
@@ -43,18 +46,91 @@ class _LoginPageState extends State<LoginPage> {
       context.go('/');
     } catch (e) {
       if (!mounted) return;
-      final errorMsg = e.toString();
-      if (errorMsg.contains('Lỗi từ Server') ||
-          errorMsg.toLowerCase().contains('invalid') ||
-          errorMsg.toLowerCase().contains('credentials') ||
-          errorMsg.contains('400') ||
-          errorMsg.contains('401')) {
+      // Debug log để trace lỗi
+      debugPrint('[Login Error] type=${e.runtimeType} | toString=$e');
+
+      // 1. Ưu tiên: Nếu là AppException có code INVALID_CREDENTIALS → báo sai mật khẩu
+      if (e is AppException && e.code == 'INVALID_CREDENTIALS') {
         _showSnackBar(
           'Email hoặc mật khẩu không chính xác, vui lòng kiểm tra lại',
           AppColors.error,
         );
-      } else {
-        _showSnackBar(errorMsg, AppColors.error);
+      }
+      // 2. Ưu tiên: Nếu là AppException có message Tiếng Việt cụ thể
+      else if (e is AppException &&
+          e.message.isNotEmpty &&
+          e.message !=
+              'Hệ thống đang gặp sự cố. Vui lòng thử lại sau.') {
+        // Phân loại: message có chứa từ khoá "không chính xác" → sai mật khẩu
+        final lower = e.message.toLowerCase();
+        if (lower.contains('không chính xác') ||
+            lower.contains('invalid') ||
+            lower.contains('credentials') ||
+            lower.contains('sai')) {
+          _showSnackBar(
+            'Email hoặc mật khẩu không chính xác, vui lòng kiểm tra lại',
+            AppColors.error,
+          );
+        } else {
+          // Hiển thị message gốc từ server (ví dụ: "Tài khoản đã bị khoá")
+          _showSnackBar(e.message, AppColors.error);
+        }
+      }
+      // 3. Fallback cho DioException gốc (không qua _handleDioError)
+      else if (e is DioException) {
+        // Thử parse message từ response data
+        final data = e.response?.data;
+        String? serverMsg;
+        if (data is Map) {
+          serverMsg = (data['message'] ?? data['Message'] ??
+                  data['error'] ?? data['Error'])
+              ?.toString();
+        }
+        final status = e.response?.statusCode;
+        if (serverMsg != null && serverMsg.isNotEmpty) {
+          final lower = serverMsg.toLowerCase();
+          if (lower.contains('không chính xác') ||
+              lower.contains('invalid') ||
+              lower.contains('credentials')) {
+            _showSnackBar(
+              'Email hoặc mật khẩu không chính xác, vui lòng kiểm tra lại',
+              AppColors.error,
+            );
+          } else {
+            _showSnackBar(serverMsg, AppColors.error);
+          }
+        } else if (status == 400 || status == 401) {
+          _showSnackBar(
+            'Email hoặc mật khẩu không chính xác, vui lòng kiểm tra lại',
+            AppColors.error,
+          );
+        } else {
+          _showSnackBar(
+            'Đăng nhập thất bại. Vui lòng thử lại sau.',
+            AppColors.error,
+          );
+        }
+      }
+      // 4. Các exception khác
+      else {
+        final errorMsg = e.toString();
+        if (errorMsg.toLowerCase().contains('không chính xác') ||
+            errorMsg.toLowerCase().contains('invalid') ||
+            errorMsg.toLowerCase().contains('credentials')) {
+          _showSnackBar(
+            'Email hoặc mật khẩu không chính xác, vui lòng kiểm tra lại',
+            AppColors.error,
+          );
+        } else if (errorMsg.isNotEmpty &&
+            errorMsg != 'Hệ thống đang gặp sự cố. Vui lòng thử lại sau.' &&
+            !errorMsg.toLowerCase().contains('instance of')) {
+          _showSnackBar(errorMsg, AppColors.error);
+        } else {
+          _showSnackBar(
+            'Đăng nhập thất bại. Vui lòng thử lại sau.',
+            AppColors.error,
+          );
+        }
       }
     } finally {
       if (mounted) {

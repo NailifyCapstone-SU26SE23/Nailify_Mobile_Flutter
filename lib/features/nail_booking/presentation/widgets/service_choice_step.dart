@@ -10,6 +10,7 @@ import '../../../nails/data/repositories/nail_variant_repository.dart';
 import '../../data/datasources/capable_nails_api_service.dart';
 import 'booking_service_selection.dart';
 import 'nail_variant_detail_sheet.dart';
+import 'shape_method_selection_sheet.dart';
 
 /// Step chọn dịch vụ với 2 tab:
 /// - "Làm nail": load từ API capable-by-artist, hiển thị grid nail variants
@@ -88,23 +89,24 @@ class _ServiceChoiceStepState extends State<ServiceChoiceStep>
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 8),
-        _buildHeader(),
-        const SizedBox(height: 16),
-        _buildCustomTabBar(),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: MediaQuery.of(context).size.height * 0.6,
-          child: TabBarView(
-            controller: _tabController,
-            physics: const NeverScrollableScrollPhysics(),
-            children: [_buildNailTab(), _buildServiceTab()],
+    return Padding(
+      padding: const EdgeInsets.only(left: 20, right: 20, top: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeader(),
+          const SizedBox(height: 16),
+          _buildCustomTabBar(),
+          const SizedBox(height: 16),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              physics: const NeverScrollableScrollPhysics(),
+              children: [_buildNailTab(), _buildServiceTab()],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -237,13 +239,8 @@ class _ServiceChoiceStepState extends State<ServiceChoiceStep>
                   widget.onNailVariantChanged(null);
                   widget.onShapeMethodChanged(null);
                 } else {
-                  // Chọn mới
-                  widget.onNailVariantChanged(variants[index]);
-                  // Load shape method mặc định (item đầu tiên không inactive)
-                  final shapeMethod = await _fetchDefaultShapeMethod(
-                    variants[index],
-                  );
-                  widget.onShapeMethodChanged(shapeMethod);
+                  // Chọn mới → Hiển thị pop up chọn phương pháp tạo form
+                  _openShapeMethodSelection(variants[index]);
                 }
               },
               onDetailTap: () => _openDetail(variants[index]),
@@ -271,6 +268,27 @@ class _ServiceChoiceStepState extends State<ServiceChoiceStep>
     }
   }
 
+  void _openShapeMethodSelection(NailVariantModel variant) async {
+    final shapeMethod = await ShapeMethodSelectionSheet.show(
+      context,
+      variant: variant,
+      initialSelection:
+          widget.selectedNailVariant?.nailVariantId == variant.nailVariantId
+              ? widget.selectedShapeMethod
+              : null,
+    );
+    if (shapeMethod != null && mounted) {
+      widget.onNailVariantChanged(variant);
+      widget.onShapeMethodChanged(shapeMethod);
+    } else if (mounted) {
+      widget.onNailVariantChanged(variant);
+      final defaultMethod = await _fetchDefaultShapeMethod(variant);
+      if (mounted && widget.selectedShapeMethod == null) {
+        widget.onShapeMethodChanged(defaultMethod);
+      }
+    }
+  }
+
   void _openDetail(NailVariantModel variant) async {
     final shapeMethod = await NailVariantDetailSheet.show(
       context,
@@ -280,22 +298,27 @@ class _ServiceChoiceStepState extends State<ServiceChoiceStep>
       widget.onNailVariantChanged(variant);
       widget.onShapeMethodChanged(shapeMethod);
     } else if (mounted) {
-      // Đóng sheet mà không chọn → vẫn set variant để có thể xem nhanh
       widget.onNailVariantChanged(variant);
+      final defaultMethod = await _fetchDefaultShapeMethod(variant);
+      if (mounted) widget.onShapeMethodChanged(defaultMethod);
     }
   }
 
   Widget _buildServiceTab() {
-    return BookingServiceSelection(
-      nailData: widget.selectedNailVariant != null
-          ? {
-              'id': widget.selectedNailVariant!.nailVariantId.toString(),
-              'name': widget.selectedNailVariant!.name,
-            }
-          : null,
-      services: widget.services,
-      selectedExtraServices: widget.selectedExtraServices,
-      onChanged: widget.onExtraServicesChanged,
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.only(bottom: 30),
+      child: BookingServiceSelection(
+        nailData: widget.selectedNailVariant != null
+            ? {
+                'id': widget.selectedNailVariant!.nailVariantId.toString(),
+                'name': widget.selectedNailVariant!.name,
+              }
+            : null,
+        services: widget.services,
+        selectedExtraServices: widget.selectedExtraServices,
+        onChanged: widget.onExtraServicesChanged,
+      ),
     );
   }
 

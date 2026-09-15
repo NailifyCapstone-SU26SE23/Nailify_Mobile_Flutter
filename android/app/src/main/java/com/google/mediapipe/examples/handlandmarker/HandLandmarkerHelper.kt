@@ -24,6 +24,7 @@ import android.os.SystemClock
 import android.util.Log
 import androidx.annotation.VisibleForTesting
 import androidx.camera.core.ImageProxy
+import com.google.mediapipe.framework.image.BitmapExtractor
 import com.google.mediapipe.framework.image.BitmapImageBuilder
 import com.google.mediapipe.framework.image.MPImage
 import com.google.mediapipe.tasks.core.BaseOptions
@@ -47,6 +48,15 @@ class HandLandmarkerHelper(
     // For this example this needs to be a var so it can be reset on changes.
     // If the Hand Landmarker will not change, a lazy val would be preferable.
     private var handLandmarker: HandLandmarker? = null
+
+    // ── Phase 1.5: Reusable objects to reduce GC pressure in live mode ──
+    // Matrix dùng cho rotation/scale mỗi frame — reset thay vì tạo mới.
+    private val reusableMatrix = Matrix()
+    // Buffer bitmap cho ImageProxy→Bitmap conversion — reuse nếu size không đổi.
+    // Camera resolution cố định (640×480) nên buffer bitmap được tái sử dụng qua các frame.
+    private var reusableBufferBitmap: Bitmap? = null
+    private var bufferBitmapWidth = 0
+    private var bufferBitmapHeight = 0
 
     init {
         setupHandLandmarker()
@@ -185,7 +195,7 @@ class HandLandmarkerHelper(
         }
         val rotatedBitmap = Bitmap.createBitmap(
             bitmapBuffer, 0, 0, bitmapBuffer.width, bitmapBuffer.height,
-            matrix, true
+            reusableMatrix, true
         )
 
         // Convert the input Bitmap object to an MPImage object to run inference
@@ -339,12 +349,21 @@ class HandLandmarkerHelper(
         val finishTimeMs = SystemClock.uptimeMillis()
         val inferenceTime = finishTimeMs - result.timestampMs()
 
+        // Phase 5/6: Trích xuất source bitmap từ MPImage để truyền cho CV pipeline.
+        // BitmapExtractor.extract trả về bitmap gốc (không copy) nếu MPImage được tạo từ BitmapImageBuilder.
+        val sourceBitmap = try {
+            BitmapExtractor.extract(input)
+        } catch (_: Exception) {
+            null
+        }
+
         handLandmarkerHelperListener?.onResults(
             ResultBundle(
                 listOf(result),
                 inferenceTime,
                 input.height,
-                input.width
+                input.width,
+                sourceBitmap
             )
         )
     }
@@ -376,6 +395,12 @@ class HandLandmarkerHelper(
         val inferenceTime: Long,
         val inputImageHeight: Int,
         val inputImageWidth: Int,
+        /**
+         * Phase 5/6: Source bitmap từ camera frame — dùng cho CV pipeline (nail detection).
+         * Chỉ có giá trị trong LIVE_STREAM mode. Trong IMAGE mode có thể là null.
+         * OverlayView truyền bitmap này cho NailDetectionPipeline để trích xuất ROI.
+         */
+        val sourceBitmap: Bitmap? = null,
     )
 
     interface LandmarkerListener {

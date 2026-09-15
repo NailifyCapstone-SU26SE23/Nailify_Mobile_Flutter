@@ -22,7 +22,6 @@ import '../widgets/nail_shape_selector.dart';
 import '../widgets/nail_surface_selector.dart';
 import '../widgets/try_on_action_bar.dart';
 import '../widgets/try_on_color_selector.dart';
-import '../widgets/try_on_placement_controls.dart';
 import '../widgets/try_on_preview_board.dart';
 
 class TryOnSetupScreen extends StatefulWidget {
@@ -382,8 +381,8 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
     }).toList();
   }
 
-  void _addSelectedComponent() {
-    final component = _selectedComponent;
+  void _addSelectedComponent([CombinedComponent? targetComponent]) {
+    final component = targetComponent ?? _selectedComponent;
     if (component == null) return;
     final targetFingers = _selectedFingerIndex == -1
         ? [1, 2, 3, 4, 5]
@@ -401,20 +400,15 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
           fingerIndex: targetFingers[index],
           posX: 0,
           posY: 0,
-          scale: 0.5,
+          scale: 0.28,
           rotation: 0,
         ),
     ];
     setState(() {
+      _selectedComponent = component;
       _placements.addAll(drafts);
       _selectedPlacementId = drafts.last.localId;
     });
-  }
-
-  void _removeSelectedPlacement() {
-    final selected = _selectedPlacement;
-    if (selected == null) return;
-    _deletePlacement(selected.localId);
   }
 
   void _updatePlacement(PlacedComponentDraft placement) {
@@ -440,25 +434,6 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
       _selectedPlacementId = _placements.isEmpty
           ? null
           : _placements.last.localId;
-    });
-  }
-
-  void _nudge({
-    double dx = 0,
-    double dy = 0,
-    double scale = 0,
-    double rotation = 0,
-  }) {
-    final index = _selectedPlacementIndex;
-    if (index == -1) return;
-    final current = _placements[index];
-    setState(() {
-      _placements[index] = current.copyWith(
-        posX: (current.posX + dx).clamp(-0.5, 0.5).toDouble(),
-        posY: (current.posY + dy).clamp(-0.5, 0.5).toDouble(),
-        scale: (current.scale + scale).clamp(0.1, 1.5).toDouble(),
-        rotation: current.rotation + rotation,
-      );
     });
   }
 
@@ -1086,87 +1061,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
   }
 
   Widget _buildComponentsTab(TryOnData data) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Nửa trên: Danh sách phụ kiện
-        _buildComponentsTool(data),
-        const SizedBox(height: 16),
-        const Divider(height: 1),
-        const SizedBox(height: 16),
-        // Nửa dưới: Remote D-Pad
-        _buildPlacementTool(),
-      ],
-    );
-  }
-
-  Widget _buildPlacementTool() {
-    return SingleChildScrollView(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 8.0,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    _selectedPlacement?.name ?? 'Chưa chọn phụ kiện trên móng',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: _selectedPlacement != null
-                          ? const Color(0xFFE91E63)
-                          : Colors.black87,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                FilledButton.icon(
-                  onPressed: _selectedComponent == null
-                      ? null
-                      : _addSelectedComponent,
-                  icon: const Icon(Icons.add_rounded, size: 16),
-                  label: const Text(
-                    'Thêm vào móng',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  style: FilledButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    backgroundColor: const Color(0xFFE91E63),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          TryOnPlacementControls(
-            selectedPlacement: _selectedPlacement,
-            onMoveLeft: () => _nudge(dx: -0.04),
-            onMoveRight: () => _nudge(dx: 0.04),
-            onMoveUp: () => _nudge(dy: -0.04),
-            onMoveDown: () => _nudge(dy: 0.04),
-            onScaleDown: () => _nudge(scale: -0.05),
-            onScaleUp: () => _nudge(scale: 0.05),
-            onRotateLeft: () => _nudge(rotation: -10),
-            onRotateRight: () => _nudge(rotation: 10),
-            onRemove: _removeSelectedPlacement,
-          ),
-        ],
-      ),
-    );
+    return _buildComponentsTool(data);
   }
 
   Widget _buildShapeTool(TryOnData data) {
@@ -1277,8 +1172,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
                       .where((item) => !item.isCustomerComponent)
                       .toList(),
                   selectedComponent: _selectedComponent,
-                  onSelected: (component) =>
-                      setState(() => _selectedComponent = component),
+                  onSelected: (component) => _addSelectedComponent(component),
                 ),
                 ComponentGrid(
                   title: '',
@@ -1286,8 +1180,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
                       .where((item) => item.isCustomerComponent)
                       .toList(),
                   selectedComponent: _selectedComponent,
-                  onSelected: (component) =>
-                      setState(() => _selectedComponent = component),
+                  onSelected: (component) => _addSelectedComponent(component),
                 ),
               ],
             ),
@@ -1310,17 +1203,6 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
         ],
       ),
     );
-  }
-
-  int get _selectedPlacementIndex {
-    return _placements.indexWhere(
-      (item) => item.localId == _selectedPlacementId,
-    );
-  }
-
-  PlacedComponentDraft? get _selectedPlacement {
-    final index = _selectedPlacementIndex;
-    return index == -1 ? null : _placements[index];
   }
 
   void _showMessage(String message) {

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/utils/price_formatter.dart';
 import '../../../../generated/l10n.dart';
 import '../../../nail_booking/data/datasources/capable_nails_api_service.dart';
 import '../../../nails/data/models/nail_variant_model.dart';
@@ -58,9 +59,25 @@ class _NailArtistDetailPageState extends State<NailArtistDetailPage> {
     final l10n = S.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(l10n.nailArtistDetailTitle),
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.primaryDark,
+            size: 20,
+          ),
+          onPressed: () => context.pop(),
+        ),
+        title: Text(
+          l10n.nailArtistDetailTitle,
+          style: const TextStyle(
+            color: AppColors.primaryDark,
+            fontWeight: FontWeight.w800,
+            fontFamily: 'Georgia',
+          ),
+        ),
+        centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
       ),
@@ -68,7 +85,9 @@ class _NailArtistDetailPageState extends State<NailArtistDetailPage> {
         future: _detailFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            );
           }
           if (snapshot.hasError) {
             return SalonErrorState(
@@ -87,7 +106,7 @@ class _NailArtistDetailPageState extends State<NailArtistDetailPage> {
           }
 
           return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
             children: [
               _ArtistHero(artist: data.artist),
               const SizedBox(height: 16),
@@ -108,7 +127,9 @@ class _NailArtistDetailPageState extends State<NailArtistDetailPage> {
                   if (data.artist.status.isNotEmpty)
                     SalonInfoChip(
                       icon: Icons.verified_rounded,
-                      label: data.artist.status,
+                      label: data.artist.status.toLowerCase() == 'active'
+                          ? 'Đang hoạt động'
+                          : data.artist.status,
                       color: AppColors.success,
                     ),
                 ],
@@ -183,7 +204,7 @@ class _ArtistHero extends StatelessWidget {
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    Colors.black.withValues(alpha: 0.62),
+                    Colors.black.withValues(alpha: 0.65),
                   ],
                 ),
               ),
@@ -222,11 +243,6 @@ class _ArtistHero extends StatelessWidget {
   }
 }
 
-String _formatPrice(double price) {
-  final text = price % 1 == 0 ? price.toInt().toString() : price.toString();
-  return '$text VND';
-}
-
 class _NailVariantTile extends StatelessWidget {
   final NailVariantModel variant;
   final VoidCallback? onTap;
@@ -245,23 +261,32 @@ class _NailVariantTile extends StatelessWidget {
     ];
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.10)),
+        border: Border.all(color: const Color(0xFFF0EAE1), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       clipBehavior: Clip.antiAlias,
       child: Material(
         color: Colors.transparent,
+        borderRadius: BorderRadius.circular(18),
         child: InkWell(
           onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
           child: Row(
             children: [
               BasicNetworkImage(
                 imageUrl: variant.imageUrl,
-                width: 92,
-                height: 92,
+                width: 96,
+                height: 96,
                 placeholderIcon: Icons.auto_awesome_rounded,
               ),
               Expanded(
@@ -274,29 +299,44 @@ class _NailVariantTile extends StatelessWidget {
                         variant.name,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w800),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                       if (specs.isNotEmpty) ...[
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 4),
                         Text(
                           specs.join(' • '),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
                             fontSize: 12,
                             height: 1.3,
                           ),
                         ),
                       ],
                       const SizedBox(height: 8),
-                      SalonInfoChip(
-                        icon: Icons.payments_rounded,
-                        label: _formatPrice(variant.price),
-                        color: AppColors.primaryDark,
+                      Text(
+                        PriceFormatter.format(variant.price),
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.grey.shade400,
+                  size: 20,
                 ),
               ),
             ],

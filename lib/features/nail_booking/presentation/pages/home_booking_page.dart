@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/auth_guard.dart';
 import '../../../../core/utils/price_formatter.dart';
+import '../../../../core/utils/retry_helper.dart';
 import '../../../../generated/l10n.dart';
 import '../../../nails/data/models/nail_variant_model.dart';
 import '../../../nails/data/models/shape_method_config_model.dart';
@@ -17,6 +18,7 @@ import '../widgets/artist_selection_list.dart';
 import '../widgets/booking_date_selection.dart';
 import '../widgets/booking_time_selection.dart';
 import '../widgets/branch_selection_list.dart';
+import '../widgets/payment_detail_table.dart';
 import '../widgets/service_choice_step.dart';
 
 /// Trang đặt lịch mới từ HomeBanner.
@@ -53,6 +55,11 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
   String? _priceReviewKey;
   String? _inFlightPriceReviewKey;
   Future<void>? _inFlightPriceReview;
+
+  // ── Load-error fields (dùng để hiển thị retry view khi API fail) ─
+  String? _salonsLoadError;
+  String? _artistsLoadError;
+  String? _timesLoadError;
 
   // ── Data ─────────────────────────────────────────
   List<dynamic> _salons = [];
@@ -118,28 +125,47 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
   }
 
   // ── Fetch APIs ──────────────────────────────────
+  // Tất cả các _fetchXxx bên dưới đều dùng RetryHelper (max 2 retries,
+  // backoff 400ms) cho network/5xx/timeout. Lỗi 4xx (validation,
+  // authorization) không retry. Khi hết retry, page sẽ hiện nút
+  // "Thử lại" cho user.
+
   Future<void> _fetchSalons() async {
+    setState(() => _salonsLoadError = null);
     try {
-      final data = await _apiService.getSalons();
+      final data = await RetryHelper.run(
+        () => _apiService.getSalons(),
+        shouldRetry: RetryHelper.defaultShouldRetry,
+      );
       if (!mounted) return;
       setState(() {
         _salons = data;
         _isLoadingSalons = false;
+        _salonsLoadError = null;
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isLoadingSalons = false);
-      _showSnackBar('Lỗi tải danh sách salon: $e');
+      setState(() {
+        _isLoadingSalons = false;
+        _salonsLoadError = 'Không tải được danh sách salon: $e';
+      });
+      _showSnackBar(
+        'Không tải được danh sách salon. Bấm "Thử lại" để tải lại.',
+      );
     }
   }
 
   Future<void> _fetchServices() async {
     try {
-      final data = await _apiService.getServices();
+      final data = await RetryHelper.run(
+        () => _apiService.getServices(),
+        shouldRetry: RetryHelper.defaultShouldRetry,
+      );
       if (!mounted) return;
       setState(() => _services = data);
     } catch (_) {
       if (!mounted) return;
+      // Fallback về mock data — không show lỗi vì vẫn dùng được.
       setState(() => _services = BookingMockData.extraServices);
     }
   }
@@ -147,7 +173,10 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
   Future<void> _fetchPromotions() async {
     setState(() => _isLoadingPromotions = true);
     try {
-      final vouchers = await _promotionApiService.getMyWalletVouchers();
+      final vouchers = await RetryHelper.run(
+        () => _promotionApiService.getMyWalletVouchers(),
+        shouldRetry: RetryHelper.defaultShouldRetry,
+      );
       if (!mounted) return;
       setState(() {
         _promotions = vouchers
@@ -171,9 +200,13 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
     setState(() {
       _isLoadingArtists = true;
       _artists = [];
+      _artistsLoadError = null;
     });
     try {
-      final data = await _apiService.getNailArtistsBySalon(salonId);
+      final data = await RetryHelper.run(
+        () => _apiService.getNailArtistsBySalon(salonId),
+        shouldRetry: RetryHelper.defaultShouldRetry,
+      );
       if (!mounted) return;
       setState(() {
         _artists = data;
@@ -181,8 +214,13 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isLoadingArtists = false);
-      _showSnackBar('Lỗi tải danh sách thợ: $e');
+      setState(() {
+        _isLoadingArtists = false;
+        _artistsLoadError = 'Không tải được danh sách thợ: $e';
+      });
+      _showSnackBar(
+        'Không tải được danh sách thợ. Bấm "Thử lại" để tải lại.',
+      );
     }
   }
 
@@ -196,16 +234,20 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
       _isLoadingTimes = true;
       _timeSlots = [];
       _selectedTime = null;
+      _timesLoadError = null;
     });
     try {
-      final data = await _apiService.getArtistAvailableSlots(
-        _selectedStylist!['nailArtistId'],
-        _formatBookingDate(_selectedDate!),
+      final rawSlots = await RetryHelper.run(
+        () => _apiService.getArtistAvailableSlots(
+          _selectedStylist!['nailArtistId'],
+          _formatBookingDate(_selectedDate!),
+        ),
+        shouldRetry: RetryHelper.defaultShouldRetry,
       );
       if (!mounted) return;
       setState(() {
         _timeSlots = _apiService.filterSlotsByOperatingHours(
-          slots: data,
+          slots: rawSlots,
           salon: _selectedBranch,
           date: _selectedDate,
         );
@@ -213,8 +255,13 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isLoadingTimes = false);
-      _showSnackBar('Lỗi tải khung giờ: $e');
+      setState(() {
+        _isLoadingTimes = false;
+        _timesLoadError = 'Không tải được khung giờ: $e';
+      });
+      _showSnackBar(
+        'Không tải được khung giờ. Bấm "Thử lại" để tải lại.',
+      );
     }
   }
 
@@ -224,18 +271,22 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
       _isLoadingTimes = true;
       _timeSlots = [];
       _selectedTime = null;
+      _timesLoadError = null;
     });
     try {
       final items = _buildBookingItems();
-      final data = await _apiService.getSalonAvailableSlots(
-        salonId: _selectedBranch!['salonId'],
-        bookingDate: _formatBookingDate(_selectedDate!),
-        bookingItems: items,
+      final rawSlots = await RetryHelper.run(
+        () => _apiService.getSalonAvailableSlots(
+          salonId: _selectedBranch!['salonId'],
+          bookingDate: _formatBookingDate(_selectedDate!),
+          bookingItems: items,
+        ),
+        shouldRetry: RetryHelper.defaultShouldRetry,
       );
       if (!mounted) return;
       setState(() {
         _timeSlots = _apiService.filterSlotsByOperatingHours(
-          slots: data,
+          slots: rawSlots,
           salon: _selectedBranch,
           date: _selectedDate,
         );
@@ -243,8 +294,13 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isLoadingTimes = false);
-      _showSnackBar('Lỗi tải khung giờ salon: $e');
+      setState(() {
+        _isLoadingTimes = false;
+        _timesLoadError = 'Không tải được khung giờ salon: $e';
+      });
+      _showSnackBar(
+        'Không tải được khung giờ salon. Bấm "Thử lại" để tải lại.',
+      );
     }
   }
 
@@ -605,8 +661,8 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
       _showSnackBar(S.of(context).bookingValidateSalon);
       return;
     }
-    if (_currentStep == 1 && _selectedStylist == null && !_noArtistSelected) {
-      _showSnackBar('Vui lòng chọn thợ hoặc chọn "Tự động phân công"!');
+    if (_currentStep == 1 && _selectedStylist == null) {
+      _showSnackBar('Vui lòng chọn thợ để tiếp tục.');
       return;
     }
     if (_currentStep == 2) {
@@ -739,6 +795,12 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
   }
 
   Widget _buildSalonStep() {
+    if (_salonsLoadError != null && !_isLoadingSalons) {
+      return _buildRetryView(
+        message: _salonsLoadError!,
+        onRetry: _fetchSalons,
+      );
+    }
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: BranchSelectionList(
@@ -751,6 +813,15 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
   }
 
   Widget _buildArtistStep() {
+    if (_artistsLoadError != null && !_isLoadingArtists) {
+      return _buildRetryView(
+        message: _artistsLoadError!,
+        onRetry: () async {
+          final salonId = _selectedBranch?['salonId']?.toString() ?? '';
+          if (salonId.isNotEmpty) await _fetchArtists(salonId);
+        },
+      );
+    }
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: ArtistSelectionList(
@@ -760,25 +831,65 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
         noArtistSelected: _noArtistSelected,
         onStylistSelected: _handleStylistSelected,
         onModeChanged: _handleArtistModeChanged,
+        // Fix: home booking bắt buộc phải có thợ (để list nail variants).
+        // Ẩn option "Tự động phân công" để user không chọn mode này.
+        hideAutoAssign: true,
+      ),
+    );
+  }
+
+  Widget _buildRetryView({
+    required String message,
+    required Future<void> Function() onRetry,
+  }) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.cloud_off_rounded,
+              size: 64,
+              color: Colors.grey,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Thử lại'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildServiceStep() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: ServiceChoiceStep(
-        selectedArtistId: _noArtistSelected
-            ? null
-            : _selectedStylist?['nailArtistId'],
-        services: _availableServices,
-        selectedExtraServices: _selectedExtraServices,
-        onExtraServicesChanged: _handleExtraServicesChanged,
-        selectedNailVariant: _selectedNailVariant,
-        onNailVariantChanged: _handleNailVariantChanged,
-        selectedShapeMethod: _selectedShapeMethod,
-        onShapeMethodChanged: _handleShapeMethodChanged,
-      ),
+    return ServiceChoiceStep(
+      selectedArtistId: _noArtistSelected
+          ? null
+          : _selectedStylist?['nailArtistId'],
+      services: _availableServices,
+      selectedExtraServices: _selectedExtraServices,
+      onExtraServicesChanged: _handleExtraServicesChanged,
+      selectedNailVariant: _selectedNailVariant,
+      onNailVariantChanged: _handleNailVariantChanged,
+      selectedShapeMethod: _selectedShapeMethod,
+      onShapeMethodChanged: _handleShapeMethodChanged,
     );
   }
 
@@ -793,22 +904,30 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
             onDateChanged: _handleDateChanged,
           ),
           const SizedBox(height: 28),
-          BookingTimeSelection(
-            timeSlots: _timeSlots,
-            isLoading: _isLoadingTimes,
-            selectedTime: _selectedTime,
-            canSelect: _selectedDate != null,
-            selectedDate: _selectedDate,
-            salonId: _selectedBranch?['salonId'],
-            artistId: _selectedStylist?['nailArtistId'],
-            onTimeChanged: (time) {
-              _cancelCurrentHold();
-              setState(() {
-                _selectedTime = time;
-                _priceReview = null;
-              });
-            },
-          ),
+          if (_timesLoadError != null &&
+              !_isLoadingTimes &&
+              _selectedDate != null)
+            _buildRetryView(
+              message: _timesLoadError!,
+              onRetry: _fetchTimeSlots,
+            )
+          else
+            BookingTimeSelection(
+              timeSlots: _timeSlots,
+              isLoading: _isLoadingTimes,
+              selectedTime: _selectedTime,
+              canSelect: _selectedDate != null,
+              selectedDate: _selectedDate,
+              salonId: _selectedBranch?['salonId'],
+              artistId: _selectedStylist?['nailArtistId'],
+              onTimeChanged: (time) {
+                _cancelCurrentHold();
+                setState(() {
+                  _selectedTime = time;
+                  _priceReview = null;
+                });
+              },
+            ),
         ],
       ),
     );
@@ -924,14 +1043,11 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
             ],
           ),
           const SizedBox(height: 12),
-          if (_selectedNailVariant != null) _buildNailVariantRow(),
-          ..._selectedExtraServices.whereType<String>().map(
-            (id) => _buildPaymentRow(
-              S.of(context).bookingExtraService(_serviceNameById(id)),
-              _servicePriceById(id),
-              muted: true,
-            ),
-          ),
+          PaymentDetailTable(items: _paymentTableItems),
+          if (_discountBreakdown.isNotEmpty) ...[
+            const Divider(height: 16),
+            ..._discountBreakdown.map(_buildDiscountRow),
+          ],
           const Divider(height: 16),
           // Fix bug "nhảy giá": hiển thị placeholder thay vì giá 0.
           isLoading
@@ -951,34 +1067,87 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
     );
   }
 
-  Widget _buildNailVariantRow() {
-    final name = _selectedNailVariant?.name ?? 'Mẫu nail';
-    final price = (_nailVariantPrice + _shapeMethodPrice).round();
+  List<PaymentTableItem> get _paymentTableItems {
+    final items = <PaymentTableItem>[];
+    final variantPrice = (_nailVariantPrice + _shapeMethodPrice).round();
+    if (_selectedNailVariant != null && variantPrice > 0) {
+      items.add(
+        PaymentTableItem(
+          name: _selectedNailVariant?.name ?? 'Mẫu nail',
+          quantity: 1,
+          unitPrice: variantPrice,
+        ),
+      );
+    }
+    final counts = <String, int>{};
+    for (final id in _selectedExtraServices.whereType<String>()) {
+      counts[id] = (counts[id] ?? 0) + 1;
+    }
+    for (final entry in counts.entries) {
+      final unit = _servicePriceById(entry.key);
+      items.add(
+        PaymentTableItem(
+          name: _serviceNameById(entry.key),
+          quantity: entry.value,
+          unitPrice: unit,
+        ),
+      );
+    }
+    return items;
+  }
+
+  List<Map<String, dynamic>> get _discountBreakdown {
+    final raw =
+        _priceReview?['discountBreakdown'] ?? _priceReview?['discounts'];
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((m) => Map<String, dynamic>.from(m))
+        .toList();
+  }
+
+  Widget _buildDiscountRow(Map<String, dynamic> discount) {
+    final name = discount['name']?.toString() ?? 'Giảm giá';
+    final amount = discount['amount'];
+    final amountDisplay = discount['amountDisplay']?.toString();
+    final rawDisplay = (amountDisplay?.isNotEmpty == true)
+        ? amountDisplay!
+        : (amount != null ? PriceFormatter.format(amount) : '');
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: Text(
-                name,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
+            child: Text(
+              name,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.green,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
           Text(
-            PriceFormatter.format(price),
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            _formatDiscountDisplay(rawDisplay),
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.green,
+            ),
           ),
         ],
       ),
     );
+  }
+
+  String _formatDiscountDisplay(String value) {
+    var text = value.trim();
+    if (text.isEmpty) return text;
+    text = text.replaceAll(RegExp(r'^-+'), '');
+    text = '-$text';
+    final lower = text.toLowerCase();
+    if (lower.contains('đ') || lower.contains('vnd')) return text;
+    return '$text VNĐ';
   }
 
   Widget _buildDepositDetails(int totalPrice) {

@@ -16,6 +16,84 @@ class BranchSelectionList extends StatelessWidget {
     required this.onBranchSelected,
   });
 
+  static bool _isSalonOpen(dynamic salon) {
+    if (salon == null || salon is! Map) return false;
+
+    // 1. Status string check
+    final status = (salon['status'] ?? salon['salonStatus'] ?? salon['state'])
+        ?.toString()
+        .trim()
+        .toLowerCase() ?? '';
+    if (status == 'closed' ||
+        status == 'close' ||
+        status == 'inactive' ||
+        status == 'disabled' ||
+        status == 'off' ||
+        status == 'maintenance' ||
+        status == 'đóng cửa' ||
+        status == 'dong cua' ||
+        status == 'ngừng hoạt động') {
+      return false;
+    }
+
+    // 2. Explicit boolean flags
+    final isClosedVal = salon['isClosed'];
+    if (isClosedVal == true || isClosedVal == 1 || isClosedVal == 'true') {
+      return false;
+    }
+    final isOpenVal = salon['isOpen'];
+    if (isOpenVal == false || isOpenVal == 0 || isOpenVal == 'false') {
+      return false;
+    }
+    final isOperatingVal = salon['isOperating'];
+    if (isOperatingVal == false ||
+        isOperatingVal == 0 ||
+        isOperatingVal == 'false') {
+      return false;
+    }
+    final isActiveVal = salon['isActive'];
+    if (isActiveVal == false || isActiveVal == 0 || isActiveVal == 'false') {
+      return false;
+    }
+
+    // 3. Operating hours check for current day
+    final operatingHours = salon['operatingHours'];
+    if (operatingHours is List && operatingHours.isNotEmpty) {
+      final now = DateTime.now();
+      // In Dart: Mon=1..Sun=7. In backend dayOfWeek: 0=Sun, 1=Mon, ..., 6=Sat.
+      final currentDayOfWeek = now.weekday % 7;
+
+      final todayHours = operatingHours
+          .whereType<Map>()
+          .where((h) {
+            final day = h['dayOfWeek'];
+            if (day == null) return false;
+            final d = day is num ? day.toInt() : int.tryParse(day.toString());
+            return d == currentDayOfWeek;
+          })
+          .toList();
+
+      if (todayHours.isNotEmpty) {
+        // Check if all segments for today are explicitly marked isClosed
+        final allClosedToday = todayHours.every((h) {
+          final isClosed = h['isClosed'];
+          final isOpen = h['isOpen'];
+          return isClosed == true ||
+              isClosed == 1 ||
+              isClosed == 'true' ||
+              isOpen == false ||
+              isOpen == 0 ||
+              isOpen == 'false';
+        });
+        if (allClosedToday) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -26,7 +104,9 @@ class BranchSelectionList extends StatelessWidget {
         ),
       );
     }
-    if (salons.isEmpty) {
+    final openSalons = salons.where(_isSalonOpen).toList();
+
+    if (openSalons.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 40),
@@ -107,7 +187,7 @@ class BranchSelectionList extends StatelessWidget {
         const SizedBox(height: 16),
 
         // ── DANH SÁCH SALON MỞ CỬA ──────────────────────────────────
-        ...salons.map((salon) {
+        ...openSalons.map((salon) {
           final bool isSelected = selectedBranchId == salon['salonId'];
           final String name = salon['name'] ?? salon['salonName'] ?? 'Salon';
           final String address = salon['address'] ?? '';

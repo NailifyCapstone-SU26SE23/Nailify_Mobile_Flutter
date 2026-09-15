@@ -17,6 +17,7 @@ import '../../data/models/wallet_voucher_model.dart';
 import '../widgets/booking_date_selection.dart';
 import '../widgets/booking_service_selection.dart';
 import '../widgets/booking_time_selection.dart';
+import '../widgets/payment_detail_table.dart';
 
 class CustomNailBookingPage extends StatefulWidget {
   final CustomerNailModel nail;
@@ -892,6 +893,30 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
     );
   }
 
+  List<PaymentTableItem> get _paymentTableItems {
+    final items = <PaymentTableItem>[];
+    if (widget.nail.price > 0) {
+      items.add(
+        PaymentTableItem(
+          name: 'Thiết kế riêng (Custom)',
+          quantity: 1,
+          unitPrice: widget.nail.price,
+        ),
+      );
+    }
+    for (final entry in _groupedServicesMap.entries) {
+      final unit = _servicePriceById(entry.key);
+      items.add(
+        PaymentTableItem(
+          name: _serviceNameById(entry.key),
+          quantity: entry.value,
+          unitPrice: unit,
+        ),
+      );
+    }
+    return items;
+  }
+
   Widget _buildPaymentDetails() {
     final double customPrice =
         (widget.nail.customerNailPrice + widget.nail.surfacePrice).toDouble();
@@ -943,21 +968,11 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
             ],
           ),
           const SizedBox(height: 12),
-          _buildCustomerNailPaymentItem(),
-          if (widget.nail.price > 0) ...[
-            const SizedBox(height: 8),
-            _buildPaymentLine('Phí custom', widget.nail.price),
+          PaymentDetailTable(items: _paymentTableItems),
+          if (_discountBreakdown.isNotEmpty) ...[
+            const Divider(height: 16),
+            ..._discountBreakdown.map(_buildDiscountRow),
           ],
-          ..._groupedServicesMap.entries.map((entry) {
-            return _buildPaymentLine(
-              '${entry.value}x ${_serviceNameById(entry.key)}',
-              _servicePriceById(entry.key) * entry.value,
-              muted: true,
-            );
-          }),
-          const Divider(height: 16),
-          _buildPaymentLine('Tạm tính', price, muted: true),
-          ..._discountBreakdown.map(_buildDiscountRow),
           const Divider(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1244,9 +1259,12 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   }
 
   Widget _buildDiscountRow(Map<String, dynamic> discount) {
-    final name = discount['name']?.toString() ?? 'Giam gia';
-    final amount = discount['amount'] ?? 0;
+    final name = discount['name']?.toString() ?? 'Giảm giá';
+    final amount = discount['amount'];
     final amountDisplay = discount['amountDisplay']?.toString();
+    final rawDisplay = (amountDisplay?.isNotEmpty == true)
+        ? amountDisplay!
+        : (amount != null ? PriceFormatter.format(amount) : '');
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -1259,9 +1277,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
             ),
           ),
           Text(
-            amountDisplay?.isNotEmpty == true
-                ? _formatDiscountDisplay(amountDisplay!)
-                : '-${PriceFormatter.format(amount)}',
+            _formatDiscountDisplay(rawDisplay),
             style: const TextStyle(
               fontWeight: FontWeight.bold,
               color: Colors.green,
@@ -1273,8 +1289,10 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   }
 
   String _formatDiscountDisplay(String value) {
-    final text = value.trim();
+    var text = value.trim();
     if (text.isEmpty) return text;
+    text = text.replaceAll(RegExp(r'^-+'), '');
+    text = '-$text';
     final lower = text.toLowerCase();
     if (lower.contains('đ') || lower.contains('vnd')) return text;
     return '$text VNĐ';

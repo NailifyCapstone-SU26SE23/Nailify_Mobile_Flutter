@@ -28,119 +28,161 @@ class SalonOperatingHoursSection extends StatelessWidget {
             title: l10n.noOperatingHours,
           )
         else
-          ...groupedHours.map(
-            (dayHours) => _OperatingDayCard(dayHours: dayHours),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFF0EAE1), width: 1.2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                for (int i = 0; i < groupedHours.length; i++) ...[
+                  _OperatingDayRow(
+                    dayHours: groupedHours[i],
+                    isLast: i == groupedHours.length - 1,
+                  ),
+                ],
+              ],
+            ),
           ),
       ],
     );
   }
 }
 
-class _OperatingDayCard extends StatelessWidget {
+class _OperatingDayRow extends StatelessWidget {
   final _OperatingDayHours dayHours;
+  final bool isLast;
 
-  const _OperatingDayCard({required this.dayHours});
+  const _OperatingDayRow({
+    required this.dayHours,
+    required this.isLast,
+  });
 
   @override
   Widget build(BuildContext context) {
     final l10n = S.of(context);
+    final primary = dayHours.primaryHour;
+    final dayName = _localizedDayName(l10n, primary);
+    final todayWeekday = DateTime.now().weekday;
+    final isToday = _daySortIndex(dayHours.dayOfWeek) == todayWeekday;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.10)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: isToday
+                ? AppColors.primary.withValues(alpha: 0.05)
+                : Colors.transparent,
+            borderRadius: isToday ? BorderRadius.circular(12) : null,
+          ),
+          child: Row(
             children: [
               Container(
-                width: 36,
-                height: 36,
+                padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(12),
+                  color: isToday
+                      ? AppColors.primary.withValues(alpha: 0.15)
+                      : Colors.grey.shade100,
+                  shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.calendar_today_rounded,
-                  color: AppColors.primary,
-                  size: 18,
+                child: Icon(
+                  isToday ? Icons.stars_rounded : Icons.calendar_today_rounded,
+                  size: 14,
+                  color: isToday ? AppColors.primary : Colors.grey.shade600,
                 ),
               ),
               const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  _localizedDayName(l10n, dayHours.primaryHour),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
+              Text(
+                dayName,
+                style: TextStyle(
+                  fontWeight: isToday ? FontWeight.w800 : FontWeight.w600,
+                  color: isToday ? AppColors.primary : AppColors.textPrimary,
+                  fontSize: 14,
+                ),
+              ),
+              if (isToday) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Text(
+                    'Hôm nay',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
+              ],
+              const Spacer(),
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: dayHours.hours.map((hour) {
+                  final isClosed = hour.isClosed;
+                  return Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isClosed
+                          ? AppColors.error.withValues(alpha: 0.08)
+                          : isToday
+                              ? AppColors.primary.withValues(alpha: 0.1)
+                              : const Color(0xFFF7F5F2),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: isClosed
+                            ? AppColors.error.withValues(alpha: 0.2)
+                            : isToday
+                                ? AppColors.primary.withValues(alpha: 0.3)
+                                : const Color(0xFFEFEBE4),
+                      ),
+                    ),
+                    child: Text(
+                      isClosed
+                          ? l10n.salonClosed
+                          : '${_formatTime(hour.openTime)} - ${_formatTime(hour.closeTime)}',
+                      style: TextStyle(
+                        color: isClosed
+                            ? AppColors.error
+                            : isToday
+                                ? AppColors.primary
+                                : AppColors.textPrimary,
+                        fontSize: 12,
+                        fontWeight:
+                            isToday ? FontWeight.bold : FontWeight.w600,
+                      ),
+                    ),
+                  );
+                }).toList(),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: dayHours.hours
-                .map((hour) => _OperatingSegmentChip(hour: hour))
-                .toList(),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _OperatingSegmentChip extends StatelessWidget {
-  final SalonOperatingHour hour;
-
-  const _OperatingSegmentChip({required this.hour});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = S.of(context);
-    final isClosed = hour.isClosed;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
-      decoration: BoxDecoration(
-        color: isClosed
-            ? AppColors.error.withValues(alpha: 0.08)
-            : AppColors.primary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isClosed
-              ? AppColors.error.withValues(alpha: 0.12)
-              : AppColors.primary.withValues(alpha: 0.12),
         ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            isClosed ? Icons.event_busy_rounded : Icons.access_time_rounded,
-            size: 16,
-            color: isClosed ? AppColors.error : AppColors.primary,
+        if (!isLast)
+          Divider(
+            height: 1,
+            indent: 16,
+            endIndent: 16,
+            color: Colors.grey.shade100,
           ),
-          const SizedBox(width: 6),
-          Text(
-            isClosed
-                ? l10n.salonClosed
-                : '${_formatTime(hour.openTime)} - ${_formatTime(hour.closeTime)}',
-            style: TextStyle(
-              color: isClosed ? AppColors.error : AppColors.primaryDark,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
+      ],
     );
   }
 }
@@ -217,8 +259,12 @@ String _localizedDayName(S l10n, SalonOperatingHour hour) {
   }
 }
 
-String _formatTime(String value) {
-  final parts = value.split(':');
-  if (parts.length >= 2) return '${parts[0]}:${parts[1]}';
-  return value;
+String _formatTime(String rawTime) {
+  final parts = rawTime.split(':');
+  if (parts.length >= 2) {
+    final hour = parts[0].padLeft(2, '0');
+    final minute = parts[1].padLeft(2, '0');
+    return '$hour:$minute';
+  }
+  return rawTime;
 }

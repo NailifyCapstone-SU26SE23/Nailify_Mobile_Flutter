@@ -422,10 +422,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
         rawStatus == 'Pending' ||
         rawStatus == 'Approved' ||
         rawStatus == 'Assigned';
-    final canReschedule =
-        rawStatus == 'Pending' ||
-        rawStatus == 'Approved' ||
-        rawStatus == 'Assigned';
+    final canReschedule = rawStatus == 'Approved';
     final canRate = rawStatus == 'Completed' && !isRated;
     final canPay = rawStatus == 'Pending' && !_hasPaidAmount(booking);
     final canRequestRefund =
@@ -693,9 +690,9 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.05),
+                color: AppColors.primary.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
               ),
               child: Column(
                 children: [
@@ -842,7 +839,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   border: Border.all(color: AppColors.borderLight),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.02),
+                      color: Colors.black.withValues(alpha: 0.02),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -945,11 +942,10 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    showDialog(
+                    RescheduleBookingDialog.show(
                       context: context,
-                      builder: (context) => RescheduleBookingDialog(
-                        bookingId: widget.bookingId,
-                        onConfirm: (newDate, newTime, reason) async {
+                      bookingId: widget.bookingId,
+                      onConfirm: (newDate, newTime, reason) async {
                           try {
                             final success = await _apiService
                                 .requestRescheduleBooking(
@@ -997,9 +993,8 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                             return false;
                           }
                         },
-                      ),
-                    );
-                  },
+                      );
+                    },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,

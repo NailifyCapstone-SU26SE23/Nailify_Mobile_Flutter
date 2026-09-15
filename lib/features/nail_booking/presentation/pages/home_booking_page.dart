@@ -332,7 +332,27 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
   }
 
   Future<bool> _createHoldForSummary() async {
-    await _cancelCurrentHold();
+    // Fix bug: trước đây khi user back từ step tổng quan về step chọn ngày/giờ
+    // rồi chọn lại giờ, _handleTimeChanged đã tạo hold token mới → đến khi
+    // bấm "Tiếp tục" sang step tổng quan, _createHoldForSummary lại gọi
+    // _cancelCurrentHold() + _createHold() → backend log cho thấy 2 lần
+    // DELETE hold-slot + 1 lần POST hold-slot (cancel hold cũ trước khi tạo
+    // mới mặc dù hold cũ vẫn còn hiệu lực).
+    //
+    // Sau fix: nếu đã có hold token còn hiệu lực (_isHolding == true +
+    // _holdToken != null + remaining > 0) thì GIỮ NGUYÊN, không tạo lại.
+    // Chỉ tạo hold mới khi:
+    //  - Chưa có token (_holdToken == null).
+    //  - Hold đã hết hạn local (_isHolding == false).
+    //  - User đổi giờ ở _handleTimeChanged (đã cancel thủ công ở đó).
+    if (_isHolding && _holdToken != null && _holdRemainingSeconds > 0) {
+      // Đảm bảo timer vẫn chạy (có thể bị dispose khi rebuild widget).
+      if (_holdTimer == null || !_holdTimer!.isActive) {
+        _startHoldTimer(_holdToken!);
+      }
+      return true;
+    }
+
     final hold = await _createHold();
     final token = hold?['holdToken']?.toString();
     if (!_noArtistSelected && (token == null || token.isEmpty)) {
@@ -632,10 +652,18 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
 
   // ── Navigation ──────────────────────────────────
   Future<void> _handleBack() async {
-    if (_currentStep == 3) {
-      await _cancelCurrentHold();
-      if (!mounted) return;
-    }
+    // Fix bug: trước đây khi user back từ step 3 (tổng quan) về step < 3,
+    // hệ thống gọi `_cancelCurrentHold()` → xóa hold token + gọi API
+    // `cancelHoldSlot` lên backend. Điều này không đúng vì:
+    //  - User chỉ muốn xem lại các bước trước, KHÔNG có ý định hủy booking.
+    //  - Khi bấm "Tiếp tục" trở lại step 3, hệ thống phải tạo hold mới
+    //    → tốn 1 lượt API hold-slot + có thể không còn slot đó nữa.
+    //
+    // Sau fix: KHÔNG cancel hold khi back giữa các step. Hold token chỉ bị
+    // huỷ khi:
+    //  - User đổi salon/ngày/thợ/mode/giờ (line 448, 466, 479, 492, 924).
+    //  - Hold timer hết hạn.
+    //  - User thoát khỏi trang booking (line 94 dispose()).
     if (_currentStep > 0) {
       _pageController.previousPage(
         duration: const Duration(milliseconds: 300),

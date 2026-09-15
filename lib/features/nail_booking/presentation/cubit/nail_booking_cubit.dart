@@ -61,12 +61,19 @@ class NailBookingCubit extends Cubit<NailBookingState> {
   // ══════════════════════════════════════════════════════════════
 
   Future<void> selectBranch(Map<String, dynamic> branch) async {
+    // Đổi salon → slot cũ không còn hợp lệ, huỷ hold token (nếu có).
+    if (state.holdToken != null) {
+      _cancelCurrentHold(state.holdToken!);
+    }
     emit(
       state.copyWith(
         selectedBranch: branch,
         clearSeat: true,
         clearStylist: true,
         clearTime: true,
+        clearHoldToken: true,
+        isHolding: false,
+        holdRemainingSeconds: 0,
         noArtistSelected: false,
         artists: [],
         timeSlots: [],
@@ -124,28 +131,43 @@ class NailBookingCubit extends Cubit<NailBookingState> {
     // → gọi SAI API `POST /api/Bookings/salon-available-slots` thay vì
     // `GET /api/Bookings/artist-available-slots?NailArtistId=...`.
     //
-    // Sau fix: KHÔNG xóa thợ. Chỉ clear time đã chọn + reload slots
-    // (giữ nguyên `selectedStylist` + `artists` để API gọi đúng endpoint).
+    // Sau fix: KHÔNG xóa thợ. Chỉ update selectedExtraServices.
+    //
+    // QUAN TRỌNG: KHÔNG clear `selectedTime`, `timeSlots`, `holdToken` khi
+    // user thêm/xoá dịch vụ đi kèm. Lý do:
+    //   - Dịch vụ đi kèm (addon như ngâm chân, cắt da tay...) là dịch vụ
+    //     SONG SONG với làm móng, KHÔNG ảnh hưởng đến duration slot đã chọn.
+    //   - Backend đã tính slot duration dựa trên dịch vụ chính, các addon
+    //     được làm song song trong cùng khoảng thời gian đó.
+    //   - Hold token vẫn hợp lệ cho slot đã chọn.
+    //
+    // Nếu thực sự cần reset time (hiếm gặp), gọi `selectTime('')` riêng.
     emit(
       state.copyWith(
         selectedExtraServices: services,
-        clearTime: true,
-        timeSlots: [],
       ),
     );
   }
 
   /// Gọi khi user chọn ngày — reset thợ/giờ rồi fetch thợ.
+  ///
+  /// Đổi ngày → slot cũ không còn hợp lệ, huỷ hold token (nếu có).
   Future<void> selectDate({
     required DateTime date,
     required int nailVariantId,
     int? shapeMethodConfigId,
     bool useSuggestedArtists = true,
   }) async {
+    if (state.holdToken != null) {
+      _cancelCurrentHold(state.holdToken!);
+    }
     emit(
       state.copyWith(
         selectedDate: date,
         clearTime: true,
+        clearHoldToken: true,
+        isHolding: false,
+        holdRemainingSeconds: 0,
         timeSlots: [],
         timeSlotsStatus: NailBookingLoadStatus.loading,
       ),
@@ -159,12 +181,20 @@ class NailBookingCubit extends Cubit<NailBookingState> {
   }
 
   /// Gọi khi user chọn thợ cụ thể.
+  ///
+  /// Đổi thợ → slot cũ thuộc thợ khác, không hợp lệ, huỷ hold token (nếu có).
   Future<void> selectStylist(Map<String, dynamic> artist) async {
+    if (state.holdToken != null) {
+      _cancelCurrentHold(state.holdToken!);
+    }
     emit(
       state.copyWith(
         selectedStylist: artist,
         noArtistSelected: false,
         clearTime: true,
+        clearHoldToken: true,
+        isHolding: false,
+        holdRemainingSeconds: 0,
         timeSlots: [],
         timeSlotsStatus: NailBookingLoadStatus.loading,
       ),
@@ -173,12 +203,20 @@ class NailBookingCubit extends Cubit<NailBookingState> {
   }
 
   /// Gọi khi user chuyển sang tab "Không chọn thợ".
+  ///
+  /// Đổi mode chọn thợ → huỷ hold token (slot thuộc thợ cũ).
   Future<void> setNoArtistMode() async {
+    if (state.holdToken != null) {
+      _cancelCurrentHold(state.holdToken!);
+    }
     emit(
       state.copyWith(
         noArtistSelected: true,
         clearStylist: true,
         clearTime: true,
+        clearHoldToken: true,
+        isHolding: false,
+        holdRemainingSeconds: 0,
         timeSlots: [],
         timeSlotsStatus: NailBookingLoadStatus.loading,
       ),
@@ -187,12 +225,20 @@ class NailBookingCubit extends Cubit<NailBookingState> {
   }
 
   /// Gọi khi user quay lại tab "Chọn thợ".
+  ///
+  /// Đổi mode chọn thợ → huỷ hold token (slot thuộc salon-level, không có thợ).
   void setSelectArtistMode() {
+    if (state.holdToken != null) {
+      _cancelCurrentHold(state.holdToken!);
+    }
     emit(
       state.copyWith(
         noArtistSelected: false,
         clearStylist: true,
         clearTime: true,
+        clearHoldToken: true,
+        isHolding: false,
+        holdRemainingSeconds: 0,
         timeSlots: [],
         timeSlotsStatus: NailBookingLoadStatus.initial,
       ),
@@ -327,12 +373,12 @@ class NailBookingCubit extends Cubit<NailBookingState> {
 
   /// Giữ chỗ trước khi bước sang trang Xác nhận.
   /// Trả về true nếu giữ chỗ thành công, false nếu thất bại (đã emit errorMessage).
+  ///
+  /// Lưu ý: Vẫn tạo hold token cho cả flow "Không chọn thợ" — backend cần
+  /// token này để tránh 2 user cùng đặt 1 slot salon (race condition).
   Future<bool> holdSelectedSlot({int? nailVariantId}) async {
     final time = state.selectedTime;
     if (time == null) return false;
-
-    // Nếu chọn luồng "Không chọn thợ", bỏ qua việc lấy holdToken
-    if (state.noArtistSelected) return true;
 
     // Fix bug: set `isSubmitting = true` trước khi gọi API hold-slot để button
     // "Tiếp tục" trên `service_booking_page` disable + spinner ngay, tránh
@@ -350,17 +396,23 @@ class NailBookingCubit extends Cubit<NailBookingState> {
   }
 
   /// Gọi API giữ chỗ và khởi động bộ đếm thời gian.
+  ///
+  /// Hỗ trợ cả 2 luồng:
+  /// - Có chọn thợ cụ thể → truyền `nailArtistId`
+  /// - "Không chọn thợ" → truyền `nailArtistId` rỗng, backend sẽ tự assign sau
   Future<void> _holdSlot(String time, {int? nailVariantId}) async {
     final branch = state.selectedBranch;
     final date = state.selectedDate;
     if (branch == null || date == null) return;
 
     final salonId = branch['salonId']?.toString() ?? '';
+    // Khi `noArtistSelected = true`, vẫn truyền nailArtistId rỗng để
+    // backend có thể giữ chỗ ở cấp salon (tránh race condition giữa 2 users).
     final artistId = state.noArtistSelected
         ? ''
         : (state.selectedStylist?['nailArtistId']?.toString() ?? '');
 
-    if (salonId.isEmpty || artistId.isEmpty) return;
+    if (salonId.isEmpty) return;
 
     final bookingDate = _formatDate(date);
     final formattedTime = time.length == 5 ? '$time:00' : time;
@@ -573,6 +625,29 @@ class NailBookingCubit extends Cubit<NailBookingState> {
     _holdTimer?.cancel();
     _holdTimer = null;
     _repository.cancelHoldSlot(token); // fire-and-forget
+  }
+
+  /// Huỷ giữ chỗ hiện tại (nếu có) — fire-and-forget, không throw.
+  /// Gọi khi user back step 3 → 2 hoặc đóng page mà chưa đặt booking xong.
+  void cancelCurrentHold() {
+    final token = state.holdToken;
+    if (token == null || token.isEmpty) return;
+    _cancelCurrentHold(token);
+    if (!isClosed) {
+      emit(
+        state.copyWith(
+          clearHoldToken: true,
+          isHolding: false,
+          holdRemainingSeconds: 0,
+        ),
+      );
+    }
+  }
+
+  /// Bắt đầu giữ chỗ (cho service_booking_page gọi thẳng vào cubit).
+  /// Trả về true nếu thành công, false nếu thất bại.
+  Future<bool> startHold() async {
+    return holdSelectedSlot();
   }
 
   void selectPromotions(List<dynamic> promos) {

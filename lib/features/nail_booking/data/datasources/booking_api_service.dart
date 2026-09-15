@@ -439,6 +439,9 @@ class BookingApiService {
   /// Giữ chỗ slot 5 phút để tránh race condition.
   /// Dùng [expiresAt] (UTC) để tính toán thời gian còn lại chính xác,
   /// tránh sai lệch đồng hồ giữa app và server.
+  ///
+  /// Lưu ý: [nailArtistId] có thể rỗng cho luồng "Không chọn thợ"
+  /// (backend sẽ giữ chỗ ở cấp salon).
   Future<Map<String, dynamic>> holdSlot({
     required String salonId,
     required String nailArtistId,
@@ -450,7 +453,8 @@ class BookingApiService {
       '/Bookings/hold-slot',
       data: {
         'salonId': salonId,
-        'nailArtistId': nailArtistId,
+        // Chỉ gửi nailArtistId khi có chọn thợ cụ thể
+        if (nailArtistId.isNotEmpty) 'nailArtistId': nailArtistId,
         'bookingDate': bookingDate,
         'startTime': startTime,
         'bookingItems': bookingItems,

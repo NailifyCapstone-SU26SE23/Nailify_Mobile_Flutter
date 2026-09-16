@@ -153,11 +153,13 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
         _showSnackBar('Vui lòng chọn khung giờ!');
         return;
       }
-      // Luôn tạo hold mới (kể cả "Không chọn thợ") — backend cần token này
-      // để tránh race condition giữa nhiều user cùng chọn 1 slot salon.
-      // Chỉ skip khi đã có token hợp lệ (tránh reset timer khi back/forward
-      // và forward lại trong cùng 1 phiên).
-      if (state.holdToken == null || !state.isHolding) {
+      // CHỈ tạo hold-slot khi user đã chọn thợ cụ thể.
+      // Khi "Tự động phân công" (noArtistSelected = true), backend sẽ
+      // phân thợ ngay khi tạo booking nên hold ở tầng app là thừa
+      // và gây ra lỗi "Hệ thống đang gặp sự cố" do backend từ chối
+      // hold ở cấp salon.
+      if (!state.noArtistSelected &&
+          (state.holdToken == null || !state.isHolding)) {
         final held = await cubit.holdSelectedSlot();
         if (!held || !mounted) return;
       }

@@ -353,22 +353,75 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
       return true;
     }
 
-    final hold = await _createHold();
-    final token = hold?['holdToken']?.toString();
-    if (!_noArtistSelected && (token == null || token.isEmpty)) {
-      _showSnackBar('Không thể giữ khung giờ này. Vui lòng chọn giờ khác.');
+    try {
+      final hold = await _createHold();
+      final token = hold?['holdToken']?.toString();
+      if (!_noArtistSelected && (token == null || token.isEmpty)) {
+        _showHoldFailureMessage(
+          'Không thể giữ khung giờ này. Vui lòng chọn giờ khác.',
+        );
+        return false;
+      }
+      if (mounted && token != null) {
+        final remaining = (hold?['remainingSeconds'] as num?)?.toInt() ?? 300;
+        setState(() {
+          _holdToken = token;
+          _holdRemainingSeconds = remaining;
+          _isHolding = true;
+        });
+        _startHoldTimer(token);
+      }
+      return true;
+    } catch (e) {
+      // API trả về 400 (ví dụ: "Thợ đã đầy lịch trong khoảng thời gian này...")
+      // → hiển thị message server để user biết lý do thay vì message chung chung.
+      debugPrint('holdSlot failed: $e');
+      _showHoldFailureMessage(e.toString());
       return false;
     }
-    if (mounted && token != null) {
-      final remaining = (hold?['remainingSeconds'] as num?)?.toInt() ?? 300;
-      setState(() {
-        _holdToken = token;
-        _holdRemainingSeconds = remaining;
-        _isHolding = true;
-      });
-      _startHoldTimer(token);
+  }
+
+  /// Hiển thị lỗi hold-slot từ server.
+  /// - Chỉ snackbar, KHÔNG reload slot, KHÔNG reset state (giữ nguyên
+  ///   lựa chọn giờ của user để họ chỉ cần đổi sang giờ khác).
+  void _showHoldFailureMessage(String rawMessage) {
+    if (!mounted) return;
+    final String msg = _extractServerMessage(rawMessage);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(
+              Icons.event_busy_rounded,
+              color: Colors.white,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(msg, style: const TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.red.shade600,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 4),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
+  }
+
+  /// Extract message từ exception. AppException.toString() trả về
+  /// `message` gốc từ server. Fallback chỉ dùng khi exception rỗng/null.
+  String _extractServerMessage(String rawMessage) {
+    String msg = rawMessage.trim();
+    if (msg.isEmpty ||
+        msg.toLowerCase() == 'null' ||
+        msg.toLowerCase() == 'exception') {
+      return 'Không thể giữ khung giờ này. Vui lòng chọn giờ khác.';
     }
-    return true;
+    return msg;
   }
 
   void _startHoldTimer(String token) {

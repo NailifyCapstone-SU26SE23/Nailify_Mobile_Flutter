@@ -8,6 +8,69 @@ class AppException implements Exception {
   String toString() => message;
 }
 
+/// Phân loại lỗi trả về khi giữ chỗ (hold-slot) trong các luồng booking.
+///
+/// Backend .NET hiện tại trả 400 Bad Request cho case
+/// "thợ đã đầy lịch / slot vừa bị giữ". Trước đây code Flutter chỉ
+/// nhận diện HTTP 409 → không phân biệt được → hiển thị sai message
+/// "Hệ thống đang gặp sự cố" thay vì "vui lòng chọn giờ khác".
+enum HoldErrorKind {
+  /// Slot vừa bị người khác giữ (HTTP 409/410/423). Nên reload slots.
+  slotTakenByOther,
+
+  /// Thợ đã đầy lịch trong khoảng user chọn (HTTP 400 + message cụ thể).
+  /// KHÔNG phải lỗi hệ thống — user chọn giờ không còn khả dụng.
+  artistFullyBooked,
+
+  /// Lỗi hệ thống thực sự (network, 500, timeout...).
+  systemError,
+}
+
+/// Keyword để nhận diện message conflict từ backend .NET (VN + EN).
+/// Đặt ngoài class để cả 2 cubit (nail_booking + warranty_booking) có thể
+/// dùng chung.
+const List<String> _holdConflictKeywords = [
+  'đã đầy lịch',
+  'đã được giữ',
+  'đã có người chọn',
+  'vừa được giữ',
+  'slot',
+  'kín lịch',
+  'đã đặt',
+  'fully booked',
+  'not available',
+  'already held',
+];
+
+/// Phân loại exception trả về từ API hold-slot để UI hiển thị message
+/// đúng cho từng trường hợp:
+///  - slotTakenByOther   → "vừa có người chọn, chọn giờ khác"
+///  - artistFullyBooked  → "thợ đã đầy lịch" (server message, có thể tiếng Việt)
+///  - systemError        → "hệ thống đang gặp sự cố"
+HoldErrorKind classifyHoldError(Object error) {
+  if (error is! AppException) return HoldErrorKind.systemError;
+
+  final code = error.code;
+  final msg = error.message.toLowerCase();
+  final isHttp400 = code == 'HTTP_400';
+
+  final hasConflictKeyword = _holdConflictKeywords.any(msg.contains);
+  if (isHttp400 && hasConflictKeyword) {
+    return HoldErrorKind.artistFullyBooked;
+  }
+  if (code == 'HTTP_409' || code == 'HTTP_410' || code == 'HTTP_423') {
+    return HoldErrorKind.slotTakenByOther;
+  }
+
+  // Backend trả 400 với isSucceeded=false (nhưng message generic) → vẫn
+  // coi là lỗi nghiệp vụ, không phải hệ thống.
+  final data = error.data;
+  if (data is Map && isHttp400 && data['isSucceeded'] == false) {
+    return HoldErrorKind.artistFullyBooked;
+  }
+  return HoldErrorKind.systemError;
+}
+
 class TimeoutException extends AppException {
   const TimeoutException()
     : super(message: 'Kết nối quá thời gian quy định', code: 'TIMEOUT');

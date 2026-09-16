@@ -519,62 +519,74 @@ class NailBookingCubit extends Cubit<NailBookingState> {
 
       _startHoldTimer(token, expiresAt);
     } catch (e) {
-      // Phân biệt lỗi race condition (slot đã bị người khác giữ) với lỗi khác
-      // (validation, auth, network). Chỉ khi là conflict (HTTP 409) mới xoá
-      // giờ đang chọn và reload slots. Các lỗi khác chỉ thông báo để user biết.
-      final isConflict = _isConflictError(e);
-      if (isConflict) {
-        emit(
-          state.copyWith(
-            clearHoldToken: true,
-            isHolding: false,
-            holdRemainingSeconds: 0,
-            clearTime: true,
-            errorMessage:
-                'Khung giờ này vừa mới có người chọn. Vui lòng chọn giờ khác.',
-          ),
-        );
-        // Tải lại danh sách giờ để cập nhật trạng thái isHeld mới nhất
-        if (state.noArtistSelected) {
-          _loadSalonSlots();
-        } else {
-          _fetchTimeSlots();
-        }
-      } else {
-        // Các lỗi khác (validation, auth, network...) — chỉ thông báo,
-        // không xoá thời gian user đã chọn để tránh UX khó chịu.
-        // Fix bug "app đơ": luôn set isHolding = false để _holdSelectedSlot
-        // nhận ra hold fail và return false + BlocConsumer hiển thị lỗi.
-        emit(
-          state.copyWith(
-            clearHoldToken: true,
-            isHolding: false,
-            holdRemainingSeconds: 0,
-            errorMessage: _readableError(e),
-          ),
-        );
+      // Phân biệt các loại lỗi để hiển thị message phù hợp:
+      // 1. Lỗi do người dùng chọn giờ đã kín / slot đã có người giữ
+      //    → hiển thị "vui lòng chọn giờ khác", reload slots
+      // 2. Lỗi hệ thống (network, timeout, 500...)
+      //    → hiển thị "hệ thống đang gặp sự cố"
+      //
+      // Backend .NET hiện tại trả 400 Bad Request cho cả 2 trường hợp:
+      //  - Body `{ isSucceeded: false, message: "Thợ đã đầy lịch..." }` — lỗi
+      //    nghiệp vụ (user chọn giờ kín, KHÔNG phải lỗi hệ thống).
+      //  - Body khác (validation fail...) — lỗi hệ thống.
+      // Helper `classifyHoldError` ở `core/error/exceptions.dart` xử lý
+      // phân loại (dùng chung cho nail_booking + warranty_booking).
+      final errorKind = classifyHoldError(e);
+      switch (errorKind) {
+        case HoldErrorKind.slotTakenByOther:
+          // Slot vừa bị người khác giữ trước khi mình tới lượt.
+          // Xoá giờ đang chọn + reload slots để UI cập nhật trạng thái mới nhất.
+          emit(
+            state.copyWith(
+              clearHoldToken: true,
+              isHolding: false,
+              holdRemainingSeconds: 0,
+              clearTime: true,
+              errorMessage:
+                  'Khung giờ này vừa mới có người chọn. Vui lòng chọn giờ khác.',
+            ),
+          );
+          if (state.noArtistSelected) {
+            _loadSalonSlots();
+          } else {
+            _fetchTimeSlots();
+          }
+          break;
+        case HoldErrorKind.artistFullyBooked:
+          // Backend báo thợ đã kín lịch trong khoảng thời gian user chọn.
+          // Đây KHÔNG phải lỗi hệ thống — chỉ là user chọn giờ không còn khả dụng.
+          // Hiển thị message server trả về (đã được Việt hoá) để user hiểu và chọn giờ khác.
+          // Vẫn reload slots vì giờ khác có thể đã bị người khác vừa chọn.
+          emit(
+            state.copyWith(
+              clearHoldToken: true,
+              isHolding: false,
+              holdRemainingSeconds: 0,
+              clearTime: true,
+              errorMessage: _readableError(e),
+            ),
+          );
+          if (state.noArtistSelected) {
+            _loadSalonSlots();
+          } else {
+            _fetchTimeSlots();
+          }
+          break;
+        case HoldErrorKind.systemError:
+          // Lỗi thực sự (network, 500, timeout...). Giữ nguyên UI, chỉ thông báo.
+          // Fix bug "app đơ": luôn set isHolding = false để _holdSelectedSlot
+          // nhận ra hold fail và return false + BlocConsumer hiển thị lỗi.
+          emit(
+            state.copyWith(
+              clearHoldToken: true,
+              isHolding: false,
+              holdRemainingSeconds: 0,
+              errorMessage: _readableError(e),
+            ),
+          );
+          break;
       }
     }
-  }
-
-  /// Kiểm tra exception có phải race condition (slot bị giữ bởi người khác)
-  /// hay không. Server hiện tại trả về các loại lỗi khác nhau tuỳ business
-  /// logic; ta ưu tiên HTTP 409 + các mã thường gặp.
-  bool _isConflictError(Object error) {
-    if (error is AppException) {
-      final code = error.code;
-      if (code == 'HTTP_409' || code == 'HTTP_410' || code == 'HTTP_423') {
-        return true;
-      }
-      final msg = error.message.toLowerCase();
-      if (msg.contains('đã được giữ') ||
-          msg.contains('slot') && msg.contains('conflict') ||
-          msg.contains('already held') ||
-          msg.contains('race condition')) {
-        return true;
-      }
-    }
-    return false;
   }
 
   /// Trả về message thân thiện cho mọi lỗi không phải conflict.

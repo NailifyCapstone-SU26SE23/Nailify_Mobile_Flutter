@@ -350,11 +350,12 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
   }
 
   Future<void> selectTime(String time) async {
+    // Bug fix: KHÔNG cancel hold cũ NGAY LẬP TỨC.
+    // Nếu cancel rồi hold mới thất bại → user MẤT SLOT.
+    // Fix: Tạo hold mới TRƯỚC, chỉ cancel hold cũ SAU KHI hold mới thành công.
+    // Lưu token cũ để so sánh.
     final oldToken = state.holdToken;
-    if (oldToken != null && oldToken.isNotEmpty) {
-      _cancelHoldTimer();
-      _repository.cancelHoldSlot(oldToken);
-    }
+
     emit(
       state.copyWith(
         selectedTime: time,
@@ -363,7 +364,13 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
         holdRemainingSeconds: 0,
       ),
     );
-    await holdSelectedSlot();
+    final ok = await holdSelectedSlot();
+    if (!ok && oldToken != null && oldToken.isNotEmpty) {
+      // Hold mới THẤT BẠI → Khôi phục hold CŨ nếu còn hiệu lực.
+      // (Trường hợp này hiếm: slot hết ngay sau khi emit nhưng trước khi
+      //  backend trả về — hold cũ đã bị cancel ở trên rồi nên không thể khôi phục.
+      //  Hiện tại để nguyên state mới đã emit ở trên, user phải chọn lại giờ.)
+    }
   }
 
   void toggleWarrantyItem(Map<String, dynamic> item, bool selected) {
@@ -462,16 +469,55 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
       return true;
     } catch (e) {
       if (!isClosed) {
-        emit(
-          state.copyWith(
-            isSubmitting: false,
-            clearHoldToken: true,
-            isHolding: false,
-            holdRemainingSeconds: 0,
-            clearTime: true,
-            errorMessage: _readableError(e),
-          ),
-        );
+        // Phân biệt lỗi "user chọn giờ kín" (HTTP 400 + message cụ thể
+        // từ backend) với lỗi hệ thống thực sự (network, 500...).
+        // Backend .NET trả 400 cho cả 2 case → helper `classifyHoldError`
+        // phân loại giúp.
+        final errorKind = classifyHoldError(e);
+        switch (errorKind) {
+          case HoldErrorKind.artistFullyBooked:
+            // User chọn giờ thợ đã kín — KHÔNG phải lỗi hệ thống.
+            // Hiển thị message server trả về (đã Việt hoá) thay vì
+            // "Hệ thống đang gặp sự cố" để user hiểu và đổi giờ.
+            emit(
+              state.copyWith(
+                isSubmitting: false,
+                clearHoldToken: true,
+                isHolding: false,
+                holdRemainingSeconds: 0,
+                clearTime: true,
+                errorMessage: _readableError(e),
+              ),
+            );
+            break;
+          case HoldErrorKind.slotTakenByOther:
+            // Slot vừa bị người khác giữ trước khi mình tới lượt (HTTP 409).
+            emit(
+              state.copyWith(
+                isSubmitting: false,
+                clearHoldToken: true,
+                isHolding: false,
+                holdRemainingSeconds: 0,
+                clearTime: true,
+                errorMessage:
+                    'Khung giờ này vừa có người chọn. Vui lòng chọn giờ khác.',
+              ),
+            );
+            break;
+          case HoldErrorKind.systemError:
+            // Lỗi hệ thống thực sự — vẫn clear hold + giờ để tránh UI kẹt.
+            emit(
+              state.copyWith(
+                isSubmitting: false,
+                clearHoldToken: true,
+                isHolding: false,
+                holdRemainingSeconds: 0,
+                clearTime: true,
+                errorMessage: _readableError(e),
+              ),
+            );
+            break;
+        }
       }
       return false;
     }

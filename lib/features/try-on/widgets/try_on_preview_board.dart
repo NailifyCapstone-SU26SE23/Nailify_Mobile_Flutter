@@ -60,9 +60,9 @@ class _TryOnPreviewBoardState extends State<TryOnPreviewBoard>
   // Width multipliers for the available preview areas.
   static const double _focusedPreviewScale = 0.92;
   static const double _rowPreviewScale = 1.0;
-  static const double handNailScale = 3.0;
-  static const double handNailOffsetX = -0.07;
-  static const double handNailOffsetY = -0.12;
+  static const double handNailScale = 2.45;
+  static const double handNailOffsetX = 0.0;
+  static const double handNailOffsetY = 0.0;
   late final AnimationController _controller;
   late final Animation<double> _animation;
 
@@ -198,60 +198,58 @@ class _TryOnPreviewBoardState extends State<TryOnPreviewBoard>
                     [
                       {
                         'finger': 1,
-                        'cx': 0.242,
-                        'cy': 0.485,
-                        'w': 0.0781,
-                        'h': 0.1074,
-                        'angle': -30.0,
+                        'cx': 0.221,
+                        'cy': 0.455,
+                        'w': 0.088,
+                        'h': 0.135,
+                        'angle': -35.0,
                       },
                       {
                         'finger': 2,
-                        'cx': 0.374,
-                        'cy': 0.2497,
-                        'w': 0.0664,
-                        'h': 0.0928,
-                        'angle': -6.0,
+                        'cx': 0.372,
+                        'cy': 0.184,
+                        'w': 0.082,
+                        'h': 0.125,
+                        'angle': -7.0,
                       },
                       {
                         'finger': 3,
-                        'cx': 0.5087,
-                        'cy': 0.2061,
-                        'w': 0.0703,
-                        'h': 0.0928,
+                        'cx': 0.512,
+                        'cy': 0.134,
+                        'w': 0.085,
+                        'h': 0.130,
                         'angle': 0.0,
                       },
                       {
                         'finger': 4,
-                        'cx': 0.6352,
-                        'cy': 0.2645,
-                        'w': 0.0635,
-                        'h': 0.0928,
-                        'angle': 5.0,
+                        'cx': 0.638,
+                        'cy': 0.194,
+                        'w': 0.082,
+                        'h': 0.125,
+                        'angle': 6.0,
                       },
                       {
                         'finger': 5,
-                        'cx': 0.7460,
-                        'cy': 0.4021,
-                        'w': 0.0605,
-                        'h': 0.0977,
-                        'angle': 13.0,
+                        'cx': 0.758,
+                        'cy': 0.322,
+                        'w': 0.076,
+                        'h': 0.120,
+                        'angle': 14.0,
                       },
                     ].map((cfg) {
                       final angle = cfg['angle'] as double;
-                      final rad = angle * math.pi / 180;
                       final cx = (cfg['cx'] as double) + handNailOffsetX;
                       final cy = (cfg['cy'] as double) + handNailOffsetY;
-                      final w = cfg['w'] as double;
-                      final h = cfg['h'] as double;
-                      final leftRatio = cx - w / 2 + (h / 2) * math.sin(rad);
-                      final topRatio = cy - h / 2 - (h / 2) * math.cos(rad);
+                      final slotW = (cfg['w'] as double) * _rowPreviewScale * handNailScale;
+                      final slotH = (cfg['h'] as double) * handNailScale;
+                      final leftRatio = cx - slotW / 2;
+                      final topRatio = cy - slotH / 2;
                       return {
                         'finger': cfg['finger'],
                         'left': width * leftRatio,
                         'top': height * topRatio,
-
-                        'width': width * w * _rowPreviewScale * handNailScale,
-                        'height': height * h * handNailScale,
+                        'width': width * slotW,
+                        'height': height * slotH,
                         'angle': angle,
                       };
                     }).toList();

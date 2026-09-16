@@ -318,7 +318,15 @@ class AppRouter {
           ),
           GoRoute(
             path: '/my-bookings',
-            builder: (context, state) => const MyBookingListPage(),
+            builder: (context, state) {
+              int initialTab = 0;
+              if (state.extra is Map) {
+                initialTab = (state.extra as Map)['initialTab'] ?? 0;
+              } else if (state.extra is int) {
+                initialTab = state.extra as int;
+              }
+              return MyBookingListPage(initialTab: initialTab);
+            },
           ),
           GoRoute(
             path: '/my-bookings/detail',

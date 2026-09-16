@@ -165,7 +165,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     }
 
     try {
-      final shouldLoadAll = refresh && _requiresClientSideStatusFilter;
+      final shouldLoadAll = refresh;
       final validBookings = <Map<String, dynamic>>[];
       var nextPage = refresh ? 1 : _page + 1;
       var resultPage = _page;
@@ -246,15 +246,23 @@ class _MyBookingListPageState extends State<MyBookingListPage>
 
   List<Map<String, dynamic>> get _rescheduleRelatedBookings {
     return _allBookings.where((booking) {
-      final status = booking['status']?.toString();
-      return status == 'ReschedulePending' || status == 'RescheduleSuggested';
+      final status = booking['status']?.toString() ?? '';
+      return status == 'ReschedulePending' ||
+          status == 'RescheduleSuggested' ||
+          status == 'RescheduleApproved' ||
+          status == 'RescheduleRejected' ||
+          status.startsWith('Reschedule');
     }).toList();
   }
 
   List<Map<String, dynamic>> get _filteredBookings {
     return _allBookings.where((booking) {
-      final status = booking['status']?.toString();
-      if (status == 'ReschedulePending' || status == 'RescheduleSuggested') {
+      final status = booking['status']?.toString() ?? '';
+      if (status == 'ReschedulePending' ||
+          status == 'RescheduleSuggested' ||
+          status == 'RescheduleApproved' ||
+          status == 'RescheduleRejected' ||
+          status.startsWith('Reschedule')) {
         return false;
       }
       final dateStr = booking['bookingDate']?.toString() ?? '';
@@ -594,10 +602,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     final canRate = (rawStatus == 'Completed' && booking['isRated'] == false);
 
     final canReschedule =
-        (rawStatus == 'Pending' ||
-            rawStatus == 'Approved' ||
-            rawStatus == 'Assigned') &&
-        bookingIdStr.isNotEmpty;
+        rawStatus == 'Approved' && bookingIdStr.isNotEmpty;
 
     final warrantyForBookingId = booking['warrantyForBookingId']?.toString() ??
         booking['WarrantyForBookingId']?.toString();
@@ -627,7 +632,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
           border: Border.all(color: AppColors.borderLight),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.02),
+              color: Colors.black.withValues(alpha: 0.02),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -842,10 +847,9 @@ class _MyBookingListPageState extends State<MyBookingListPage>
   }
 
   void _openRescheduleDialog(String bookingIdStr) {
-    showDialog(
+    RescheduleBookingDialog.show(
       context: context,
-      builder: (context) => RescheduleBookingDialog(
-        bookingId: bookingIdStr,
+      bookingId: bookingIdStr,
         onConfirm: (newDate, newTime, reason) async {
           try {
             final success = await _apiService.requestRescheduleBooking(
@@ -886,8 +890,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
             return false;
           }
         },
-      ),
-    );
+      );
   }
 
   bool _readBool(dynamic value) {

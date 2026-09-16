@@ -23,6 +23,7 @@ import '../widgets/nail_surface_selector.dart';
 import '../widgets/try_on_action_bar.dart';
 import '../widgets/try_on_color_selector.dart';
 import '../widgets/try_on_preview_board.dart';
+import '../widgets/save_nail_design_dialog.dart';
 
 class TryOnSetupScreen extends StatefulWidget {
   final CustomerNailModel? customerNail;
@@ -678,17 +679,29 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
       return;
     }
 
+    final initialName = nail?.name.trim().isNotEmpty == true ? nail!.name : '';
+    final dialogResult = await showDialog<SaveNailDesignDialogResult>(
+      context: context,
+      builder: (context) => SaveNailDesignDialog(
+        initialName: initialName,
+        initialImageUrl: nail?.imageUrl,
+        isNew: (nail?.customerNailId ?? 0) <= 0,
+      ),
+    );
+
+    if (dialogResult == null) return;
+
     setState(() => _isSaving = true);
     try {
       var customerNailId = nail?.customerNailId ?? 0;
       final isNewCustomerNail = customerNailId <= 0;
-      final nailName = nail?.name.trim().isNotEmpty == true
-          ? nail!.name
-          : 'Custom Nail';
+      final nailName = dialogResult.name;
+      final imagePath = dialogResult.imagePath;
 
       if (customerNailId <= 0) {
         customerNailId = await _customerNailRepository.createCustomerNail(
           name: nailName,
+          imagePath: imagePath,
         );
       }
 
@@ -698,6 +711,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
         nailShapeId: shape.nailShapeId,
         nailSurfaceId: _selectedNailSurface?.nailSurfaceId,
         customColor: _buildColorJson(),
+        imagePath: imagePath,
       );
 
       for (final id in _deletedPlacementIds) {

@@ -88,6 +88,19 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
   @override
   void dispose() {
     _holdTimer?.cancel();
+    // Bug fix: Gọi cancelCurrentHold() để notify backend hủy hold slot.
+    // Trước đây chỉ cancel timer cục bộ, phụ thuộc vào BlocProvider close cubit.
+    // Việc gọi trực tiếp ở đây đảm bảo backend nhận cancel ngay khi page dispose,
+    // tránh hold slot treo trên backend nếu BlocProvider close chậm.
+    if (mounted) {
+      // mounted check để tránh lỗi "Tried to call BlocProvider.of() in a
+      // dispose callback" — context vẫn hợp lệ trong dispose của StatefulWidget.
+      try {
+        context.read<WarrantyBookingCubit>().cancelCurrentHold();
+      } catch (_) {
+        // Ignore nếu context đã invalid (hiếm khi xảy ra).
+      }
+    }
     _pageController.dispose();
     super.dispose();
   }
@@ -161,7 +174,14 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
   }
 
   Future<void> _handleTimeChanged(String time) async {
-    _cancelHold();
+    // Lưu hold token CŨ trước khi chọn giờ mới.
+    // Bug fix: KHÔNG cancel hold cũ NGAY LẬP TỨC. Nếu cancel rồi hold mới
+    // thất bại → user MẤT SLOT vì hold cũ đã bị cancel.
+    // Fix: Chỉ cancel hold cũ SAU KHI hold mới THÀNH CÔNG.
+    final oldToken = _holdTimer != null
+        ? context.read<WarrantyBookingCubit>().state.holdToken
+        : null;
+
     setState(() {
       _selectedTime = time;
     });
@@ -177,13 +197,29 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
     cubit.selectTimeForHolder(time);
     final ok = await cubit.holdSelectedSlot();
     if (!mounted) return;
+
     if (ok) {
+      // ✅ Hold mới thành công → Cancel hold CŨ (nếu có và khác token mới).
+      if (oldToken != null && oldToken.isNotEmpty) {
+        final newToken = cubit.state.holdToken;
+        // Chỉ cancel nếu token mới khác token cũ (tránh cancel chính mình).
+        if (newToken != oldToken) {
+          cubit.cancelCurrentHold();
+        }
+      }
       _startHoldCountdown();
     } else {
-      // hold thất bại -> reset time (cubit đã emit errorMessage + clearTime)
-      setState(() {
-        _selectedTime = null;
-      });
+      // ❌ Hold mới thất bại → GIỮ NGUYÊN hold CŨ (user vẫn có slot).
+      // Reset UI chỉ khi không có hold cũ nào.
+      if (oldToken == null || oldToken.isEmpty) {
+        setState(() {
+          _selectedTime = null;
+        });
+      }
+      _showSnackBar(
+        'Khung giờ này vừa có người chọn. Vui lòng chọn giờ khác.',
+        isError: true,
+      );
     }
   }
 

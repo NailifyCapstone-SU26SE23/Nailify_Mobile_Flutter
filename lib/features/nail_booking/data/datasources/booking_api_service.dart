@@ -1,4 +1,5 @@
 import '../../../../core/di/injection.dart';
+import '../../../../core/error/exceptions.dart';
 import '../../../../core/network/api_client.dart';
 
 class BookingApiService {
@@ -442,6 +443,9 @@ class BookingApiService {
   ///
   /// Lưu ý: [nailArtistId] có thể rỗng cho luồng "Không chọn thợ"
   /// (backend sẽ giữ chỗ ở cấp salon).
+  ///
+  /// Throw [AppException] với message từ server khi API trả về
+  /// `isSucceeded: false` (kể cả HTTP 200 lẫn 4xx) để UI hiển thị.
   Future<Map<String, dynamic>> holdSlot({
     required String salonId,
     required String nailArtistId,
@@ -460,7 +464,30 @@ class BookingApiService {
         'bookingItems': bookingItems,
       },
     );
-    return response.data['data'] ?? {};
+
+    // Kiểm tra ApiResponse wrapper từ backend .NET:
+    // { isSucceeded: false, message: "Thợ đã đầy lịch...", data: null }
+    // Một số backend trả HTTP 200 + isSucceeded=false mà Dio KHÔNG throw,
+    // nên cần check thủ công để ném exception cho UI hiển thị message.
+    final body = response.data;
+    if (body is Map) {
+      final isSucceeded =
+          body['isSucceeded'] ?? body['IsSucceeded'] ?? true;
+      if (isSucceeded == false) {
+        final msg = (body['message'] ?? body['Message'] ?? body['error'] ?? body['Error'])
+            ?.toString()
+            .trim();
+        throw AppException(
+          message: (msg != null && msg.isNotEmpty)
+              ? msg
+              : 'Không thể giữ khung giờ này. Vui lòng chọn giờ khác.',
+          code: 'HOLD_SLOT_FAILED',
+          data: body,
+        );
+      }
+    }
+
+    return body is Map ? (body['data'] ?? {}) : {};
   }
 
   /// Huỷ giữ chỗ thủ công (khi user đổi ý hoặc thoát màn hình đặt lịch).

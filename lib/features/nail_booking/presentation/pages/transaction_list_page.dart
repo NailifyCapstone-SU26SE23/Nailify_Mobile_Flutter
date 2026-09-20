@@ -11,11 +11,7 @@ class TransactionListPage extends StatefulWidget {
   final String? bookingId;
   final Map<String, dynamic>? bookingData;
 
-  const TransactionListPage({
-    super.key,
-    this.bookingId,
-    this.bookingData,
-  });
+  const TransactionListPage({super.key, this.bookingId, this.bookingData});
 
   @override
   State<TransactionListPage> createState() => _TransactionListPageState();
@@ -97,7 +93,8 @@ class _TransactionListPageState extends State<TransactionListPage> {
                   ? amountPaid
                   : (double.tryParse(amountPaid.toString()) ?? 0);
               if (numAmount > 0) {
-                final salonName = bData['salonName']?.toString() ??
+                final salonName =
+                    bData['salonName']?.toString() ??
                     (bData['salon'] is Map
                         ? bData['salon']['name']?.toString()
                         : null) ??
@@ -108,14 +105,16 @@ class _TransactionListPageState extends State<TransactionListPage> {
                     'amount': numAmount,
                     'status': 'Paid',
                     'salonName': salonName,
-                    'createdAt': bData['updatedAt'] ??
+                    'createdAt':
+                        bData['updatedAt'] ??
                         bData['createdAt'] ??
                         bData['bookingDate'],
-                    'orderCode': bData['orderCode'] ?? bData['paymentOrderCode'],
+                    'orderCode':
+                        bData['orderCode'] ?? bData['paymentOrderCode'],
                     'customerName':
                         bData['customerName'] ?? bData['user']?['fullName'],
                     'bookingId': widget.bookingId,
-                  }
+                  },
                 ];
               }
             }
@@ -228,7 +227,9 @@ class _TransactionListPageState extends State<TransactionListPage> {
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
             if (widget.bookingId == null) _buildFilters(),
-            if (!_isLoading && _errorMessage == null && _transactions.isNotEmpty)
+            if (!_isLoading &&
+                _errorMessage == null &&
+                _transactions.isNotEmpty)
               _buildSummaryHeader(),
             if (_isLoading)
               const Padding(
@@ -456,7 +457,8 @@ class _TransactionListPageState extends State<TransactionListPage> {
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: transactionId == null && (orderCode == null || orderCode.isEmpty)
+          onTap:
+              transactionId == null && (orderCode == null || orderCode.isEmpty)
               ? null
               : () => context.push('/transaction-detail', extra: transaction),
           child: Padding(

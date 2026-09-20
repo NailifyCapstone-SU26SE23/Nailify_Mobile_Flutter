@@ -117,6 +117,8 @@ class _HomeGalleryState extends State<HomeGallery> {
       return _buildSkeleton(context);
     }
 
+    final List<HomeGalleryItem> baseItems = widget.items;
+    /*
     final List<HomeGalleryItem> baseItems = widget.items.isNotEmpty
         ? widget.items
         : const [
@@ -125,6 +127,11 @@ class _HomeGalleryState extends State<HomeGallery> {
             HomeGalleryItem(id: 3, title: 'Ombre Hồng San Hô', imageUrl: 'assets/images/home-mid.jpg'),
             HomeGalleryItem(id: 4, title: 'Art Đính Đá Nổi', imageUrl: 'assets/images/image.png'),
           ];
+    */
+
+    if (baseItems.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     final displayItems = baseItems
         .map((item) => _itemsMap[item.id] ?? item)

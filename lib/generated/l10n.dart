@@ -1576,7 +1576,7 @@ abstract class S {
   /// No description provided for @bookingDiscount.
   ///
   /// In en, this message translates to:
-  /// **'Discount'**
+  /// **'Discount:'**
   String get bookingDiscount;
 
   /// No description provided for @cancelBookingTitle.
@@ -2047,6 +2047,84 @@ abstract class S {
   /// **'Select Salon'**
   String get bookingStepSelectSalon;
 
+  /// No description provided for @bookingStepArtist.
+  ///
+  /// In en, this message translates to:
+  /// **'Artist'**
+  String get bookingStepArtist;
+
+  /// No description provided for @bookingArtistAutoAssign.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto Assign'**
+  String get bookingArtistAutoAssign;
+
+  /// No description provided for @bookingArtistAutoAssignDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'System auto-assigns the most suitable artist'**
+  String get bookingArtistAutoAssignDesc;
+
+  /// No description provided for @bookingArtistHighestRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Highest rating'**
+  String get bookingArtistHighestRating;
+
+  /// No description provided for @bookingSortHighExpertise.
+  ///
+  /// In en, this message translates to:
+  /// **'High expertise'**
+  String get bookingSortHighExpertise;
+
+  /// No description provided for @bookingSortNameAZ.
+  ///
+  /// In en, this message translates to:
+  /// **'Name (A-Z)'**
+  String get bookingSortNameAZ;
+
+  /// No description provided for @ratingExcellent.
+  ///
+  /// In en, this message translates to:
+  /// **'Excellent'**
+  String get ratingExcellent;
+
+  /// No description provided for @ratingVeryGood.
+  ///
+  /// In en, this message translates to:
+  /// **'Very good'**
+  String get ratingVeryGood;
+
+  /// No description provided for @ratingGood.
+  ///
+  /// In en, this message translates to:
+  /// **'Good'**
+  String get ratingGood;
+
+  /// No description provided for @ratingHighlyRated.
+  ///
+  /// In en, this message translates to:
+  /// **'Highly rated'**
+  String get ratingHighlyRated;
+
+  /// No description provided for @bookingAddService.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Service'**
+  String get bookingAddService;
+
+  /// No description provided for @bookingAddAddonService.
+  ///
+  /// In en, this message translates to:
+  /// **'Add add-on service'**
+  String get bookingAddAddonService;
+
+  /// No description provided for @bookingEstimatedTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated total:'**
+  String get bookingEstimatedTotal;
+
   /// No description provided for @bookingStepServices.
   ///
   /// In en, this message translates to:
@@ -2268,12 +2346,6 @@ abstract class S {
   /// In en, this message translates to:
   /// **'Quantity'**
   String get bookingQtyLabel;
-
-  /// No description provided for @bookingAddService.
-  ///
-  /// In en, this message translates to:
-  /// **'Add Service'**
-  String get bookingAddService;
 
   /// No description provided for @bookingAddServiceTitle.
   ///
@@ -3642,6 +3714,162 @@ abstract class S {
   /// In en, this message translates to:
   /// **'Try On'**
   String get galleryTryOn;
+
+  /// No description provided for @searchSalonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search salon by name, address...'**
+  String get searchSalonHint;
+
+  /// No description provided for @allDistrictsFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get allDistrictsFilter;
+
+  /// No description provided for @bookingSelectSalonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Salon Branch'**
+  String get bookingSelectSalonTitle;
+
+  /// No description provided for @branchesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} branches'**
+  String branchesCount(String count);
+
+  /// No description provided for @noMatchingSalon.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching salon found'**
+  String get noMatchingSalon;
+
+  /// No description provided for @viewDetailsLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get viewDetailsLink;
+
+  /// No description provided for @salonOpenStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get salonOpenStatus;
+
+  /// No description provided for @salonClosedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get salonClosedStatus;
+
+  /// No description provided for @selectThisBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Select this branch'**
+  String get selectThisBranch;
+
+  /// No description provided for @detailedAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Detailed address'**
+  String get detailedAddress;
+
+  /// No description provided for @phoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number'**
+  String get phoneTitle;
+
+  /// No description provided for @operatingHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Operating hours'**
+  String get operatingHours;
+
+  /// No description provided for @todayBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get todayBadge;
+
+  /// No description provided for @highlyRated.
+  ///
+  /// In en, this message translates to:
+  /// **'Highly rated'**
+  String get highlyRated;
+
+  /// No description provided for @collapseList.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse list'**
+  String get collapseList;
+
+  /// No description provided for @viewMoreBranches.
+  ///
+  /// In en, this message translates to:
+  /// **'View {count} more branches'**
+  String viewMoreBranches(String count);
+
+  /// No description provided for @reservationMayExpireIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Reservation may expire in {minutes}:{seconds}'**
+  String reservationMayExpireIn(String minutes, String seconds);
+
+  /// No description provided for @reservationMayExpireInClickToComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Reservation may expire in {minutes}:{seconds}! Click to complete.'**
+  String reservationMayExpireInClickToComplete(String minutes, String seconds);
+
+  /// No description provided for @slotHeldRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'Your slot is held - {minutes}:{seconds} remaining'**
+  String slotHeldRemaining(String minutes, String seconds);
+
+  /// No description provided for @slotHeldRemainingClickToReturn.
+  ///
+  /// In en, this message translates to:
+  /// **'Slot held - {minutes}:{seconds} remaining. Click to return.'**
+  String slotHeldRemainingClickToReturn(String minutes, String seconds);
+
+  /// No description provided for @bookingDepositRatioLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Deposit Ratio:'**
+  String get bookingDepositRatioLabel;
+
+  /// No description provided for @bookingDepositAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Deposit Amount to Pay:'**
+  String get bookingDepositAmountLabel;
+
+  /// No description provided for @bookingWalletVoucher.
+  ///
+  /// In en, this message translates to:
+  /// **'Wallet Voucher'**
+  String get bookingWalletVoucher;
+
+  /// No description provided for @bookingSelectVoucher.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a voucher from your wallet'**
+  String get bookingSelectVoucher;
+
+  /// No description provided for @bookingVoucherAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'available'**
+  String get bookingVoucherAvailable;
+
+  /// No description provided for @bookingAppliedOffers.
+  ///
+  /// In en, this message translates to:
+  /// **'Applied Offers'**
+  String get bookingAppliedOffers;
 }
 
 class _SDelegate extends LocalizationsDelegate<S> {

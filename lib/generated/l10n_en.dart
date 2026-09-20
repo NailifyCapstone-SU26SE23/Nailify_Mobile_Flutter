@@ -807,7 +807,7 @@ class SEn extends S {
   }
 
   @override
-  String get bookingDiscount => 'Discount';
+  String get bookingDiscount => 'Discount:';
 
   @override
   String get cancelBookingTitle => 'Cancel Booking';
@@ -1066,6 +1066,46 @@ class SEn extends S {
   String get bookingStepSelectSalon => 'Select Salon';
 
   @override
+  String get bookingStepArtist => 'Artist';
+
+  @override
+  String get bookingArtistAutoAssign => 'Auto Assign';
+
+  @override
+  String get bookingArtistAutoAssignDesc =>
+      'System auto-assigns the most suitable artist';
+
+  @override
+  String get bookingArtistHighestRating => 'Highest rating';
+
+  @override
+  String get bookingSortHighExpertise => 'High expertise';
+
+  @override
+  String get bookingSortNameAZ => 'Name (A-Z)';
+
+  @override
+  String get ratingExcellent => 'Excellent';
+
+  @override
+  String get ratingVeryGood => 'Very good';
+
+  @override
+  String get ratingGood => 'Good';
+
+  @override
+  String get ratingHighlyRated => 'Highly rated';
+
+  @override
+  String get bookingAddService => 'Add Service';
+
+  @override
+  String get bookingAddAddonService => 'Add add-on service';
+
+  @override
+  String get bookingEstimatedTotal => 'Estimated total:';
+
+  @override
   String get bookingStepServices => 'Services';
 
   @override
@@ -1187,9 +1227,6 @@ class SEn extends S {
 
   @override
   String get bookingQtyLabel => 'Quantity';
-
-  @override
-  String get bookingAddService => 'Add Service';
 
   @override
   String get bookingAddServiceTitle => 'Add Add-on Service';
@@ -1946,4 +1983,94 @@ class SEn extends S {
 
   @override
   String get galleryTryOn => 'Try On';
+
+  @override
+  String get searchSalonHint => 'Search salon by name, address...';
+
+  @override
+  String get allDistrictsFilter => 'All';
+
+  @override
+  String get bookingSelectSalonTitle => 'Select Salon Branch';
+
+  @override
+  String branchesCount(String count) {
+    return '$count branches';
+  }
+
+  @override
+  String get noMatchingSalon => 'No matching salon found';
+
+  @override
+  String get viewDetailsLink => 'Details';
+
+  @override
+  String get salonOpenStatus => 'Open';
+
+  @override
+  String get salonClosedStatus => 'Closed';
+
+  @override
+  String get selectThisBranch => 'Select this branch';
+
+  @override
+  String get detailedAddress => 'Detailed address';
+
+  @override
+  String get phoneTitle => 'Phone number';
+
+  @override
+  String get operatingHours => 'Operating hours';
+
+  @override
+  String get todayBadge => 'Today';
+
+  @override
+  String get highlyRated => 'Highly rated';
+
+  @override
+  String get collapseList => 'Collapse list';
+
+  @override
+  String viewMoreBranches(String count) {
+    return 'View $count more branches';
+  }
+
+  @override
+  String reservationMayExpireIn(String minutes, String seconds) {
+    return 'Reservation may expire in $minutes:$seconds';
+  }
+
+  @override
+  String reservationMayExpireInClickToComplete(String minutes, String seconds) {
+    return 'Reservation may expire in $minutes:$seconds! Click to complete.';
+  }
+
+  @override
+  String slotHeldRemaining(String minutes, String seconds) {
+    return 'Your slot is held - $minutes:$seconds remaining';
+  }
+
+  @override
+  String slotHeldRemainingClickToReturn(String minutes, String seconds) {
+    return 'Slot held - $minutes:$seconds remaining. Click to return.';
+  }
+
+  @override
+  String get bookingDepositRatioLabel => 'Deposit Ratio:';
+
+  @override
+  String get bookingDepositAmountLabel => 'Deposit Amount to Pay:';
+
+  @override
+  String get bookingWalletVoucher => 'Wallet Voucher';
+
+  @override
+  String get bookingSelectVoucher => 'Select a voucher from your wallet';
+
+  @override
+  String get bookingVoucherAvailable => 'available';
+
+  @override
+  String get bookingAppliedOffers => 'Applied Offers';
 }

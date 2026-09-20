@@ -85,6 +85,19 @@ class BookingApiService {
     }
   }
 
+  /// Fetch the current customer's wallet summary (balance, frozenBalance, etc.)
+  /// Endpoint: GET /api/Wallets/summary → CustomerWalletSummaryDto
+  Future<Map<String, dynamic>?> getCustomerWalletSummary() async {
+    try {
+      final response = await _apiClient.get('/Wallets/summary');
+      final data = response.data['data'];
+      if (data is Map) return Map<String, dynamic>.from(data);
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   static bool _isSalonOpen(dynamic salon) {
     if (salon == null || salon is! Map) return false;
 
@@ -210,34 +223,51 @@ class BookingApiService {
     List<String> serviceIds,
     int? shapeMethodConfigId,
   ) {
-    return [
-      if (nailVariantId > 0)
-        {
-          'nailVariantId': nailVariantId,
-          'shapeMethodConfigId': ?shapeMethodConfigId,
-          'quantity': 1,
-        },
-      ...serviceIds.map((serviceId) => {'serviceId': serviceId, 'quantity': 1}),
-    ];
+    final List<Map<String, dynamic>> items = [];
+    if (nailVariantId > 0) {
+      items.add({
+        'nailVariantId': nailVariantId,
+        if (shapeMethodConfigId != null)
+          'shapeMethodConfigId': shapeMethodConfigId,
+        'quantity': 1,
+      });
+    }
+
+    final serviceCounts = <String, int>{};
+    for (final sId in serviceIds) {
+      if (sId.isNotEmpty) {
+        serviceCounts[sId] = (serviceCounts[sId] ?? 0) + 1;
+      }
+    }
+    for (final entry in serviceCounts.entries) {
+      items.add({
+        'serviceId': entry.key,
+        'quantity': entry.value,
+      });
+    }
+    return items;
   }
 
   Future<List<dynamic>> getSuggestedArtists(
     String salonId,
-    String bookingDate,
-    int nailVariantId,
-    List<String> serviceIds,
+    String bookingDate, {
+    int nailVariantId = 0,
+    List<String> serviceIds = const [],
     int? shapeMethodConfigId,
-  ) async {
+    List<Map<String, dynamic>>? bookingItems,
+  }) async {
+    final itemsPayload = bookingItems ??
+        _buildBookingItems(
+          nailVariantId,
+          serviceIds,
+          shapeMethodConfigId,
+        );
     final response = await _apiClient.post(
       '/Bookings/suggested-artists',
       data: {
         'salonId': salonId,
         'bookingDate': bookingDate,
-        'bookingItems': _buildBookingItems(
-          nailVariantId,
-          serviceIds,
-          shapeMethodConfigId,
-        ),
+        'bookingItems': itemsPayload,
       },
     );
     final items = (response.data['data'] as List<dynamic>?) ?? [];
@@ -272,11 +302,16 @@ class BookingApiService {
 
   Future<List<dynamic>> getArtistAvailableSlots(
     String artistId,
-    String bookingDate,
-  ) async {
-    final response = await _apiClient.get(
+    String bookingDate, {
+    List<Map<String, dynamic>>? bookingItems,
+  }) async {
+    final response = await _apiClient.post(
       '/Bookings/artist-available-slots',
-      queryParameters: {'NailArtistId': artistId, 'BookingDate': bookingDate},
+      data: {
+        'nailArtistId': artistId,
+        'bookingDate': bookingDate,
+        'bookingItems': bookingItems ?? [],
+      },
     );
     final List<dynamic> list =
         response.data['data']['timeSlots'] ?? response.data['data'] ?? [];

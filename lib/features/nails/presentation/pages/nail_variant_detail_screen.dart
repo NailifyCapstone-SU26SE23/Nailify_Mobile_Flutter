@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/auth_guard.dart';
+import '../../../../core/utils/duration_formatter.dart';
 import '../../../../core/utils/price_formatter.dart';
 
 import '../../../../core/di/injection.dart';
@@ -373,32 +374,7 @@ class _DetailContentState extends State<_DetailContent> {
   }
 
   String _formatDurationText(BuildContext context, int? minutes) {
-    if (minutes == null || minutes <= 0) {
-      return Localizations.localeOf(context).languageCode == 'vi'
-          ? '30 phút'
-          : '30 mins';
-    }
-    final hours = minutes ~/ 60;
-    final remainingMins = minutes % 60;
-    final isVi = Localizations.localeOf(context).languageCode == 'vi';
-
-    if (isVi) {
-      if (hours > 0 && remainingMins > 0) {
-        return '$hours giờ $remainingMins phút';
-      } else if (hours > 0) {
-        return '$hours giờ';
-      } else {
-        return '$remainingMins phút';
-      }
-    } else {
-      if (hours > 0 && remainingMins > 0) {
-        return '${hours}h${remainingMins}m';
-      } else if (hours > 0) {
-        return '${hours}h';
-      } else {
-        return '${remainingMins}m';
-      }
-    }
+    return DurationFormatter.format(minutes, context: context);
   }
 
   Map<String, dynamic> _parseColorsWithDetails(
@@ -795,7 +771,7 @@ class _DetailContentState extends State<_DetailContent> {
                                   crossAxisCount: 2,
                                   crossAxisSpacing: 12,
                                   mainAxisSpacing: 12,
-                                  childAspectRatio: 1.65,
+                                  childAspectRatio: 2.15,
                                 ),
                             itemBuilder: (context, index) => specItems[index],
                           );
@@ -969,6 +945,7 @@ class _DetailContentState extends State<_DetailContent> {
                                     'name': variant.name,
                                     'image': variant.imageUrl,
                                     'price': variant.price,
+                                    'duration': variant.duration,
                                     'shapeMethodConfigId':
                                         selectedShapeMethod.shapeMethodConfigId,
                                     'shapeMethodName': selectedShapeMethod.name,
@@ -1027,62 +1004,74 @@ class _DetailContentState extends State<_DetailContent> {
     required String value,
   }) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFFFAFAFC),
-        borderRadius: BorderRadius.circular(18),
+        color: const Color(0xFFFFF8FA),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.14),
+          color: const Color(0xFFFCE4EC),
           width: 1.0,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 6,
+            color: AppColors.primary.withValues(alpha: 0.04),
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(5),
-                decoration: const BoxDecoration(
-                  color: AppColors.primarySurface,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: AppColors.primary, size: 14),
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.15),
+                width: 1,
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.06),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+            child: Icon(icon, color: AppColors.primary, size: 15),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
                   label,
                   style: TextStyle(
-                    fontSize: 11.5,
+                    fontSize: 10.5,
                     color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.2,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 13.5,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-              height: 1.2,
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -1096,94 +1085,107 @@ class _DetailContentState extends State<_DetailContent> {
     required String colorNames,
   }) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFFFAFAFC),
-        borderRadius: BorderRadius.circular(18),
+        color: const Color(0xFFFFF8FA),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.14),
+          color: const Color(0xFFFCE4EC),
           width: 1.0,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 6,
+            color: AppColors.primary.withValues(alpha: 0.04),
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(5),
-                decoration: const BoxDecoration(
-                  color: AppColors.primarySurface,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.palette_rounded,
-                  color: AppColors.primary,
-                  size: 14,
-                ),
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.15),
+                width: 1,
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.06),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.palette_rounded,
+              color: AppColors.primary,
+              size: 15,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
                   label,
                   style: TextStyle(
-                    fontSize: 11.5,
+                    fontSize: 10.5,
                     color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.2,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              if (colors.isNotEmpty) ...[
+                const SizedBox(height: 2),
                 Row(
-                  children: colors
-                      .take(3)
-                      .map(
-                        (color) => Container(
-                          margin: const EdgeInsets.only(right: 4),
-                          width: 15,
-                          height: 15,
-                          decoration: BoxDecoration(
-                            color: color,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.grey.shade300,
-                              width: 1,
-                            ),
-                          ),
+                  children: [
+                    if (colors.isNotEmpty) ...[
+                      Row(
+                        children: colors
+                            .take(3)
+                            .map(
+                              (color) => Container(
+                                margin: const EdgeInsets.only(right: 3),
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: color,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.grey.shade300,
+                                    width: 1,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                      const SizedBox(width: 3),
+                    ],
+                    Expanded(
+                      child: Text(
+                        colorNames,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
                         ),
-                      )
-                      .toList(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 4),
               ],
-              Expanded(
-                child: Text(
-                  colorNames,
-                  style: const TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),
@@ -1247,7 +1249,7 @@ class _DetailContentState extends State<_DetailContent> {
                 crossAxisCount: 2,
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
-                childAspectRatio: 2.1,
+                childAspectRatio: 1.8,
               ),
               itemBuilder: (context, index) {
                 final method = methods[index];
@@ -1264,26 +1266,24 @@ class _DetailContentState extends State<_DetailContent> {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
+                      horizontal: 14,
+                      vertical: 12,
                     ),
                     decoration: BoxDecoration(
                       color: selected
-                          ? AppColors.primarySurface
+                          ? const Color(0xFFFFF7FA)
                           : Colors.white,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: selected
                             ? AppColors.primary
-                            : const Color(0xFFF2F2F7),
-                        width: selected ? 1.8 : 1.0,
+                            : const Color(0xFFEFEFEF),
+                        width: selected ? 1.6 : 1.0,
                       ),
                       boxShadow: selected
                           ? [
                               BoxShadow(
-                                color: AppColors.primary.withValues(
-                                  alpha: 0.12,
-                                ),
+                                color: AppColors.primary.withValues(alpha: 0.1),
                                 blurRadius: 8,
                                 offset: const Offset(0, 3),
                               ),
@@ -1298,9 +1298,10 @@ class _DetailContentState extends State<_DetailContent> {
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Expanded(
                               child: Text(
@@ -1311,42 +1312,72 @@ class _DetailContentState extends State<_DetailContent> {
                                   color: selected
                                       ? AppColors.primary
                                       : AppColors.textPrimary,
+                                  height: 1.2,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            Icon(
-                              selected
-                                  ? Icons.check_circle_rounded
-                                  : Icons.radio_button_unchecked_rounded,
-                              size: 16,
-                              color: selected
-                                  ? AppColors.primary
-                                  : Colors.grey.shade400,
+                            const SizedBox(width: 4),
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              width: 18,
+                              height: 18,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: selected ? AppColors.primary : Colors.transparent,
+                                border: Border.all(
+                                  color: selected
+                                      ? AppColors.primary
+                                      : Colors.grey.shade300,
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: selected
+                                  ? const Icon(
+                                      Icons.check,
+                                      size: 11,
+                                      color: Colors.white,
+                                    )
+                                  : null,
                             ),
                           ],
                         ),
+                        const SizedBox(height: 5),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              S.of(context).minutesLabel('${method.duration}'),
-                              style: TextStyle(
-                                color: Colors.grey.shade500,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                              ),
+                            Icon(
+                              Icons.access_time_rounded,
+                              size: 11,
+                              color: selected
+                                  ? AppColors.primary.withValues(alpha: 0.8)
+                                  : Colors.grey.shade500,
                             ),
-                            Text(
-                              PriceFormatter.format(method.price),
-                              style: const TextStyle(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
+                            const SizedBox(width: 3),
+                            Expanded(
+                              child: Text(
+                                DurationFormatter.format(method.duration, context: context),
+                                style: TextStyle(
+                                  color: selected
+                                      ? AppColors.primary.withValues(alpha: 0.9)
+                                      : Colors.grey.shade600,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          PriceFormatter.format(method.price),
+                          style: TextStyle(
+                            color: selected ? AppColors.primary : AppColors.primaryDark,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13,
+                          ),
                         ),
                       ],
                     ),

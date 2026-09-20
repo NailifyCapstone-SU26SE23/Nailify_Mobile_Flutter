@@ -3,8 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../network/signalr_events.dart';
-import '../network/signalr_service.dart';
 import '../utils/auth_guard.dart';
 import '../../features/nail_booking/presentation/manager/global_booking_manager.dart';
 
@@ -32,17 +30,10 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
-  StreamSubscription<WaitlistPromotedEvent>? _promotedSub;
-  StreamSubscription<WaitlistExpiredEvent>? _expiredSub;
-  StreamSubscription<BookingCancelledEvent>? _cancelledSub;
-  StreamSubscription<BookingRescheduleEvent>? _rescheduleSub;
-
   bool _hasRecommendations = false;
   String? _lastCheckedToken;
   bool _isCheckingRecommendations = false;
   bool _showNewNotificationTip = false;
-
-  bool _signalRSubscribed = false;
 
   @override
   void initState() {
@@ -50,13 +41,8 @@ class _MainShellState extends State<MainShell> {
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Chỉ đăng ký 1 lần sau khi Scaffold tree đã sẵn sàng
-    if (!_signalRSubscribed) {
-      _signalRSubscribed = true;
-      _subscribeToSignalR();
-    }
+  void dispose() {
+    super.dispose();
   }
 
   void _triggerNotificationTip() {
@@ -122,299 +108,6 @@ class _MainShellState extends State<MainShell> {
     } finally {
       _isCheckingRecommendations = false;
     }
-  }
-
-  String _cleanNotificationMessage(String msg) {
-    // 1. Loại bỏ các chuỗi hex 24 ký tự (như MongoDB ObjectId) hoặc UUID 36 ký tự, có hoặc không có dấu '#' phía trước
-    final objectIdRegex = RegExp(r'#?[0-9a-fA-F]{24}');
-    final uuidRegex = RegExp(
-      r'#?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}',
-    );
-    
-
-    String cleaned = msg
-        .replaceAll(uuidRegex, '')
-        .replaceAll(objectIdRegex, '');
-
-    // 2. Loại bỏ các cụm từ đi kèm nếu có (ví dụ: "mã: ", "Mã: ", "ID: ", "id: ", v.v.)
-    cleaned = cleaned
-        .replaceAll(RegExp(r'\(\s*[Mm]ã\s*:\s*\)'), '')
-        .replaceAll(RegExp(r'\(\s*[Mm]ã\s*\)'), '')
-        .replaceAll(RegExp(r'\(\s*[Ii][Dd]\s*:\s*\)'), '')
-        .replaceAll(RegExp(r'\(\s*[Ii][Dd]\s*\)'), '')
-        .replaceAll(RegExp(r'\(\s*\)'), '')
-        .replaceAll(RegExp(r'\[\s*\]'), '')
-        .replaceAll(RegExp(r'#\s*'), '');
-
-    // 3. Chuẩn hóa khoảng trắng dư thừa
-    cleaned = cleaned.replaceAll(RegExp(r'\s+'), ' ').trim();
-
-    // 4. Nếu kết quả thừa ký tự đặc biệt ở đầu/cuối sau khi xóa ID
-    if (cleaned.startsWith(':') ||
-        cleaned.startsWith('-') ||
-        cleaned.startsWith(',')) {
-      cleaned = cleaned.substring(1).trim();
-    }
-
-    return cleaned;
-  }
-
-  // ─── Helper: SnackBar phong cách đồng nhất, đẹp mắt dành cho phái nữ ─────────────
-  void _showStyledSnackBar(
-    BuildContext context, {
-    required String message,
-    required IconData icon,
-    required Color color,
-    String? actionLabel,
-    VoidCallback? onAction,
-    Duration duration = const Duration(seconds: 5),
-    bool isTop = false,
-  }) {
-    final cleanedMessage = _cleanNotificationMessage(message);
-    final mediaQuery = MediaQuery.of(context);
-    final topPadding = mediaQuery.padding.top;
-    final screenHeight = mediaQuery.size.height;
-
-    final margin = isTop
-        ? EdgeInsets.only(
-            bottom: screenHeight - topPadding - 240,
-            left: 16,
-            right: 16,
-          )
-        : const EdgeInsets.fromLTRB(16, 0, 16, 16);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        elevation: 0,
-        behavior: SnackBarBehavior.floating,
-        duration: duration,
-        backgroundColor: Colors.transparent,
-        margin: margin,
-        padding: EdgeInsets.zero,
-        content: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: const Color(0xFFFFF8FB), // Hồng ngọc trai ngọc lụa
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: color.withValues(alpha: 0.18),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-            border: Border.all(
-              color: color.withValues(alpha: 0.35),
-              width: 1.2,
-            ),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: color, size: 22),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  cleanedMessage,
-                  style: const TextStyle(
-                    color: Color(0xFF4A3543),
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w600,
-                    height: 1.38,
-                  ),
-                ),
-              ),
-              if (actionLabel != null && onAction != null) ...[
-                const SizedBox(width: 10),
-                TextButton(
-                  onPressed: onAction,
-                  style: TextButton.styleFrom(
-                    backgroundColor: color.withValues(alpha: 0.14),
-                    foregroundColor: color,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: Text(
-                    actionLabel,
-                    style: const TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _subscribeToSignalR() {
-    final signalR = getIt<SignalRService>();
-
-    _promotedSub = signalR.onWaitlistPromoted.listen((event) {
-      if (!mounted) return;
-      _showWaitlistBanner(event);
-    });
-
-    _expiredSub = signalR.onWaitlistExpired.listen((event) {
-      if (!mounted) return;
-      _showStyledSnackBar(
-        context,
-        message: event.message,
-        icon: Icons.hourglass_bottom_rounded,
-        color: Colors.orange.shade600,
-        duration: const Duration(seconds: 5),
-      );
-    });
-
-    _cancelledSub = signalR.onBookingCancelled.listen((event) {
-      if (!mounted) return;
-      _showStyledSnackBar(
-        context,
-        message: event.message,
-        icon: Icons.cancel_outlined,
-        color: Colors.red.shade400,
-        actionLabel: 'Xem lịch',
-        onAction: () => context.go('/my-bookings', extra: {'initialTab': 0}),
-        duration: const Duration(seconds: 6),
-      );
-    });
-
-    _rescheduleSub = signalR.onBookingRescheduled.listen((event) {
-      if (!mounted) return;
-
-      Color color = AppColors.primary;
-      IconData icon = Icons.edit_calendar_outlined;
-
-      if (event.status == 'Approved') {
-        color = Colors.green.shade500;
-        icon = Icons.check_circle_outline_rounded;
-      } else if (event.status == 'Rejected') {
-        color = Colors.red.shade400;
-        icon = Icons.cancel_outlined;
-      } else if (event.status == 'Suggested') {
-        color = Colors.amber.shade600;
-        icon = Icons.event_note_rounded;
-      }
-
-      // Dùng addPostFrameCallback để chắc chắn Scaffold đã build xong
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        _showStyledSnackBar(
-          context,
-          message: event.message,
-          icon: icon,
-          color: color,
-          actionLabel: 'Xem lịch',
-          onAction: () {
-            final targetTab =
-                (event.status == 'Approved' || event.status == 'Rejected')
-                ? 0
-                : 2;
-            context.go('/my-bookings', extra: {'initialTab': targetTab});
-          },
-          duration: const Duration(seconds: 8),
-          isTop: true,
-        );
-      });
-    });
-  }
-
-  void _showWaitlistBanner(WaitlistPromotedEvent event) {
-    final cleanedMessage = _cleanNotificationMessage(event.message);
-    ScaffoldMessenger.of(context).clearMaterialBanners();
-    ScaffoldMessenger.of(context).showMaterialBanner(
-      MaterialBanner(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-        backgroundColor: AppColors.primary,
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.2),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(
-            Icons.notifications_active_rounded,
-            color: Colors.white,
-            size: 22,
-          ),
-        ),
-        content: Text(
-          cleanedMessage,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 13.5,
-          ),
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).clearMaterialBanners();
-              context.go('/my-bookings');
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: AppColors.primary,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-            ),
-            child: const Text(
-              'Xác nhận ngay',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 12.5,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () =>
-                ScaffoldMessenger.of(context).clearMaterialBanners(),
-            child: Text(
-              'Đóng',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.8),
-                fontSize: 12.5,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _promotedSub?.cancel();
-    _expiredSub?.cancel();
-    _cancelledSub?.cancel();
-    _rescheduleSub?.cancel();
-    super.dispose();
   }
 
   // Biến kiểm tra trạng thái đăng nhập
@@ -1114,8 +807,8 @@ class _MainShellState extends State<MainShell> {
             Expanded(
               child: Text(
                 isUrgent
-                    ? 'Chỗ có thể bị hủy sau $min:$sec giây! Nhấp để hoàn tất.'
-                    : 'Slot đang được giữ chỗ – còn $min:$sec để hoàn tất. Nhấp để quay lại.',
+                    ? S.of(context).reservationMayExpireInClickToComplete(min, sec)
+                    : S.of(context).slotHeldRemainingClickToReturn(min, sec),
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 12.5,

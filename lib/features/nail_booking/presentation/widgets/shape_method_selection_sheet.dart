@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/utils/duration_formatter.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../../nails/data/models/nail_variant_model.dart';
 import '../../../nails/data/models/shape_method_config_model.dart';
@@ -40,8 +41,7 @@ class ShapeMethodSelectionSheet extends StatefulWidget {
       _ShapeMethodSelectionSheetState();
 }
 
-class _ShapeMethodSelectionSheetState
-    extends State<ShapeMethodSelectionSheet> {
+class _ShapeMethodSelectionSheetState extends State<ShapeMethodSelectionSheet> {
   late final Future<List<ShapeMethodConfigModel>> _shapeMethodsFuture;
   ShapeMethodConfigModel? _selectedShapeMethod;
 
@@ -140,14 +140,18 @@ class _ShapeMethodSelectionSheetState
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Text(
                       'Không thể tải danh sách phương pháp tạo form',
-                      style: TextStyle(color: Colors.red.shade400, fontSize: 13),
+                      style: TextStyle(
+                        color: Colors.red.shade400,
+                        fontSize: 13,
+                      ),
                     ),
                   );
                 }
 
-                final methods = (snapshot.data ?? const <ShapeMethodConfigModel>[])
-                    .where((m) => m.status.toLowerCase() != 'inactive')
-                    .toList();
+                final methods =
+                    (snapshot.data ?? const <ShapeMethodConfigModel>[])
+                        .where((m) => m.status.toLowerCase() != 'inactive')
+                        .toList();
 
                 if (methods.isEmpty) {
                   return const Padding(
@@ -198,7 +202,10 @@ class _ShapeMethodSelectionSheetState
                           ),
                         ),
                         subtitle: Text(
-                          S.of(context).minutesLabel('${method.duration}'),
+                          DurationFormatter.format(
+                            method.duration,
+                            context: context,
+                          ),
                           style: TextStyle(
                             color: Colors.grey.shade600,
                             fontSize: 12,
@@ -213,8 +220,10 @@ class _ShapeMethodSelectionSheetState
                           ),
                         ),
                         activeColor: AppColors.primary,
-                        contentPadding:
-                            const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 2,
+                        ),
                       ),
                     );
                   }).toList(),

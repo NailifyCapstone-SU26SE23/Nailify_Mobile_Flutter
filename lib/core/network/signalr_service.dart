@@ -29,6 +29,13 @@ class SignalRService {
       StreamController<WalletPointsChangedEvent>.broadcast();
   final _voucherReceivedCtrl =
       StreamController<VoucherReceivedEvent>.broadcast();
+  final _delayWarningCtrl =
+      StreamController<DelayWarningWithAutonomyEvent>.broadcast();
+  final _delayEtaCtrl = StreamController<DelayETAEvent>.broadcast();
+  final _customNailQuotedCtrl =
+      StreamController<CustomNailQuotedEvent>.broadcast();
+  final _customNailRejectedCtrl =
+      StreamController<CustomNailRejectedEvent>.broadcast();
 
   Stream<WaitlistPromotedEvent> get onWaitlistPromoted => _promotedCtrl.stream;
   Stream<WaitlistExpiredEvent> get onWaitlistExpired => _expiredCtrl.stream;
@@ -39,6 +46,13 @@ class SignalRService {
       _walletPointsCtrl.stream;
   Stream<VoucherReceivedEvent> get onVoucherReceived =>
       _voucherReceivedCtrl.stream;
+  Stream<DelayWarningWithAutonomyEvent> get onDelayWarningWithAutonomy =>
+      _delayWarningCtrl.stream;
+  Stream<DelayETAEvent> get onDelayETA => _delayEtaCtrl.stream;
+  Stream<CustomNailQuotedEvent> get onCustomNailQuoted =>
+      _customNailQuotedCtrl.stream;
+  Stream<CustomNailRejectedEvent> get onCustomNailRejected =>
+      _customNailRejectedCtrl.stream;
 
   bool get isConnected => _isConnected;
 
@@ -57,16 +71,19 @@ class SignalRService {
       _isConnected = false;
     }
 
-    final hubUrl = AppConstants.baseUrl + _hubPath;
-    debugPrint('[SignalR] Đang kết nối tới hub...');
+    final cleanBaseUrl = AppConstants.baseUrl.endsWith('/')
+        ? AppConstants.baseUrl.substring(0, AppConstants.baseUrl.length - 1)
+        : AppConstants.baseUrl;
+    final hubUrl = '$cleanBaseUrl$_hubPath';
+    debugPrint('[SignalR] Đang kết nối tới hub: $hubUrl...');
 
     _hub = HubConnectionBuilder()
         .withUrl(
           hubUrl,
           options: HttpConnectionOptions(
             accessTokenFactory: () async => authToken,
-            transport: HttpTransportType.WebSockets,
-            // Chỉ log nội dung message chi tiết khi debug, không log trong release
+            requestTimeout: 30000,
+            // Không ép cứng WebSockets để tự động fallback khi host trên Render.com
             logMessageContent: kDebugMode,
           ),
         )
@@ -189,6 +206,57 @@ class SignalRService {
             _voucherReceivedCtrl.add(payload);
             break;
 
+          case 'DelayWarningWithAutonomy':
+            final payload = payloadMap != null
+                ? DelayWarningWithAutonomyEvent.fromJson(payloadMap)
+                : DelayWarningWithAutonomyEvent(
+                    bookingId: '',
+                    message:
+                        rawPayload?.toString() ??
+                        'Lịch hẹn của bạn có thể bị trễ. Vui lòng chọn hướng xử lý.',
+                    options: const ['WAIT', 'REASSIGN', 'RESCHEDULE'],
+                  );
+            _delayWarningCtrl.add(payload);
+            break;
+
+          case 'DelayETA':
+            final payload = payloadMap != null
+                ? DelayETAEvent.fromJson(payloadMap)
+                : DelayETAEvent(
+                    message:
+                        rawPayload?.toString() ?? 'Thông báo trễ lịch hẹn.',
+                  );
+            _delayEtaCtrl.add(payload);
+            break;
+
+          case 'CUSTOM_NAIL_QUOTED':
+            final payload = payloadMap != null
+                ? CustomNailQuotedEvent.fromJson(payloadMap)
+                : CustomNailQuotedEvent(
+                    customerNailRequestId: '',
+                    customerNailId: '',
+                    price: 0,
+                    duration: 0,
+                    message:
+                        rawPayload?.toString() ??
+                        'Salon đã gửi báo giá cho mẫu nail custom của bạn!',
+                  );
+            _customNailQuotedCtrl.add(payload);
+            break;
+
+          case 'CUSTOM_NAIL_REJECTED':
+            final payload = payloadMap != null
+                ? CustomNailRejectedEvent.fromJson(payloadMap)
+                : CustomNailRejectedEvent(
+                    customerNailRequestId: '',
+                    reason: '',
+                    message:
+                        rawPayload?.toString() ??
+                        'Mẫu nail custom của bạn đã bị salon từ chối.',
+                  );
+            _customNailRejectedCtrl.add(payload);
+            break;
+
           default:
             if (kDebugMode) {
               debugPrint('[SignalR] messageType không xác định: $messageType');
@@ -232,7 +300,7 @@ class SignalRService {
         return;
       } catch (e) {
         _isConnected = false;
-        debugPrint('[SignalR] ❌ Thử kết nối thất bại (lần $attempts)');
+        debugPrint('[SignalR] ❌ Thử kết nối thất bại (lần $attempts): $e');
         if (attempts < maxAttempts) {
           await Future.delayed(const Duration(seconds: 10));
         }
@@ -257,5 +325,11 @@ class SignalRService {
     _expiredCtrl.close();
     _cancelledCtrl.close();
     _rescheduleCtrl.close();
+    _walletPointsCtrl.close();
+    _voucherReceivedCtrl.close();
+    _delayWarningCtrl.close();
+    _delayEtaCtrl.close();
+    _customNailQuotedCtrl.close();
+    _customNailRejectedCtrl.close();
   }
 }

@@ -736,7 +736,10 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
   /// sang `/payment-qr`. Page sẽ xử lý navigate dựa trên 2 mode này.
   ///
   /// Throw nếu lỗi — page sẽ catch và hiển thị snackbar.
-  Future<Map<String, dynamic>> submitWarrantyBooking() async {
+  Future<Map<String, dynamic>> submitWarrantyBooking({
+    bool useWalletBalance = false,
+    List<dynamic>? selectedPromotionIds,
+  }) async {
     final branch = state.selectedBranch;
     final date = state.selectedDate;
     final time = state.selectedTime;
@@ -763,7 +766,10 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
         // Có phát sinh phí: gọi createPaymentForRequest để tạo order
         // trên cổng thanh toán. Khi user thanh toán xong → backend tự
         // tạo booking.
-        result = await _createPaymentForRequest();
+        result = await _createPaymentForRequest(
+          useWalletBalance: useWalletBalance,
+          selectedPromotionIds: selectedPromotionIds,
+        );
         result['__mode'] = 'paid';
       }
 
@@ -810,7 +816,10 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
     );
   }
 
-  Future<Map<String, dynamic>> _createPaymentForRequest() async {
+  Future<Map<String, dynamic>> _createPaymentForRequest({
+    bool useWalletBalance = false,
+    List<dynamic>? selectedPromotionIds,
+  }) async {
     final branch = state.selectedBranch!;
     final date = state.selectedDate!;
     final time = state.selectedTime!;
@@ -839,6 +848,8 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
       'holdToken': state.holdToken,
       'bookingItems': mergedItems,
       'warrantyForBookingId': state.sourceBookingId,
+      'useWalletBalance': useWalletBalance,
+      'selectedPromotionIds': selectedPromotionIds,
     };
 
     return _paymentApiService.createPaymentForRequest(payload);

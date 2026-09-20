@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/network/signalr_service.dart';
 import '../../../../core/utils/paginated_response.dart';
 import '../../../../generated/l10n.dart';
 import '../../data/datasources/studio_api_service.dart';
@@ -25,6 +27,8 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
       getIt<CustomerNailRepository>();
   late Future<List<request_models.CustomerNailModel>> _future;
   String? _statusFilter;
+  StreamSubscription? _quotedSub;
+  StreamSubscription? _rejectedSub;
 
   Map<String, String> get _statusLabels => {
     'Pending': S.of(context).statusPending,
@@ -41,6 +45,20 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
   void initState() {
     super.initState();
     _load();
+    final signalR = getIt<SignalRService>();
+    _quotedSub = signalR.onCustomNailQuoted.listen((_) {
+      if (mounted) _load();
+    });
+    _rejectedSub = signalR.onCustomNailRejected.listen((_) {
+      if (mounted) _load();
+    });
+  }
+
+  @override
+  void dispose() {
+    _quotedSub?.cancel();
+    _rejectedSub?.cancel();
+    super.dispose();
   }
 
   void _load() {

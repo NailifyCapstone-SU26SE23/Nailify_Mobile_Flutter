@@ -83,7 +83,10 @@ class HomePage extends StatelessWidget {
                     // 6. Customer Reviews (Thẻ mini vuốt ngang social review style - Dynamic từ API)
                     BlocBuilder<HomeCubit, HomeState>(
                       builder: (context, state) {
-                        return CustomerReviews(reviews: state.reviews);
+                        return CustomerReviews(
+                          reviews: state.reviews,
+                          isLoading: state.status == HomeStatus.loading,
+                        );
                       },
                     ),
 

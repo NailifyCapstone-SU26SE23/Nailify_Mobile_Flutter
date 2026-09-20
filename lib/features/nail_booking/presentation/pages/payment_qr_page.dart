@@ -34,6 +34,17 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
   @override
   void initState() {
     super.initState();
+    final status = widget.paymentData['status']?.toString().toUpperCase() ?? '';
+    final qrCode = widget.paymentData['qrCode']?.toString() ?? '';
+    final paymentUrl = widget.paymentData['paymentUrl']?.toString() ?? '';
+
+    if (status == 'PAID' || status == 'SUCCESS' || (qrCode.isEmpty && paymentUrl.isEmpty)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _navigateOnce('/payment-success');
+      });
+      return;
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkPaymentStatus(showError: false);
     });

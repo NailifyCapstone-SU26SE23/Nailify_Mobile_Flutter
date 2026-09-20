@@ -19,175 +19,82 @@ class PaymentTableItem {
 class PaymentDetailTable extends StatelessWidget {
   final List<PaymentTableItem> items;
 
-  const PaymentDetailTable({
-    super.key,
-    required this.items,
-  });
+  const PaymentDetailTable({super.key, required this.items});
 
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) return const SizedBox.shrink();
 
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFFD1E3), width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(11),
-        child: Table(
-          border: const TableBorder(
-            horizontalInside: BorderSide(
-              color: Color(0xFFFFEBF2),
-              width: 1,
-            ),
-            verticalInside: BorderSide(
-              color: Color(0xFFFFEBF2),
-              width: 1,
-            ),
-          ),
-          columnWidths: const {
-            0: FixedColumnWidth(32),   // TT
-            1: FlexColumnWidth(3.2),  // Dịch vụ
-            2: FixedColumnWidth(34),   // SL
-            3: FlexColumnWidth(2.2),  // Đơn giá
-            4: FlexColumnWidth(2.4),  // Thành tiền
-          },
-          defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-          children: [
-            // ── HEADER ROW ──────────────────────────────────────────
-            const TableRow(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFFFF85A1), Color(0xFFFFA4BA)],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                ),
-              ),
+    return Column(
+      children: [
+        for (int i = 0; i < items.length; i++) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                _HeaderCell('TT', alignment: Alignment.center),
-                _HeaderCell('Dịch Vụ', alignment: Alignment.centerLeft),
-                _HeaderCell('SL', alignment: Alignment.center),
-                _HeaderCell('Đơn Giá', alignment: Alignment.centerRight),
-                _HeaderCell('Thành Tiền', alignment: Alignment.centerRight),
+                Expanded(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          items[i].name,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      if (items[i].quantity > 1) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF0F5),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: const Color(0xFFFFD1DC)),
+                          ),
+                          child: Text(
+                            'x${items[i].quantity}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  PriceFormatter.format(items[i].totalPrice),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
               ],
             ),
-            // ── DATA ROWS ───────────────────────────────────────────
-            for (int i = 0; i < items.length; i++)
-              TableRow(
-                decoration: BoxDecoration(
-                  color: i % 2 == 0
-                      ? Colors.white
-                      : const Color(0xFFFFF9FB),
-                ),
-                children: [
-                  _DataCell(
-                    '${i + 1}',
-                    alignment: Alignment.center,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black54,
-                    ),
-                  ),
-                  _DataCell(
-                    items[i].name,
-                    alignment: Alignment.centerLeft,
-                    style: const TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  _DataCell(
-                    '${items[i].quantity}',
-                    alignment: Alignment.center,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  _DataCell(
-                    PriceFormatter.format(items[i].unitPrice).replaceAll(' VNĐ', ''),
-                    alignment: Alignment.centerRight,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  _DataCell(
-                    PriceFormatter.format(items[i].totalPrice).replaceAll(' VNĐ', ''),
-                    alignment: Alignment.centerRight,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primaryDark,
-                    ),
-                  ),
-                ],
+          ),
+          if (i < items.length - 1)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 4),
+              child: Divider(
+                height: 1,
+                thickness: 0.8,
+                color: Color(0xFFF3E8EE),
               ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _HeaderCell extends StatelessWidget {
-  final String text;
-  final Alignment alignment;
-
-  const _HeaderCell(this.text, {required this.alignment});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 8),
-      alignment: alignment,
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-}
-
-class _DataCell extends StatelessWidget {
-  final String text;
-  final Alignment alignment;
-  final TextStyle style;
-
-  const _DataCell(
-    this.text, {
-    required this.alignment,
-    required this.style,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 8),
-      alignment: alignment,
-      child: Text(
-        text,
-        style: style,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-      ),
+            ),
+        ],
+      ],
     );
   }
 }

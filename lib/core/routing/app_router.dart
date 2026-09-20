@@ -54,8 +54,11 @@ import '../../features/try-on/models/nail_variant_model.dart'
     as snapshot_models;
 import '../widgets/main_shell.dart';
 
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
+
 class AppRouter {
   static final GoRouter router = GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/',
     routes: [
       GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
@@ -105,7 +108,12 @@ class AppRouter {
       ),
       GoRoute(
         path: '/home-booking',
-        builder: (context, state) => const HomeBookingPage(),
+        builder: (context, state) {
+          final extra = state.extra is Map
+              ? Map<String, dynamic>.from(state.extra as Map)
+              : null;
+          return HomeBookingPage(initialData: extra);
+        },
       ),
       GoRoute(
         path: '/service-booking',

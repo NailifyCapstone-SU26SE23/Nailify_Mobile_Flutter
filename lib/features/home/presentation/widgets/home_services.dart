@@ -22,6 +22,8 @@ class HomeServices extends StatelessWidget {
       return _buildSkeleton(context);
     }
 
+    final List<HomeCategoryItem> displayList = categories;
+    /*
     final List<HomeCategoryItem> displayList = categories.isNotEmpty
         ? categories
         : [
@@ -31,6 +33,11 @@ class HomeServices extends StatelessWidget {
             HomeCategoryItem(id: 4, title: S.of(context).serviceAcrylic, imagePath: 'assets/images/image 4.png'),
             const HomeCategoryItem(id: 5, title: 'Dưỡng', imagePath: 'assets/images/home-mid.jpg'),
           ];
+    */
+
+    if (displayList.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     final gradients = [
       [const Color(0xFFFF66C4), const Color(0xFFFFB347)],

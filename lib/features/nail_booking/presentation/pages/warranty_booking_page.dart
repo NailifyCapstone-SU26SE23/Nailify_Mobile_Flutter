@@ -4,13 +4,18 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/duration_formatter.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../../../generated/l10n.dart';
 
+import '../../data/datasources/booking_api_service.dart';
+import '../../data/models/wallet_voucher_model.dart';
 import '../cubit/warranty_booking_cubit.dart';
 import '../widgets/artist_selection_list.dart';
 import '../widgets/booking_date_selection.dart';
+import '../widgets/booking_promotion_sheet.dart';
 import '../widgets/booking_time_selection.dart';
+import '../widgets/payment_detail_table.dart';
 
 /// Entry point: bọc page trong BlocProvider.
 class WarrantyBookingPage extends StatelessWidget {
@@ -37,6 +42,7 @@ class _WarrantyBookingView extends StatefulWidget {
 }
 
 class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
+  final BookingApiService _apiService = BookingApiService();
   late final PageController _pageController;
 
   int _currentStep = 0;
@@ -52,6 +58,15 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
   bool _isHolding = false;
   int _holdRemainingSeconds = 0;
   Timer? _holdTimer;
+
+  // ============== Wallet & Vouchers ==============
+  bool _useWalletBalance = true;
+  double? _walletAvailableBalance;
+  bool _isLoadingWallet = false;
+
+  bool _isLoadingPromotions = false;
+  List<WalletVoucherModel> _promotions = [];
+  int? _selectedPromotionId;
 
   List<Map<String, dynamic>> get _bookingSteps => [
         {
@@ -82,7 +97,24 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
       context.read<WarrantyBookingCubit>().loadWarrantyContext(
             widget.warrantyData,
           );
+      _fetchWalletBalance();
     });
+  }
+
+  Future<void> _fetchWalletBalance() async {
+    setState(() => _isLoadingWallet = true);
+    try {
+      final response = await _apiService.getCustomerWalletSummary();
+      if (!mounted) return;
+      setState(() {
+        _walletAvailableBalance =
+            (response?['availableBalance'] as num?)?.toDouble();
+        _isLoadingWallet = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLoadingWallet = false);
+    }
   }
 
   @override
@@ -300,7 +332,11 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
     if (_selectedTime == null || _selectedDate == null) return;
     final cubit = context.read<WarrantyBookingCubit>();
     try {
-      final result = await cubit.submitWarrantyBooking();
+      final result = await cubit.submitWarrantyBooking(
+        useWalletBalance: _useWalletBalance,
+        selectedPromotionIds:
+            _selectedPromotionId != null ? [_selectedPromotionId!] : null,
+      );
       if (!mounted) return;
       final state = cubit.state;
       final time = _selectedTime!;
@@ -1178,72 +1214,524 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
 
   // ── Step 4: Summary ───────────────────────────────────────────────
   Widget _buildSummaryStep(WarrantyBookingState state) {
-    final cubit = context.read<WarrantyBookingCubit>();
-    final totalPrice = cubit.estimatedTotalPrice;
-    final extraTotal = cubit.extraServicesTotal;
-    final isFree = totalPrice == 0;
-    final salon = state.selectedBranch;
-    final stylist = state.selectedStylist;
-    final time = _selectedTime != null
-        ? (_selectedTime!.length == 5
-            ? '${_selectedTime!}:00'
-            : _selectedTime!)
-        : '';
-    final date = _selectedDate;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSummaryCard(
-            icon: Icons.storefront_rounded,
-            title: S.of(context).bookingInfoSalon,
-            value: salon?['name']?.toString() ??
-                salon?['salonName']?.toString() ??
-                '',
-            subtitle: salon?['address']?.toString() ??
-                salon?['salonAddress']?.toString() ??
-                '',
-          ),
-          const SizedBox(height: 12),
-          _buildSummaryCard(
-            icon: Icons.person_rounded,
-            title: S.of(context).bookingInfoStaff,
-            value: _noArtistSelected
-                ? 'Tự động phân công'
-                : (stylist?['fullName']?.toString() ??
-                    state.sourceArtistName),
-          ),
-          const SizedBox(height: 12),
-          _buildSummaryCard(
-            icon: Icons.calendar_today_rounded,
-            title: S.of(context).bookingInfoTime,
-            value: date == null
-                ? ''
-                : '${date.day}/${date.month}/${date.year} • $time',
-          ),
-          const SizedBox(height: 12),
-          _buildPaymentDetails(state, extraTotal, totalPrice, isFree),
+          _buildBookingSummaryCard(state),
+          const SizedBox(height: 16),
+          _buildPromotionsAndWalletCard(),
+          const SizedBox(height: 16),
+          _buildPaymentDetailsCard(state),
         ],
       ),
     );
   }
 
-  Widget _buildPaymentDetails(
-    WarrantyBookingState state,
-    int extraTotal,
-    int totalPrice,
-    bool isFree,
-  ) {
+  Widget _buildBookingSummaryCard(WarrantyBookingState state) {
+    final branchName = state.selectedBranch?['name']?.toString() ??
+        state.selectedBranch?['salonName']?.toString() ??
+        'Chi nhánh Nailify';
+    final dateStr = _selectedDate == null
+        ? ''
+        : '${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}';
+    final timeStr =
+        _selectedTime == null ? '' : _selectedTime!.substring(0, 5);
+    final dateTimeText = dateStr.isEmpty ? '--' : '$dateStr • $timeStr';
+
+    final artistName = _noArtistSelected
+        ? S.of(context).bookingAutoAssign
+        : (state.selectedStylist?['fullName']?.toString() ??
+            state.sourceArtistName);
+    final artistAvatar = state.selectedStylist?['avatarUrl']?.toString();
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade100),
+        border: Border.all(color: const Color(0xFFF0F0F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Dòng 1: Icon Salon + Tên chi nhánh + Nút Đổi lịch
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFFF0F5),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.storefront_rounded,
+                  size: 18,
+                  color: Color(0xFFE02B6D),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  branchName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: AppColors.primaryDark,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              InkWell(
+                onTap: () {
+                  _pageController.animateToPage(
+                    2,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Text(
+                        'Đổi lịch',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFE02B6D),
+                        ),
+                      ),
+                      SizedBox(width: 2),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: 16,
+                        color: Color(0xFFE02B6D),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Divider(height: 1, color: Color(0xFFF5F5F5)),
+          const SizedBox(height: 12),
+
+          // Dòng 2: 2 cột ngang (Lịch hẹn & Thợ phụ trách)
+          Row(
+            children: [
+              // Cột trái: Lịch hẹn
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF0F5),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.access_time_filled_rounded,
+                        size: 16,
+                        color: Color(0xFFE02B6D),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Lịch hẹn',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            dateTimeText,
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(width: 1, height: 32, color: const Color(0xFFF0F0F0)),
+              const SizedBox(width: 12),
+              // Cột phải: Thợ phụ trách
+              Expanded(
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 14,
+                      backgroundColor: const Color(0xFFFFF0F5),
+                      backgroundImage:
+                          artistAvatar != null && artistAvatar.isNotEmpty
+                              ? NetworkImage(artistAvatar)
+                              : null,
+                      child: artistAvatar == null || artistAvatar.isEmpty
+                          ? const Icon(
+                              Icons.person_rounded,
+                              size: 16,
+                              color: Color(0xFFE02B6D),
+                            )
+                          : null,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Thợ phụ trách',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            artistName,
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPromotionsAndWalletCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFF0F0F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          _buildVoucherRow(),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Divider(height: 1, color: Color(0xFFF5F5F5)),
+          ),
+          _buildWalletToggleRow(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVoucherRow() {
+    final selectedPromotion =
+        _promotions.where((v) => v.promotionId == _selectedPromotionId);
+    final hasSelected = selectedPromotion.isNotEmpty;
+    final count = _promotions.length;
+    final selectedVoucher = hasSelected ? selectedPromotion.first : null;
+
+    return GestureDetector(
+      onTap: _isLoadingPromotions
+          ? null
+          : () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => BookingPromotionSheet(
+                  selectedPromotions: selectedPromotion.toList(),
+                  onConfirm: (list) {
+                    setState(() {
+                      _selectedPromotionId =
+                          list.isNotEmpty ? list.first.promotionId : null;
+                    });
+                  },
+                ),
+              );
+            },
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: const BoxDecoration(
+              color: Color(0xFFFFF0F5),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.confirmation_number_rounded,
+              size: 20,
+              color: Color(0xFFE02B6D),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text(
+                      'Voucher giảm giá',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13.5,
+                        color: AppColors.primaryDark,
+                      ),
+                    ),
+                    if (count > 0 && !hasSelected) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 1.5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF0F5),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFFFD1DC)),
+                        ),
+                        child: Text(
+                          '$count có sẵn',
+                          style: const TextStyle(
+                            color: Color(0xFFE02B6D),
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 3),
+                if (_isLoadingPromotions)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(3),
+                    child: const SizedBox(
+                      height: 4,
+                      width: 60,
+                      child: LinearProgressIndicator(
+                        backgroundColor: Color(0xFFFCE4EC),
+                        valueColor: AlwaysStoppedAnimation(Color(0xFFE02B6D)),
+                      ),
+                    ),
+                  )
+                else if (hasSelected)
+                  Text(
+                    '${selectedVoucher!.promotionName} (-${selectedVoucher.displayDiscount})',
+                    style: const TextStyle(
+                      color: Color(0xFFE02B6D),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  )
+                else
+                  Text(
+                    count > 0 ? 'Chọn voucher' : 'Chưa chọn voucher',
+                    style: TextStyle(
+                      color: Colors.grey.shade500,
+                      fontSize: 12,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ),
+          ),
+          if (hasSelected)
+            IconButton(
+              icon: const Icon(
+                Icons.close_rounded,
+                color: Color(0xFFE02B6D),
+                size: 20,
+              ),
+              onPressed: () => setState(() => _selectedPromotionId = null),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF0F5),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFFFD1DC)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Text(
+                    'Chọn',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFE02B6D),
+                    ),
+                  ),
+                  SizedBox(width: 2),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: Color(0xFFE02B6D),
+                    size: 16,
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWalletToggleRow() {
+    final balance = _walletAvailableBalance;
+    final hasBalance = balance != null && balance > 0;
+
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: const BoxDecoration(
+            color: Color(0xFFFFF0F5),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.account_balance_wallet_rounded,
+            size: 20,
+            color: Color(0xFFE02B6D),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Dùng số dư Ví Nailify',
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryDark,
+                ),
+              ),
+              const SizedBox(height: 3),
+              if (_isLoadingWallet)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(3),
+                  child: const SizedBox(
+                    height: 4,
+                    width: 60,
+                    child: LinearProgressIndicator(
+                      backgroundColor: Color(0xFFFCE4EC),
+                      valueColor: AlwaysStoppedAnimation(Color(0xFFE02B6D)),
+                    ),
+                  ),
+                )
+              else
+                Text(
+                  hasBalance
+                      ? 'Số dư: ${PriceFormatter.format(balance!.round())}'
+                      : 'Số dư trống',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: hasBalance
+                        ? Colors.grey.shade700
+                        : Colors.grey.shade400,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 30,
+          child: FittedBox(
+            fit: BoxFit.contain,
+            child: Switch(
+              value: _useWalletBalance,
+              onChanged: hasBalance && !_isLoadingWallet
+                  ? (val) => setState(() => _useWalletBalance = val)
+                  : null,
+              activeColor: Colors.white,
+              activeTrackColor: const Color(0xFFE02B6D),
+              inactiveThumbColor: Colors.white,
+              inactiveTrackColor: const Color(0xFFF0E6EA),
+              trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPaymentDetailsCard(WarrantyBookingState state) {
+    final cubit = context.read<WarrantyBookingCubit>();
+    final int totalPrice = cubit.estimatedTotalPrice;
+    final int extraTotal = cubit.extraServicesTotal;
+
+    final depositInfo = PriceFormatter.getDepositInfo(
+      state.selectedBranch?['depositConfig'],
+      totalPrice,
+    );
+    final initialDepositAmount = depositInfo['amount'] as int;
+
+    final walletDeduction = (_useWalletBalance &&
+            _walletAvailableBalance != null &&
+            _walletAvailableBalance! > 0)
+        ? (_walletAvailableBalance! < initialDepositAmount
+            ? _walletAvailableBalance!.round()
+            : initialDepositAmount)
+        : 0;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFF0F0F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1254,148 +1742,184 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
         children: [
           Row(
             children: [
-              const Icon(Icons.shield_outlined, color: AppColors.primary),
-              const SizedBox(width: 8),
-              Text(
-                S.of(context).bookingPaymentDetails,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFFF0F5),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.receipt_long_rounded,
+                  size: 18,
+                  color: Color(0xFFE02B6D),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  S.of(context).bookingPaymentDetails,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    fontFamily: 'Georgia',
+                    color: AppColors.primaryDark,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          // ── Warranty items (miễn phí) ──────────────────────────
-          ...state.selectedWarrantyItems.map((item) {
-            final names = [
-              item['nailVariantName']?.toString().trim() ?? '',
-              item['customerNailName']?.toString().trim() ?? '',
-              item['serviceName']?.toString().trim() ?? '',
-            ].where((n) => n.isNotEmpty).toList();
-            final name = names.isEmpty
-                ? S.of(context).bookingWarrantyDefault
-                : names.join(' & ');
-            return _buildPaymentRow(name, 0, muted: true);
-          }),
-          if (state.selectedExtraServices
-              .whereType<String>()
-              .isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              S.of(context).bookingAddonServices,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 6),
-            ..._buildExtraServiceRows(state),
-          ],
-          const Divider(height: 16),
-          // ── Subtotal (chỉ extra services, warranty = 0) ──────
-          _buildPaymentRow(
-            'Tạm tính (dịch vụ phát sinh)',
-            extraTotal,
-            muted: true,
+          const SizedBox(height: 14),
+
+          PaymentDetailTable(items: _paymentTableItems(state)),
+
+          const SizedBox(height: 14),
+          CustomPaint(
+            size: const Size(double.infinity, 1),
+            painter:
+                _HorizontalDashedLinePainter(color: const Color(0xFFE5E7EB)),
           ),
-          // ── Discount (giữ chỗ hiển thị — hiện chưa có) ────────
-          // Nếu tương lai tích hợp voucher sẽ hiện ở đây.
-          // ── Total ─────────────────────────────────────────────
-          const Divider(height: 16),
-          _buildPaymentRow(
-            S.of(context).bookingTotal,
-            totalPrice,
-            strong: true,
-            highlight: true,
-          ),
-          if (!isFree) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.amber.shade50,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.amber.shade200),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline,
-                      color: Colors.amber.shade800, size: 18),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      S.of(context).warrantyDepositNote,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        color: Colors.amber.shade900,
-                      ),
-                    ),
+          const SizedBox(height: 14),
+
+          _buildInvoiceRow('Tạm tính (dịch vụ phát sinh)', extraTotal,
+              isNegative: false),
+
+          const SizedBox(height: 6),
+          const Divider(height: 1, color: Color(0xFFF0F0F0)),
+          const SizedBox(height: 14),
+
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Tổng thanh toán',
+                  style: TextStyle(
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
                   ),
-                ],
-              ),
+                ),
+                Text(
+                  PriceFormatter.format(totalPrice),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFE02B6D),
+                    fontSize: 20,
+                  ),
+                ),
+              ],
             ),
+          ),
+
+          if (state.selectedBranch != null && totalPrice > 0) ...[
+            const SizedBox(height: 4),
+            const Divider(height: 1, color: Color(0xFFF0F0F0)),
+            const SizedBox(height: 14),
+            _buildDepositDetails(totalPrice, initialDepositAmount, walletDeduction, state),
           ],
         ],
       ),
     );
   }
 
-  List<Widget> _buildExtraServiceRows(WarrantyBookingState state) {
+  List<PaymentTableItem> _paymentTableItems(WarrantyBookingState state) {
+    final items = <PaymentTableItem>[];
+    for (final item in state.selectedWarrantyItems) {
+      final names = [
+        item['nailVariantName']?.toString().trim() ?? '',
+        item['customerNailName']?.toString().trim() ?? '',
+        item['serviceName']?.toString().trim() ?? '',
+      ].where((n) => n.isNotEmpty).toList();
+      final name = names.isEmpty
+          ? S.of(context).bookingWarrantyDefault
+          : names.join(' & ');
+      final qty = (item['quantity'] is num)
+          ? (item['quantity'] as num).toInt()
+          : (int.tryParse(item['quantity']?.toString() ?? '1') ?? 1);
+      items.add(
+        PaymentTableItem(
+          name: '$name (Bảo hành)',
+          quantity: qty,
+          unitPrice: 0,
+        ),
+      );
+    }
+
     final cubit = context.read<WarrantyBookingCubit>();
     final counts = <String, int>{};
-    for (final id in state.selectedExtraServices.whereType<String>()) {
-      counts[id] = (counts[id] ?? 0) + 1;
+    for (final serviceId in state.selectedExtraServices.whereType<String>()) {
+      counts[serviceId] = (counts[serviceId] ?? 0) + 1;
     }
-    return counts.entries.map((entry) {
-      final id = entry.key;
-      final count = entry.value;
-      final unit = cubit.servicePriceById(id);
-      final name = cubit.serviceNameById(id);
-      final lineTotal = unit * count;
-      final label = count > 1 ? '$name × $count' : name;
-      return _buildPaymentRow(
-        S.of(context).bookingExtraService(label),
-        lineTotal,
-        muted: true,
+    for (final entry in counts.entries) {
+      final unit = cubit.servicePriceById(entry.key);
+      items.add(
+        PaymentTableItem(
+          name: cubit.serviceNameById(entry.key),
+          quantity: entry.value,
+          unitPrice: unit,
+        ),
       );
-    }).toList();
+    }
+    return items;
   }
 
-  Widget _buildPaymentRow(
+  Widget _buildInvoiceRow(String label, num amount, {required bool isNegative}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13.5,
+              color: isNegative ? Colors.grey.shade700 : Colors.grey.shade600,
+              fontWeight: isNegative ? FontWeight.w500 : FontWeight.normal,
+            ),
+          ),
+          Text(
+            isNegative
+                ? '-${PriceFormatter.format(amount)}'
+                : PriceFormatter.format(amount),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isNegative
+                  ? const Color(0xFFE02B6D)
+                  : AppColors.textPrimary,
+              fontSize: 13.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInvoiceRowText(
     String label,
-    num price, {
+    String valueText, {
     bool strong = false,
     bool muted = false,
-    bool highlight = false,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: highlight ? 16 : 14,
-                  color: muted ? Colors.grey : AppColors.textPrimary,
-                  fontWeight: strong ? FontWeight.bold : FontWeight.normal,
-                ),
-              ),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13.5,
+              color: muted ? Colors.grey.shade600 : AppColors.textPrimary,
+              fontWeight: strong ? FontWeight.bold : FontWeight.normal,
             ),
           ),
           Text(
-            PriceFormatter.format(price),
+            valueText,
             style: TextStyle(
               fontWeight: strong ? FontWeight.bold : FontWeight.w600,
-              color: price == 0
-                  ? Colors.green
-                  : (highlight ? AppColors.primary : AppColors.textPrimary),
-              fontSize: highlight ? 18 : 14,
+              color: AppColors.textPrimary,
+              fontSize: 13.5,
             ),
           ),
         ],
@@ -1403,134 +1927,256 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
     );
   }
 
-  Widget _buildSummaryCard({
-    required IconData icon,
-    required String title,
-    required String value,
-    String? subtitle,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade100),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: AppColors.primary, size: 18),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                ),
-                if (subtitle != null && subtitle.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      color: Colors.grey.shade700,
-                      fontSize: 12.5,
-                    ),
-                  ),
-                ],
-              ],
-            ),
+  Widget _buildDepositDetails(
+    int totalPrice,
+    int initialDepositAmount,
+    int walletDeduction,
+    WarrantyBookingState state,
+  ) {
+    final depositInfo = PriceFormatter.getDepositInfo(
+      state.selectedBranch?['depositConfig'],
+      totalPrice,
+    );
+    final depositConfigText = depositInfo['displayText'] as String;
+    final depositAmountToPay =
+        (initialDepositAmount - walletDeduction).clamp(0, initialDepositAmount);
+    final remainingAmountAtSalon =
+        (totalPrice - walletDeduction).clamp(0, totalPrice);
+
+    return Column(
+      children: [
+        _buildInvoiceRowText(
+          S.of(context).bookingDepositRatioLabel,
+          depositConfigText,
+          muted: true,
+        ),
+        if (_useWalletBalance && walletDeduction > 0) ...[
+          const SizedBox(height: 8),
+          _buildInvoiceRow(
+            'Khấu trừ Ví Nailify (cọc)',
+            walletDeduction,
+            isNegative: true,
           ),
         ],
-      ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                S.of(context).bookingDepositAmountLabel,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                PriceFormatter.format(depositAmountToPay),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFE02B6D),
+                  fontSize: 17,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (_useWalletBalance && walletDeduction > 0) ...[
+          const SizedBox(height: 8),
+          _buildInvoiceRowText(
+            'Còn lại trả tại Salon:',
+            PriceFormatter.format(remainingAmountAtSalon),
+            muted: true,
+            strong: true,
+          ),
+        ],
+      ],
     );
   }
 
   Widget _buildBottomBar(bool canProceed, WarrantyBookingState state) {
+    final cubit = context.read<WarrantyBookingCubit>();
     final isLastStep = _currentStep == 3;
-    final totalPrice = context.read<WarrantyBookingCubit>().estimatedTotalPrice;
-    return SafeArea(
-      top: false,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFDFBF7),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 12,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: ElevatedButton(
-            onPressed: (canProceed && !state.isSubmitting)
-                ? () {
-                    if (isLastStep) {
-                      _handleSubmit();
-                    } else {
-                      _pageController.nextPage(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      );
-                    }
-                  }
-                : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              disabledBackgroundColor: Colors.grey.shade300,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 0,
-            ),
-            child: state.isSubmitting
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2.5,
-                    ),
-                  )
-                : Text(
-                    isLastStep
-                        ? (totalPrice == 0
-                            ? S.of(context).warrantyConfirmBtn
-                            : S.of(context).warrantyConfirmDepositBtn)
-                        : S.of(context).bookingContinueBtn,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
+    final totalPrice = cubit.estimatedTotalPrice;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 14,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if ((_currentStep == 1 || _currentStep == 2) && totalPrice > 0) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    S.of(context).bookingEstimatedTotal,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade600,
                     ),
                   ),
-          ),
+                  Text(
+                    PriceFormatter.format(totalPrice),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
+            Row(
+              children: [
+                if (_currentStep > 0) ...[
+                  TextButton.icon(
+                    onPressed: state.isSubmitting
+                        ? null
+                        : () {
+                            _pageController.previousPage(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          },
+                    icon: const Icon(
+                      Icons.arrow_back_rounded,
+                      size: 18,
+                      color: AppColors.textPrimary,
+                    ),
+                    label: const Text(
+                      'Quay lại',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14.5,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 14,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Expanded(
+                  child: Container(
+                    height: 50,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(25),
+                      gradient: LinearGradient(
+                        colors: (!canProceed || state.isSubmitting)
+                            ? [Colors.grey.shade400, Colors.grey.shade500]
+                            : [
+                                const Color(0xFFFF4081),
+                                const Color(0xFFD81B60),
+                              ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      boxShadow: [
+                        if (canProceed && !state.isSubmitting)
+                          BoxShadow(
+                            color: const Color(0xFFD81B60).withValues(alpha: 0.35),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                      ],
+                    ),
+                    child: ElevatedButton(
+                      onPressed: (canProceed && !state.isSubmitting)
+                          ? () {
+                              if (isLastStep) {
+                                _handleSubmit();
+                              } else {
+                                _pageController.nextPage(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                );
+                              }
+                            }
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        foregroundColor: Colors.white,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: state.isSubmitting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2.5,
+                              ),
+                            )
+                          : Text(
+                              isLastStep
+                                  ? (totalPrice == 0
+                                      ? S.of(context).warrantyConfirmBtn
+                                      : 'Thanh toán cọc')
+                                  : 'Tiếp tục',
+                              style: const TextStyle(
+                                fontSize: 15.5,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
+}
+
+class _HorizontalDashedLinePainter extends CustomPainter {
+  final Color color;
+
+  _HorizontalDashedLinePainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const dashWidth = 5.0;
+    const dashSpace = 3.0;
+    double startX = 0;
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1;
+    while (startX < size.width) {
+      canvas.drawLine(
+        Offset(startX, 0),
+        Offset(startX + dashWidth, 0),
+        paint,
+      );
+      startX += dashWidth + dashSpace;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

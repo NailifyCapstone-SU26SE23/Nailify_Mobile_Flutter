@@ -112,19 +112,39 @@ class HomeReviewItem {
       }
     }
 
-    final rawScore = json['overallScore'] ?? json['stars'] ?? json['rating'] ?? json['score'] ?? 5;
+    final rawScore = json['overallScore'] ?? json['OverallScore'] ?? json['stars'] ?? json['rating'] ?? json['score'] ?? 5;
     final int scoreInt = (rawScore is num) ? rawScore.round() : int.tryParse(rawScore.toString()) ?? 5;
 
     final img = (json['imageUrl'] ?? json['image'] ?? json['ImageUrl'] ?? json['Image'])?.toString().trim();
     final imageUrl = (img != null && img.isNotEmpty) ? img : null;
 
+    final rawDate = json['createdAt'] ?? json['CreatedAt'] ?? json['createdDate'] ?? json['CreatedDate'];
+    String timeAgoStr = '2 ngày trước';
+    if (rawDate != null) {
+      final parsedDate = DateTime.tryParse(rawDate.toString());
+      if (parsedDate != null) {
+        final diff = DateTime.now().difference(parsedDate.toLocal());
+        if (diff.inDays > 30) {
+          timeAgoStr = '${(diff.inDays / 30).floor()} tháng trước';
+        } else if (diff.inDays > 0) {
+          timeAgoStr = '${diff.inDays} ngày trước';
+        } else if (diff.inHours > 0) {
+          timeAgoStr = '${diff.inHours} giờ trước';
+        } else if (diff.inMinutes > 0) {
+          timeAgoStr = '${diff.inMinutes} phút trước';
+        } else {
+          timeAgoStr = 'Vừa xong';
+        }
+      }
+    }
+
     return HomeReviewItem(
-      id: json['id']?.toString() ?? json['bookingRatingId']?.toString() ?? '',
+      id: json['id']?.toString() ?? json['bookingRatingId']?.toString() ?? json['BookingRatingId']?.toString() ?? '',
       name: fullName,
       initials: init,
-      review: json['comment'] as String? ?? json['review'] as String? ?? json['content'] as String? ?? 'Dịch vụ rất tuyệt vời!',
+      review: json['comment'] as String? ?? json['Comment'] as String? ?? json['review'] as String? ?? json['content'] as String? ?? 'Dịch vụ rất tuyệt vời!',
       stars: scoreInt.clamp(1, 5),
-      timeAgo: json['createdDate'] != null ? 'Gần đây' : '2 ngày trước',
+      timeAgo: timeAgoStr,
       imageUrl: imageUrl,
     );
   }

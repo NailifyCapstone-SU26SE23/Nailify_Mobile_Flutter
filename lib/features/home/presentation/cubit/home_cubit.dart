@@ -10,6 +10,7 @@ class HomeCubit extends Cubit<HomeState> {
   HomeCubit(this._repository) : super(const HomeState());
 
   Future<void> loadHomeData() async {
+    if (isClosed) return;
     emit(state.copyWith(status: HomeStatus.loading));
 
     try {
@@ -20,6 +21,7 @@ class HomeCubit extends Cubit<HomeState> {
         _repository.getNearestSalon(),
       ]);
 
+      if (isClosed) return;
       final servicesList = results[0] as List<HomeCategoryItem>;
       final galleryList = results[1] as List<HomeGalleryItem>;
       final reviewsList = results[2] as List<HomeReviewItem>;
@@ -36,6 +38,7 @@ class HomeCubit extends Cubit<HomeState> {
       );
 
     } catch (e) {
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: HomeStatus.error,
@@ -50,6 +53,7 @@ class HomeCubit extends Cubit<HomeState> {
     required bool isFavorited,
     int? favoriteNailId,
   }) {
+    if (isClosed) return;
     final updatedGallery = state.gallery.map((item) {
       if (item.id != nailDesignId) return item;
       return item.copyWith(

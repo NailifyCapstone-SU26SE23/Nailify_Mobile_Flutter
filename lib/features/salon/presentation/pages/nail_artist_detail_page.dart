@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/utils/auth_guard.dart';
+import '../../../../core/utils/duration_formatter.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../../../generated/l10n.dart';
 import '../../../nail_booking/data/datasources/capable_nails_api_service.dart';
@@ -166,6 +168,76 @@ class _NailArtistDetailPageState extends State<NailArtistDetailPage> {
           );
         },
       ),
+      bottomNavigationBar: FutureBuilder<_NailArtistDetailData>(
+        future: _detailFuture,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) return const SizedBox.shrink();
+          final artist = snapshot.data!.artist;
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 10,
+                  offset: const Offset(0, -3),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                  ),
+                  onPressed: () {
+                    AuthGuard.check(context, () {
+                      context.push('/home-booking', extra: {
+                        'salon': {
+                          'salonId': artist.salonId,
+                          'name': 'Salon',
+                        },
+                        'salonId': artist.salonId,
+                        'artist': {
+                          'nailArtistId': artist.nailArtistId,
+                          'fullName': artist.fullName,
+                          'firstName': artist.firstName,
+                          'lastName': artist.lastName,
+                          'salonId': artist.salonId,
+                          'avatarUrl': artist.avatarUrl,
+                        },
+                        'artistId': artist.nailArtistId,
+                      });
+                    });
+                  },
+                  icon: const Icon(
+                    Icons.calendar_month_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                  label: Text(
+                    'Đặt Lịch Với ${artist.fullName}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }
@@ -257,7 +329,8 @@ class _NailVariantTile extends StatelessWidget {
         '${l10n.nailShapeLabel}: ${variant.nailShape!.name}',
       if (variant.nailSurface != null)
         '${l10n.nailSurfaceLabel}: ${variant.nailSurface!.name}',
-      if (variant.duration != null) l10n.minutesLabel('${variant.duration}'),
+      if (variant.duration != null)
+        DurationFormatter.format(variant.duration, context: context),
     ];
 
     return Container(

@@ -274,8 +274,8 @@ class _ServiceChoiceStepState extends State<ServiceChoiceStep>
       variant: variant,
       initialSelection:
           widget.selectedNailVariant?.nailVariantId == variant.nailVariantId
-              ? widget.selectedShapeMethod
-              : null,
+          ? widget.selectedShapeMethod
+          : null,
     );
     if (shapeMethod != null && mounted) {
       widget.onNailVariantChanged(variant);
@@ -543,7 +543,10 @@ class _NailVariantCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        DurationFormatter.format(variant.duration ?? 0),
+                        DurationFormatter.format(
+                          variant.duration ?? 0,
+                          context: context,
+                        ),
                         style: TextStyle(
                           fontSize: 10,
                           color: Colors.grey.shade500,

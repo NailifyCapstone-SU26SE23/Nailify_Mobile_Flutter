@@ -155,15 +155,17 @@ class WarrantyBookingState extends Equatable {
       sourceBookingDate: sourceBookingDate ?? this.sourceBookingDate,
       isWithinWarrantyWindow:
           isWithinWarrantyWindow ?? this.isWithinWarrantyWindow,
-      selectedBranch:
-          clearBranch ? null : (selectedBranch ?? this.selectedBranch),
+      selectedBranch: clearBranch
+          ? null
+          : (selectedBranch ?? this.selectedBranch),
       warrantyItems: warrantyItems ?? this.warrantyItems,
       selectedWarrantyItems:
           selectedWarrantyItems ?? this.selectedWarrantyItems,
       selectedExtraServices:
           selectedExtraServices ?? this.selectedExtraServices,
-      selectedStylist:
-          clearStylist ? null : (selectedStylist ?? this.selectedStylist),
+      selectedStylist: clearStylist
+          ? null
+          : (selectedStylist ?? this.selectedStylist),
       noArtistSelected: noArtistSelected ?? this.noArtistSelected,
       selectedDate: clearDate ? null : (selectedDate ?? this.selectedDate),
       selectedTime: clearTime ? null : (selectedTime ?? this.selectedTime),
@@ -180,29 +182,29 @@ class WarrantyBookingState extends Equatable {
 
   @override
   List<Object?> get props => [
-        artistsStatus,
-        servicesStatus,
-        timeSlotsStatus,
-        artists,
-        services,
-        sourceBookingId,
-        sourceArtistId,
-        sourceArtistName,
-        sourceBookingDate,
-        isWithinWarrantyWindow,
-        selectedBranch,
-        warrantyItems,
-        selectedWarrantyItems,
-        selectedExtraServices,
-        selectedStylist,
-        noArtistSelected,
-        selectedDate,
-        selectedTime,
-        timeSlotsLoadError,
-        isSubmitting,
-        errorMessage,
-        holdToken,
-        holdRemainingSeconds,
-        isHolding,
-      ];
+    artistsStatus,
+    servicesStatus,
+    timeSlotsStatus,
+    artists,
+    services,
+    sourceBookingId,
+    sourceArtistId,
+    sourceArtistName,
+    sourceBookingDate,
+    isWithinWarrantyWindow,
+    selectedBranch,
+    warrantyItems,
+    selectedWarrantyItems,
+    selectedExtraServices,
+    selectedStylist,
+    noArtistSelected,
+    selectedDate,
+    selectedTime,
+    timeSlotsLoadError,
+    isSubmitting,
+    errorMessage,
+    holdToken,
+    holdRemainingSeconds,
+    isHolding,
+  ];
 }

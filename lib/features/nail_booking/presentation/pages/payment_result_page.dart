@@ -17,7 +17,28 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage> {
   final BookingApiService _bookingApiService = BookingApiService();
   bool _isLoadingBooking = false;
 
+  bool get _isWalletDeposit {
+    final type = widget.paymentData['paymentType']?.toString().toLowerCase() ?? '';
+    final policy = widget.paymentData['policy']?.toString().toLowerCase() ?? '';
+    final rawBookingId = widget.paymentData['bookingId'];
+    final isBooking = rawBookingId != null &&
+        rawBookingId.toString().trim().isNotEmpty;
+    if (isBooking) return false;
+    if (type.contains('wallet') ||
+        type.contains('deposit') ||
+        policy.contains('ví') ||
+        policy.contains('nap')) {
+      return true;
+    }
+    return !isBooking;
+  }
+
   Future<void> _openBookingDetail() async {
+    if (_isWalletDeposit) {
+      context.go('/profile/wallet');
+      return;
+    }
+
     if (_isLoadingBooking) return;
 
     final directBookingId = widget.paymentData['bookingId']?.toString() ?? '';
@@ -71,9 +92,11 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage> {
     return _PaymentResultView(
       icon: Icons.check_circle,
       iconColor: Colors.green,
-      title: 'Thanh toán thành công',
-      message: 'Giao dịch đã được xác nhận. Cảm ơn bạn đã thanh toán.',
-      primaryLabel: 'Xem lịch hẹn',
+      title: _isWalletDeposit ? 'Nạp tiền ví thành công!' : 'Thanh toán thành công',
+      message: _isWalletDeposit
+          ? 'Số dư ví tiền mặt của bạn đã được cập nhật thành công.'
+          : 'Giao dịch đã được xác nhận. Cảm ơn bạn đã thanh toán.',
+      primaryLabel: _isWalletDeposit ? 'Về Ví của tôi' : 'Xem lịch hẹn',
       isLoading: _isLoadingBooking,
       onPrimaryPressed: _openBookingDetail,
     );

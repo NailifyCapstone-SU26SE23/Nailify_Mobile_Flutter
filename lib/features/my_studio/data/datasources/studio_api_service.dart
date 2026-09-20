@@ -53,7 +53,7 @@ class StudioApiService {
   }
 
   /// Phản hồi đồng ý hoặc từ chối báo giá mẫu nail custom
-  /// POST /api/CustomerNailRequests/{id}/respond-quote
+  /// POST /api/CustomerNails/requests/{id}/customer-respond-quote
   Future<Map<String, dynamic>> respondToQuote(
     String customerNailRequestId, {
     required bool isAccepted,
@@ -61,7 +61,7 @@ class StudioApiService {
   }) async {
     try {
       final response = await _apiClient.post(
-        '/CustomerNailRequests/$customerNailRequestId/respond-quote',
+        '/CustomerNails/requests/$customerNailRequestId/customer-respond-quote',
         data: {
           'isAccepted': isAccepted,
           if (rejectReason != null && rejectReason.isNotEmpty)

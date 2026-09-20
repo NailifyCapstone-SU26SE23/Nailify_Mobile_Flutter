@@ -163,21 +163,41 @@ class AppRouter {
       GoRoute(
         path: '/payment-qr',
         builder: (context, state) {
-          final paymentData = state.extra as Map<String, dynamic>? ?? {};
+          final extra = state.extra;
+          Map<String, dynamic> paymentData = {};
+          if (extra is Map<String, dynamic>) {
+            paymentData = extra;
+          } else if (extra is Map) {
+            paymentData = Map<String, dynamic>.from(extra);
+          } else if (extra is String && extra.isNotEmpty) {
+            paymentData = {'checkoutUrl': extra, 'paymentUrl': extra, 'qrCode': ''};
+          }
           return PaymentQrPage(paymentData: paymentData);
         },
       ),
       GoRoute(
         path: '/payment-success',
         builder: (context, state) {
-          final paymentData = state.extra as Map<String, dynamic>? ?? {};
+          final extra = state.extra;
+          Map<String, dynamic> paymentData = {};
+          if (extra is Map<String, dynamic>) {
+            paymentData = extra;
+          } else if (extra is Map) {
+            paymentData = Map<String, dynamic>.from(extra);
+          }
           return PaymentSuccessPage(paymentData: paymentData);
         },
       ),
       GoRoute(
         path: '/payment-cancelled',
         builder: (context, state) {
-          final paymentData = state.extra as Map<String, dynamic>? ?? {};
+          final extra = state.extra;
+          Map<String, dynamic> paymentData = {};
+          if (extra is Map<String, dynamic>) {
+            paymentData = extra;
+          } else if (extra is Map) {
+            paymentData = Map<String, dynamic>.from(extra);
+          }
           return PaymentCancelledPage(paymentData: paymentData);
         },
       ),

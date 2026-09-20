@@ -11,9 +11,14 @@ import '../../../../generated/l10n_x.dart';
 import '../../data/models/wallet_voucher_model.dart';
 import '../../data/repositories/wallet_repository.dart';
 import '../cubit/wallet_overview_cubit.dart';
+import '../widgets/cash_wallet_card.dart';
+import '../widgets/convert_points_sheet.dart';
+import '../widgets/deposit_sheet.dart';
 import '../widgets/empty_wallet_state.dart';
 import '../widgets/loyalty_tier_card.dart';
 import '../widgets/wallet_balance_card.dart';
+import '../widgets/withdraw_sheet.dart';
+import 'wallet_transactions_page.dart';
 
 class WalletOverviewPage extends StatelessWidget {
   const WalletOverviewPage({super.key});
@@ -57,6 +62,75 @@ class _WalletOverviewViewState extends State<_WalletOverviewView> {
     super.dispose();
   }
 
+  void _openDepositSheet(BuildContext context) {
+    DepositSheet.show(
+      context,
+      onConfirmDeposit: (amount) async {
+        final repo = getIt<WalletRepository>();
+        final paymentData = await repo.requestDeposit(amount);
+        if (!mounted) return;
+
+        if (paymentData.isNotEmpty && context.mounted) {
+          final Map<String, dynamic> enrichedData = Map<String, dynamic>.from(paymentData);
+          enrichedData['paymentType'] = 'WalletDeposit';
+          enrichedData['policy'] = 'Nạp tiền vào ví cá nhân';
+          context.push('/payment-qr', extra: enrichedData);
+        }
+      },
+    );
+  }
+
+  void _openWithdrawSheet(BuildContext context, double availableBalance) {
+    final cubit = context.read<WalletOverviewCubit>();
+    WithdrawSheet.show(
+      context,
+      availableBalance: availableBalance,
+      onConfirmWithdraw: ({
+        required double amount,
+        required String bankName,
+        required String bankCode,
+        required String accountNumber,
+        required String accountHolderName,
+      }) async {
+        final repo = getIt<WalletRepository>();
+        final success = await repo.requestWithdrawal(
+          amount: amount,
+          bankName: bankName,
+          bankCode: bankCode,
+          accountNumber: accountNumber,
+          accountHolderName: accountHolderName,
+        );
+        if (mounted && success) {
+          cubit.refresh();
+        }
+        return success;
+      },
+    );
+  }
+
+  void _openConvertSheet(BuildContext context, double availableBalance) {
+    final cubit = context.read<WalletOverviewCubit>();
+    ConvertPointsSheet.show(
+      context,
+      availableBalance: availableBalance,
+      onConfirmConvert: (moneyAmount) async {
+        final repo = getIt<WalletRepository>();
+        final msg = await repo.convertMoneyToPoints(moneyAmount);
+        if (mounted) {
+          cubit.refresh();
+        }
+        return msg;
+      },
+    );
+  }
+
+  void _openTransactionsPage(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const WalletTransactionsPage()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -75,10 +149,10 @@ class _WalletOverviewViewState extends State<_WalletOverviewView> {
         elevation: 0,
         actions: [
           IconButton(
-            tooltip: context.l10n.pointsHistoryTitle,
-            onPressed: () => context.push('/profile/wallet/transactions'),
+            tooltip: 'Lịch sử ví tiền mặt',
+            onPressed: () => _openTransactionsPage(context),
             icon: const Icon(
-              Icons.history_rounded,
+              Icons.receipt_long_rounded,
               color: AppColors.primaryDark,
             ),
           ),
@@ -120,6 +194,12 @@ class _WalletOverviewViewState extends State<_WalletOverviewView> {
           if (snapshot == null) {
             return const SizedBox.shrink();
           }
+
+          final cash = snapshot.cashSummary;
+          final balance = cash?.balance ?? 0.0;
+          final frozenBalance = cash?.frozenBalance ?? 0.0;
+          final availableBalance = cash?.availableBalance ?? (balance - frozenBalance);
+
           return RefreshIndicator(
             onRefresh: () => context.read<WalletOverviewCubit>().refresh(),
             child: SingleChildScrollView(
@@ -128,6 +208,20 @@ class _WalletOverviewViewState extends State<_WalletOverviewView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Digital Cash Wallet Card (Sleek modern UI)
+                  CashWalletCard(
+                    balance: balance,
+                    frozenBalance: frozenBalance,
+                    loyaltyPoints: snapshot.loyalty.loyaltyPoint,
+                    loyaltyTierName: snapshot.loyalty.loyaltyTier?.name,
+                    onDepositPressed: () => _openDepositSheet(context),
+                    onWithdrawPressed: () => _openWithdrawSheet(context, availableBalance),
+                    onConvertPressed: () => _openConvertSheet(context, availableBalance),
+                    onHistoryPressed: () => _openTransactionsPage(context),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Loyalty Member Tier Progress
                   LoyaltyTierCard(
                     tier: snapshot.loyalty.loyaltyTier,
                     lifetimePoints: snapshot.loyalty.lifetimePoints,
@@ -136,11 +230,14 @@ class _WalletOverviewViewState extends State<_WalletOverviewView> {
                     hasNextTier: snapshot.loyalty.hasNextTier,
                   ),
                   const SizedBox(height: 16),
+
+                  // Voucher Balance Card
                   WalletBalanceCard(
                     loyaltyPoints: snapshot.loyalty.loyaltyPoint,
                     usableVoucherCount: snapshot.usableVoucherCount,
                   ),
                   const SizedBox(height: 20),
+
                   if (snapshot.expiringSoon.isNotEmpty) ...[
                     Row(
                       children: [

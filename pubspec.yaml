@@ -45,6 +45,7 @@ dependencies:
   get_it: ^9.2.1
   image_picker: ^1.2.2
   qr_flutter: ^4.1.0
+  url_launcher: ^6.3.0
 
   # AI & Snapshot Try-on dependencies
   onnxruntime: ^1.4.1

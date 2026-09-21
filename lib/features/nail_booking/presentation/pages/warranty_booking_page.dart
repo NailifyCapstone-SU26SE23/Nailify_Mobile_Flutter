@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/utils/duration_formatter.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../../../generated/l10n.dart';
 
@@ -64,28 +63,25 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
   double? _walletAvailableBalance;
   bool _isLoadingWallet = false;
 
-  bool _isLoadingPromotions = false;
-  List<WalletVoucherModel> _promotions = [];
+  final bool _isLoadingPromotions = false;
+  final List<WalletVoucherModel> _promotions = [];
   int? _selectedPromotionId;
 
   List<Map<String, dynamic>> get _bookingSteps => [
-        {
-          'title': S.of(context).warrantyStepArtist,
-          'icon': Icons.person_pin_rounded,
-        },
-        {
-          'title': S.of(context).warrantyStepServices,
-          'icon': Icons.spa_rounded,
-        },
-        {
-          'title': S.of(context).warrantyStepSchedule,
-          'icon': Icons.calendar_month_rounded,
-        },
-        {
-          'title': S.of(context).warrantyStepConfirm,
-          'icon': Icons.check_circle_rounded,
-        },
-      ];
+    {
+      'title': S.of(context).warrantyStepArtist,
+      'icon': Icons.person_pin_rounded,
+    },
+    {'title': S.of(context).warrantyStepServices, 'icon': Icons.spa_rounded},
+    {
+      'title': S.of(context).warrantyStepSchedule,
+      'icon': Icons.calendar_month_rounded,
+    },
+    {
+      'title': S.of(context).warrantyStepConfirm,
+      'icon': Icons.check_circle_rounded,
+    },
+  ];
 
   @override
   void initState() {
@@ -95,8 +91,8 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<WarrantyBookingCubit>().loadWarrantyContext(
-            widget.warrantyData,
-          );
+        widget.warrantyData,
+      );
       _fetchWalletBalance();
     });
   }
@@ -107,8 +103,8 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
       final response = await _apiService.getCustomerWalletSummary();
       if (!mounted) return;
       setState(() {
-        _walletAvailableBalance =
-            (response?['availableBalance'] as num?)?.toDouble();
+        _walletAvailableBalance = (response?['availableBalance'] as num?)
+            ?.toDouble();
         _isLoadingWallet = false;
       });
     } catch (_) {
@@ -147,8 +143,8 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
   // ── Artist step handlers ─────────────────────────────────────────
   void _handleStylistSelected(Map<String, dynamic>? stylist) {
     setState(() {
-      _selectedStylistId = stylist?['nailArtistId']?.toString() ??
-          stylist?['id']?.toString();
+      _selectedStylistId =
+          stylist?['nailArtistId']?.toString() ?? stylist?['id']?.toString();
       _noArtistSelected = stylist == null;
       _selectedTime = null;
       _timeSlots = [];
@@ -187,7 +183,7 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
     final artistId = _noArtistSelected
         ? null
         : (_selectedStylistId ??
-            state.selectedStylist?['nailArtistId']?.toString());
+              state.selectedStylist?['nailArtistId']?.toString());
     if (salonId.isEmpty) return;
     if (!_noArtistSelected && (artistId == null || artistId.isEmpty)) return;
 
@@ -219,7 +215,8 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
     });
     final cubit = context.read<WarrantyBookingCubit>();
     final state = cubit.state;
-    final stylistId = _selectedStylistId ??
+    final stylistId =
+        _selectedStylistId ??
         state.selectedStylist?['nailArtistId']?.toString();
     final artistObj = _noArtistSelected
         ? null
@@ -259,8 +256,7 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
     if (id == null) return null;
     for (final a in artists) {
       if (a is Map &&
-          (a['nailArtistId']?.toString() == id ||
-              a['id']?.toString() == id)) {
+          (a['nailArtistId']?.toString() == id || a['id']?.toString() == id)) {
         return Map<String, dynamic>.from(a);
       }
     }
@@ -334,8 +330,9 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
     try {
       final result = await cubit.submitWarrantyBooking(
         useWalletBalance: _useWalletBalance,
-        selectedPromotionIds:
-            _selectedPromotionId != null ? [_selectedPromotionId!] : null,
+        selectedPromotionIds: _selectedPromotionId != null
+            ? [_selectedPromotionId!]
+            : null,
       );
       if (!mounted) return;
       final state = cubit.state;
@@ -376,7 +373,8 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
     final items = state.selectedWarrantyItems;
     if (items.isEmpty) return S.of(context).warrantyServiceDefault;
     final first = items.first;
-    final name = first['nailVariantName']?.toString().trim() ??
+    final name =
+        first['nailVariantName']?.toString().trim() ??
         first['customerNailName']?.toString().trim() ??
         first['serviceName']?.toString().trim() ??
         '';
@@ -515,10 +513,7 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
             Text(
               S.of(context).warrantyExpiredDesc,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade700,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
             ),
             const SizedBox(height: 24),
             SizedBox(
@@ -585,8 +580,7 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
                       boxShadow: isActive
                           ? [
                               BoxShadow(
-                                color:
-                                    AppColors.primary.withValues(alpha: 0.4),
+                                color: AppColors.primary.withValues(alpha: 0.4),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -607,8 +601,7 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 10.5,
-                      fontWeight:
-                          isActive ? FontWeight.bold : FontWeight.w500,
+                      fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
                       color: isActive
                           ? AppColors.primaryDark
                           : AppColors.textSecondary,
@@ -625,10 +618,8 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
 
   Widget _buildHoldCountdownBanner() {
     if (!_isHolding) return const SizedBox.shrink();
-    final minutes =
-        (_holdRemainingSeconds ~/ 60).toString().padLeft(2, '0');
-    final seconds =
-        (_holdRemainingSeconds % 60).toString().padLeft(2, '0');
+    final minutes = (_holdRemainingSeconds ~/ 60).toString().padLeft(2, '0');
+    final seconds = (_holdRemainingSeconds % 60).toString().padLeft(2, '0');
     final isUrgent = _holdRemainingSeconds <= 60;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -701,11 +692,7 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.cloud_off_rounded,
-              size: 64,
-              color: Colors.grey,
-            ),
+            const Icon(Icons.cloud_off_rounded, size: 64, color: Colors.grey),
             const SizedBox(height: 16),
             Text(
               message,
@@ -766,7 +753,9 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
               ),
             )
           else
-            ...state.warrantyItems.map((item) => _buildWarrantyItemTile(item, state)),
+            ...state.warrantyItems.map(
+              (item) => _buildWarrantyItemTile(item, state),
+            ),
           const SizedBox(height: 24),
           _buildExtraServicesSection(state),
         ],
@@ -791,8 +780,7 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
       return true;
     }
 
-    final isSelected =
-        state.selectedWarrantyItems.any((s) => isSame(s, item));
+    final isSelected = state.selectedWarrantyItems.any((s) => isSame(s, item));
 
     final names = [
       item['nailVariantName']?.toString().trim() ?? '',
@@ -839,9 +827,9 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
         ),
         onChanged: (val) {
           context.read<WarrantyBookingCubit>().toggleWarrantyItem(
-                item,
-                val == true,
-              );
+            item,
+            val == true,
+          );
         },
       ),
     );
@@ -906,11 +894,11 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
               ),
               if (counts.isNotEmpty)
                 Text(
-                  S.of(context).bookingSelectedCount(
-                    counts.values
-                        .fold<int>(0, (s, c) => s + c)
-                        .toString(),
-                  ),
+                  S
+                      .of(context)
+                      .bookingSelectedCount(
+                        counts.values.fold<int>(0, (s, c) => s + c).toString(),
+                      ),
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
@@ -930,7 +918,9 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
           // ── Danh sách dịch vụ đã chọn (chip-style) ─────────────────
           if (counts.isNotEmpty) ...[
             const SizedBox(height: 12),
-            ...counts.entries.map((e) => _buildSelectedServiceChip(e.key, e.value)),
+            ...counts.entries.map(
+              (e) => _buildSelectedServiceChip(e.key, e.value),
+            ),
           ],
         ],
       ),
@@ -1030,18 +1020,27 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.remove_circle_outline_rounded,
-                size: 22, color: AppColors.primary),
+            icon: const Icon(
+              Icons.remove_circle_outline_rounded,
+              size: 22,
+              color: AppColors.primary,
+            ),
             onPressed: () => _handleExtraServiceDecrement(serviceId),
           ),
           IconButton(
-            icon: const Icon(Icons.add_circle_rounded,
-                size: 22, color: AppColors.primary),
+            icon: const Icon(
+              Icons.add_circle_rounded,
+              size: 22,
+              color: AppColors.primary,
+            ),
             onPressed: () => _handleExtraServiceIncrement(serviceId),
           ),
           IconButton(
-            icon: const Icon(Icons.delete_outline_rounded,
-                size: 20, color: Colors.red),
+            icon: const Icon(
+              Icons.delete_outline_rounded,
+              size: 20,
+              color: Colors.red,
+            ),
             onPressed: () => _handleExtraServiceRemoveAll(serviceId),
           ),
         ],
@@ -1098,8 +1097,7 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
               const Divider(color: Color(0xFFFFF0F5)),
               ConstrainedBox(
                 constraints: BoxConstraints(
-                  maxHeight:
-                      MediaQuery.of(sheetCtx).size.height * 0.5,
+                  maxHeight: MediaQuery.of(sheetCtx).size.height * 0.5,
                 ),
                 child: Material(
                   color: Colors.transparent,
@@ -1116,13 +1114,12 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
                       final s = state.services[index];
                       final sId =
                           s['serviceId']?.toString() ??
-                              s['id']?.toString() ??
-                              '';
+                          s['id']?.toString() ??
+                          '';
                       final name = cubit.serviceNameById(sId);
                       final price = cubit.servicePriceById(sId);
                       return ListTile(
-                        contentPadding:
-                            const EdgeInsets.symmetric(vertical: 8),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
                         title: Text(
                           name,
                           style: const TextStyle(
@@ -1189,7 +1186,8 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
               _timeSlots.isEmpty &&
               _selectedDate != null)
             _buildRetryView(
-              message: state.timeSlotsLoadError ??
+              message:
+                  state.timeSlotsLoadError ??
                   'Không tải được khung giờ. Vui lòng thử lại.',
               onRetry: _handleRetryTimes,
             )
@@ -1204,7 +1202,7 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
               artistId: _noArtistSelected
                   ? null
                   : (_selectedStylistId ??
-                      state.selectedStylist?['nailArtistId']),
+                        state.selectedStylist?['nailArtistId']),
               onTimeChanged: _handleTimeChanged,
             ),
         ],
@@ -1230,20 +1228,20 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
   }
 
   Widget _buildBookingSummaryCard(WarrantyBookingState state) {
-    final branchName = state.selectedBranch?['name']?.toString() ??
+    final branchName =
+        state.selectedBranch?['name']?.toString() ??
         state.selectedBranch?['salonName']?.toString() ??
         'Chi nhánh Nailify';
     final dateStr = _selectedDate == null
         ? ''
         : '${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}';
-    final timeStr =
-        _selectedTime == null ? '' : _selectedTime!.substring(0, 5);
+    final timeStr = _selectedTime == null ? '' : _selectedTime!.substring(0, 5);
     final dateTimeText = dateStr.isEmpty ? '--' : '$dateStr • $timeStr';
 
     final artistName = _noArtistSelected
         ? S.of(context).bookingAutoAssign
         : (state.selectedStylist?['fullName']?.toString() ??
-            state.sourceArtistName);
+              state.sourceArtistName);
     final artistAvatar = state.selectedStylist?['avatarUrl']?.toString();
 
     return Container(
@@ -1301,8 +1299,10 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
                 },
                 borderRadius: BorderRadius.circular(12),
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: const [
@@ -1390,8 +1390,8 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
                       backgroundColor: const Color(0xFFFFF0F5),
                       backgroundImage:
                           artistAvatar != null && artistAvatar.isNotEmpty
-                              ? NetworkImage(artistAvatar)
-                              : null,
+                          ? NetworkImage(artistAvatar)
+                          : null,
                       child: artistAvatar == null || artistAvatar.isEmpty
                           ? const Icon(
                               Icons.person_rounded,
@@ -1466,8 +1466,9 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
   }
 
   Widget _buildVoucherRow() {
-    final selectedPromotion =
-        _promotions.where((v) => v.promotionId == _selectedPromotionId);
+    final selectedPromotion = _promotions.where(
+      (v) => v.promotionId == _selectedPromotionId,
+    );
     final hasSelected = selectedPromotion.isNotEmpty;
     final count = _promotions.length;
     final selectedVoucher = hasSelected ? selectedPromotion.first : null;
@@ -1484,8 +1485,9 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
                   selectedPromotions: selectedPromotion.toList(),
                   onConfirm: (list) {
                     setState(() {
-                      _selectedPromotionId =
-                          list.isNotEmpty ? list.first.promotionId : null;
+                      _selectedPromotionId = list.isNotEmpty
+                          ? list.first.promotionId
+                          : null;
                     });
                   },
                 ),
@@ -1524,7 +1526,9 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 1.5),
+                          horizontal: 6,
+                          vertical: 1.5,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFFF0F5),
                           borderRadius: BorderRadius.circular(8),
@@ -1569,10 +1573,7 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
                 else
                   Text(
                     count > 0 ? 'Chọn voucher' : 'Chưa chọn voucher',
-                    style: TextStyle(
-                      color: Colors.grey.shade500,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1670,7 +1671,7 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
               else
                 Text(
                   hasBalance
-                      ? 'Số dư: ${PriceFormatter.format(balance!.round())}'
+                      ? 'Số dư: ${PriceFormatter.format(balance.round())}'
                       : 'Số dư trống',
                   style: TextStyle(
                     fontSize: 12,
@@ -1692,7 +1693,7 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
               onChanged: hasBalance && !_isLoadingWallet
                   ? (val) => setState(() => _useWalletBalance = val)
                   : null,
-              activeColor: Colors.white,
+              activeThumbColor: Colors.white,
               activeTrackColor: const Color(0xFFE02B6D),
               inactiveThumbColor: Colors.white,
               inactiveTrackColor: const Color(0xFFF0E6EA),
@@ -1715,12 +1716,13 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
     );
     final initialDepositAmount = depositInfo['amount'] as int;
 
-    final walletDeduction = (_useWalletBalance &&
+    final walletDeduction =
+        (_useWalletBalance &&
             _walletAvailableBalance != null &&
             _walletAvailableBalance! > 0)
         ? (_walletAvailableBalance! < initialDepositAmount
-            ? _walletAvailableBalance!.round()
-            : initialDepositAmount)
+              ? _walletAvailableBalance!.round()
+              : initialDepositAmount)
         : 0;
 
     return Container(
@@ -1775,13 +1777,17 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
           const SizedBox(height: 14),
           CustomPaint(
             size: const Size(double.infinity, 1),
-            painter:
-                _HorizontalDashedLinePainter(color: const Color(0xFFE5E7EB)),
+            painter: _HorizontalDashedLinePainter(
+              color: const Color(0xFFE5E7EB),
+            ),
           ),
           const SizedBox(height: 14),
 
-          _buildInvoiceRow('Tạm tính (dịch vụ phát sinh)', extraTotal,
-              isNegative: false),
+          _buildInvoiceRow(
+            'Tạm tính (dịch vụ phát sinh)',
+            extraTotal,
+            isNegative: false,
+          ),
 
           const SizedBox(height: 6),
           const Divider(height: 1, color: Color(0xFFF0F0F0)),
@@ -1816,7 +1822,12 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
             const SizedBox(height: 4),
             const Divider(height: 1, color: Color(0xFFF0F0F0)),
             const SizedBox(height: 14),
-            _buildDepositDetails(totalPrice, initialDepositAmount, walletDeduction, state),
+            _buildDepositDetails(
+              totalPrice,
+              initialDepositAmount,
+              walletDeduction,
+              state,
+            ),
           ],
         ],
       ),
@@ -1838,11 +1849,7 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
           ? (item['quantity'] as num).toInt()
           : (int.tryParse(item['quantity']?.toString() ?? '1') ?? 1);
       items.add(
-        PaymentTableItem(
-          name: '$name (Bảo hành)',
-          quantity: qty,
-          unitPrice: 0,
-        ),
+        PaymentTableItem(name: '$name (Bảo hành)', quantity: qty, unitPrice: 0),
       );
     }
 
@@ -1864,7 +1871,11 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
     return items;
   }
 
-  Widget _buildInvoiceRow(String label, num amount, {required bool isNegative}) {
+  Widget _buildInvoiceRow(
+    String label,
+    num amount, {
+    required bool isNegative,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -1938,10 +1949,14 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
       totalPrice,
     );
     final depositConfigText = depositInfo['displayText'] as String;
-    final depositAmountToPay =
-        (initialDepositAmount - walletDeduction).clamp(0, initialDepositAmount);
-    final remainingAmountAtSalon =
-        (totalPrice - walletDeduction).clamp(0, totalPrice);
+    final depositAmountToPay = (initialDepositAmount - walletDeduction).clamp(
+      0,
+      initialDepositAmount,
+    );
+    final remainingAmountAtSalon = (totalPrice - walletDeduction).clamp(
+      0,
+      totalPrice,
+    );
 
     return Column(
       children: [
@@ -2094,7 +2109,9 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
                       boxShadow: [
                         if (canProceed && !state.isSubmitting)
                           BoxShadow(
-                            color: const Color(0xFFD81B60).withValues(alpha: 0.35),
+                            color: const Color(
+                              0xFFD81B60,
+                            ).withValues(alpha: 0.35),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -2134,8 +2151,8 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
                           : Text(
                               isLastStep
                                   ? (totalPrice == 0
-                                      ? S.of(context).warrantyConfirmBtn
-                                      : 'Thanh toán cọc')
+                                        ? S.of(context).warrantyConfirmBtn
+                                        : 'Thanh toán cọc')
                                   : 'Tiếp tục',
                               style: const TextStyle(
                                 fontSize: 15.5,
@@ -2168,11 +2185,7 @@ class _HorizontalDashedLinePainter extends CustomPainter {
       ..color = color
       ..strokeWidth = 1;
     while (startX < size.width) {
-      canvas.drawLine(
-        Offset(startX, 0),
-        Offset(startX + dashWidth, 0),
-        paint,
-      );
+      canvas.drawLine(Offset(startX, 0), Offset(startX + dashWidth, 0), paint);
       startX += dashWidth + dashSpace;
     }
   }

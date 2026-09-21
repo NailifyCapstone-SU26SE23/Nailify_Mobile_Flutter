@@ -177,7 +177,9 @@ class _MainShellState extends State<MainShell> {
               );
             },
           ),
-          bottomNavigationBar: _hideBottomNav ? null : _buildCustomBottomBar(context),
+          bottomNavigationBar: _hideBottomNav
+              ? null
+              : _buildCustomBottomBar(context),
         ),
         if (_showNewNotificationTip)
           Positioned(
@@ -294,7 +296,9 @@ class _MainShellState extends State<MainShell> {
           ),
         ),
       ),
-      actions: _isLoggedIn ? _buildLoggedInActions(context) : _buildLoggedOutActions(context),
+      actions: _isLoggedIn
+          ? _buildLoggedInActions(context)
+          : _buildLoggedOutActions(context),
     );
   }
 
@@ -402,14 +406,11 @@ class _MainShellState extends State<MainShell> {
             if (_hasRecommendations)
               PopupMenuItem<void>(
                 onTap: () {
-                  Future.delayed(
-                    const Duration(milliseconds: 100),
-                    () {
-                      if (context.mounted) {
-                        context.go('/perfect-match');
-                      }
-                    },
-                  );
+                  Future.delayed(const Duration(milliseconds: 100), () {
+                    if (context.mounted) {
+                      context.go('/perfect-match');
+                    }
+                  });
                 },
                 child: Container(
                   padding: const EdgeInsets.all(8),
@@ -495,28 +496,19 @@ class _MainShellState extends State<MainShell> {
   List<Widget> _buildLoggedOutActions(BuildContext context) {
     return [
       IconButton(
-        icon: const Icon(
-          Icons.camera_alt_outlined,
-          color: AppColors.primary,
-        ),
+        icon: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
         tooltip: 'Snapshot Try-on',
         onPressed: () => context.push('/snapshot-try-on'),
       ),
-                          // HIỂN THỊ NÚT ĐĂNG NHẬP/ĐĂNG KÝ KHI CHƯA CÓ TOKEN
+      // HIỂN THỊ NÚT ĐĂNG NHẬP/ĐĂNG KÝ KHI CHƯA CÓ TOKEN
       OutlinedButton(
         onPressed: () => context.push('/login'),
         style: OutlinedButton.styleFrom(
-          side: const BorderSide(
-            color: AppColors.primary,
-            width: 1.2,
-          ),
+          side: const BorderSide(color: AppColors.primary, width: 1.2),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 8,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           minimumSize: Size.zero,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
@@ -548,10 +540,7 @@ class _MainShellState extends State<MainShell> {
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
             foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 8,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
@@ -560,10 +549,7 @@ class _MainShellState extends State<MainShell> {
           ),
           child: Text(
             S.of(context).register,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
           ),
         ),
       ),
@@ -662,10 +648,7 @@ class _MainShellState extends State<MainShell> {
                             offset: const Offset(0, 2),
                           ),
                         ],
-                        border: Border.all(
-                          color: Colors.white,
-                          width: 2.5,
-                        ),
+                        border: Border.all(color: Colors.white, width: 2.5),
                       ),
                       child: const Icon(
                         Icons.calendar_today_rounded,
@@ -708,7 +691,9 @@ class _MainShellState extends State<MainShell> {
     required String label,
     required bool isSelected,
   }) {
-    final color = isSelected ? AppColors.primary : AppColors.textSecondary.withValues(alpha: 0.7);
+    final color = isSelected
+        ? AppColors.primary
+        : AppColors.textSecondary.withValues(alpha: 0.7);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -787,7 +772,9 @@ class _MainShellState extends State<MainShell> {
           ),
           boxShadow: [
             BoxShadow(
-              color: (isUrgent ? Colors.red : Colors.orange).withValues(alpha: 0.3),
+              color: (isUrgent ? Colors.red : Colors.orange).withValues(
+                alpha: 0.3,
+              ),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
@@ -801,13 +788,19 @@ class _MainShellState extends State<MainShell> {
                 color: Colors.white.withValues(alpha: 0.25),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.timer_outlined, color: Colors.white, size: 16),
+              child: const Icon(
+                Icons.timer_outlined,
+                color: Colors.white,
+                size: 16,
+              ),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 isUrgent
-                    ? S.of(context).reservationMayExpireInClickToComplete(min, sec)
+                    ? S
+                          .of(context)
+                          .reservationMayExpireInClickToComplete(min, sec)
                     : S.of(context).slotHeldRemainingClickToReturn(min, sec),
                 style: const TextStyle(
                   color: Colors.white,
@@ -934,22 +927,8 @@ class BottomNavPainter extends CustomPainter {
     path.lineTo(cx - radiusX, 0);
 
     // Tạo đường cong mái vòm hình chữ U ngược (dome) lồi lên bao quanh nút Đặt lịch
-    path.cubicTo(
-      cx - 20,
-      0,
-      cx - 18,
-      radiusY,
-      cx,
-      radiusY,
-    );
-    path.cubicTo(
-      cx + 18,
-      radiusY,
-      cx + 20,
-      0,
-      cx + radiusX,
-      0,
-    );
+    path.cubicTo(cx - 20, 0, cx - 18, radiusY, cx, radiusY);
+    path.cubicTo(cx + 18, radiusY, cx + 20, 0, cx + radiusX, 0);
 
     path.lineTo(width, 0);
     path.lineTo(width, height);

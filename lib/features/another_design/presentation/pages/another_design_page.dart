@@ -170,9 +170,7 @@ class _AnotherDesignPageState extends State<AnotherDesignPage> {
               },
               icon: const Icon(Icons.refresh_rounded, size: 16),
               label: const Text('Reset filters'),
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.primary,
-              ),
+              style: TextButton.styleFrom(foregroundColor: AppColors.primary),
             ),
           ],
         ),

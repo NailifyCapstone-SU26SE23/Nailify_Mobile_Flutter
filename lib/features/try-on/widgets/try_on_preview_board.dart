@@ -240,7 +240,10 @@ class _TryOnPreviewBoardState extends State<TryOnPreviewBoard>
                       final angle = cfg['angle'] as double;
                       final cx = (cfg['cx'] as double) + handNailOffsetX;
                       final cy = (cfg['cy'] as double) + handNailOffsetY;
-                      final slotW = (cfg['w'] as double) * _rowPreviewScale * handNailScale;
+                      final slotW =
+                          (cfg['w'] as double) *
+                          _rowPreviewScale *
+                          handNailScale;
                       final slotH = (cfg['h'] as double) * handNailScale;
                       final leftRatio = cx - slotW / 2;
                       final topRatio = cy - slotH / 2;
@@ -977,7 +980,8 @@ class _PlacedComponentPreviewState extends State<_PlacedComponentPreview> {
                     ? _NailImageCache._resolved[widget.selectedShape!.imageUrl]
                     : null;
 
-                final validScale = (cached == null ||
+                final validScale =
+                    (cached == null ||
                         _isPlacementOnNail(
                           widget.placement.posX,
                           widget.placement.posY,

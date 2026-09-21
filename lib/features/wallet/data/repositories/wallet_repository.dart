@@ -337,4 +337,3 @@ class WalletRepository {
     return PaginatedWalletTransactions.fromJson(json);
   }
 }
-

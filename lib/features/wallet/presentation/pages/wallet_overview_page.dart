@@ -69,7 +69,9 @@ class _WalletOverviewViewState extends State<_WalletOverviewView> {
         if (!mounted) return;
 
         if (paymentData.isNotEmpty && context.mounted) {
-          final Map<String, dynamic> enrichedData = Map<String, dynamic>.from(paymentData);
+          final Map<String, dynamic> enrichedData = Map<String, dynamic>.from(
+            paymentData,
+          );
           enrichedData['paymentType'] = 'WalletDeposit';
           enrichedData['policy'] = 'Nạp tiền vào ví cá nhân';
           context.push('/payment-qr', extra: enrichedData);
@@ -83,26 +85,27 @@ class _WalletOverviewViewState extends State<_WalletOverviewView> {
     WithdrawSheet.show(
       context,
       availableBalance: availableBalance,
-      onConfirmWithdraw: ({
-        required double amount,
-        required String bankName,
-        required String bankCode,
-        required String accountNumber,
-        required String accountHolderName,
-      }) async {
-        final repo = getIt<WalletRepository>();
-        final success = await repo.requestWithdrawal(
-          amount: amount,
-          bankName: bankName,
-          bankCode: bankCode,
-          accountNumber: accountNumber,
-          accountHolderName: accountHolderName,
-        );
-        if (mounted && success) {
-          cubit.refresh();
-        }
-        return success;
-      },
+      onConfirmWithdraw:
+          ({
+            required double amount,
+            required String bankName,
+            required String bankCode,
+            required String accountNumber,
+            required String accountHolderName,
+          }) async {
+            final repo = getIt<WalletRepository>();
+            final success = await repo.requestWithdrawal(
+              amount: amount,
+              bankName: bankName,
+              bankCode: bankCode,
+              accountNumber: accountNumber,
+              accountHolderName: accountHolderName,
+            );
+            if (mounted && success) {
+              cubit.refresh();
+            }
+            return success;
+          },
     );
   }
 
@@ -186,7 +189,8 @@ class _WalletOverviewViewState extends State<_WalletOverviewView> {
           final cash = snapshot.cashSummary;
           final balance = cash?.balance ?? 0.0;
           final frozenBalance = cash?.frozenBalance ?? 0.0;
-          final availableBalance = cash?.availableBalance ?? (balance - frozenBalance);
+          final availableBalance =
+              cash?.availableBalance ?? (balance - frozenBalance);
 
           return RefreshIndicator(
             onRefresh: () => context.read<WalletOverviewCubit>().refresh(),
@@ -202,7 +206,8 @@ class _WalletOverviewViewState extends State<_WalletOverviewView> {
                     frozenBalance: frozenBalance,
                     loyaltyTierName: snapshot.loyalty.loyaltyTier?.name,
                     onDepositPressed: () => _openDepositSheet(context),
-                    onWithdrawPressed: () => _openWithdrawSheet(context, availableBalance),
+                    onWithdrawPressed: () =>
+                        _openWithdrawSheet(context, availableBalance),
                     onHistoryPressed: () => _openTransactionsPage(context),
                   ),
                   const SizedBox(height: 16),
@@ -216,9 +221,12 @@ class _WalletOverviewViewState extends State<_WalletOverviewView> {
                     pointsToNext: snapshot.loyalty.pointsToNextTier,
                     hasNextTier: snapshot.loyalty.hasNextTier,
                     usableVoucherCount: snapshot.usableVoucherCount,
-                    onRedeemPressed: () => context.push('/profile/wallet/redeem'),
-                    onMyVouchersPressed: () => context.push('/profile/wallet/vouchers'),
-                    onHistoryPressed: () => context.push('/profile/wallet/transactions'),
+                    onRedeemPressed: () =>
+                        context.push('/profile/wallet/redeem'),
+                    onMyVouchersPressed: () =>
+                        context.push('/profile/wallet/vouchers'),
+                    onHistoryPressed: () =>
+                        context.push('/profile/wallet/transactions'),
                   ),
                   const SizedBox(height: 20),
 

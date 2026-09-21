@@ -3,7 +3,6 @@ import '../../data/models/home_data_models.dart';
 import '../../data/repositories/home_repository.dart';
 import 'home_state.dart';
 
-
 class HomeCubit extends Cubit<HomeState> {
   final HomeRepository _repository;
 
@@ -36,14 +35,10 @@ class HomeCubit extends Cubit<HomeState> {
           nearestSalon: salonItem,
         ),
       );
-
     } catch (e) {
       if (isClosed) return;
       emit(
-        state.copyWith(
-          status: HomeStatus.error,
-          errorMessage: e.toString(),
-        ),
+        state.copyWith(status: HomeStatus.error, errorMessage: e.toString()),
       );
     }
   }

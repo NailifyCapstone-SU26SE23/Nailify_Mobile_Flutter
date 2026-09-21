@@ -170,8 +170,7 @@ class DelayWarningWithAutonomyEvent {
     return DelayWarningWithAutonomyEvent(
       bookingId:
           json['bookingId']?.toString() ?? json['BookingId']?.toString() ?? '',
-      message:
-          json['message']?.toString() ?? json['Message']?.toString() ?? '',
+      message: json['message']?.toString() ?? json['Message']?.toString() ?? '',
       options: parsedOptions,
     );
   }
@@ -185,8 +184,7 @@ class DelayETAEvent {
 
   factory DelayETAEvent.fromJson(Map<String, dynamic> json) {
     return DelayETAEvent(
-      message:
-          json['message']?.toString() ?? json['Message']?.toString() ?? '',
+      message: json['message']?.toString() ?? json['Message']?.toString() ?? '',
     );
   }
 }
@@ -253,5 +251,3 @@ class CustomNailRejectedEvent {
     );
   }
 }
-
-

@@ -15,6 +15,7 @@
   "phoneNumber": "Phone Number",
   "save": "Save",
   "cancel": "Cancel",
+  "cancelBookingReasonMinLength": "Requires at least 5 characters",
   "confirm": "Confirm",
   "back": "Back",
   "next": "Next",

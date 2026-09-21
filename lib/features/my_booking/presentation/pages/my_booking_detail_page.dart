@@ -267,6 +267,8 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     return double.tryParse(value.toString());
   }
 
+  bool _isCancelling = false;
+
   bool _hasPaidAmount(Map<String, dynamic> booking) {
     return booking['amountPaid'] != null;
   }
@@ -430,7 +432,8 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
         _hasPaidAmount(booking) &&
         !_isRefunded(booking);
 
-    final warrantyForBookingId = booking['warrantyForBookingId']?.toString() ??
+    final warrantyForBookingId =
+        booking['warrantyForBookingId']?.toString() ??
         booking['WarrantyForBookingId']?.toString();
     final isWarrantyBooking =
         warrantyForBookingId != null && warrantyForBookingId.isNotEmpty;
@@ -692,7 +695,9 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.2),
+                ),
               ),
               child: Column(
                 children: [
@@ -915,10 +920,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                 child: OutlinedButton.icon(
                   onPressed: () => context.push(
                     '/booking-transactions',
-                    extra: {
-                      'bookingId': widget.bookingId,
-                      'booking': booking,
-                    },
+                    extra: {'bookingId': widget.bookingId, 'booking': booking},
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
@@ -946,55 +948,55 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                       context: context,
                       bookingId: widget.bookingId,
                       onConfirm: (newDate, newTime, reason) async {
-                          try {
-                            final success = await _apiService
-                                .requestRescheduleBooking(
-                                  widget.bookingId,
-                                  newDate: newDate,
-                                  newTime: newTime,
-                                  reason: reason,
-                                );
-                            if (!context.mounted) return false;
-                            if (success) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    S.of(context).bookingRescheduleSuccess,
-                                  ),
-                                  backgroundColor: Colors.green,
-                                  duration: const Duration(seconds: 2),
-                                ),
+                        try {
+                          final success = await _apiService
+                              .requestRescheduleBooking(
+                                widget.bookingId,
+                                newDate: newDate,
+                                newTime: newTime,
+                                reason: reason,
                               );
-                              // Chuyển về trang danh sách lịch đặt, tab Dời lịch (index 2)
-                              context.go(
-                                '/my-bookings',
-                                extra: {'initialTab': 2},
-                              );
-                              return true;
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    S.of(context).bookingRescheduleFail,
-                                  ),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                              return false;
-                            }
-                          } catch (e) {
-                            if (!context.mounted) return false;
+                          if (!context.mounted) return false;
+                          if (success) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Lỗi: $e'),
+                                content: Text(
+                                  S.of(context).bookingRescheduleSuccess,
+                                ),
+                                backgroundColor: Colors.green,
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                            // Chuyển về trang danh sách lịch đặt, tab Dời lịch (index 2)
+                            context.go(
+                              '/my-bookings',
+                              extra: {'initialTab': 2},
+                            );
+                            return true;
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  S.of(context).bookingRescheduleFail,
+                                ),
                                 backgroundColor: Colors.red,
                               ),
                             );
                             return false;
                           }
-                        },
-                      );
-                    },
+                        } catch (e) {
+                          if (!context.mounted) return false;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Lỗi: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return false;
+                        }
+                      },
+                    );
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -1029,12 +1031,14 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                       builder: (dialogContext) => CancelBookingDialog(
                         bookingId: widget.bookingId,
                         onConfirm: (reason) async {
+                          if (_isCancelling) return false;
+                          setState(() => _isCancelling = true);
                           try {
                             final success = await _apiService.cancelBooking(
                               widget.bookingId,
                               reason: reason,
                             );
-                            if (!context.mounted) return;
+                            if (!context.mounted) return false;
                             if (success) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
@@ -1043,14 +1047,8 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                                   ),
                                 ),
                               );
-                              if (_hasPaidAmount(booking)) {
-                                context.go(
-                                  '/refund-bank-info',
-                                  extra: widget.bookingId,
-                                );
-                              } else {
-                                await _fetchBookingDetail();
-                              }
+                              await _fetchBookingDetail();
+                              return true;
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
@@ -1059,12 +1057,18 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                                   ),
                                 ),
                               );
+                              return false;
                             }
                           } catch (e) {
-                            if (!context.mounted) return;
+                            if (!context.mounted) return false;
                             ScaffoldMessenger.of(
                               context,
                             ).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+                            return false;
+                          } finally {
+                            if (mounted) {
+                              setState(() => _isCancelling = false);
+                            }
                           }
                         },
                       ),
@@ -1084,29 +1088,6 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
-                  ),
-                ),
-              ),
-            ],
-            if (canRequestRefund) ...[
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () =>
-                      context.go('/refund-bank-info', extra: widget.bookingId),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  icon: const Icon(Icons.receipt_long, color: Colors.white),
-                  label: const Text(
-                    'Hoàn tiền',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),

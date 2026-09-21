@@ -28,7 +28,8 @@ class DurationFormatter {
     bool isEnglish = false,
     BuildContext? context,
   }) {
-    final bool useEn = isEnglish ||
+    final bool useEn =
+        isEnglish ||
         (context != null &&
             Localizations.localeOf(context).languageCode == 'en');
 

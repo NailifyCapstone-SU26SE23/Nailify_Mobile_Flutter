@@ -257,7 +257,9 @@ class _DiscoverFilterSheetState extends State<DiscoverFilterSheet> {
                         side: BorderSide(
                           color: AppColors.primary.withValues(alpha: 0.4),
                         ),
-                        backgroundColor: AppColors.primary.withValues(alpha: 0.06),
+                        backgroundColor: AppColors.primary.withValues(
+                          alpha: 0.06,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(24),
                         ),

@@ -299,25 +299,30 @@ class MyBookingApiService {
         '/Bookings/$bookingId/delay-response',
         data: {
           "customerDecision": customerDecision,
-          if (newDate != null) "newDate": newDate,
-          if (formattedTime != null) "newTime": formattedTime,
+          "newDate": ?newDate,
+          "newTime": ?formattedTime,
         },
       );
 
-      final isSuccess = response.statusCode != null &&
+      final isSuccess =
+          response.statusCode != null &&
           response.statusCode! >= 200 &&
           response.statusCode! < 300;
       final dataMap = response.data is Map ? response.data : {};
-      final message = dataMap['message']?.toString() ??
+      final message =
+          dataMap['message']?.toString() ??
           dataMap['data']?.toString() ??
-          (isSuccess ? 'Đã xử lý quyết định thành công' : 'Không thể thực hiện yêu cầu');
+          (isSuccess
+              ? 'Đã xử lý quyết định thành công'
+              : 'Không thể thực hiện yêu cầu');
 
       return {'success': isSuccess, 'message': message};
     } on DioException catch (e) {
       final errorData = e.response?.data;
       String message = 'Đã có lỗi xảy ra khi xử lý phản hồi.';
       if (errorData is Map) {
-        message = errorData['message']?.toString() ??
+        message =
+            errorData['message']?.toString() ??
             errorData['data']?.toString() ??
             message;
       }
@@ -327,4 +332,3 @@ class MyBookingApiService {
     }
   }
 }
-

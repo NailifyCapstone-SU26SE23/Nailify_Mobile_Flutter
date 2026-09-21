@@ -23,7 +23,9 @@ class LoyaltyTierCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final baseColor = tier?.parsedBackgroundColor ?? AppColors.primary;
-    final tierColor = baseColor == AppColors.primary ? const Color(0xFF7C3AED) : baseColor;
+    final tierColor = baseColor == AppColors.primary
+        ? const Color(0xFF7C3AED)
+        : baseColor;
     final tierTextColor = tier?.parsedTextColor ?? Colors.white;
 
     return Container(
@@ -241,4 +243,3 @@ class LoyaltyTierCard extends StatelessWidget {
     );
   }
 }
-

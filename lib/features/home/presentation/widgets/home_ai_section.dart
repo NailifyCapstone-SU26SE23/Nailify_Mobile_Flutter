@@ -113,17 +113,15 @@ class HomeAiSection extends StatelessWidget {
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: iconGradient.first.withValues(alpha: 0.3),
+                                color: iconGradient.first.withValues(
+                                  alpha: 0.3,
+                                ),
                                 blurRadius: 6,
                                 offset: const Offset(0, 2),
                               ),
                             ],
                           ),
-                          child: Icon(
-                            icon,
-                            color: Colors.white,
-                            size: 20,
-                          ),
+                          child: Icon(icon, color: Colors.white, size: 20),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -199,4 +197,3 @@ class HomeAiSection extends StatelessWidget {
     );
   }
 }
-

@@ -71,7 +71,9 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: _PM.bg,
-        body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
       );
     }
 
@@ -96,7 +98,9 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
     }
 
     final top = _results.first;
-    final others = _results.length > 1 ? _results.sublist(1) : <QuizResultModel>[];
+    final others = _results.length > 1
+        ? _results.sublist(1)
+        : <QuizResultModel>[];
 
     return PopScope(
       canPop: false,
@@ -133,10 +137,7 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
                     const SizedBox(height: 28),
 
                     // ── Khối 2: Top Match Card ──
-                    Text(
-                      'Mẫu móng chuẩn gu nhất',
-                      style: _PM.sectionTitle,
-                    ),
+                    Text('Mẫu móng chuẩn gu nhất', style: _PM.sectionTitle),
                     const SizedBox(height: 4),
                     Text(
                       'Điểm tương thích cao nhất với phong cách của bạn',
@@ -215,8 +216,11 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
       elevation: 0,
       scrolledUnderElevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new_rounded,
-            color: AppColors.primaryDark, size: 20),
+        icon: const Icon(
+          Icons.arrow_back_ios_new_rounded,
+          color: AppColors.primaryDark,
+          size: 20,
+        ),
         onPressed: () => context.go('/nails'),
       ),
       title: Row(
@@ -287,8 +291,11 @@ class _HeroHeadline extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.auto_awesome_outlined,
-                color: AppColors.primary, size: 14),
+            const Icon(
+              Icons.auto_awesome_outlined,
+              color: AppColors.primary,
+              size: 14,
+            ),
             const SizedBox(width: 8),
             Text(
               S.of(context).forYouTitle,
@@ -300,8 +307,11 @@ class _HeroHeadline extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.auto_awesome_outlined,
-                color: AppColors.primary, size: 14),
+            const Icon(
+              Icons.auto_awesome_outlined,
+              color: AppColors.primary,
+              size: 14,
+            ),
           ],
         ),
         const SizedBox(height: 10),
@@ -425,9 +435,14 @@ class StyleProfileCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: const BoxDecoration(
-                    color: Colors.white, shape: BoxShape.circle),
-                child: const Icon(Icons.favorite_rounded,
-                    color: AppColors.primary, size: 16),
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.favorite_rounded,
+                  color: AppColors.primary,
+                  size: 16,
+                ),
               ),
               const SizedBox(width: 10),
               const Text(
@@ -449,8 +464,9 @@ class StyleProfileCard extends StatelessWidget {
               style: const TextStyle(fontSize: 15, color: Colors.black87),
               children: [
                 const TextSpan(
-                    text: 'Phong cách cá nhân của bạn: ',
-                    style: TextStyle(fontWeight: FontWeight.w500)),
+                  text: 'Phong cách cá nhân của bạn: ',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
                 TextSpan(
                   text: mainStyle,
                   style: const TextStyle(
@@ -562,7 +578,8 @@ class _PreferenceChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isColor = characteristic.category.toLowerCase() == 'color' &&
+    final isColor =
+        characteristic.category.toLowerCase() == 'color' &&
         characteristic.value.startsWith('#');
     Color? parsedColor;
     if (isColor) {
@@ -709,9 +726,9 @@ class TopMatchCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final matchPct =
-        (result.score <= 1 ? result.score * 100 : result.score).toInt();
-    final priceStr = NumberFormat('#,###', 'vi_VN').format(result.price) + 'đ';
+    final matchPct = (result.score <= 1 ? result.score * 100 : result.score)
+        .toInt();
+    final priceStr = '${NumberFormat('#,###', 'vi_VN').format(result.price)}đ';
     final durationStr = result.duration > 0 ? '${result.duration} phút' : '';
 
     return Container(
@@ -735,7 +752,8 @@ class TopMatchCard extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(26)),
+                  top: Radius.circular(26),
+                ),
                 child: result.imageUrl.isNotEmpty
                     ? Image.network(
                         result.imageUrl,
@@ -815,8 +833,11 @@ class TopMatchCard extends StatelessWidget {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.check_circle_outline_rounded,
-                              color: AppColors.primary, size: 16),
+                          const Icon(
+                            Icons.check_circle_outline_rounded,
+                            color: AppColors.primary,
+                            size: 16,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -847,19 +868,27 @@ class TopMatchCard extends StatelessWidget {
                 // Secondary — Retake
                 OutlinedButton.icon(
                   onPressed: onRetakeQuiz,
-                  icon: const Icon(Icons.refresh_rounded,
-                      size: 16, color: AppColors.primary),
+                  icon: const Icon(
+                    Icons.refresh_rounded,
+                    size: 16,
+                    color: AppColors.primary,
+                  ),
                   label: Text(
                     S.of(context).takeAnotherAnalysis,
                     style: const TextStyle(
-                        color: AppColors.primary, fontWeight: FontWeight.w700),
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 48),
                     side: const BorderSide(
-                        color: AppColors.primary, width: 1.5),
+                      color: AppColors.primary,
+                      width: 1.5,
+                    ),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24)),
+                      borderRadius: BorderRadius.circular(24),
+                    ),
                   ),
                 ),
               ],
@@ -875,8 +904,11 @@ class _InfoPill extends StatelessWidget {
   final IconData icon;
   final String text;
   final Color color;
-  const _InfoPill(
-      {required this.icon, required this.text, required this.color});
+  const _InfoPill({
+    required this.icon,
+    required this.text,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -894,7 +926,10 @@ class _InfoPill extends StatelessWidget {
           Text(
             text,
             style: TextStyle(
-                fontSize: 13, color: color, fontWeight: FontWeight.w700),
+              fontSize: 13,
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),
@@ -914,8 +949,8 @@ class SuggestionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final matchPct =
-        (result.score <= 1 ? result.score * 100 : result.score).toInt();
+    final matchPct = (result.score <= 1 ? result.score * 100 : result.score)
+        .toInt();
 
     // Top-3 matching tags only (matching first)
     final tags = [
@@ -924,7 +959,7 @@ class SuggestionCard extends StatelessWidget {
     ].take(3).toList();
 
     final priceStr = result.price > 0
-        ? NumberFormat('#,###', 'vi_VN').format(result.price) + 'đ'
+        ? '${NumberFormat('#,###', 'vi_VN').format(result.price)}đ'
         : '';
 
     return GestureDetector(
@@ -953,10 +988,12 @@ class SuggestionCard extends StatelessWidget {
                   fit: StackFit.expand,
                   children: [
                     result.imageUrl.isNotEmpty
-                        ? Image.network(result.imageUrl,
+                        ? Image.network(
+                            result.imageUrl,
                             fit: BoxFit.cover,
                             errorBuilder: (_, _, _) =>
-                                _imgPlaceholder(double.infinity))
+                                _imgPlaceholder(double.infinity),
+                          )
                         : _imgPlaceholder(double.infinity),
                     // Match badge
                     Positioned(
@@ -1006,7 +1043,9 @@ class SuggestionCard extends StatelessWidget {
                             .map(
                               (c) => Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 7, vertical: 3),
+                                  horizontal: 7,
+                                  vertical: 3,
+                                ),
                                 decoration: BoxDecoration(
                                   color: c.isMatchingPreference
                                       ? AppColors.primary.withOpacity(0.10)
@@ -1051,10 +1090,10 @@ class _DetailBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final matchPct =
-        (result.score <= 1 ? result.score * 100 : result.score).toInt();
+    final matchPct = (result.score <= 1 ? result.score * 100 : result.score)
+        .toInt();
     final priceStr = result.price > 0
-        ? NumberFormat('#,###', 'vi_VN').format(result.price) + 'đ'
+        ? '${NumberFormat('#,###', 'vi_VN').format(result.price)}đ'
         : '';
 
     return Container(
@@ -1134,14 +1173,16 @@ class _DetailBottomSheet extends StatelessWidget {
             Text(
               S.of(context).styleFitReasons,
               style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87),
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
             ),
             const SizedBox(height: 10),
             ConstrainedBox(
               constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.22),
+                maxHeight: MediaQuery.of(context).size.height * 0.22,
+              ),
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 child: Column(
@@ -1152,15 +1193,21 @@ class _DetailBottomSheet extends StatelessWidget {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(Icons.check_circle_outline_rounded,
-                                  color: AppColors.primary, size: 16),
+                              const Icon(
+                                Icons.check_circle_outline_rounded,
+                                color: AppColors.primary,
+                                size: 16,
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
-                                child: Text(r,
-                                    style: const TextStyle(
-                                        fontSize: 13,
-                                        color: Colors.black87,
-                                        height: 1.4)),
+                                child: Text(
+                                  r,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.black87,
+                                    height: 1.4,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
@@ -1201,7 +1248,9 @@ class _MatchBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.symmetric(
-          horizontal: large ? 14 : 8, vertical: large ? 7 : 4),
+        horizontal: large ? 14 : 8,
+        vertical: large ? 7 : 4,
+      ),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFFFF4081), Color(0xFFFF80AB)],
@@ -1303,8 +1352,10 @@ class _ErrorView extends StatelessWidget {
         backgroundColor: _PM.bg,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: AppColors.primaryDark),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.primaryDark,
+          ),
           onPressed: () => context.go('/nails'),
         ),
       ),
@@ -1314,22 +1365,32 @@ class _ErrorView extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline_rounded,
-                  color: AppColors.primary, size: 48),
+              const Icon(
+                Icons.error_outline_rounded,
+                color: AppColors.primary,
+                size: 48,
+              ),
               const SizedBox(height: 16),
-              const Text('Có lỗi xảy ra',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text(
+                'Có lỗi xảy ra',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 8),
-              Text(error,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.black54)),
+              Text(
+                error,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.black54),
+              ),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: onRetry,
                 style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary),
-                child: const Text('Thử lại',
-                    style: TextStyle(color: Colors.white)),
+                  backgroundColor: AppColors.primary,
+                ),
+                child: const Text(
+                  'Thử lại',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ],
           ),
@@ -1348,8 +1409,10 @@ class _EmptyView extends StatelessWidget {
         backgroundColor: _PM.bg,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: AppColors.primaryDark),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.primaryDark,
+          ),
           onPressed: () => context.go('/nails'),
         ),
       ),
@@ -1362,9 +1425,14 @@ class _EmptyView extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: const BoxDecoration(
-                    color: Color(0xFFFFF0F5), shape: BoxShape.circle),
-                child: const Icon(Icons.sentiment_dissatisfied_rounded,
-                    color: AppColors.primary, size: 48),
+                  color: Color(0xFFFFF0F5),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.sentiment_dissatisfied_rounded,
+                  color: AppColors.primary,
+                  size: 48,
+                ),
               ),
               const SizedBox(height: 24),
               Text(
@@ -1381,7 +1449,10 @@ class _EmptyView extends StatelessWidget {
                 S.of(context).noMatchingDesc,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                    fontSize: 14, color: Colors.black54, height: 1.4),
+                  fontSize: 14,
+                  color: Colors.black54,
+                  height: 1.4,
+                ),
               ),
               const SizedBox(height: 32),
               ElevatedButton.icon(
@@ -1392,9 +1463,12 @@ class _EmptyView extends StatelessWidget {
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 32, vertical: 16),
+                    horizontal: 32,
+                    vertical: 16,
+                  ),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30)),
+                    borderRadius: BorderRadius.circular(30),
+                  ),
                 ),
               ),
             ],

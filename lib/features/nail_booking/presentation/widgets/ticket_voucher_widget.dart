@@ -21,7 +21,9 @@ class TicketVoucherWidget extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withOpacity(0.05) : Colors.white,
+          color: isSelected
+              ? AppColors.primary.withOpacity(0.05)
+              : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? AppColors.primary : Colors.grey.shade300,
@@ -44,9 +46,14 @@ class TicketVoucherWidget extends StatelessWidget {
                 // Left side: Icon & Amount
                 Container(
                   width: 100,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 16,
+                  ),
                   decoration: BoxDecoration(
-                    color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.orange.shade50,
+                    color: isSelected
+                        ? AppColors.primary.withOpacity(0.1)
+                        : Colors.orange.shade50,
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -55,7 +62,9 @@ class TicketVoucherWidget extends StatelessWidget {
                         voucher.discountType.toLowerCase() == 'percentage'
                             ? Icons.percent
                             : Icons.discount_outlined,
-                        color: isSelected ? AppColors.primary : Colors.orange.shade700,
+                        color: isSelected
+                            ? AppColors.primary
+                            : Colors.orange.shade700,
                         size: 28,
                       ),
                       const SizedBox(height: 8),
@@ -64,7 +73,9 @@ class TicketVoucherWidget extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: isSelected ? AppColors.primary : Colors.orange.shade700,
+                          color: isSelected
+                              ? AppColors.primary
+                              : Colors.orange.shade700,
                         ),
                         textAlign: TextAlign.center,
                         maxLines: 2,
@@ -78,7 +89,9 @@ class TicketVoucherWidget extends StatelessWidget {
                 CustomPaint(
                   size: const Size(1, double.infinity),
                   painter: DashedLinePainter(
-                    color: isSelected ? AppColors.primary.withOpacity(0.5) : Colors.grey.shade300,
+                    color: isSelected
+                        ? AppColors.primary.withOpacity(0.5)
+                        : Colors.grey.shade300,
                   ),
                 ),
 
@@ -107,8 +120,12 @@ class TicketVoucherWidget extends StatelessWidget {
                             const SizedBox(width: 8),
                             // Radio button representation
                             Icon(
-                              isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                              color: isSelected ? AppColors.primary : Colors.grey.shade400,
+                              isSelected
+                                  ? Icons.radio_button_checked
+                                  : Icons.radio_button_unchecked,
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : Colors.grey.shade400,
                               size: 22,
                             ),
                           ],
@@ -127,7 +144,10 @@ class TicketVoucherWidget extends StatelessWidget {
                           const SizedBox(height: 8),
                         ],
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.green.shade50,
                             borderRadius: BorderRadius.circular(6),
@@ -159,7 +179,7 @@ class TicketClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     final path = Path();
-    
+
     // Draw outer rectangle
     path.lineTo(0, size.height);
     path.lineTo(size.width, size.height);
@@ -181,7 +201,10 @@ class TicketClipper extends CustomClipper<Path> {
     // Bottom hole
     final bottomHole = Path()
       ..addArc(
-        Rect.fromCircle(center: Offset(holePositionX, size.height), radius: holeRadius),
+        Rect.fromCircle(
+          center: Offset(holePositionX, size.height),
+          radius: holeRadius,
+        ),
         -3.14159,
         3.14159,
       );
@@ -211,11 +234,7 @@ class DashedLinePainter extends CustomPainter {
     double startY = 12.0;
 
     while (startY < size.height - 12) {
-      canvas.drawLine(
-        Offset(0, startY),
-        Offset(0, startY + dashWidth),
-        paint,
-      );
+      canvas.drawLine(Offset(0, startY), Offset(0, startY + dashWidth), paint);
       startY += dashWidth + dashSpace;
     }
   }

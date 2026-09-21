@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import '../../data/models/nail_design_model.dart';
 import 'nail_design_card.dart';
 
-typedef NailFavoriteCallback = void Function(NailDesignModel design, bool shouldFavorite);
+typedef NailFavoriteCallback =
+    void Function(NailDesignModel design, bool shouldFavorite);
 
 /// A single horizontally-scrolling "collection" row, e.g.
 /// "Dành riêng cho bạn", "Xu hướng tuần này", "Móng Pháp cổ điển"...

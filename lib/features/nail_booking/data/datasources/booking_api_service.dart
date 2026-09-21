@@ -1,4 +1,5 @@
 import '../../../../core/di/injection.dart';
+import '../../../../core/error/exceptions.dart';
 import '../../../../core/network/api_client.dart';
 
 class BookingApiService {
@@ -84,10 +85,104 @@ class BookingApiService {
     }
   }
 
+  /// Fetch the current customer's wallet summary (balance, frozenBalance, etc.)
+  /// Endpoint: GET /api/Wallets/summary → CustomerWalletSummaryDto
+  Future<Map<String, dynamic>?> getCustomerWalletSummary() async {
+    try {
+      final response = await _apiClient.get('/Wallets/summary');
+      final data = response.data['data'];
+      if (data is Map) return Map<String, dynamic>.from(data);
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static bool _isSalonOpen(dynamic salon) {
+    if (salon == null || salon is! Map) return false;
+
+    // 1. Status string check
+    final status = (salon['status'] ?? salon['salonStatus'] ?? salon['state'])
+        ?.toString()
+        .trim()
+        .toLowerCase() ?? '';
+    if (status == 'closed' ||
+        status == 'close' ||
+        status == 'inactive' ||
+        status == 'disabled' ||
+        status == 'off' ||
+        status == 'maintenance' ||
+        status == 'đóng cửa' ||
+        status == 'dong cua' ||
+        status == 'ngừng hoạt động') {
+      return false;
+    }
+
+    // 2. Explicit boolean flags
+    final isClosedVal = salon['isClosed'];
+    if (isClosedVal == true || isClosedVal == 1 || isClosedVal == 'true') {
+      return false;
+    }
+    final isOpenVal = salon['isOpen'];
+    if (isOpenVal == false || isOpenVal == 0 || isOpenVal == 'false') {
+      return false;
+    }
+    final isOperatingVal = salon['isOperating'];
+    if (isOperatingVal == false ||
+        isOperatingVal == 0 ||
+        isOperatingVal == 'false') {
+      return false;
+    }
+    final isActiveVal = salon['isActive'];
+    if (isActiveVal == false || isActiveVal == 0 || isActiveVal == 'false') {
+      return false;
+    }
+
+    // 3. Operating hours check for current day
+    final operatingHours = salon['operatingHours'];
+    if (operatingHours is List && operatingHours.isNotEmpty) {
+      final now = DateTime.now();
+      final currentDayOfWeek = now.weekday % 7;
+
+      final todayHours = operatingHours
+          .whereType<Map>()
+          .where((h) {
+            final day = h['dayOfWeek'];
+            if (day == null) return false;
+            final d = day is num ? day.toInt() : int.tryParse(day.toString());
+            return d == currentDayOfWeek;
+          })
+          .toList();
+
+      if (todayHours.isNotEmpty) {
+        final allClosedToday = todayHours.every((h) {
+          final isClosed = h['isClosed'];
+          final isOpen = h['isOpen'];
+          return isClosed == true ||
+              isClosed == 1 ||
+              isClosed == 'true' ||
+              isOpen == false ||
+              isOpen == 0 ||
+              isOpen == 'false';
+        });
+        if (allClosedToday) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
   Future<List<dynamic>> getSalons() async {
     final response = await _apiClient.get(
       '/Salons',
-      queryParameters: {'PageIndex': 1, 'PageSize': 10, 'Status': 'Open'},
+      queryParameters: {
+        'PageNumber': 1,
+        'PageIndex': 1,
+        'PageSize': 100,
+        'Status': 'Open',
+      },
     );
     final items = (response.data['data']['items'] as List<dynamic>?) ?? [];
 
@@ -100,7 +195,12 @@ class BookingApiService {
         return {...map, 'rating': rating};
       }),
     );
-    return listWithRatings;
+
+    // Lọc nghiêm ngặt chỉ giữ lại các salon đang MỞ cửa (loại bỏ hoàn toàn salon đóng cửa)
+    return listWithRatings.where((salon) {
+      if (salon is! Map) return false;
+      return _isSalonOpen(salon);
+    }).toList();
   }
 
   Future<Map<String, dynamic>?> getSalonDetail(String salonId) async {
@@ -123,34 +223,51 @@ class BookingApiService {
     List<String> serviceIds,
     int? shapeMethodConfigId,
   ) {
-    return [
-      if (nailVariantId > 0)
-        {
-          'nailVariantId': nailVariantId,
-          'shapeMethodConfigId': ?shapeMethodConfigId,
-          'quantity': 1,
-        },
-      ...serviceIds.map((serviceId) => {'serviceId': serviceId, 'quantity': 1}),
-    ];
+    final List<Map<String, dynamic>> items = [];
+    if (nailVariantId > 0) {
+      items.add({
+        'nailVariantId': nailVariantId,
+        if (shapeMethodConfigId != null)
+          'shapeMethodConfigId': shapeMethodConfigId,
+        'quantity': 1,
+      });
+    }
+
+    final serviceCounts = <String, int>{};
+    for (final sId in serviceIds) {
+      if (sId.isNotEmpty) {
+        serviceCounts[sId] = (serviceCounts[sId] ?? 0) + 1;
+      }
+    }
+    for (final entry in serviceCounts.entries) {
+      items.add({
+        'serviceId': entry.key,
+        'quantity': entry.value,
+      });
+    }
+    return items;
   }
 
   Future<List<dynamic>> getSuggestedArtists(
     String salonId,
-    String bookingDate,
-    int nailVariantId,
-    List<String> serviceIds,
+    String bookingDate, {
+    int nailVariantId = 0,
+    List<String> serviceIds = const [],
     int? shapeMethodConfigId,
-  ) async {
+    List<Map<String, dynamic>>? bookingItems,
+  }) async {
+    final itemsPayload = bookingItems ??
+        _buildBookingItems(
+          nailVariantId,
+          serviceIds,
+          shapeMethodConfigId,
+        );
     final response = await _apiClient.post(
       '/Bookings/suggested-artists',
       data: {
         'salonId': salonId,
         'bookingDate': bookingDate,
-        'bookingItems': _buildBookingItems(
-          nailVariantId,
-          serviceIds,
-          shapeMethodConfigId,
-        ),
+        'bookingItems': itemsPayload,
       },
     );
     final items = (response.data['data'] as List<dynamic>?) ?? [];
@@ -185,11 +302,16 @@ class BookingApiService {
 
   Future<List<dynamic>> getArtistAvailableSlots(
     String artistId,
-    String bookingDate,
-  ) async {
-    final response = await _apiClient.get(
+    String bookingDate, {
+    List<Map<String, dynamic>>? bookingItems,
+  }) async {
+    final response = await _apiClient.post(
       '/Bookings/artist-available-slots',
-      queryParameters: {'NailArtistId': artistId, 'BookingDate': bookingDate},
+      data: {
+        'nailArtistId': artistId,
+        'bookingDate': bookingDate,
+        'bookingItems': bookingItems ?? [],
+      },
     );
     final List<dynamic> list =
         response.data['data']['timeSlots'] ?? response.data['data'] ?? [];
@@ -353,6 +475,12 @@ class BookingApiService {
   /// Giữ chỗ slot 5 phút để tránh race condition.
   /// Dùng [expiresAt] (UTC) để tính toán thời gian còn lại chính xác,
   /// tránh sai lệch đồng hồ giữa app và server.
+  ///
+  /// Lưu ý: [nailArtistId] có thể rỗng cho luồng "Không chọn thợ"
+  /// (backend sẽ giữ chỗ ở cấp salon).
+  ///
+  /// Throw [AppException] với message từ server khi API trả về
+  /// `isSucceeded: false` (kể cả HTTP 200 lẫn 4xx) để UI hiển thị.
   Future<Map<String, dynamic>> holdSlot({
     required String salonId,
     required String nailArtistId,
@@ -364,13 +492,37 @@ class BookingApiService {
       '/Bookings/hold-slot',
       data: {
         'salonId': salonId,
-        'nailArtistId': nailArtistId,
+        // Chỉ gửi nailArtistId khi có chọn thợ cụ thể
+        if (nailArtistId.isNotEmpty) 'nailArtistId': nailArtistId,
         'bookingDate': bookingDate,
         'startTime': startTime,
         'bookingItems': bookingItems,
       },
     );
-    return response.data['data'] ?? {};
+
+    // Kiểm tra ApiResponse wrapper từ backend .NET:
+    // { isSucceeded: false, message: "Thợ đã đầy lịch...", data: null }
+    // Một số backend trả HTTP 200 + isSucceeded=false mà Dio KHÔNG throw,
+    // nên cần check thủ công để ném exception cho UI hiển thị message.
+    final body = response.data;
+    if (body is Map) {
+      final isSucceeded =
+          body['isSucceeded'] ?? body['IsSucceeded'] ?? true;
+      if (isSucceeded == false) {
+        final msg = (body['message'] ?? body['Message'] ?? body['error'] ?? body['Error'])
+            ?.toString()
+            .trim();
+        throw AppException(
+          message: (msg != null && msg.isNotEmpty)
+              ? msg
+              : 'Không thể giữ khung giờ này. Vui lòng chọn giờ khác.',
+          code: 'HOLD_SLOT_FAILED',
+          data: body,
+        );
+      }
+    }
+
+    return body is Map ? (body['data'] ?? {}) : {};
   }
 
   /// Huỷ giữ chỗ thủ công (khi user đổi ý hoặc thoát màn hình đặt lịch).

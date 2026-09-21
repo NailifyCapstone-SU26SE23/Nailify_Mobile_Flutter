@@ -430,6 +430,13 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
         _hasPaidAmount(booking) &&
         !_isRefunded(booking);
 
+    final warrantyForBookingId = booking['warrantyForBookingId']?.toString() ??
+        booking['WarrantyForBookingId']?.toString();
+    final isWarrantyBooking =
+        warrantyForBookingId != null && warrantyForBookingId.isNotEmpty;
+    final isWarrantiedBooking =
+        booking['isWarrantied'] == true || booking['IsWarrantied'] == true;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -491,7 +498,84 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
+
+            // Banner Đơn Bảo Hành
+            if (isWarrantyBooking) ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.shield_outlined, color: Colors.blue),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Đây là đơn bảo hành cho lịch hẹn gốc #$warrantyForBookingId',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue.shade800,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () => context.push(
+                        '/my-bookings/detail',
+                        extra: warrantyForBookingId,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        child: Text(
+                          'Xem đơn gốc →',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade900,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ] else if (isWarrantiedBooking) ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.teal.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.teal.shade200),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.verified_outlined, color: Colors.teal),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Lịch hẹn này đã được tạo đơn bảo hành.',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.teal.shade800,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
             Text(
               S.of(context).bookingGeneralInfo,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -606,9 +690,9 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.05),
+                color: AppColors.primary.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
               ),
               child: Column(
                 children: [
@@ -755,7 +839,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   border: Border.all(color: AppColors.borderLight),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.02),
+                      color: Colors.black.withValues(alpha: 0.02),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -831,7 +915,10 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                 child: OutlinedButton.icon(
                   onPressed: () => context.push(
                     '/booking-transactions',
-                    extra: widget.bookingId,
+                    extra: {
+                      'bookingId': widget.bookingId,
+                      'booking': booking,
+                    },
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
@@ -850,16 +937,15 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
               ),
             ],
             if (canReschedule) ...[
-              const SizedBox(height: 24),
+              SizedBox(height: (canPay || _hasPaidAmount(booking)) ? 12 : 24),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    showDialog(
+                    RescheduleBookingDialog.show(
                       context: context,
-                      builder: (context) => RescheduleBookingDialog(
-                        bookingId: widget.bookingId,
-                        onConfirm: (newDate, newTime, reason) async {
+                      bookingId: widget.bookingId,
+                      onConfirm: (newDate, newTime, reason) async {
                           try {
                             final success = await _apiService
                                 .requestRescheduleBooking(
@@ -907,9 +993,8 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                             return false;
                           }
                         },
-                      ),
-                    );
-                  },
+                      );
+                    },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -1584,7 +1669,11 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
 
   Widget _buildDiscountRow(Map<String, dynamic> discount) {
     final name = discount['name']?.toString() ?? 'Giảm giá';
+    final amount = discount['amount'];
     final amountDisplay = discount['amountDisplay']?.toString();
+    final rawDisplay = (amountDisplay?.isNotEmpty == true)
+        ? amountDisplay!
+        : (amount != null ? PriceFormatter.format(amount) : '');
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -1597,9 +1686,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
             ),
           ),
           Text(
-            amountDisplay?.isNotEmpty == true
-                ? _formatDiscountDisplay(amountDisplay!)
-                : PriceFormatter.format(-(discount['amount'] ?? 0)),
+            _formatDiscountDisplay(rawDisplay),
             style: const TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 14,
@@ -1633,8 +1720,10 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
   }
 
   String _formatDiscountDisplay(String value) {
-    final text = value.trim();
+    var text = value.trim();
     if (text.isEmpty) return text;
+    text = text.replaceAll(RegExp(r'^-+'), '');
+    text = '-$text';
     final lower = text.toLowerCase();
     if (lower.contains('đ') || lower.contains('vnd')) return text;
     return '$text VNĐ';

@@ -17,7 +17,28 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage> {
   final BookingApiService _bookingApiService = BookingApiService();
   bool _isLoadingBooking = false;
 
+  bool get _isWalletDeposit {
+    final type = widget.paymentData['paymentType']?.toString().toLowerCase() ?? '';
+    final policy = widget.paymentData['policy']?.toString().toLowerCase() ?? '';
+    final rawBookingId = widget.paymentData['bookingId'];
+    final isBooking = rawBookingId != null &&
+        rawBookingId.toString().trim().isNotEmpty;
+    if (isBooking) return false;
+    if (type.contains('booking')) return false;
+    if (type == 'walletdeposit' ||
+        type.contains('wallet') ||
+        policy.contains('nạp tiền vào ví')) {
+      return true;
+    }
+    return false;
+  }
+
   Future<void> _openBookingDetail() async {
+    if (_isWalletDeposit) {
+      context.go('/profile/wallet');
+      return;
+    }
+
     if (_isLoadingBooking) return;
 
     final directBookingId = widget.paymentData['bookingId']?.toString() ?? '';
@@ -28,7 +49,7 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage> {
 
     final orderCode = _orderCode;
     if (orderCode == null) {
-      _showError('Không tìm thấy mã thanh toán.');
+      context.go('/my-bookings');
       return;
     }
 
@@ -40,14 +61,14 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage> {
       if (!mounted) return;
 
       if (bookingId.isEmpty) {
-        _showError('Chưa tìm thấy lịch hẹn cho thanh toán này.');
+        context.go('/my-bookings');
         return;
       }
 
       context.go('/my-bookings/detail', extra: bookingId);
     } catch (e) {
       if (!mounted) return;
-      _showError('Không thể lấy lịch hẹn: $e');
+      context.go('/my-bookings');
     } finally {
       if (mounted) setState(() => _isLoadingBooking = false);
     }
@@ -71,9 +92,11 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage> {
     return _PaymentResultView(
       icon: Icons.check_circle,
       iconColor: Colors.green,
-      title: 'Thanh toán thành công',
-      message: 'Giao dịch đã được xác nhận. Cảm ơn bạn đã thanh toán.',
-      primaryLabel: 'Xem lịch hẹn',
+      title: _isWalletDeposit ? 'Nạp tiền ví thành công!' : 'Thanh toán thành công',
+      message: _isWalletDeposit
+          ? 'Số dư ví tiền mặt của bạn đã được cập nhật thành công.'
+          : 'Giao dịch đã được xác nhận. Cảm ơn bạn đã thanh toán.',
+      primaryLabel: _isWalletDeposit ? 'Về Ví của tôi' : 'Xem lịch hẹn',
       isLoading: _isLoadingBooking,
       onPrimaryPressed: _openBookingDetail,
     );

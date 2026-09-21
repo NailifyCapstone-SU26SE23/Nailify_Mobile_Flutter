@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/utils/duration_formatter.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../../nails/data/models/nail_variant_model.dart';
 import '../../../nails/data/models/shape_method_config_model.dart';
@@ -286,7 +287,7 @@ class _NailVariantDetailSheetState extends State<NailVariantDetailSheet> {
         _buildSpecCard(
           icon: Icons.access_time_filled_rounded,
           label: S.of(context).bookingDurationLabel,
-          value: S.of(context).minutesLabel('${variant.duration}'),
+          value: DurationFormatter.format(variant.duration, context: context),
         ),
       );
     }
@@ -493,7 +494,7 @@ class _NailVariantDetailSheetState extends State<NailVariantDetailSheet> {
                     ),
                   ),
                   subtitle: Text(
-                    S.of(context).minutesLabel('${method.duration}'),
+                    DurationFormatter.format(method.duration, context: context),
                     style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
                   ),
                   secondary: Text(

@@ -137,8 +137,14 @@ class _TransactionDetailPageState extends State<TransactionDetailPage> {
                     _buildRow('Mã đơn hàng', transaction['orderCode']),
                     _buildRow('Khách hàng', transaction['customerName']),
                     _buildRow('Cửa hàng', transaction['salonName']),
-                    _buildRow('Ngày tạo', transaction['createdAt']),
-                    _buildRow('Ngày thanh toán', transaction['paidAt']),
+                    _buildRow(
+                      'Ngày tạo',
+                      _formatDateTime(transaction['createdAt']),
+                    ),
+                    _buildRow(
+                      'Ngày thanh toán',
+                      _formatDateTime(transaction['paidAt']),
+                    ),
                   ],
                 ),
               ),
@@ -203,6 +209,21 @@ class _TransactionDetailPageState extends State<TransactionDetailPage> {
     if (value is int) return value;
     if (value is num) return value.toInt();
     return int.tryParse(value?.toString() ?? '');
+  }
+
+  String _formatDateTime(dynamic value) {
+    if (value == null) return '';
+    final str = value.toString().trim();
+    if (str.isEmpty) return '';
+    final date = DateTime.tryParse(str)?.toLocal();
+    if (date == null) return str;
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final year = date.year;
+    final hour = date.hour.toString().padLeft(2, '0');
+    final minute = date.minute.toString().padLeft(2, '0');
+    final second = date.second.toString().padLeft(2, '0');
+    return '$day/$month/$year $hour:$minute:$second';
   }
 
   Widget _buildRow(String label, dynamic value) {

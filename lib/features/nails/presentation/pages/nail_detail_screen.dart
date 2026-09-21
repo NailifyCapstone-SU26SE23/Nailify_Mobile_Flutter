@@ -5,13 +5,14 @@ import '../../../../generated/l10n.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/auth_guard.dart';
+import '../../../../core/utils/duration_formatter.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../../../core/di/injection.dart';
+import '../../data/models/category_model.dart';
 import '../../data/models/nail_design_model.dart';
 import '../../data/models/nail_variant_model.dart';
 import '../../data/repositories/favorite_nail_repository.dart';
 import '../../data/repositories/nail_design_repository.dart';
-import '../../data/repositories/nail_variant_repository.dart';
 
 class NailDetailScreen extends StatefulWidget {
   final int nailDesignId;
@@ -107,15 +108,12 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
   final _scrollController = ScrollController();
   late NailDesignModel _design;
 
-  double _rating = 0.0;
-  int _reviewsCount = 0;
-  bool _isLoadingRating = true;
+  int _visibleVariantsCount = 3;
 
   @override
   void initState() {
     super.initState();
     _design = widget.design;
-    _loadRating();
   }
 
   @override
@@ -123,7 +121,6 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.design.nailDesignId != widget.design.nailDesignId) {
       _design = widget.design;
-      _loadRating();
     }
   }
 
@@ -177,27 +174,6 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
     }
   }
 
-  Future<void> _loadRating() async {
-    if (!mounted) return;
-    setState(() {
-      _isLoadingRating = true;
-    });
-
-    final variantIds = widget.design.nailVariants
-        .map((v) => v.nailVariantId)
-        .toList();
-    final stats = await getIt<NailVariantRepository>()
-        .getRatingStatsForVariants(variantIds);
-
-    if (mounted) {
-      setState(() {
-        _rating = stats['rating'] as double;
-        _reviewsCount = stats['reviewsCount'] as int;
-        _isLoadingRating = false;
-      });
-    }
-  }
-
   @override
   void dispose() {
     _scrollController.dispose();
@@ -217,8 +193,6 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
   @override
   Widget build(BuildContext context) {
     final design = _design;
-    final ratingStr = _isLoadingRating ? '...' : _rating.toStringAsFixed(1);
-    final reviewsCountStr = _isLoadingRating ? '...' : '$_reviewsCount';
 
     return Stack(
       children: [
@@ -249,8 +223,8 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
                     20,
                     24,
                     20,
-                    100,
-                  ), // padding bottom 100 to avoid sticky bottom bar overlapping
+                    130,
+                  ), // generous bottom padding to prevent bottom bar overlapping
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -265,73 +239,67 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
                           letterSpacing: -0.5,
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      // Subtitle categories
-                      Text(
-                        design.categories.isEmpty
-                            ? S.of(context).nailDesignFallback
-                            : design.categories.map((c) => c.name).join(' • '),
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade500,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      // Rating block
+                      const SizedBox(height: 8),
+                      // Subtitle categories (Luxury Badges)
+                      _buildCategoryBadges(context, design.categories),
+                      const SizedBox(height: 24),
+                      // Introduction header & card
                       Row(
                         children: [
-                          const Icon(
-                            Icons.star_rounded,
-                            color: Color(0xFFFFB300),
-                            size: 20,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            ratingStr,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
+                          Container(
+                            width: 4,
+                            height: 18,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(4),
                             ),
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 8),
                           Text(
-                            '($reviewsCountStr)',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey.shade500,
+                            S.of(context).introduction,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                              fontFamily: 'Georgia',
+                              letterSpacing: -0.5,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 24),
-                      // Introduction
-                      Text(
-                        S.of(context).introduction,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                          fontFamily: 'Georgia',
-                          letterSpacing: -0.5,
-                        ),
-                      ),
                       const SizedBox(height: 10),
-                      Text(
-                        design.description.isEmpty
-                            ? S.of(context).nailDescriptionDefault
-                            : design.description,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade700,
-                          height: 1.6,
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFAFAFD),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFF2ECF3)),
+                        ),
+                        child: Text(
+                          design.description.isEmpty
+                              ? S.of(context).nailDescriptionDefault
+                              : design.description,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade800,
+                            height: 1.6,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 28),
                       // Variants section
                       Row(
                         children: [
+                          Container(
+                            width: 4,
+                            height: 18,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
                           Text(
                             S.of(context).availableVariants,
                             style: const TextStyle(
@@ -345,21 +313,24 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
                           const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
+                              horizontal: 10,
+                              vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(
-                                0xFFFF4081,
-                              ).withValues(alpha: 0.08),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFFFF0F6), Color(0xFFFFECF4)],
+                              ),
                               borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: AppColors.primary.withValues(alpha: 0.2),
+                              ),
                             ),
                             child: Text(
                               '${design.nailVariants.length}',
                               style: const TextStyle(
-                                fontSize: 11,
+                                fontSize: 12,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFFFF4081),
+                                color: AppColors.primary,
                               ),
                             ),
                           ),
@@ -378,12 +349,12 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
                             ),
                           ),
                         )
-                      else
+                      else ...[
                         ListView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           padding: EdgeInsets.zero,
-                          itemCount: design.nailVariants.length,
+                          itemCount: design.nailVariants.length.clamp(0, _visibleVariantsCount),
                           itemBuilder: (context, index) {
                             return _VariantSection(
                               variant: design.nailVariants[index],
@@ -391,6 +362,39 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
                             );
                           },
                         ),
+                        if (design.nailVariants.length > _visibleVariantsCount) ...[
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                setState(() {
+                                  _visibleVariantsCount += 5;
+                                });
+                              },
+                              style: OutlinedButton.styleFrom(
+                                backgroundColor: const Color(0xFFF4F4F6),
+                                foregroundColor: AppColors.textPrimary,
+                                side: BorderSide.none,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              icon: const Icon(Icons.expand_more_rounded, size: 20),
+                              label: Text(
+                                Localizations.localeOf(context).languageCode == 'vi'
+                                    ? 'Xem thêm biến thể móng (${design.nailVariants.length - _visibleVariantsCount})'
+                                    : 'Load More Related Variants (${design.nailVariants.length - _visibleVariantsCount})',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ],
                   ),
                 ),
@@ -447,24 +451,31 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
           ),
         ),
 
-        // 3. Sticky Bottom Bar
+        // 3. Floating Sticky Bottom Bar
         Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
+          bottom: 12,
+          left: 16,
+          right: 16,
           child: Container(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             decoration: BoxDecoration(
               color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -4),
+                  color: Colors.black.withValues(alpha: 0.12),
+                  blurRadius: 20,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 6),
                 ),
               ],
+              border: Border.all(
+                color: const Color(0xFFFFF0F5),
+                width: 1.5,
+              ),
             ),
             child: SafeArea(
+              top: false,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -479,7 +490,7 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
                               design.nailVariants.length.toString(),
                             ),
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: 15,
                           fontWeight: FontWeight.bold,
                           color: AppColors.textPrimary,
                         ),
@@ -495,16 +506,16 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
                     ],
                   ),
                   SizedBox(
-                    height: 48,
+                    height: 44,
                     child: ElevatedButton(
                       onPressed: _scrollToVariants,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                         elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 28),
+                        padding: const EdgeInsets.symmetric(horizontal: 26),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(14),
                         ),
                       ),
                       child: Text(
@@ -522,6 +533,155 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildCategoryBadges(
+    BuildContext context,
+    List<CategoryModel> categories,
+  ) {
+    if (categories.isEmpty) {
+      return Text(
+        S.of(context).nailDesignFallback,
+        style: TextStyle(
+          fontSize: 13,
+          color: Colors.grey.shade500,
+          fontWeight: FontWeight.w500,
+        ),
+      );
+    }
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: categories.map((c) {
+        final badgeStyle = _getCategoryBadgeStyle(c.categoryTypeName, c.name);
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+          decoration: BoxDecoration(
+            gradient: badgeStyle.bgGradient,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: badgeStyle.borderColor,
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: badgeStyle.textColor.withValues(alpha: 0.08),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: badgeStyle.iconBgColor,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  badgeStyle.icon,
+                  size: 12,
+                  color: badgeStyle.iconColor,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                c.name,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: badgeStyle.textColor,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  _BadgeStyle _getCategoryBadgeStyle(String typeName, String categoryName) {
+    final type = typeName.toLowerCase();
+    final name = categoryName.toLowerCase();
+
+    if (type.contains('shape') ||
+        type.contains('form') ||
+        name.contains('hạnh nhân') ||
+        name.contains('dáng') ||
+        name.contains('móng')) {
+      return const _BadgeStyle(
+        bgGradient: LinearGradient(colors: [Color(0xFFEFF6FF), Color(0xFFDBEAFE)]),
+        borderColor: Color(0xFFBFDBFE),
+        textColor: Color(0xFF1E40AF),
+        iconColor: Color(0xFF2563EB),
+        iconBgColor: Color(0xFFDBEAFE),
+        icon: Icons.gesture_rounded,
+      );
+    }
+    if (type.contains('surface') ||
+        name.contains('sơn') ||
+        name.contains('mờ') ||
+        name.contains('bóng') ||
+        name.contains('tráng')) {
+      return const _BadgeStyle(
+        bgGradient: LinearGradient(colors: [Color(0xFFFFF7ED), Color(0xFFFFEDD5)]),
+        borderColor: Color(0xFFFED7AA),
+        textColor: Color(0xFFC2410C),
+        iconColor: Color(0xFFEA580C),
+        iconBgColor: Color(0xFFFFEDD5),
+        icon: Icons.layers_rounded,
+      );
+    }
+    if (type.contains('season') ||
+        type.contains('mùa') ||
+        name.contains('thu') ||
+        name.contains('hạ') ||
+        name.contains('đông') ||
+        name.contains('xuân')) {
+      return const _BadgeStyle(
+        bgGradient: LinearGradient(colors: [Color(0xFFFEFCE8), Color(0xFFFEF08A)]),
+        borderColor: Color(0xFFFDE047),
+        textColor: Color(0xFFA16207),
+        iconColor: Color(0xFFCA8A04),
+        iconBgColor: Color(0xFFFEF9C3),
+        icon: Icons.wb_sunny_rounded,
+      );
+    }
+    if (type.contains('skin') || name.contains('da') || name.contains('tông')) {
+      return const _BadgeStyle(
+        bgGradient: LinearGradient(colors: [Color(0xFFFAF5FF), Color(0xFFF3E8FF)]),
+        borderColor: Color(0xFFE9D5FF),
+        textColor: Color(0xFF7E22CE),
+        iconColor: Color(0xFF9333EA),
+        iconBgColor: Color(0xFFF3E8FF),
+        icon: Icons.face_retouching_natural_rounded,
+      );
+    }
+    if (type.contains('occasion') ||
+        name.contains('dịp') ||
+        name.contains('văn phòng') ||
+        name.contains('tiệc')) {
+      return const _BadgeStyle(
+        bgGradient: LinearGradient(colors: [Color(0xFFF0FDF4), Color(0xFFDCFCE7)]),
+        borderColor: Color(0xFFBBF7D0),
+        textColor: Color(0xFF15803D),
+        iconColor: Color(0xFF16A34A),
+        iconBgColor: Color(0xFFDCFCE7),
+        icon: Icons.celebration_rounded,
+      );
+    }
+    return const _BadgeStyle(
+      bgGradient: LinearGradient(colors: [Color(0xFFFFF0F6), Color(0xFFFFECF4)]),
+      borderColor: Color(0xFFFFC0E0),
+      textColor: Color(0xFFC2185B),
+      iconColor: Color(0xFFE91E63),
+      iconBgColor: Color(0xFFFFE0F0),
+      icon: Icons.palette_rounded,
     );
   }
 }
@@ -606,124 +766,269 @@ class _ImageGalleryState extends State<_ImageGallery> {
   }
 }
 
+class _BadgeStyle {
+  final LinearGradient bgGradient;
+  final Color borderColor;
+  final Color textColor;
+  final Color iconColor;
+  final Color iconBgColor;
+  final IconData icon;
+
+  const _BadgeStyle({
+    required this.bgGradient,
+    required this.borderColor,
+    required this.textColor,
+    required this.iconColor,
+    required this.iconBgColor,
+    required this.icon,
+  });
+}
+
 class _VariantSection extends StatelessWidget {
   final NailVariantModel variant;
   final String designName;
 
   const _VariantSection({required this.variant, required this.designName});
 
+  String _formatDuration(BuildContext context, int? mins) {
+    return DurationFormatter.format(mins, context: context);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final durationText = _formatDuration(context, variant.duration);
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFFFF0F5), width: 1.5),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFF4EBF2), width: 1.3),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFFF4081).withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 14,
+            spreadRadius: 0,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         onTap: () => context.push(
           '/nail-variants/${variant.nailVariantId}',
           extra: {'designName': designName},
         ),
         child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: SizedBox(
-                  width: 72,
-                  height: 72,
-                  child: variant.imageUrl.isEmpty
-                      ? Container(
-                          color: const Color(0xFFF5F5F7),
-                          child: const Icon(
-                            Icons.spa_rounded,
-                            color: Colors.grey,
-                          ),
-                        )
-                      : Image.network(variant.imageUrl, fit: BoxFit.cover),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      variant.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Georgia',
-                        color: AppColors.textPrimary,
-                        letterSpacing: -0.2,
-                      ),
+              // Top Part: Product Thumbnail + Title + Specs
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Product image (88x88)
+                  Container(
+                    width: 88,
+                    height: 88,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: const Color(0xFFF0E5EC)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
-                    if (variant.nailShape != null ||
-                        variant.nailSurface != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        '${S.of(context).nailShapeLabel}: ${variant.nailShape?.name ?? S.of(context).noneLabel} • ${S.of(context).nailSurfaceLabel}: ${variant.nailSurface?.name ?? S.of(context).noneLabel}',
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(17),
+                      child: variant.imageUrl.isEmpty
+                          ? Container(
+                              color: const Color(0xFFFFF0F5),
+                              child: const Icon(
+                                Icons.spa_rounded,
+                                color: AppColors.primary,
+                                size: 32,
+                              ),
+                            )
+                          : Image.network(
+                              variant.imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                color: const Color(0xFFF5F5F7),
+                                child: const Icon(
+                                  Icons.broken_image_rounded,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  // Title + Attribute Tags
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          variant.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Georgia',
+                            color: AppColors.textPrimary,
+                            height: 1.25,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            if (variant.nailShape != null)
+                              _buildMiniChip(
+                                Icons.gesture_rounded,
+                                variant.nailShape!.name,
+                                const Color(0xFFEFF6FF),
+                                const Color(0xFF1D4ED8),
+                              ),
+                            if (variant.nailSurface != null)
+                              _buildMiniChip(
+                                Icons.layers_rounded,
+                                variant.nailSurface!.name,
+                                const Color(0xFFFFF7ED),
+                                const Color(0xFFC2410C),
+                              ),
+                            if (durationText.isNotEmpty)
+                              _buildMiniChip(
+                                Icons.access_time_rounded,
+                                durationText,
+                                const Color(0xFFF0FDF4),
+                                const Color(0xFF15803D),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Thin Separator Line
+              Container(
+                height: 1,
+                color: const Color(0xFFF4ECF2),
+              ),
+              const SizedBox(height: 10),
+              // Bottom Action Bar: Price + CTA Button
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Giá dịch vụ',
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.grey.shade500,
                           fontWeight: FontWeight.w500,
+                          color: Color(0xFF8E8E93),
+                        ),
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        PriceFormatter.format(variant.price),
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.3,
                         ),
                       ),
                     ],
-                    const SizedBox(height: 6),
-                    Text(
-                      PriceFormatter.format(variant.price),
-                      style: const TextStyle(
-                        color: Color(0xFFFF4081),
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 9,
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              // Outlined "Đặt" button like in Image 2
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: const Color(0xFFFF4081),
-                    width: 1.5,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFF66C4), Color(0xFFFF4081)],
+                      ),
+                      borderRadius: BorderRadius.circular(22),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.32),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          S.of(context).bookBtn,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        const Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          color: Colors.white,
+                          size: 11,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                child: Text(
-                  S.of(context).bookBtn,
-                  style: const TextStyle(
-                    color: Color(0xFFFF4081),
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                ],
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildMiniChip(
+    IconData icon,
+    String text,
+    Color bgColor,
+    Color textColor,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: textColor),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              color: textColor,
+            ),
+          ),
+        ],
       ),
     );
   }

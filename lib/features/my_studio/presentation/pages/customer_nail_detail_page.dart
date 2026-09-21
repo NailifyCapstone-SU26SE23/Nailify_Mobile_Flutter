@@ -1,11 +1,15 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/di/injection.dart';
+import '../../../../core/network/signalr_service.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../cubit/studio_cubit.dart';
 import '../../data/models/customer_nail_model.dart';
 import '../../../../core/utils/duration_formatter.dart';
+import '../../data/datasources/studio_api_service.dart';
 import '../../../../generated/l10n.dart';
 
 class CustomerNailDetailPage extends StatefulWidget {
@@ -18,10 +22,41 @@ class CustomerNailDetailPage extends StatefulWidget {
 }
 
 class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
+  late final StudioDetailCubit _cubit;
+  StreamSubscription? _quotedSub;
+  StreamSubscription? _rejectedSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _cubit = StudioDetailCubit()..fetchDetail(widget.id);
+    final signalR = getIt<SignalRService>();
+    _quotedSub = signalR.onCustomNailQuoted.listen((event) {
+      if (mounted &&
+          (event.customerNailRequestId == widget.id ||
+              event.customerNailId == widget.id)) {
+        _cubit.fetchDetail(widget.id);
+      }
+    });
+    _rejectedSub = signalR.onCustomNailRejected.listen((event) {
+      if (mounted && event.customerNailRequestId == widget.id) {
+        _cubit.fetchDetail(widget.id);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _quotedSub?.cancel();
+    _rejectedSub?.cancel();
+    _cubit.close();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => StudioDetailCubit()..fetchDetail(widget.id),
+    return BlocProvider.value(
+      value: _cubit,
       child: Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
@@ -131,8 +166,67 @@ class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
                         'Mẫu móng của bạn đang được chuyên viên tại tiệm đánh giá tính khả thi và báo giá.',
                       ),
 
-                    // --- TRẠNG THÁI: ĐÃ DUYỆT ---
-                    if (nail.status == 'Approved' || nail.status == 'Quoted')
+                    // --- TRẠNG THÁI: CHỜ XÁC NHẬN BÁO GIÁ (QUOTED) ---
+                    if (nail.status == 'Quoted')
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 20),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade50,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.amber.shade300),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.monetization_on_rounded,
+                                  color: Colors.amber.shade800,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Salon đã gửi Báo Giá!',
+                                  style: TextStyle(
+                                    color: Colors.amber.shade900,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Divider(color: Colors.amber),
+                            const SizedBox(height: 8),
+                            _buildPriceDurationRow(
+                              'Giá mẫu:',
+                              PriceFormatter.format(nail.customerNailPrice),
+                            ),
+                            if (nail.price > 0) ...[
+                              const SizedBox(height: 8),
+                              _buildPriceDurationRow(
+                                'Phí custom:',
+                                PriceFormatter.format(nail.price),
+                              ),
+                            ],
+                            const SizedBox(height: 8),
+                            _buildPriceDurationRow(
+                              'Thời gian dự kiến:',
+                              DurationFormatter.format(nail.duration),
+                            ),
+                            if (nail.stylistName.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              _buildPriceDurationRow(
+                                'Thợ chỉ định:',
+                                nail.stylistName,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+
+                    // --- TRẠNG THÁI: ĐÃ DUYỆT (APPROVED) ---
+                    if (nail.status == 'Approved')
                       Container(
                         margin: const EdgeInsets.only(bottom: 20),
                         padding: const EdgeInsets.all(16),
@@ -261,9 +355,9 @@ class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
       margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -326,17 +420,92 @@ class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
     );
   }
 
+  bool _isRespondingQuote = false;
+
+  Future<void> _handleRespondQuote(
+    bool isAccepted, {
+    String? rejectReason,
+  }) async {
+    setState(() => _isRespondingQuote = true);
+    final api = StudioApiService();
+    final res = await api.respondToQuote(
+      widget.id,
+      isAccepted: isAccepted,
+      rejectReason: rejectReason,
+    );
+    if (!mounted) return;
+    setState(() => _isRespondingQuote = false);
+
+    final isOk = res['success'] == true;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(res['message']?.toString() ?? ''),
+        backgroundColor: isOk ? Colors.green.shade600 : Colors.red.shade400,
+      ),
+    );
+
+    if (isOk) {
+      _cubit.fetchDetail(widget.id);
+    }
+  }
+
+  Future<void> _showRejectReasonDialog(BuildContext context) async {
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (dialogCtx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'Từ chối báo giá',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          content: TextField(
+            controller: controller,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              hintText: 'Nhập lý do từ chối (không bắt buộc)...',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(),
+              child: const Text('Hủy'),
+            ),
+            ElevatedButton(
+              onPressed: () =>
+                  Navigator.of(dialogCtx).pop(controller.text.trim()),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Từ chối'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result != null && mounted) {
+      await _handleRespondQuote(false, rejectReason: result);
+    }
+  }
+
   /// Footer action button:
   /// - Approved => "Đặt lịch ngay" -> forward data sang CustomNailBookingPage
+  /// - Quoted => "Từ chối báo giá" & "Đồng ý báo giá"
   Widget? _buildFooterAction(BuildContext context, CustomerNailModel nail) {
-    if (nail.status == 'Approved' || nail.status == 'Quoted') {
+    if (nail.status == 'Approved') {
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, -5),
             ),
@@ -366,6 +535,79 @@ class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
         ),
       );
     }
+
+    if (nail.status == 'Quoted') {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          top: false,
+          child: _isRespondingQuote
+              ? const SizedBox(
+                  height: 48,
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              : Row(
+                  children: [
+                    Expanded(
+                      flex: 4,
+                      child: OutlinedButton(
+                        onPressed: () => _showRejectReasonDialog(context),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red.shade600,
+                          side: BorderSide(color: Colors.red.shade300),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Từ chối',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 6,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _handleRespondQuote(true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        icon: const Icon(
+                          Icons.check_circle_outline_rounded,
+                          size: 20,
+                        ),
+                        label: const Text(
+                          'Đồng ý báo giá',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      );
+    }
+
     return null;
   }
 

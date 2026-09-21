@@ -1,60 +1,68 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/constants/app_colors.dart';
 import '../../../../generated/l10n.dart';
+import '../../data/models/home_data_models.dart';
 
+/// Khối Featured Services dạng Vuốt Ngang (Horizontal Scroll):
+/// - Hỗ trợ nạp dữ liệu động từ API hoặc danh sách mặc định
 class HomeServices extends StatelessWidget {
-  const HomeServices({super.key});
+  final List<HomeCategoryItem> categories;
+  final bool isLoading;
 
-  void _showPopup(BuildContext context, String serviceName) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Thông báo'),
-        content: Text(
-          'Chuyển hướng đến chi tiết dịch vụ: "$serviceName".\nTính năng này đang phát triển.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Đóng'),
-          ),
-        ],
-      ),
-    );
-  }
+  const HomeServices({
+    super.key,
+    this.categories = const [],
+    this.isLoading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final services = [
-      {
-        'title': S.of(context).serviceCare,
-        'image': 'assets/images/image 1.png',
-      },
-      {'title': S.of(context).serviceGel, 'image': 'assets/images/image 2.png'},
-      {'title': S.of(context).serviceArt, 'image': 'assets/images/image 3.png'},
-      {
-        'title': S.of(context).serviceAcrylic,
-        'image': 'assets/images/image 4.png',
-      },
+    if (isLoading && categories.isEmpty) {
+      return _buildSkeleton(context);
+    }
+
+    final List<HomeCategoryItem> displayList = categories;
+    /*
+    final List<HomeCategoryItem> displayList = categories.isNotEmpty
+        ? categories
+        : [
+            HomeCategoryItem(id: 1, title: S.of(context).serviceCare, imagePath: 'assets/images/image 1.png'),
+            HomeCategoryItem(id: 2, title: S.of(context).serviceGel, imagePath: 'assets/images/image 2.png'),
+            HomeCategoryItem(id: 3, title: S.of(context).serviceArt, imagePath: 'assets/images/image 3.png'),
+            HomeCategoryItem(id: 4, title: S.of(context).serviceAcrylic, imagePath: 'assets/images/image 4.png'),
+            const HomeCategoryItem(id: 5, title: 'Dưỡng', imagePath: 'assets/images/home-mid.jpg'),
+          ];
+    */
+
+    if (displayList.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final gradients = [
+      [const Color(0xFFFF66C4), const Color(0xFFFFB347)],
+      [const Color(0xFFFF4B72), const Color(0xFFFF7E53)],
+      [const Color(0xFFE02B6D), const Color(0xFFFF66C4)],
+      [const Color(0xFFB39DDB), const Color(0xFF7E57C2)],
+      [const Color(0xFF81D4FA), const Color(0xFF29B6F6)],
     ];
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Dòng tiêu đề sang trọng
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Tiêu đề dịch vụ tinh gọn + nút xem tất cả
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
                 children: [
                   Container(
                     width: 4,
-                    height: 20,
+                    height: 18,
                     decoration: BoxDecoration(
-                      color: AppColors.primary,
+                      color: const Color(0xFFE02B6D),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -62,161 +70,222 @@ class HomeServices extends StatelessWidget {
                   Text(
                     S.of(context).servicesTitle,
                     style: const TextStyle(
-                      fontSize: 20,
+                      fontSize: 17,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
-                      letterSpacing: 0.5,
+                      letterSpacing: 0.2,
                     ),
                   ),
                 ],
               ),
-              Padding(
-                padding: const EdgeInsets.only(left: 12.0, top: 4),
-                child: Text(
-                  S.of(context).servicesSubtitle,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w500,
-                  ),
+              GestureDetector(
+                onTap: () => context.push('/services'),
+                child: const Row(
+                  children: [
+                    Text(
+                      'Tất cả',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFFE02B6D),
+                      ),
+                    ),
+                    SizedBox(width: 2),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 16,
+                      color: Color(0xFFE02B6D),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 18),
+        ),
+        const SizedBox(height: 14),
 
-          // 2. Lưới 2 cột chứa các hình ảnh dịch vụ có đổ bóng mịn màng
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 0.95,
-            ),
-            itemCount: services.length,
+        // Hàng icon tròn nằm ngang vuốt mượt (Horizontal Scroll)
+        SizedBox(
+          height: 98,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+            itemCount: displayList.length,
             itemBuilder: (context, index) {
-              final service = services[index];
-              return _buildServiceCard(
-                context,
-                service['title']!,
-                service['image']!,
+              final item = displayList[index];
+              final String title = item.title;
+              final String? imagePath = item.imagePath;
+              final String? iconUrl = item.iconUrl;
+              final gradient = gradients[index % gradients.length];
+
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 6.0),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      final idStr = item.id?.toString() ?? '';
+                      if (idStr.isNotEmpty && idStr != '0') {
+                        context.push('/services/$idStr');
+                      } else {
+                        context.push('/services');
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(36),
+                    splashColor: const Color(0xFFFF4B72).withValues(alpha: 0.15),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Icon Tròn với viền gradient nhẹ
+                          Container(
+                            width: 62,
+                            height: 62,
+                            padding: const EdgeInsets.all(2.5),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: LinearGradient(
+                                colors: gradient,
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: gradient.first.withValues(alpha: 0.25),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white,
+                              ),
+                              child: ClipOval(
+                                child: iconUrl != null && iconUrl.startsWith('http')
+                                    ? Image.network(
+                                        iconUrl,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) => Icon(
+                                          Icons.spa_rounded,
+                                          color: gradient.first,
+                                          size: 26,
+                                        ),
+                                      )
+                                    : Image.asset(
+                                        imagePath ?? 'assets/images/image 1.png',
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) => Icon(
+                                          Icons.spa_rounded,
+                                          color: gradient.first,
+                                          size: 26,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 8),
+
+                          // Tên dịch vụ
+                          SizedBox(
+                            width: 68,
+                            child: Text(
+                              title,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                                height: 1.1,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               );
             },
           ),
-          const SizedBox(height: 28),
-
-          // Nút xem thêm dạng Outlined Button thanh lịch
-          Center(
-            child: OutlinedButton.icon(
-              onPressed: () => context.go('/services'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primaryDark,
-                side: const BorderSide(color: AppColors.primary, width: 1.5),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 40,
-                  vertical: 14,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(26),
-                ),
-              ),
-              icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-              label: Text(
-                S.of(context).viewAllServices,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.0,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  // Dựng Layout xếp chồng cho từng ô (Card) với đổ bóng sang trọng
-  Widget _buildServiceCard(
-    BuildContext context,
-    String title,
-    String imagePath,
-  ) {
-    return GestureDetector(
-      onTap: () => _showPopup(context, title),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: Stack(
-            fit: StackFit.expand,
+  Widget _buildSkeleton(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
             children: [
-              // HÌNH ẢNH SẢN PHẨM
-              Image.asset(
-                imagePath,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: Colors.grey.shade100,
-                  child: const Icon(
-                    Icons.spa_outlined,
-                    color: Colors.grey,
-                    size: 32,
-                  ),
-                ),
-              ),
-
-              // Gradient tối mịn màng để nổi bật chữ
               Container(
+                width: 4,
+                height: 18,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withValues(alpha: 0.65),
-                    ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    stops: const [0.3, 1.0],
-                  ),
+                  color: const Color(0xFFE02B6D).withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-
-              // CHỮ TÊN DỊCH VỤ
-              Positioned(
-                bottom: 14,
-                left: 14,
-                right: 14,
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black45,
-                        blurRadius: 4,
-                        offset: Offset(0, 1),
-                      ),
-                    ],
-                  ),
+              const SizedBox(width: 8),
+              Text(
+                S.of(context).servicesTitle,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],
           ),
         ),
-      ),
+        const SizedBox(height: 14),
+        SizedBox(
+          height: 98,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+            itemCount: 5,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 62,
+                      height: 62,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.grey.shade200,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: 48,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
+
+

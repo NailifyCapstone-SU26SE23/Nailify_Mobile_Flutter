@@ -299,7 +299,7 @@ class AdvancedNailPainter extends CustomPainter {
         poseKeypoint.base.dy > 5;
 
     // 1. Calculate unit vector pointing from cuticle toward fingertip
-    final Offset tipDir = isPoseValid
+    final Offset rawTipDir = isPoseValid
         ? poseKeypoint.direction
         : _tipDirection(
             poly,
@@ -310,6 +310,15 @@ class AdvancedNailPainter extends CustomPainter {
             fingerIndex,
             indexCentroid,
           );
+
+    // 🎯 Ensure tipDir points Cuticle -> Tip (respecting Pose keypoint & Thumb radial vector)
+    final Offset tipDir = _verifyAndFixTipDirection(
+      poly,
+      center,
+      rawTipDir,
+      isPoseValid: isPoseValid,
+      fingerIndex: fingerIndex,
+    );
 
     // Canvas rotation mapping local -Y (up) onto fingertip direction
     final double angle = math.atan2(tipDir.dx, -tipDir.dy);
@@ -346,6 +355,7 @@ class AdvancedNailPainter extends CustomPainter {
     if (nailShapeImage != null) {
       _paintShapeNail(
         canvas,
+        localPts,
         localBounds,
         nailColor,
         fingerIndex,
@@ -372,8 +382,10 @@ class AdvancedNailPainter extends CustomPainter {
 
   /// 💅 FAKE NAIL TIP EXTENSION MODE (Almond / Coffin / Stiletto shape PNG).
   /// Anchored at cuticle and extends past fingertip along the finger direction vector.
+  /// Clipped 100% to the real fingernail contour (cuticle & lateral edges) at the nail bed.
   void _paintShapeNail(
     Canvas canvas,
+    List<Offset> localPts,
     Rect nb,
     Color color,
     int fingerIndex, {
@@ -391,8 +403,8 @@ class AdvancedNailPainter extends CustomPainter {
         ? math.max(nb.height, poseLength)
         : nb.height;
 
-    // Fit width snugly to cyan polygon width + 15% margin to cover natural nail
-    final double fitWidth = nb.width * _widthCover;
+    // Fit width to cover natural nail polygon width with margin so clipping is seamless
+    final double fitWidth = math.max(nb.width * _widthCover, nb.width * 1.04);
     final double aspect = src.height / src.width;
     final double fitHeight = math.max(
       fitWidth * aspect,
@@ -407,6 +419,27 @@ class AdvancedNailPainter extends CustomPainter {
       fitWidth,
       fitHeight,
     );
+
+    // 🎯 100% Precise Fingernail Outline Alignment:
+    // Path of the natural nail bed (exact cuticle arc and side contours)
+    final Path nailPath = Path()..addPolygon(localPts, true);
+
+    // Extension region above the natural nail tip for the fake nail tip shape
+    final Rect tipExtensionRect = Rect.fromLTRB(
+      dest.left,
+      dest.top,
+      dest.right,
+      nb.top + 2.0,
+    );
+    final Path tipPath = Path()..addRect(tipExtensionRect);
+
+    // Combined precision clip path:
+    // - Below nb.top + 2.0 (nail bed & cuticle): strictly clipped by nailPath (matches cuticle 100%)
+    // - Above nb.top + 2.0 (tip extension): allows the fake nail tip shape to extend past fingertip
+    final Path clipPath = Path.combine(PathOperation.union, nailPath, tipPath);
+
+    canvas.save();
+    canvas.clipPath(clipPath);
 
     canvas.saveLayer(dest.inflate(dest.width), Paint());
 
@@ -439,7 +472,8 @@ class AdvancedNailPainter extends CustomPainter {
       Paint()..blendMode = BlendMode.dstIn,
     );
 
-    canvas.restore();
+    canvas.restore(); // restore layer
+    canvas.restore(); // restore clip
   }
 
   /// 🎨 NATURAL NAIL BED COLOR FILL MODE
@@ -533,6 +567,49 @@ class AdvancedNailPainter extends CustomPainter {
     } else {
       return -axis;
     }
+  }
+
+  /// Ensures [dir] strictly points from Cuticle (wider base) to Fingertip (narrower tip).
+  /// Respects AI Pose Keypoint models and Thumb anatomical radial vectors.
+  Offset _verifyAndFixTipDirection(
+    List<Offset> poly,
+    Offset center,
+    Offset candidateDir, {
+    bool isPoseValid = false,
+    int fingerIndex = 0,
+  }) {
+    if (poly.length < 3) return candidateDir;
+    final double len = candidateDir.distance;
+    if (len < 1e-4) return candidateDir;
+    final Offset uDir = Offset(candidateDir.dx / len, candidateDir.dy / len);
+
+    // AI Pose Keypoints and Thumb vectors are pre-computed with palm anatomy context
+    if (isPoseValid || fingerIndex == 1) return uDir;
+
+    final double angle = math.atan2(uDir.dx, -uDir.dy);
+    final List<Offset> localPts = [
+      for (final pt in poly) _rotate(pt - center, -angle),
+    ];
+
+    double minL = double.infinity, maxL = -double.infinity;
+    for (final lp in localPts) {
+      if (lp.dy < minL) minL = lp.dy;
+      if (lp.dy > maxL) maxL = lp.dy;
+    }
+    final double height = maxL - minL;
+    if (height < 2.0) return uDir;
+
+    final double yTop = minL + height * 0.25;
+    final double yBottom = minL + height * 0.75;
+
+    final double topWidth = _polygonWidthAtY(localPts, yTop);
+    final double bottomWidth = _polygonWidthAtY(localPts, yBottom);
+
+    if (topWidth > bottomWidth * 1.15) {
+      return -uDir;
+    }
+
+    return uDir;
   }
 
   double _polygonWidthAtY(List<Offset> localPts, double targetY) {
@@ -878,7 +955,7 @@ class AdvancedNailPainter extends CustomPainter {
           poseKpt.base.dx > 5 &&
           poseKpt.base.dy > 5;
 
-      final Offset tipDir = isPoseValid
+      final Offset rawTipDir = isPoseValid
           ? poseKpt.direction
           : _tipDirection(
               poly,
@@ -889,6 +966,14 @@ class AdvancedNailPainter extends CustomPainter {
               fingerIndex,
               palmInfo.indexCentroid,
             );
+
+      final Offset tipDir = _verifyAndFixTipDirection(
+        poly,
+        center,
+        rawTipDir,
+        isPoseValid: isPoseValid,
+        fingerIndex: fingerIndex,
+      );
 
       final double angle = math.atan2(tipDir.dx, -tipDir.dy);
 

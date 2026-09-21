@@ -11,9 +11,12 @@ import '../../../../generated/l10n_x.dart';
 import '../../data/models/wallet_voucher_model.dart';
 import '../../data/repositories/wallet_repository.dart';
 import '../cubit/wallet_overview_cubit.dart';
+import '../widgets/cash_wallet_card.dart';
+import '../widgets/deposit_sheet.dart';
 import '../widgets/empty_wallet_state.dart';
-import '../widgets/loyalty_tier_card.dart';
-import '../widgets/wallet_balance_card.dart';
+import '../widgets/loyalty_rewards_card.dart';
+import '../widgets/withdraw_sheet.dart';
+import 'wallet_transactions_page.dart';
 
 class WalletOverviewPage extends StatelessWidget {
   const WalletOverviewPage({super.key});
@@ -57,28 +60,84 @@ class _WalletOverviewViewState extends State<_WalletOverviewView> {
     super.dispose();
   }
 
+  void _openDepositSheet(BuildContext context) {
+    DepositSheet.show(
+      context,
+      onConfirmDeposit: (amount) async {
+        final repo = getIt<WalletRepository>();
+        final paymentData = await repo.requestDeposit(amount);
+        if (!mounted) return;
+
+        if (paymentData.isNotEmpty && context.mounted) {
+          final Map<String, dynamic> enrichedData = Map<String, dynamic>.from(paymentData);
+          enrichedData['paymentType'] = 'WalletDeposit';
+          enrichedData['policy'] = 'Nạp tiền vào ví cá nhân';
+          context.push('/payment-qr', extra: enrichedData);
+        }
+      },
+    );
+  }
+
+  void _openWithdrawSheet(BuildContext context, double availableBalance) {
+    final cubit = context.read<WalletOverviewCubit>();
+    WithdrawSheet.show(
+      context,
+      availableBalance: availableBalance,
+      onConfirmWithdraw: ({
+        required double amount,
+        required String bankName,
+        required String bankCode,
+        required String accountNumber,
+        required String accountHolderName,
+      }) async {
+        final repo = getIt<WalletRepository>();
+        final success = await repo.requestWithdrawal(
+          amount: amount,
+          bankName: bankName,
+          bankCode: bankCode,
+          accountNumber: accountNumber,
+          accountHolderName: accountHolderName,
+        );
+        if (mounted && success) {
+          cubit.refresh();
+        }
+        return success;
+      },
+    );
+  }
+
+  void _openTransactionsPage(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const WalletTransactionsPage()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFF6F7FB),
       appBar: AppBar(
         title: Text(
           context.l10n.walletTitle,
           style: const TextStyle(
             color: AppColors.primaryDark,
-            fontWeight: FontWeight.w800,
-            fontFamily: 'Georgia',
+            fontWeight: FontWeight.w900,
+            fontSize: 20,
+            letterSpacing: 0.2,
           ),
         ),
         centerTitle: true,
         backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0.5,
         actions: [
           IconButton(
-            tooltip: context.l10n.pointsHistoryTitle,
-            onPressed: () => context.push('/profile/wallet/transactions'),
+            tooltip: 'Lịch sử ví tiền mặt',
+            onPressed: () => _openTransactionsPage(context),
             icon: const Icon(
-              Icons.history_rounded,
+              Icons.receipt_long_rounded,
               color: AppColors.primaryDark,
             ),
           ),
@@ -94,7 +153,10 @@ class _WalletOverviewViewState extends State<_WalletOverviewView> {
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Icon(Icons.refresh_rounded),
+                    : const Icon(
+                        Icons.refresh_rounded,
+                        color: AppColors.primaryDark,
+                      ),
               );
             },
           ),
@@ -120,27 +182,46 @@ class _WalletOverviewViewState extends State<_WalletOverviewView> {
           if (snapshot == null) {
             return const SizedBox.shrink();
           }
+
+          final cash = snapshot.cashSummary;
+          final balance = cash?.balance ?? 0.0;
+          final frozenBalance = cash?.frozenBalance ?? 0.0;
+          final availableBalance = cash?.availableBalance ?? (balance - frozenBalance);
+
           return RefreshIndicator(
             onRefresh: () => context.read<WalletOverviewCubit>().refresh(),
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  LoyaltyTierCard(
+                  // Card 1: Digital Cash Wallet Card
+                  CashWalletCard(
+                    balance: balance,
+                    frozenBalance: frozenBalance,
+                    loyaltyTierName: snapshot.loyalty.loyaltyTier?.name,
+                    onDepositPressed: () => _openDepositSheet(context),
+                    onWithdrawPressed: () => _openWithdrawSheet(context, availableBalance),
+                    onHistoryPressed: () => _openTransactionsPage(context),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Card 2: Loyalty Tier, Reward Points & Voucher Actions Card
+                  LoyaltyRewardsCard(
                     tier: snapshot.loyalty.loyaltyTier,
+                    loyaltyPoints: snapshot.loyalty.loyaltyPoint,
                     lifetimePoints: snapshot.loyalty.lifetimePoints,
                     progress: snapshot.loyalty.progressPercent,
                     pointsToNext: snapshot.loyalty.pointsToNextTier,
                     hasNextTier: snapshot.loyalty.hasNextTier,
-                  ),
-                  const SizedBox(height: 16),
-                  WalletBalanceCard(
-                    loyaltyPoints: snapshot.loyalty.loyaltyPoint,
                     usableVoucherCount: snapshot.usableVoucherCount,
+                    onRedeemPressed: () => context.push('/profile/wallet/redeem'),
+                    onMyVouchersPressed: () => context.push('/profile/wallet/vouchers'),
+                    onHistoryPressed: () => context.push('/profile/wallet/transactions'),
                   ),
                   const SizedBox(height: 20),
+
                   if (snapshot.expiringSoon.isNotEmpty) ...[
                     Row(
                       children: [
@@ -148,7 +229,7 @@ class _WalletOverviewViewState extends State<_WalletOverviewView> {
                           child: Text(
                             context.l10n.walletExpiringSoon,
                             style: const TextStyle(
-                              fontSize: 14,
+                              fontSize: 15,
                               fontWeight: FontWeight.w800,
                               color: AppColors.textPrimary,
                             ),
@@ -160,8 +241,8 @@ class _WalletOverviewViewState extends State<_WalletOverviewView> {
                           child: Text(
                             context.l10n.viewAll,
                             style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
                               color: AppColors.primary,
                             ),
                           ),
@@ -184,12 +265,19 @@ class _WalletOverviewViewState extends State<_WalletOverviewView> {
 
   Widget _buildQuickVoucherTile(BuildContext context, WalletVoucherModel v) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade100),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -198,11 +286,11 @@ class _WalletOverviewViewState extends State<_WalletOverviewView> {
             height: 48,
             decoration: BoxDecoration(
               color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: v.imageUrl != null && v.imageUrl!.isNotEmpty
                 ? ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                     child: Image.network(
                       v.imageUrl!,
                       fit: BoxFit.cover,
@@ -227,17 +315,18 @@ class _WalletOverviewViewState extends State<_WalletOverviewView> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: 13.5,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
                   ),
                 ),
+                const SizedBox(height: 2),
                 Text(
                   v.discountLabel,
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: 13.5,
                     fontWeight: FontWeight.w900,
-                    color: AppColors.primary,
+                    color: AppColors.primaryDark,
                   ),
                 ),
               ],

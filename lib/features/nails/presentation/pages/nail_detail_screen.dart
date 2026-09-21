@@ -5,6 +5,7 @@ import '../../../../generated/l10n.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/auth_guard.dart';
+import '../../../../core/utils/duration_formatter.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../../../core/di/injection.dart';
 import '../../data/models/category_model.dart';
@@ -790,28 +791,7 @@ class _VariantSection extends StatelessWidget {
   const _VariantSection({required this.variant, required this.designName});
 
   String _formatDuration(BuildContext context, int? mins) {
-    if (mins == null || mins <= 0) return '';
-    final hours = mins ~/ 60;
-    final remainingMins = mins % 60;
-    final isVi = Localizations.localeOf(context).languageCode == 'vi';
-
-    if (isVi) {
-      if (hours > 0 && remainingMins > 0) {
-        return '$hours giờ $remainingMins phút';
-      } else if (hours > 0) {
-        return '$hours giờ';
-      } else {
-        return '$remainingMins phút';
-      }
-    } else {
-      if (hours > 0 && remainingMins > 0) {
-        return '${hours}h${remainingMins}m';
-      } else if (hours > 0) {
-        return '${hours}h';
-      } else {
-        return '${mins}m';
-      }
-    }
+    return DurationFormatter.format(mins, context: context);
   }
 
   @override

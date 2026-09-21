@@ -12,6 +12,40 @@ class RescheduleBookingDialog extends StatefulWidget {
     required this.onConfirm,
   });
 
+  /// Phương thức hiển thị Modal với hiệu ứng Pop-up (Scale & Fade) siêu mượt mà
+  static Future<bool?> show({
+    required BuildContext context,
+    required String bookingId,
+    required Future<bool> Function(
+      String newDate,
+      String newTime,
+      String reason,
+    )
+    onConfirm,
+  }) {
+    return showGeneralDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'RescheduleBookingDialog',
+      barrierColor: Colors.black.withValues(alpha: 0.54),
+      transitionDuration: const Duration(milliseconds: 280),
+      pageBuilder: (ctx, anim1, anim2) => RescheduleBookingDialog(
+        bookingId: bookingId,
+        onConfirm: onConfirm,
+      ),
+      transitionBuilder: (ctx, anim1, anim2, child) {
+        final curve = CurvedAnimation(
+          parent: anim1,
+          curve: Curves.easeOutCubic,
+        );
+        return ScaleTransition(
+          scale: Tween<double>(begin: 0.92, end: 1.0).animate(curve),
+          child: FadeTransition(opacity: anim1, child: child),
+        );
+      },
+    );
+  }
+
   @override
   State<RescheduleBookingDialog> createState() =>
       _RescheduleBookingDialogState();
@@ -58,7 +92,6 @@ class _RescheduleBookingDialogState extends State<RescheduleBookingDialog> {
   void _setPeriod(String period) {
     setState(() {
       _selectedPeriod = period;
-      // Reset if selected slot is not in the new period
       final newSlots = _getSlotsForPeriod(period);
       if (_selectedTimeStr != null && !newSlots.contains(_selectedTimeStr)) {
         _selectedTimeStr = null;
@@ -108,19 +141,20 @@ class _RescheduleBookingDialogState extends State<RescheduleBookingDialog> {
     return Expanded(
       child: InkWell(
         onTap: () => _setPeriod(label),
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(12),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary : const Color(0xFFF5F5F7),
-            borderRadius: BorderRadius.circular(30),
+            gradient: isSelected ? AppColors.quizGradient : null,
+            color: isSelected ? null : const Color(0xFFF2F2F7),
+            borderRadius: BorderRadius.circular(12),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.25),
+                      color: AppColors.primary.withValues(alpha: 0.3),
                       blurRadius: 8,
-                      offset: const Offset(0, 4),
+                      offset: const Offset(0, 3),
                     ),
                   ]
                 : null,
@@ -138,7 +172,7 @@ class _RescheduleBookingDialogState extends State<RescheduleBookingDialog> {
                 label,
                 style: TextStyle(
                   color: isSelected ? Colors.white : AppColors.textSecondary,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                   fontSize: 13,
                 ),
               ),
@@ -152,235 +186,490 @@ class _RescheduleBookingDialogState extends State<RescheduleBookingDialog> {
   @override
   Widget build(BuildContext context) {
     final dateText = _selectedDate == null
-        ? 'Chọn ngày hẹn'
+        ? 'Chọn ngày hẹn mới'
         : '${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}';
 
+    final mediaQuery = MediaQuery.of(context);
+    final maxHeight = mediaQuery.size.height * 0.85;
+
     return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: SingleChildScrollView(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxHeight),
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Form(
             key: _formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header
+                // Header (Cố định ở trên với thiết kế hiện đại)
                 Row(
                   children: [
-                    const Expanded(
-                      child: Text(
-                        'Yêu cầu dời lịch hẹn',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                          letterSpacing: -0.5,
-                        ),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        gradient: AppColors.quizGradient,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.edit_calendar_rounded,
+                        color: Colors.white,
+                        size: 22,
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.close_rounded,
-                        color: AppColors.textSecondary,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text(
+                            'Yêu cầu dời lịch hẹn',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primaryDark,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Thay đổi thời gian tiện hơn cho bạn',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
                       ),
-                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                    InkWell(
+                      onTap: () => Navigator.of(context).pop(),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFF2F2F7),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close_rounded,
+                          color: AppColors.textSecondary,
+                          size: 18,
+                        ),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Vui lòng chọn ngày và khung giờ hẹn mới cùng lý do để chúng tôi sắp xếp lại lịch của bạn.',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
+                const Divider(height: 1, color: Color(0xFFF0F0F3)),
+                const SizedBox(height: 16),
 
-                // Picker Ngày
-                const Text(
-                  'Ngày hẹn mới',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                InkWell(
-                  onTap: () => _selectDate(context),
-                  borderRadius: BorderRadius.circular(16),
-                  child: Ink(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF5F5F7),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
+                // Nội dung cuộn linh hoạt
+                Flexible(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(
-                          Icons.calendar_today_rounded,
-                          color: AppColors.primary,
-                          size: 20,
+                        // Picker Ngày
+                        Row(
+                          children: const [
+                            Icon(
+                              Icons.calendar_month_rounded,
+                              size: 16,
+                              color: AppColors.primary,
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              'Ngày hẹn mới',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 12),
-                        Text(
-                          dateText,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: _selectedDate == null
-                                ? FontWeight.normal
-                                : FontWeight.bold,
-                            color: _selectedDate == null
-                                ? AppColors.textSecondary
-                                : AppColors.textPrimary,
+                        const SizedBox(height: 10),
+                        InkWell(
+                          onTap: () => _selectDate(context),
+                          borderRadius: BorderRadius.circular(16),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _selectedDate != null
+                                  ? AppColors.primarySurface
+                                  : const Color(0xFFF7F7FA),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: _selectedDate != null
+                                    ? AppColors.primary.withValues(alpha: 0.4)
+                                    : const Color(0xFFE5E5EA),
+                                width: _selectedDate != null ? 1.5 : 1.0,
+                              ),
+                              boxShadow: _selectedDate != null
+                                  ? [
+                                      BoxShadow(
+                                        color: AppColors.primary.withValues(
+                                          alpha: 0.08,
+                                        ),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.event_available_rounded,
+                                  color: _selectedDate != null
+                                      ? AppColors.primary
+                                      : AppColors.textSecondary,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  dateText,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: _selectedDate == null
+                                        ? FontWeight.normal
+                                        : FontWeight.bold,
+                                    color: _selectedDate == null
+                                        ? AppColors.textSecondary
+                                        : AppColors.primaryDark,
+                                  ),
+                                ),
+                                const Spacer(),
+                                if (_selectedDate != null)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 3,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.15,
+                                      ),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Text(
+                                      'Đã chọn',
+                                      style: TextStyle(
+                                        color: AppColors.primaryDark,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  const Icon(
+                                    Icons.arrow_forward_ios_rounded,
+                                    color: AppColors.textSecondary,
+                                    size: 14,
+                                  ),
+                              ],
+                            ),
                           ),
                         ),
-                        const Spacer(),
-                        const Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          color: Colors.grey,
-                          size: 14,
+
+                        // Mở rộng mượt mà khi chọn ngày hẹn mới
+                        AnimatedSize(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOutCubic,
+                          child: _selectedDate == null
+                              ? const SizedBox.shrink()
+                              : Column(
+                                  key: const ValueKey('time_slots_section'),
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const SizedBox(height: 20),
+                                    Row(
+                                      children: const [
+                                        Icon(
+                                          Icons.access_time_filled_rounded,
+                                          size: 16,
+                                          color: AppColors.primary,
+                                        ),
+                                        SizedBox(width: 6),
+                                        Text(
+                                          'Chọn khung giờ mới',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+
+                                    // Tabs chọn buổi: Sáng / Chiều / Tối
+                                    Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF2F2F7),
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          _buildPeriodTab(
+                                            'Sáng',
+                                            Icons.wb_sunny_rounded,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          _buildPeriodTab(
+                                            'Chiều',
+                                            Icons.wb_twilight_rounded,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          _buildPeriodTab(
+                                            'Tối',
+                                            Icons.nightlight_round,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+
+                                    // Slots giờ (Chuyển tab mượt mà với AnimatedSwitcher)
+                                    AnimatedSwitcher(
+                                      duration: const Duration(
+                                        milliseconds: 220,
+                                      ),
+                                      switchInCurve: Curves.easeOutCubic,
+                                      switchOutCurve: Curves.easeInCubic,
+                                      transitionBuilder: (child, animation) {
+                                        return FadeTransition(
+                                          opacity: animation,
+                                          child: SlideTransition(
+                                            position: Tween<Offset>(
+                                              begin: const Offset(0, 0.04),
+                                              end: Offset.zero,
+                                            ).animate(animation),
+                                            child: child,
+                                          ),
+                                        );
+                                      },
+                                      child: LayoutBuilder(
+                                        key: ValueKey(_selectedPeriod),
+                                        builder: (context, constraints) {
+                                          final itemWidth =
+                                              (constraints.maxWidth - 24) / 4;
+                                          final slots = _getSlotsForPeriod(
+                                            _selectedPeriod,
+                                          );
+                                          return Wrap(
+                                            spacing: 8,
+                                            runSpacing: 8,
+                                            children: slots.map((slot) {
+                                              final isSelected =
+                                                  _selectedTimeStr == slot;
+                                              return InkWell(
+                                                onTap: () {
+                                                  setState(() {
+                                                    _selectedTimeStr = slot;
+                                                  });
+                                                },
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                child: AnimatedScale(
+                                                  scale: isSelected ? 1.02 : 1.0,
+                                                  duration: const Duration(
+                                                    milliseconds: 150,
+                                                  ),
+                                                  curve: Curves.easeOutBack,
+                                                  child: AnimatedContainer(
+                                                    duration: const Duration(
+                                                      milliseconds: 180,
+                                                    ),
+                                                    width: itemWidth,
+                                                    height: 42,
+                                                    decoration: BoxDecoration(
+                                                      gradient: isSelected
+                                                          ? AppColors
+                                                              .quizGradient
+                                                          : null,
+                                                      color: isSelected
+                                                          ? null
+                                                          : const Color(
+                                                              0xFFF7F7FA,
+                                                            ),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            12,
+                                                          ),
+                                                      border: Border.all(
+                                                        color: isSelected
+                                                            ? Colors.transparent
+                                                            : const Color(
+                                                                0xFFE5E5EA,
+                                                              ),
+                                                        width: 1.0,
+                                                      ),
+                                                      boxShadow: isSelected
+                                                          ? [
+                                                              BoxShadow(
+                                                                color: AppColors
+                                                                    .primary
+                                                                    .withValues(
+                                                                      alpha:
+                                                                          0.35,
+                                                                    ),
+                                                                blurRadius: 8,
+                                                                offset:
+                                                                    const Offset(
+                                                                      0,
+                                                                      3,
+                                                                    ),
+                                                              ),
+                                                            ]
+                                                          : null,
+                                                    ),
+                                                    child: Center(
+                                                      child: Text(
+                                                        slot,
+                                                        style: TextStyle(
+                                                          color: isSelected
+                                                              ? Colors.white
+                                                              : AppColors
+                                                                  .textPrimary,
+                                                          fontWeight: isSelected
+                                                              ? FontWeight.bold
+                                                              : FontWeight.w500,
+                                                          fontSize: 13,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              );
+                                            }).toList(),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
                         ),
+                        const SizedBox(height: 20),
+
+                        // Lý do dời lịch
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: const [
+                                Icon(
+                                  Icons.edit_note_rounded,
+                                  size: 18,
+                                  color: AppColors.primary,
+                                ),
+                                SizedBox(width: 6),
+                                Text(
+                                  'Lý do dời lịch',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            ValueListenableBuilder<TextEditingValue>(
+                              valueListenable: _reasonController,
+                              builder: (context, value, child) {
+                                final count = _countWords(value.text);
+                                return Text(
+                                  '$count/50 từ',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: count > 50
+                                        ? AppColors.error
+                                        : AppColors.textSecondary,
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _reasonController,
+                          maxLines: 3,
+                          scrollPadding: EdgeInsets.only(
+                            bottom: mediaQuery.viewInsets.bottom + 80,
+                          ),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textPrimary,
+                          ),
+                          decoration: InputDecoration(
+                            hintText:
+                                'Nhập lý do dời lịch (ví dụ: bận việc đột xuất)...',
+                            hintStyle: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 13,
+                            ),
+                            filled: true,
+                            fillColor: const Color(0xFFF7F7FA),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(
+                                color: Color(0xFFE5E5EA),
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(
+                                color: Color(0xFFE5E5EA),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(
+                                color: AppColors.primary,
+                                width: 1.5,
+                              ),
+                            ),
+                            contentPadding: const EdgeInsets.all(14),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Vui lòng nhập lý do';
+                            }
+                            if (_countWords(value) > 50) {
+                              return 'Lý do không được vượt quá 50 từ';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
                       ],
                     ),
                   ),
                 ),
+                const SizedBox(height: 16),
+                const Divider(height: 1, color: Color(0xFFF0F0F3)),
+                const SizedBox(height: 14),
 
-                // Chỉ hiển thị chọn khung giờ sau khi đã chọn ngày
-                if (_selectedDate != null) ...[
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Chọn khung giờ mới',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Tabs chọn buổi: Sáng / Chiều / Tối
-                  Row(
-                    children: [
-                      _buildPeriodTab('Sáng', Icons.wb_sunny_rounded),
-                      const SizedBox(width: 8),
-                      _buildPeriodTab('Chiều', Icons.wb_twilight_rounded),
-                      const SizedBox(width: 8),
-                      _buildPeriodTab('Tối', Icons.nightlight_round),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Slots giờ theo buổi
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final itemWidth =
-                          (constraints.maxWidth - 24) /
-                          4; // 4 cột, 3 khoảng cách 8px
-                      final slots = _getSlotsForPeriod(_selectedPeriod);
-                      return Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: slots.map((slot) {
-                          final isSelected = _selectedTimeStr == slot;
-                          return InkWell(
-                            onTap: () {
-                              setState(() {
-                                _selectedTimeStr = slot;
-                              });
-                            },
-                            borderRadius: BorderRadius.circular(12),
-                            child: Ink(
-                              width: itemWidth,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? AppColors.primary.withValues(alpha: 0.12)
-                                    : const Color(0xFFF5F5F7),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? AppColors.primary
-                                      : Colors.transparent,
-                                  width: 1.2,
-                                ),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  slot,
-                                  style: TextStyle(
-                                    color: isSelected
-                                        ? AppColors.primary
-                                        : AppColors.textPrimary,
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      );
-                    },
-                  ),
-                ],
-                const SizedBox(height: 20),
-
-                // Lý do dời lịch
-                const Text(
-                  'Lý do dời lịch',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _reasonController,
-                  maxLines: 3,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textPrimary,
-                  ),
-                  decoration: InputDecoration(
-                    hintText:
-                        'Nhập lý do dời lịch (ví dụ: bận việc đột xuất, tối đa 50 từ)...',
-                    hintStyle: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 13,
-                    ),
-                    filled: true,
-                    fillColor: const Color(0xFFF5F5F7),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.all(16),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Vui lòng nhập lý do';
-                    }
-                    if (_countWords(value) > 50) {
-                      return 'Lý do không được vượt quá 50 từ';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 24),
-
-                // Actions
+                // Nút hành động cố định ở đáy Dialog
                 Row(
                   children: [
                     Expanded(
@@ -410,85 +699,115 @@ class _RescheduleBookingDialogState extends State<RescheduleBookingDialog> {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: FilledButton(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 0,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: AppColors.quizGradient,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.35),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                        onPressed: _isSubmitting
-                            ? null
-                            : () async {
-                                if (_selectedDate == null) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Vui lòng chọn ngày hẹn mới',
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          onPressed: _isSubmitting
+                              ? null
+                              : () async {
+                                  if (_selectedDate == null) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Vui lòng chọn ngày hẹn mới',
+                                        ),
                                       ),
-                                    ),
-                                  );
-                                  return;
-                                }
-                                if (_selectedTimeStr == null) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Vui lòng chọn khung giờ hẹn mới',
-                                      ),
-                                    ),
-                                  );
-                                  return;
-                                }
-                                if (_formKey.currentState!.validate()) {
-                                  setState(() {
-                                    _isSubmitting = true;
-                                  });
-                                  try {
-                                    final formattedDate = DateTime.utc(
-                                      _selectedDate!.year,
-                                      _selectedDate!.month,
-                                      _selectedDate!.day,
-                                      12,
-                                      0,
-                                      0,
-                                    ).toIso8601String();
-                                    final success = await widget.onConfirm(
-                                      formattedDate,
-                                      _selectedTimeStr!,
-                                      _reasonController.text.trim(),
                                     );
-                                    if (!context.mounted) return;
-                                    if (success) {
-                                      Navigator.of(context).pop();
-                                    }
-                                  } finally {
-                                    if (mounted) {
-                                      setState(() {
-                                        _isSubmitting = false;
-                                      });
+                                    return;
+                                  }
+                                  if (_selectedTimeStr == null) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Vui lòng chọn khung giờ hẹn mới',
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  if (_formKey.currentState!.validate()) {
+                                    setState(() {
+                                      _isSubmitting = true;
+                                    });
+                                    try {
+                                      final formattedDate = DateTime.utc(
+                                        _selectedDate!.year,
+                                        _selectedDate!.month,
+                                        _selectedDate!.day,
+                                        12,
+                                        0,
+                                        0,
+                                      ).toIso8601String();
+                                      final success = await widget.onConfirm(
+                                        formattedDate,
+                                        _selectedTimeStr!,
+                                        _reasonController.text.trim(),
+                                      );
+                                      if (!context.mounted) return;
+                                      if (success) {
+                                        Navigator.of(context).pop();
+                                      }
+                                    } finally {
+                                      if (mounted) {
+                                        setState(() {
+                                          _isSubmitting = false;
+                                        });
+                                      }
                                     }
                                   }
-                                }
-                              },
-                        child: _isSubmitting
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Text(
-                                'Gửi yêu cầu',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
+                                },
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 200),
+                            child: _isSubmitting
+                                ? const SizedBox(
+                                    key: ValueKey('loading'),
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Row(
+                                    key: const ValueKey('submit_text'),
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: const [
+                                      Text(
+                                        'Gửi yêu cầu',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      SizedBox(width: 6),
+                                      Icon(
+                                        Icons.send_rounded,
+                                        color: Colors.white,
+                                        size: 16,
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ),
                       ),
                     ),
                   ],

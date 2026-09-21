@@ -186,8 +186,8 @@ class _BookingDateSelectionState extends State<BookingDateSelection> {
                       color: isSelected
                           ? Colors.white
                           : (isPastDate
-                              ? Colors.grey.shade300
-                              : AppColors.textPrimary),
+                                ? Colors.grey.shade300
+                                : AppColors.textPrimary),
                     ),
                   ),
                 ),

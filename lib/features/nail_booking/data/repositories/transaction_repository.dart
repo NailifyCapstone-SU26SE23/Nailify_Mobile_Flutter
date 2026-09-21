@@ -33,10 +33,26 @@ class TransactionRepository {
   Future<List<Map<String, dynamic>>> getTransactionsByBooking(
     String bookingId,
   ) async {
-    final response = await _apiClient.get<dynamic>(
-      '/Transactions/booking/$bookingId',
-    );
-    return ApiResponseParser.unwrapList(response.data);
+    try {
+      final response = await _apiClient.get<dynamic>(
+        '/Transactions/booking/$bookingId',
+      );
+      final list = ApiResponseParser.unwrapList(response.data);
+      if (list.isNotEmpty) return list;
+    } catch (_) {}
+
+    try {
+      final myTxs = await getMyTransactions(page: 1, pageSize: 50);
+      final filtered = myTxs.items.where((tx) {
+        final txBookingId = tx['bookingId']?.toString().toLowerCase().trim();
+        final targetBookingId = bookingId.toLowerCase().trim();
+        if (txBookingId != null && txBookingId == targetBookingId) return true;
+        return false;
+      }).toList();
+      if (filtered.isNotEmpty) return filtered;
+    } catch (_) {}
+
+    return [];
   }
 
   String _formatDate(DateTime date) {

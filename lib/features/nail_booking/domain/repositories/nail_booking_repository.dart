@@ -9,13 +9,14 @@ abstract class NailBookingRepository {
   /// Lấy danh sách dịch vụ thêm.
   Future<List<Map<String, dynamic>>> getServices();
 
-  /// Lấy danh sách thợ được gợi ý dựa trên salon, ngày, và dịch vụ.
+  /// Lấy danh sách thợ được gợi ý dựa trên salon, ngày, và dịch vụ/items.
   Future<List<Map<String, dynamic>>> getSuggestedArtists({
     required String salonId,
     required String bookingDate,
-    required int nailVariantId,
-    required List<String> serviceIds,
+    int nailVariantId = 0,
+    List<String> serviceIds = const [],
     int? shapeMethodConfigId,
+    List<Map<String, dynamic>>? bookingItems,
   });
 
   /// Lấy danh sách thợ theo salon (dùng cho ServiceBooking).
@@ -25,6 +26,7 @@ abstract class NailBookingRepository {
   Future<List<Map<String, dynamic>>> getArtistAvailableSlots({
     required String artistId,
     required String bookingDate,
+    List<Map<String, dynamic>>? bookingItems,
   });
 
   /// Lấy danh sách slot giờ rảnh của salon (không chọn thợ).

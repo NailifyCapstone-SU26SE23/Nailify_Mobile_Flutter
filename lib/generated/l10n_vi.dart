@@ -808,7 +808,7 @@ class SVi extends S {
   }
 
   @override
-  String get bookingDiscount => 'Giảm giá';
+  String get bookingDiscount => 'Giảm giá:';
 
   @override
   String get cancelBookingTitle => 'Hủy đặt lịch';
@@ -1066,6 +1066,46 @@ class SVi extends S {
   String get bookingStepSelectSalon => 'Chọn tiệm';
 
   @override
+  String get bookingStepArtist => 'Chọn thợ';
+
+  @override
+  String get bookingArtistAutoAssign => 'Tự động phân công';
+
+  @override
+  String get bookingArtistAutoAssignDesc =>
+      'Hệ thống tự sắp xếp thợ phù hợp nhất';
+
+  @override
+  String get bookingArtistHighestRating => 'Rating cao nhất';
+
+  @override
+  String get bookingSortHighExpertise => 'Chuyên môn cao';
+
+  @override
+  String get bookingSortNameAZ => 'Tên (A-Z)';
+
+  @override
+  String get ratingExcellent => 'Xuất sắc';
+
+  @override
+  String get ratingVeryGood => 'Rất tốt';
+
+  @override
+  String get ratingGood => 'Tốt';
+
+  @override
+  String get ratingHighlyRated => 'Đánh giá cao';
+
+  @override
+  String get bookingAddService => 'Thêm dịch vụ';
+
+  @override
+  String get bookingAddAddonService => 'Thêm dịch vụ phụ trợ';
+
+  @override
+  String get bookingEstimatedTotal => 'Tổng tạm tính:';
+
+  @override
   String get bookingStepServices => 'Dịch vụ';
 
   @override
@@ -1189,10 +1229,10 @@ class SVi extends S {
   String get bookingQtyLabel => 'Số lượng';
 
   @override
-  String get bookingAddService => 'Thêm dịch vụ';
+  String get bookingAddServiceTitle => 'Thêm Dịch Vụ Phụ Trợ';
 
   @override
-  String get bookingAddServiceTitle => 'Thêm Dịch Vụ Phụ Trợ';
+  String get bookingAddServiceBtn => 'Thêm dịch vụ';
 
   @override
   String get bookingSelectArtistTitle => 'Chọn thợ làm móng';
@@ -1842,6 +1882,65 @@ class SVi extends S {
   }
 
   @override
+  String get bookingInfoSalon => 'Chi nhánh';
+
+  @override
+  String get warrantyBookingTitle => 'Đặt lịch bảo hành';
+
+  @override
+  String get warrantyStepArtist => 'Chọn thợ';
+
+  @override
+  String get warrantyStepServices => 'Dịch vụ bảo hành';
+
+  @override
+  String get warrantyStepSchedule => 'Chọn ngày/giờ';
+
+  @override
+  String get warrantyStepConfirm => 'Xác nhận';
+
+  @override
+  String get warrantyPinnedArtist => 'Thợ đã làm trước đây';
+
+  @override
+  String get warrantyFree => 'Miễn phí';
+
+  @override
+  String get warrantyConfirmBtn => 'Xác nhận bảo hành';
+
+  @override
+  String get warrantyConfirmDepositBtn => 'Đặt cọc & xác nhận';
+
+  @override
+  String get warrantyAddonNote =>
+      'Có thể chọn thêm dịch vụ phát sinh (nếu có). Phần này sẽ tính phí.';
+
+  @override
+  String get warrantyDepositNote =>
+      'Bảo hành có phát sinh dịch vụ trả phí. Bạn cần đặt cọc trước khi hoàn tất.';
+
+  @override
+  String get warrantyExpiredTitle => 'Đã quá hạn bảo hành';
+
+  @override
+  String get warrantyExpiredDesc =>
+      'Thời hạn bảo hành tối đa là 7 ngày kể từ ngày hoàn thành lịch hẹn gốc. Vui lòng liên hệ salon để được hỗ trợ.';
+
+  @override
+  String get warrantyExpiredBackBtn => 'Quay lại';
+
+  @override
+  String get warrantyServiceNote =>
+      'Các dịch vụ bảo hành đã được liệt kê sẵn từ lịch hẹn trước. Bạn có thể bỏ chọn nếu không cần bảo hành mục nào.';
+
+  @override
+  String get warrantySuccessTitle => 'Đặt lịch bảo hành thành công!';
+
+  @override
+  String get warrantySuccessSubtitle =>
+      'Lịch bảo hành của bạn đã được ghi nhận.';
+
+  @override
   String get galleryHeaderTag => 'BỘ SƯU TẬP MÓNG NGHỆ THUẬT 2026';
 
   @override
@@ -1886,4 +1985,94 @@ class SVi extends S {
 
   @override
   String get galleryTryOn => 'Thử Móng';
+
+  @override
+  String get searchSalonHint => 'Tìm salon theo tên, địa chỉ...';
+
+  @override
+  String get allDistrictsFilter => 'Tất cả';
+
+  @override
+  String get bookingSelectSalonTitle => 'Chọn tiệm dịch vụ';
+
+  @override
+  String branchesCount(String count) {
+    return '$count chi nhánh';
+  }
+
+  @override
+  String get noMatchingSalon => 'Không tìm thấy salon nào phù hợp';
+
+  @override
+  String get viewDetailsLink => 'Chi tiết';
+
+  @override
+  String get salonOpenStatus => 'Đang mở cửa';
+
+  @override
+  String get salonClosedStatus => 'Đã đóng cửa';
+
+  @override
+  String get selectThisBranch => 'Chọn chi nhánh này';
+
+  @override
+  String get detailedAddress => 'Địa chỉ chi tiết';
+
+  @override
+  String get phoneTitle => 'Số điện thoại';
+
+  @override
+  String get operatingHours => 'Giờ mở cửa';
+
+  @override
+  String get todayBadge => 'Hôm nay';
+
+  @override
+  String get highlyRated => 'Nhiều đánh giá tốt';
+
+  @override
+  String get collapseList => 'Thu gọn danh sách';
+
+  @override
+  String viewMoreBranches(String count) {
+    return 'Xem thêm $count chi nhánh khác';
+  }
+
+  @override
+  String reservationMayExpireIn(String minutes, String seconds) {
+    return 'Chỗ có thể bị hủy sau $minutes:$seconds';
+  }
+
+  @override
+  String reservationMayExpireInClickToComplete(String minutes, String seconds) {
+    return 'Chỗ có thể bị hủy sau $minutes:$seconds! Nhấp để hoàn tất.';
+  }
+
+  @override
+  String slotHeldRemaining(String minutes, String seconds) {
+    return 'Slot đang được giữ cho bạn - còn $minutes:$seconds để hoàn tất';
+  }
+
+  @override
+  String slotHeldRemainingClickToReturn(String minutes, String seconds) {
+    return 'Slot đang được giữ chỗ – còn $minutes:$seconds để hoàn tất. Nhấp để quay lại.';
+  }
+
+  @override
+  String get bookingDepositRatioLabel => 'Tỷ lệ cọc:';
+
+  @override
+  String get bookingDepositAmountLabel => 'Tiền cọc cần thanh toán:';
+
+  @override
+  String get bookingWalletVoucher => 'Voucher trong ví';
+
+  @override
+  String get bookingSelectVoucher => 'Chọn voucher từ ví của bạn';
+
+  @override
+  String get bookingVoucherAvailable => 'có sẵn';
+
+  @override
+  String get bookingAppliedOffers => 'Ưu đãi được áp dụng';
 }

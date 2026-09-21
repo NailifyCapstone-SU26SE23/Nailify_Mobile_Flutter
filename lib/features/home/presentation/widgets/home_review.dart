@@ -8,59 +8,24 @@ import '../../data/models/home_data_models.dart';
 /// - Hỗ trợ nạp dữ liệu động từ API hoặc danh sách mặc định
 class CustomerReviews extends StatelessWidget {
   final List<HomeReviewItem> reviews;
+  final bool isLoading;
 
   const CustomerReviews({
     super.key,
     this.reviews = const [],
+    this.isLoading = false,
   });
 
-  @override
+  @override 
   Widget build(BuildContext context) {
-    final List<HomeReviewItem> displayList = reviews.isNotEmpty
-        ? reviews
-        : [
-            HomeReviewItem(
-              id: '1',
-              name: 'Linh Mai',
-              initials: 'LM',
-              review: S.of(context).reviewLinhMai,
-              stars: 5,
-              timeAgo: '2 ngày trước',
-            ),
-            HomeReviewItem(
-              id: '2',
-              name: 'Thu Nga',
-              initials: 'TN',
-              review: S.of(context).reviewThuNga,
-              stars: 4,
-              timeAgo: '5 ngày trước',
-            ),
-            HomeReviewItem(
-              id: '3',
-              name: 'Hoàng Anh',
-              initials: 'HA',
-              review: S.of(context).reviewHoangAnh,
-              stars: 5,
-              timeAgo: '1 tuần trước',
-            ),
-            const HomeReviewItem(
-              id: '4',
-              name: 'Phương Thảo',
-              initials: 'PT',
-              review: 'Nhân viên tư vấn nhiệt tình, làm móng tay rất sạch sẽ và cẩn thận.',
-              stars: 4,
-              timeAgo: '2 tuần trước',
-            ),
-            const HomeReviewItem(
-              id: '5',
-              name: 'Bích Ngọc',
-              initials: 'BN',
-              review: 'Dịch vụ nhanh chóng, màu sơn tươi tắn đúng như thiết kế tôi chọn.',
-              stars: 3,
-              timeAgo: '3 tuần trước',
-            ),
-          ];
+    if (isLoading && reviews.isEmpty) {
+      return _buildSkeleton(context);
+    }
 
+    if (reviews.isEmpty) {
+      return const SizedBox.shrink();
+    }
+ 
     final gradients = [
       [const Color(0xFFFF4B72), const Color(0xFFFF7E53)],
       [const Color(0xFFB39DDB), const Color(0xFF7E57C2)],
@@ -102,9 +67,9 @@ class CustomerReviews extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            itemCount: displayList.length,
+            itemCount: reviews.length,
             itemBuilder: (context, index) {
-              final review = displayList[index];
+              final review = reviews[index];
               return _buildMiniReviewCard(
                 context: context,
                 initials: review.initials,
@@ -292,6 +257,116 @@ class CustomerReviews extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSkeleton(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.favorite_rounded,
+                color: Color(0xFFFF4B72),
+                size: 16,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                S.of(context).reviewsTitle,
+                style: const TextStyle(
+                  color: Color(0xFFE02B6D),
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 155,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            itemCount: 2,
+            itemBuilder: (context, index) {
+              return Container(
+                width: 255,
+                margin: const EdgeInsets.only(right: 12.0),
+                padding: const EdgeInsets.all(12.0),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFFFE3ED), width: 1),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.grey.shade200,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 80,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              width: 50,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(5),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      width: double.infinity,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      width: 140,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

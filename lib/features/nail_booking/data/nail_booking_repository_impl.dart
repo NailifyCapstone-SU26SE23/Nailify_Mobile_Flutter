@@ -37,16 +37,18 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
   Future<List<Map<String, dynamic>>> getSuggestedArtists({
     required String salonId,
     required String bookingDate,
-    required int nailVariantId,
-    required List<String> serviceIds,
+    int nailVariantId = 0,
+    List<String> serviceIds = const [],
     int? shapeMethodConfigId,
+    List<Map<String, dynamic>>? bookingItems,
   }) async {
     final list = await _bookingApi.getSuggestedArtists(
       salonId,
       bookingDate,
-      nailVariantId,
-      serviceIds,
-      shapeMethodConfigId,
+      nailVariantId: nailVariantId,
+      serviceIds: serviceIds,
+      shapeMethodConfigId: shapeMethodConfigId,
+      bookingItems: bookingItems,
     );
     return list
         .whereType<Map>()
@@ -67,10 +69,12 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
   Future<List<Map<String, dynamic>>> getArtistAvailableSlots({
     required String artistId,
     required String bookingDate,
+    List<Map<String, dynamic>>? bookingItems,
   }) async {
     final list = await _bookingApi.getArtistAvailableSlots(
       artistId,
       bookingDate,
+      bookingItems: bookingItems,
     );
     return list
         .whereType<Map>()

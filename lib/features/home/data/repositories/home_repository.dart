@@ -17,21 +17,17 @@ class HomeRepository {
         final List items = response.data['data']['items'] ?? [];
         if (items.isNotEmpty) {
           return items
-              .map((item) => HomeCategoryItem.fromJson(item as Map<String, dynamic>))
+              .map(
+                (item) =>
+                    HomeCategoryItem.fromJson(item as Map<String, dynamic>),
+              )
               .toList();
         }
       }
+      return [];
     } catch (_) {
-      // Ignored: dùng fallback nếu không có mạng
+      rethrow;
     }
-
-    return const [
-      HomeCategoryItem(id: 1, title: 'Chăm sóc móng', imagePath: 'assets/images/image 1.png'),
-      HomeCategoryItem(id: 2, title: 'Sơn Gel', imagePath: 'assets/images/image 2.png'),
-      HomeCategoryItem(id: 3, title: 'Vẽ Nghệ Thuật', imagePath: 'assets/images/image 3.png'),
-      HomeCategoryItem(id: 4, title: 'Úp Móng Acrylic', imagePath: 'assets/images/image 4.png'),
-      HomeCategoryItem(id: 5, title: 'Dưỡng Móng', imagePath: 'assets/images/home-mid.jpg'),
-    ];
   }
 
   /// Lấy danh sách Mẫu Móng Bộ Sưu Tập (/NailDesigns)
@@ -45,20 +41,17 @@ class HomeRepository {
         final List items = response.data['data']['items'] ?? [];
         if (items.isNotEmpty) {
           return items
-              .map((item) => HomeGalleryItem.fromJson(item as Map<String, dynamic>))
+              .map(
+                (item) =>
+                    HomeGalleryItem.fromJson(item as Map<String, dynamic>),
+              )
               .toList();
         }
       }
+      return [];
     } catch (_) {
-      // Ignored: dùng fallback nếu API lỗi
+      rethrow;
     }
-
-    return const [
-      HomeGalleryItem(id: 1, title: 'Hoa Anh Đào', imageUrl: 'assets/images/Rectangle 1.png'),
-      HomeGalleryItem(id: 2, title: 'Gel Kim Tuyến', imageUrl: 'assets/images/Rectangle 2.png'),
-      HomeGalleryItem(id: 3, title: 'Ombre Hồng San Hô', imageUrl: 'assets/images/home-mid.jpg'),
-      HomeGalleryItem(id: 4, title: 'Art Đính Đá Nổi', imageUrl: 'assets/images/image.png'),
-    ];
   }
 
   /// Lấy danh sách Ý Kiến Đánh Giá Khách Hàng (/BookingRatings từ 3-5 sao)
@@ -72,7 +65,9 @@ class HomeRepository {
         final List items = response.data['data']['items'] ?? [];
         if (items.isNotEmpty) {
           final reviews = items
-              .map((item) => HomeReviewItem.fromJson(item as Map<String, dynamic>))
+              .map(
+                (item) => HomeReviewItem.fromJson(item as Map<String, dynamic>),
+              )
               .where((r) => r.stars >= 3)
               .toList();
           if (reviews.isNotEmpty) {
@@ -80,52 +75,10 @@ class HomeRepository {
           }
         }
       }
+      return [];
     } catch (_) {
-      // Ignored: dùng fallback nếu API lỗi
+      rethrow;
     }
-
-    return const [
-      HomeReviewItem(
-        id: '1',
-        name: 'Linh Mai',
-        initials: 'LM',
-        review: 'Tôi rất yêu thích bộ móng của mình! Nhân viên ở đây vô cùng tài năng và các thiết kế rất lộng lẫy.',
-        stars: 5,
-        timeAgo: '2 ngày trước',
-      ),
-      HomeReviewItem(
-        id: '2',
-        name: 'Thu Nga',
-        initials: 'TN',
-        review: 'Màu sơn gương (chrome) lên cực chuẩn, các bạn nhân viên cực kỳ chu đáo và thân thiện!',
-        stars: 4,
-        timeAgo: '5 ngày trước',
-      ),
-      HomeReviewItem(
-        id: '3',
-        name: 'Hoàng Anh',
-        initials: 'HA',
-        review: 'Không gian salon sang trọng, móng giữ được tương đối bền lâu. Rất hài lòng.',
-        stars: 5,
-        timeAgo: '1 tuần trước',
-      ),
-      HomeReviewItem(
-        id: '4',
-        name: 'Phương Thảo',
-        initials: 'PT',
-        review: 'Nhân viên tư vấn nhiệt tình, làm móng tay rất sạch sẽ và cẩn thận.',
-        stars: 4,
-        timeAgo: '2 tuần trước',
-      ),
-      HomeReviewItem(
-        id: '5',
-        name: 'Bích Ngọc',
-        initials: 'BN',
-        review: 'Dịch vụ nhanh chóng, màu sơn tươi tắn đúng như thiết kế tôi chọn.',
-        stars: 3,
-        timeAgo: '3 tuần trước',
-      ),
-    ];
   }
 
   /// Lấy chi nhánh Salon (/Salons)
@@ -141,13 +94,9 @@ class HomeRepository {
           return HomeSalonItem.fromJson(items.first as Map<String, dynamic>);
         }
       }
+      return null;
     } catch (_) {
-      // Ignored
+      rethrow;
     }
-    return const HomeSalonItem(
-      id: '',
-      name: 'Tìm salon gần bạn nhất',
-      address: 'Khám phá hệ thống Nailify trên toàn quốc',
-    );
   }
 }

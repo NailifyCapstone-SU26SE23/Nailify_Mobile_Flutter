@@ -122,12 +122,12 @@ class BookingServiceSelection extends StatelessWidget {
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? AppColors.primary.withOpacity(0.04)
+                      ? AppColors.primary.withValues(alpha: 0.04)
                       : Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isSelected
-                        ? AppColors.primary.withOpacity(0.3)
+                        ? AppColors.primary.withValues(alpha: 0.3)
                         : const Color(0xFFF3EFEA),
                     width: 1.2,
                   ),
@@ -180,7 +180,7 @@ class BookingServiceSelection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          _buildNailVariantCard(),
+          _buildNailVariantCard(context),
           const SizedBox(height: 24),
         ],
 
@@ -188,46 +188,133 @@ class BookingServiceSelection extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              S.of(context).bookingAddonServices,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
+            Row(
+              children: [
+                Text(
+                  S.of(context).bookingAddonServices,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                if (totalSelectedCount > 0) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF1F5),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      'Đã chọn $totalSelectedCount',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
-            if (totalSelectedCount > 0)
-              Text(
-                S
-                    .of(context)
-                    .bookingSelectedCount(totalSelectedCount.toString()),
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
+            if (availableServices.isNotEmpty)
+              InkWell(
+                onTap: () =>
+                    _showServicesBottomSheet(context, availableServices),
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF8FA),
+                    border: Border.all(color: AppColors.primary, width: 1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.add_rounded,
+                        size: 14,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        S.of(context).bookingAddService,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
           ],
         ),
         const SizedBox(height: 12),
 
-        // ── 3. Service cards (quantity-grouped) + add button ──────────────
+        // ── 3. Service cards (grouped into ONE single container) ──────────
         if (availableServices.isNotEmpty) ...[
-          ...counts.entries.map((entry) {
-            final serviceId = entry.key;
-            final count = entry.value;
-            Map<String, dynamic>? service;
-            for (final s in availableServices) {
-              if (_serviceId(s) == serviceId) {
-                service = s;
-                break;
-              }
-            }
-            if (service == null) return const SizedBox.shrink();
-            return _buildServiceCard(context, service, count, serviceId);
-          }),
-          const SizedBox(height: 6),
-          _buildAddButton(context, availableServices),
+          if (counts.isNotEmpty) ...[
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFF1F5F9), width: 1.2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.025),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: () {
+                  final entries = counts.entries.toList();
+                  return List.generate(entries.length, (index) {
+                    final entry = entries[index];
+                    final serviceId = entry.key;
+                    final count = entry.value;
+                    Map<String, dynamic>? service;
+                    for (final s in availableServices) {
+                      if (_serviceId(s) == serviceId) {
+                        service = s;
+                        break;
+                      }
+                    }
+                    if (service == null) return const SizedBox.shrink();
+                    final isLast = index == entries.length - 1;
+                    return Column(
+                      children: [
+                        _buildAddonServiceRow(
+                          context,
+                          service,
+                          count,
+                          serviceId,
+                        ),
+                        if (!isLast)
+                          const Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: Color(0xFFF1F5F9),
+                          ),
+                      ],
+                    );
+                  });
+                }(),
+              ),
+            ),
+          ] else
+            _buildAddButton(context, availableServices),
         ] else
           Center(
             child: Padding(
@@ -246,9 +333,9 @@ class BookingServiceSelection extends StatelessWidget {
     );
   }
 
-  // ── Service quantity card ─────────────────────────────────────────────────
+  // ── Single row item inside unified Addon container ──────────────────────
 
-  Widget _buildServiceCard(
+  Widget _buildAddonServiceRow(
     BuildContext context,
     Map<String, dynamic> service,
     int count,
@@ -260,133 +347,85 @@ class BookingServiceSelection extends StatelessWidget {
     final totalPrice = (unitPrice is num) ? unitPrice * count : unitPrice;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFF3EFEA), width: 1.2),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.01),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
+          // Line 1: Tên dịch vụ (Left) | Thành tiền + Nút Xóa (Right)
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  name,
+                  style: const TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
                   ),
-                ],
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Top row: name, duration, total price
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              name,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.access_time_rounded,
-                                  size: 12,
-                                  color: Colors.grey.shade500,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  DurationFormatter.format(duration),
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey.shade500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            PriceFormatter.format(totalPrice),
-                            style: const TextStyle(
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                          if (count > 1)
-                            Text(
-                              S
-                                  .of(context)
-                                  .bookingUnitPrice(
-                                    PriceFormatter.format(unitPrice),
-                                  ),
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey.shade500,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
+              const SizedBox(width: 8),
+              Text(
+                PriceFormatter.format(totalPrice),
+                style: const TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () => _removeAllInstances(serviceId),
+                child: Container(
+                  padding: const EdgeInsets.all(5),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFFF1F2),
+                    shape: BoxShape.circle,
                   ),
-
-                  // Quantity stepper — shown only when count > 1
-                  if (count > 1) ...[
-                    const SizedBox(height: 10),
-                    Divider(height: 1, color: Colors.grey.shade100),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Text(
-                          S.of(context).bookingQtyLabel,
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const Spacer(),
-                        _buildStepper(count, serviceId),
-                      ],
-                    ),
-                  ],
-                ],
+                  child: const Icon(
+                    Icons.delete_outline_rounded,
+                    size: 16,
+                    color: Color(0xFFF43F5E),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
-          const SizedBox(width: 12),
-          // Remove-all button
-          GestureDetector(
-            onTap: () => _removeAllInstances(serviceId),
-            child: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: Colors.red.shade50,
-                shape: BoxShape.circle,
+          const SizedBox(height: 6),
+
+          // Line 2: Thời lượng & Đơn giá (Left) | Số lượng Stepper (Right)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.access_time_rounded,
+                    size: 12,
+                    color: Colors.grey.shade500,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    DurationFormatter.format(duration, context: context),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  Text(' • ', style: TextStyle(color: Colors.grey.shade400)),
+                  Text(
+                    'Đơn giá: ${PriceFormatter.format(unitPrice)}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
-              child: Icon(
-                Icons.cancel_rounded,
-                color: Colors.red.shade400,
-                size: 20,
-              ),
-            ),
+              _buildStepper(count, serviceId),
+            ],
           ),
         ],
       ),
@@ -398,8 +437,9 @@ class BookingServiceSelection extends StatelessWidget {
   Widget _buildStepper(int count, String serviceId) {
     return Container(
       decoration: BoxDecoration(
+        color: const Color(0xFFFFF5F8),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.35),
+          color: AppColors.primary.withValues(alpha: 0.3),
           width: 1,
         ),
         borderRadius: BorderRadius.circular(20),
@@ -410,20 +450,20 @@ class BookingServiceSelection extends StatelessWidget {
           GestureDetector(
             onTap: () => _decrementService(serviceId),
             child: Padding(
-              padding: const EdgeInsets.all(5),
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
               child: Icon(
                 Icons.remove_rounded,
-                size: 16,
-                color: AppColors.primary,
+                size: 15,
+                color: count > 1 ? AppColors.primary : Colors.grey.shade400,
               ),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 6),
             child: Text(
               '$count',
               style: const TextStyle(
-                fontSize: 14,
+                fontSize: 13,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
               ),
@@ -431,11 +471,11 @@ class BookingServiceSelection extends StatelessWidget {
           ),
           GestureDetector(
             onTap: () => _addService(serviceId),
-            child: Padding(
-              padding: const EdgeInsets.all(5),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 7, vertical: 4),
               child: Icon(
                 Icons.add_rounded,
-                size: 16,
+                size: 15,
                 color: AppColors.primary,
               ),
             ),
@@ -547,6 +587,7 @@ class BookingServiceSelection extends StatelessWidget {
                                         Text(
                                           DurationFormatter.format(
                                             _serviceDuration(s),
+                                            context: context,
                                           ),
                                           style: TextStyle(
                                             fontSize: 12,
@@ -604,32 +645,37 @@ class BookingServiceSelection extends StatelessWidget {
   ) {
     return InkWell(
       onTap: () => _showServicesBottomSheet(context, availableServices),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(14),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
         decoration: BoxDecoration(
           color: const Color(0xFFFFF8FA),
           border: Border.all(color: AppColors.primary, width: 1.2),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(3),
+              padding: const EdgeInsets.all(4),
               decoration: const BoxDecoration(
                 color: AppColors.primary,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.add_rounded, size: 14, color: Colors.white),
+              child: const Icon(
+                Icons.add_rounded,
+                size: 14,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(width: 8),
             Text(
-              S.of(context).bookingAddService,
-              style: const TextStyle(
+              S.of(context).bookingAddAddonService,
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: AppColors.primary,
-                fontSize: 14,
+                fontSize: 14.5,
               ),
             ),
           ],
@@ -640,33 +686,66 @@ class BookingServiceSelection extends StatelessWidget {
 
   // ── Nail-variant card (normal booking) ───────────────────────────────────
 
-  Widget _buildNailVariantCard() {
+  Widget _buildNailVariantCard(BuildContext context) {
+    final String? imageUrl =
+        nailData!['imageUrl'] ??
+        nailData!['image'] ??
+        nailData!['avatarUrl'] ??
+        nailData!['logoUrl'] ??
+        nailData!['thumbnail'];
+    final String name =
+        nailData!['name']?.toString() ?? 'Nail Design - Dark Burgundy';
+    final num? duration =
+        (nailData!['duration'] as num?) ?? (nailData!['estimatedTime'] as num?);
+    final dynamic price = nailData!['price'] ?? nailData!['basePrice'];
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: const Color(0xFFFFF5F8),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.25), width: 1),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.25),
+          width: 1.2,
+        ),
         boxShadow: [
           BoxShadow(
             color: AppColors.primary.withValues(alpha: 0.05),
-            blurRadius: 8,
+            blurRadius: 10,
             offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Row(
         children: [
+          // Image thumbnail or icon container
           Container(
-            padding: const EdgeInsets.all(10),
-            decoration: const BoxDecoration(
-              color: Color(0xFFFFF0F5),
-              shape: BoxShape.circle,
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: const Color(0xFFFFF0F5),
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.2),
+              ),
             ),
-            child: const Icon(
-              Icons.diamond_outlined,
-              color: AppColors.primary,
-              size: 22,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(11),
+              child: imageUrl != null && imageUrl.isNotEmpty
+                  ? Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => const Icon(
+                        Icons.diamond_outlined,
+                        color: AppColors.primary,
+                        size: 26,
+                      ),
+                    )
+                  : const Icon(
+                      Icons.diamond_outlined,
+                      color: AppColors.primary,
+                      size: 26,
+                    ),
             ),
           ),
           const SizedBox(width: 14),
@@ -677,32 +756,68 @@ class BookingServiceSelection extends StatelessWidget {
                 Text(
                   'Dịch vụ thiết kế Nail (Mặc định)',
                   style: TextStyle(
-                    fontSize: 11.5,
+                    fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: Colors.grey.shade600,
-                    letterSpacing: 0.3,
+                    letterSpacing: 0.2,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(
-                  nailData!['name']?.toString() ?? '',
+                  name,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15.5,
                     color: AppColors.primaryDark,
                   ),
                 ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    if (duration != null && duration > 0) ...[
+                      Icon(
+                        Icons.access_time_rounded,
+                        size: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        DurationFormatter.format(duration, context: context),
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                    ],
+                    if (price != null)
+                      Text(
+                        PriceFormatter.format(price),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                  ],
+                ),
               ],
             ),
           ),
           const SizedBox(width: 8),
+          // Locked badge
           Container(
             padding: const EdgeInsets.all(7),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade200,
+            decoration: const BoxDecoration(
+              color: Color(0xFFF1F5F9),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.lock_rounded, size: 14, color: Colors.grey.shade600),
+            child: const Icon(
+              Icons.lock_rounded,
+              size: 15,
+              color: Color(0xFF64748B),
+            ),
           ),
         ],
       ),

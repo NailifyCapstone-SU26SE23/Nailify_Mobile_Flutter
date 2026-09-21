@@ -64,7 +64,9 @@ class RatingList extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          rating.comment.isEmpty ? l10n.noComment : rating.comment,
+                          rating.comment.isEmpty
+                              ? l10n.noComment
+                              : rating.comment,
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -87,7 +89,10 @@ class RatingList extends StatelessWidget {
                         backgroundColor: Colors.transparent,
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(16),
-                          child: Image.network(rating.imageUrl, fit: BoxFit.contain),
+                          child: Image.network(
+                            rating.imageUrl,
+                            fit: BoxFit.contain,
+                          ),
                         ),
                       ),
                     );

@@ -106,7 +106,8 @@ class NailVariantRatingModel {
   }
 
   factory NailVariantRatingModel.fromJson(Map<dynamic, dynamic> json) {
-    final userObj = json['user'] ??
+    final userObj =
+        json['user'] ??
         json['User'] ??
         json['customer'] ??
         json['Customer'] ??
@@ -118,47 +119,52 @@ class NailVariantRatingModel {
 
     if (userObj is Map) {
       name = _extractFullName(userObj);
-      avatar = (userObj['avatarUrl'] ??
-              userObj['AvatarUrl'] ??
-              userObj['avatar'] ??
-              userObj['Avatar'] ??
-              '')
-          .toString()
-          .trim();
-      uId = (userObj['userId'] ??
-              userObj['UserId'] ??
-              userObj['id'] ??
-              userObj['Id'] ??
-              '')
-          .toString()
-          .trim();
+      avatar =
+          (userObj['avatarUrl'] ??
+                  userObj['AvatarUrl'] ??
+                  userObj['avatar'] ??
+                  userObj['Avatar'] ??
+                  '')
+              .toString()
+              .trim();
+      uId =
+          (userObj['userId'] ??
+                  userObj['UserId'] ??
+                  userObj['id'] ??
+                  userObj['Id'] ??
+                  '')
+              .toString()
+              .trim();
     }
 
     if (name.isEmpty) {
       name = _extractFullName(json);
     }
     if (avatar.isEmpty) {
-      avatar = (json['customerAvatarUrl'] ??
-              json['CustomerAvatarUrl'] ??
-              json['avatarUrl'] ??
-              json['AvatarUrl'] ??
-              json['avatar'] ??
-              json['Avatar'] ??
-              '')
-          .toString()
-          .trim();
+      avatar =
+          (json['customerAvatarUrl'] ??
+                  json['CustomerAvatarUrl'] ??
+                  json['avatarUrl'] ??
+                  json['AvatarUrl'] ??
+                  json['avatar'] ??
+                  json['Avatar'] ??
+                  '')
+              .toString()
+              .trim();
     }
     if (uId.isEmpty) {
-      uId = (json['userId'] ??
-              json['UserId'] ??
-              json['customerId'] ??
-              json['CustomerId'] ??
-              '')
-          .toString()
-          .trim();
+      uId =
+          (json['userId'] ??
+                  json['UserId'] ??
+                  json['customerId'] ??
+                  json['CustomerId'] ??
+                  '')
+              .toString()
+              .trim();
     }
 
-    final rawImg = json['imageUrl'] ??
+    final rawImg =
+        json['imageUrl'] ??
         json['ImageUrl'] ??
         json['image'] ??
         json['Image'] ??

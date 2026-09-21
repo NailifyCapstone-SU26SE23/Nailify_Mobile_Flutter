@@ -33,7 +33,10 @@ class _WalletTransactionsPageState extends State<WalletTransactionsPage> {
     });
 
     try {
-      final res = await _repository.getWalletTransactions(pageNumber: 1, pageSize: 50);
+      final res = await _repository.getWalletTransactions(
+        pageNumber: 1,
+        pageSize: 50,
+      );
       if (mounted) {
         setState(() {
           _allTransactions = res.items;
@@ -81,7 +84,10 @@ class _WalletTransactionsPageState extends State<WalletTransactionsPage> {
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: AppColors.primaryDark),
+            icon: const Icon(
+              Icons.refresh_rounded,
+              color: AppColors.primaryDark,
+            ),
             onPressed: _loadTransactions,
           ),
         ],
@@ -100,7 +106,10 @@ class _WalletTransactionsPageState extends State<WalletTransactionsPage> {
                   _buildFilterChip('Tất cả', null),
                   _buildFilterChip('Nạp tiền', WalletTxType.deposit),
                   _buildFilterChip('Rút tiền', WalletTxType.withdraw),
-                  _buildFilterChip('Thanh toán cọc', WalletTxType.bookingPayment),
+                  _buildFilterChip(
+                    'Thanh toán cọc',
+                    WalletTxType.bookingPayment,
+                  ),
                   _buildFilterChip('Đổi điểm', WalletTxType.convertToPoints),
                   _buildFilterChip('Hoàn tiền', WalletTxType.refund),
                 ],
@@ -114,47 +123,59 @@ class _WalletTransactionsPageState extends State<WalletTransactionsPage> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _errorMessage != null
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.error_outline_rounded, size: 48, color: Colors.grey),
-                            const SizedBox(height: 12),
-                            Text(_errorMessage!),
-                            const SizedBox(height: 12),
-                            ElevatedButton(
-                              onPressed: _loadTransactions,
-                              child: const Text('Thử lại'),
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.error_outline_rounded,
+                          size: 48,
+                          color: Colors.grey,
                         ),
-                      )
-                    : _filteredTransactions.isEmpty
-                        ? const Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.receipt_long_rounded, size: 48, color: Colors.grey),
-                                SizedBox(height: 12),
-                                Text(
-                                  'Chưa có giao dịch nào',
-                                  style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600),
-                                ),
-                              ],
-                            ),
-                          )
-                        : RefreshIndicator(
-                            onRefresh: _loadTransactions,
-                            child: ListView.separated(
-                              padding: const EdgeInsets.all(16),
-                              itemCount: _filteredTransactions.length,
-                              separatorBuilder: (context, index) => const SizedBox(height: 10),
-                              itemBuilder: (context, index) {
-                                final tx = _filteredTransactions[index];
-                                return _buildTransactionTile(tx);
-                              },
-                            ),
+                        const SizedBox(height: 12),
+                        Text(_errorMessage!),
+                        const SizedBox(height: 12),
+                        ElevatedButton(
+                          onPressed: _loadTransactions,
+                          child: const Text('Thử lại'),
+                        ),
+                      ],
+                    ),
+                  )
+                : _filteredTransactions.isEmpty
+                ? const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.receipt_long_rounded,
+                          size: 48,
+                          color: Colors.grey,
+                        ),
+                        SizedBox(height: 12),
+                        Text(
+                          'Chưa có giao dịch nào',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w600,
                           ),
+                        ),
+                      ],
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: _loadTransactions,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _filteredTransactions.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        final tx = _filteredTransactions[index];
+                        return _buildTransactionTile(tx);
+                      },
+                    ),
+                  ),
           ),
         ],
       ),
@@ -180,7 +201,9 @@ class _WalletTransactionsPageState extends State<WalletTransactionsPage> {
         onSelected: (_) => setState(() => _selectedFilter = type),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: isSelected ? AppColors.primary : Colors.grey.shade300),
+          side: BorderSide(
+            color: isSelected ? AppColors.primary : Colors.grey.shade300,
+          ),
         ),
       ),
     );
@@ -272,10 +295,7 @@ class _WalletTransactionsPageState extends State<WalletTransactionsPage> {
                 const SizedBox(height: 2),
                 Text(
                   _formatDateTime(tx.createdAt),
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey.shade500,
-                  ),
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                 ),
               ],
             ),
@@ -288,7 +308,9 @@ class _WalletTransactionsPageState extends State<WalletTransactionsPage> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w900,
-                  color: prefix == '+' ? const Color(0xFF4CAF50) : AppColors.textPrimary,
+                  color: prefix == '+'
+                      ? const Color(0xFF4CAF50)
+                      : AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 2),
@@ -340,11 +362,7 @@ class _WalletTransactionsPageState extends State<WalletTransactionsPage> {
       ),
       child: Text(
         label,
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w800,
-          color: fg,
-        ),
+        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: fg),
       ),
     );
   }

@@ -107,12 +107,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
           : _services.isEmpty
           ? const Center(child: Text('Không có dịch vụ nào khả dụng.'))
           : ListView.builder(
-              padding: const EdgeInsets.fromLTRB(
-                20,
-                10,
-                20,
-                100,
-              ),
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 100),
               physics: const BouncingScrollPhysics(),
               itemCount: _services.length + (_hasMore ? 1 : 0),
               itemBuilder: (context, index) {
@@ -138,15 +133,18 @@ class _ServiceListPageState extends State<ServiceListPage> {
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Icon(Icons.expand_more_rounded, size: 20),
                         label: Text(
                           _isLoadingMore
                               ? 'Đang tải...'
-                              : (Localizations.localeOf(context).languageCode == 'vi'
-                                  ? 'Tải thêm dịch vụ'
-                                  : 'Load More Services'),
+                              : (Localizations.localeOf(context).languageCode ==
+                                        'vi'
+                                    ? 'Tải thêm dịch vụ'
+                                    : 'Load More Services'),
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 13,

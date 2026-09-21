@@ -8,10 +8,7 @@ class SaveNailDesignDialogResult {
   final String name;
   final String? imagePath;
 
-  SaveNailDesignDialogResult({
-    required this.name,
-    this.imagePath,
-  });
+  SaveNailDesignDialogResult({required this.name, this.imagePath});
 }
 
 class SaveNailDesignDialog extends StatefulWidget {

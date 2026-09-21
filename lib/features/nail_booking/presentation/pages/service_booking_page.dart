@@ -65,13 +65,16 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
     final state = context.read<NailBookingCubit>().state;
     final extraServices =
         state.selectedExtraServices.whereType<String>().toList()..sort();
-    final promos = state.selectedPromotions
-        .whereType<WalletVoucherModel>()
-        .map((p) => p.promotionId)
-        .toList()
-      ..sort();
+    final promos =
+        state.selectedPromotions
+            .whereType<WalletVoucherModel>()
+            .map((p) => p.promotionId)
+            .toList()
+          ..sort();
     final dateStr = state.selectedDate != null
-        ? context.read<NailBookingCubit>().formatBookingDate(state.selectedDate!)
+        ? context.read<NailBookingCubit>().formatBookingDate(
+            state.selectedDate!,
+          )
         : '';
     final timeStr = state.selectedTime ?? '';
     final artistIdStr = state.noArtistSelected
@@ -109,8 +112,9 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
 
     final cubit = context.read<NailBookingCubit>();
     final state = cubit.state;
-    final extraServices =
-        state.selectedExtraServices.whereType<String>().toList();
+    final extraServices = state.selectedExtraServices
+        .whereType<String>()
+        .toList();
     final serviceIds = [_baseServiceId, ...extraServices];
 
     final promos = state.selectedPromotions
@@ -123,8 +127,8 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
         : '';
     final timeStr = state.selectedTime != null
         ? (state.selectedTime!.length == 5
-            ? '${state.selectedTime}:00'
-            : state.selectedTime!)
+              ? '${state.selectedTime}:00'
+              : state.selectedTime!)
         : '';
     final artistIdStr = state.noArtistSelected
         ? null
@@ -273,8 +277,8 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
       final response = await _apiService.getCustomerWalletSummary();
       if (!mounted) return;
       setState(() {
-        _walletAvailableBalance =
-            (response?['availableBalance'] as num?)?.toDouble();
+        _walletAvailableBalance = (response?['availableBalance'] as num?)
+            ?.toDouble();
         _isLoadingWallet = false;
       });
     } catch (_) {
@@ -388,7 +392,9 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
         final qrCode = paymentData['qrCode']?.toString() ?? '';
         final paymentUrl = paymentData['paymentUrl']?.toString() ?? '';
 
-        if (status == 'PAID' || status == 'SUCCESS' || (qrCode.isEmpty && paymentUrl.isEmpty)) {
+        if (status == 'PAID' ||
+            status == 'SUCCESS' ||
+            (qrCode.isEmpty && paymentUrl.isEmpty)) {
           context.go('/payment-success', extra: paymentData);
         } else {
           context.go('/payment-qr', extra: paymentData);
@@ -430,8 +436,9 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
     grouped.forEach((id, qty) {
       final detail = _getServiceDetail(id, cubit);
       final rawDur = detail?['duration'] ?? detail?['estimatedTime'];
-      final int dur =
-          (rawDur is num) ? rawDur.toInt() : (int.tryParse(rawDur?.toString() ?? '') ?? 0);
+      final int dur = (rawDur is num)
+          ? rawDur.toInt()
+          : (int.tryParse(rawDur?.toString() ?? '') ?? 0);
       totalDur += dur * qty;
     });
     return totalDur;
@@ -585,7 +592,11 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
     );
   }
 
-  Widget _buildDateStep(BuildContext context, NailBookingState state, NailBookingCubit cubit) {
+  Widget _buildDateStep(
+    BuildContext context,
+    NailBookingState state,
+    NailBookingCubit cubit,
+  ) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -604,7 +615,11 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
     );
   }
 
-  Widget _buildArtistAndTimeStep(BuildContext context, NailBookingState state, NailBookingCubit cubit) {
+  Widget _buildArtistAndTimeStep(
+    BuildContext context,
+    NailBookingState state,
+    NailBookingCubit cubit,
+  ) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -625,7 +640,9 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
-                        color: !state.noArtistSelected ? Colors.white : Colors.transparent,
+                        color: !state.noArtistSelected
+                            ? Colors.white
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: !state.noArtistSelected
                             ? [
@@ -633,7 +650,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                                   color: Colors.black.withValues(alpha: 0.08),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
-                                )
+                                ),
                               ]
                             : [],
                       ),
@@ -643,7 +660,9 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
-                            color: !state.noArtistSelected ? AppColors.primary : Colors.grey.shade700,
+                            color: !state.noArtistSelected
+                                ? AppColors.primary
+                                : Colors.grey.shade700,
                           ),
                         ),
                       ),
@@ -657,7 +676,9 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
-                        color: state.noArtistSelected ? Colors.white : Colors.transparent,
+                        color: state.noArtistSelected
+                            ? Colors.white
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: state.noArtistSelected
                             ? [
@@ -665,7 +686,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                                   color: Colors.black.withValues(alpha: 0.08),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
-                                )
+                                ),
                               ]
                             : [],
                       ),
@@ -675,7 +696,9 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
-                            color: state.noArtistSelected ? AppColors.primary : Colors.grey.shade700,
+                            color: state.noArtistSelected
+                                ? AppColors.primary
+                                : Colors.grey.shade700,
                           ),
                         ),
                       ),
@@ -765,12 +788,13 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
       totalPrice,
     );
     final initialDepositAmount = depositInfo['amount'] as int;
-    final walletDeduction = (_useWalletBalance &&
+    final walletDeduction =
+        (_useWalletBalance &&
             _walletAvailableBalance != null &&
             _walletAvailableBalance! > 0)
         ? (_walletAvailableBalance! < initialDepositAmount
-            ? _walletAvailableBalance!.round()
-            : initialDepositAmount)
+              ? _walletAvailableBalance!.round()
+              : initialDepositAmount)
         : 0;
 
     final discountsList = _discountBreakdown;
@@ -1154,15 +1178,16 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                           width: 60,
                           child: LinearProgressIndicator(
                             backgroundColor: Color(0xFFFCE4EC),
-                            valueColor:
-                                AlwaysStoppedAnimation(Color(0xFFE02B6D)),
+                            valueColor: AlwaysStoppedAnimation(
+                              Color(0xFFE02B6D),
+                            ),
                           ),
                         ),
                       )
                     else
                       Text(
                         hasBalance
-                            ? 'Số dư: ${PriceFormatter.format(balance!.round())}'
+                            ? 'Số dư: ${PriceFormatter.format(balance.round())}'
                             : 'Số dư trống',
                         style: TextStyle(
                           fontSize: 12,
@@ -1184,12 +1209,13 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                     onChanged: hasBalance && !_isLoadingWallet
                         ? (val) => setState(() => _useWalletBalance = val)
                         : null,
-                    activeColor: Colors.white,
+                    activeThumbColor: Colors.white,
                     activeTrackColor: const Color(0xFFE02B6D),
                     inactiveThumbColor: Colors.white,
                     inactiveTrackColor: const Color(0xFFF0E6EA),
-                    trackOutlineColor:
-                        WidgetStateProperty.all(Colors.transparent),
+                    trackOutlineColor: WidgetStateProperty.all(
+                      Colors.transparent,
+                    ),
                   ),
                 ),
               ),
@@ -1214,12 +1240,18 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
       tileColor: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: hasPromos ? AppColors.primary.withOpacity(0.5) : Colors.grey.shade200),
+        side: BorderSide(
+          color: hasPromos
+              ? AppColors.primary.withOpacity(0.5)
+              : Colors.grey.shade200,
+        ),
       ),
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: hasPromos ? AppColors.primary.withOpacity(0.1) : Colors.orange.shade50,
+          color: hasPromos
+              ? AppColors.primary.withOpacity(0.1)
+              : Colors.orange.shade50,
           shape: BoxShape.circle,
         ),
         child: Icon(
@@ -1237,7 +1269,9 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
         ),
       ),
       subtitle: Text(
-        hasPromos ? 'Đã chọn ${promos.length} khuyến mãi' : 'Chọn voucher / khuyến mãi',
+        hasPromos
+            ? 'Đã chọn ${promos.length} khuyến mãi'
+            : 'Chọn voucher / khuyến mãi',
         style: TextStyle(
           color: hasPromos ? AppColors.primary : Colors.grey.shade600,
           fontSize: 13,
@@ -1325,10 +1359,14 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
       totalPrice,
     );
     final depositConfigText = depositInfo['displayText'] as String;
-    final depositAmountToPay =
-        (initialDepositAmount - walletDeduction).clamp(0, initialDepositAmount);
-    final remainingAmountAtSalon =
-        (totalPrice - walletDeduction).clamp(0, totalPrice);
+    final depositAmountToPay = (initialDepositAmount - walletDeduction).clamp(
+      0,
+      initialDepositAmount,
+    );
+    final remainingAmountAtSalon = (totalPrice - walletDeduction).clamp(
+      0,
+      totalPrice,
+    );
 
     return Column(
       children: [
@@ -1341,7 +1379,10 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
             ),
             Text(
               depositConfigText,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 13.5,
+              ),
             ),
           ],
         ),
@@ -1546,95 +1587,12 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
               const SizedBox(height: 12),
             ],
             isFirstStep
-            ? SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(26),
-                    gradient: LinearGradient(
-                      colors: state.isSubmitting
-                          ? [Colors.grey.shade400, Colors.grey.shade500]
-                          : [const Color(0xFFFF4081), const Color(0xFFD81B60)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    boxShadow: [
-                      if (!state.isSubmitting)
-                        BoxShadow(
-                          color: const Color(
-                            0xFFD81B60,
-                          ).withValues(alpha: 0.38),
-                          blurRadius: 14,
-                          offset: const Offset(0, 5),
-                        ),
-                    ],
-                  ),
-                  child: ElevatedButton(
-                    onPressed: state.isSubmitting
-                        ? null
-                        : () => _handleNextAction(state, cubit),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      foregroundColor: Colors.white,
-                      shadowColor: Colors.transparent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(26),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: state.isSubmitting
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2.5,
-                            ),
-                          )
-                        : const Text(
-                            'Tiếp tục',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.2,
-                            ),
-                          ),
-                  ),
-                ),
-              )
-            : Row(
-                children: [
-                  TextButton.icon(
-                    onPressed: state.isSubmitting
-                        ? null
-                        : () => _handleBackAction(state),
-                    icon: const Icon(
-                      Icons.arrow_back_rounded,
-                      size: 18,
-                      color: AppColors.textPrimary,
-                    ),
-                    label: const Text(
-                      'Quay lại',
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14.5,
-                      ),
-                    ),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 14,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
+                ? SizedBox(
+                    width: double.infinity,
+                    height: 52,
                     child: Container(
-                      height: 50,
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(25),
+                        borderRadius: BorderRadius.circular(26),
                         gradient: LinearGradient(
                           colors: state.isSubmitting
                               ? [Colors.grey.shade400, Colors.grey.shade500]
@@ -1650,9 +1608,9 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                             BoxShadow(
                               color: const Color(
                                 0xFFD81B60,
-                              ).withValues(alpha: 0.35),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
+                              ).withValues(alpha: 0.38),
+                              blurRadius: 14,
+                              offset: const Offset(0, 5),
                             ),
                         ],
                       ),
@@ -1665,33 +1623,119 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                           foregroundColor: Colors.white,
                           shadowColor: Colors.transparent,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(25),
+                            borderRadius: BorderRadius.circular(26),
                           ),
                           elevation: 0,
                         ),
                         child: state.isSubmitting
                             ? const SizedBox(
-                                width: 20,
-                                height: 20,
+                                width: 22,
+                                height: 22,
                                 child: CircularProgressIndicator(
                                   color: Colors.white,
                                   strokeWidth: 2.5,
                                 ),
                               )
-                            : Text(
-                                _currentStep == 4
-                                    ? 'Thanh toán cọc'
-                                    : 'Tiếp tục',
-                                style: const TextStyle(
-                                  fontSize: 15.5,
+                            : const Text(
+                                'Tiếp tục',
+                                style: TextStyle(
+                                  fontSize: 16,
                                   fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.2,
                                 ),
                               ),
                       ),
                     ),
+                  )
+                : Row(
+                    children: [
+                      TextButton.icon(
+                        onPressed: state.isSubmitting
+                            ? null
+                            : () => _handleBackAction(state),
+                        icon: const Icon(
+                          Icons.arrow_back_rounded,
+                          size: 18,
+                          color: AppColors.textPrimary,
+                        ),
+                        label: const Text(
+                          'Quay lại',
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14.5,
+                          ),
+                        ),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 14,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Container(
+                          height: 50,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(25),
+                            gradient: LinearGradient(
+                              colors: state.isSubmitting
+                                  ? [Colors.grey.shade400, Colors.grey.shade500]
+                                  : [
+                                      const Color(0xFFFF4081),
+                                      const Color(0xFFD81B60),
+                                    ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            boxShadow: [
+                              if (!state.isSubmitting)
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFFD81B60,
+                                  ).withValues(alpha: 0.35),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                            ],
+                          ),
+                          child: ElevatedButton(
+                            onPressed: state.isSubmitting
+                                ? null
+                                : () => _handleNextAction(state, cubit),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              foregroundColor: Colors.white,
+                              shadowColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(25),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: state.isSubmitting
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2.5,
+                                    ),
+                                  )
+                                : Text(
+                                    _currentStep == 4
+                                        ? 'Thanh toán cọc'
+                                        : 'Tiếp tục',
+                                    style: const TextStyle(
+                                      fontSize: 15.5,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
           ],
         ),
       ),

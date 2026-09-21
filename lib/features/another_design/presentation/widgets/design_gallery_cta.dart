@@ -6,11 +6,7 @@ class DesignGalleryCta extends StatelessWidget {
   final VoidCallback? onBookPressed;
   final VoidCallback? onCustomPressed;
 
-  const DesignGalleryCta({
-    super.key,
-    this.onBookPressed,
-    this.onCustomPressed,
-  });
+  const DesignGalleryCta({super.key, this.onBookPressed, this.onCustomPressed});
 
   @override
   Widget build(BuildContext context) {
@@ -37,10 +33,7 @@ class DesignGalleryCta extends StatelessWidget {
             offset: const Offset(0, 6),
           ),
         ],
-        border: Border.all(
-          color: AppColors.primaryLight,
-          width: 1.2,
-        ),
+        border: Border.all(color: AppColors.primaryLight, width: 1.2),
       ),
       child: Column(
         children: [
@@ -198,9 +191,7 @@ class _OutlinedPillButton extends StatelessWidget {
       onPressed: onPressed,
       style: OutlinedButton.styleFrom(
         side: const BorderSide(color: AppColors.primary, width: 1.4),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(26),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
         padding: const EdgeInsets.symmetric(vertical: 13),
         backgroundColor: Colors.white,
       ),

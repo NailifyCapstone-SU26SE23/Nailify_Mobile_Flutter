@@ -16,11 +16,7 @@ class HomeGallery extends StatefulWidget {
   final List<HomeGalleryItem> items;
   final bool isLoading;
 
-  const HomeGallery({
-    super.key,
-    this.items = const [],
-    this.isLoading = false,
-  });
+  const HomeGallery({super.key, this.items = const [], this.isLoading = false});
 
   @override
   State<HomeGallery> createState() => _HomeGalleryState();
@@ -74,10 +70,10 @@ class _HomeGalleryState extends State<HomeGallery> {
               _itemsMap[item.id] = updated;
             });
             context.read<HomeCubit>().updateFavoriteGalleryItem(
-                  nailDesignId: item.id,
-                  isFavorited: true,
-                  favoriteNailId: favoriteNailId,
-                );
+              nailDesignId: item.id,
+              isFavorited: true,
+              favoriteNailId: favoriteNailId,
+            );
           }
         } else {
           final favId = previousItem.favoriteNailId;
@@ -93,9 +89,9 @@ class _HomeGalleryState extends State<HomeGallery> {
               _itemsMap[item.id] = updated;
             });
             context.read<HomeCubit>().updateFavoriteGalleryItem(
-                  nailDesignId: item.id,
-                  isFavorited: false,
-                );
+              nailDesignId: item.id,
+              isFavorited: false,
+            );
           }
         }
       } catch (error) {
@@ -230,26 +226,30 @@ class _HomeGalleryState extends State<HomeGallery> {
                             ? Image.network(
                                 imageUrl,
                                 fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) => Container(
-                                  color: const Color(0xFFFFF5F7),
-                                  child: const Icon(
-                                    Icons.spa_outlined,
-                                    color: Color(0xFFFF4B72),
-                                    size: 36,
-                                  ),
-                                ),
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Container(
+                                      color: const Color(0xFFFFF5F7),
+                                      child: const Icon(
+                                        Icons.spa_outlined,
+                                        color: Color(0xFFFF4B72),
+                                        size: 36,
+                                      ),
+                                    ),
                               )
                             : Image.asset(
-                                imageUrl.isNotEmpty ? imageUrl : 'assets/images/Rectangle 1.png',
+                                imageUrl.isNotEmpty
+                                    ? imageUrl
+                                    : 'assets/images/Rectangle 1.png',
                                 fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) => Container(
-                                  color: const Color(0xFFFFF5F7),
-                                  child: const Icon(
-                                    Icons.spa_outlined,
-                                    color: Color(0xFFFF4B72),
-                                    size: 36,
-                                  ),
-                                ),
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Container(
+                                      color: const Color(0xFFFFF5F7),
+                                      child: const Icon(
+                                        Icons.spa_outlined,
+                                        color: Color(0xFFFF4B72),
+                                        size: 36,
+                                      ),
+                                    ),
                               ),
 
                         // Phủ mờ gradient đen sát đáy
@@ -307,8 +307,12 @@ class _HomeGalleryState extends State<HomeGallery> {
                                 ],
                               ),
                               child: Icon(
-                                isFav ? Icons.favorite_rounded : Icons.favorite_outline_rounded,
-                                color: isFav ? const Color(0xFFFF4B72) : Colors.grey.shade600,
+                                isFav
+                                    ? Icons.favorite_rounded
+                                    : Icons.favorite_outline_rounded,
+                                color: isFav
+                                    ? const Color(0xFFFF4B72)
+                                    : Colors.grey.shade600,
                                 size: 16,
                               ),
                             ),
@@ -327,10 +331,7 @@ class _HomeGalleryState extends State<HomeGallery> {
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                               shadows: [
-                                Shadow(
-                                  color: Colors.black54,
-                                  blurRadius: 4,
-                                ),
+                                Shadow(color: Colors.black54, blurRadius: 4),
                               ],
                             ),
                             maxLines: 1,
@@ -400,5 +401,3 @@ class _HomeGalleryState extends State<HomeGallery> {
     );
   }
 }
-
-

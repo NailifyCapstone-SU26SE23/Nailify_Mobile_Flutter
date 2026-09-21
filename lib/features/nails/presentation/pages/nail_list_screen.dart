@@ -69,10 +69,7 @@ class _NailListViewState extends State<_NailListView> {
     }
   }
 
-  void _handleFavoriteToggle(
-    NailDesignModel design,
-    bool shouldFavorite,
-  ) {
+  void _handleFavoriteToggle(NailDesignModel design, bool shouldFavorite) {
     AuthGuard.check(context, () async {
       try {
         if (shouldFavorite) {
@@ -80,10 +77,10 @@ class _NailListViewState extends State<_NailListView> {
               .favoriteDesign(design.nailDesignId);
           if (mounted) {
             context.read<NailCatalogCubit>().updateFavoriteDesign(
-                  nailDesignId: design.nailDesignId,
-                  isFavorited: true,
-                  favoriteNailId: favoriteNailId,
-                );
+              nailDesignId: design.nailDesignId,
+              isFavorited: true,
+              favoriteNailId: favoriteNailId,
+            );
           }
         } else {
           final favoriteNailId = design.favoriteNailId;
@@ -92,9 +89,9 @@ class _NailListViewState extends State<_NailListView> {
           }
           if (mounted) {
             context.read<NailCatalogCubit>().updateFavoriteDesign(
-                  nailDesignId: design.nailDesignId,
-                  isFavorited: false,
-                );
+              nailDesignId: design.nailDesignId,
+              isFavorited: false,
+            );
           }
         }
       } catch (error) {
@@ -627,12 +624,9 @@ class _NailListViewState extends State<_NailListView> {
               state.status == NailCatalogStatus.loadingMore
                   ? 'Đang tải...'
                   : (Localizations.localeOf(context).languageCode == 'vi'
-                      ? 'Tải thêm mẫu móng'
-                      : 'Load More Designs'),
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-              ),
+                        ? 'Tải thêm mẫu móng'
+                        : 'Load More Designs'),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
             ),
           ),
         ),

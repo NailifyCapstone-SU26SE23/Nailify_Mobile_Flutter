@@ -46,7 +46,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
   bool _isLoadingArtists = false;
   bool _isLoadingTimes = false;
   bool _isLoadingPromotions = false;
-  bool _isPromotionExpanded = false;
+  final bool _isPromotionExpanded = false;
   bool _isReviewingPrice = false;
   bool _sourceSelectionFallback = false;
   bool _useWalletBalance = false;
@@ -91,7 +91,10 @@ class _NailBookingPageState extends State<NailBookingPage> {
       'title': S.of(context).bookingStepBook,
       'icon': Icons.calendar_month_rounded,
     },
-    {'title': S.of(context).bookingStepArtist, 'icon': Icons.person_pin_rounded},
+    {
+      'title': S.of(context).bookingStepArtist,
+      'icon': Icons.person_pin_rounded,
+    },
     {
       'title': S.of(context).bookingStepCompleted,
       'icon': Icons.check_circle_rounded,
@@ -154,7 +157,8 @@ class _NailBookingPageState extends State<NailBookingPage> {
       _sourceArtistId.isNotEmpty;
 
   num get _shapeMethodPrice {
-    final value = widget.nailData?['shapeMethodPrice'] ??
+    final value =
+        widget.nailData?['shapeMethodPrice'] ??
         widget.nailData?['shapePrice'] ??
         widget.nailData?['shapeMethodConfigPrice'] ??
         (widget.nailData?['selectedShapeMethod'] is Map
@@ -165,7 +169,8 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   int get _shapeMethodDuration {
-    final value = widget.nailData?['shapeMethodDuration'] ??
+    final value =
+        widget.nailData?['shapeMethodDuration'] ??
         widget.nailData?['shapeDuration'] ??
         (widget.nailData?['selectedShapeMethod'] is Map
             ? widget.nailData!['selectedShapeMethod']['duration']
@@ -195,8 +200,11 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   int get _estimatedTotalDuration {
-    final baseDur = widget.nailData?['duration'] ?? widget.nailData?['estimatedTime'] ?? 60;
-    final int nailDur = baseDur is num ? baseDur.round() : (int.tryParse(baseDur.toString()) ?? 60);
+    final baseDur =
+        widget.nailData?['duration'] ?? widget.nailData?['estimatedTime'] ?? 60;
+    final int nailDur = baseDur is num
+        ? baseDur.round()
+        : (int.tryParse(baseDur.toString()) ?? 60);
     return nailDur + _shapeMethodDuration + _selectedExtraServicesDurationTotal;
   }
 
@@ -509,7 +517,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
         final qrCode = paymentData['qrCode']?.toString() ?? '';
         final paymentUrl = paymentData['paymentUrl']?.toString() ?? '';
 
-        if (status == 'PAID' || status == 'SUCCESS' || (qrCode.isEmpty && paymentUrl.isEmpty)) {
+        if (status == 'PAID' ||
+            status == 'SUCCESS' ||
+            (qrCode.isEmpty && paymentUrl.isEmpty)) {
           context.go('/payment-success', extra: paymentData);
         } else {
           context.go('/payment-qr', extra: paymentData);
@@ -582,11 +592,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(
-              Icons.event_busy_rounded,
-              color: Colors.white,
-              size: 18,
-            ),
+            const Icon(Icons.event_busy_rounded, color: Colors.white, size: 18),
             const SizedBox(width: 8),
             Expanded(
               child: Text(msg, style: const TextStyle(color: Colors.white)),
@@ -596,9 +602,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
         backgroundColor: Colors.red.shade600,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 4),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
@@ -738,7 +742,8 @@ class _NailBookingPageState extends State<NailBookingPage> {
       final response = await _apiService.getCustomerWalletSummary();
       if (!mounted) return;
       setState(() {
-        _walletAvailableBalance = (response?['availableBalance'] as num?)?.toDouble();
+        _walletAvailableBalance = (response?['availableBalance'] as num?)
+            ?.toDouble();
         _isLoadingWallet = false;
       });
     } catch (_) {
@@ -765,10 +770,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
       }
     }
     for (final entry in serviceCounts.entries) {
-      items.add({
-        'serviceId': entry.key,
-        'quantity': entry.value,
-      });
+      items.add({'serviceId': entry.key, 'quantity': entry.value});
     }
     return items;
   }
@@ -1116,10 +1118,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
 
   Widget _buildSalonStep() {
     if (_salonsLoadError != null && !_isLoadingSalons) {
-      return _buildRetryView(
-        message: _salonsLoadError!,
-        onRetry: _fetchSalons,
-      );
+      return _buildRetryView(message: _salonsLoadError!, onRetry: _fetchSalons);
     }
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -1142,11 +1141,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.cloud_off_rounded,
-              size: 64,
-              color: Colors.grey,
-            ),
+            const Icon(Icons.cloud_off_rounded, size: 64, color: Colors.grey),
             const SizedBox(height: 16),
             Text(
               message,
@@ -1226,7 +1221,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
-                        color: !_noArtistSelected ? Colors.white : Colors.transparent,
+                        color: !_noArtistSelected
+                            ? Colors.white
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: !_noArtistSelected
                             ? [
@@ -1234,7 +1231,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                                   color: Colors.black.withValues(alpha: 0.08),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
-                                )
+                                ),
                               ]
                             : [],
                       ),
@@ -1244,7 +1241,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
-                            color: !_noArtistSelected ? AppColors.primary : Colors.grey.shade700,
+                            color: !_noArtistSelected
+                                ? AppColors.primary
+                                : Colors.grey.shade700,
                           ),
                         ),
                       ),
@@ -1258,7 +1257,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
-                        color: _noArtistSelected ? Colors.white : Colors.transparent,
+                        color: _noArtistSelected
+                            ? Colors.white
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: _noArtistSelected
                             ? [
@@ -1266,7 +1267,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                                   color: Colors.black.withValues(alpha: 0.08),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
-                                )
+                                ),
                               ]
                             : [],
                       ),
@@ -1276,7 +1277,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
-                            color: _noArtistSelected ? AppColors.primary : Colors.grey.shade700,
+                            color: _noArtistSelected
+                                ? AppColors.primary
+                                : Colors.grey.shade700,
                           ),
                         ),
                       ),
@@ -1378,8 +1381,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
     final dateStr = _selectedDate == null
         ? ''
         : '${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}';
-    final timeStr =
-        _selectedTime == null ? '' : _selectedTime!.substring(0, 5);
+    final timeStr = _selectedTime == null ? '' : _selectedTime!.substring(0, 5);
     final dateTimeText = dateStr.isEmpty ? '--' : '$dateStr • $timeStr';
 
     final artistName = _noArtistSelected
@@ -1436,7 +1438,10 @@ class _NailBookingPageState extends State<NailBookingPage> {
                 onTap: () => setState(() => _currentStep = 1),
                 borderRadius: BorderRadius.circular(12),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: const [
@@ -1524,8 +1529,8 @@ class _NailBookingPageState extends State<NailBookingPage> {
                       backgroundColor: const Color(0xFFFFF0F5),
                       backgroundImage:
                           artistAvatar != null && artistAvatar.isNotEmpty
-                              ? NetworkImage(artistAvatar)
-                              : null,
+                          ? NetworkImage(artistAvatar)
+                          : null,
                       child: artistAvatar == null || artistAvatar.isEmpty
                           ? const Icon(
                               Icons.person_rounded,
@@ -1601,8 +1606,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   Widget _buildVoucherRow() {
-    final selectedPromotion =
-        _promotions.where((v) => v.promotionId == _selectedPromotionId);
+    final selectedPromotion = _promotions.where(
+      (v) => v.promotionId == _selectedPromotionId,
+    );
     final hasSelected = selectedPromotion.isNotEmpty;
     final count = _promotions.length;
     final selectedVoucher = hasSelected ? selectedPromotion.first : null;
@@ -1660,7 +1666,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 1.5),
+                          horizontal: 6,
+                          vertical: 1.5,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFFF0F5),
                           borderRadius: BorderRadius.circular(8),
@@ -1705,10 +1713,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                 else
                   Text(
                     count > 0 ? 'Chọn voucher' : 'Chưa chọn voucher',
-                    style: TextStyle(
-                      color: Colors.grey.shade500,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1806,7 +1811,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
               else
                 Text(
                   hasBalance
-                      ? 'Số dư: ${PriceFormatter.format(balance!.round())}'
+                      ? 'Số dư: ${PriceFormatter.format(balance.round())}'
                       : 'Số dư trống',
                   style: TextStyle(
                     fontSize: 12,
@@ -1828,7 +1833,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
               onChanged: hasBalance && !_isLoadingWallet
                   ? (val) => setState(() => _useWalletBalance = val)
                   : null,
-              activeColor: Colors.white,
+              activeThumbColor: Colors.white,
               activeTrackColor: const Color(0xFFE02B6D),
               inactiveThumbColor: Colors.white,
               inactiveTrackColor: const Color(0xFFF0E6EA),
@@ -1847,9 +1852,8 @@ class _NailBookingPageState extends State<NailBookingPage> {
     final int totalPrice = reviewTotal is num
         ? reviewTotal.round()
         : isLoading
-            ? 0
-            : int.tryParse(reviewTotal?.toString() ?? '') ??
-                _estimatedTotalPrice;
+        ? 0
+        : int.tryParse(reviewTotal?.toString() ?? '') ?? _estimatedTotalPrice;
     final int subtotalPrice = _reviewSubtotal ?? _estimatedTotalPrice;
 
     // Calculate deposit info
@@ -1860,14 +1864,15 @@ class _NailBookingPageState extends State<NailBookingPage> {
     final initialDepositAmount = depositInfo['amount'] as int;
 
     // Calculate deductions for deposit
-    final walletDeduction = (_useWalletBalance &&
+    final walletDeduction =
+        (_useWalletBalance &&
             _walletAvailableBalance != null &&
             _walletAvailableBalance! > 0)
         ? (_priceReview?['walletDiscount'] is num
-            ? (_priceReview!['walletDiscount'] as num).round()
-            : (_walletAvailableBalance! < initialDepositAmount
-                ? _walletAvailableBalance!.round()
-                : initialDepositAmount))
+              ? (_priceReview!['walletDiscount'] as num).round()
+              : (_walletAvailableBalance! < initialDepositAmount
+                    ? _walletAvailableBalance!.round()
+                    : initialDepositAmount))
         : 0;
 
     final int finalTotalPrice = totalPrice;
@@ -1936,8 +1941,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
           // 3. Đường nét đứt mờ (Dashed Divider)
           CustomPaint(
             size: const Size(double.infinity, 1),
-            painter:
-                _HorizontalDashedLinePainter(color: const Color(0xFFE5E7EB)),
+            painter: _HorizontalDashedLinePainter(
+              color: const Color(0xFFE5E7EB),
+            ),
           ),
           const SizedBox(height: 14),
 
@@ -1948,7 +1954,6 @@ class _NailBookingPageState extends State<NailBookingPage> {
           // - Discount Breakdown (Ưu đãi thành viên, Voucher, v.v.)
           for (final discount in _discountBreakdown)
             _buildDiscountInvoiceRow(discount),
-
 
           const SizedBox(height: 6),
           // 5. Đường kẻ phân cách rõ ràng
@@ -1987,14 +1992,22 @@ class _NailBookingPageState extends State<NailBookingPage> {
             const SizedBox(height: 4),
             const Divider(height: 1, color: Color(0xFFF0F0F0)),
             const SizedBox(height: 14),
-            _buildDepositDetails(totalPrice, initialDepositAmount, walletDeduction),
+            _buildDepositDetails(
+              totalPrice,
+              initialDepositAmount,
+              walletDeduction,
+            ),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildInvoiceRow(String label, num amount, {required bool isNegative}) {
+  Widget _buildInvoiceRow(
+    String label,
+    num amount, {
+    required bool isNegative,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -2071,10 +2084,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
         children: [
           Text(
             label,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
           ),
           Text(
             '-${PriceFormatter.format(discountAmount)}',
@@ -2290,10 +2300,14 @@ class _NailBookingPageState extends State<NailBookingPage> {
       totalPrice,
     );
     final depositConfigText = depositInfo['displayText'] as String;
-    final depositAmountToPay =
-        (initialDepositAmount - walletDeduction).clamp(0, initialDepositAmount);
-    final remainingAmountAtSalon =
-        (totalPrice - walletDeduction).clamp(0, totalPrice);
+    final depositAmountToPay = (initialDepositAmount - walletDeduction).clamp(
+      0,
+      initialDepositAmount,
+    );
+    final remainingAmountAtSalon = (totalPrice - walletDeduction).clamp(
+      0,
+      totalPrice,
+    );
 
     return Column(
       children: [
@@ -2389,7 +2403,8 @@ class _NailBookingPageState extends State<NailBookingPage> {
           reviewedNailPrice ?? _nailVariantPrice + _shapeMethodPrice.round();
       items.add(
         PaymentTableItem(
-          name: widget.nailData!['name']?.toString() ??
+          name:
+              widget.nailData!['name']?.toString() ??
               S.of(context).bookingNailVariantDefault,
           quantity: 1,
           unitPrice: displayPrice,
@@ -2487,8 +2502,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color:
-                isActive ? const Color(0xFFFFADC8) : const Color(0xFFF3E8EE),
+            color: isActive ? const Color(0xFFFFADC8) : const Color(0xFFF3E8EE),
             width: 1.2,
           ),
           boxShadow: [
@@ -2543,7 +2557,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                   else
                     Text(
                       hasBalance
-                          ? 'Số dư: ${PriceFormatter.format(balance!.round())}'
+                          ? 'Số dư: ${PriceFormatter.format(balance.round())}'
                           : 'Số dư trống',
                       style: TextStyle(
                         fontSize: 12.5,
@@ -2576,12 +2590,13 @@ class _NailBookingPageState extends State<NailBookingPage> {
                   onChanged: hasBalance && !_isLoadingWallet
                       ? (val) => setState(() => _useWalletBalance = val)
                       : null,
-                  activeColor: Colors.white,
+                  activeThumbColor: Colors.white,
                   activeTrackColor: const Color(0xFFE02B6D),
                   inactiveThumbColor: Colors.white,
                   inactiveTrackColor: const Color(0xFFF0E6EA),
-                  trackOutlineColor:
-                      WidgetStateProperty.all(Colors.transparent),
+                  trackOutlineColor: WidgetStateProperty.all(
+                    Colors.transparent,
+                  ),
                 ),
               ),
             ),
@@ -2592,8 +2607,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   Widget _buildPromotionSelector() {
-    final selectedPromotion =
-        _promotions.where((v) => v.promotionId == _selectedPromotionId);
+    final selectedPromotion = _promotions.where(
+      (v) => v.promotionId == _selectedPromotionId,
+    );
     final hasSelected = selectedPromotion.isNotEmpty;
     final count = _promotions.length;
     final selectedVoucher = hasSelected ? selectedPromotion.first : null;
@@ -2624,8 +2640,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color:
-                hasSelected ? const Color(0xFFFFADC8) : const Color(0xFFF3E8EE),
+            color: hasSelected
+                ? const Color(0xFFFFADC8)
+                : const Color(0xFFF3E8EE),
             width: 1.2,
           ),
           boxShadow: [
@@ -2670,7 +2687,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
                         const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 1.5),
+                            horizontal: 6,
+                            vertical: 1.5,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFFFF0F5),
                             borderRadius: BorderRadius.circular(8),
@@ -2878,14 +2897,19 @@ class _NailBookingPageState extends State<NailBookingPage> {
                         gradient: LinearGradient(
                           colors: _isSubmitting
                               ? [Colors.grey.shade400, Colors.grey.shade500]
-                              : [const Color(0xFFFF4081), const Color(0xFFD81B60)],
+                              : [
+                                  const Color(0xFFFF4081),
+                                  const Color(0xFFD81B60),
+                                ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         boxShadow: [
                           if (!_isSubmitting)
                             BoxShadow(
-                              color: const Color(0xFFD81B60).withValues(alpha: 0.38),
+                              color: const Color(
+                                0xFFD81B60,
+                              ).withValues(alpha: 0.38),
                               blurRadius: 14,
                               offset: const Offset(0, 5),
                             ),
@@ -2957,7 +2981,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                                   ? [Colors.grey.shade400, Colors.grey.shade500]
                                   : [
                                       const Color(0xFFFF4081),
-                                      const Color(0xFFE02B6D)
+                                      const Color(0xFFE02B6D),
                                     ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
@@ -2965,16 +2989,16 @@ class _NailBookingPageState extends State<NailBookingPage> {
                             boxShadow: [
                               if (!_isSubmitting)
                                 BoxShadow(
-                                  color: const Color(0xFFE02B6D)
-                                      .withValues(alpha: 0.38),
+                                  color: const Color(
+                                    0xFFE02B6D,
+                                  ).withValues(alpha: 0.38),
                                   blurRadius: 14,
                                   offset: const Offset(0, 5),
                                 ),
                             ],
                           ),
                           child: ElevatedButton(
-                            onPressed:
-                                _isSubmitting ? null : _handleNextAction,
+                            onPressed: _isSubmitting ? null : _handleNextAction,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.transparent,
                               foregroundColor: Colors.white,
@@ -2994,8 +3018,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                                     ),
                                   )
                                 : Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.center,
+                                    mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       Icon(
                                         _currentStep == 4
@@ -3106,11 +3129,7 @@ class _HorizontalDashedLinePainter extends CustomPainter {
     double startX = 0.0;
 
     while (startX < size.width) {
-      canvas.drawLine(
-        Offset(startX, 0),
-        Offset(startX + dashWidth, 0),
-        paint,
-      );
+      canvas.drawLine(Offset(startX, 0), Offset(startX + dashWidth, 0), paint);
       startX += dashWidth + dashSpace;
     }
   }
@@ -3120,4 +3139,3 @@ class _HorizontalDashedLinePainter extends CustomPainter {
     return oldDelegate.color != color;
   }
 }
-

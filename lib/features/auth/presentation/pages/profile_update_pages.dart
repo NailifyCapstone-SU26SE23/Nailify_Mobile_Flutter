@@ -86,7 +86,9 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
           content: const Text('Đã cập nhật thông tin thành công'),
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
       context.go('/profile');
@@ -97,7 +99,9 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
           content: Text('Cập nhật thất bại: $error'),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
     } finally {
@@ -153,9 +157,10 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
                       backgroundImage: _selectedImage != null
                           ? FileImage(File(_selectedImage!.path))
                           : _currentAvatarUrl?.trim().isNotEmpty == true
-                              ? NetworkImage(_currentAvatarUrl!.trim())
-                              : null,
-                      child: _selectedImage == null &&
+                          ? NetworkImage(_currentAvatarUrl!.trim())
+                          : null,
+                      child:
+                          _selectedImage == null &&
                               (_currentAvatarUrl == null ||
                                   _currentAvatarUrl!.trim().isEmpty)
                           ? const Icon(
@@ -392,7 +397,9 @@ class _UpdatePreferencesPageState extends State<UpdatePreferencesPage> {
           content: const Text('Đã cập nhật sở thích làm móng thành công'),
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
       context.go('/profile');
@@ -403,7 +410,9 @@ class _UpdatePreferencesPageState extends State<UpdatePreferencesPage> {
           content: Text('Cập nhật thất bại: $error'),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
     } finally {
@@ -632,7 +641,10 @@ class _UpdatePageShell extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(28),
-                      border: Border.all(color: AppColors.primaryLight, width: 1.2),
+                      border: Border.all(
+                        color: AppColors.primaryLight,
+                        width: 1.2,
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: AppColors.primary.withValues(alpha: 0.08),
@@ -711,7 +723,10 @@ class _StyledFormField extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: AppColors.primary, width: 1.6),
+              borderSide: const BorderSide(
+                color: AppColors.primary,
+                width: 1.6,
+              ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),

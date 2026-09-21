@@ -111,7 +111,9 @@ class _NailVariantRatingsSectionState extends State<NailVariantRatingsSection> {
               return Column(
                 children: [
                   _RatingsSummaryHeader(
-                    totalCount: page.totalItems > 0 ? page.totalItems : page.items.length,
+                    totalCount: page.totalItems > 0
+                        ? page.totalItems
+                        : page.items.length,
                     averageScore: _calcAverageScore(page.items),
                   ),
                   ...page.items.map((rating) {
@@ -343,7 +345,9 @@ class _RatingsSummaryHeader extends StatelessWidget {
                 value: percent,
                 minHeight: 6,
                 backgroundColor: const Color(0xFFEEEEF5),
-                valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                valueColor: const AlwaysStoppedAnimation<Color>(
+                  AppColors.primary,
+                ),
               ),
             ),
           ),
@@ -390,10 +394,12 @@ class _RatingCardState extends State<_RatingCard> {
     try {
       final response = await getIt<ApiClient>().get<dynamic>('/Users/$userId');
       final data = ApiResponseParser.unwrapMap(response.data);
-      final firstName =
-          (data['firstName'] ?? data['FirstName'] ?? '').toString().trim();
-      final lastName =
-          (data['lastName'] ?? data['LastName'] ?? '').toString().trim();
+      final firstName = (data['firstName'] ?? data['FirstName'] ?? '')
+          .toString()
+          .trim();
+      final lastName = (data['lastName'] ?? data['LastName'] ?? '')
+          .toString()
+          .trim();
       String name = '';
       if (lastName.isNotEmpty && firstName.isNotEmpty) {
         name = '$lastName $firstName';
@@ -402,21 +408,20 @@ class _RatingCardState extends State<_RatingCard> {
       } else if (lastName.isNotEmpty) {
         name = lastName;
       } else {
-        name = (data['fullName'] ??
-                data['FullName'] ??
-                data['name'] ??
-                data['userName'] ??
-                '')
-            .toString()
-            .trim();
+        name =
+            (data['fullName'] ??
+                    data['FullName'] ??
+                    data['name'] ??
+                    data['userName'] ??
+                    '')
+                .toString()
+                .trim();
       }
 
-      final avatar = (data['avatarUrl'] ??
-              data['AvatarUrl'] ??
-              data['avatar'] ??
-              '')
-          .toString()
-          .trim();
+      final avatar =
+          (data['avatarUrl'] ?? data['AvatarUrl'] ?? data['avatar'] ?? '')
+              .toString()
+              .trim();
       if (mounted) {
         setState(() {
           if (name.isNotEmpty) _fetchedUserName = name;
@@ -452,7 +457,8 @@ class _RatingCardState extends State<_RatingCard> {
   Widget build(BuildContext context) {
     final rating = widget.rating;
     final createdAt = _formatDate(rating.createdAt);
-    final displayName = _fetchedUserName ??
+    final displayName =
+        _fetchedUserName ??
         (rating.userName.isNotEmpty ? rating.userName : 'Khách hàng Nailify');
     final avatarUrl = _fetchedAvatarUrl ?? rating.userAvatarUrl;
 
@@ -493,11 +499,12 @@ class _RatingCardState extends State<_RatingCard> {
                           width: 38,
                           height: 38,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => const Icon(
-                            Icons.person_rounded,
-                            color: AppColors.primary,
-                            size: 22,
-                          ),
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(
+                                Icons.person_rounded,
+                                color: AppColors.primary,
+                                size: 22,
+                              ),
                         ),
                       )
                     : const Icon(
@@ -738,9 +745,13 @@ class _RatingCardState extends State<_RatingCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Icon(
-                          isSalon ? Icons.storefront_rounded : Icons.chat_bubble_outline_rounded,
+                          isSalon
+                              ? Icons.storefront_rounded
+                              : Icons.chat_bubble_outline_rounded,
                           size: 14,
-                          color: isSalon ? AppColors.primary : Colors.grey.shade600,
+                          color: isSalon
+                              ? AppColors.primary
+                              : Colors.grey.shade600,
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -748,15 +759,21 @@ class _RatingCardState extends State<_RatingCard> {
                             TextSpan(
                               children: [
                                 TextSpan(
-                                  text: isSalon ? 'Salon Nailify: ' : '${rep.split(': ').first}: ',
+                                  text: isSalon
+                                      ? 'Salon Nailify: '
+                                      : '${rep.split(': ').first}: ',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12,
-                                    color: isSalon ? AppColors.primaryDark : AppColors.textPrimary,
+                                    color: isSalon
+                                        ? AppColors.primaryDark
+                                        : AppColors.textPrimary,
                                   ),
                                 ),
                                 TextSpan(
-                                  text: rep.contains(': ') ? rep.split(': ').sublist(1).join(': ') : rep,
+                                  text: rep.contains(': ')
+                                      ? rep.split(': ').sublist(1).join(': ')
+                                      : rep,
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.grey.shade800,
@@ -788,7 +805,10 @@ class _RatingCardState extends State<_RatingCard> {
                 },
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   visualDensity: VisualDensity.compact,
                 ),
                 icon: const Icon(Icons.reply_rounded, size: 16),
@@ -811,8 +831,14 @@ class _RatingCardState extends State<_RatingCard> {
                         style: const TextStyle(fontSize: 12.5),
                         decoration: InputDecoration(
                           hintText: 'Nhập phản hồi của bạn...',
-                          hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade400),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          hintStyle: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade400,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                           filled: true,
                           fillColor: const Color(0xFFF6F6FA),
                           border: OutlineInputBorder(
@@ -839,7 +865,10 @@ class _RatingCardState extends State<_RatingCard> {
                       ),
                       child: const Text(
                         'Gửi',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),

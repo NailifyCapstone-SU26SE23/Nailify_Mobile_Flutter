@@ -15,10 +15,7 @@ class DesignGalleryHeader extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: const LinearGradient(
-          colors: [
-            AppColors.primarySurface,
-            Colors.white,
-          ],
+          colors: [AppColors.primarySurface, Colors.white],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
@@ -82,9 +79,12 @@ class DesignGalleryHeader extends StatelessWidget {
               ),
               children: [
                 TextSpan(
-                  text: (l10n?.galleryHeaderTitle ?? 'Find your next signature look')
-                      .contains('\n')
-                      ? (l10n?.galleryHeaderTitle ?? 'Find your next signature look')
+                  text:
+                      (l10n?.galleryHeaderTitle ??
+                              'Find your next signature look')
+                          .contains('\n')
+                      ? (l10n?.galleryHeaderTitle ??
+                            'Find your next signature look')
                       : 'Find your next\n',
                 ),
                 TextSpan(

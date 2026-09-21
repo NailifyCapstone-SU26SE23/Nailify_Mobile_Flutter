@@ -128,10 +128,7 @@ class DesignGridToolbar extends StatelessWidget {
                     } else if (option == 'A-Z') {
                       label = l10n?.gallerySortAZ ?? 'A - Z';
                     }
-                    return DropdownMenuItem(
-                      value: option,
-                      child: Text(label),
-                    );
+                    return DropdownMenuItem(value: option, child: Text(label));
                   }).toList(),
                   onChanged: onSortChanged,
                 ),

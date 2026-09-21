@@ -22,7 +22,6 @@ import '../widgets/booking_promotion_sheet.dart';
 import '../widgets/payment_detail_table.dart';
 import '../widgets/sleek_booking_step_indicator.dart';
 
-
 class CustomNailBookingPage extends StatefulWidget {
   final CustomerNailModel nail;
   final int? shapeMethodConfigId;
@@ -105,8 +104,8 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
       final response = await _apiService.getCustomerWalletSummary();
       if (!mounted) return;
       setState(() {
-        _walletAvailableBalance =
-            (response?['availableBalance'] as num?)?.toDouble();
+        _walletAvailableBalance = (response?['availableBalance'] as num?)
+            ?.toDouble();
         _isLoadingWallet = false;
       });
     } catch (_) {
@@ -114,7 +113,6 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
       setState(() => _isLoadingWallet = false);
     }
   }
-
 
   @override
   void dispose() {
@@ -140,7 +138,6 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
 
   int? get _selectedShapeMethodConfigId =>
       _selectedShapeMethod?.shapeMethodConfigId;
-
 
   Map<String, int> get _groupedServicesMap {
     final map = <String, int>{};
@@ -385,7 +382,9 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
         final qrCode = paymentData['qrCode']?.toString() ?? '';
         final paymentUrl = paymentData['paymentUrl']?.toString() ?? '';
 
-        if (status == 'PAID' || status == 'SUCCESS' || (qrCode.isEmpty && paymentUrl.isEmpty)) {
+        if (status == 'PAID' ||
+            status == 'SUCCESS' ||
+            (qrCode.isEmpty && paymentUrl.isEmpty)) {
           context.go('/payment-success', extra: paymentData);
         } else {
           context.go('/payment-qr', extra: paymentData);
@@ -586,7 +585,6 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
       'useWalletBalance': _useWalletBalance,
     };
   }
-
 
   List<Map<String, dynamic>> _buildBookingItems() {
     return [
@@ -975,14 +973,14 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   }
 
   Widget _buildBookingSummaryCard() {
-    final branchName = widget.nail.salonData?['name']?.toString() ??
+    final branchName =
+        widget.nail.salonData?['name']?.toString() ??
         widget.nail.salonData?['salonName']?.toString() ??
         'Chi nhánh Salon';
     final dateStr = _selectedDate == null
         ? ''
         : '${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}';
-    final timeStr =
-        _selectedTime == null ? '' : _selectedTime!.substring(0, 5);
+    final timeStr = _selectedTime == null ? '' : _selectedTime!.substring(0, 5);
     final dateTimeText = dateStr.isEmpty ? '--' : '$dateStr • $timeStr';
     final artistName = widget.nail.stylistName.isNotEmpty
         ? widget.nail.stylistName
@@ -1042,8 +1040,10 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                 },
                 borderRadius: BorderRadius.circular(12),
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: const [
@@ -1303,10 +1303,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                 else
                   Text(
                     count > 0 ? 'Chọn voucher' : 'Chưa chọn voucher',
-                    style: TextStyle(
-                      color: Colors.grey.shade500,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1326,8 +1323,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
             )
           else
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: const Color(0xFFFFF0F5),
                 borderRadius: BorderRadius.circular(20),
@@ -1437,8 +1433,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
               activeTrackColor: const Color(0xFFE02B6D),
               inactiveThumbColor: Colors.white,
               inactiveTrackColor: const Color(0xFFF0E6EA),
-              trackOutlineColor:
-                  WidgetStateProperty.all(Colors.transparent),
+              trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
             ),
           ),
         ),
@@ -1452,9 +1447,8 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
     final int totalPrice = reviewTotal is num
         ? reviewTotal.round()
         : isLoading
-            ? 0
-            : int.tryParse(reviewTotal?.toString() ?? '') ??
-                _estimatedTotalPrice;
+        ? 0
+        : int.tryParse(reviewTotal?.toString() ?? '') ?? _estimatedTotalPrice;
     final int subtotalPrice = _reviewSubtotal ?? _estimatedTotalPrice;
 
     final depositInfo = PriceFormatter.getDepositInfo(
@@ -1463,14 +1457,15 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
     );
     final initialDepositAmount = depositInfo['amount'] as int;
 
-    final walletDeduction = (_useWalletBalance &&
+    final walletDeduction =
+        (_useWalletBalance &&
             _walletAvailableBalance != null &&
             _walletAvailableBalance! > 0)
         ? (_priceReview?['walletDiscount'] is num
-            ? (_priceReview!['walletDiscount'] as num).round()
-            : (_walletAvailableBalance! < initialDepositAmount
-                ? _walletAvailableBalance!.round()
-                : initialDepositAmount))
+              ? (_priceReview!['walletDiscount'] as num).round()
+              : (_walletAvailableBalance! < initialDepositAmount
+                    ? _walletAvailableBalance!.round()
+                    : initialDepositAmount))
         : 0;
 
     final int finalTotalPrice = totalPrice;
@@ -1536,8 +1531,9 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
 
           CustomPaint(
             size: const Size(double.infinity, 1),
-            painter:
-                _HorizontalDashedLinePainter(color: const Color(0xFFE5E7EB)),
+            painter: _HorizontalDashedLinePainter(
+              color: const Color(0xFFE5E7EB),
+            ),
           ),
           const SizedBox(height: 14),
 
@@ -1602,10 +1598,14 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
       totalPrice,
     );
     final depositConfigText = depositInfo['displayText'] as String;
-    final depositAmountToPay =
-        (initialDepositAmount - walletDeduction).clamp(0, initialDepositAmount);
-    final remainingAmountAtSalon =
-        (totalPrice - walletDeduction).clamp(0, totalPrice);
+    final depositAmountToPay = (initialDepositAmount - walletDeduction).clamp(
+      0,
+      initialDepositAmount,
+    );
+    final remainingAmountAtSalon = (totalPrice - walletDeduction).clamp(
+      0,
+      totalPrice,
+    );
 
     return Column(
       children: [
@@ -2100,9 +2100,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
       ),
     );
   }
-
 }
-
 
 class _HorizontalDashedLinePainter extends CustomPainter {
   final Color color;
@@ -2120,11 +2118,7 @@ class _HorizontalDashedLinePainter extends CustomPainter {
     double startX = 0.0;
 
     while (startX < size.width) {
-      canvas.drawLine(
-        Offset(startX, 0),
-        Offset(startX + dashWidth, 0),
-        paint,
-      );
+      canvas.drawLine(Offset(startX, 0), Offset(startX + dashWidth, 0), paint);
       startX += dashWidth + dashSpace;
     }
   }
@@ -2134,4 +2128,3 @@ class _HorizontalDashedLinePainter extends CustomPainter {
     return oldDelegate.color != color;
   }
 }
-

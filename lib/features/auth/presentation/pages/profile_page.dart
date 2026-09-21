@@ -61,7 +61,10 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             child: const Text(
               'Đăng xuất',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -142,7 +145,9 @@ class _ProfilePageState extends State<ProfilePage> {
                             OutlinedButton(
                               onPressed: _reload,
                               style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: AppColors.primary),
+                                side: const BorderSide(
+                                  color: AppColors.primary,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
                                 ),
@@ -197,14 +202,21 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     const Spacer(),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         gradient: AppColors.primaryGradient,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Row(
                         children: [
-                          Icon(Icons.star_rounded, size: 14, color: Colors.white),
+                          Icon(
+                            Icons.star_rounded,
+                            size: 14,
+                            color: Colors.white,
+                          ),
                           SizedBox(width: 4),
                           Text(
                             'VIP MEMBER',
@@ -228,7 +240,10 @@ class _ProfilePageState extends State<ProfilePage> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: AppColors.primaryLight, width: 1.2),
+                    border: Border.all(
+                      color: AppColors.primaryLight,
+                      width: 1.2,
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: AppColors.primary.withValues(alpha: 0.1),
@@ -254,7 +269,9 @@ class _ProfilePageState extends State<ProfilePage> {
                               : null,
                           onBackgroundImageError: avatarUrl != null
                               ? (_, _) {
-                                  debugPrint('Failed to load avatar: $avatarUrl');
+                                  debugPrint(
+                                    'Failed to load avatar: $avatarUrl',
+                                  );
                                 }
                               : null,
                           child: avatarUrl == null
@@ -292,7 +309,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                 color: AppColors.textSecondary,
                               ),
                             ),
-                            if (user.phone != null && user.phone!.isNotEmpty) ...[
+                            if (user.phone != null &&
+                                user.phone!.isNotEmpty) ...[
                               const SizedBox(height: 2),
                               Text(
                                 user.phone!,
@@ -392,7 +410,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
+                    border: Border.all(
+                      color: AppColors.error.withValues(alpha: 0.4),
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: AppColors.error.withValues(alpha: 0.05),
@@ -409,7 +429,11 @@ class _ProfilePageState extends State<ProfilePage> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    icon: const Icon(Icons.logout_rounded, color: AppColors.error, size: 20),
+                    icon: const Icon(
+                      Icons.logout_rounded,
+                      color: AppColors.error,
+                      size: 20,
+                    ),
                     label: const Text(
                       'Đăng xuất khỏi tài khoản',
                       style: TextStyle(

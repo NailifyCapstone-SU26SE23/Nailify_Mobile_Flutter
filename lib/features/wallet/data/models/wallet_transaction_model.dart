@@ -11,7 +11,9 @@ enum WalletTxType {
     final lower = val.toLowerCase();
     if (lower.contains('deposit')) return WalletTxType.deposit;
     if (lower.contains('withdraw')) return WalletTxType.withdraw;
-    if (lower.contains('booking') || lower.contains('payment')) return WalletTxType.bookingPayment;
+    if (lower.contains('booking') || lower.contains('payment')) {
+      return WalletTxType.bookingPayment;
+    }
     if (lower.contains('convert')) return WalletTxType.convertToPoints;
     if (lower.contains('refund')) return WalletTxType.refund;
     return WalletTxType.unknown;
@@ -28,7 +30,9 @@ enum WalletTxStatus {
   static WalletTxStatus fromString(String? val) {
     if (val == null) return WalletTxStatus.unknown;
     final lower = val.toLowerCase();
-    if (lower.contains('completed') || lower.contains('success')) return WalletTxStatus.completed;
+    if (lower.contains('completed') || lower.contains('success')) {
+      return WalletTxStatus.completed;
+    }
     if (lower.contains('pending')) return WalletTxStatus.pending;
     if (lower.contains('failed')) return WalletTxStatus.failed;
     if (lower.contains('cancel')) return WalletTxStatus.cancelled;
@@ -100,9 +104,13 @@ class PaginatedWalletTransactions {
 
   factory PaginatedWalletTransactions.fromJson(Map<String, dynamic> json) {
     final data = json['data'] is Map ? json['data'] as Map : json;
-    final itemsList = (data['items'] as List?)
+    final itemsList =
+        (data['items'] as List?)
             ?.whereType<Map>()
-            .map((e) => WalletTransactionModel.fromJson(Map<String, dynamic>.from(e)))
+            .map(
+              (e) =>
+                  WalletTransactionModel.fromJson(Map<String, dynamic>.from(e)),
+            )
             .toList() ??
         const [];
     final meta = data['metaData'] as Map? ?? {};

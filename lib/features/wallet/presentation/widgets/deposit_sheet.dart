@@ -26,13 +26,7 @@ class DepositSheet extends StatefulWidget {
 
 class _DepositSheetState extends State<DepositSheet> {
   final TextEditingController _amountController = TextEditingController();
-  final List<double> _presetAmounts = [
-    50000,
-    100000,
-    200000,
-    500000,
-    1000000,
-  ];
+  final List<double> _presetAmounts = [50000, 100000, 200000, 500000, 1000000];
   double _selectedAmount = 100000;
   bool _isLoading = false;
   String? _errorMessage;
@@ -196,7 +190,9 @@ class _DepositSheetState extends State<DepositSheet> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(
-                    color: isSelected ? AppColors.primary : Colors.grey.shade200,
+                    color: isSelected
+                        ? AppColors.primary
+                        : Colors.grey.shade200,
                   ),
                 ),
               );
@@ -227,7 +223,10 @@ class _DepositSheetState extends State<DepositSheet> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                borderSide: const BorderSide(
+                  color: AppColors.primary,
+                  width: 2,
+                ),
               ),
             ),
           ),
@@ -271,7 +270,10 @@ class _DepositSheetState extends State<DepositSheet> {
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.qr_code_2_rounded, color: Colors.white),
+                        const Icon(
+                          Icons.qr_code_2_rounded,
+                          color: Colors.white,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           'Tạo mã QR Nạp ${_formatNumber(_selectedAmount)}đ',

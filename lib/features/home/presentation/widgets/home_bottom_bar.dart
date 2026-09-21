@@ -8,11 +8,7 @@ class NailifyBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int>? onTap;
 
-  const NailifyBottomNavBar({
-    super.key,
-    this.currentIndex = 0,
-    this.onTap,
-  });
+  const NailifyBottomNavBar({super.key, this.currentIndex = 0, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -84,25 +80,21 @@ class NailifyBottomNavBar extends StatelessWidget {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: const LinearGradient(
-                          colors: [
-                            Color(0xFFFF4B72),
-                            Color(0xFFFF7E53),
-                          ],
+                          colors: [Color(0xFFFF4B72), Color(0xFFFF7E53)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFFF4B72).withValues(alpha: 0.35),
+                            color: const Color(
+                              0xFFFF4B72,
+                            ).withValues(alpha: 0.35),
                             blurRadius: 12,
                             spreadRadius: 1,
                             offset: const Offset(0, 5),
                           ),
                         ],
-                        border: Border.all(
-                          color: Colors.white,
-                          width: 3.0,
-                        ),
+                        border: Border.all(color: Colors.white, width: 3.0),
                       ),
                       child: const Icon(
                         Icons.calendar_today_rounded,
@@ -149,7 +141,9 @@ class NailifyBottomNavBar extends StatelessWidget {
             Icon(
               isSelected ? activeIcon : icon,
               size: 22,
-              color: isSelected ? const Color(0xFFE02B6D) : Colors.grey.shade500,
+              color: isSelected
+                  ? const Color(0xFFE02B6D)
+                  : Colors.grey.shade500,
             ),
             const SizedBox(height: 3),
             Text(
@@ -157,7 +151,9 @@ class NailifyBottomNavBar extends StatelessWidget {
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: isSelected ? const Color(0xFFE02B6D) : Colors.grey.shade600,
+                color: isSelected
+                    ? const Color(0xFFE02B6D)
+                    : Colors.grey.shade600,
               ),
             ),
           ],

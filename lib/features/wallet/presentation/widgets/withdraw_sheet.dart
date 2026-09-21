@@ -11,7 +11,8 @@ class WithdrawSheet extends StatefulWidget {
     required String bankCode,
     required String accountNumber,
     required String accountHolderName,
-  }) onConfirmWithdraw;
+  })
+  onConfirmWithdraw;
 
   const WithdrawSheet({
     super.key,
@@ -28,7 +29,8 @@ class WithdrawSheet extends StatefulWidget {
       required String bankCode,
       required String accountNumber,
       required String accountHolderName,
-    }) onConfirmWithdraw,
+    })
+    onConfirmWithdraw,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -48,8 +50,10 @@ class WithdrawSheet extends StatefulWidget {
 class _WithdrawSheetState extends State<WithdrawSheet> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _amountController = TextEditingController();
-  final TextEditingController _accountNumberController = TextEditingController();
-  final TextEditingController _accountHolderController = TextEditingController();
+  final TextEditingController _accountNumberController =
+      TextEditingController();
+  final TextEditingController _accountHolderController =
+      TextEditingController();
 
   final List<Map<String, String>> _supportedBanks = const [
     {'name': 'Vietcombank', 'code': 'VCB'},
@@ -122,7 +126,9 @@ class _WithdrawSheetState extends State<WithdrawSheet> {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Tạo yêu cầu rút tiền thành công. Vui lòng chờ BQL duyệt!'),
+              content: Text(
+                'Tạo yêu cầu rút tiền thành công. Vui lòng chờ BQL duyệt!',
+              ),
               backgroundColor: Colors.green,
             ),
           );
@@ -223,7 +229,11 @@ class _WithdrawSheetState extends State<WithdrawSheet> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline_rounded, size: 18, color: Colors.amber.shade900),
+                    Icon(
+                      Icons.info_outline_rounded,
+                      size: 18,
+                      color: Colors.amber.shade900,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -245,7 +255,9 @@ class _WithdrawSheetState extends State<WithdrawSheet> {
                 initialValue: _selectedBank,
                 decoration: InputDecoration(
                   labelText: 'Ngân hàng nhận',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
                 items: _supportedBanks.map((bank) {
                   return DropdownMenuItem(
@@ -265,10 +277,13 @@ class _WithdrawSheetState extends State<WithdrawSheet> {
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
                   labelText: 'Số tài khoản ngân hàng',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
-                validator: (val) =>
-                    (val == null || val.isEmpty) ? 'Vui lòng nhập số tài khoản' : null,
+                validator: (val) => (val == null || val.isEmpty)
+                    ? 'Vui lòng nhập số tài khoản'
+                    : null,
               ),
               const SizedBox(height: 12),
 
@@ -278,10 +293,13 @@ class _WithdrawSheetState extends State<WithdrawSheet> {
                 textCapitalization: TextCapitalization.characters,
                 decoration: InputDecoration(
                   labelText: 'Tên chủ tài khoản (Viết hoa không dấu)',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
-                validator: (val) =>
-                    (val == null || val.isEmpty) ? 'Vui lòng nhập tên chủ tài khoản' : null,
+                validator: (val) => (val == null || val.isEmpty)
+                    ? 'Vui lòng nhập tên chủ tài khoản'
+                    : null,
               ),
               const SizedBox(height: 12),
 
@@ -293,15 +311,26 @@ class _WithdrawSheetState extends State<WithdrawSheet> {
                   labelText: 'Số tiền muốn rút (VNĐ)',
                   suffixIcon: TextButton(
                     onPressed: _setMaxAmount,
-                    child: const Text('Rút tối đa', style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      'Rút tối đa',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
                 validator: (val) {
-                  if (val == null || val.isEmpty) return 'Vui lòng nhập số tiền rút';
+                  if (val == null || val.isEmpty) {
+                    return 'Vui lòng nhập số tiền rút';
+                  }
                   final parsed = double.tryParse(val);
-                  if (parsed == null || parsed <= 0) return 'Số tiền không hợp lệ';
-                  if (parsed > widget.availableBalance) return 'Vượt quá số dư khả dụng';
+                  if (parsed == null || parsed <= 0) {
+                    return 'Số tiền không hợp lệ';
+                  }
+                  if (parsed > widget.availableBalance) {
+                    return 'Vượt quá số dư khả dụng';
+                  }
                   return null;
                 },
               ),
@@ -310,7 +339,11 @@ class _WithdrawSheetState extends State<WithdrawSheet> {
                 const SizedBox(height: 8),
                 Text(
                   _errorMessage!,
-                  style: const TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.red,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
 
@@ -324,14 +357,19 @@ class _WithdrawSheetState extends State<WithdrawSheet> {
                   onPressed: _isLoading ? null : _handleConfirm,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orange.shade800,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     elevation: 0,
                   ),
                   child: _isLoading
                       ? const SizedBox(
                           width: 24,
                           height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
+                          ),
                         )
                       : const Text(
                           'Gửi yêu cầu rút tiền',

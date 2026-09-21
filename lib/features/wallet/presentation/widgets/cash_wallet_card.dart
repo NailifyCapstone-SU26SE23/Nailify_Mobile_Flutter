@@ -34,10 +34,7 @@ class CashWalletCard extends StatelessWidget {
       width: double.infinity,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            Color(0xFF14121F),
-            Color(0xFF29243C),
-          ],
+          colors: [Color(0xFF14121F), Color(0xFF29243C)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -155,7 +152,9 @@ class CashWalletCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFFFFD700).withValues(alpha: 0.3),
+                                color: const Color(
+                                  0xFFFFD700,
+                                ).withValues(alpha: 0.3),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -306,9 +305,7 @@ class CashWalletCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.14),
-            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -339,5 +336,3 @@ class CashWalletCard extends StatelessWidget {
     );
   }
 }
-
-

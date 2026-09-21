@@ -18,11 +18,12 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage> {
   bool _isLoadingBooking = false;
 
   bool get _isWalletDeposit {
-    final type = widget.paymentData['paymentType']?.toString().toLowerCase() ?? '';
+    final type =
+        widget.paymentData['paymentType']?.toString().toLowerCase() ?? '';
     final policy = widget.paymentData['policy']?.toString().toLowerCase() ?? '';
     final rawBookingId = widget.paymentData['bookingId'];
-    final isBooking = rawBookingId != null &&
-        rawBookingId.toString().trim().isNotEmpty;
+    final isBooking =
+        rawBookingId != null && rawBookingId.toString().trim().isNotEmpty;
     if (isBooking) return false;
     if (type.contains('booking')) return false;
     if (type == 'walletdeposit' ||
@@ -92,7 +93,9 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage> {
     return _PaymentResultView(
       icon: Icons.check_circle,
       iconColor: Colors.green,
-      title: _isWalletDeposit ? 'Nạp tiền ví thành công!' : 'Thanh toán thành công',
+      title: _isWalletDeposit
+          ? 'Nạp tiền ví thành công!'
+          : 'Thanh toán thành công',
       message: _isWalletDeposit
           ? 'Số dư ví tiền mặt của bạn đã được cập nhật thành công.'
           : 'Giao dịch đã được xác nhận. Cảm ơn bạn đã thanh toán.',

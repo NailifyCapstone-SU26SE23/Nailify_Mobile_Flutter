@@ -187,6 +187,12 @@ abstract class S {
   /// **'Cancel'**
   String get cancel;
 
+  /// No description provided for @cancelBookingReasonMinLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Requires at least 5 characters'**
+  String get cancelBookingReasonMinLength;
+
   /// No description provided for @confirm.
   ///
   /// In en, this message translates to:

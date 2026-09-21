@@ -101,7 +101,8 @@ class _SalonDetailPageState extends State<SalonDetailPage> {
             );
           }
 
-          final isOpen = data.salon.status.toLowerCase() != 'closed' &&
+          final isOpen =
+              data.salon.status.toLowerCase() != 'closed' &&
               data.salon.status.toLowerCase() != 'inactive';
 
           return ListView(

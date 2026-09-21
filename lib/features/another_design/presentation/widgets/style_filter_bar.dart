@@ -38,7 +38,9 @@ class StyleFilterBar extends StatelessWidget {
                 color: isSelected ? null : Colors.white,
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: isSelected ? Colors.transparent : AppColors.borderLight,
+                  color: isSelected
+                      ? Colors.transparent
+                      : AppColors.borderLight,
                   width: 1.2,
                 ),
                 boxShadow: isSelected
@@ -72,7 +74,9 @@ class StyleFilterBar extends StatelessWidget {
                     filter,
                     style: TextStyle(
                       fontSize: 13,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
                       color: isSelected ? Colors.white : AppColors.textPrimary,
                     ),
                   ),

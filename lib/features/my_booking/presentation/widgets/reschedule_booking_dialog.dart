@@ -29,10 +29,8 @@ class RescheduleBookingDialog extends StatefulWidget {
       barrierLabel: 'RescheduleBookingDialog',
       barrierColor: Colors.black.withValues(alpha: 0.54),
       transitionDuration: const Duration(milliseconds: 280),
-      pageBuilder: (ctx, anim1, anim2) => RescheduleBookingDialog(
-        bookingId: bookingId,
-        onConfirm: onConfirm,
-      ),
+      pageBuilder: (ctx, anim1, anim2) =>
+          RescheduleBookingDialog(bookingId: bookingId, onConfirm: onConfirm),
       transitionBuilder: (ctx, anim1, anim2, child) {
         final curve = CurvedAnimation(
           parent: anim1,
@@ -489,7 +487,9 @@ class _RescheduleBookingDialogState extends State<RescheduleBookingDialog> {
                                                 borderRadius:
                                                     BorderRadius.circular(12),
                                                 child: AnimatedScale(
-                                                  scale: isSelected ? 1.02 : 1.0,
+                                                  scale: isSelected
+                                                      ? 1.02
+                                                      : 1.0,
                                                   duration: const Duration(
                                                     milliseconds: 150,
                                                   ),
@@ -503,7 +503,7 @@ class _RescheduleBookingDialogState extends State<RescheduleBookingDialog> {
                                                     decoration: BoxDecoration(
                                                       gradient: isSelected
                                                           ? AppColors
-                                                              .quizGradient
+                                                                .quizGradient
                                                           : null,
                                                       color: isSelected
                                                           ? null
@@ -548,7 +548,7 @@ class _RescheduleBookingDialogState extends State<RescheduleBookingDialog> {
                                                           color: isSelected
                                                               ? Colors.white
                                                               : AppColors
-                                                                  .textPrimary,
+                                                                    .textPrimary,
                                                           fontWeight: isSelected
                                                               ? FontWeight.bold
                                                               : FontWeight.w500,

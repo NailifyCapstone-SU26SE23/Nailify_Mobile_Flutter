@@ -141,10 +141,7 @@ class WalletApiService {
 
   /// POST /Wallets/deposit
   Future<Map<String, dynamic>> requestDeposit(double amount) async {
-    final response = await _api.post<dynamic>(
-      '/Wallets/deposit',
-      data: amount,
-    );
+    final response = await _api.post<dynamic>('/Wallets/deposit', data: amount);
     final payload = _unwrapData(response.data);
     if (payload is Map<String, dynamic>) {
       return payload;
@@ -206,4 +203,3 @@ class WalletApiService {
     return <String, dynamic>{};
   }
 }
-

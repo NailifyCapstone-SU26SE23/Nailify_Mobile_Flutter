@@ -528,10 +528,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
       }
     }
     for (final entry in serviceCounts.entries) {
-      items.add({
-        'serviceId': entry.key,
-        'quantity': entry.value,
-      });
+      items.add({'serviceId': entry.key, 'quantity': entry.value});
     }
     return items;
   }
@@ -727,8 +724,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
           _priceReview = review;
           _priceReviewKey = key;
         });
-      } catch (_) {
-      }
+      } catch (_) {}
     }();
     _inFlightPriceReviewKey = key;
     _inFlightPriceReview = reviewFuture;
@@ -762,7 +758,9 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
         final qrCode = paymentData['qrCode']?.toString() ?? '';
         final paymentUrl = paymentData['paymentUrl']?.toString() ?? '';
 
-        if (status == 'PAID' || status == 'SUCCESS' || (qrCode.isEmpty && paymentUrl.isEmpty)) {
+        if (status == 'PAID' ||
+            status == 'SUCCESS' ||
+            (qrCode.isEmpty && paymentUrl.isEmpty)) {
           context.go('/payment-success', extra: paymentData);
         } else {
           context.go('/payment-qr', extra: paymentData);
@@ -868,10 +866,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
       'title': S.of(context).bookingStepArtist,
       'icon': Icons.person_pin_rounded,
     },
-    {
-      'title': S.of(context).bookingStepServices,
-      'icon': Icons.spa_rounded,
-    },
+    {'title': S.of(context).bookingStepServices, 'icon': Icons.spa_rounded},
     {
       'title': S.of(context).bookingStepBook,
       'icon': Icons.calendar_month_rounded,
@@ -1029,7 +1024,9 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
-                        color: !_noArtistSelected ? Colors.white : Colors.transparent,
+                        color: !_noArtistSelected
+                            ? Colors.white
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: !_noArtistSelected
                             ? [
@@ -1037,7 +1034,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                                   color: Colors.black.withValues(alpha: 0.08),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
-                                )
+                                ),
                               ]
                             : [],
                       ),
@@ -1047,7 +1044,9 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
-                            color: !_noArtistSelected ? AppColors.primary : Colors.grey.shade700,
+                            color: !_noArtistSelected
+                                ? AppColors.primary
+                                : Colors.grey.shade700,
                           ),
                         ),
                       ),
@@ -1061,7 +1060,9 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                       duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
-                        color: _noArtistSelected ? Colors.white : Colors.transparent,
+                        color: _noArtistSelected
+                            ? Colors.white
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: _noArtistSelected
                             ? [
@@ -1069,7 +1070,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                                   color: Colors.black.withValues(alpha: 0.08),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
-                                )
+                                ),
                               ]
                             : [],
                       ),
@@ -1079,7 +1080,9 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
-                            color: _noArtistSelected ? AppColors.primary : Colors.grey.shade700,
+                            color: _noArtistSelected
+                                ? AppColors.primary
+                                : Colors.grey.shade700,
                           ),
                         ),
                       ),
@@ -1115,11 +1118,17 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.2),
+                ),
               ),
               child: const Column(
                 children: [
-                  Icon(Icons.auto_awesome_rounded, color: AppColors.primary, size: 36),
+                  Icon(
+                    Icons.auto_awesome_rounded,
+                    color: AppColors.primary,
+                    size: 36,
+                  ),
                   SizedBox(height: 12),
                   Text(
                     'Nailify sẽ tự động sắp xếp thợ phù hợp nhất cho bạn tại tiệm đã chọn.',
@@ -1228,8 +1237,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
     final dateStr = _selectedDate == null
         ? ''
         : '${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}';
-    final timeStr =
-        _selectedTime == null ? '' : _selectedTime!.substring(0, 5);
+    final timeStr = _selectedTime == null ? '' : _selectedTime!.substring(0, 5);
     final dateTimeText = dateStr.isEmpty ? '--' : '$dateStr • $timeStr';
 
     final artistName = _noArtistSelected
@@ -1291,7 +1299,10 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                 },
                 borderRadius: BorderRadius.circular(12),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: const [
@@ -1375,8 +1386,8 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                       backgroundColor: const Color(0xFFFFF0F5),
                       backgroundImage:
                           artistAvatar != null && artistAvatar.isNotEmpty
-                              ? NetworkImage(artistAvatar)
-                              : null,
+                          ? NetworkImage(artistAvatar)
+                          : null,
                       child: artistAvatar == null || artistAvatar.isEmpty
                           ? const Icon(
                               Icons.person_rounded,
@@ -1451,8 +1462,9 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
   }
 
   Widget _buildVoucherRow() {
-    final selectedPromotion =
-        _promotions.where((v) => v.promotionId == _selectedPromotionId);
+    final selectedPromotion = _promotions.where(
+      (v) => v.promotionId == _selectedPromotionId,
+    );
     final hasSelected = selectedPromotion.isNotEmpty;
     final count = _promotions.length;
     final selectedVoucher = hasSelected ? selectedPromotion.first : null;
@@ -1510,7 +1522,9 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 1.5),
+                          horizontal: 6,
+                          vertical: 1.5,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFFF0F5),
                           borderRadius: BorderRadius.circular(8),
@@ -1555,10 +1569,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                 else
                   Text(
                     count > 0 ? 'Chọn voucher' : 'Chưa chọn voucher',
-                    style: TextStyle(
-                      color: Colors.grey.shade500,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1656,7 +1667,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
               else
                 Text(
                   hasBalance
-                      ? 'Số dư: ${PriceFormatter.format(balance!.round())}'
+                      ? 'Số dư: ${PriceFormatter.format(balance.round())}'
                       : 'Số dư trống',
                   style: TextStyle(
                     fontSize: 12,
@@ -1678,7 +1689,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
               onChanged: hasBalance && !_isLoadingWallet
                   ? (val) => setState(() => _useWalletBalance = val)
                   : null,
-              activeColor: Colors.white,
+              activeThumbColor: Colors.white,
               activeTrackColor: const Color(0xFFE02B6D),
               inactiveThumbColor: Colors.white,
               inactiveTrackColor: const Color(0xFFF0E6EA),
@@ -1696,9 +1707,8 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
     final int totalPrice = reviewTotal is num
         ? reviewTotal.round()
         : isLoading
-            ? 0
-            : int.tryParse(reviewTotal?.toString() ?? '') ??
-                _estimatedTotalPrice;
+        ? 0
+        : int.tryParse(reviewTotal?.toString() ?? '') ?? _estimatedTotalPrice;
     final int subtotalPrice = _reviewSubtotal ?? _estimatedTotalPrice;
 
     final depositInfo = PriceFormatter.getDepositInfo(
@@ -1707,12 +1717,13 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
     );
     final initialDepositAmount = depositInfo['amount'] as int;
 
-    final walletDeduction = (_useWalletBalance &&
+    final walletDeduction =
+        (_useWalletBalance &&
             _walletAvailableBalance != null &&
             _walletAvailableBalance! > 0)
         ? (_walletAvailableBalance! < initialDepositAmount
-            ? _walletAvailableBalance!.round()
-            : initialDepositAmount)
+              ? _walletAvailableBalance!.round()
+              : initialDepositAmount)
         : 0;
 
     final int finalTotalPrice = totalPrice;
@@ -1776,7 +1787,9 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
           const SizedBox(height: 14),
           CustomPaint(
             size: const Size(double.infinity, 1),
-            painter: const _HorizontalDashedLinePainter(color: Color(0xFFE5E7EB)),
+            painter: const _HorizontalDashedLinePainter(
+              color: Color(0xFFE5E7EB),
+            ),
           ),
           const SizedBox(height: 14),
           _buildInvoiceRow('Tạm tính', subtotalPrice, isNegative: false),
@@ -1815,14 +1828,22 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
             const SizedBox(height: 4),
             const Divider(height: 1, color: Color(0xFFF0F0F0)),
             const SizedBox(height: 14),
-            _buildDepositDetails(totalPrice, initialDepositAmount, walletDeduction),
+            _buildDepositDetails(
+              totalPrice,
+              initialDepositAmount,
+              walletDeduction,
+            ),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildInvoiceRow(String label, num amount, {required bool isNegative}) {
+  Widget _buildInvoiceRow(
+    String label,
+    num amount, {
+    required bool isNegative,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -1842,7 +1863,9 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                 : PriceFormatter.format(amount),
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: isNegative ? const Color(0xFFE02B6D) : AppColors.textPrimary,
+              color: isNegative
+                  ? const Color(0xFFE02B6D)
+                  : AppColors.textPrimary,
               fontSize: 13.5,
             ),
           ),
@@ -1909,8 +1932,10 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
       totalPrice,
     );
     final depositConfigText = depositInfo['displayText'] as String;
-    final depositAmountToPay =
-        (initialDepositAmount - walletDeduction).clamp(0, initialDepositAmount);
+    final depositAmountToPay = (initialDepositAmount - walletDeduction).clamp(
+      0,
+      initialDepositAmount,
+    );
 
     return Column(
       children: [
@@ -1923,7 +1948,10 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
             ),
             Text(
               depositConfigText,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 13.5,
+              ),
             ),
           ],
         ),
@@ -2212,27 +2240,31 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                                 ),
                               )
                             : (_currentStep == 4
-                                ? Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(Icons.lock_rounded, size: 18),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        S.of(context).bookingPayBtn,
-                                        style: const TextStyle(
-                                          fontSize: 15.5,
-                                          fontWeight: FontWeight.bold,
+                                  ? Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(
+                                          Icons.lock_rounded,
+                                          size: 18,
                                         ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          S.of(context).bookingPayBtn,
+                                          style: const TextStyle(
+                                            fontSize: 15.5,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : Text(
+                                      S.of(context).bookingContinueBtn,
+                                      style: const TextStyle(
+                                        fontSize: 15.5,
+                                        fontWeight: FontWeight.bold,
                                       ),
-                                    ],
-                                  )
-                                : Text(
-                                    S.of(context).bookingContinueBtn,
-                                    style: const TextStyle(
-                                      fontSize: 15.5,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  )),
+                                    )),
                       ),
                     ),
                   ),
@@ -2259,11 +2291,7 @@ class _HorizontalDashedLinePainter extends CustomPainter {
     double startX = 0.0;
 
     while (startX < size.width) {
-      canvas.drawLine(
-        Offset(startX, 0),
-        Offset(startX + dashWidth, 0),
-        paint,
-      );
+      canvas.drawLine(Offset(startX, 0), Offset(startX + dashWidth, 0), paint);
       startX += dashWidth + dashSpace;
     }
   }

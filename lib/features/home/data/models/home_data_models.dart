@@ -15,8 +15,15 @@ class HomeCategoryItem {
   factory HomeCategoryItem.fromJson(Map<String, dynamic> json) {
     return HomeCategoryItem(
       id: json['serviceId'] ?? json['id'],
-      title: json['name'] as String? ?? json['serviceName'] as String? ?? json['title'] as String? ?? 'Dịch vụ',
-      iconUrl: json['imageUrl'] as String? ?? json['thumbnailUrl'] as String? ?? json['iconUrl'] as String?,
+      title:
+          json['name'] as String? ??
+          json['serviceName'] as String? ??
+          json['title'] as String? ??
+          'Dịch vụ',
+      iconUrl:
+          json['imageUrl'] as String? ??
+          json['thumbnailUrl'] as String? ??
+          json['iconUrl'] as String?,
     );
   }
 }
@@ -62,18 +69,39 @@ class HomeGalleryItem {
       img = imageUrls.first.toString().trim();
     }
 
-    final rawId = json['nailDesignId'] ?? json['NailDesignId'] ?? json['id'] ?? json['Id'];
-    final int parsedId = rawId is int ? rawId : (rawId is num ? rawId.toInt() : int.tryParse(rawId?.toString() ?? '') ?? 0);
+    final rawId =
+        json['nailDesignId'] ??
+        json['NailDesignId'] ??
+        json['id'] ??
+        json['Id'];
+    final int parsedId = rawId is int
+        ? rawId
+        : (rawId is num
+              ? rawId.toInt()
+              : int.tryParse(rawId?.toString() ?? '') ?? 0);
 
-    final rawFav = json['isFavorited'] ?? json['IsFavorited'] ?? json['isFavorite'] ?? json['IsFavorite'];
-    final bool parsedFav = rawFav is bool ? rawFav : (rawFav?.toString().toLowerCase() == 'true' || rawFav?.toString() == '1');
+    final rawFav =
+        json['isFavorited'] ??
+        json['IsFavorited'] ??
+        json['isFavorite'] ??
+        json['IsFavorite'];
+    final bool parsedFav = rawFav is bool
+        ? rawFav
+        : (rawFav?.toString().toLowerCase() == 'true' ||
+              rawFav?.toString() == '1');
 
     final rawFavId = json['favoriteNailId'] ?? json['FavoriteNailId'];
-    final int? parsedFavId = rawFavId is int ? rawFavId : (rawFavId is num ? rawFavId.toInt() : int.tryParse(rawFavId?.toString() ?? ''));
+    final int? parsedFavId = rawFavId is int
+        ? rawFavId
+        : (rawFavId is num
+              ? rawFavId.toInt()
+              : int.tryParse(rawFavId?.toString() ?? ''));
 
     return HomeGalleryItem(
       id: parsedId,
-      title: (json['name'] ?? json['Name'] ?? json['title'] ?? 'Mẫu móng Nailify').toString(),
+      title:
+          (json['name'] ?? json['Name'] ?? json['title'] ?? 'Mẫu móng Nailify')
+              .toString(),
       imageUrl: img,
       isFavorite: parsedFav,
       favoriteNailId: parsedFavId,
@@ -101,24 +129,45 @@ class HomeReviewItem {
   });
 
   factory HomeReviewItem.fromJson(Map<String, dynamic> json) {
-    final fullName = json['customerName'] as String? ?? json['name'] as String? ?? json['userName'] as String? ?? 'Khách hàng';
+    final fullName =
+        json['customerName'] as String? ??
+        json['name'] as String? ??
+        json['userName'] as String? ??
+        'Khách hàng';
     final parts = fullName.trim().split(' ');
     String init = 'KH';
     if (parts.isNotEmpty && parts.first.isNotEmpty) {
       if (parts.length > 1 && parts.last.isNotEmpty) {
         init = '${parts.first[0]}${parts.last[0]}'.toUpperCase();
       } else {
-        init = parts.first.substring(0, parts.first.length.clamp(1, 2)).toUpperCase();
+        init = parts.first
+            .substring(0, parts.first.length.clamp(1, 2))
+            .toUpperCase();
       }
     }
 
-    final rawScore = json['overallScore'] ?? json['OverallScore'] ?? json['stars'] ?? json['rating'] ?? json['score'] ?? 5;
-    final int scoreInt = (rawScore is num) ? rawScore.round() : int.tryParse(rawScore.toString()) ?? 5;
+    final rawScore =
+        json['overallScore'] ??
+        json['OverallScore'] ??
+        json['stars'] ??
+        json['rating'] ??
+        json['score'] ??
+        5;
+    final int scoreInt = (rawScore is num)
+        ? rawScore.round()
+        : int.tryParse(rawScore.toString()) ?? 5;
 
-    final img = (json['imageUrl'] ?? json['image'] ?? json['ImageUrl'] ?? json['Image'])?.toString().trim();
+    final img =
+        (json['imageUrl'] ?? json['image'] ?? json['ImageUrl'] ?? json['Image'])
+            ?.toString()
+            .trim();
     final imageUrl = (img != null && img.isNotEmpty) ? img : null;
 
-    final rawDate = json['createdAt'] ?? json['CreatedAt'] ?? json['createdDate'] ?? json['CreatedDate'];
+    final rawDate =
+        json['createdAt'] ??
+        json['CreatedAt'] ??
+        json['createdDate'] ??
+        json['CreatedDate'];
     String timeAgoStr = '2 ngày trước';
     if (rawDate != null) {
       final parsedDate = DateTime.tryParse(rawDate.toString());
@@ -139,10 +188,19 @@ class HomeReviewItem {
     }
 
     return HomeReviewItem(
-      id: json['id']?.toString() ?? json['bookingRatingId']?.toString() ?? json['BookingRatingId']?.toString() ?? '',
+      id:
+          json['id']?.toString() ??
+          json['bookingRatingId']?.toString() ??
+          json['BookingRatingId']?.toString() ??
+          '',
       name: fullName,
       initials: init,
-      review: json['comment'] as String? ?? json['Comment'] as String? ?? json['review'] as String? ?? json['content'] as String? ?? 'Dịch vụ rất tuyệt vời!',
+      review:
+          json['comment'] as String? ??
+          json['Comment'] as String? ??
+          json['review'] as String? ??
+          json['content'] as String? ??
+          'Dịch vụ rất tuyệt vời!',
       stars: scoreInt.clamp(1, 5),
       timeAgo: timeAgoStr,
       imageUrl: imageUrl,

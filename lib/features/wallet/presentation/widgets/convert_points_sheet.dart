@@ -90,7 +90,9 @@ class _ConvertPointsSheetState extends State<ConvertPointsSheet> {
       return;
     }
     if (_selectedMoney % 10000 != 0) {
-      setState(() => _errorMessage = 'Số tiền đổi phải là bội số của 10,000 VNĐ');
+      setState(
+        () => _errorMessage = 'Số tiền đổi phải là bội số của 10,000 VNĐ',
+      );
       return;
     }
     if (_selectedMoney > widget.availableBalance) {
@@ -109,7 +111,11 @@ class _ConvertPointsSheetState extends State<ConvertPointsSheet> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(msg.isNotEmpty ? msg : 'Đã đổi thành công $_pointsEarned điểm tích lũy!'),
+            content: Text(
+              msg.isNotEmpty
+                  ? msg
+                  : 'Đã đổi thành công $_pointsEarned điểm tích lũy!',
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -179,10 +185,7 @@ class _ConvertPointsSheetState extends State<ConvertPointsSheet> {
                   ),
                   Text(
                     'Tăng điểm để nâng hạng thành viên nhanh chóng',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                   ),
                 ],
               ),
@@ -221,7 +224,10 @@ class _ConvertPointsSheetState extends State<ConvertPointsSheet> {
                     ),
                   ],
                 ),
-                const Icon(Icons.arrow_forward_rounded, color: AppColors.primary),
+                const Icon(
+                  Icons.arrow_forward_rounded,
+                  color: AppColors.primary,
+                ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -276,7 +282,9 @@ class _ConvertPointsSheetState extends State<ConvertPointsSheet> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(
-                    color: isSelected ? AppColors.primary : Colors.grey.shade200,
+                    color: isSelected
+                        ? AppColors.primary
+                        : Colors.grey.shade200,
                   ),
                 ),
               );

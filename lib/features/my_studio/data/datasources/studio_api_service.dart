@@ -68,15 +68,17 @@ class StudioApiService {
             'rejectReason': rejectReason,
         },
       );
-      final isSuccess = response.statusCode != null &&
+      final isSuccess =
+          response.statusCode != null &&
           response.statusCode! >= 200 &&
           response.statusCode! < 300;
       final dataMap = response.data is Map ? response.data : {};
-      final message = dataMap['message']?.toString() ??
+      final message =
+          dataMap['message']?.toString() ??
           (isSuccess
               ? (isAccepted
-                  ? 'Đồng ý báo giá thành công! Bạn có thể đặt lịch ngay.'
-                  : 'Đã từ chối báo giá thành công.')
+                    ? 'Đồng ý báo giá thành công! Bạn có thể đặt lịch ngay.'
+                    : 'Đã từ chối báo giá thành công.')
               : 'Không thể xử lý phản hồi.');
 
       return {'success': isSuccess, 'message': message};
@@ -92,4 +94,3 @@ class StudioApiService {
     }
   }
 }
-

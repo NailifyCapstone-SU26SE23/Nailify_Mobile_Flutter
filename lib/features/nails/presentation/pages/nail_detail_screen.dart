@@ -354,7 +354,10 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           padding: EdgeInsets.zero,
-                          itemCount: design.nailVariants.length.clamp(0, _visibleVariantsCount),
+                          itemCount: design.nailVariants.length.clamp(
+                            0,
+                            _visibleVariantsCount,
+                          ),
                           itemBuilder: (context, index) {
                             return _VariantSection(
                               variant: design.nailVariants[index],
@@ -362,7 +365,8 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
                             );
                           },
                         ),
-                        if (design.nailVariants.length > _visibleVariantsCount) ...[
+                        if (design.nailVariants.length >
+                            _visibleVariantsCount) ...[
                           const SizedBox(height: 12),
                           SizedBox(
                             width: double.infinity,
@@ -376,14 +380,20 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
                                 backgroundColor: const Color(0xFFF4F4F6),
                                 foregroundColor: AppColors.textPrimary,
                                 side: BorderSide.none,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
-                              icon: const Icon(Icons.expand_more_rounded, size: 20),
+                              icon: const Icon(
+                                Icons.expand_more_rounded,
+                                size: 20,
+                              ),
                               label: Text(
-                                Localizations.localeOf(context).languageCode == 'vi'
+                                Localizations.localeOf(context).languageCode ==
+                                        'vi'
                                     ? 'Xem thêm biến thể móng (${design.nailVariants.length - _visibleVariantsCount})'
                                     : 'Load More Related Variants (${design.nailVariants.length - _visibleVariantsCount})',
                                 style: const TextStyle(
@@ -469,10 +479,7 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
                   offset: const Offset(0, 6),
                 ),
               ],
-              border: Border.all(
-                color: const Color(0xFFFFF0F5),
-                width: 1.5,
-              ),
+              border: Border.all(color: const Color(0xFFFFF0F5), width: 1.5),
             ),
             child: SafeArea(
               top: false,
@@ -561,10 +568,7 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
           decoration: BoxDecoration(
             gradient: badgeStyle.bgGradient,
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: badgeStyle.borderColor,
-              width: 1.2,
-            ),
+            border: Border.all(color: badgeStyle.borderColor, width: 1.2),
             boxShadow: [
               BoxShadow(
                 color: badgeStyle.textColor.withValues(alpha: 0.08),
@@ -615,7 +619,9 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
         name.contains('dáng') ||
         name.contains('móng')) {
       return const _BadgeStyle(
-        bgGradient: LinearGradient(colors: [Color(0xFFEFF6FF), Color(0xFFDBEAFE)]),
+        bgGradient: LinearGradient(
+          colors: [Color(0xFFEFF6FF), Color(0xFFDBEAFE)],
+        ),
         borderColor: Color(0xFFBFDBFE),
         textColor: Color(0xFF1E40AF),
         iconColor: Color(0xFF2563EB),
@@ -629,7 +635,9 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
         name.contains('bóng') ||
         name.contains('tráng')) {
       return const _BadgeStyle(
-        bgGradient: LinearGradient(colors: [Color(0xFFFFF7ED), Color(0xFFFFEDD5)]),
+        bgGradient: LinearGradient(
+          colors: [Color(0xFFFFF7ED), Color(0xFFFFEDD5)],
+        ),
         borderColor: Color(0xFFFED7AA),
         textColor: Color(0xFFC2410C),
         iconColor: Color(0xFFEA580C),
@@ -644,7 +652,9 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
         name.contains('đông') ||
         name.contains('xuân')) {
       return const _BadgeStyle(
-        bgGradient: LinearGradient(colors: [Color(0xFFFEFCE8), Color(0xFFFEF08A)]),
+        bgGradient: LinearGradient(
+          colors: [Color(0xFFFEFCE8), Color(0xFFFEF08A)],
+        ),
         borderColor: Color(0xFFFDE047),
         textColor: Color(0xFFA16207),
         iconColor: Color(0xFFCA8A04),
@@ -654,7 +664,9 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
     }
     if (type.contains('skin') || name.contains('da') || name.contains('tông')) {
       return const _BadgeStyle(
-        bgGradient: LinearGradient(colors: [Color(0xFFFAF5FF), Color(0xFFF3E8FF)]),
+        bgGradient: LinearGradient(
+          colors: [Color(0xFFFAF5FF), Color(0xFFF3E8FF)],
+        ),
         borderColor: Color(0xFFE9D5FF),
         textColor: Color(0xFF7E22CE),
         iconColor: Color(0xFF9333EA),
@@ -667,7 +679,9 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
         name.contains('văn phòng') ||
         name.contains('tiệc')) {
       return const _BadgeStyle(
-        bgGradient: LinearGradient(colors: [Color(0xFFF0FDF4), Color(0xFFDCFCE7)]),
+        bgGradient: LinearGradient(
+          colors: [Color(0xFFF0FDF4), Color(0xFFDCFCE7)],
+        ),
         borderColor: Color(0xFFBBF7D0),
         textColor: Color(0xFF15803D),
         iconColor: Color(0xFF16A34A),
@@ -676,7 +690,9 @@ class _DesignDetailContentState extends State<_DesignDetailContent> {
       );
     }
     return const _BadgeStyle(
-      bgGradient: LinearGradient(colors: [Color(0xFFFFF0F6), Color(0xFFFFECF4)]),
+      bgGradient: LinearGradient(
+        colors: [Color(0xFFFFF0F6), Color(0xFFFFECF4)],
+      ),
       borderColor: Color(0xFFFFC0E0),
       textColor: Color(0xFFC2185B),
       iconColor: Color(0xFFE91E63),
@@ -860,12 +876,12 @@ class _VariantSection extends StatelessWidget {
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) =>
                                   Container(
-                                color: const Color(0xFFF5F5F7),
-                                child: const Icon(
-                                  Icons.broken_image_rounded,
-                                  color: Colors.grey,
-                                ),
-                              ),
+                                    color: const Color(0xFFF5F5F7),
+                                    child: const Icon(
+                                      Icons.broken_image_rounded,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
                             ),
                     ),
                   ),
@@ -923,10 +939,7 @@ class _VariantSection extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               // Thin Separator Line
-              Container(
-                height: 1,
-                color: const Color(0xFFF4ECF2),
-              ),
+              Container(height: 1, color: const Color(0xFFF4ECF2)),
               const SizedBox(height: 10),
               // Bottom Action Bar: Price + CTA Button
               Row(

@@ -61,10 +61,7 @@ class _OperatingDayRow extends StatelessWidget {
   final _OperatingDayHours dayHours;
   final bool isLast;
 
-  const _OperatingDayRow({
-    required this.dayHours,
-    required this.isLast,
-  });
+  const _OperatingDayRow({required this.dayHours, required this.isLast});
 
   @override
   Widget build(BuildContext context) {
@@ -112,8 +109,10 @@ class _OperatingDayRow extends StatelessWidget {
               if (isToday) ...[
                 const SizedBox(width: 8),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.primary,
                     borderRadius: BorderRadius.circular(10),
@@ -143,15 +142,15 @@ class _OperatingDayRow extends StatelessWidget {
                       color: isClosed
                           ? AppColors.error.withValues(alpha: 0.08)
                           : isToday
-                              ? AppColors.primary.withValues(alpha: 0.1)
-                              : const Color(0xFFF7F5F2),
+                          ? AppColors.primary.withValues(alpha: 0.1)
+                          : const Color(0xFFF7F5F2),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: isClosed
                             ? AppColors.error.withValues(alpha: 0.2)
                             : isToday
-                                ? AppColors.primary.withValues(alpha: 0.3)
-                                : const Color(0xFFEFEBE4),
+                            ? AppColors.primary.withValues(alpha: 0.3)
+                            : const Color(0xFFEFEBE4),
                       ),
                     ),
                     child: Text(
@@ -162,11 +161,10 @@ class _OperatingDayRow extends StatelessWidget {
                         color: isClosed
                             ? AppColors.error
                             : isToday
-                                ? AppColors.primary
-                                : AppColors.textPrimary,
+                            ? AppColors.primary
+                            : AppColors.textPrimary,
                         fontSize: 12,
-                        fontWeight:
-                            isToday ? FontWeight.bold : FontWeight.w600,
+                        fontWeight: isToday ? FontWeight.bold : FontWeight.w600,
                       ),
                     ),
                   );

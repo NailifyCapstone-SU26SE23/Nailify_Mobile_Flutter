@@ -633,10 +633,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
         // Photo try-on uses Snapshot so the user can choose camera/gallery,
         // while keeping this custom nail selected in the editor.
         if (mounted) {
-          context.push(
-            '/snapshot-try-on',
-            extra: _toSnapshotVariant(preview),
-          );
+          context.push('/snapshot-try-on', extra: _toSnapshotVariant(preview));
         }
       } else {
         await service.launchCustomerLive(preview);
@@ -672,100 +669,109 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
   }
 
   Future<void> _save() async {
-    final nail = _customerNail;
-    final shape = _selectedNailShape;
-    if (shape == null) {
-      _showMessage('Vui lòng tạo mẫu móng và chọn dáng móng.');
-      return;
-    }
+  final nail = _customerNail;
+  final shape = _selectedNailShape;
+  if (shape == null) {
+    _showMessage('Vui lòng tạo mẫu móng và chọn dáng móng.');
+    return;
+  }
 
-    final initialName = nail?.name.trim().isNotEmpty == true ? nail!.name : '';
+  final existingId = _existingCustomerNailId;
+  final isNew = existingId <= 0;
+
+  String nailName;
+  String? imagePath;
+
+  if (isNew) {
+    // New nail → ask user for name + image
+    final initialName =
+        nail?.name.trim().isNotEmpty == true ? nail!.name : '';
     final dialogResult = await showDialog<SaveNailDesignDialogResult>(
       context: context,
       builder: (context) => SaveNailDesignDialog(
         initialName: initialName,
         initialImageUrl: nail?.imageUrl,
-        isNew: (nail?.customerNailId ?? 0) <= 0,
+        isNew: true,
       ),
     );
+    if (dialogResult == null) return; // user cancelled
+    nailName = dialogResult.name;
+    imagePath = dialogResult.imagePath;
+  } else {
+    // Existing nail → save silently, keep current name + image
+    nailName = nail?.name ?? 'Custom Nail';
+    imagePath = null; // null = keep existing image on server
+  }
 
-    if (dialogResult == null) return;
-
-    setState(() => _isSaving = true);
-    try {
-      var customerNailId = nail?.customerNailId ?? 0;
-      final isNewCustomerNail = customerNailId <= 0;
-      final nailName = dialogResult.name;
-      final imagePath = dialogResult.imagePath;
-
-      if (customerNailId <= 0) {
-        customerNailId = await _customerNailRepository.createCustomerNail(
-          name: nailName,
-          imagePath: imagePath,
-        );
-      }
-
-      await _customerNailRepository.updateCustomerNail(
-        customerNailId: customerNailId,
+  setState(() => _isSaving = true);
+  try {
+    var customerNailId = existingId;
+    if (customerNailId <= 0) {
+      customerNailId = await _customerNailRepository.createCustomerNail(
         name: nailName,
-        nailShapeId: shape.nailShapeId,
-        nailSurfaceId: _selectedNailSurface?.nailSurfaceId,
-        customColor: _buildColorJson(),
         imagePath: imagePath,
       );
-
-      for (final id in _deletedPlacementIds) {
-        await _componentRepository.deleteCustomerNailComponent(id);
-      }
-
-      for (final placement in _placements) {
-        final payload = placement.toPayload(customerNailId);
-        if (placement.customerNailComponentId == null) {
-          await _componentRepository.createCustomerNailComponent(
-            customerNailId: payload.customerNailId,
-            componentId: payload.componentId,
-            customerComponentId: payload.customerComponentId,
-            posX: payload.posX,
-            posY: payload.posY,
-            fingerIndex: payload.fingerIndex,
-            configJson: payload.configJson,
-          );
-        } else {
-          await _componentRepository.updateCustomerNailComponent(
-            customerNailComponentId: placement.customerNailComponentId!,
-            customerNailId: payload.customerNailId,
-            componentId: payload.componentId,
-            customerComponentId: payload.customerComponentId,
-            posX: payload.posX,
-            posY: payload.posY,
-            fingerIndex: payload.fingerIndex,
-            configJson: payload.configJson,
-          );
-        }
-      }
-
-      _deletedPlacementIds.clear();
-      final fresh = await _customerNailRepository.getCustomerNailById(
-        customerNailId,
-      );
-      setState(() => _customerNail = fresh);
-      _showMessage('Đã lưu thiết lập thử móng.');
-      if ((widget.customerNail?.customerNailId ?? 0) > 0) {
-        await _fetchData();
-      }
-      if (mounted) {
-        if (isNewCustomerNail) {
-          context.go('/my-studio');
-        } else {
-          Navigator.of(context).pop(true);
-        }
-      }
-    } catch (error) {
-      _showMessage(error.toString());
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
     }
+
+    await _customerNailRepository.updateCustomerNail(
+      customerNailId: customerNailId,
+      name: nailName,
+      nailShapeId: shape.nailShapeId,
+      nailSurfaceId: _selectedNailSurface?.nailSurfaceId,
+      customColor: _buildColorJson(),
+      imagePath: imagePath,
+    );
+
+    for (final id in _deletedPlacementIds) {
+      await _componentRepository.deleteCustomerNailComponent(id);
+    }
+
+    for (final placement in _placements) {
+      final payload = placement.toPayload(customerNailId);
+      if (placement.customerNailComponentId == null) {
+        await _componentRepository.createCustomerNailComponent(
+          customerNailId: payload.customerNailId,
+          componentId: payload.componentId,
+          customerComponentId: payload.customerComponentId,
+          posX: payload.posX,
+          posY: payload.posY,
+          fingerIndex: payload.fingerIndex,
+          configJson: payload.configJson,
+        );
+      } else {
+        await _componentRepository.updateCustomerNailComponent(
+          customerNailComponentId: placement.customerNailComponentId!,
+          customerNailId: payload.customerNailId,
+          componentId: payload.componentId,
+          customerComponentId: payload.customerComponentId,
+          posX: payload.posX,
+          posY: payload.posY,
+          fingerIndex: payload.fingerIndex,
+          configJson: payload.configJson,
+        );
+      }
+    }
+
+    _deletedPlacementIds.clear();
+    final fresh = await _customerNailRepository.getCustomerNailById(
+      customerNailId,
+    );
+    setState(() => _customerNail = fresh);
+    _showMessage('Đã lưu thiết lập thử móng.');
+
+    if (mounted) {
+      if (isNew) {
+        context.go('/my-studio');
+      } else {
+        Navigator.of(context).pop(true);
+      }
+    }
+  } catch (error) {
+    _showMessage(error.toString());
+  } finally {
+    if (mounted) setState(() => _isSaving = false);
   }
+}
 
   CustomerNailModel? _buildPreviewNail() {
     final shape = _selectedNailShape;
@@ -860,6 +866,14 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
         ? _fingerGradients[2]
         : _fingerGradients[_selectedFingerIndex];
   }
+
+  int get _existingCustomerNailId {
+  final fromState = _customerNail?.customerNailId ?? 0;
+  if (fromState > 0) return fromState;
+  return widget.customerNail?.customerNailId ?? 0;
+}
+
+bool get _isNewCustomerNail => _existingCustomerNailId <= 0;
 
   @override
   Widget build(BuildContext context) {

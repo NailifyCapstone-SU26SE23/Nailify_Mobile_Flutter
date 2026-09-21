@@ -168,7 +168,10 @@ class _RegisterPageState extends State<RegisterPage> {
             child: Center(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
                 child: Container(
                   constraints: const BoxConstraints(maxWidth: 420),
                   child: Column(
@@ -186,7 +189,9 @@ class _RegisterPageState extends State<RegisterPage> {
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.primary.withValues(alpha: 0.2),
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.2,
+                                  ),
                                   blurRadius: 24,
                                   spreadRadius: 2,
                                   offset: const Offset(0, 8),
@@ -223,7 +228,9 @@ class _RegisterPageState extends State<RegisterPage> {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
-                              color: AppColors.textSecondary.withValues(alpha: 0.85),
+                              color: AppColors.textSecondary.withValues(
+                                alpha: 0.85,
+                              ),
                               letterSpacing: 0.3,
                             ),
                           ),
@@ -239,12 +246,16 @@ class _RegisterPageState extends State<RegisterPage> {
                           color: Colors.white.withValues(alpha: 0.94),
                           borderRadius: BorderRadius.circular(32),
                           border: Border.all(
-                            color: AppColors.primaryLight.withValues(alpha: 0.6),
+                            color: AppColors.primaryLight.withValues(
+                              alpha: 0.6,
+                            ),
                             width: 1.2,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.primaryDark.withValues(alpha: 0.06),
+                              color: AppColors.primaryDark.withValues(
+                                alpha: 0.06,
+                              ),
                               blurRadius: 32,
                               offset: const Offset(0, 12),
                             ),
@@ -300,7 +311,9 @@ class _RegisterPageState extends State<RegisterPage> {
                               decoration: InputDecoration(
                                 hintText: 'nhapemail@example.com',
                                 hintStyle: TextStyle(
-                                  color: AppColors.textSecondary.withValues(alpha: 0.5),
+                                  color: AppColors.textSecondary.withValues(
+                                    alpha: 0.5,
+                                  ),
                                   fontSize: 13.5,
                                 ),
                                 prefixIcon: const Icon(
@@ -309,7 +322,9 @@ class _RegisterPageState extends State<RegisterPage> {
                                   size: 20,
                                 ),
                                 filled: true,
-                                fillColor: AppColors.primarySurface.withValues(alpha: 0.4),
+                                fillColor: AppColors.primarySurface.withValues(
+                                  alpha: 0.4,
+                                ),
                                 contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 16,
                                   vertical: 14,
@@ -317,7 +332,9 @@ class _RegisterPageState extends State<RegisterPage> {
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16),
                                   borderSide: BorderSide(
-                                    color: AppColors.borderLight.withValues(alpha: 0.7),
+                                    color: AppColors.borderLight.withValues(
+                                      alpha: 0.7,
+                                    ),
                                     width: 1,
                                   ),
                                 ),
@@ -337,7 +354,8 @@ class _RegisterPageState extends State<RegisterPage> {
                               children: [
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         S.of(context).lastNameHint,
@@ -350,7 +368,8 @@ class _RegisterPageState extends State<RegisterPage> {
                                       const SizedBox(height: 6),
                                       TextField(
                                         controller: _firstNameController,
-                                        textCapitalization: TextCapitalization.words,
+                                        textCapitalization:
+                                            TextCapitalization.words,
                                         style: const TextStyle(
                                           color: AppColors.textPrimary,
                                           fontSize: 14,
@@ -359,24 +378,32 @@ class _RegisterPageState extends State<RegisterPage> {
                                         decoration: InputDecoration(
                                           hintText: 'Họ',
                                           hintStyle: TextStyle(
-                                            color: AppColors.textSecondary.withValues(alpha: 0.5),
+                                            color: AppColors.textSecondary
+                                                .withValues(alpha: 0.5),
                                             fontSize: 13.5,
                                           ),
                                           filled: true,
-                                          fillColor: AppColors.primarySurface.withValues(alpha: 0.4),
-                                          contentPadding: const EdgeInsets.symmetric(
-                                            horizontal: 14,
-                                            vertical: 14,
-                                          ),
+                                          fillColor: AppColors.primarySurface
+                                              .withValues(alpha: 0.4),
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 14,
+                                                vertical: 14,
+                                              ),
                                           enabledBorder: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(16),
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
                                             borderSide: BorderSide(
-                                              color: AppColors.borderLight.withValues(alpha: 0.7),
+                                              color: AppColors.borderLight
+                                                  .withValues(alpha: 0.7),
                                               width: 1,
                                             ),
                                           ),
                                           focusedBorder: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(16),
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
                                             borderSide: const BorderSide(
                                               color: AppColors.primary,
                                               width: 1.6,
@@ -390,7 +417,8 @@ class _RegisterPageState extends State<RegisterPage> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         S.of(context).firstNameHint,
@@ -403,7 +431,8 @@ class _RegisterPageState extends State<RegisterPage> {
                                       const SizedBox(height: 6),
                                       TextField(
                                         controller: _lastNameController,
-                                        textCapitalization: TextCapitalization.words,
+                                        textCapitalization:
+                                            TextCapitalization.words,
                                         style: const TextStyle(
                                           color: AppColors.textPrimary,
                                           fontSize: 14,
@@ -412,24 +441,32 @@ class _RegisterPageState extends State<RegisterPage> {
                                         decoration: InputDecoration(
                                           hintText: 'Tên',
                                           hintStyle: TextStyle(
-                                            color: AppColors.textSecondary.withValues(alpha: 0.5),
+                                            color: AppColors.textSecondary
+                                                .withValues(alpha: 0.5),
                                             fontSize: 13.5,
                                           ),
                                           filled: true,
-                                          fillColor: AppColors.primarySurface.withValues(alpha: 0.4),
-                                          contentPadding: const EdgeInsets.symmetric(
-                                            horizontal: 14,
-                                            vertical: 14,
-                                          ),
+                                          fillColor: AppColors.primarySurface
+                                              .withValues(alpha: 0.4),
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 14,
+                                                vertical: 14,
+                                              ),
                                           enabledBorder: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(16),
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
                                             borderSide: BorderSide(
-                                              color: AppColors.borderLight.withValues(alpha: 0.7),
+                                              color: AppColors.borderLight
+                                                  .withValues(alpha: 0.7),
                                               width: 1,
                                             ),
                                           ),
                                           focusedBorder: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(16),
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
                                             borderSide: const BorderSide(
                                               color: AppColors.primary,
                                               width: 1.6,
@@ -465,7 +502,9 @@ class _RegisterPageState extends State<RegisterPage> {
                               decoration: InputDecoration(
                                 hintText: '0901234567',
                                 hintStyle: TextStyle(
-                                  color: AppColors.textSecondary.withValues(alpha: 0.5),
+                                  color: AppColors.textSecondary.withValues(
+                                    alpha: 0.5,
+                                  ),
                                   fontSize: 13.5,
                                 ),
                                 prefixIcon: const Icon(
@@ -474,7 +513,9 @@ class _RegisterPageState extends State<RegisterPage> {
                                   size: 20,
                                 ),
                                 filled: true,
-                                fillColor: AppColors.primarySurface.withValues(alpha: 0.4),
+                                fillColor: AppColors.primarySurface.withValues(
+                                  alpha: 0.4,
+                                ),
                                 contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 16,
                                   vertical: 14,
@@ -482,7 +523,9 @@ class _RegisterPageState extends State<RegisterPage> {
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16),
                                   borderSide: BorderSide(
-                                    color: AppColors.borderLight.withValues(alpha: 0.7),
+                                    color: AppColors.borderLight.withValues(
+                                      alpha: 0.7,
+                                    ),
                                     width: 1,
                                   ),
                                 ),
@@ -518,7 +561,9 @@ class _RegisterPageState extends State<RegisterPage> {
                               decoration: InputDecoration(
                                 hintText: '••••••••',
                                 hintStyle: TextStyle(
-                                  color: AppColors.textSecondary.withValues(alpha: 0.5),
+                                  color: AppColors.textSecondary.withValues(
+                                    alpha: 0.5,
+                                  ),
                                   fontSize: 13.5,
                                 ),
                                 prefixIcon: const Icon(
@@ -531,7 +576,9 @@ class _RegisterPageState extends State<RegisterPage> {
                                     _obscurePassword
                                         ? Icons.visibility_off_outlined
                                         : Icons.visibility_outlined,
-                                    color: AppColors.textSecondary.withValues(alpha: 0.6),
+                                    color: AppColors.textSecondary.withValues(
+                                      alpha: 0.6,
+                                    ),
                                     size: 20,
                                   ),
                                   onPressed: () => setState(
@@ -539,7 +586,9 @@ class _RegisterPageState extends State<RegisterPage> {
                                   ),
                                 ),
                                 filled: true,
-                                fillColor: AppColors.primarySurface.withValues(alpha: 0.4),
+                                fillColor: AppColors.primarySurface.withValues(
+                                  alpha: 0.4,
+                                ),
                                 contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 16,
                                   vertical: 14,
@@ -547,7 +596,9 @@ class _RegisterPageState extends State<RegisterPage> {
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16),
                                   borderSide: BorderSide(
-                                    color: AppColors.borderLight.withValues(alpha: 0.7),
+                                    color: AppColors.borderLight.withValues(
+                                      alpha: 0.7,
+                                    ),
                                     width: 1,
                                   ),
                                 ),
@@ -583,7 +634,9 @@ class _RegisterPageState extends State<RegisterPage> {
                               decoration: InputDecoration(
                                 hintText: '••••••••',
                                 hintStyle: TextStyle(
-                                  color: AppColors.textSecondary.withValues(alpha: 0.5),
+                                  color: AppColors.textSecondary.withValues(
+                                    alpha: 0.5,
+                                  ),
                                   fontSize: 13.5,
                                 ),
                                 prefixIcon: const Icon(
@@ -596,15 +649,20 @@ class _RegisterPageState extends State<RegisterPage> {
                                     _obscureConfirmPassword
                                         ? Icons.visibility_off_outlined
                                         : Icons.visibility_outlined,
-                                    color: AppColors.textSecondary.withValues(alpha: 0.6),
+                                    color: AppColors.textSecondary.withValues(
+                                      alpha: 0.6,
+                                    ),
                                     size: 20,
                                   ),
                                   onPressed: () => setState(
-                                    () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                                    () => _obscureConfirmPassword =
+                                        !_obscureConfirmPassword,
                                   ),
                                 ),
                                 filled: true,
-                                fillColor: AppColors.primarySurface.withValues(alpha: 0.4),
+                                fillColor: AppColors.primarySurface.withValues(
+                                  alpha: 0.4,
+                                ),
                                 contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 16,
                                   vertical: 14,
@@ -612,7 +670,9 @@ class _RegisterPageState extends State<RegisterPage> {
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16),
                                   borderSide: BorderSide(
-                                    color: AppColors.borderLight.withValues(alpha: 0.7),
+                                    color: AppColors.borderLight.withValues(
+                                      alpha: 0.7,
+                                    ),
                                     width: 1,
                                   ),
                                 ),
@@ -670,14 +730,18 @@ class _RegisterPageState extends State<RegisterPage> {
                                 borderRadius: BorderRadius.circular(18),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.primary.withValues(alpha: 0.38),
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.38,
+                                    ),
                                     blurRadius: 16,
                                     offset: const Offset(0, 6),
                                   ),
                                 ],
                               ),
                               child: ElevatedButton(
-                                onPressed: _isSubmitting ? null : _handleRegister,
+                                onPressed: _isSubmitting
+                                    ? null
+                                    : _handleRegister,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.transparent,
                                   shadowColor: Colors.transparent,
@@ -695,10 +759,14 @@ class _RegisterPageState extends State<RegisterPage> {
                                         ),
                                       )
                                     : Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
                                           Text(
-                                            S.of(context).registerNow.toUpperCase(),
+                                            S
+                                                .of(context)
+                                                .registerNow
+                                                .toUpperCase(),
                                             style: const TextStyle(
                                               fontSize: 15,
                                               fontWeight: FontWeight.w800,
@@ -763,7 +831,10 @@ class _RegisterPageState extends State<RegisterPage> {
             right: 0,
             child: SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 8,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -801,7 +872,8 @@ class _RegisterPageState extends State<RegisterPage> {
                     // Language Switcher Pill
                     Consumer<LocaleService>(
                       builder: (context, localeService, _) {
-                        final isVi = localeService.currentLocale.languageCode == 'vi';
+                        final isVi =
+                            localeService.currentLocale.languageCode == 'vi';
                         return Container(
                           height: 38,
                           padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -809,7 +881,9 @@ class _RegisterPageState extends State<RegisterPage> {
                             color: Colors.white.withValues(alpha: 0.9),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: AppColors.primaryLight.withValues(alpha: 0.5),
+                              color: AppColors.primaryLight.withValues(
+                                alpha: 0.5,
+                              ),
                               width: 1,
                             ),
                             boxShadow: [
@@ -824,7 +898,9 @@ class _RegisterPageState extends State<RegisterPage> {
                             onTap: () => localeService.toggleLocale(),
                             borderRadius: BorderRadius.circular(20),
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -859,4 +935,3 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 }
-

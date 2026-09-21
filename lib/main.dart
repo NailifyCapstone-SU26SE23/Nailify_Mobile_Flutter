@@ -83,9 +83,8 @@ class CoreApp extends StatelessWidget {
 
           // Cấu hình định tuyến trung tâm GoRouter
           routerConfig: AppRouter.router,
-          builder: (context, child) => GlobalSignalRListener(
-            child: child ?? const SizedBox.shrink(),
-          ),
+          builder: (context, child) =>
+              GlobalSignalRListener(child: child ?? const SizedBox.shrink()),
         );
       },
     );

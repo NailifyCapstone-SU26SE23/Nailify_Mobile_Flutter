@@ -232,7 +232,8 @@ class _SalonCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = S.of(context);
-    final isOpen = salon.status.toLowerCase() != 'closed' &&
+    final isOpen =
+        salon.status.toLowerCase() != 'closed' &&
         salon.status.toLowerCase() != 'inactive';
 
     return Container(

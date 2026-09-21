@@ -24,13 +24,13 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage> {
     final isBooking = rawBookingId != null &&
         rawBookingId.toString().trim().isNotEmpty;
     if (isBooking) return false;
-    if (type.contains('wallet') ||
-        type.contains('deposit') ||
-        policy.contains('ví') ||
-        policy.contains('nap')) {
+    if (type.contains('booking')) return false;
+    if (type == 'walletdeposit' ||
+        type.contains('wallet') ||
+        policy.contains('nạp tiền vào ví')) {
       return true;
     }
-    return !isBooking;
+    return false;
   }
 
   Future<void> _openBookingDetail() async {
@@ -49,7 +49,7 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage> {
 
     final orderCode = _orderCode;
     if (orderCode == null) {
-      _showError('Không tìm thấy mã thanh toán.');
+      context.go('/my-bookings');
       return;
     }
 
@@ -61,14 +61,14 @@ class _PaymentSuccessPageState extends State<PaymentSuccessPage> {
       if (!mounted) return;
 
       if (bookingId.isEmpty) {
-        _showError('Chưa tìm thấy lịch hẹn cho thanh toán này.');
+        context.go('/my-bookings');
         return;
       }
 
       context.go('/my-bookings/detail', extra: bookingId);
     } catch (e) {
       if (!mounted) return;
-      _showError('Không thể lấy lịch hẹn: $e');
+      context.go('/my-bookings');
     } finally {
       if (mounted) setState(() => _isLoadingBooking = false);
     }

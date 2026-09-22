@@ -1320,6 +1320,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                   selectedDate: _selectedDate,
                   salonId: _selectedBranch?['salonId'],
                   artistId: _selectedStylist?['nailArtistId'],
+                  waitlistItems: _buildBookingItems(),
                   onTimeChanged: (time) {
                     _cancelCurrentHold();
                     setState(() {
@@ -1345,6 +1346,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                 selectedDate: _selectedDate,
                 salonId: _selectedBranch?['salonId'],
                 artistId: null,
+                waitlistItems: _buildBookingItems(),
                 onTimeChanged: (time) {
                   _cancelCurrentHold();
                   setState(() {

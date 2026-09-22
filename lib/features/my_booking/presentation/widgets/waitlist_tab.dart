@@ -3,6 +3,7 @@
 // Mô tả: Tab "Lịch chờ" — Quản lý danh sách Waitlist với API thật
 // ====================================================================
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
@@ -10,6 +11,7 @@ import '../../../../generated/l10n.dart';
 import '../../data/datasources/waitlist_api_service.dart';
 import '../../data/models/waitlist_model.dart';
 import 'waitlist_card.dart';
+import 'waitlist_checkout_sheet.dart';
 
 class WaitlistTab extends StatefulWidget {
   final VoidCallback onRefreshBookings;
@@ -89,37 +91,18 @@ class _WaitlistTabState extends State<WaitlistTab> {
     }
   }
 
-  Future<void> _confirmBook(String id) async {
-    try {
-      final success = await _apiService.confirmWaitlist(id);
-      if (!mounted) return;
-      if (success) {
-        setState(() => _waitlist.removeWhere((e) => e.id == id));
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white, size: 18),
-                const SizedBox(width: 8),
-                Text(S.of(context).waitlistConfirmSuccess),
-              ],
-            ),
-            backgroundColor: AppColors.primary,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(S.of(context).waitlistConfirmError(e.toString())),
-        ),
-      );
-    }
+  void _openCheckoutSheet(WaitlistModel item) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => WaitlistCheckoutSheet(
+        waitlist: item,
+        onSuccess: () {
+          setState(() => _waitlist.removeWhere((e) => e.id == item.id));
+        },
+      ),
+    );
   }
 
   void _declineOpened(String id) => _cancelWaitlist(id);
@@ -173,7 +156,7 @@ class _WaitlistTabState extends State<WaitlistTab> {
             key: ValueKey(item.id),
             item: item,
             onCancel: () => _cancelWaitlist(item.id),
-            onConfirmBook: () => _confirmBook(item.id),
+            onConfirmBook: () => _openCheckoutSheet(item),
             onDecline: () => _declineOpened(item.id),
           );
         },

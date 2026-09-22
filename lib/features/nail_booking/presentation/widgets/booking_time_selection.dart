@@ -12,6 +12,7 @@ class BookingTimeSelection extends StatefulWidget {
   final DateTime? selectedDate;
   final String? salonId; // Dùng cho Waitlist join API
   final String? artistId; // Dùng cho Waitlist join API (nullable = bất kỳ)
+  final List<Map<String, dynamic>> waitlistItems;
   final Function(String) onTimeChanged;
 
   /// Callback để trang cha reload lại danh sách giờ khi phát hiện isHeld.
@@ -27,6 +28,7 @@ class BookingTimeSelection extends StatefulWidget {
     required this.onTimeChanged,
     this.salonId,
     this.artistId,
+    this.waitlistItems = const [],
     this.onRefreshSlots,
   });
 
@@ -72,6 +74,7 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
               preferredNailArtistId: widget.artistId,
               requestedDate: widget.selectedDate ?? DateTime.now(),
               requestedStartTime: time,
+              waitlistItems: widget.waitlistItems,
             );
             if (mounted) setState(() => _waitlistedTimes.add(time));
           } catch (e) {

@@ -940,6 +940,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
             selectedDate: _selectedDate,
             salonId: widget.nail.salonId,
             artistId: widget.nail.nailArtistId,
+            waitlistItems: _buildBookingItems(),
             onTimeChanged: (time) {
               _cancelCurrentHold();
               setState(() => _selectedTime = time);

@@ -31,12 +31,26 @@ class WaitlistApiService {
   }
 
   // POST /api/Waitlists/{id}/confirm
-  Future<bool> confirmWaitlist(String waitlistId) async {
+  Future<String?> confirmWaitlist(
+    String waitlistId, {
+    bool useWalletBalance = true,
+    List<int>? selectedPromotionIds,
+  }) async {
     final response = await _apiClient.post(
       '/Waitlists/$waitlistId/confirm',
-      data: {},
+      data: {
+        "useWalletBalance": useWalletBalance,
+        "selectedPromotionIds": selectedPromotionIds ?? [],
+      },
     );
-    return response.statusCode == 200;
+    if (response.statusCode == 200) {
+      final data = response.data['data'];
+      if (data != null && data['convertedBookingId'] != null) {
+        return data['convertedBookingId'].toString();
+      }
+      return "SUCCESS_NO_ID"; // In case it succeeded but no ID returned somehow
+    }
+    return null;
   }
 
   // POST /api/Waitlists/{id}/cancel

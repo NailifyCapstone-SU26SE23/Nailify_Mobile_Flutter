@@ -615,11 +615,17 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
     );
   }
 
-  Widget _buildArtistAndTimeStep(
-    BuildContext context,
-    NailBookingState state,
-    NailBookingCubit cubit,
-  ) {
+  Widget _buildArtistAndTimeStep(BuildContext context, NailBookingState state, NailBookingCubit cubit) {
+    final grouped = _groupedServicesMap(state.selectedExtraServices);
+    final bookingItems = grouped.entries
+        .map((e) => {
+              'nailVariantId': null,
+              'serviceId': e.key,
+              'customerNailId': null,
+              'quantity': e.value,
+            })
+        .toList();
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -732,6 +738,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                 selectedDate: state.selectedDate,
                 salonId: state.selectedBranch?['salonId']?.toString(),
                 artistId: state.selectedStylist?['nailArtistId']?.toString(),
+                waitlistItems: bookingItems,
                 onTimeChanged: cubit.selectTime,
                 onRefreshSlots: cubit.refreshTimeSlots,
               ),
@@ -744,6 +751,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
               selectedDate: state.selectedDate,
               salonId: state.selectedBranch?['salonId']?.toString(),
               artistId: null,
+              waitlistItems: bookingItems,
               onTimeChanged: cubit.selectTime,
               onRefreshSlots: cubit.refreshTimeSlots,
             ),

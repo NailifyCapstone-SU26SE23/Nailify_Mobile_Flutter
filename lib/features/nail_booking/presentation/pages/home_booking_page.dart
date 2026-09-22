@@ -1191,6 +1191,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                 artistId: _noArtistSelected
                     ? null
                     : _selectedStylist?['nailArtistId'],
+                waitlistItems: _buildBookingItems(),
                 onTimeChanged: (time) {
                   _cancelCurrentHold();
                   setState(() {

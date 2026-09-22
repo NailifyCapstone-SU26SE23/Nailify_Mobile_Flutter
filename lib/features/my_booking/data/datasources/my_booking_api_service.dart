@@ -282,4 +282,53 @@ class MyBookingApiService {
     final response = await _apiClient.delete('/BookingRatings/$ratingId');
     return response.statusCode == 200 || response.statusCode == 204;
   }
+
+  /// Phản hồi quyết định của khách hàng khi ca làm việc bị trễ (WAIT, REASSIGN, RESCHEDULE)
+  /// Endpoint: POST /api/Bookings/{id}/delay-response
+  Future<Map<String, dynamic>> respondToDelay(
+    String bookingId, {
+    required int customerDecision, // 1: Wait, 2: Reassign, 3: Reschedule
+    String? newDate,
+    String? newTime,
+  }) async {
+    try {
+      final formattedTime = (newTime != null && newTime.length == 5)
+          ? "$newTime:00"
+          : newTime;
+      final response = await _apiClient.post(
+        '/Bookings/$bookingId/delay-response',
+        data: {
+          "customerDecision": customerDecision,
+          "newDate": ?newDate,
+          "newTime": ?formattedTime,
+        },
+      );
+
+      final isSuccess =
+          response.statusCode != null &&
+          response.statusCode! >= 200 &&
+          response.statusCode! < 300;
+      final dataMap = response.data is Map ? response.data : {};
+      final message =
+          dataMap['message']?.toString() ??
+          dataMap['data']?.toString() ??
+          (isSuccess
+              ? 'Đã xử lý quyết định thành công'
+              : 'Không thể thực hiện yêu cầu');
+
+      return {'success': isSuccess, 'message': message};
+    } on DioException catch (e) {
+      final errorData = e.response?.data;
+      String message = 'Đã có lỗi xảy ra khi xử lý phản hồi.';
+      if (errorData is Map) {
+        message =
+            errorData['message']?.toString() ??
+            errorData['data']?.toString() ??
+            message;
+      }
+      return {'success': false, 'message': message};
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
 }

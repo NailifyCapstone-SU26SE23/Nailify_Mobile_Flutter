@@ -223,7 +223,7 @@ class _DiscoverFilterSheetState extends State<DiscoverFilterSheet> {
                             ),
                             decoration: BoxDecoration(
                               color: selected
-                                  ? AppColors.primary.withOpacity(0.1)
+                                  ? AppColors.primary.withValues(alpha: 0.1)
                                   : Colors.white,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
@@ -255,9 +255,11 @@ class _DiscoverFilterSheetState extends State<DiscoverFilterSheet> {
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size(double.infinity, 48),
                         side: BorderSide(
-                          color: AppColors.primary.withOpacity(0.4),
+                          color: AppColors.primary.withValues(alpha: 0.4),
                         ),
-                        backgroundColor: AppColors.primary.withOpacity(0.06),
+                        backgroundColor: AppColors.primary.withValues(
+                          alpha: 0.06,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(24),
                         ),
@@ -354,12 +356,12 @@ class _FilterListTile extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               color: selected
-                  ? AppColors.primary.withOpacity(0.1)
+                  ? AppColors.primary.withValues(alpha: 0.1)
                   : Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: selected
-                    ? AppColors.primary.withOpacity(0.3)
+                    ? AppColors.primary.withValues(alpha: 0.3)
                     : AppColors.borderLight,
               ),
             ),

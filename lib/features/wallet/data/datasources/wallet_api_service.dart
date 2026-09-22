@@ -124,4 +124,82 @@ class WalletApiService {
       totalItems: 0,
     );
   }
+
+  /// ─── DIGITAL CASH WALLET ENDPOINTS ────────────────────────────────
+
+  /// GET /Wallets/summary
+  Future<Map<String, dynamic>> getCustomerWalletSummary() async {
+    final response = await _api.get<dynamic>('/Wallets/summary');
+    final payload = _unwrapData(response.data);
+    if (payload is Map<String, dynamic>) {
+      return payload;
+    } else if (payload is Map) {
+      return Map<String, dynamic>.from(payload);
+    }
+    return <String, dynamic>{};
+  }
+
+  /// POST /Wallets/deposit
+  Future<Map<String, dynamic>> requestDeposit(double amount) async {
+    final response = await _api.post<dynamic>('/Wallets/deposit', data: amount);
+    final payload = _unwrapData(response.data);
+    if (payload is Map<String, dynamic>) {
+      return payload;
+    } else if (payload is Map) {
+      return Map<String, dynamic>.from(payload);
+    } else if (payload is String && payload.isNotEmpty) {
+      return {'paymentUrl': payload, 'checkoutUrl': payload, 'qrCode': ''};
+    }
+    return <String, dynamic>{};
+  }
+
+  /// POST /Wallets/withdraw
+  Future<Map<String, dynamic>> requestWithdrawal({
+    required double amount,
+    required String bankName,
+    required String bankCode,
+    required String accountNumber,
+    required String accountHolderName,
+  }) async {
+    final response = await _api.post<dynamic>(
+      '/Wallets/withdraw',
+      data: {
+        'amount': amount,
+        'bankName': bankName,
+        'bankCode': bankCode,
+        'accountNumber': accountNumber,
+        'accountHolderName': accountHolderName,
+      },
+    );
+    final payload = _unwrapData(response.data);
+    if (payload is Map) return Map<String, dynamic>.from(payload);
+    return <String, dynamic>{};
+  }
+
+  /// POST /Wallets/convert-points
+  Future<String> convertMoneyToPoints(double moneyAmount) async {
+    final response = await _api.post<dynamic>(
+      '/Wallets/convert-points',
+      data: {'moneyAmount': moneyAmount},
+    );
+    final raw = response.data;
+    if (raw is Map && raw.containsKey('message')) {
+      return raw['message']?.toString() ?? 'Quy đổi điểm thành công!';
+    }
+    return _unwrapData(raw)?.toString() ?? 'Quy đổi điểm thành công!';
+  }
+
+  /// GET /Wallets/transactions?pageNumber=&pageSize=
+  Future<Map<String, dynamic>> getWalletTransactions({
+    int pageNumber = 1,
+    int pageSize = 10,
+  }) async {
+    final response = await _api.get<dynamic>(
+      '/Wallets/transactions',
+      queryParameters: {'pageNumber': pageNumber, 'pageSize': pageSize},
+    );
+    final raw = response.data;
+    if (raw is Map) return Map<String, dynamic>.from(raw);
+    return <String, dynamic>{};
+  }
 }

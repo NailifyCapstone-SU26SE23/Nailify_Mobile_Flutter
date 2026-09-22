@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/utils/auth_guard.dart';
+import '../../data/repositories/favorite_nail_repository.dart';
 import '../../data/repositories/nail_design_repository.dart';
 import '../../data/repositories/nail_variant_repository.dart';
 import '../../data/models/nail_design_model.dart';
@@ -65,6 +67,41 @@ class _NailListViewState extends State<_NailListView> {
     if (currentFilters.name != null) {
       _searchController.text = currentFilters.name!;
     }
+  }
+
+  void _handleFavoriteToggle(NailDesignModel design, bool shouldFavorite) {
+    AuthGuard.check(context, () async {
+      try {
+        if (shouldFavorite) {
+          final favoriteNailId = await getIt<FavoriteNailRepository>()
+              .favoriteDesign(design.nailDesignId);
+          if (mounted) {
+            context.read<NailCatalogCubit>().updateFavoriteDesign(
+              nailDesignId: design.nailDesignId,
+              isFavorited: true,
+              favoriteNailId: favoriteNailId,
+            );
+          }
+        } else {
+          final favoriteNailId = design.favoriteNailId;
+          if (favoriteNailId != null) {
+            await getIt<FavoriteNailRepository>().unfavorite(favoriteNailId);
+          }
+          if (mounted) {
+            context.read<NailCatalogCubit>().updateFavoriteDesign(
+              nailDesignId: design.nailDesignId,
+              isFavorited: false,
+            );
+          }
+        }
+      } catch (error) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Không thể cập nhật yêu thích: $error')),
+          );
+        }
+      }
+    });
   }
 
   @override
@@ -392,9 +429,10 @@ class _NailListViewState extends State<_NailListView> {
                     ),
                   ),
                 )
-              else if (state.filters.isNotEmpty)
-                _buildFilteredGrid(context, state)
-              else
+              else if (state.filters.isNotEmpty) ...[
+                _buildFilteredGrid(context, state),
+                if (state.hasNextPage) _buildLoadMoreButton(context, state),
+              ] else
                 ..._buildCollectionSlivers(context, state),
 
               // Loading thêm khi cuộn
@@ -556,6 +594,46 @@ class _NailListViewState extends State<_NailListView> {
     );
   }
 
+  Widget _buildLoadMoreButton(BuildContext context, NailCatalogState state) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: state.status == NailCatalogStatus.loadingMore
+                ? null
+                : () => context.read<NailCatalogCubit>().loadMore(),
+            style: OutlinedButton.styleFrom(
+              backgroundColor: const Color(0xFFF4F4F6),
+              foregroundColor: AppColors.textPrimary,
+              side: BorderSide.none,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            icon: state.status == NailCatalogStatus.loadingMore
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.expand_more_rounded, size: 20),
+            label: Text(
+              state.status == NailCatalogStatus.loadingMore
+                  ? 'Đang tải...'
+                  : (Localizations.localeOf(context).languageCode == 'vi'
+                        ? 'Tải thêm mẫu móng'
+                        : 'Load More Designs'),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   List<Widget> _buildCollectionSlivers(
     BuildContext context,
     NailCatalogState state,
@@ -596,6 +674,7 @@ class _NailListViewState extends State<_NailListView> {
               matchPercentages: matchLookup,
               onDesignTap: (design) =>
                   context.go('/nails/${design.nailDesignId}'),
+              onFavoriteToggle: _handleFavoriteToggle,
             ),
           ),
         );
@@ -619,6 +698,7 @@ class _NailListViewState extends State<_NailListView> {
             designs: seasonalDesigns,
             onDesignTap: (design) =>
                 context.go('/nails/${design.nailDesignId}'),
+            onFavoriteToggle: _handleFavoriteToggle,
             onSeeAll: () {
               _applyCategoryTypeFilter(
                 context,
@@ -653,6 +733,7 @@ class _NailListViewState extends State<_NailListView> {
             designs: styleDesigns,
             onDesignTap: (design) =>
                 context.go('/nails/${design.nailDesignId}'),
+            onFavoriteToggle: _handleFavoriteToggle,
             onSeeAll: () {
               _applyCategoryTypeFilter(
                 context,
@@ -690,6 +771,7 @@ class _NailListViewState extends State<_NailListView> {
             designs: skinToneDesigns,
             onDesignTap: (design) =>
                 context.go('/nails/${design.nailDesignId}'),
+            onFavoriteToggle: _handleFavoriteToggle,
             onSeeAll: () {
               _applyCategoryTypeFilter(
                 context,
@@ -725,6 +807,7 @@ class _NailListViewState extends State<_NailListView> {
             designs: occasionDesigns,
             onDesignTap: (design) =>
                 context.go('/nails/${design.nailDesignId}'),
+            onFavoriteToggle: _handleFavoriteToggle,
             onSeeAll: () {
               _applyCategoryTypeFilter(
                 context,
@@ -748,6 +831,7 @@ class _NailListViewState extends State<_NailListView> {
             designs: entry.value,
             onDesignTap: (design) =>
                 context.go('/nails/${design.nailDesignId}'),
+            onFavoriteToggle: _handleFavoriteToggle,
             onSeeAll: () {
               final match = state.categoryTypes.where(
                 (c) => c.name == entry.key,
@@ -771,6 +855,10 @@ class _NailListViewState extends State<_NailListView> {
           ),
         ),
       );
+    }
+
+    if (state.hasNextPage) {
+      sections.add(_buildLoadMoreButton(context, state));
     }
 
     return sections;

@@ -11,8 +11,8 @@ import '../../data/models/salon_model.dart';
 import '../../data/salon_repository.dart';
 import '../widgets/basic_network_image.dart';
 import '../widgets/rating_list.dart';
-import '../widgets/salon_ui.dart';
 import '../widgets/salon_operating_hours_section.dart';
+import '../widgets/salon_ui.dart';
 
 class SalonDetailPage extends StatefulWidget {
   final String salonId;
@@ -55,9 +55,25 @@ class _SalonDetailPageState extends State<SalonDetailPage> {
     final l10n = S.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(l10n.salonDetailTitle),
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.primaryDark,
+            size: 20,
+          ),
+          onPressed: () => context.pop(),
+        ),
+        title: Text(
+          l10n.salonDetailTitle,
+          style: const TextStyle(
+            color: AppColors.primaryDark,
+            fontWeight: FontWeight.w800,
+            fontFamily: 'Georgia',
+          ),
+        ),
+        centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
       ),
@@ -65,7 +81,9 @@ class _SalonDetailPageState extends State<SalonDetailPage> {
         future: _detailFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            );
           }
           if (snapshot.hasError) {
             return SalonErrorState(
@@ -83,26 +101,29 @@ class _SalonDetailPageState extends State<SalonDetailPage> {
             );
           }
 
+          final isOpen =
+              data.salon.status.toLowerCase() != 'closed' &&
+              data.salon.status.toLowerCase() != 'inactive';
+
           return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
             children: [
-              _SalonHero(salon: data.salon),
-              const SizedBox(height: 18),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+              _SalonHero(salon: data.salon, isOpen: isOpen),
+              const SizedBox(height: 16),
+              Row(
                 children: [
                   if (data.salon.phone.isNotEmpty)
                     SalonInfoChip(
                       icon: Icons.call_rounded,
                       label: data.salon.phone,
                     ),
+                  const SizedBox(width: 8),
                   SalonInfoChip(
-                    icon: Icons.verified_rounded,
-                    label: data.salon.status.isNotEmpty
-                        ? data.salon.status
-                        : l10n.salonVerified,
-                    color: AppColors.success,
+                    icon: isOpen
+                        ? Icons.check_circle_rounded
+                        : Icons.cancel_rounded,
+                    label: isOpen ? 'Đang mở cửa' : 'Tạm đóng cửa',
+                    color: isOpen ? Colors.green.shade700 : Colors.red.shade700,
                   ),
                 ],
               ),
@@ -159,8 +180,9 @@ class _SalonDetailPageState extends State<SalonDetailPage> {
 
 class _SalonHero extends StatelessWidget {
   final SalonModel salon;
+  final bool isOpen;
 
-  const _SalonHero({required this.salon});
+  const _SalonHero({required this.salon, required this.isOpen});
 
   @override
   Widget build(BuildContext context) {
@@ -171,7 +193,7 @@ class _SalonHero extends StatelessWidget {
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 18,
-            offset: const Offset(0, 10),
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -191,7 +213,7 @@ class _SalonHero extends StatelessWidget {
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    Colors.black.withValues(alpha: 0.62),
+                    Colors.black.withValues(alpha: 0.70),
                   ],
                 ),
               ),
@@ -210,28 +232,30 @@ class _SalonHero extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 26,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                     fontFamily: 'Georgia',
                   ),
                 ),
                 const SizedBox(height: 8),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Icon(
                       Icons.location_on_rounded,
-                      color: Colors.white,
-                      size: 17,
+                      color: AppColors.primary,
+                      size: 18,
                     ),
-                    const SizedBox(width: 5),
+                    const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         salon.address,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.9),
-                          height: 1.3,
+                          color: Colors.white.withValues(alpha: 0.95),
+                          fontSize: 13,
+                          height: 1.35,
                         ),
                       ),
                     ),
@@ -263,9 +287,9 @@ class _InfoTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFFDFDFD),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderLight),
+        border: Border.all(color: const Color(0xFFF0EAE1)),
       ),
       child: Row(
         children: [
@@ -277,7 +301,10 @@ class _InfoTile extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
                 if (subtitle.isNotEmpty) ...[
                   const SizedBox(height: 4),
@@ -311,27 +338,97 @@ class _ArtistTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.10)),
+        border: Border.all(color: const Color(0xFFF0EAE1), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        leading: CircleAvatar(
-          radius: 24,
-          backgroundColor: AppColors.primary.withValues(alpha: 0.08),
-          backgroundImage: artist.avatarUrl.isEmpty
-              ? null
-              : NetworkImage(artist.avatarUrl),
-          child: artist.avatarUrl.isEmpty
-              ? const Icon(Icons.person_outline, color: AppColors.primary)
-              : null,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 26,
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.08),
+                  backgroundImage: artist.avatarUrl.isEmpty
+                      ? null
+                      : NetworkImage(artist.avatarUrl),
+                  child: artist.avatarUrl.isEmpty
+                      ? const Icon(
+                          Icons.person_outline_rounded,
+                          color: AppColors.primary,
+                          size: 26,
+                        )
+                      : null,
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        artist.fullName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Text(
+                              'Thợ làm móng',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                          if (artist.phone.isNotEmpty) ...[
+                            const SizedBox(width: 8),
+                            Text(
+                              artist.phone,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.grey.shade400,
+                  size: 22,
+                ),
+              ],
+            ),
+          ),
         ),
-        title: Text(
-          artist.fullName,
-          style: const TextStyle(fontWeight: FontWeight.w700),
-        ),
-        subtitle: artist.phone.isNotEmpty ? Text(artist.phone) : null,
-        trailing: const Icon(Icons.chevron_right_rounded),
-        onTap: onTap,
       ),
     );
   }

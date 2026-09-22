@@ -93,261 +93,455 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
+  String _getTimeRangeText(List<dynamic> slots) {
+    if (slots.isEmpty) return '';
+    final String start =
+        slots.first['startTime']?.toString().substring(0, 5) ?? '';
+    final String end =
+        slots.last['startTime']?.toString().substring(0, 5) ?? '';
+    if (start.isEmpty || end.isEmpty) return '';
+    if (start == end) return '($start)';
+    return '($start - $end)';
+  }
+
+  Widget _buildSkeletonLoading(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          S.of(context).bookingAvailableSlots,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        Row(
+          children: [
+            Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              width: 150,
+              height: 14,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            childAspectRatio: 2.5,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+          ),
+          itemCount: 6,
+          itemBuilder: (context, index) {
+            return Container(
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+        Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Đang kiểm tra lịch rảnh của salon...',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final morningSlots = <dynamic>[];
+    final afternoonSlots = <dynamic>[];
+    final eveningSlots = <dynamic>[];
+
+    for (final slot in widget.timeSlots) {
+      final String time = slot['startTime']?.toString() ?? '00:00';
+      final parts = time.split(':');
+      final hour = int.tryParse(parts[0]) ?? 0;
+
+      if (hour < 12) {
+        morningSlots.add(slot);
+      } else if (hour < 17) {
+        afternoonSlots.add(slot);
+      } else {
+        eveningSlots.add(slot);
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primaryLight.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.access_time_filled_rounded,
+                size: 20,
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              S.of(context).bookingAvailableSlots,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Georgia',
+                color: AppColors.primaryDark,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
         if (!widget.canSelect)
-          Text(
-            S.of(context).bookingSelectArtistFirst,
-            style: const TextStyle(
-              color: Colors.grey,
-              fontStyle: FontStyle.italic,
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Text(
+              S.of(context).bookingSelectArtistFirst,
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontStyle: FontStyle.italic,
+                fontSize: 14,
+              ),
             ),
           )
         else if (widget.isLoading)
-          const CircularProgressIndicator()
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: _buildSkeletonLoading(context),
+          )
         else if (widget.timeSlots.isEmpty)
-          Text(S.of(context).bookingNoSchedule)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Center(
+              child: Text(
+                S.of(context).bookingNoSchedule,
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 14,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          )
         else
+          // Khung cuộn cố định chiều cao tối đa 320px để tránh đè lên nút Tiếp Tục
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 320),
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (morningSlots.isNotEmpty)
+                    _buildSessionSection(
+                      title: 'Buổi sáng ${_getTimeRangeText(morningSlots)}',
+                      icon: Icons.wb_twilight_rounded,
+                      slots: morningSlots,
+                    ),
+                  if (afternoonSlots.isNotEmpty)
+                    _buildSessionSection(
+                      title: 'Buổi chiều ${_getTimeRangeText(afternoonSlots)}',
+                      icon: Icons.wb_sunny_rounded,
+                      slots: afternoonSlots,
+                    ),
+                  if (eveningSlots.isNotEmpty)
+                    _buildSessionSection(
+                      title: 'Buổi tối ${_getTimeRangeText(eveningSlots)}',
+                      icon: Icons.nights_stay_rounded,
+                      slots: eveningSlots,
+                    ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSessionSection({
+    required String title,
+    required IconData icon,
+    required List<dynamic> slots,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 15, color: AppColors.primary),
+              const SizedBox(width: 6),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
               childAspectRatio: 2.5,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
             ),
-            itemCount: widget.timeSlots.length,
+            itemCount: slots.length,
             itemBuilder: (context, index) {
-              final slot = widget.timeSlots[index];
-              final String time = slot['startTime']; // "09:30:00"
-              final bool isAvailableApi = slot['isAvailable'] == true;
-              final bool isHeld = slot['isHeld'] == true;
-              final bool isSelected = widget.selectedTime == time;
-              final bool isWaitlisted = _waitlistedTimes.contains(time);
-
-              bool isPast = false;
-
-              // ==========================================
-              // LOGIC CHỐT CHẶN KHÔNG CHO CHỌN GIỜ QUÁ KHỨ
-              // ==========================================
-              if (widget.selectedDate != null) {
-                final now = DateTime.now();
-                final DateTime todayStart = DateTime(
-                  now.year,
-                  now.month,
-                  now.day,
-                );
-                final DateTime selectedDateStart = DateTime(
-                  widget.selectedDate!.year,
-                  widget.selectedDate!.month,
-                  widget.selectedDate!.day,
-                );
-
-                if (selectedDateStart.isBefore(todayStart)) {
-                  isPast = true;
-                } else if (selectedDateStart.isAtSameMomentAs(todayStart)) {
-                  final List<String> timeParts = time.split(':');
-                  final int slotHour = int.tryParse(timeParts[0]) ?? 0;
-                  final int slotMinute = int.tryParse(timeParts[1]) ?? 0;
-
-                  if (slotHour < now.hour ||
-                      (slotHour == now.hour && slotMinute <= now.minute)) {
-                    isPast = true;
-                  }
-                }
-              }
-              // ==========================================
-
-              // isAvail: chỉ khi isAvailable: true VÀ isHeld: false → có thể chọn
-              final bool isAvail = isAvailableApi && !isHeld && !isPast;
-              // isHeldOnly: đang bị giữ tạm (5 phút) bởi ai đó → mờ, cho vào waitlist
-              final bool isHeldOnly = isHeld && !isPast;
-              // isFull: đã đặt hẳn (isAvailable: false) và KHÔNG đang held → mờ, waitlist
-              final bool isFull = !isAvailableApi && !isHeld && !isPast;
-
-              // Xác định style cho ô
-              Color bgColor;
-              Color borderColor;
-              Color textColor;
-              bool showBell = false;
-              bool lineThrough = false;
-              FontWeight fontWeight = FontWeight.normal;
-
-              if (isSelected) {
-                bgColor = AppColors.primary;
-                borderColor = AppColors.primary;
-                textColor = Colors.white;
-                fontWeight = FontWeight.bold;
-              } else if (isWaitlisted) {
-                bgColor = AppColors.primary.withOpacity(0.08);
-                borderColor = AppColors.primary.withOpacity(0.5);
-                textColor = AppColors.primary;
-                fontWeight = FontWeight.bold;
-                showBell = true;
-              } else if (isAvail) {
-                // Còn trống, không bị giữ
-                bgColor = Colors.white;
-                borderColor = Colors.grey.shade300;
-                textColor = Colors.black;
-                fontWeight = FontWeight.bold;
-              } else if (isPast) {
-                bgColor = Colors.grey.shade50;
-                borderColor = Colors.transparent;
-                textColor = Colors.grey.shade300;
-                lineThrough = true;
-              } else {
-                // isHeldOnly hoặc isFull → đều hiện mờ giống nhau
-                bgColor = Colors.grey.shade100;
-                borderColor = Colors.grey.shade200;
-                textColor = Colors.grey.shade400;
-              }
-
-              return GestureDetector(
-                onTap: () {
-                  // Kiểm tra lại tại thời điểm tap (người dùng gửi request)
-                  bool isCurrentlyPast = false;
-                  if (widget.selectedDate != null) {
-                    final currentNow = DateTime.now();
-                    final currentTodayStart = DateTime(
-                      currentNow.year,
-                      currentNow.month,
-                      currentNow.day,
-                    );
-                    final selDateStart = DateTime(
-                      widget.selectedDate!.year,
-                      widget.selectedDate!.month,
-                      widget.selectedDate!.day,
-                    );
-
-                    if (selDateStart.isBefore(currentTodayStart)) {
-                      isCurrentlyPast = true;
-                    } else if (selDateStart.isAtSameMomentAs(
-                      currentTodayStart,
-                    )) {
-                      final List<String> timeParts = time.split(':');
-                      final int slotHour = int.tryParse(timeParts[0]) ?? 0;
-                      final int slotMinute = int.tryParse(timeParts[1]) ?? 0;
-
-                      if (slotHour < currentNow.hour ||
-                          (slotHour == currentNow.hour &&
-                              slotMinute <= currentNow.minute)) {
-                        isCurrentlyPast = true;
-                      }
-                    }
-                  }
-
-                  if (isCurrentlyPast) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(S.of(context).bookingSlotPast),
-                        backgroundColor: Colors.redAccent,
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                    return;
-                  }
-
-                  if (isAvail) {
-                    // isHeld: false, isAvailable: true → tạo holdToken bình thường
-                    widget.onTimeChanged(time);
-                  } else if (isWaitlisted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Row(
-                          children: [
-                            const Icon(
-                              Icons.notifications_active,
-                              color: Colors.white,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              S
-                                  .of(context)
-                                  .bookingWaitlistJoined(time.substring(0, 5)),
-                            ),
-                          ],
-                        ),
-                        backgroundColor: AppColors.primary,
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    );
-                  } else if (isHeldOnly) {
-                    // isHeld: true → hiện thông báo, reload slot, cho vào waitlist
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text(
-                          'Khung giờ này đang được giữ chỗ tạm thời. Bạn có thể đăng ký hàng chờ.',
-                        ),
-                        backgroundColor: Colors.orange.shade700,
-                        behavior: SnackBarBehavior.floating,
-                        duration: const Duration(seconds: 3),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    );
-                    // Reload để cập nhật trạng thái mới nhất
-                    widget.onRefreshSlots?.call();
-                    _showWaitlistBottomSheet(time);
-                  } else if (isFull) {
-                    // isAvailable: false, isHeld: false → đã đặt hẳn → cho vào waitlist
-                    _showWaitlistBottomSheet(time);
-                  }
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeOut,
-                  decoration: BoxDecoration(
-                    color: bgColor,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: borderColor,
-                      width: isWaitlisted ? 1.5 : 1,
-                    ),
-                  ),
-                  alignment: Alignment.center,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        time.substring(0, 5), // "09:30"
-                        style: TextStyle(
-                          fontWeight: fontWeight,
-                          color: textColor,
-                          decoration: lineThrough
-                              ? TextDecoration.lineThrough
-                              : null,
-                          decorationColor: Colors.grey.shade400,
-                        ),
-                      ),
-                      if (showBell) ...[
-                        const SizedBox(width: 4),
-                        const Icon(
-                          Icons.notifications_active,
-                          size: 13,
-                          color: AppColors.primary,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              );
+              final slot = slots[index];
+              return _buildSlotTile(slot);
             },
           ),
-      ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSlotTile(dynamic slot) {
+    final String time = slot['startTime'] ?? '00:00:00'; // "09:30:00"
+    final bool isAvailableApi = slot['isAvailable'] == true;
+    final bool isHeld = slot['isHeld'] == true;
+    final bool isSelected = widget.selectedTime == time;
+    final bool isWaitlisted = _waitlistedTimes.contains(time);
+
+    bool isPast = false;
+
+    if (widget.selectedDate != null) {
+      final now = DateTime.now();
+      final DateTime todayStart = DateTime(now.year, now.month, now.day);
+      final DateTime selectedDateStart = DateTime(
+        widget.selectedDate!.year,
+        widget.selectedDate!.month,
+        widget.selectedDate!.day,
+      );
+
+      if (selectedDateStart.isBefore(todayStart)) {
+        isPast = true;
+      } else if (selectedDateStart.isAtSameMomentAs(todayStart)) {
+        final List<String> timeParts = time.split(':');
+        final int slotHour = int.tryParse(timeParts[0]) ?? 0;
+        final int slotMinute = int.tryParse(timeParts[1]) ?? 0;
+
+        if (slotHour < now.hour ||
+            (slotHour == now.hour && slotMinute <= now.minute)) {
+          isPast = true;
+        }
+      }
+    }
+
+    final bool isAvail = isAvailableApi && !isHeld && !isPast;
+    final bool isHeldOnly = isHeld && !isPast;
+    final bool isFull = !isAvailableApi && !isHeld && !isPast;
+
+    Color bgColor;
+    Color borderColor;
+    Color textColor;
+    bool showBell = false;
+    bool lineThrough = false;
+    FontWeight fontWeight = FontWeight.w600;
+
+    if (isSelected) {
+      bgColor = AppColors.primary;
+      borderColor = AppColors.primary;
+      textColor = Colors.white;
+      fontWeight = FontWeight.bold;
+    } else if (isWaitlisted) {
+      bgColor = AppColors.primary.withValues(alpha: 0.08);
+      borderColor = AppColors.primary.withValues(alpha: 0.5);
+      textColor = AppColors.primary;
+      fontWeight = FontWeight.bold;
+      showBell = true;
+    } else if (isAvail) {
+      bgColor = Colors.white;
+      borderColor = const Color(0xFFF2ECE6);
+      textColor = AppColors.textPrimary;
+      fontWeight = FontWeight.bold;
+    } else if (isPast) {
+      bgColor = Colors.grey.shade50;
+      borderColor = Colors.transparent;
+      textColor = Colors.grey.shade300;
+      lineThrough = true;
+    } else {
+      bgColor = Colors.grey.shade100;
+      borderColor = Colors.grey.shade200;
+      textColor = Colors.grey.shade400;
+    }
+
+    return GestureDetector(
+      onTap: () {
+        bool isCurrentlyPast = false;
+        if (widget.selectedDate != null) {
+          final currentNow = DateTime.now();
+          final currentTodayStart = DateTime(
+            currentNow.year,
+            currentNow.month,
+            currentNow.day,
+          );
+          final selDateStart = DateTime(
+            widget.selectedDate!.year,
+            widget.selectedDate!.month,
+            widget.selectedDate!.day,
+          );
+
+          if (selDateStart.isBefore(currentTodayStart)) {
+            isCurrentlyPast = true;
+          } else if (selDateStart.isAtSameMomentAs(currentTodayStart)) {
+            final List<String> timeParts = time.split(':');
+            final int slotHour = int.tryParse(timeParts[0]) ?? 0;
+            final int slotMinute = int.tryParse(timeParts[1]) ?? 0;
+
+            if (slotHour < currentNow.hour ||
+                (slotHour == currentNow.hour &&
+                    slotMinute <= currentNow.minute)) {
+              isCurrentlyPast = true;
+            }
+          }
+        }
+
+        if (isCurrentlyPast) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(S.of(context).bookingSlotPast),
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          return;
+        }
+
+        if (isAvail) {
+          widget.onTimeChanged(time);
+        } else if (isWaitlisted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(
+                    Icons.notifications_active,
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    S.of(context).bookingWaitlistJoined(time.substring(0, 5)),
+                  ),
+                ],
+              ),
+              backgroundColor: AppColors.primary,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          );
+        } else if (isHeldOnly) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                'Khung giờ này đang được giữ chỗ tạm thời. Bạn có thể đăng ký hàng chờ.',
+              ),
+              backgroundColor: Colors.orange.shade700,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 3),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          );
+          widget.onRefreshSlots?.call();
+          _showWaitlistBottomSheet(time);
+        } else if (isFull) {
+          _showWaitlistBottomSheet(time);
+        }
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: borderColor,
+            width: isSelected || isWaitlisted ? 1.5 : 1,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.35),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        alignment: Alignment.center,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              time.substring(0, 5),
+              style: TextStyle(
+                fontSize: 13.5,
+                fontWeight: fontWeight,
+                color: textColor,
+                decoration: lineThrough ? TextDecoration.lineThrough : null,
+                decorationColor: Colors.grey.shade400,
+              ),
+            ),
+            if (showBell) ...[
+              const SizedBox(width: 4),
+              const Icon(
+                Icons.notifications_active,
+                size: 13,
+                color: AppColors.primary,
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

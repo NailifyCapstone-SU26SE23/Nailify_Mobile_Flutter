@@ -49,7 +49,9 @@ class NailVariantRepository {
   }
 
   Future<List<NailSurfaceModel>> getNailSurfaces() async {
-    final response = await _apiClient.get<dynamic>('/NailSurfaces?status=Active');
+    final response = await _apiClient.get<dynamic>(
+      '/NailSurfaces?status=Active',
+    );
     final list = ApiResponseParser.unwrapList(response.data);
     return list.map(NailSurfaceModel.fromJson).toList();
   }

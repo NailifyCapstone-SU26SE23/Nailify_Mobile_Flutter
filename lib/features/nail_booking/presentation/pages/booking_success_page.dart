@@ -268,7 +268,11 @@ class BookingSuccessPage extends StatelessWidget {
     Map<String, dynamic> discount,
   ) {
     final name = discount['name']?.toString() ?? S.of(context).bookingDiscount;
+    final amount = discount['amount'];
     final amountDisplay = discount['amountDisplay']?.toString();
+    final rawDisplay = (amountDisplay?.isNotEmpty == true)
+        ? amountDisplay!
+        : (amount != null ? PriceFormatter.format(amount) : '');
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -281,9 +285,7 @@ class BookingSuccessPage extends StatelessWidget {
             ),
           ),
           Text(
-            amountDisplay?.isNotEmpty == true
-                ? _formatDiscountDisplay(amountDisplay!)
-                : PriceFormatter.format(-(discount['amount'] ?? 0)),
+            _formatDiscountDisplay(rawDisplay),
             style: const TextStyle(
               fontWeight: FontWeight.bold,
               color: Colors.green,
@@ -295,8 +297,10 @@ class BookingSuccessPage extends StatelessWidget {
   }
 
   String _formatDiscountDisplay(String value) {
-    final text = value.trim();
+    var text = value.trim();
     if (text.isEmpty) return text;
+    text = text.replaceAll(RegExp(r'^-+'), '');
+    text = '-$text';
     final lower = text.toLowerCase();
     if (lower.contains('đ') || lower.contains('vnd')) return text;
     return '$text VNĐ';

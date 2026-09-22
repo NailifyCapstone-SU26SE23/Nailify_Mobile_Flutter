@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import '../../data/models/nail_design_model.dart';
 import 'nail_design_card.dart';
 
+typedef NailFavoriteCallback =
+    void Function(NailDesignModel design, bool shouldFavorite);
+
 /// A single horizontally-scrolling "collection" row, e.g.
 /// "Dành riêng cho bạn", "Xu hướng tuần này", "Móng Pháp cổ điển"...
 ///
@@ -17,6 +20,7 @@ class NailCollectionSection extends StatelessWidget {
   final Map<int, int> matchPercentages;
 
   final ValueChanged<NailDesignModel> onDesignTap;
+  final NailFavoriteCallback? onFavoriteToggle;
   final VoidCallback? onSeeAll;
 
   /// Icon shown to the left of the title — use a sparkle for the
@@ -28,6 +32,7 @@ class NailCollectionSection extends StatelessWidget {
     required this.title,
     required this.designs,
     required this.onDesignTap,
+    this.onFavoriteToggle,
     this.matchPercentages = const {},
     this.onSeeAll,
     this.titleIcon,
@@ -119,6 +124,9 @@ class NailCollectionSection extends StatelessWidget {
                     isFavorited: design.isFavorited,
                     matchPercentage: matchPercentages[design.nailDesignId],
                     onTap: () => onDesignTap(design),
+                    onFavoriteToggle: onFavoriteToggle != null
+                        ? (shouldFav) => onFavoriteToggle!(design, shouldFav)
+                        : null,
                   ),
                 );
               },

@@ -54,6 +54,9 @@ class SEn extends S {
   String get cancel => 'Cancel';
 
   @override
+  String get cancelBookingReasonMinLength => 'Requires at least 5 characters';
+
+  @override
   String get confirm => 'Confirm';
 
   @override
@@ -807,7 +810,7 @@ class SEn extends S {
   }
 
   @override
-  String get bookingDiscount => 'Discount';
+  String get bookingDiscount => 'Discount:';
 
   @override
   String get cancelBookingTitle => 'Cancel Booking';
@@ -1066,6 +1069,46 @@ class SEn extends S {
   String get bookingStepSelectSalon => 'Select Salon';
 
   @override
+  String get bookingStepArtist => 'Artist';
+
+  @override
+  String get bookingArtistAutoAssign => 'Auto Assign';
+
+  @override
+  String get bookingArtistAutoAssignDesc =>
+      'System auto-assigns the most suitable artist';
+
+  @override
+  String get bookingArtistHighestRating => 'Highest rating';
+
+  @override
+  String get bookingSortHighExpertise => 'High expertise';
+
+  @override
+  String get bookingSortNameAZ => 'Name (A-Z)';
+
+  @override
+  String get ratingExcellent => 'Excellent';
+
+  @override
+  String get ratingVeryGood => 'Very good';
+
+  @override
+  String get ratingGood => 'Good';
+
+  @override
+  String get ratingHighlyRated => 'Highly rated';
+
+  @override
+  String get bookingAddService => 'Add Service';
+
+  @override
+  String get bookingAddAddonService => 'Add add-on service';
+
+  @override
+  String get bookingEstimatedTotal => 'Estimated total:';
+
+  @override
   String get bookingStepServices => 'Services';
 
   @override
@@ -1189,10 +1232,10 @@ class SEn extends S {
   String get bookingQtyLabel => 'Quantity';
 
   @override
-  String get bookingAddService => 'Add Service';
+  String get bookingAddServiceTitle => 'Add Add-on Service';
 
   @override
-  String get bookingAddServiceTitle => 'Add Add-on Service';
+  String get bookingAddServiceBtn => 'Add service';
 
   @override
   String get bookingSelectArtistTitle => 'Select Artist';
@@ -1838,4 +1881,199 @@ class SEn extends S {
   String balanceHint(int points) {
     return 'You have $points points to redeem';
   }
+
+  @override
+  String get bookingInfoSalon => 'Branch';
+
+  @override
+  String get warrantyBookingTitle => 'Warranty booking';
+
+  @override
+  String get warrantyStepArtist => 'Choose artist';
+
+  @override
+  String get warrantyStepServices => 'Warranty services';
+
+  @override
+  String get warrantyStepSchedule => 'Date & time';
+
+  @override
+  String get warrantyStepConfirm => 'Confirm';
+
+  @override
+  String get warrantyPinnedArtist => 'Previously worked with';
+
+  @override
+  String get warrantyFree => 'Free';
+
+  @override
+  String get warrantyConfirmBtn => 'Confirm warranty';
+
+  @override
+  String get warrantyConfirmDepositBtn => 'Pay deposit & confirm';
+
+  @override
+  String get warrantyAddonNote =>
+      'You can add extra services (if any). This will be charged.';
+
+  @override
+  String get warrantyDepositNote =>
+      'Your warranty includes paid extra services. A deposit is required before completing.';
+
+  @override
+  String get warrantyExpiredTitle => 'Warranty has expired';
+
+  @override
+  String get warrantyExpiredDesc =>
+      'The maximum warranty period is 7 days from the original booking\'s completion date. Please contact the salon for support.';
+
+  @override
+  String get warrantyExpiredBackBtn => 'Back';
+
+  @override
+  String get warrantyServiceNote =>
+      'Warranty items are listed from your previous appointment. You can uncheck any service you don\'t need to maintain.';
+
+  @override
+  String get warrantySuccessTitle => 'Warranty booking successful!';
+
+  @override
+  String get warrantySuccessSubtitle =>
+      'Your warranty appointment has been recorded.';
+
+  @override
+  String get galleryHeaderTag => 'NAIL ART COLLECTION 2026';
+
+  @override
+  String get galleryHeaderTitle => 'Find your next signature look';
+
+  @override
+  String get galleryHeaderSubtitle =>
+      'Explore curated nail designs from classics to modern trends.';
+
+  @override
+  String get gallerySearchHint => 'Search designs...';
+
+  @override
+  String galleryShowingCount(int count) {
+    return 'Showing $count designs';
+  }
+
+  @override
+  String get gallerySortNewest => 'Newest';
+
+  @override
+  String get gallerySortOldest => 'Oldest';
+
+  @override
+  String get gallerySortAZ => 'A - Z';
+
+  @override
+  String get galleryNoDesigns => 'No designs match your criteria';
+
+  @override
+  String get galleryCtaTitle => 'Can\'t find your dream design?';
+
+  @override
+  String get galleryCtaSubtitle =>
+      'Upload your inspiration image or generate a personalized AI design.';
+
+  @override
+  String get galleryBookBtn => 'Book Now';
+
+  @override
+  String get galleryCustomBtn => 'Custom Design ↗';
+
+  @override
+  String get galleryTryOn => 'Try On';
+
+  @override
+  String get searchSalonHint => 'Search salon by name, address...';
+
+  @override
+  String get allDistrictsFilter => 'All';
+
+  @override
+  String get bookingSelectSalonTitle => 'Select Salon Branch';
+
+  @override
+  String branchesCount(String count) {
+    return '$count branches';
+  }
+
+  @override
+  String get noMatchingSalon => 'No matching salon found';
+
+  @override
+  String get viewDetailsLink => 'Details';
+
+  @override
+  String get salonOpenStatus => 'Open';
+
+  @override
+  String get salonClosedStatus => 'Closed';
+
+  @override
+  String get selectThisBranch => 'Select this branch';
+
+  @override
+  String get detailedAddress => 'Detailed address';
+
+  @override
+  String get phoneTitle => 'Phone number';
+
+  @override
+  String get operatingHours => 'Operating hours';
+
+  @override
+  String get todayBadge => 'Today';
+
+  @override
+  String get highlyRated => 'Highly rated';
+
+  @override
+  String get collapseList => 'Collapse list';
+
+  @override
+  String viewMoreBranches(String count) {
+    return 'View $count more branches';
+  }
+
+  @override
+  String reservationMayExpireIn(String minutes, String seconds) {
+    return 'Reservation may expire in $minutes:$seconds';
+  }
+
+  @override
+  String reservationMayExpireInClickToComplete(String minutes, String seconds) {
+    return 'Reservation may expire in $minutes:$seconds! Click to complete.';
+  }
+
+  @override
+  String slotHeldRemaining(String minutes, String seconds) {
+    return 'Your slot is held - $minutes:$seconds remaining';
+  }
+
+  @override
+  String slotHeldRemainingClickToReturn(String minutes, String seconds) {
+    return 'Slot held - $minutes:$seconds remaining. Click to return.';
+  }
+
+  @override
+  String get bookingDepositRatioLabel => 'Deposit Ratio:';
+
+  @override
+  String get bookingDepositAmountLabel => 'Deposit Amount to Pay:';
+
+  @override
+  String get bookingWalletVoucher => 'Wallet Voucher';
+
+  @override
+  String get bookingSelectVoucher => 'Select a voucher from your wallet';
+
+  @override
+  String get bookingVoucherAvailable => 'available';
+
+  @override
+  String get bookingAppliedOffers => 'Applied Offers';
 }

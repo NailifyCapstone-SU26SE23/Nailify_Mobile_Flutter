@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../generated/l10n.dart';
 
 class RatingStarBadge extends StatelessWidget {
   final double rating;
@@ -16,11 +17,11 @@ class RatingStarBadge extends StatelessWidget {
     this.isCompact = false,
   });
 
-  String _getRatingLabel(double score) {
-    if (score >= 4.9 || score == 0) return 'Xuất sắc';
-    if (score >= 4.5) return 'Rất tốt';
-    if (score >= 4.0) return 'Tốt';
-    return 'Đánh giá cao';
+  String _getRatingLabel(BuildContext context, double score) {
+    if (score >= 4.9 || score == 0) return S.of(context).ratingExcellent;
+    if (score >= 4.5) return S.of(context).ratingVeryGood;
+    if (score >= 4.0) return S.of(context).ratingGood;
+    return S.of(context).ratingHighlyRated;
   }
 
   Widget _buildStarRow(double score) {
@@ -139,7 +140,7 @@ class RatingStarBadge extends StatelessWidget {
           if (showLabel) ...[
             const SizedBox(width: 4),
             Text(
-              '• ${_getRatingLabel(safeRating)}',
+              '• ${_getRatingLabel(context, safeRating)}',
               style: const TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,

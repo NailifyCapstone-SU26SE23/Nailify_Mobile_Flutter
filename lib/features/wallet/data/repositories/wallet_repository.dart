@@ -6,11 +6,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/utils/paginated_response.dart';
 import '../datasources/wallet_api_service.dart';
+import '../models/customer_wallet_summary_model.dart';
 import '../models/loyalty_model.dart';
 import '../models/loyalty_transaction_model.dart';
 import '../models/redeem_outcome.dart';
 import '../models/redeemable_promotion_model.dart';
 import '../models/wallet_overview_model.dart';
+import '../models/wallet_transaction_model.dart';
 import '../models/wallet_voucher_model.dart';
 
 /// Repository cho Wallet feature.
@@ -189,39 +191,22 @@ class WalletRepository {
       }
     }
 
-    // Gọi song song 2 endpoint; nếu 1 fail vẫn trả data còn lại.
+    // Gọi song song 3 endpoint; nếu 1 fail vẫn trả data còn lại.
     final results = await Future.wait([
       _apiService.getLoyalty(),
       _apiService.getMyWalletVouchers(),
+      getCustomerWalletSummary(),
     ]);
 
     final loyalty = results[0] as LoyaltyModel;
     final vouchers = results[1] as List<WalletVoucherModel>;
+    final cashSummary = results[2] as CustomerWalletSummaryModel?;
 
-    await _writeCache(_kCacheOverview, {
-      'loyalty': loyalty.toJson(),
-      'vouchers': vouchers
-          .map(
-            (e) => <String, dynamic>{
-              'userPromotionUsageId': e.userPromotionUsageId,
-              'promotionId': e.promotionId,
-              'promotionName': e.promotionName,
-              'description': e.description,
-              'discountType': e.discountType,
-              'discountValue': e.discountValue,
-              'receivedCount': e.receivedCount,
-              'usageCount': e.usageCount,
-              'remainingCount': e.remainingCount,
-              'startDate': e.startDate?.toIso8601String(),
-              'endDate': e.endDate?.toIso8601String(),
-              'imageUrl': e.imageUrl,
-              'isValidForUse': e.isValidForUse,
-            },
-          )
-          .toList(),
-    });
-
-    return WalletOverviewSnapshot(loyalty: loyalty, vouchers: vouchers);
+    return WalletOverviewSnapshot(
+      loyalty: loyalty,
+      vouchers: vouchers,
+      cashSummary: cashSummary,
+    );
   }
 
   // ─── Redeemable ──────────────────────────────────────────────────
@@ -295,5 +280,60 @@ class WalletRepository {
     }
 
     return fresh;
+  }
+
+  // ─── Digital Cash Wallet Methods ─────────────────────────────────
+
+  Future<CustomerWalletSummaryModel?> getCustomerWalletSummary() async {
+    try {
+      final json = await _apiService.getCustomerWalletSummary();
+      if (json.isEmpty) return null;
+      return CustomerWalletSummaryModel.fromJson(json);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>> requestDeposit(double amount) async {
+    return await _apiService.requestDeposit(amount);
+  }
+
+  Future<bool> requestWithdrawal({
+    required double amount,
+    required String bankName,
+    required String bankCode,
+    required String accountNumber,
+    required String accountHolderName,
+  }) async {
+    try {
+      final res = await _apiService.requestWithdrawal(
+        amount: amount,
+        bankName: bankName,
+        bankCode: bankCode,
+        accountNumber: accountNumber,
+        accountHolderName: accountHolderName,
+      );
+      await clearCache();
+      return res.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<String> convertMoneyToPoints(double moneyAmount) async {
+    final msg = await _apiService.convertMoneyToPoints(moneyAmount);
+    await clearCache();
+    return msg;
+  }
+
+  Future<PaginatedWalletTransactions> getWalletTransactions({
+    int pageNumber = 1,
+    int pageSize = 10,
+  }) async {
+    final json = await _apiService.getWalletTransactions(
+      pageNumber: pageNumber,
+      pageSize: pageSize,
+    );
+    return PaginatedWalletTransactions.fromJson(json);
   }
 }

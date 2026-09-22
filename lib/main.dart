@@ -9,6 +9,7 @@ import 'core/di/injection.dart';
 import 'core/network/signalr_service.dart';
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/widgets/global_signalr_listener.dart';
 import 'generated/l10n.dart';
 import 'core/localization/locale_service.dart';
 import 'core/utils/token_utils.dart';
@@ -30,7 +31,7 @@ void main() async {
   try {
     await configureDependencies();
   } catch (e) {
-    print('Lỗi cấu hình Dependency Injection: $e');
+    debugPrint('Lỗi cấu hình Dependency Injection: $e');
   }
 
   // Kiểm tra token khi mở app: nếu hết hạn thì tự động xóa
@@ -82,6 +83,8 @@ class CoreApp extends StatelessWidget {
 
           // Cấu hình định tuyến trung tâm GoRouter
           routerConfig: AppRouter.router,
+          builder: (context, child) =>
+              GlobalSignalRListener(child: child ?? const SizedBox.shrink()),
         );
       },
     );

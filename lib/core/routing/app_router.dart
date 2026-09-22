@@ -21,6 +21,7 @@ import '../../features/nail_booking/presentation/pages/payment_qr_page.dart';
 import '../../features/nail_booking/presentation/pages/payment_result_page.dart';
 import '../../features/nail_booking/presentation/pages/refund_bank_info_page.dart';
 import '../../features/nail_booking/presentation/pages/service_booking_page.dart';
+import '../../features/nail_booking/presentation/pages/warranty_booking_page.dart';
 import '../../features/nail_booking/presentation/pages/transaction_detail_page.dart';
 import '../../features/nail_booking/presentation/pages/transaction_list_page.dart';
 import '../../features/my_studio/presentation/pages/my_studio_tab_page.dart';
@@ -53,8 +54,11 @@ import '../../features/try-on/models/nail_variant_model.dart'
     as snapshot_models;
 import '../widgets/main_shell.dart';
 
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
+
 class AppRouter {
   static final GoRouter router = GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/',
     routes: [
       GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
@@ -104,13 +108,27 @@ class AppRouter {
       ),
       GoRoute(
         path: '/home-booking',
-        builder: (context, state) => const HomeBookingPage(),
+        builder: (context, state) {
+          final extra = state.extra is Map
+              ? Map<String, dynamic>.from(state.extra as Map)
+              : null;
+          return HomeBookingPage(initialData: extra);
+        },
       ),
       GoRoute(
         path: '/service-booking',
         builder: (context, state) {
           final serviceData = state.extra as Map<String, dynamic>;
           return ServiceBookingPage(baseService: serviceData);
+        },
+      ),
+      GoRoute(
+        path: '/warranty-booking',
+        builder: (context, state) {
+          final extra = state.extra is Map
+              ? Map<String, dynamic>.from(state.extra as Map)
+              : const <String, dynamic>{};
+          return WarrantyBookingPage(warrantyData: extra);
         },
       ),
       GoRoute(
@@ -145,21 +163,45 @@ class AppRouter {
       GoRoute(
         path: '/payment-qr',
         builder: (context, state) {
-          final paymentData = state.extra as Map<String, dynamic>? ?? {};
+          final extra = state.extra;
+          Map<String, dynamic> paymentData = {};
+          if (extra is Map<String, dynamic>) {
+            paymentData = extra;
+          } else if (extra is Map) {
+            paymentData = Map<String, dynamic>.from(extra);
+          } else if (extra is String && extra.isNotEmpty) {
+            paymentData = {
+              'checkoutUrl': extra,
+              'paymentUrl': extra,
+              'qrCode': '',
+            };
+          }
           return PaymentQrPage(paymentData: paymentData);
         },
       ),
       GoRoute(
         path: '/payment-success',
         builder: (context, state) {
-          final paymentData = state.extra as Map<String, dynamic>? ?? {};
+          final extra = state.extra;
+          Map<String, dynamic> paymentData = {};
+          if (extra is Map<String, dynamic>) {
+            paymentData = extra;
+          } else if (extra is Map) {
+            paymentData = Map<String, dynamic>.from(extra);
+          }
           return PaymentSuccessPage(paymentData: paymentData);
         },
       ),
       GoRoute(
         path: '/payment-cancelled',
         builder: (context, state) {
-          final paymentData = state.extra as Map<String, dynamic>? ?? {};
+          final extra = state.extra;
+          Map<String, dynamic> paymentData = {};
+          if (extra is Map<String, dynamic>) {
+            paymentData = extra;
+          } else if (extra is Map) {
+            paymentData = Map<String, dynamic>.from(extra);
+          }
           return PaymentCancelledPage(paymentData: paymentData);
         },
       ),
@@ -180,6 +222,13 @@ class AppRouter {
       GoRoute(
         path: '/booking-transactions',
         builder: (context, state) {
+          if (state.extra is Map) {
+            final map = Map<String, dynamic>.from(state.extra as Map);
+            return TransactionListPage(
+              bookingId: map['bookingId']?.toString(),
+              bookingData: map['booking'] as Map<String, dynamic>?,
+            );
+          }
           final bookingId = state.extra?.toString() ?? '';
           return TransactionListPage(bookingId: bookingId);
         },
@@ -301,7 +350,15 @@ class AppRouter {
           ),
           GoRoute(
             path: '/my-bookings',
-            builder: (context, state) => const MyBookingListPage(),
+            builder: (context, state) {
+              int initialTab = 0;
+              if (state.extra is Map) {
+                initialTab = (state.extra as Map)['initialTab'] ?? 0;
+              } else if (state.extra is int) {
+                initialTab = state.extra as int;
+              }
+              return MyBookingListPage(initialTab: initialTab);
+            },
           ),
           GoRoute(
             path: '/my-bookings/detail',
@@ -353,8 +410,7 @@ class AppRouter {
                 initialVariant: extra is snapshot_models.NailVariantModel
                     ? extra
                     : null,
-                lockVariantSelection:
-                    extra is snapshot_models.NailVariantModel,
+                lockVariantSelection: extra is snapshot_models.NailVariantModel,
               );
             },
           ),

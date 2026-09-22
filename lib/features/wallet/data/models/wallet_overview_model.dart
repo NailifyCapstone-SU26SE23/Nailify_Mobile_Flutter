@@ -1,14 +1,18 @@
+import 'customer_wallet_summary_model.dart';
 import 'loyalty_model.dart';
 import 'wallet_voucher_model.dart';
 
 /// Snapshot của toàn bộ màn hình Wallet Overview.
-/// Không map trực tiếp từ một endpoint — gộp dữ liệu từ `/Loyalty/me`
-/// và `/Promotions/my-wallet-vouchers` để giảm số lần render loading.
 class WalletOverviewSnapshot {
   final LoyaltyModel loyalty;
   final List<WalletVoucherModel> vouchers;
+  final CustomerWalletSummaryModel? cashSummary;
 
-  const WalletOverviewSnapshot({required this.loyalty, required this.vouchers});
+  const WalletOverviewSnapshot({
+    required this.loyalty,
+    required this.vouchers,
+    this.cashSummary,
+  });
 
   int get usableVoucherCount => vouchers.where((v) => v.isUsableNow).length;
 

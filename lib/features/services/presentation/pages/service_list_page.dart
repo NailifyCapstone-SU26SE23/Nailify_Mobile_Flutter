@@ -17,6 +17,10 @@ class _ServiceListPageState extends State<ServiceListPage> {
   final ServiceApiService _apiService = ServiceApiService();
   List<dynamic> _services = [];
   bool _isLoading = true;
+  bool _isLoadingMore = false;
+  int _currentPage = 1;
+  static const int _pageSize = 10;
+  bool _hasMore = true;
 
   @override
   void initState() {
@@ -24,18 +28,45 @@ class _ServiceListPageState extends State<ServiceListPage> {
     _fetchServices();
   }
 
-  Future<void> _fetchServices() async {
+  Future<void> _fetchServices({bool loadMore = false}) async {
+    if (loadMore) {
+      if (_isLoadingMore || !_hasMore) return;
+      setState(() => _isLoadingMore = true);
+    } else {
+      setState(() {
+        _isLoading = true;
+        _currentPage = 1;
+        _hasMore = true;
+      });
+    }
+
     try {
-      final data = await _apiService.getServices(pageNumber: 1, pageSize: 20);
+      final nextPage = loadMore ? _currentPage + 1 : 1;
+      final data = await _apiService.getServices(
+        pageNumber: nextPage,
+        pageSize: _pageSize,
+      );
       if (mounted) {
         setState(() {
-          _services = data;
-          _isLoading = false;
+          if (loadMore) {
+            _currentPage = nextPage;
+            _services.addAll(data);
+            _isLoadingMore = false;
+          } else {
+            _services = data;
+            _isLoading = false;
+          }
+          if (data.length < _pageSize) {
+            _hasMore = false;
+          }
         });
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() {
+          _isLoading = false;
+          _isLoadingMore = false;
+        });
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Lỗi tải dịch vụ: $e')));
@@ -76,15 +107,53 @@ class _ServiceListPageState extends State<ServiceListPage> {
           : _services.isEmpty
           ? const Center(child: Text('Không có dịch vụ nào khả dụng.'))
           : ListView.builder(
-              padding: const EdgeInsets.fromLTRB(
-                20,
-                10,
-                20,
-                100,
-              ), // extra padding bottom for safe scroll
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 100),
               physics: const BouncingScrollPhysics(),
-              itemCount: _services.length,
+              itemCount: _services.length + (_hasMore ? 1 : 0),
               itemBuilder: (context, index) {
+                if (index == _services.length) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8, bottom: 16),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _isLoadingMore
+                            ? null
+                            : () => _fetchServices(loadMore: true),
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF4F4F6),
+                          foregroundColor: AppColors.textPrimary,
+                          side: BorderSide.none,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        icon: _isLoadingMore
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.expand_more_rounded, size: 20),
+                        label: Text(
+                          _isLoadingMore
+                              ? 'Đang tải...'
+                              : (Localizations.localeOf(context).languageCode ==
+                                        'vi'
+                                    ? 'Tải thêm dịch vụ'
+                                    : 'Load More Services'),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }
                 final service = _services[index];
                 return _buildServiceCard(service);
               },

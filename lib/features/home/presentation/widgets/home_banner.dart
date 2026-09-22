@@ -4,156 +4,171 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/auth_guard.dart';
 import '../../../../generated/l10n.dart';
 
+/// Hero Banner ngang tinh gọn cho Màn hình Trang Chủ (Height max ~135px):
+/// - Bên trái: Tiêu đề thanh lịch & nút "Đặt Lịch" dạng pill gradient nhỏ gọn
+/// - Bên phải: Ảnh móng tay chìm mượt vào nền
+/// - Toàn bộ banner là vùng tương tác chạm (InkWell ripple effect)
 class HomeBanner extends StatelessWidget {
   const HomeBanner({super.key});
+
+  void _onBannerTap(BuildContext context) {
+    AuthGuard.check(context, () {
+      context.push('/home-booking');
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Container(
-        // Cấu hình khung và bo góc
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          // Mã màu Gradient mềm mại hơn, sang trọng
-          gradient: const LinearGradient(
-            colors: [
-              Color(0xFFFFF0F5), // primarySurface - hồng nhạt tinh khôi
-              Color(0xFFFFE0EC), // primaryLight
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.15),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 36.0, horizontal: 24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Ảnh oval nghệ thuật có viền trắng dày sang trọng
-            Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 4),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => _onBannerTap(context),
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            height: 135,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFFFFF5F7), // Hồng phấn thương hiệu
+                  Color(0xFFFFE3ED), // Hồng san hô mượt
                 ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(100),
-                child: Image.asset(
-                  'assets/images/Ellipse 1.png',
-                  width: 130,
-                  height: 130,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    width: 130,
-                    height: 130,
-                    color: Colors.white,
-                    child: const Icon(
-                      Icons.spa_outlined,
-                      color: AppColors.primary,
-                      size: 40,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.9),
+                width: 1.5,
+              ),
+            ),
+            child: Stack(
+              children: [
+                // Ảnh bên phải chìm nhẹ vào nền
+                Positioned(
+                  right: -10,
+                  top: -10,
+                  bottom: -10,
+                  width: 160,
+                  child: ShaderMask(
+                    shaderCallback: (rect) {
+                      return const LinearGradient(
+                        colors: [Colors.transparent, Colors.black],
+                        stops: [0.0, 0.4],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ).createShader(rect);
+                    },
+                    blendMode: BlendMode.dstIn,
+                    child: Image.asset(
+                      'assets/images/Ellipse 1.png',
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: Colors.pink.shade50.withValues(alpha: 0.5),
+                        child: const Icon(
+                          Icons.spa_outlined,
+                          color: Color(0xFFFF527B),
+                          size: 40,
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
 
-            const SizedBox(height: 24),
+                // Nội dung bên trái
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 14, 150, 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Tiêu đề thanh lịch
+                      Text(
+                        S.of(context).homeBannerTitle,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontFamily: 'serif',
+                          fontStyle: FontStyle.italic,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFE02B6D), // Màu hồng dâu thương hiệu
+                          height: 1.15,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        S.of(context).homeBannerSubtitle,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                          height: 1.25,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 10),
 
-            // Tiêu đề với font chữ Serif nghiêng cao cấp kiểu tạp chí thời trang
-            Text(
-              S.of(context).homeBannerTitle,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 44,
-                fontFamily: 'serif',
-                fontStyle: FontStyle.italic,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primaryDark, // Màu hồng mận chín sang trọng
-                height: 1.15,
-                letterSpacing: 0.5,
-                shadows: [
-                  Shadow(
-                    color: Colors.white54,
-                    offset: Offset(0, 1),
-                    blurRadius: 2,
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            Text(
-              S.of(context).homeBannerSubtitle,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w500,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 28),
-
-            // Nút Book Now cao cấp dạng Gradient
-            Container(
-              width: double.infinity,
-              height: 52,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(26),
-                gradient: const LinearGradient(
-                  colors: [AppColors.primary, AppColors.primaryDark],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primaryDark.withValues(alpha: 0.3),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: ElevatedButton(
-                onPressed: () {
-                  AuthGuard.check(context, () {
-                    context.push('/home-booking');
-                  });
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  foregroundColor: Colors.white,
-                  shadowColor: Colors.transparent,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(26),
-                  ),
-                ),
-                child: Text(
-                  S.of(context).bookNowButton,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
+                      // Nút "Đặt Lịch" nhỏ gọn dạng pill
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFF527B), Color(0xFFFF7E53)],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(
+                                0xFFFF527B,
+                              ).withValues(alpha: 0.3),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.calendar_month_rounded,
+                              size: 13,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              S.of(context).bookAppointment,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

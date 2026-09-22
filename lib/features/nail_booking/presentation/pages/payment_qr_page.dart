@@ -34,6 +34,19 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
   @override
   void initState() {
     super.initState();
+    final status = widget.paymentData['status']?.toString().toUpperCase() ?? '';
+    final qrCode = widget.paymentData['qrCode']?.toString() ?? '';
+    final paymentUrl = widget.paymentData['paymentUrl']?.toString() ?? '';
+
+    if (status == 'PAID' ||
+        status == 'SUCCESS' ||
+        (qrCode.isEmpty && paymentUrl.isEmpty)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _navigateOnce('/payment-success');
+      });
+      return;
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkPaymentStatus(showError: false);
     });
@@ -154,7 +167,7 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
                             borderRadius: BorderRadius.circular(24),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.pink.withOpacity(0.04),
+                                color: Colors.pink.withValues(alpha: 0.04),
                                 blurRadius: 24,
                                 spreadRadius: 4,
                                 offset: const Offset(0, 8),
@@ -195,7 +208,9 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
                                     child: CircularProgressIndicator(
                                       strokeWidth: 1.5,
                                       valueColor: AlwaysStoppedAnimation<Color>(
-                                        AppColors.primary.withOpacity(0.8),
+                                        AppColors.primary.withValues(
+                                          alpha: 0.8,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -219,7 +234,9 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
                                     borderRadius: BorderRadius.circular(20),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.pink.withOpacity(0.06),
+                                        color: Colors.pink.withValues(
+                                          alpha: 0.06,
+                                        ),
                                         blurRadius: 16,
                                         spreadRadius: 2,
                                       ),

@@ -3,7 +3,7 @@ import '../../../../generated/l10n.dart';
 
 class CancelBookingDialog extends StatefulWidget {
   final String bookingId;
-  final Function(String) onConfirm;
+  final Future<bool> Function(String) onConfirm;
 
   const CancelBookingDialog({
     super.key,
@@ -18,6 +18,7 @@ class CancelBookingDialog extends StatefulWidget {
 class _CancelBookingDialogState extends State<CancelBookingDialog> {
   final TextEditingController _reasonController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -50,6 +51,7 @@ class _CancelBookingDialogState extends State<CancelBookingDialog> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _reasonController,
+              enabled: !_isSubmitting,
               maxLines: 3,
               decoration: InputDecoration(
                 hintText: S.of(context).cancelBookingReasonHint,
@@ -62,6 +64,9 @@ class _CancelBookingDialogState extends State<CancelBookingDialog> {
                 if (value == null || value.trim().isEmpty) {
                   return S.of(context).cancelBookingReasonRequired;
                 }
+                if (value.trim().length < 5) {
+                  return S.of(context).cancelBookingReasonMinLength;
+                }
                 if (_countWords(value) > 50) {
                   return S.of(context).cancelBookingReasonTooLong;
                 }
@@ -73,17 +78,25 @@ class _CancelBookingDialogState extends State<CancelBookingDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
           child: Text(
             S.of(context).cancelBtn,
             style: const TextStyle(color: Colors.grey),
           ),
         ),
         ElevatedButton(
-          onPressed: () {
+          onPressed: _isSubmitting ? null : () async {
             if (_formKey.currentState!.validate()) {
-              widget.onConfirm(_reasonController.text.trim());
-              Navigator.of(context).pop();
+              setState(() => _isSubmitting = true);
+              final success = await widget.onConfirm(
+                _reasonController.text.trim(),
+              );
+              if (!mounted) return;
+              if (success) {
+                Navigator.of(context).pop();
+              } else {
+                setState(() => _isSubmitting = false);
+              }
             }
           },
           style: ElevatedButton.styleFrom(
@@ -92,10 +105,19 @@ class _CancelBookingDialogState extends State<CancelBookingDialog> {
               borderRadius: BorderRadius.circular(8),
             ),
           ),
-          child: Text(
-            S.of(context).confirmBtn,
-            style: const TextStyle(color: Colors.white),
-          ),
+          child: _isSubmitting
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : Text(
+                  S.of(context).confirmBtn,
+                  style: const TextStyle(color: Colors.white),
+                ),
         ),
       ],
     );

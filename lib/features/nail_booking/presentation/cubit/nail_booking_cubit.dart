@@ -105,11 +105,7 @@ class NailBookingCubit extends Cubit<NailBookingState> {
   }
 
   void updateExtraServices(List<String?> services) {
-    emit(
-      state.copyWith(
-        selectedExtraServices: services,
-      ),
-    );
+    emit(state.copyWith(selectedExtraServices: services));
   }
 
   /// Helper build booking items payload cho API suggested-artists & salon-available-slots
@@ -131,24 +127,18 @@ class NailBookingCubit extends Cubit<NailBookingState> {
     if (state.selectedWarrantyItems.isNotEmpty) {
       bookingItems.addAll(state.selectedWarrantyItems);
       for (final entry in extraCounts.entries) {
-        bookingItems.add({
-          'serviceId': entry.key,
-          'quantity': entry.value,
-        });
+        bookingItems.add({'serviceId': entry.key, 'quantity': entry.value});
       }
     } else {
       if (nailVariantId > 0) {
         bookingItems.add({
           'nailVariantId': nailVariantId,
-          if (shapeMethodConfigId != null) 'shapeMethodConfigId': shapeMethodConfigId,
+          'shapeMethodConfigId': ?shapeMethodConfigId,
           'quantity': 1,
         });
       }
       for (final entry in extraCounts.entries) {
-        bookingItems.add({
-          'serviceId': entry.key,
-          'quantity': entry.value,
-        });
+        bookingItems.add({'serviceId': entry.key, 'quantity': entry.value});
       }
     }
     return bookingItems;

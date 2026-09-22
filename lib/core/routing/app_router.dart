@@ -170,7 +170,11 @@ class AppRouter {
           } else if (extra is Map) {
             paymentData = Map<String, dynamic>.from(extra);
           } else if (extra is String && extra.isNotEmpty) {
-            paymentData = {'checkoutUrl': extra, 'paymentUrl': extra, 'qrCode': ''};
+            paymentData = {
+              'checkoutUrl': extra,
+              'paymentUrl': extra,
+              'qrCode': '',
+            };
           }
           return PaymentQrPage(paymentData: paymentData);
         },
@@ -406,8 +410,7 @@ class AppRouter {
                 initialVariant: extra is snapshot_models.NailVariantModel
                     ? extra
                     : null,
-                lockVariantSelection:
-                    extra is snapshot_models.NailVariantModel,
+                lockVariantSelection: extra is snapshot_models.NailVariantModel,
               );
             },
           ),

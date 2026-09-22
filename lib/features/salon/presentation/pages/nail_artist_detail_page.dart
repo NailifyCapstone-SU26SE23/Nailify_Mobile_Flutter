@@ -199,22 +199,22 @@ class _NailArtistDetailPageState extends State<NailArtistDetailPage> {
                   ),
                   onPressed: () {
                     AuthGuard.check(context, () {
-                      context.push('/home-booking', extra: {
-                        'salon': {
+                      context.push(
+                        '/home-booking',
+                        extra: {
+                          'salon': {'salonId': artist.salonId, 'name': 'Salon'},
                           'salonId': artist.salonId,
-                          'name': 'Salon',
+                          'artist': {
+                            'nailArtistId': artist.nailArtistId,
+                            'fullName': artist.fullName,
+                            'firstName': artist.firstName,
+                            'lastName': artist.lastName,
+                            'salonId': artist.salonId,
+                            'avatarUrl': artist.avatarUrl,
+                          },
+                          'artistId': artist.nailArtistId,
                         },
-                        'salonId': artist.salonId,
-                        'artist': {
-                          'nailArtistId': artist.nailArtistId,
-                          'fullName': artist.fullName,
-                          'firstName': artist.firstName,
-                          'lastName': artist.lastName,
-                          'salonId': artist.salonId,
-                          'avatarUrl': artist.avatarUrl,
-                        },
-                        'artistId': artist.nailArtistId,
-                      });
+                      );
                     });
                   },
                   icon: const Icon(

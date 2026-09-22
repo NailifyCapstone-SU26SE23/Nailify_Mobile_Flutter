@@ -428,8 +428,9 @@ class _DetailContentState extends State<_DetailContent> {
       }
       return {
         'colors': colors,
-        'colorNames':
-            colorNameSet.isEmpty ? fallbackText : colorNameSet.join(', '),
+        'colorNames': colorNameSet.isEmpty
+            ? fallbackText
+            : colorNameSet.join(', '),
       };
     } catch (_) {
       return {'colors': <Color>[], 'colorNames': fallbackText};
@@ -638,12 +639,16 @@ class _DetailContentState extends State<_DetailContent> {
                               ),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: AppColors.primary.withValues(alpha: 0.22),
+                                color: AppColors.primary.withValues(
+                                  alpha: 0.22,
+                                ),
                                 width: 1,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.primary.withValues(alpha: 0.05),
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.05,
+                                  ),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),
                                 ),
@@ -684,7 +689,10 @@ class _DetailContentState extends State<_DetailContent> {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  Localizations.localeOf(context).languageCode == 'vi'
+                                  Localizations.localeOf(
+                                            context,
+                                          ).languageCode ==
+                                          'vi'
                                       ? '$reviewsCountStr đánh giá'
                                       : '$reviewsCountStr reviews',
                                   style: const TextStyle(
@@ -748,7 +756,8 @@ class _DetailContentState extends State<_DetailContent> {
                             variant.colorJson,
                           );
                           final colors = colorDetails['colors'] as List<Color>;
-                          final colorNames = colorDetails['colorNames'] as String;
+                          final colorNames =
+                              colorDetails['colorNames'] as String;
                           if (colors.isNotEmpty || colorNames.isNotEmpty) {
                             specItems.add(
                               _buildSpecColorsCard(
@@ -856,10 +865,7 @@ class _DetailContentState extends State<_DetailContent> {
                   offset: const Offset(0, 4),
                 ),
               ],
-              border: Border.all(
-                color: const Color(0xFFF2F2F7),
-                width: 1.2,
-              ),
+              border: Border.all(color: const Color(0xFFF2F2F7), width: 1.2),
             ),
             child: SafeArea(
               top: false,
@@ -921,10 +927,7 @@ class _DetailContentState extends State<_DetailContent> {
                           borderRadius: BorderRadius.circular(14),
                         ),
                       ),
-                      child: const Icon(
-                        Icons.photo_camera_rounded,
-                        size: 22,
-                      ),
+                      child: const Icon(Icons.photo_camera_rounded, size: 22),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1008,10 +1011,7 @@ class _DetailContentState extends State<_DetailContent> {
       decoration: BoxDecoration(
         color: const Color(0xFFFFF8FA),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFFCE4EC),
-          width: 1.0,
-        ),
+        border: Border.all(color: const Color(0xFFFCE4EC), width: 1.0),
         boxShadow: [
           BoxShadow(
             color: AppColors.primary.withValues(alpha: 0.04),
@@ -1089,10 +1089,7 @@ class _DetailContentState extends State<_DetailContent> {
       decoration: BoxDecoration(
         color: const Color(0xFFFFF8FA),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFFCE4EC),
-          width: 1.0,
-        ),
+        border: Border.all(color: const Color(0xFFFCE4EC), width: 1.0),
         boxShadow: [
           BoxShadow(
             color: AppColors.primary.withValues(alpha: 0.04),
@@ -1270,9 +1267,7 @@ class _DetailContentState extends State<_DetailContent> {
                       vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: selected
-                          ? const Color(0xFFFFF7FA)
-                          : Colors.white,
+                      color: selected ? const Color(0xFFFFF7FA) : Colors.white,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: selected
@@ -1325,7 +1320,9 @@ class _DetailContentState extends State<_DetailContent> {
                               height: 18,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: selected ? AppColors.primary : Colors.transparent,
+                                color: selected
+                                    ? AppColors.primary
+                                    : Colors.transparent,
                                 border: Border.all(
                                   color: selected
                                       ? AppColors.primary
@@ -1356,7 +1353,10 @@ class _DetailContentState extends State<_DetailContent> {
                             const SizedBox(width: 3),
                             Expanded(
                               child: Text(
-                                DurationFormatter.format(method.duration, context: context),
+                                DurationFormatter.format(
+                                  method.duration,
+                                  context: context,
+                                ),
                                 style: TextStyle(
                                   color: selected
                                       ? AppColors.primary.withValues(alpha: 0.9)
@@ -1374,7 +1374,9 @@ class _DetailContentState extends State<_DetailContent> {
                         Text(
                           PriceFormatter.format(method.price),
                           style: TextStyle(
-                            color: selected ? AppColors.primary : AppColors.primaryDark,
+                            color: selected
+                                ? AppColors.primary
+                                : AppColors.primaryDark,
                             fontWeight: FontWeight.w800,
                             fontSize: 13,
                           ),

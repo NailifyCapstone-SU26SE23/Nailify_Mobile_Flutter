@@ -362,7 +362,10 @@ class _ResetPasswordShell extends StatelessWidget {
             child: Center(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 20,
+                ),
                 child: Container(
                   constraints: const BoxConstraints(maxWidth: 420),
                   child: Column(
@@ -405,12 +408,16 @@ class _ResetPasswordShell extends StatelessWidget {
                           color: Colors.white.withValues(alpha: 0.94),
                           borderRadius: BorderRadius.circular(32),
                           border: Border.all(
-                            color: AppColors.primaryLight.withValues(alpha: 0.6),
+                            color: AppColors.primaryLight.withValues(
+                              alpha: 0.6,
+                            ),
                             width: 1.2,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.primaryDark.withValues(alpha: 0.06),
+                              color: AppColors.primaryDark.withValues(
+                                alpha: 0.06,
+                              ),
                               blurRadius: 32,
                               offset: const Offset(0, 12),
                             ),
@@ -458,7 +465,10 @@ class _ResetPasswordShell extends StatelessWidget {
             right: 0,
             child: SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 8,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -496,7 +506,8 @@ class _ResetPasswordShell extends StatelessWidget {
                     // Language Switcher Pill
                     Consumer<LocaleService>(
                       builder: (context, localeService, _) {
-                        final isVi = localeService.currentLocale.languageCode == 'vi';
+                        final isVi =
+                            localeService.currentLocale.languageCode == 'vi';
                         return Container(
                           height: 38,
                           padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -504,7 +515,9 @@ class _ResetPasswordShell extends StatelessWidget {
                             color: Colors.white.withValues(alpha: 0.9),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: AppColors.primaryLight.withValues(alpha: 0.5),
+                              color: AppColors.primaryLight.withValues(
+                                alpha: 0.5,
+                              ),
                               width: 1,
                             ),
                             boxShadow: [
@@ -519,7 +532,9 @@ class _ResetPasswordShell extends StatelessWidget {
                             onTap: () => localeService.toggleLocale(),
                             borderRadius: BorderRadius.circular(20),
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -620,7 +635,10 @@ class _ResetTextField extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: AppColors.primary, width: 1.6),
+              borderSide: const BorderSide(
+                color: AppColors.primary,
+                width: 1.6,
+              ),
             ),
           ),
         ),

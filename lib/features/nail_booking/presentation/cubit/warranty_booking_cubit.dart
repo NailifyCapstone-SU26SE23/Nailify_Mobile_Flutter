@@ -31,9 +31,9 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
   WarrantyBookingCubit({
     NailBookingRepository? repository,
     PaymentApiService? paymentApiService,
-  })  : _repository = repository ?? NailBookingRepositoryImpl(),
-        _paymentApiService = paymentApiService ?? PaymentApiService(),
-        super(const WarrantyBookingState());
+  }) : _repository = repository ?? NailBookingRepositoryImpl(),
+       _paymentApiService = paymentApiService ?? PaymentApiService(),
+       super(const WarrantyBookingState());
 
   // ══════════════════════════════════════════════════════════════
   // LOAD CONTEXT
@@ -130,9 +130,7 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
           }
           return _fallbackBranch(salonId, fallbackPayload);
         }
-        await Future<void>.delayed(
-          Duration(milliseconds: 400 * (attempt + 1)),
-        );
+        await Future<void>.delayed(Duration(milliseconds: 400 * (attempt + 1)));
       }
     }
     return _fallbackBranch(salonId, fallbackPayload);
@@ -189,9 +187,7 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
           );
           return;
         }
-        await Future<void>.delayed(
-          Duration(milliseconds: 400 * (attempt + 1)),
-        );
+        await Future<void>.delayed(Duration(milliseconds: 400 * (attempt + 1)));
       }
     }
   }
@@ -223,9 +219,7 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
           );
           return;
         }
-        await Future<void>.delayed(
-          Duration(milliseconds: 400 * (attempt + 1)),
-        );
+        await Future<void>.delayed(Duration(milliseconds: 400 * (attempt + 1)));
       }
     }
   }
@@ -283,9 +277,7 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
           );
           return const [];
         }
-        await Future<void>.delayed(
-          Duration(milliseconds: 400 * (attempt + 1)),
-        );
+        await Future<void>.delayed(Duration(milliseconds: 400 * (attempt + 1)));
       }
     }
     return const [];
@@ -453,8 +445,7 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
         return false;
       }
 
-      final remaining =
-          (data['remainingSeconds'] as num?)?.toInt() ?? 300;
+      final remaining = (data['remainingSeconds'] as num?)?.toInt() ?? 300;
       if (!isClosed) {
         emit(
           state.copyWith(
@@ -669,10 +660,14 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
     if (id == null) return '';
     for (final s in state.services) {
       if (_matchServiceId(s, id)) {
-        final name = _firstNonEmptyString(
-              s,
-              const ['name', 'serviceName', 'ServiceName', 'title', 'displayName'],
-            ) ??
+        final name =
+            _firstNonEmptyString(s, const [
+              'name',
+              'serviceName',
+              'ServiceName',
+              'title',
+              'displayName',
+            ]) ??
             id;
         return name;
       }
@@ -688,10 +683,13 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
   static String? _mockServiceName(String id) {
     for (final s in _mockFallback) {
       if (_matchServiceId(s, id)) {
-        final name = _firstNonEmptyString(
-          s,
-          const ['name', 'serviceName', 'ServiceName', 'title', 'displayName'],
-        );
+        final name = _firstNonEmptyString(s, const [
+          'name',
+          'serviceName',
+          'ServiceName',
+          'title',
+          'displayName',
+        ]);
         if (name != null && name.isNotEmpty) return name;
       }
     }
@@ -701,7 +699,11 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
   /// Danh sách fallback mirror theo `BookingMockData.extraServices`. Dùng
   /// khi API trả về service không có trường tên → tránh hiển thị UUID.
   static const List<Map<String, dynamic>> _mockFallback = [
-    {'id': 'f512b732-231c-4584-b3f0-647603b1f167', 'name': 'Chà gót chân', 'price': 12000},
+    {
+      'id': 'f512b732-231c-4584-b3f0-647603b1f167',
+      'name': 'Chà gót chân',
+      'price': 12000,
+    },
     {'id': 'tay-gel', 'name': 'Tẩy gel', 'price': 30000},
     {'id': 'lam-sach-mong', 'name': 'Làm sạch móng (Cắt da)', 'price': 40000},
     {'id': 'duong-mong-co-ban', 'name': 'Dưỡng móng cơ bản', 'price': 50000},
@@ -833,11 +835,8 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
     final mergedItems = <Map<String, dynamic>>[
       ...state.selectedWarrantyItems,
       ...state.selectedExtraServices.whereType<String>().map(
-            (id) => <String, dynamic>{
-              'serviceId': id,
-              'quantity': 1,
-            },
-          ),
+        (id) => <String, dynamic>{'serviceId': id, 'quantity': 1},
+      ),
     ];
 
     final payload = <String, dynamic>{
@@ -866,10 +865,11 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
   List<Map<String, dynamic>> _buildBookingItemsForHold() {
     final items = state.selectedWarrantyItems
         .map(
-          (e) => Map<String, dynamic>.from(e)
-            ..['quantity'] = (e['quantity'] is num)
-                ? (e['quantity'] as num).toInt()
-                : (int.tryParse(e['quantity']?.toString() ?? '1') ?? 1),
+          (e) =>
+              Map<String, dynamic>.from(e)
+                ..['quantity'] = (e['quantity'] is num)
+                    ? (e['quantity'] as num).toInt()
+                    : (int.tryParse(e['quantity']?.toString() ?? '1') ?? 1),
         )
         .toList();
     // Append extra services để backend tính duration chính xác.

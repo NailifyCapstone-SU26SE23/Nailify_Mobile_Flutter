@@ -134,7 +134,8 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
                         ),
                         if (_tempSelected.isNotEmpty)
                           TextButton(
-                            onPressed: () => setState(() => _tempSelected.clear()),
+                            onPressed: () =>
+                                setState(() => _tempSelected.clear()),
                             style: TextButton.styleFrom(
                               foregroundColor: Colors.redAccent,
                               padding: EdgeInsets.zero,
@@ -143,12 +144,18 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
                             ),
                             child: const Text(
                               'Bỏ chọn',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
                             ),
                           )
                         else
                           IconButton(
-                            icon: Icon(Icons.close, color: Colors.grey.shade600),
+                            icon: Icon(
+                              Icons.close,
+                              color: Colors.grey.shade600,
+                            ),
                             onPressed: () => Navigator.pop(context),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
@@ -207,44 +214,46 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
               Expanded(
                 child: _isLoading
                     ? const Center(
-                        child: CircularProgressIndicator(color: AppColors.primary),
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                        ),
                       )
                     : _errorMessage != null
-                        ? Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.error_outline,
-                                  color: Colors.grey.shade400,
-                                  size: 48,
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  _errorMessage!,
-                                  style: const TextStyle(color: Colors.grey),
-                                ),
-                                const SizedBox(height: 12),
-                                FilledButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      _isLoading = true;
-                                      _errorMessage = null;
-                                    });
-                                    _fetchVouchers();
-                                  },
-                                  child: Text(S.of(context).bookingRetry),
-                                ),
-                              ],
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              color: Colors.grey.shade400,
+                              size: 48,
                             ),
-                          )
-                        : TabBarView(
-                            controller: _tabController,
-                            children: [
-                              _buildList(_discounts, scrollController),
-                              _buildList(_vouchers, scrollController),
-                            ],
-                          ),
+                            const SizedBox(height: 12),
+                            Text(
+                              _errorMessage!,
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                            const SizedBox(height: 12),
+                            FilledButton(
+                              onPressed: () {
+                                setState(() {
+                                  _isLoading = true;
+                                  _errorMessage = null;
+                                });
+                                _fetchVouchers();
+                              },
+                              child: Text(S.of(context).bookingRetry),
+                            ),
+                          ],
+                        ),
+                      )
+                    : TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _buildList(_discounts, scrollController),
+                          _buildList(_vouchers, scrollController),
+                        ],
+                      ),
               ),
 
               // ──── FOOTER ────
@@ -279,7 +288,9 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
                         ),
                       ),
                       child: Text(
-                        _tempSelected.isEmpty ? 'Bỏ qua (Không áp dụng)' : 'Xác nhận áp dụng',
+                        _tempSelected.isEmpty
+                            ? 'Bỏ qua (Không áp dụng)'
+                            : 'Xác nhận áp dụng',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,

@@ -133,9 +133,14 @@ class HomeServices extends StatelessWidget {
                       }
                     },
                     borderRadius: BorderRadius.circular(36),
-                    splashColor: const Color(0xFFFF4B72).withValues(alpha: 0.15),
+                    splashColor: const Color(
+                      0xFFFF4B72,
+                    ).withValues(alpha: 0.15),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 4,
+                      ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -165,24 +170,31 @@ class HomeServices extends StatelessWidget {
                                 color: Colors.white,
                               ),
                               child: ClipOval(
-                                child: iconUrl != null && iconUrl.startsWith('http')
+                                child:
+                                    iconUrl != null &&
+                                        iconUrl.startsWith('http')
                                     ? Image.network(
                                         iconUrl,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) => Icon(
-                                          Icons.spa_rounded,
-                                          color: gradient.first,
-                                          size: 26,
-                                        ),
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                Icon(
+                                                  Icons.spa_rounded,
+                                                  color: gradient.first,
+                                                  size: 26,
+                                                ),
                                       )
                                     : Image.asset(
-                                        imagePath ?? 'assets/images/image 1.png',
+                                        imagePath ??
+                                            'assets/images/image 1.png',
                                         fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) => Icon(
-                                          Icons.spa_rounded,
-                                          color: gradient.first,
-                                          size: 26,
-                                        ),
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                Icon(
+                                                  Icons.spa_rounded,
+                                                  color: gradient.first,
+                                                  size: 26,
+                                                ),
                                       ),
                               ),
                             ),
@@ -287,5 +299,3 @@ class HomeServices extends StatelessWidget {
     );
   }
 }
-
-

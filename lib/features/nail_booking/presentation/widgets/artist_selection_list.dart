@@ -75,8 +75,10 @@ class _ArtistSelectionListState extends State<ArtistSelectionList> {
       });
     } else if (_selectedSort == 'name') {
       sorted.sort((a, b) {
-        final nameA = (a is Map ? (a['fullName'] ?? a['name'] ?? '') : '').toString();
-        final nameB = (b is Map ? (b['fullName'] ?? b['name'] ?? '') : '').toString();
+        final nameA = (a is Map ? (a['fullName'] ?? a['name'] ?? '') : '')
+            .toString();
+        final nameB = (b is Map ? (b['fullName'] ?? b['name'] ?? '') : '')
+            .toString();
         return nameA.compareTo(nameB);
       });
     }
@@ -95,8 +97,6 @@ class _ArtistSelectionListState extends State<ArtistSelectionList> {
         return S.of(context).bookingArtistHighestRating;
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -158,7 +158,10 @@ class _ArtistSelectionListState extends State<ArtistSelectionList> {
               elevation: 4,
               color: Colors.white,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [Colors.amber.shade50, Colors.amber.shade100],
@@ -176,7 +179,11 @@ class _ArtistSelectionListState extends State<ArtistSelectionList> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.tune_rounded, size: 13, color: Colors.amber),
+                    const Icon(
+                      Icons.tune_rounded,
+                      size: 13,
+                      color: Colors.amber,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       _getSortLabel(context, _selectedSort),
@@ -200,14 +207,22 @@ class _ArtistSelectionListState extends State<ArtistSelectionList> {
                   value: 'rating',
                   child: Row(
                     children: [
-                      const Icon(Icons.star_rounded, size: 16, color: Colors.amber),
+                      const Icon(
+                        Icons.star_rounded,
+                        size: 16,
+                        color: Colors.amber,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         S.of(context).bookingArtistHighestRating,
                         style: TextStyle(
                           fontSize: 12.5,
-                          fontWeight: _selectedSort == 'rating' ? FontWeight.bold : FontWeight.normal,
-                          color: _selectedSort == 'rating' ? AppColors.primary : AppColors.textPrimary,
+                          fontWeight: _selectedSort == 'rating'
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: _selectedSort == 'rating'
+                              ? AppColors.primary
+                              : AppColors.textPrimary,
                         ),
                       ),
                     ],
@@ -217,14 +232,22 @@ class _ArtistSelectionListState extends State<ArtistSelectionList> {
                   value: 'experience',
                   child: Row(
                     children: [
-                      const Icon(Icons.auto_awesome_rounded, size: 16, color: AppColors.primary),
+                      const Icon(
+                        Icons.auto_awesome_rounded,
+                        size: 16,
+                        color: AppColors.primary,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         S.of(context).bookingSortHighExpertise,
                         style: TextStyle(
                           fontSize: 12.5,
-                          fontWeight: _selectedSort == 'experience' ? FontWeight.bold : FontWeight.normal,
-                          color: _selectedSort == 'experience' ? AppColors.primary : AppColors.textPrimary,
+                          fontWeight: _selectedSort == 'experience'
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: _selectedSort == 'experience'
+                              ? AppColors.primary
+                              : AppColors.textPrimary,
                         ),
                       ),
                     ],
@@ -234,14 +257,22 @@ class _ArtistSelectionListState extends State<ArtistSelectionList> {
                   value: 'name',
                   child: Row(
                     children: [
-                      const Icon(Icons.sort_by_alpha_rounded, size: 16, color: Colors.blue),
+                      const Icon(
+                        Icons.sort_by_alpha_rounded,
+                        size: 16,
+                        color: Colors.blue,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         S.of(context).bookingSortNameAZ,
                         style: TextStyle(
                           fontSize: 12.5,
-                          fontWeight: _selectedSort == 'name' ? FontWeight.bold : FontWeight.normal,
-                          color: _selectedSort == 'name' ? AppColors.primary : AppColors.textPrimary,
+                          fontWeight: _selectedSort == 'name'
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color: _selectedSort == 'name'
+                              ? AppColors.primary
+                              : AppColors.textPrimary,
                         ),
                       ),
                     ],
@@ -285,8 +316,8 @@ class _ArtistSelectionListState extends State<ArtistSelectionList> {
           )
         else
           ...remaining.asMap().entries.map(
-                (entry) => _buildArtistTile(entry.value, index: entry.key),
-              ),
+            (entry) => _buildArtistTile(entry.value, index: entry.key),
+          ),
       ],
     );
   }
@@ -309,9 +340,7 @@ class _ArtistSelectionListState extends State<ArtistSelectionList> {
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isSelected
-              ? AppColors.primary
-              : const Color(0xFFFFE4EC),
+          color: isSelected ? AppColors.primary : const Color(0xFFFFE4EC),
           width: isSelected ? 2 : 1,
         ),
         boxShadow: [
@@ -373,10 +402,7 @@ class _ArtistSelectionListState extends State<ArtistSelectionList> {
                 const SizedBox(height: 3),
                 Text(
                   S.of(context).bookingArtistAutoAssignDesc,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
                 ),
               ],
             ),
@@ -410,7 +436,10 @@ class _ArtistSelectionListState extends State<ArtistSelectionList> {
         artist['nailArtistId']?.toString() ?? artist['id']?.toString() ?? '';
     final bool isSelected =
         !widget.noArtistSelected && widget.selectedStylistId == artistId;
-    final String name = artist['fullName']?.toString() ?? artist['name']?.toString() ?? 'Thợ nail';
+    final String name =
+        artist['fullName']?.toString() ??
+        artist['name']?.toString() ??
+        'Thợ nail';
     final num ratingNum = (artist['rating'] as num?) ?? 5.0;
 
     return GestureDetector(
@@ -430,8 +459,8 @@ class _ArtistSelectionListState extends State<ArtistSelectionList> {
             color: isSelected
                 ? AppColors.primary
                 : (badgeLabel != null
-                    ? AppColors.primary.withValues(alpha: 0.5)
-                    : const Color(0xFFF2ECE6)),
+                      ? AppColors.primary.withValues(alpha: 0.5)
+                      : const Color(0xFFF2ECE6)),
             width: isSelected ? 2 : (badgeLabel != null ? 1.5 : 1),
           ),
           boxShadow: [
@@ -473,10 +502,11 @@ class _ArtistSelectionListState extends State<ArtistSelectionList> {
                 backgroundColor: Colors.pink.shade50,
                 backgroundImage:
                     artist['avatarUrl'] != null &&
-                            '${artist['avatarUrl']}'.isNotEmpty
-                        ? NetworkImage('${artist['avatarUrl']}')
-                        : null,
-                child: artist['avatarUrl'] == null ||
+                        '${artist['avatarUrl']}'.isNotEmpty
+                    ? NetworkImage('${artist['avatarUrl']}')
+                    : null,
+                child:
+                    artist['avatarUrl'] == null ||
                         '${artist['avatarUrl']}'.isEmpty
                     ? const Icon(
                         Icons.person_rounded,
@@ -494,7 +524,9 @@ class _ArtistSelectionListState extends State<ArtistSelectionList> {
                   if (badgeLabel != null) ...[
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       margin: const EdgeInsets.only(bottom: 6),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(

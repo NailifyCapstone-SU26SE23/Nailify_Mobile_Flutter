@@ -123,18 +123,20 @@ class HomeBanner extends StatelessWidget {
 
                       // Nút "Đặt Lịch" nhỏ gọn dạng pill
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16),
                           gradient: const LinearGradient(
-                            colors: [
-                              Color(0xFFFF527B),
-                              Color(0xFFFF7E53),
-                            ],
+                            colors: [Color(0xFFFF527B), Color(0xFFFF7E53)],
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFFF527B).withValues(alpha: 0.3),
+                              color: const Color(
+                                0xFFFF527B,
+                              ).withValues(alpha: 0.3),
                               blurRadius: 6,
                               offset: const Offset(0, 2),
                             ),
@@ -172,4 +174,3 @@ class HomeBanner extends StatelessWidget {
     );
   }
 }
-

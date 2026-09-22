@@ -102,10 +102,12 @@ class BookingApiService {
     if (salon == null || salon is! Map) return false;
 
     // 1. Status string check
-    final status = (salon['status'] ?? salon['salonStatus'] ?? salon['state'])
-        ?.toString()
-        .trim()
-        .toLowerCase() ?? '';
+    final status =
+        (salon['status'] ?? salon['salonStatus'] ?? salon['state'])
+            ?.toString()
+            .trim()
+            .toLowerCase() ??
+        '';
     if (status == 'closed' ||
         status == 'close' ||
         status == 'inactive' ||
@@ -144,15 +146,12 @@ class BookingApiService {
       final now = DateTime.now();
       final currentDayOfWeek = now.weekday % 7;
 
-      final todayHours = operatingHours
-          .whereType<Map>()
-          .where((h) {
-            final day = h['dayOfWeek'];
-            if (day == null) return false;
-            final d = day is num ? day.toInt() : int.tryParse(day.toString());
-            return d == currentDayOfWeek;
-          })
-          .toList();
+      final todayHours = operatingHours.whereType<Map>().where((h) {
+        final day = h['dayOfWeek'];
+        if (day == null) return false;
+        final d = day is num ? day.toInt() : int.tryParse(day.toString());
+        return d == currentDayOfWeek;
+      }).toList();
 
       if (todayHours.isNotEmpty) {
         final allClosedToday = todayHours.every((h) {
@@ -227,8 +226,7 @@ class BookingApiService {
     if (nailVariantId > 0) {
       items.add({
         'nailVariantId': nailVariantId,
-        if (shapeMethodConfigId != null)
-          'shapeMethodConfigId': shapeMethodConfigId,
+        'shapeMethodConfigId': ?shapeMethodConfigId,
         'quantity': 1,
       });
     }
@@ -240,10 +238,7 @@ class BookingApiService {
       }
     }
     for (final entry in serviceCounts.entries) {
-      items.add({
-        'serviceId': entry.key,
-        'quantity': entry.value,
-      });
+      items.add({'serviceId': entry.key, 'quantity': entry.value});
     }
     return items;
   }
@@ -256,12 +251,9 @@ class BookingApiService {
     int? shapeMethodConfigId,
     List<Map<String, dynamic>>? bookingItems,
   }) async {
-    final itemsPayload = bookingItems ??
-        _buildBookingItems(
-          nailVariantId,
-          serviceIds,
-          shapeMethodConfigId,
-        );
+    final itemsPayload =
+        bookingItems ??
+        _buildBookingItems(nailVariantId, serviceIds, shapeMethodConfigId);
     final response = await _apiClient.post(
       '/Bookings/suggested-artists',
       data: {
@@ -506,12 +498,15 @@ class BookingApiService {
     // nên cần check thủ công để ném exception cho UI hiển thị message.
     final body = response.data;
     if (body is Map) {
-      final isSucceeded =
-          body['isSucceeded'] ?? body['IsSucceeded'] ?? true;
+      final isSucceeded = body['isSucceeded'] ?? body['IsSucceeded'] ?? true;
       if (isSucceeded == false) {
-        final msg = (body['message'] ?? body['Message'] ?? body['error'] ?? body['Error'])
-            ?.toString()
-            .trim();
+        final msg =
+            (body['message'] ??
+                    body['Message'] ??
+                    body['error'] ??
+                    body['Error'])
+                ?.toString()
+                .trim();
         throw AppException(
           message: (msg != null && msg.isNotEmpty)
               ? msg
@@ -642,7 +637,11 @@ class BookingApiService {
   Future<List<dynamic>> getNailArtistsBySalon(String salonId) async {
     final response = await _apiClient.get(
       '/NailArtists',
-      queryParameters: {'PageNumber': 1, 'PageSize': 50, 'salonId': salonId, 'status': 'Active'
+      queryParameters: {
+        'PageNumber': 1,
+        'PageSize': 50,
+        'salonId': salonId,
+        'status': 'Active',
       },
     );
     final items = response.data['data']['items'] as List<dynamic>? ?? [];

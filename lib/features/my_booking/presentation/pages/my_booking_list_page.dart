@@ -601,16 +601,15 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     final bookingIdStr = booking['bookingId']?.toString() ?? '';
     final canRate = (rawStatus == 'Completed' && booking['isRated'] == false);
 
-    final canReschedule =
-        rawStatus == 'Approved' && bookingIdStr.isNotEmpty;
+    final canReschedule = rawStatus == 'Approved' && bookingIdStr.isNotEmpty;
 
-    final warrantyForBookingId = booking['warrantyForBookingId']?.toString() ??
+    final warrantyForBookingId =
+        booking['warrantyForBookingId']?.toString() ??
         booking['WarrantyForBookingId']?.toString();
     final isWarrantyBooking =
         warrantyForBookingId != null && warrantyForBookingId.isNotEmpty;
-    final hasWarrantyRequested = _readBool(
-          booking['isWarrantied'] ?? booking['IsWarrantied'],
-        ) ||
+    final hasWarrantyRequested =
+        _readBool(booking['isWarrantied'] ?? booking['IsWarrantied']) ||
         _hasWarranty(bookingIdStr);
 
     return GestureDetector(
@@ -785,7 +784,10 @@ class _MyBookingListPageState extends State<MyBookingListPage>
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary, width: 1.2),
+                    side: const BorderSide(
+                      color: AppColors.primary,
+                      width: 1.2,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -850,47 +852,47 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     RescheduleBookingDialog.show(
       context: context,
       bookingId: bookingIdStr,
-        onConfirm: (newDate, newTime, reason) async {
-          try {
-            final success = await _apiService.requestRescheduleBooking(
-              bookingIdStr,
-              newDate: newDate,
-              newTime: newTime,
-              reason: reason,
-            );
-            if (!context.mounted) return false;
-            if (success) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(S.of(context).bookingRescheduleSuccess),
-                  backgroundColor: Colors.green,
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-              _fetchBookings(refresh: true);
-              _tabController.animateTo(2);
-              return true;
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(S.of(context).bookingRescheduleFail),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              return false;
-            }
-          } catch (e) {
-            if (!context.mounted) return false;
+      onConfirm: (newDate, newTime, reason) async {
+        try {
+          final success = await _apiService.requestRescheduleBooking(
+            bookingIdStr,
+            newDate: newDate,
+            newTime: newTime,
+            reason: reason,
+          );
+          if (!context.mounted) return false;
+          if (success) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Lỗi: ${e.toString()}'),
+                content: Text(S.of(context).bookingRescheduleSuccess),
+                backgroundColor: Colors.green,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+            _fetchBookings(refresh: true);
+            _tabController.animateTo(2);
+            return true;
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(S.of(context).bookingRescheduleFail),
                 backgroundColor: Colors.red,
               ),
             );
             return false;
           }
-        },
-      );
+        } catch (e) {
+          if (!context.mounted) return false;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Lỗi: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return false;
+        }
+      },
+    );
   }
 
   bool _readBool(dynamic value) {
@@ -959,8 +961,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
         }
         map['customerNailName'] = item['customerNailName']?.toString();
 
-        final customerNailRequestId =
-            item['customerNailRequestId']?.toString();
+        final customerNailRequestId = item['customerNailRequestId']?.toString();
         if (customerNailRequestId != null) {
           map['customerNailRequestId'] = customerNailRequestId;
         }
@@ -1043,9 +1044,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
       context: context,
       barrierDismissible: true,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         contentPadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1089,8 +1088,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
             onPressed: () => Navigator.of(ctx).pop(),
             style: TextButton.styleFrom(
               foregroundColor: AppColors.primary,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
             ),
             child: Text(
               S.of(context).warrantyExpiredBackBtn,

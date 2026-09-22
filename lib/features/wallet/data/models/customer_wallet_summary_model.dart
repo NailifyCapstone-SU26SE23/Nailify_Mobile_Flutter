@@ -30,7 +30,8 @@ class CustomerWalletSummaryModel {
       balance: (json['balance'] as num?)?.toDouble() ?? 0.0,
       frozenBalance: (json['frozenBalance'] as num?)?.toDouble() ?? 0.0,
       availableBalance: (json['availableBalance'] as num?)?.toDouble() ?? 0.0,
-      loyaltyPoints: json['loyaltyPoints'] as int? ?? json['loyaltyPoint'] as int? ?? 0,
+      loyaltyPoints:
+          json['loyaltyPoints'] as int? ?? json['loyaltyPoint'] as int? ?? 0,
       lifetimePoints: json['lifetimePoints'] as int? ?? 0,
       loyaltyTierName: json['loyaltyTierName']?.toString(),
       status: json['status']?.toString() ?? 'Active',

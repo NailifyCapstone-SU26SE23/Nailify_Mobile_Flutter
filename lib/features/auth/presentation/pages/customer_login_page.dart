@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -59,8 +58,7 @@ class _LoginPageState extends State<LoginPage> {
       // 2. Ưu tiên: Nếu là AppException có message Tiếng Việt cụ thể
       else if (e is AppException &&
           e.message.isNotEmpty &&
-          e.message !=
-              'Hệ thống đang gặp sự cố. Vui lòng thử lại sau.') {
+          e.message != 'Hệ thống đang gặp sự cố. Vui lòng thử lại sau.') {
         // Phân loại: message có chứa từ khoá "không chính xác" → sai mật khẩu
         final lower = e.message.toLowerCase();
         if (lower.contains('không chính xác') ||
@@ -82,9 +80,12 @@ class _LoginPageState extends State<LoginPage> {
         final data = e.response?.data;
         String? serverMsg;
         if (data is Map) {
-          serverMsg = (data['message'] ?? data['Message'] ??
-                  data['error'] ?? data['Error'])
-              ?.toString();
+          serverMsg =
+              (data['message'] ??
+                      data['Message'] ??
+                      data['error'] ??
+                      data['Error'])
+                  ?.toString();
         }
         final status = e.response?.statusCode;
         if (serverMsg != null && serverMsg.isNotEmpty) {
@@ -282,7 +283,10 @@ class _LoginPageState extends State<LoginPage> {
             child: Center(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
                 child: Container(
                   constraints: const BoxConstraints(maxWidth: 420),
                   child: Column(
@@ -300,7 +304,9 @@ class _LoginPageState extends State<LoginPage> {
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.primary.withValues(alpha: 0.2),
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.2,
+                                  ),
                                   blurRadius: 24,
                                   spreadRadius: 2,
                                   offset: const Offset(0, 8),
@@ -337,7 +343,9 @@ class _LoginPageState extends State<LoginPage> {
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
-                              color: AppColors.textSecondary.withValues(alpha: 0.85),
+                              color: AppColors.textSecondary.withValues(
+                                alpha: 0.85,
+                              ),
                               letterSpacing: 0.3,
                             ),
                           ),
@@ -353,12 +361,16 @@ class _LoginPageState extends State<LoginPage> {
                           color: Colors.white.withValues(alpha: 0.94),
                           borderRadius: BorderRadius.circular(32),
                           border: Border.all(
-                            color: AppColors.primaryLight.withValues(alpha: 0.6),
+                            color: AppColors.primaryLight.withValues(
+                              alpha: 0.6,
+                            ),
                             width: 1.2,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.primaryDark.withValues(alpha: 0.06),
+                              color: AppColors.primaryDark.withValues(
+                                alpha: 0.06,
+                              ),
                               blurRadius: 32,
                               offset: const Offset(0, 12),
                             ),
@@ -414,7 +426,9 @@ class _LoginPageState extends State<LoginPage> {
                               decoration: InputDecoration(
                                 hintText: 'nhapemail@example.com',
                                 hintStyle: TextStyle(
-                                  color: AppColors.textSecondary.withValues(alpha: 0.5),
+                                  color: AppColors.textSecondary.withValues(
+                                    alpha: 0.5,
+                                  ),
                                   fontSize: 13.5,
                                 ),
                                 prefixIcon: const Icon(
@@ -423,7 +437,9 @@ class _LoginPageState extends State<LoginPage> {
                                   size: 20,
                                 ),
                                 filled: true,
-                                fillColor: AppColors.primarySurface.withValues(alpha: 0.4),
+                                fillColor: AppColors.primarySurface.withValues(
+                                  alpha: 0.4,
+                                ),
                                 contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 16,
                                   vertical: 15,
@@ -431,7 +447,9 @@ class _LoginPageState extends State<LoginPage> {
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16),
                                   borderSide: BorderSide(
-                                    color: AppColors.borderLight.withValues(alpha: 0.7),
+                                    color: AppColors.borderLight.withValues(
+                                      alpha: 0.7,
+                                    ),
                                     width: 1,
                                   ),
                                 ),
@@ -467,7 +485,9 @@ class _LoginPageState extends State<LoginPage> {
                               decoration: InputDecoration(
                                 hintText: '••••••••',
                                 hintStyle: TextStyle(
-                                  color: AppColors.textSecondary.withValues(alpha: 0.5),
+                                  color: AppColors.textSecondary.withValues(
+                                    alpha: 0.5,
+                                  ),
                                   fontSize: 13.5,
                                 ),
                                 prefixIcon: const Icon(
@@ -480,7 +500,9 @@ class _LoginPageState extends State<LoginPage> {
                                     _obscurePassword
                                         ? Icons.visibility_off_outlined
                                         : Icons.visibility_outlined,
-                                    color: AppColors.textSecondary.withValues(alpha: 0.6),
+                                    color: AppColors.textSecondary.withValues(
+                                      alpha: 0.6,
+                                    ),
                                     size: 20,
                                   ),
                                   onPressed: () {
@@ -490,7 +512,9 @@ class _LoginPageState extends State<LoginPage> {
                                   },
                                 ),
                                 filled: true,
-                                fillColor: AppColors.primarySurface.withValues(alpha: 0.4),
+                                fillColor: AppColors.primarySurface.withValues(
+                                  alpha: 0.4,
+                                ),
                                 contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 16,
                                   vertical: 15,
@@ -498,7 +522,9 @@ class _LoginPageState extends State<LoginPage> {
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(16),
                                   borderSide: BorderSide(
-                                    color: AppColors.borderLight.withValues(alpha: 0.7),
+                                    color: AppColors.borderLight.withValues(
+                                      alpha: 0.7,
+                                    ),
                                     width: 1,
                                   ),
                                 ),
@@ -525,9 +551,13 @@ class _LoginPageState extends State<LoginPage> {
                                   );
                                 },
                                 style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 4,
+                                    horizontal: 4,
+                                  ),
                                   minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
                                 ),
                                 child: const Text(
                                   'Quên mật khẩu?',
@@ -549,7 +579,9 @@ class _LoginPageState extends State<LoginPage> {
                                 borderRadius: BorderRadius.circular(18),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.primary.withValues(alpha: 0.38),
+                                    color: AppColors.primary.withValues(
+                                      alpha: 0.38,
+                                    ),
                                     blurRadius: 16,
                                     offset: const Offset(0, 6),
                                   ),
@@ -574,7 +606,8 @@ class _LoginPageState extends State<LoginPage> {
                                         ),
                                       )
                                     : const Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
                                           Text(
                                             'ĐĂNG NHẬP',
@@ -603,16 +636,22 @@ class _LoginPageState extends State<LoginPage> {
                               children: [
                                 Expanded(
                                   child: Divider(
-                                    color: AppColors.borderLight.withValues(alpha: 0.8),
+                                    color: AppColors.borderLight.withValues(
+                                      alpha: 0.8,
+                                    ),
                                     thickness: 1,
                                   ),
                                 ),
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                  ),
                                   child: Text(
                                     'hoặc đăng nhập với',
                                     style: TextStyle(
-                                      color: AppColors.textSecondary.withValues(alpha: 0.8),
+                                      color: AppColors.textSecondary.withValues(
+                                        alpha: 0.8,
+                                      ),
                                       fontSize: 12,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -620,7 +659,9 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                                 Expanded(
                                   child: Divider(
-                                    color: AppColors.borderLight.withValues(alpha: 0.8),
+                                    color: AppColors.borderLight.withValues(
+                                      alpha: 0.8,
+                                    ),
                                     thickness: 1,
                                   ),
                                 ),
@@ -633,14 +674,20 @@ class _LoginPageState extends State<LoginPage> {
                             SizedBox(
                               height: 50,
                               child: OutlinedButton(
-                                onPressed: _isGoogleSubmitting ? null : _handleGoogleLogin,
+                                onPressed: _isGoogleSubmitting
+                                    ? null
+                                    : _handleGoogleLogin,
                                 style: OutlinedButton.styleFrom(
                                   backgroundColor: Colors.white,
                                   foregroundColor: AppColors.textPrimary,
                                   elevation: 1,
-                                  shadowColor: Colors.black.withValues(alpha: 0.05),
+                                  shadowColor: Colors.black.withValues(
+                                    alpha: 0.05,
+                                  ),
                                   side: BorderSide(
-                                    color: AppColors.borderLight.withValues(alpha: 0.9),
+                                    color: AppColors.borderLight.withValues(
+                                      alpha: 0.9,
+                                    ),
                                     width: 1.2,
                                   ),
                                   shape: RoundedRectangleBorder(
@@ -657,7 +704,8 @@ class _LoginPageState extends State<LoginPage> {
                                         ),
                                       )
                                     : Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
                                           Container(
                                             padding: const EdgeInsets.all(4),
@@ -732,7 +780,10 @@ class _LoginPageState extends State<LoginPage> {
             right: 0,
             child: SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 8,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -770,7 +821,8 @@ class _LoginPageState extends State<LoginPage> {
                     // Language Switcher Pill
                     Consumer<LocaleService>(
                       builder: (context, localeService, _) {
-                        final isVi = localeService.currentLocale.languageCode == 'vi';
+                        final isVi =
+                            localeService.currentLocale.languageCode == 'vi';
                         return Container(
                           height: 38,
                           padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -778,7 +830,9 @@ class _LoginPageState extends State<LoginPage> {
                             color: Colors.white.withValues(alpha: 0.9),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: AppColors.primaryLight.withValues(alpha: 0.5),
+                              color: AppColors.primaryLight.withValues(
+                                alpha: 0.5,
+                              ),
                               width: 1,
                             ),
                             boxShadow: [
@@ -793,7 +847,9 @@ class _LoginPageState extends State<LoginPage> {
                             onTap: () => localeService.toggleLocale(),
                             borderRadius: BorderRadius.circular(20),
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -828,4 +884,3 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 }
-

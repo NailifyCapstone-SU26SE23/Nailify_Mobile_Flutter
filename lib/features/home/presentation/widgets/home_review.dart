@@ -16,7 +16,7 @@ class CustomerReviews extends StatelessWidget {
     this.isLoading = false,
   });
 
-  @override 
+  @override
   Widget build(BuildContext context) {
     if (isLoading && reviews.isEmpty) {
       return _buildSkeleton(context);
@@ -25,7 +25,7 @@ class CustomerReviews extends StatelessWidget {
     if (reviews.isEmpty) {
       return const SizedBox.shrink();
     }
- 
+
     final gradients = [
       [const Color(0xFFFF4B72), const Color(0xFFFF7E53)],
       [const Color(0xFFB39DDB), const Color(0xFF7E57C2)],
@@ -191,8 +191,12 @@ class CustomerReviews extends StatelessWidget {
                 children: List.generate(
                   5,
                   (index) => Icon(
-                    index < stars ? Icons.star_rounded : Icons.star_outline_rounded,
-                    color: index < stars ? const Color(0xFFFFD54F) : Colors.grey.shade300,
+                    index < stars
+                        ? Icons.star_rounded
+                        : Icons.star_outline_rounded,
+                    color: index < stars
+                        ? const Color(0xFFFFD54F)
+                        : Colors.grey.shade300,
                     size: 12,
                   ),
                 ),
@@ -243,9 +247,13 @@ class CustomerReviews extends StatelessWidget {
                         child: Image.network(
                           imageUrl,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
+                          errorBuilder: (_, _, _) => Container(
                             color: Colors.grey.shade200,
-                            child: const Icon(Icons.broken_image_rounded, size: 20, color: Colors.grey),
+                            child: const Icon(
+                              Icons.broken_image_rounded,
+                              size: 20,
+                              color: Colors.grey,
+                            ),
                           ),
                         ),
                       ),
@@ -370,5 +378,3 @@ class CustomerReviews extends StatelessWidget {
     );
   }
 }
-
-

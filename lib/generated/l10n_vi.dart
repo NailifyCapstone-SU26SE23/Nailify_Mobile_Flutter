@@ -54,6 +54,9 @@ class SVi extends S {
   String get cancel => 'Hủy';
 
   @override
+  String get cancelBookingReasonMinLength => 'Yêu cầu ít nhất 5 ký tự';
+
+  @override
   String get confirm => 'Xác nhận';
 
   @override
@@ -519,7 +522,7 @@ class SVi extends S {
       'Tự động chọn họa tiết & phụ kiện tinh tế';
 
   @override
-  String get generateDesignButton => 'GENERATE THIẾT KẾ';
+  String get generateDesignButton => 'TẠO THIẾT KẾ';
 
   @override
   String get tryOnHintText =>

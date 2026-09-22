@@ -33,8 +33,9 @@ class LoyaltyRewardsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final baseColor = tier?.parsedBackgroundColor ?? AppColors.primary;
-    final tierColor =
-        baseColor == AppColors.primary ? const Color(0xFF6B46C1) : baseColor;
+    final tierColor = baseColor == AppColors.primary
+        ? const Color(0xFF6B46C1)
+        : baseColor;
     final tierTextColor = tier?.parsedTextColor ?? Colors.white;
 
     return Container(
@@ -181,7 +182,9 @@ class LoyaltyRewardsCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(10),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFFFFD700).withValues(alpha: 0.6),
+                                color: const Color(
+                                  0xFFFFD700,
+                                ).withValues(alpha: 0.6),
                                 blurRadius: 8,
                               ),
                             ],
@@ -414,9 +417,7 @@ class LoyaltyRewardsCard extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.25),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.15),

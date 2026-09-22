@@ -54,6 +54,9 @@ class SEn extends S {
   String get cancel => 'Cancel';
 
   @override
+  String get cancelBookingReasonMinLength => 'Requires at least 5 characters';
+
+  @override
   String get confirm => 'Confirm';
 
   @override

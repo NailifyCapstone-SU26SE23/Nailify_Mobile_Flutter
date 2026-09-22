@@ -194,7 +194,8 @@ class ApiClient {
         if (msg.isNotEmpty) {
           // Phân loại lỗi INVALID_CREDENTIALS cho endpoint login
           if (path.contains('/Auth/login') &&
-              (statusCode == 400 || statusCode == 401 ||
+              (statusCode == 400 ||
+                  statusCode == 401 ||
                   msg.toLowerCase().contains('không chính xác') ||
                   msg.toLowerCase().contains('invalid') ||
                   msg.toLowerCase().contains('credentials'))) {
@@ -245,19 +246,19 @@ class ApiClient {
           );
         }
         if (bodyMap != null) {
-          final serverMsg = (bodyMap['message'] ??
-                  bodyMap['Message'] ??
-                  bodyMap['error'] ??
-                  bodyMap['Error'] ??
-                  bodyMap['title'] ??
-                  bodyMap['detail'])
-              ?.toString()
-              .trim();
+          final serverMsg =
+              (bodyMap['message'] ??
+                      bodyMap['Message'] ??
+                      bodyMap['error'] ??
+                      bodyMap['Error'] ??
+                      bodyMap['title'] ??
+                      bodyMap['detail'])
+                  ?.toString()
+                  .trim();
           if (serverMsg != null && serverMsg.isNotEmpty) {
             return AppException(
               message: serverMsg,
-              code:
-                  statusCode != null ? 'HTTP_$statusCode' : 'SERVER_MESSAGE',
+              code: statusCode != null ? 'HTTP_$statusCode' : 'SERVER_MESSAGE',
               data: bodyMap,
             );
           }

@@ -38,7 +38,9 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
     final qrCode = widget.paymentData['qrCode']?.toString() ?? '';
     final paymentUrl = widget.paymentData['paymentUrl']?.toString() ?? '';
 
-    if (status == 'PAID' || status == 'SUCCESS' || (qrCode.isEmpty && paymentUrl.isEmpty)) {
+    if (status == 'PAID' ||
+        status == 'SUCCESS' ||
+        (qrCode.isEmpty && paymentUrl.isEmpty)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _navigateOnce('/payment-success');
       });
@@ -206,7 +208,9 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
                                     child: CircularProgressIndicator(
                                       strokeWidth: 1.5,
                                       valueColor: AlwaysStoppedAnimation<Color>(
-                                        AppColors.primary.withValues(alpha: 0.8),
+                                        AppColors.primary.withValues(
+                                          alpha: 0.8,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -230,7 +234,9 @@ class _PaymentQrPageState extends State<PaymentQrPage> {
                                     borderRadius: BorderRadius.circular(20),
                                     boxShadow: [
                                       BoxShadow(
-                                          color: Colors.pink.withValues(alpha: 0.06),
+                                        color: Colors.pink.withValues(
+                                          alpha: 0.06,
+                                        ),
                                         blurRadius: 16,
                                         spreadRadius: 2,
                                       ),

@@ -351,11 +351,7 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
 
     if (widget.selectedDate != null) {
       final now = DateTime.now();
-      final DateTime todayStart = DateTime(
-        now.year,
-        now.month,
-        now.day,
-      );
+      final DateTime todayStart = DateTime(now.year, now.month, now.day);
       final DateTime selectedDateStart = DateTime(
         widget.selectedDate!.year,
         widget.selectedDate!.month,

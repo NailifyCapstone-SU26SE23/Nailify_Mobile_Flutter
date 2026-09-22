@@ -31,7 +31,9 @@ class HomePage extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 32),
             child: Center(
               child: Container(
-                constraints: const BoxConstraints(maxWidth: 402), // Responsive phone width
+                constraints: const BoxConstraints(
+                  maxWidth: 402,
+                ), // Responsive phone width
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -119,10 +121,7 @@ class HomeOurSalonsBanner extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: const Color(0xFFFFE3ED),
-            width: 1,
-          ),
+          border: Border.all(color: const Color(0xFFFFE3ED), width: 1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -198,5 +197,3 @@ class HomeOurSalonsBanner extends StatelessWidget {
     );
   }
 }
-
-

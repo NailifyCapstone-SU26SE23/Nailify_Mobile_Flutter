@@ -194,7 +194,9 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
       r'#?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}',
     );
 
-    String cleaned = msg.replaceAll(uuidRegex, '').replaceAll(objectIdRegex, '');
+    String cleaned = msg
+        .replaceAll(uuidRegex, '')
+        .replaceAll(objectIdRegex, '');
 
     cleaned = cleaned
         .replaceAll(RegExp(r'\(\s*[Mm]ã\s*:\s*\)'), '')
@@ -582,10 +584,7 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
             }
 
             return Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 24,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
               decoration: const BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24)),

@@ -153,13 +153,23 @@ class _FavoriteNailsPageState extends State<FavoriteNailsPage> {
     final source = isVariant ? variant : design;
     final title = source['name']?.toString() ?? 'Móng yêu thích';
     final imageUrls = source['imageUrls'] ?? source['ImageUrls'];
-    String imageUrl = (source['imageUrl'] ?? source['ImageUrl'] ?? source['primaryImageUrl'] ?? source['PrimaryImageUrl'] ?? source['image'] ?? '').toString().trim();
+    String imageUrl =
+        (source['imageUrl'] ??
+                source['ImageUrl'] ??
+                source['primaryImageUrl'] ??
+                source['PrimaryImageUrl'] ??
+                source['image'] ??
+                '')
+            .toString()
+            .trim();
     if (imageUrl.isEmpty && imageUrls is List && imageUrls.isNotEmpty) {
       imageUrl = imageUrls.first.toString().trim();
     }
     final createdAt = _formatDateTime(favorite['createdAt']);
     final targetId = _readInt(
-      isVariant ? (source['nailVariantId'] ?? source['NailVariantId']) : (source['nailDesignId'] ?? source['NailDesignId']),
+      isVariant
+          ? (source['nailVariantId'] ?? source['NailVariantId'])
+          : (source['nailDesignId'] ?? source['NailDesignId']),
     );
 
     return Card(

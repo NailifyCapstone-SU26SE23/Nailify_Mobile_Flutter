@@ -149,7 +149,6 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
 
   int get _estimatedTotalPrice {
     final basePrice = widget.nail.customerNailPrice.round();
-    final customFee = widget.nail.price.round();
     final shapePrice = (_selectedShapeMethod?.price ?? 0).round();
     int extraPrice = 0;
     for (final id in _selectedExtraServices.whereType<String>()) {
@@ -161,11 +160,11 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
         if (p is num) extraPrice += p.round();
       }
     }
-    return basePrice + customFee + shapePrice + extraPrice;
+    return basePrice  + shapePrice + extraPrice;
   }
 
   int get _estimatedTotalDuration {
-    final customDur = widget.nail.duration;
+    final customDur = widget.nail.estimatedDuration ?? 0;
     final shapeDur = _selectedShapeMethod?.duration ?? 0;
     int extraDur = 0;
     for (final id in _selectedExtraServices.whereType<String>()) {

@@ -10,6 +10,7 @@ class CustomerNailModel {
   final String? approvedArtistId;
   final int price;
   final int duration;
+  final int? estimatedDuration;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final String? artistFullName;
@@ -54,6 +55,7 @@ class CustomerNailModel {
     this.shapeMethodName,
     this.shapeMethodPrice,
     this.shapeMethodDuration,
+    this.estimatedDuration,
     required this.name,
     this.imageUrl,
     this.nailShapeId,
@@ -96,6 +98,7 @@ class CustomerNailModel {
       approvedArtistId: json['approvedArtistId']?.toString(),
       price: parsedPrice,
       duration: finalDuration,
+      estimatedDuration: ((customerNail['duration'] as num?)?.toInt() ?? 0) + ((json['duration'] as num?)?.toInt() ?? 0),
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'])
           : null,

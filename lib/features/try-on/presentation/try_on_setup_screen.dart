@@ -633,6 +633,10 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
         // Photo try-on uses Snapshot so the user can choose camera/gallery,
         // while keeping this custom nail selected in the editor.
         if (mounted) {
+          //Photo try-on
+          //await service.launchCustomerPhoto(customerNail);
+
+          //Snapshot try-on
           context.push('/snapshot-try-on', extra: _toSnapshotVariant(preview));
         }
       } else {

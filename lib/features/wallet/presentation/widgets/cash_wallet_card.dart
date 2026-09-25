@@ -9,6 +9,7 @@ class CashWalletCard extends StatelessWidget {
   final String? loyaltyTierName;
   final VoidCallback onDepositPressed;
   final VoidCallback onWithdrawPressed;
+  final VoidCallback? onConvertPointsPressed;
   final VoidCallback onHistoryPressed;
 
   const CashWalletCard({
@@ -18,6 +19,7 @@ class CashWalletCard extends StatelessWidget {
     this.loyaltyTierName,
     required this.onDepositPressed,
     required this.onWithdrawPressed,
+    this.onConvertPointsPressed,
     required this.onHistoryPressed,
   });
 
@@ -245,7 +247,7 @@ class CashWalletCard extends StatelessWidget {
 
                   const SizedBox(height: 22),
 
-                  // Quick Action Bar (3 Glassmorphic Action Buttons)
+                  // Quick Action Bar (4 Glassmorphic Action Buttons)
                   Row(
                     children: [
                       Expanded(
@@ -257,7 +259,7 @@ class CashWalletCard extends StatelessWidget {
                           onTap: onDepositPressed,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: _buildActionButton(
                           icon: Icons.outbox_rounded,
@@ -267,7 +269,19 @@ class CashWalletCard extends StatelessWidget {
                           onTap: onWithdrawPressed,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      if (onConvertPointsPressed != null) ...[
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildActionButton(
+                            icon: Icons.published_with_changes_rounded,
+                            label: 'Đổi điểm',
+                            iconColor: const Color(0xFFEC4899),
+                            glowColor: const Color(0xFFEC4899),
+                            onTap: onConvertPointsPressed!,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(width: 8),
                       Expanded(
                         child: _buildActionButton(
                           icon: Icons.receipt_long_rounded,
@@ -299,32 +313,32 @@ class CashWalletCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(7),
                 decoration: BoxDecoration(
                   color: glowColor.withValues(alpha: 0.16),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: iconColor, size: 22),
+                child: Icon(icon, color: iconColor, size: 20),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 5),
               Text(
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),

@@ -5,6 +5,8 @@ import '../../../../generated/l10n.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/network/signalr_service.dart';
+import '../../../../core/network/signalr_events.dart';
 import '../../../../core/utils/auth_guard.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../../../core/utils/retry_helper.dart';
@@ -101,6 +103,8 @@ class _NailBookingPageState extends State<NailBookingPage> {
     },
   ];
 
+  StreamSubscription<SlotStatusChangedEvent>? _slotStatusChangedSub;
+
   @override
   void initState() {
     super.initState();
@@ -111,10 +115,38 @@ class _NailBookingPageState extends State<NailBookingPage> {
     _fetchPromotions();
     _fetchNailVariantDetail();
     _fetchWalletBalance();
+
+    try {
+      final signalR = getIt<SignalRService>();
+      _slotStatusChangedSub = signalR.onSlotStatusChanged.listen(_onSlotStatusChanged);
+    } catch (_) {}
+  }
+
+  void _onSlotStatusChanged(SlotStatusChangedEvent event) {
+    if (!mounted || _selectedDate == null) return;
+    
+    final currentSalonId = _selectedBranch?['salonId']?.toString() ?? '';
+    if (currentSalonId.isNotEmpty && event.salonId.toLowerCase() != currentSalonId.toLowerCase()) return;
+    
+    final String currentFormattedDate = _formatBookingDate(_selectedDate!); 
+    if (!event.bookingDate.startsWith(currentFormattedDate.split('T')[0])) return;
+
+    final currentArtistId = _noArtistSelected ? '' : (_selectedStylist?['nailArtistId']?.toString() ?? '');
+    
+    if (_noArtistSelected || event.artistId.isEmpty || event.artistId.toLowerCase() == currentArtistId.toLowerCase()) {
+      if (event.action == 'Held' || event.action == 'Released' || event.action == 'Booked') {
+        if (_noArtistSelected) {
+          _loadSalonSlots();
+        } else {
+          _fetchTimeSlots();
+        }
+      }
+    }
   }
 
   @override
   void dispose() {
+    _slotStatusChangedSub?.cancel();
     _holdTimer?.cancel();
     _cancelCurrentHold();
     _pageController.dispose();
@@ -461,24 +493,28 @@ class _NailBookingPageState extends State<NailBookingPage> {
 
     setState(() => _isReviewingPrice = true);
     final reviewFuture = () async {
-      final review = await _apiService.reviewBookingPrice(
-        salonId: _selectedBranch!['salonId'],
-        bookingDate: _formatBookingDate(_selectedDate!),
-        startTime: _normalizedSelectedTime,
-        artistId: _noArtistSelected
-            ? null
-            : _selectedStylist?['nailArtistId'] as String?,
-        nailVariantId: _nailVariantId,
-        serviceIds: _selectedExtraServices.whereType<String>().toList(),
-        selectedPromotionIds: _selectedPromotionIds,
-        shapeMethodConfigId: _shapeMethodConfigId,
-      );
-      if (!mounted) return;
-      if (_priceReviewRequestKey != requestKey) return;
-      setState(() {
-        _priceReview = review;
-        _priceReviewKey = requestKey;
-      });
+      try {
+        final review = await _apiService.reviewBookingPrice(
+          salonId: _selectedBranch!['salonId'],
+          bookingDate: _formatBookingDate(_selectedDate!),
+          startTime: _normalizedSelectedTime,
+          artistId: _noArtistSelected
+              ? null
+              : _selectedStylist?['nailArtistId'] as String?,
+          nailVariantId: _nailVariantId,
+          serviceIds: _selectedExtraServices.whereType<String>().toList(),
+          selectedPromotionIds: _selectedPromotionIds,
+          shapeMethodConfigId: _shapeMethodConfigId,
+        );
+        if (!mounted) return;
+        if (_priceReviewRequestKey != requestKey) return;
+        setState(() {
+          _priceReview = review;
+          _priceReviewKey = requestKey;
+        });
+      } catch (e) {
+        debugPrint('reviewBookingPrice exception: $e');
+      }
     }();
 
     _inFlightPriceReviewKey = requestKey;
@@ -2042,6 +2078,13 @@ class _NailBookingPageState extends State<NailBookingPage> {
 
   Widget _buildDiscountInvoiceRow(Map<String, dynamic> discount) {
     final name = discount['name']?.toString() ?? 'Ưu đãi';
+    String? description = discount['description']?.toString();
+    if (description == null || description.isEmpty) {
+      if (name == 'Perfect Match') {
+        description = 'Giảm 15% tất cả thiết kế móng dòng SkinTone';
+      }
+    }
+    final isAutoApplied = discount['isAutoApplied'] == true;
     final amount = discount['amount'];
     final amountDisplay = discount['amountDisplay']?.toString();
     final rawDisplay = (amountDisplay?.isNotEmpty == true)
@@ -2049,30 +2092,80 @@ class _NailBookingPageState extends State<NailBookingPage> {
         : (amount != null ? PriceFormatter.format(amount) : '');
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(
-              name,
-              style: TextStyle(
-                fontSize: 13.5,
-                color: Colors.grey.shade700,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        name,
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          color: Colors.grey.shade800,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (isAutoApplied) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE02B6D).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: const Color(0xFFE02B6D).withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: const Text(
+                          'Tự động áp dụng',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFFE02B6D),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                _formatDiscountDisplay(rawDisplay),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13.5,
+                  color: Color(0xFFE02B6D),
+                ),
+              ),
+            ],
+          ),
+          if (description != null && description.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              description,
+              style: const TextStyle(
+                fontSize: 11.5,
+                color: Color(0xFFE02B6D),
                 fontWeight: FontWeight.w500,
               ),
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-          ),
-          Text(
-            _formatDiscountDisplay(rawDisplay),
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 13.5,
-              color: Color(0xFFE02B6D),
-            ),
-          ),
+          ],
         ],
       ),
     );

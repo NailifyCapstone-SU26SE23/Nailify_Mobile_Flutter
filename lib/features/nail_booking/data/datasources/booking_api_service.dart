@@ -591,25 +591,33 @@ class BookingApiService {
     List<int>? selectedPromotionIds,
     int? shapeMethodConfigId,
   }) async {
-    final response = await _apiClient.post(
-      '/Bookings/price',
-      data: {
-        'salonId': salonId,
-        'bookingDate': bookingDate,
-        'startTime': startTime,
-        'nailArtistId': artistId?.isEmpty == true ? null : artistId,
-        'holdToken': null,
-        'bookingItems': _buildBookingItems(
-          nailVariantId,
-          serviceIds,
-          shapeMethodConfigId,
-        ),
-        'selectedPromotionIds': selectedPromotionIds,
-      },
-    );
-    return Map<String, dynamic>.from(
-      response.data['data'] ?? response.data ?? {},
-    );
+    try {
+      final response = await _apiClient.post(
+        '/Bookings/price',
+        data: {
+          'salonId': salonId,
+          'bookingDate': bookingDate,
+          'startTime': startTime,
+          'nailArtistId': artistId?.isEmpty == true ? null : artistId,
+          'holdToken': null,
+          'bookingItems': _buildBookingItems(
+            nailVariantId,
+            serviceIds,
+            shapeMethodConfigId,
+          ),
+          'selectedPromotionIds': selectedPromotionIds,
+        },
+      );
+      if (response.data is Map) {
+        final dataMap = response.data['data'] ?? response.data;
+        if (dataMap is Map) {
+          return Map<String, dynamic>.from(dataMap);
+        }
+      }
+      return {};
+    } catch (e) {
+      return {};
+    }
   }
 
   Future<Map<String, dynamic>> reviewNailVariantPrice({

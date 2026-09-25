@@ -12,6 +12,7 @@ class LoyaltyRewardsCard extends StatelessWidget {
   final int? pointsToNext;
   final bool hasNextTier;
   final int usableVoucherCount;
+  final VoidCallback? onConvertPointsPressed;
   final VoidCallback onRedeemPressed;
   final VoidCallback onMyVouchersPressed;
   final VoidCallback onHistoryPressed;
@@ -25,6 +26,7 @@ class LoyaltyRewardsCard extends StatelessWidget {
     required this.pointsToNext,
     required this.hasNextTier,
     required this.usableVoucherCount,
+    this.onConvertPointsPressed,
     required this.onRedeemPressed,
     required this.onMyVouchersPressed,
     required this.onHistoryPressed,
@@ -256,6 +258,44 @@ class LoyaltyRewardsCard extends StatelessWidget {
                           ],
                         ),
                       ),
+                      if (onConvertPointsPressed != null) ...[
+                        InkWell(
+                          onTap: onConvertPointsPressed,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFD700).withValues(alpha: 0.22),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFFFFD700).withValues(alpha: 0.4),
+                              ),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(
+                                  Icons.published_with_changes_rounded,
+                                  size: 14,
+                                  color: Color(0xFFFFD700),
+                                ),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Đổi từ ví',
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFFFFD700),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
                       InkWell(
                         onTap: onHistoryPressed,
                         borderRadius: BorderRadius.circular(12),

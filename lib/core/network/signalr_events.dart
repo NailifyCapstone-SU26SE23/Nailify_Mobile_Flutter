@@ -251,3 +251,29 @@ class CustomNailRejectedEvent {
     );
   }
 }
+
+class SlotStatusChangedEvent {
+  final String salonId;
+  final String artistId;
+  final String bookingDate;
+  final String startTime;
+  final String action; // Held, Released, Booked
+  
+  SlotStatusChangedEvent({
+    required this.salonId,
+    required this.artistId,
+    required this.bookingDate,
+    required this.startTime,
+    required this.action,
+  });
+
+  factory SlotStatusChangedEvent.fromJson(Map<String, dynamic> json) {
+    return SlotStatusChangedEvent(
+      salonId: json['salonId']?.toString() ?? json['SalonId']?.toString() ?? '',
+      artistId: json['artistId']?.toString() ?? json['ArtistId']?.toString() ?? '',
+      bookingDate: json['bookingDate']?.toString() ?? json['BookingDate']?.toString() ?? '',
+      startTime: json['startTime']?.toString() ?? json['StartTime']?.toString() ?? '',
+      action: json['action']?.toString() ?? json['Action']?.toString() ?? '',
+    );
+  }
+}

@@ -5,11 +5,16 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
 
+import '../../../core/constants/app_constants.dart';
 import '../models/nail_variant_model.dart';
 
 class NailVariantApiService {
-  static const String baseUrl =
-      "https://nailify-be.onrender.com/api/NailVariants";
+  static String get _apiBaseUrl {
+    final base = AppConstants.baseUrl.endsWith('/')
+        ? AppConstants.baseUrl.substring(0, AppConstants.baseUrl.length - 1)
+        : AppConstants.baseUrl;
+    return '$base/api';
+  }
 
   /// Fetches nail variant items from Backend API
   static Future<List<NailVariantModel>> fetchNailVariants({
@@ -30,7 +35,7 @@ class NailVariantApiService {
         queryParams['name'] = name;
       }
 
-      final uri = Uri.parse(baseUrl).replace(queryParameters: queryParams);
+      final uri = Uri.parse('$_apiBaseUrl/NailVariants').replace(queryParameters: queryParams);
       final response = await http.get(uri);
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonBody = jsonDecode(response.body);
@@ -50,7 +55,7 @@ class NailVariantApiService {
   }) async {
     try {
       final uri = Uri.parse(
-        "https://nailify-be.onrender.com/api/NailShapes?pageNumber=$pageNumber&pageSize=$pageSize",
+        "$_apiBaseUrl/NailShapes?pageNumber=$pageNumber&pageSize=$pageSize",
       );
       final response = await http.get(uri);
       if (response.statusCode == 200) {
@@ -71,7 +76,7 @@ class NailVariantApiService {
   }) async {
     try {
       final uri = Uri.parse(
-        "https://nailify-be.onrender.com/api/NailSurfaces?pageNumber=$pageNumber&pageSize=$pageSize",
+        "$_apiBaseUrl/NailSurfaces?pageNumber=$pageNumber&pageSize=$pageSize",
       );
       final response = await http.get(uri);
       if (response.statusCode == 200) {
@@ -93,7 +98,7 @@ class NailVariantApiService {
   }) async {
     try {
       String url =
-          "https://nailify-be.onrender.com/api/Components?pageNumber=$pageNumber&pageSize=$pageSize";
+          "$_apiBaseUrl/Components?pageNumber=$pageNumber&pageSize=$pageSize";
       if (componentType != null && componentType.isNotEmpty) {
         url += "&componentType=$componentType";
       }

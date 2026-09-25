@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
@@ -266,21 +266,24 @@ class _TransactionListPageState extends State<TransactionListPage> {
     );
   }
 
-  Widget _buildSummaryHeader() {
+    Widget _buildSummaryHeader() {
     num totalAmount = 0;
-    for (final tx in _transactions) {
-      final status = tx['status']?.toString().toLowerCase();
-      if (status == 'paid' || status == 'success') {
-        totalAmount += (tx['amount'] as num? ?? 0);
-      }
+    if (widget.bookingData != null && widget.bookingData!['amountPaid'] != null) {
+      final amt = widget.bookingData!['amountPaid'];
+      totalAmount = amt is num ? amt : (double.tryParse(amt.toString()) ?? 0);
     }
-    if (totalAmount == 0 && _transactions.isNotEmpty) {
+    if (totalAmount == 0) {
       for (final tx in _transactions) {
-        totalAmount += (tx['amount'] as num? ?? 0);
+        final orderCode = tx['orderCode']?.toString().toLowerCase() ?? '';
+        if (orderCode.contains('hoàn')) continue;
+        final status = tx['status']?.toString().toLowerCase();
+        if (status == 'paid' || status == 'success' || status == 'completed') {
+          totalAmount += (tx['amount'] as num? ?? 0);
+        }
       }
     }
-
-    return Container(
+  
+      return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -721,3 +724,9 @@ class _MessageState extends StatelessWidget {
     );
   }
 }
+
+
+
+
+
+

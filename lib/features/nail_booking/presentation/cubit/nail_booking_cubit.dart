@@ -2,6 +2,9 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/network/signalr_service.dart';
+import '../../../../core/network/signalr_events.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../data/models/booking_mock_data.dart';
 import '../../data/models/promotion_model.dart';
@@ -14,10 +17,42 @@ part 'nail_booking_state.dart';
 class NailBookingCubit extends Cubit<NailBookingState> {
   final NailBookingRepository _repository;
   Timer? _holdTimer;
+  StreamSubscription? _slotStatusChangedSub;
 
   NailBookingCubit({NailBookingRepository? repository})
     : _repository = repository ?? NailBookingRepositoryImpl(),
-      super(const NailBookingState());
+      super(const NailBookingState()) {
+    try {
+      if (getIt.isRegistered<SignalRService>()) {
+        final signalR = getIt<SignalRService>();
+        _slotStatusChangedSub = signalR.onSlotStatusChanged.listen(_onSlotStatusChanged);
+      }
+    } catch (_) {
+      // Ignore SignalR registration errors during standalone testing
+    }
+  }
+
+  void _onSlotStatusChanged(SlotStatusChangedEvent event) {
+    if (isClosed) return;
+    
+    final currentBranch = state.selectedBranch;
+    final currentDate = state.selectedDate;
+    if (currentBranch == null || currentDate == null) return;
+    
+    final currentSalonId = currentBranch['salonId']?.toString() ?? '';
+    if (event.salonId.toLowerCase() != currentSalonId.toLowerCase()) return;
+    
+    final String currentFormattedDate = _formatDate(currentDate); 
+    if (!event.bookingDate.startsWith(currentFormattedDate)) return;
+
+    final currentArtistId = state.noArtistSelected ? '' : (state.selectedStylist?['nailArtistId']?.toString() ?? '');
+    
+    if (state.noArtistSelected || event.artistId.toLowerCase() == currentArtistId.toLowerCase() || event.artistId == '') {
+       if (event.action == 'Held' || event.action == 'Released' || event.action == 'Booked') {
+          refreshTimeSlots();
+       }
+    }
+  }
 
   // ══════════════════════════════════════════════════════════════
   // LOAD INITIAL DATA
@@ -945,6 +980,7 @@ class NailBookingCubit extends Cubit<NailBookingState> {
   /// Huỷ giữ chỗ khi user thoát khỏi quá trình đặt lịch.
   @override
   Future<void> close() {
+    _slotStatusChangedSub?.cancel();
     if (state.holdToken != null) {
       _repository.cancelHoldSlot(state.holdToken!); // fire-and-forget
     }

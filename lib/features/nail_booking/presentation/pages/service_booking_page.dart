@@ -176,6 +176,13 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
 
   Widget _buildDiscountInvoiceRow(Map<String, dynamic> discount) {
     final name = discount['name']?.toString() ?? 'Ưu đãi';
+    String? description = discount['description']?.toString();
+    if (description == null || description.isEmpty) {
+      if (name == 'Perfect Match') {
+        description = 'Giảm 15% tất cả thiết kế móng dòng SkinTone';
+      }
+    }
+    final isAutoApplied = discount['isAutoApplied'] == true;
     final amount = discount['amount'];
     final amountDisplay = discount['amountDisplay']?.toString();
     final rawDisplay = (amountDisplay?.isNotEmpty == true)
@@ -183,31 +190,80 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
         : (amount != null ? PriceFormatter.format(amount) : '');
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(
-              name,
-              style: TextStyle(
-                fontSize: 13.5,
-                color: Colors.grey.shade700,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        name,
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          color: Colors.grey.shade800,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (isAutoApplied) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE02B6D).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: const Color(0xFFE02B6D).withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: const Text(
+                          'Tự động áp dụng',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFFE02B6D),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                rawDisplay.startsWith('-') ? rawDisplay : '-$rawDisplay',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13.5,
+                  color: Color(0xFFE02B6D),
+                ),
+              ),
+            ],
+          ),
+          if (description != null && description.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              description,
+              style: const TextStyle(
+                fontSize: 11.5,
+                color: Color(0xFFE02B6D),
                 fontWeight: FontWeight.w500,
               ),
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            rawDisplay.startsWith('-') ? rawDisplay : '-$rawDisplay',
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Color(0xFFE02B6D),
-              fontSize: 13.5,
-            ),
-          ),
+          ],
         ],
       ),
     );

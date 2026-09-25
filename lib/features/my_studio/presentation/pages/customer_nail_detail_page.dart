@@ -210,9 +210,11 @@ class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
                               ),
                             ],
                             const SizedBox(height: 8),
-                            _buildPriceDurationRow(
+                            _buildPriceDurationRow( 
                               'Thời gian dự kiến:',
-                              DurationFormatter.format(nail.duration),
+                              nail.estimatedDuration != null
+                                  ? DurationFormatter.format(nail.estimatedDuration!)
+                                  : '—',
                             ),
                             if (nail.stylistName.isNotEmpty) ...[
                               const SizedBox(height: 8),
@@ -265,9 +267,11 @@ class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
                               ),
                             ],
                             const SizedBox(height: 8),
-                            _buildPriceDurationRow(
+                            _buildPriceDurationRow( 
                               'Thời gian dự kiến:',
-                              DurationFormatter.format(nail.duration),
+                              nail.estimatedDuration != null
+                                  ? DurationFormatter.format(nail.estimatedDuration!)
+                                  : '—',
                             ),
                             const SizedBox(height: 8),
                             _buildPriceDurationRow(

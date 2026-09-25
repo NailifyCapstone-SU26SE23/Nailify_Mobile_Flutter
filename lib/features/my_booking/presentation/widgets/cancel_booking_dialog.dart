@@ -85,20 +85,22 @@ class _CancelBookingDialogState extends State<CancelBookingDialog> {
           ),
         ),
         ElevatedButton(
-          onPressed: _isSubmitting ? null : () async {
-            if (_formKey.currentState!.validate()) {
-              setState(() => _isSubmitting = true);
-              final success = await widget.onConfirm(
-                _reasonController.text.trim(),
-              );
-              if (!mounted) return;
-              if (success) {
-                Navigator.of(context).pop();
-              } else {
-                setState(() => _isSubmitting = false);
-              }
-            }
-          },
+          onPressed: _isSubmitting
+              ? null
+              : () async {
+                  if (_formKey.currentState!.validate()) {
+                    setState(() => _isSubmitting = true);
+                    final success = await widget.onConfirm(
+                      _reasonController.text.trim(),
+                    );
+                    if (!mounted) return;
+                    if (success) {
+                      Navigator.of(context).pop();
+                    } else {
+                      setState(() => _isSubmitting = false);
+                    }
+                  }
+                },
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.red,
             shape: RoundedRectangleBorder(

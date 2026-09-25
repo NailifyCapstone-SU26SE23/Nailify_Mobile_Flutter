@@ -116,7 +116,7 @@ class PlacedComponentDraft {
     CombinedComponent? component,
   }) {
     final config = _decodeConfig(item.configJson);
-    final scale = _asDouble(config['scale'], fallback: 0.28).clamp(0.1, 0.75);
+    final scale = _asDouble(config['scale'], fallback: 0.35);
     final posX = _nullableDouble(config['x']) ?? item.posX;
     final posY = _nullableDouble(config['y']) ?? item.posY;
 
@@ -140,7 +140,7 @@ class PlacedComponentDraft {
       fingerIndex: item.fingerIndex,
       posX: posX,
       posY: posY,
-      scale: scale,
+      scale: scale > 0 ? scale : 0.35,
       rotation: _asDouble(config['rotation']),
     );
   }

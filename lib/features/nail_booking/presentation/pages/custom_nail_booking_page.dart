@@ -177,7 +177,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   }
 
   int get _estimatedTotalPrice {
-    final customPrice = widget.nail.price.round();
+    final basePrice = widget.nail.customerNailPrice.round();
     final shapePrice = (_selectedShapeMethod?.price ?? 0).round();
     int extraPrice = 0;
     for (final id in _selectedExtraServices.whereType<String>()) {
@@ -189,11 +189,11 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
         if (p is num) extraPrice += p.round();
       }
     }
-    return customPrice + shapePrice + extraPrice;
+    return basePrice  + shapePrice + extraPrice;
   }
 
   int get _estimatedTotalDuration {
-    final customDur = widget.nail.duration;
+    final customDur = widget.nail.estimatedDuration ?? 0;
     final shapeDur = _selectedShapeMethod?.duration ?? 0;
     int extraDur = 0;
     for (final id in _selectedExtraServices.whereType<String>()) {
@@ -1879,15 +1879,29 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
 
   List<PaymentTableItem> get _paymentTableItems {
     final items = <PaymentTableItem>[];
+    final shape = _selectedShapeMethod;
+    final shapeExtra = (shape != null && shape.price > 0) ? shape.price : 0;
+
+    if (widget.nail.customerNailPrice > 0) {
+      items.add(
+        PaymentTableItem(
+          name: 'Giá mẫu',
+          quantity: 1,
+          unitPrice: widget.nail.customerNailPrice + shapeExtra,
+        ),
+      );
+    }
+
     if (widget.nail.price > 0) {
       items.add(
         PaymentTableItem(
-          name: 'Thiết kế riêng (Custom)',
+          name: 'Phí custom',
           quantity: 1,
           unitPrice: widget.nail.price,
         ),
       );
     }
+
     for (final entry in _groupedServicesMap.entries) {
       final unit = _servicePriceById(entry.key);
       items.add(

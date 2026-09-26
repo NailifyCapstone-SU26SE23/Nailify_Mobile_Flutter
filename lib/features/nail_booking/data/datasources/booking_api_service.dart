@@ -296,6 +296,7 @@ class BookingApiService {
     String artistId,
     String bookingDate, {
     List<Map<String, dynamic>>? bookingItems,
+    String? holdToken,
   }) async {
     final response = await _apiClient.post(
       '/Bookings/artist-available-slots',
@@ -303,6 +304,7 @@ class BookingApiService {
         'nailArtistId': artistId,
         'bookingDate': bookingDate,
         'bookingItems': bookingItems ?? [],
+        'holdToken': holdToken,
       },
     );
     final List<dynamic> list =
@@ -326,6 +328,7 @@ class BookingApiService {
     required String salonId,
     required String bookingDate,
     required List<Map<String, dynamic>> bookingItems,
+    String? holdToken,
   }) async {
     final response = await _apiClient.post(
       '/Bookings/salon-available-slots',
@@ -333,6 +336,7 @@ class BookingApiService {
         'salonId': salonId,
         'bookingDate': bookingDate,
         'bookingItems': bookingItems,
+        'holdToken': holdToken,
       },
     );
     final List<dynamic> list =

@@ -356,6 +356,7 @@ class NailBookingCubit extends Cubit<NailBookingState> {
         artistId: stylist['nailArtistId'],
         bookingDate: _formatDate(date),
         bookingItems: bookingItems,
+        holdToken: state.holdToken,
       );
       final filteredSlots = _repository.filterSlotsByOperatingHours(
         slots: slots,
@@ -672,16 +673,22 @@ class NailBookingCubit extends Cubit<NailBookingState> {
           break;
         case HoldErrorKind.systemError:
           // Lỗi thực sự (network, 500, timeout...). Giữ nguyên UI, chỉ thông báo.
-          // Fix bug "app đơ": luôn set isHolding = false để _holdSelectedSlot
-          // nhận ra hold fail và return false + BlocConsumer hiển thị lỗi.
+          // Tạm thời hiển thị chung thông báo trùng lịch theo yêu cầu để tránh hiện 500
           emit(
             state.copyWith(
               clearHoldToken: true,
               isHolding: false,
               holdRemainingSeconds: 0,
-              errorMessage: _readableError(e),
+              clearTime: true,
+              errorMessage:
+                  'Rất tiếc, khung giờ này vừa có người đặt. Vui lòng chọn giờ khác.',
             ),
           );
+          if (state.noArtistSelected) {
+            _loadSalonSlots();
+          } else {
+            _fetchTimeSlots();
+          }
           break;
       }
     }

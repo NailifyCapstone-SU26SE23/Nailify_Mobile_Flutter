@@ -473,7 +473,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
       // API trả về 400 (ví dụ: "Thợ đã đầy lịch trong khoảng thời gian này...")
       // → hiển thị message server để user biết lý do thay vì message chung chung.
       debugPrint('holdSlot failed: $e');
-      _showHoldFailureMessage(e.toString());
+      _showHoldFailureMessage('Rất tiếc, khung giờ này vừa có người đặt. Vui lòng chọn giờ khác.');
       return false;
     }
   }
@@ -728,9 +728,15 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
       _showSnackBar('Vui long chon hoac xoa dich vu dang bo trong.');
       return;
     }
-    if (_currentStep == 1 && (_selectedDate == null || _selectedTime == null)) {
-      _showSnackBar('Vui long chon ngay va khung gio.');
-      return;
+    if (_currentStep == 1) {
+      if (_selectedDate == null) {
+        _showSnackBar('Vui lòng chọn ngày đặt lịch!');
+        return;
+      }
+      if (_selectedTime == null) {
+        _showSnackBar('Vui lòng chọn khung giờ rảnh!');
+        return;
+      }
     }
 
     if (_currentStep < 2) {

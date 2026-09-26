@@ -474,7 +474,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
       return true;
     } catch (e) {
       debugPrint('holdSlot failed: $e');
-      _showHoldFailureMessage(e.toString());
+      _showHoldFailureMessage('Rất tiếc, khung giờ này vừa có người đặt. Vui lòng chọn giờ khác.');
       return false;
     }
   }
@@ -851,7 +851,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
         return;
       }
       if (_selectedTime == null) {
-        _showSnackBar('Vui lòng chọn khung giờ!');
+        _showSnackBar('Vui lòng chọn khung giờ rảnh!');
         return;
       }
     }

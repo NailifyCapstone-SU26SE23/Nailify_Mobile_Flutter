@@ -377,11 +377,11 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
     }
     if (_currentStep == 3) {
       if (!state.noArtistSelected && state.selectedStylist == null) {
-        _showSnackBar('Vui lòng chọn thợ hoặc chọn "Để Nailify sắp xếp"!');
+        _showSnackBar('Vui lòng chọn thợ nail hoặc chọn "Để Nailify sắp xếp"!');
         return;
       }
       if (state.selectedTime == null) {
-        _showSnackBar('Vui lòng chọn khung giờ!');
+        _showSnackBar('Vui lòng chọn khung giờ rảnh!');
         return;
       }
       if (state.holdToken == null || !state.isHolding) {

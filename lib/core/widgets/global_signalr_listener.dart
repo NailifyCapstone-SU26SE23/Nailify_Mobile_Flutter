@@ -52,25 +52,6 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
     final signalR = getIt<SignalRService>();
 
     _promotedSub = signalR.onWaitlistPromoted.listen((event) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final currentCtx = rootNavigatorKey.currentContext;
-        if (currentCtx == null) return;
-        _showStyledSnackBar(
-          currentCtx,
-          message: event.message,
-          icon: Icons.stars_rounded,
-          color: AppColors.primary,
-          actionLabel: 'Xác nhận ngay',
-          onAction: () {
-            final navCtx = rootNavigatorKey.currentContext;
-            if (navCtx != null) {
-              navCtx.go('/my-bookings', extra: {'initialTab': 3});
-            }
-          },
-          duration: const Duration(seconds: 10),
-          isTop: true,
-        );
-      });
     });
 
     _expiredSub = signalR.onWaitlistExpired.listen((event) {

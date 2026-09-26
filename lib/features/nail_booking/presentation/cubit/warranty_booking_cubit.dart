@@ -250,11 +250,13 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
             salonId: salonId,
             bookingDate: _formatDate(date),
             bookingItems: bookingItems,
+            holdToken: state.holdToken,
           );
         } else {
           slots = await _repository.getArtistAvailableSlots(
             artistId: artistId,
             bookingDate: _formatDate(date),
+            holdToken: state.holdToken,
           );
         }
         if (isClosed) return slots;
@@ -497,6 +499,7 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
             break;
           case HoldErrorKind.systemError:
             // Lỗi hệ thống thực sự — vẫn clear hold + giờ để tránh UI kẹt.
+            // Tạm thời hiển thị chung thông báo trùng lịch theo yêu cầu để tránh hiện 500
             emit(
               state.copyWith(
                 isSubmitting: false,
@@ -504,7 +507,8 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
                 isHolding: false,
                 holdRemainingSeconds: 0,
                 clearTime: true,
-                errorMessage: _readableError(e),
+                errorMessage:
+                    'Rất tiếc, khung giờ này vừa có người đặt. Vui lòng chọn giờ khác.',
               ),
             );
             break;

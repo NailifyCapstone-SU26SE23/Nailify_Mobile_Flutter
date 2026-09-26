@@ -70,11 +70,13 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
     required String artistId,
     required String bookingDate,
     List<Map<String, dynamic>>? bookingItems,
+    String? holdToken,
   }) async {
     final list = await _bookingApi.getArtistAvailableSlots(
       artistId,
       bookingDate,
       bookingItems: bookingItems,
+      holdToken: holdToken,
     );
     return list
         .whereType<Map>()
@@ -87,11 +89,13 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
     required String salonId,
     required String bookingDate,
     required List<Map<String, dynamic>> bookingItems,
+    String? holdToken,
   }) async {
     final list = await _bookingApi.getSalonAvailableSlots(
       salonId: salonId,
       bookingDate: bookingDate,
       bookingItems: bookingItems,
+      holdToken: holdToken,
     );
     return list
         .whereType<Map>()

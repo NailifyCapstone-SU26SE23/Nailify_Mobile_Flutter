@@ -34,13 +34,11 @@ class CustomerComponentRepository {
     required int componentType,
     double? price,
     String? customDataJson,
-    bool isPublic = false,
     String? imagePath,
   }) async {
     final formData = FormData.fromMap({
       'Name': name,
       'ComponentType': componentType,
-      'IsPublic': isPublic.toString(),
       'Price': ?price,
       'CustomDataJson': ?customDataJson,
     });
@@ -62,14 +60,12 @@ class CustomerComponentRepository {
     required int componentType,
     double? price,
     String customDataJson = '',
-    bool isPublic = false,
     String? imagePath,
   }) async {
     final formData = FormData.fromMap({
       'Name': name,
       'ComponentType': componentType,
       'CustomDataJson': customDataJson,
-      'IsPublic': isPublic.toString(),
       'Price': ?price,
     });
     if (imagePath != null && imagePath.isNotEmpty) {

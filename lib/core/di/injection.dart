@@ -5,13 +5,17 @@ import '../../features/try-on/services/try_on_setup_service.dart';
 import '../network/api_client.dart';
 import '../network/network_info.dart';
 import '../../features/nails/data/repositories/nail_design_repository.dart';
+import '../../features/nails/data/repositories/favorite_nail_repository.dart';
 import '../../features/nails/data/repositories/nail_variant_repository.dart';
 import '../../features/nails/data/repositories/customer_nail_repository.dart';
 import '../../features/nails/data/repositories/customer_component_repository.dart';
 import '../../features/nails/data/repositories/nail_component_repository.dart';
 import '../../features/nails/data/repositories/component_catalog_repository.dart';
 import '../../features/nails/services/ar_try_on_service.dart';
+import '../../features/nail_booking/data/repositories/transaction_repository.dart';
+import '../../features/wallet/data/repositories/wallet_repository.dart';
 import '../../features/auth/data/repositories/auth_repository.dart';
+import '../../features/home/data/repositories/home_repository.dart';
 import '../network/signalr_service.dart';
 
 final GetIt getIt = GetIt.instance;
@@ -50,6 +54,10 @@ Future<void> configureDependencies() async {
     () => NailVariantRepository(getIt<ApiClient>()),
   );
 
+  getIt.registerLazySingleton<FavoriteNailRepository>(
+    () => FavoriteNailRepository(getIt<ApiClient>()),
+  );
+
   getIt.registerLazySingleton<CustomerNailRepository>(
     () => CustomerNailRepository(getIt<ApiClient>()),
   );
@@ -64,6 +72,21 @@ Future<void> configureDependencies() async {
 
   getIt.registerLazySingleton<ComponentCatalogRepository>(
     () => ComponentCatalogRepository(getIt<ApiClient>()),
+  );
+
+  getIt.registerLazySingleton<TransactionRepository>(
+    () => TransactionRepository(getIt<ApiClient>()),
+  );
+
+  // Wallet & Voucher
+  getIt.registerLazySingleton<WalletRepository>(
+    () =>
+        WalletRepository(getIt<ApiClient>(), prefs: getIt<SharedPreferences>()),
+  );
+
+  // Home Repository
+  getIt.registerLazySingleton<HomeRepository>(
+    () => HomeRepository(getIt<ApiClient>()),
   );
 
   // 5. Services

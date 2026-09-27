@@ -139,10 +139,6 @@ class _SalonMapSearchPageState extends State<SalonMapSearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    final LatLng selectedLoc = _selectedSalon != null
-        ? _getSalonLatLng(_selectedSalon)
-        : _customerLocation;
-
     return Scaffold(
       body: Stack(
         children: [

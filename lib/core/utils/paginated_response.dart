@@ -31,16 +31,35 @@ class PaginatedResponse<T> {
         .toList();
     final metaData = data['metaData'] as Map<String, dynamic>;
 
+    int readInt(String key, int fallback) {
+      final raw = metaData[key];
+      if (raw is int) return raw;
+      if (raw is num) return raw.toInt();
+      if (raw is String) return int.tryParse(raw) ?? fallback;
+      return fallback;
+    }
+
+    bool readBool(String key, bool fallback) {
+      final raw = metaData[key];
+      if (raw is bool) return raw;
+      if (raw is String) {
+        final lower = raw.toLowerCase();
+        if (lower == 'true') return true;
+        if (lower == 'false') return false;
+      }
+      return fallback;
+    }
+
     return PaginatedResponse(
       items: items,
-      currentPage: metaData['currentPage'] as int,
-      totalPages: metaData['totalPages'] as int,
-      pageSize: metaData['pageSize'] as int,
-      totalItems: metaData['totalItems'] as int,
-      hasPrevious: metaData['hasPrevious'] as bool,
-      hasNext: metaData['hasNext'] as bool,
-      firstRowOnPage: metaData['firstRowOnPage'] as int,
-      lastRowOnPage: metaData['lastRowOnPage'] as int,
+      currentPage: readInt('currentPage', 1),
+      totalPages: readInt('totalPages', 1),
+      pageSize: readInt('pageSize', items.length),
+      totalItems: readInt('totalItems', items.length),
+      hasPrevious: readBool('hasPrevious', false),
+      hasNext: readBool('hasNext', false),
+      firstRowOnPage: readInt('firstRowOnPage', 1),
+      lastRowOnPage: readInt('lastRowOnPage', items.length),
     );
   }
 

@@ -53,13 +53,11 @@ bool placementMatchesFinger(int placementFinger, int selectedFinger) {
   return placementFinger == selectedFinger;
 }
 
-extension TryOnIterableExtensions<T> on Iterable<T> {
+extension TryOnIterableFirstWhereOrNull<T> on Iterable<T> {
   T? firstWhereOrNull(bool Function(T item) test) {
     for (final item in this) {
       if (test(item)) return item;
     }
     return null;
   }
-
-  T? get firstOrNull => isEmpty ? null : first;
 }

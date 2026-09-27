@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/di/injection.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../../generated/l10n.dart';
 import '../../../nails/data/repositories/customer_component_repository.dart';
 import '../../../nails/data/repositories/customer_nail_repository.dart';
 import '../tabs/customer_components_tab.dart';
 import '../tabs/customer_nail_requests_tab.dart';
 import '../tabs/customer_nails_tab.dart';
-import '../../../../core/constants/app_colors.dart';
 
 /// Trang studio với 3 tab: My Nails, My Components, Requests.
 /// Được điều hướng từ footer "My Studio".
@@ -43,11 +44,12 @@ class _MyStudioTabPageState extends State<MyStudioTabPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'My Studio',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.bold,
+        title: Text(
+          S.of(context).myStudioTitle,
+          style: const TextStyle(
+            color: AppColors.primaryDark,
+            fontWeight: FontWeight.w800,
+            fontFamily: 'Georgia',
           ),
         ),
         centerTitle: true,
@@ -86,10 +88,10 @@ class _MyStudioTabPageState extends State<MyStudioTabPage>
                 fontSize: 12,
               ),
               dividerColor: Colors.transparent,
-              tabs: const [
-                Tab(text: 'My Nails'),
-                Tab(text: 'Components'),
-                Tab(text: 'Requests'),
+              tabs: [
+                Tab(text: S.of(context).myNailsTab),
+                Tab(text: S.of(context).accessoriesTab),
+                Tab(text: S.of(context).requestsTab),
               ],
             ),
           ),

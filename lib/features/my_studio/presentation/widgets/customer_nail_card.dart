@@ -97,37 +97,6 @@ class CustomerNailCard extends StatelessWidget {
                             horizontal: 10,
                             vertical: 5,
                           ),
-                          decoration: BoxDecoration(
-                            color: nail.isPublic
-                                ? const Color(0xFFE8F5E9)
-                                : const Color(0xFFECEFF1),
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                nail.isPublic
-                                    ? Icons.public_rounded
-                                    : Icons.lock_outline_rounded,
-                                size: 12,
-                                color: nail.isPublic
-                                    ? const Color(0xFF2E7D32)
-                                    : const Color(0xFF546E7A),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                nail.isPublic ? 'Công khai' : 'Riêng tư',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: nail.isPublic
-                                      ? const Color(0xFF2E7D32)
-                                      : const Color(0xFF546E7A),
-                                ),
-                              ),
-                            ],
-                          ),
                         ),
                       ],
                     ),
@@ -191,26 +160,6 @@ class CustomerNailCard extends StatelessWidget {
                             ),
                             SizedBox(width: 8),
                             Text('Sửa'),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'toggle_public',
-                        child: Row(
-                          children: [
-                            Icon(
-                              nail.isPublic
-                                  ? Icons.public_off_rounded
-                                  : Icons.public_rounded,
-                              size: 18,
-                              color: AppColors.textSecondary,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              nail.isPublic
-                                  ? 'Chuyển riêng tư'
-                                  : 'Chuyển công khai',
-                            ),
                           ],
                         ),
                       ),

@@ -21,7 +21,6 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
   final _nameController = TextEditingController();
   final _picker = ImagePicker();
 
-  bool _isPublic = false;
   XFile? _imageFile;
   bool _isLoading = false;
 
@@ -29,7 +28,6 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
   void initState() {
     super.initState();
     _nameController.text = widget.nail?.name ?? '';
-    _isPublic = widget.nail?.isPublic ?? false;
   }
 
   @override
@@ -54,14 +52,12 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
       if (widget.nail == null) {
         await repository.createCustomerNail(
           name: _nameController.text.trim(),
-          isPublic: _isPublic,
           imagePath: _imageFile?.path,
         );
       } else {
         await repository.updateCustomerNail(
           customerNailId: widget.nail!.customerNailId,
           name: _nameController.text.trim(),
-          isPublic: _isPublic,
           imagePath: _imageFile?.path,
         );
       }
@@ -195,23 +191,6 @@ class _CustomerNailFormDialogState extends State<CustomerNailFormDialog> {
                       color: Colors.grey.shade50,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: SwitchListTile(
-                      title: const Text(
-                        'Công khai',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      subtitle: const Text(
-                        'Mọi người có thể nhìn thấy mẫu này',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                      value: _isPublic,
-                      activeThumbColor: AppColors.primary,
-                      onChanged: (value) => setState(() => _isPublic = value),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 4,
-                      ),
                     ),
                   ),
                 const SizedBox(height: 32),

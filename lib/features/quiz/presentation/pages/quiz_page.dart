@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../generated/l10n.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/network/api_client.dart';
 import '../../data/datasources/quiz_repository.dart';
@@ -470,18 +471,18 @@ class _QuizPageState extends State<QuizPage> {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: Colors.white12),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.check_box_rounded,
                     size: 14,
                     color: Color(0xFFFFB3C6),
                   ),
                   SizedBox(width: 6),
                   Text(
-                    'Chọn nhiều đáp án',
-                    style: TextStyle(
+                    S.of(context).quizSelectMultiple,
+                    style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: Color(0xFFFFB3C6),
@@ -585,7 +586,7 @@ class _QuizPageState extends State<QuizPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    _isLast ? 'Hoàn thành' : 'Tiếp theo',
+                    _isLast ? S.of(context).done : S.of(context).next,
                     style: TextStyle(
                       color: isEnabled ? Colors.white : Colors.grey[500],
                       fontWeight: FontWeight.w800,
@@ -705,10 +706,10 @@ class _QuizCardHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
-          'Khám phá thiết kế sinh ra là dành cho bạn',
+        Text(
+          S.of(context).quizDiscoverDesign,
           textAlign: TextAlign.center,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
             color: AppColors.textSecondary,

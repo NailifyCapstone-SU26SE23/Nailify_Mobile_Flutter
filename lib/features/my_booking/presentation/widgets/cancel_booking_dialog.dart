@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../../../generated/l10n.dart';
 
 class CancelBookingDialog extends StatefulWidget {
   final String bookingId;
-  final Function(String) onConfirm;
+  final Future<bool> Function(String) onConfirm;
 
   const CancelBookingDialog({
     super.key,
@@ -17,6 +18,7 @@ class CancelBookingDialog extends StatefulWidget {
 class _CancelBookingDialogState extends State<CancelBookingDialog> {
   final TextEditingController _reasonController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -32,9 +34,9 @@ class _CancelBookingDialogState extends State<CancelBookingDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text(
-        'Hủy đặt lịch',
-        style: TextStyle(fontWeight: FontWeight.bold),
+      title: Text(
+        S.of(context).cancelBookingTitle,
+        style: const TextStyle(fontWeight: FontWeight.bold),
       ),
       content: Form(
         key: _formKey,
@@ -42,16 +44,17 @@ class _CancelBookingDialogState extends State<CancelBookingDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Bạn có chắc chắn muốn hủy lịch hẹn này không?',
-              style: TextStyle(fontSize: 14),
+            Text(
+              S.of(context).cancelBookingConfirmMsg,
+              style: const TextStyle(fontSize: 14),
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _reasonController,
+              enabled: !_isSubmitting,
               maxLines: 3,
               decoration: InputDecoration(
-                hintText: 'Nhập lý do hủy (tối đa 50 từ)',
+                hintText: S.of(context).cancelBookingReasonHint,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -59,10 +62,13 @@ class _CancelBookingDialogState extends State<CancelBookingDialog> {
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Vui lòng nhập lý do';
+                  return S.of(context).cancelBookingReasonRequired;
+                }
+                if (value.trim().length < 5) {
+                  return S.of(context).cancelBookingReasonMinLength;
                 }
                 if (_countWords(value) > 50) {
-                  return 'Lý do không được vượt quá 50 từ';
+                  return S.of(context).cancelBookingReasonTooLong;
                 }
                 return null;
               },
@@ -72,23 +78,48 @@ class _CancelBookingDialogState extends State<CancelBookingDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Hủy', style: TextStyle(color: Colors.grey)),
+          onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
+          child: Text(
+            S.of(context).cancelBtn,
+            style: const TextStyle(color: Colors.grey),
+          ),
         ),
         ElevatedButton(
-          onPressed: () {
-            if (_formKey.currentState!.validate()) {
-              widget.onConfirm(_reasonController.text.trim());
-              Navigator.of(context).pop();
-            }
-          },
+          onPressed: _isSubmitting
+              ? null
+              : () async {
+                  if (_formKey.currentState!.validate()) {
+                    setState(() => _isSubmitting = true);
+                    final success = await widget.onConfirm(
+                      _reasonController.text.trim(),
+                    );
+                    if (!mounted) return;
+                    if (success) {
+                      Navigator.of(context).pop();
+                    } else {
+                      setState(() => _isSubmitting = false);
+                    }
+                  }
+                },
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.red,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
           ),
-          child: const Text('Xác nhận', style: TextStyle(color: Colors.white)),
+          child: _isSubmitting
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : Text(
+                  S.of(context).confirmBtn,
+                  style: const TextStyle(color: Colors.white),
+                ),
         ),
       ],
     );

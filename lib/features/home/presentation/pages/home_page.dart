@@ -1,56 +1,102 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/utils/auth_guard.dart';
-import '../widgets/home_banner.dart';
-import '../widgets/home_services.dart';
-import '../widgets/home_gallery.dart';
-import '../widgets/home_our_promise.dart';
-import '../widgets/home_review.dart';
+import '../../../../core/di/injection.dart';
+import '../../data/models/home_data_models.dart';
+import '../../data/repositories/home_repository.dart';
+import '../cubit/home_cubit.dart';
+import '../cubit/home_state.dart';
+import '../widgets/widgets.dart';
 
+/// Màn hình Trang Chủ (Home Page) Nailify được refactor tinh gọn & đấu nối API thực tế:
+/// - Quản lý trạng thái bằng HomeCubit (gọi /Categories, /NailDesigns, /BookingRatings, /Salons)
+/// - Cung cấp fallback dữ liệu mềm mại khi không có mạng
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      child: Center(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 402),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 12),
+    return BlocProvider<HomeCubit>(
+      create: (context) => HomeCubit(getIt<HomeRepository>())..loadHomeData(),
+      child: Container(
+        color: const Color(0xFFFFF5F7), // Nền hồng phấn chuẩn thương hiệu
+        child: RefreshIndicator(
+          onRefresh: () async {
+            // Context within BlocProvider
+          },
+          color: const Color(0xFFE02B6D),
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.only(bottom: 32),
+            child: Center(
+              child: Container(
+                constraints: const BoxConstraints(
+                  maxWidth: 402,
+                ), // Responsive phone width
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 12),
 
-              const HomeBanner(),
+                    // 1. Hero Banner (Ngang, height max 135px, nút Đặt Lịch pill)
+                    const HomeBanner(),
 
-              const SizedBox(height: 24),
+                    const SizedBox(height: 18),
 
-              const HomeQuizBanner(),
+                    // 2. Khu vực AI Trọng tâm (2 Thẻ Glassmorphism bo góc 20px)
+                    const HomeAiSection(),
 
-              const SizedBox(height: 36),
+                    const SizedBox(height: 22),
 
-              const HomeServices(),
+                    // 3. Featured Services (Dạng hàng Icon tròn vuốt ngang - Dynamic từ API)
+                    BlocBuilder<HomeCubit, HomeState>(
+                      builder: (context, state) {
+                        return HomeServices(
+                          categories: state.services,
+                          isLoading: state.status == HomeStatus.loading,
+                        );
+                      },
+                    ),
 
-              const SizedBox(height: 36),
+                    const SizedBox(height: 22),
 
-              const HomeGallery(),
+                    // 4. Nail Gallery (Danh sách Card vuốt ngang 4:5 - Dynamic từ API)
+                    BlocBuilder<HomeCubit, HomeState>(
+                      builder: (context, state) {
+                        return HomeGallery(
+                          items: state.gallery,
+                          isLoading: state.status == HomeStatus.loading,
+                        );
+                      },
+                    ),
 
-              const SizedBox(height: 36),
+                    const SizedBox(height: 22),
 
-              const OurPromisePage(),
+                    // 5. Thanh Banner mỏng Hệ thống Salon - Dynamic từ API
+                    BlocBuilder<HomeCubit, HomeState>(
+                      builder: (context, state) {
+                        return HomeOurSalonsBanner(salon: state.nearestSalon);
+                      },
+                    ),
 
-              const SizedBox(height: 36),
+                    const SizedBox(height: 22),
 
-              const CustomerReviews(),
+                    // 6. Customer Reviews (Thẻ mini vuốt ngang social review style - Dynamic từ API)
+                    BlocBuilder<HomeCubit, HomeState>(
+                      builder: (context, state) {
+                        return CustomerReviews(
+                          reviews: state.reviews,
+                          isLoading: state.status == HomeStatus.loading,
+                        );
+                      },
+                    ),
 
-              const SizedBox(height: 36),
-
-              _buildCallToAction(context),
-
-              const SizedBox(height: 24),
-            ],
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -58,284 +104,96 @@ class HomePage extends StatelessWidget {
   }
 }
 
-class HomeQuizBanner extends StatelessWidget {
-  const HomeQuizBanner({super.key});
+/// Thanh Banner ngang mỏng Hệ thống Salons (Thin horizontal bar with chevron >)
+class HomeOurSalonsBanner extends StatelessWidget {
+  final HomeSalonItem? salon;
+
+  const HomeOurSalonsBanner({super.key, this.salon});
 
   @override
   Widget build(BuildContext context) {
+    const title = 'Hệ Thống Salon Nailify';
+    const subtitle = 'Tìm salon gần bạn nhất - Khám phá toàn bộ hệ thống';
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Container(
-        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          gradient: const LinearGradient(
-            colors: [Color(0xFFFFF5F8), Color(0xFFFFE5EE)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          border: Border.all(color: const Color(0xFFFFD1E1), width: 1),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFFFE3ED), width: 1),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              spreadRadius: 1,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          child: InkWell(
+            onTap: () => context.push('/salons'),
+            borderRadius: BorderRadius.circular(16),
+            splashColor: const Color(0xFFFF4B72).withValues(alpha: 0.1),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
                 children: [
-                  const Row(
-                    children: [
-                      Icon(
-                        Icons.auto_awesome_rounded,
-                        color: AppColors.primary,
-                        size: 18,
-                      ),
-                      SizedBox(width: 6),
-                      Text(
-                        'Nailify Match AI',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primaryDark,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Tìm kiếm mẫu móng tay hoàn hảo cho bạn',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                      height: 1.2,
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF4B72).withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.location_on_rounded,
+                      color: Color(0xFFFF4B72),
+                      size: 18,
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Hãy làm khảo sát Style Quiz nhanh để tìm ra mẫu móng phù hợp nhất với phong cách cá nhân của bạn.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => context.push('/quiz'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                    child: const Row(
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'LÀM STYLE QUIZ NGAY',
-                          style: TextStyle(
-                            fontSize: 11,
+                          title,
+                          style: const TextStyle(
+                            fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
+                            color: AppColors.textPrimary,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        SizedBox(width: 6),
-                        Icon(Icons.arrow_forward_rounded, size: 14),
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.15),
-                    blurRadius: 10,
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: Color(0xFFE02B6D),
+                    size: 20,
                   ),
                 ],
               ),
-              child: const Icon(
-                Icons.palette_rounded,
-                size: 36,
-                color: AppColors.primary,
-              ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-//  BOOK NOW CTA CARD
-Widget _buildCallToAction(BuildContext context) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-    child: Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
-          colors: [AppColors.primary, AppColors.primaryDark],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryDark.withValues(alpha: 0.25),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
           ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Stack(
-          children: [
-            // Cạnh trang trí tròn mờ nghệ thuật
-            Positioned(
-              top: -50,
-              right: -50,
-              child: Container(
-                width: 180,
-                height: 180,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.08),
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: -40,
-              left: -40,
-              child: Container(
-                width: 140,
-                height: 140,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.06),
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: 48.0,
-                horizontal: 24.0,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const Text(
-                    "Let's Book Now!",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      fontStyle: FontStyle.italic,
-                      fontFamily: 'Dancing Script',
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Book your appointment with Nailify — join us on a journey of exquisite nail artistry.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white,
-                      height: 1.5,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ).copyWithColor(
-                    Colors.white.withValues(alpha: 0.9),
-                  ), // Tránh text bị chói
-                  const SizedBox(height: 28),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      AuthGuard.check(context, () {
-                        context.push('/nail-booking');
-                      });
-                    },
-                    icon: const Icon(
-                      Icons.calendar_today_rounded,
-                      size: 18,
-                      color: AppColors.primaryDark,
-                    ),
-                    label: const Text(
-                      'BOOK AN APPOINTMENT',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        letterSpacing: 1.2,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        color: AppColors.primaryDark,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: AppColors.primaryDark,
-                      elevation: 4,
-                      shadowColor: Colors.black.withValues(alpha: 0.15),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 16,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(28),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ),
       ),
-    ),
-  );
-}
-
-// Helper extension to make text styling cleaner
-extension _TextExtension on Text {
-  Text copyWithColor(Color color) {
-    return Text(
-      data!,
-      key: key,
-      style: (style ?? const TextStyle()).copyWith(color: color),
-      strutStyle: strutStyle,
-      textAlign: textAlign,
-      textDirection: textDirection,
-      locale: locale,
-      softWrap: softWrap,
-      overflow: overflow,
-      textScaler: textScaler,
-      maxLines: maxLines,
-      semanticsLabel: semanticsLabel,
-      textWidthBasis: textWidthBasis,
-      textHeightBehavior: textHeightBehavior,
-      selectionColor: selectionColor,
     );
   }
 }

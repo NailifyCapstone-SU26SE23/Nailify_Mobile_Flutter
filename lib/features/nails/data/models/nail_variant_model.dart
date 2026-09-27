@@ -17,6 +17,8 @@ class NailVariantModel {
   final NailShapeModel? nailShape;
   final NailSurfaceModel? nailSurface;
   final List<NailComponentModel> nailComponents;
+  final bool isFavorited;
+  final int? favoriteNailId;
 
   const NailVariantModel({
     required this.nailVariantId,
@@ -31,7 +33,34 @@ class NailVariantModel {
     this.nailShape,
     this.nailSurface,
     this.nailComponents = const [],
+    this.isFavorited = false,
+    this.favoriteNailId,
   });
+
+  NailVariantModel copyWith({
+    bool? isFavorited,
+    int? favoriteNailId,
+    bool clearFavoriteNailId = false,
+  }) {
+    return NailVariantModel(
+      nailVariantId: nailVariantId,
+      name: name,
+      nailShapeId: nailShapeId,
+      nailSurfaceId: nailSurfaceId,
+      nailDesignId: nailDesignId,
+      price: price,
+      duration: duration,
+      imageUrl: imageUrl,
+      colorJson: colorJson,
+      nailShape: nailShape,
+      nailSurface: nailSurface,
+      nailComponents: nailComponents,
+      isFavorited: isFavorited ?? this.isFavorited,
+      favoriteNailId: clearFavoriteNailId
+          ? null
+          : favoriteNailId ?? this.favoriteNailId,
+    );
+  }
 
   factory NailVariantModel.fromJson(Map<String, dynamic> json) {
     final shapeJson = json['nailShape'] ?? json['NailShape'];
@@ -70,6 +99,10 @@ class NailVariantModel {
                 )
                 .toList()
           : const [],
+      isFavorited: _asBool(json['isFavorited'] ?? json['IsFavorited']),
+      favoriteNailId: _asNullableInt(
+        json['favoriteNailId'] ?? json['FavoriteNailId'],
+      ),
     );
   }
 
@@ -97,5 +130,12 @@ class NailVariantModel {
     if (value is Map || value is List) return jsonEncode(value);
     final text = value.toString();
     return text.isEmpty ? null : text;
+  }
+
+  static bool _asBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    final text = value?.toString().toLowerCase().trim();
+    return text == 'true' || text == '1';
   }
 }

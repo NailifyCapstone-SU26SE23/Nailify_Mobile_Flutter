@@ -2,8 +2,13 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/network/signalr_service.dart';
+import '../../../../core/network/signalr_events.dart';
+import '../../../../core/di/injection.dart';
+import '../../../../core/error/exceptions.dart';
 import '../../data/models/booking_mock_data.dart';
 import '../../data/models/promotion_model.dart';
+import '../../data/models/wallet_voucher_model.dart';
 import '../../data/nail_booking_repository_impl.dart';
 import '../../domain/repositories/nail_booking_repository.dart';
 
@@ -12,10 +17,42 @@ part 'nail_booking_state.dart';
 class NailBookingCubit extends Cubit<NailBookingState> {
   final NailBookingRepository _repository;
   Timer? _holdTimer;
+  StreamSubscription? _slotStatusChangedSub;
 
   NailBookingCubit({NailBookingRepository? repository})
     : _repository = repository ?? NailBookingRepositoryImpl(),
-      super(const NailBookingState());
+      super(const NailBookingState()) {
+    try {
+      if (getIt.isRegistered<SignalRService>()) {
+        final signalR = getIt<SignalRService>();
+        _slotStatusChangedSub = signalR.onSlotStatusChanged.listen(_onSlotStatusChanged);
+      }
+    } catch (_) {
+      // Ignore SignalR registration errors during standalone testing
+    }
+  }
+
+  void _onSlotStatusChanged(SlotStatusChangedEvent event) {
+    if (isClosed) return;
+    
+    final currentBranch = state.selectedBranch;
+    final currentDate = state.selectedDate;
+    if (currentBranch == null || currentDate == null) return;
+    
+    final currentSalonId = currentBranch['salonId']?.toString() ?? '';
+    if (event.salonId.toLowerCase() != currentSalonId.toLowerCase()) return;
+    
+    final String currentFormattedDate = _formatDate(currentDate); 
+    if (!event.bookingDate.startsWith(currentFormattedDate)) return;
+
+    final currentArtistId = state.noArtistSelected ? '' : (state.selectedStylist?['nailArtistId']?.toString() ?? '');
+    
+    if (state.noArtistSelected || event.artistId.toLowerCase() == currentArtistId.toLowerCase() || event.artistId == '') {
+       if (event.action == 'Held' || event.action == 'Released' || event.action == 'Booked') {
+          refreshTimeSlots();
+       }
+    }
+  }
 
   // ══════════════════════════════════════════════════════════════
   // LOAD INITIAL DATA
@@ -58,13 +95,21 @@ class NailBookingCubit extends Cubit<NailBookingState> {
   // USER SELECTIONS
   // ══════════════════════════════════════════════════════════════
 
-  void selectBranch(Map<String, dynamic> branch) {
+  Future<void> selectBranch(Map<String, dynamic> branch) async {
+    // Đổi salon → slot cũ không còn hợp lệ, huỷ hold token (nếu có).
+    if (state.holdToken != null) {
+      _cancelCurrentHold(state.holdToken!);
+    }
     emit(
       state.copyWith(
         selectedBranch: branch,
         clearSeat: true,
         clearStylist: true,
         clearTime: true,
+        clearHoldToken: true,
+        isHolding: false,
+        holdRemainingSeconds: 0,
+        noArtistSelected: false,
         artists: [],
         timeSlots: [],
         artistsStatus: NailBookingLoadStatus.initial,
@@ -95,156 +140,232 @@ class NailBookingCubit extends Cubit<NailBookingState> {
   }
 
   void updateExtraServices(List<String?> services) {
-    emit(
-      state.copyWith(
-        selectedExtraServices: services,
-        clearStylist: true,
-        clearTime: true,
-        artists: [],
-        timeSlots: [],
-      ),
-    );
+    emit(state.copyWith(selectedExtraServices: services));
   }
 
-  /// Gọi khi user chọn ngày — reset thợ/giờ rồi fetch thợ.
-  Future<void> selectDate({
-    required DateTime date,
-    required int nailVariantId,
+  /// Helper build booking items payload cho API suggested-artists & salon-available-slots
+  List<Map<String, dynamic>> buildBookingItemsPayload({
+    int nailVariantId = 0,
     int? shapeMethodConfigId,
+  }) {
+    final List<Map<String, dynamic>> bookingItems = [];
+    final extraCounts = <String, int>{};
 
-    /// Dùng getSuggestedArtists (NailBooking) hay getNailArtistsBySalon (ServiceBooking)
-    bool useSuggestedArtists = true,
-  }) async {
-    emit(
-      state.copyWith(
-        selectedDate: date,
-        clearStylist: true,
-        clearTime: true,
-        noArtistSelected: false,
-        artists: [],
-        timeSlots: [],
-        artistsStatus: NailBookingLoadStatus.loading,
-        timeSlotsStatus: NailBookingLoadStatus.initial,
-      ),
-    );
+    final baseServiceId = state.selectedBaseServiceId;
+    if (baseServiceId != null && baseServiceId.isNotEmpty) {
+      extraCounts[baseServiceId] = (extraCounts[baseServiceId] ?? 0) + 1;
+    }
+    for (final id in state.selectedExtraServices.whereType<String>()) {
+      extraCounts[id] = (extraCounts[id] ?? 0) + 1;
+    }
 
-    await _fetchArtists(
-      nailVariantId: nailVariantId,
-      shapeMethodConfigId: shapeMethodConfigId,
-      useSuggestedArtists: useSuggestedArtists,
-    );
+    if (state.selectedWarrantyItems.isNotEmpty) {
+      bookingItems.addAll(state.selectedWarrantyItems);
+      for (final entry in extraCounts.entries) {
+        bookingItems.add({'serviceId': entry.key, 'quantity': entry.value});
+      }
+    } else {
+      if (nailVariantId > 0) {
+        bookingItems.add({
+          'nailVariantId': nailVariantId,
+          'shapeMethodConfigId': ?shapeMethodConfigId,
+          'quantity': 1,
+        });
+      }
+      for (final entry in extraCounts.entries) {
+        bookingItems.add({'serviceId': entry.key, 'quantity': entry.value});
+      }
+    }
+    return bookingItems;
   }
 
-  Future<void> _fetchArtists({
-    required int nailVariantId,
+  /// Gọi API POST /Bookings/suggested-artists để gợi ý danh sách thợ đủ skill
+  Future<void> fetchSuggestedArtists({
+    int nailVariantId = 0,
     int? shapeMethodConfigId,
-    required bool useSuggestedArtists,
   }) async {
     final branch = state.selectedBranch;
     final date = state.selectedDate;
     if (branch == null || date == null) return;
 
-    final dateStr = _formatDate(date);
+    final salonId = branch['salonId']?.toString() ?? '';
+    if (salonId.isEmpty) return;
+
+    emit(state.copyWith(artistsStatus: NailBookingLoadStatus.loading));
 
     try {
-      List<Map<String, dynamic>> artists;
-      if (useSuggestedArtists) {
-        artists = await _repository.getSuggestedArtists(
-          salonId: branch['salonId'],
-          bookingDate: dateStr,
-          nailVariantId: nailVariantId,
-          serviceIds: state.selectedExtraServices
-              .whereType<String>()
-              .toSet()
-              .toList(),
-          shapeMethodConfigId: shapeMethodConfigId,
-        );
-      } else {
-        artists = await _repository.getArtistsBySalon(branch['salonId']);
-      }
-
-      if (artists.isEmpty) {
-        // Không có thợ → tự động chọn chế độ "không chọn thợ"
-        emit(
-          state.copyWith(
-            artists: artists,
-            artistsStatus: NailBookingLoadStatus.loaded,
-            noArtistSelected: true,
-          ),
-        );
-        await _loadSalonSlots();
-      } else {
-        emit(
-          state.copyWith(
-            artists: artists,
-            artistsStatus: NailBookingLoadStatus.loaded,
-          ),
-        );
-      }
+      final bookingItems = buildBookingItemsPayload(
+        nailVariantId: nailVariantId,
+        shapeMethodConfigId: shapeMethodConfigId,
+      );
+      final artists = await _repository.getSuggestedArtists(
+        salonId: salonId,
+        bookingDate: _formatDate(date),
+        bookingItems: bookingItems,
+      );
+      emit(
+        state.copyWith(
+          artists: artists,
+          artistsStatus: NailBookingLoadStatus.loaded,
+        ),
+      );
     } catch (e) {
       emit(
         state.copyWith(
           artistsStatus: NailBookingLoadStatus.error,
-          errorMessage: 'Lỗi tải danh sách thợ: $e',
+          errorMessage: 'Lỗi gợi ý thợ nail: $e',
         ),
       );
     }
   }
 
+  /// Gọi khi user chọn ngày — reset thợ/giờ rồi fetch thợ gợi ý hoặc slot salon.
+  Future<void> selectDate({
+    required DateTime date,
+    int nailVariantId = 0,
+    int? shapeMethodConfigId,
+    bool useSuggestedArtists = true,
+  }) async {
+    if (state.holdToken != null) {
+      _cancelCurrentHold(state.holdToken!);
+    }
+    emit(
+      state.copyWith(
+        selectedDate: date,
+        clearTime: true,
+        clearHoldToken: true,
+        isHolding: false,
+        holdRemainingSeconds: 0,
+        timeSlots: [],
+        timeSlotsStatus: NailBookingLoadStatus.loading,
+      ),
+    );
+
+    if (state.noArtistSelected) {
+      await loadSalonAvailableSlots(
+        nailVariantId: nailVariantId,
+        shapeMethodConfigId: shapeMethodConfigId,
+      );
+    } else {
+      await fetchSuggestedArtists(
+        nailVariantId: nailVariantId,
+        shapeMethodConfigId: shapeMethodConfigId,
+      );
+      if (state.selectedStylist != null) {
+        await _fetchTimeSlots(
+          nailVariantId: nailVariantId,
+          shapeMethodConfigId: shapeMethodConfigId,
+        );
+      }
+    }
+  }
+
   /// Gọi khi user chọn thợ cụ thể.
-  Future<void> selectStylist(Map<String, dynamic> artist) async {
+  Future<void> selectStylist(
+    Map<String, dynamic> artist, {
+    int nailVariantId = 0,
+    int? shapeMethodConfigId,
+  }) async {
+    if (state.holdToken != null) {
+      _cancelCurrentHold(state.holdToken!);
+    }
     emit(
       state.copyWith(
         selectedStylist: artist,
         noArtistSelected: false,
         clearTime: true,
+        clearHoldToken: true,
+        isHolding: false,
+        holdRemainingSeconds: 0,
         timeSlots: [],
         timeSlotsStatus: NailBookingLoadStatus.loading,
       ),
     );
-    await _fetchTimeSlots();
+    await _fetchTimeSlots(
+      nailVariantId: nailVariantId,
+      shapeMethodConfigId: shapeMethodConfigId,
+    );
   }
 
-  /// Gọi khi user chuyển sang tab "Không chọn thợ".
-  Future<void> setNoArtistMode() async {
+  /// Gọi khi user chuyển sang tab "Để Nailify sắp xếp".
+  Future<void> setNoArtistMode({
+    int nailVariantId = 0,
+    int? shapeMethodConfigId,
+  }) async {
+    if (state.holdToken != null) {
+      _cancelCurrentHold(state.holdToken!);
+    }
     emit(
       state.copyWith(
         noArtistSelected: true,
         clearStylist: true,
         clearTime: true,
+        clearHoldToken: true,
+        isHolding: false,
+        holdRemainingSeconds: 0,
         timeSlots: [],
         timeSlotsStatus: NailBookingLoadStatus.loading,
       ),
     );
-    await _loadSalonSlots();
+    await loadSalonAvailableSlots(
+      nailVariantId: nailVariantId,
+      shapeMethodConfigId: shapeMethodConfigId,
+    );
   }
 
-  /// Gọi khi user quay lại tab "Chọn thợ".
-  void setSelectArtistMode() {
+  /// Gọi khi user chuyển sang tab "Tự chọn thợ".
+  Future<void> setSelectArtistMode({
+    int nailVariantId = 0,
+    int? shapeMethodConfigId,
+  }) async {
+    if (state.holdToken != null) {
+      _cancelCurrentHold(state.holdToken!);
+    }
     emit(
       state.copyWith(
         noArtistSelected: false,
         clearStylist: true,
         clearTime: true,
+        clearHoldToken: true,
+        isHolding: false,
+        holdRemainingSeconds: 0,
         timeSlots: [],
         timeSlotsStatus: NailBookingLoadStatus.initial,
       ),
     );
+    await fetchSuggestedArtists(
+      nailVariantId: nailVariantId,
+      shapeMethodConfigId: shapeMethodConfigId,
+    );
   }
 
-  Future<void> _fetchTimeSlots() async {
+  Future<void> _fetchTimeSlots({
+    int nailVariantId = 0,
+    int? shapeMethodConfigId,
+  }) async {
     final stylist = state.selectedStylist;
     final date = state.selectedDate;
     if (stylist == null || date == null) return;
 
     try {
+      final bookingItems = buildBookingItemsPayload(
+        nailVariantId: nailVariantId,
+        shapeMethodConfigId: shapeMethodConfigId,
+      );
       final slots = await _repository.getArtistAvailableSlots(
         artistId: stylist['nailArtistId'],
         bookingDate: _formatDate(date),
+        bookingItems: bookingItems,
+        holdToken: state.holdToken,
+      );
+      final filteredSlots = _repository.filterSlotsByOperatingHours(
+        slots: slots,
+        salon: state.selectedBranch,
+        date: date,
       );
       emit(
         state.copyWith(
-          timeSlots: slots,
+          timeSlots: filteredSlots,
           timeSlotsStatus: NailBookingLoadStatus.loaded,
         ),
       );
@@ -258,19 +379,54 @@ class NailBookingCubit extends Cubit<NailBookingState> {
     }
   }
 
-  Future<void> _loadSalonSlots() async {
+  Future<void> loadSalonAvailableSlots({
+    int nailVariantId = 0,
+    int? shapeMethodConfigId,
+  }) async {
     final branch = state.selectedBranch;
     final date = state.selectedDate;
     if (branch == null || date == null) return;
 
-    final slots = _repository.getSalonOperatingSlots(salon: branch, date: date);
-    emit(
-      state.copyWith(
-        timeSlots: slots,
-        timeSlotsStatus: NailBookingLoadStatus.loaded,
-        clearTime: true,
-      ),
-    );
+    emit(state.copyWith(timeSlotsStatus: NailBookingLoadStatus.loading));
+
+    try {
+      final salonId = branch['salonId']?.toString() ?? '';
+      final bookingItems = buildBookingItemsPayload(
+        nailVariantId: nailVariantId,
+        shapeMethodConfigId: shapeMethodConfigId,
+      );
+
+      final slots = await _repository.getSalonAvailableSlots(
+        salonId: salonId,
+        bookingDate: _formatDate(date),
+        bookingItems: bookingItems,
+      );
+
+      final filteredSlots = _repository.filterSlotsByOperatingHours(
+        slots: slots,
+        salon: branch,
+        date: date,
+      );
+
+      emit(
+        state.copyWith(
+          timeSlots: filteredSlots,
+          timeSlotsStatus: NailBookingLoadStatus.loaded,
+          clearTime: true,
+        ),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          timeSlotsStatus: NailBookingLoadStatus.error,
+          errorMessage: 'Lỗi tải khung giờ salon: $e',
+        ),
+      );
+    }
+  }
+
+  Future<void> _loadSalonSlots() async {
+    await loadSalonAvailableSlots();
   }
 
   /// Reload danh sách khung giờ từ bên ngoài (VD: từ widget khi detect isHeld).
@@ -284,8 +440,23 @@ class NailBookingCubit extends Cubit<NailBookingState> {
   }
 
   void selectTime(String time) {
-    // Người dùng đổi giờ → huỷ giữ chỗ cũ (nếu có) nhưng KHÔNG gọi holdSlot mới.
-    // HoldSlot sẽ chỉ được gọi khi user bấm "Tiếp theo" sang trang Xác nhận.
+    // 1. Nếu user chọn lại đúng giờ đã chọn → bỏ chọn.
+    if (state.selectedTime == time) {
+      if (state.holdToken != null) {
+        _cancelCurrentHold(state.holdToken!);
+      }
+      emit(
+        state.copyWith(
+          clearTime: true,
+          clearHoldToken: true,
+          isHolding: false,
+          holdRemainingSeconds: 0,
+        ),
+      );
+      return;
+    }
+
+    // 2. Người dùng đổi giờ → huỷ giữ chỗ cũ (nếu có)
     if (state.holdToken != null) {
       _cancelCurrentHold(state.holdToken!);
     }
@@ -301,29 +472,46 @@ class NailBookingCubit extends Cubit<NailBookingState> {
 
   /// Giữ chỗ trước khi bước sang trang Xác nhận.
   /// Trả về true nếu giữ chỗ thành công, false nếu thất bại (đã emit errorMessage).
+  ///
+  /// Lưu ý: Vẫn tạo hold token cho cả flow "Không chọn thợ" — backend cần
+  /// token này để tránh 2 user cùng đặt 1 slot salon (race condition).
   Future<bool> holdSelectedSlot({int? nailVariantId}) async {
     final time = state.selectedTime;
     if (time == null) return false;
 
-    // Nếu chọn luồng "Không chọn thợ", bỏ qua việc lấy holdToken
-    if (state.noArtistSelected) return true;
-
-    await _holdSlot(time, nailVariantId: nailVariantId);
-    return state.holdToken != null;
+    // Fix bug: set `isSubmitting = true` trước khi gọi API hold-slot để button
+    // "Tiếp tục" trên `service_booking_page` disable + spinner ngay, tránh
+    // user bấm nhầm nhiều lần (gọi API hold-slot trùng lặp).
+    emit(state.copyWith(isSubmitting: true));
+    try {
+      await _holdSlot(time, nailVariantId: nailVariantId);
+      return state.holdToken != null;
+    } finally {
+      // Chỉ reset isSubmitting nếu vẫn còn mounted (tránh emit sau dispose).
+      if (!isClosed) {
+        emit(state.copyWith(isSubmitting: false));
+      }
+    }
   }
 
   /// Gọi API giữ chỗ và khởi động bộ đếm thời gian.
+  ///
+  /// Hỗ trợ cả 2 luồng:
+  /// - Có chọn thợ cụ thể → truyền `nailArtistId`
+  /// - "Không chọn thợ" → truyền `nailArtistId` rỗng, backend sẽ tự assign sau
   Future<void> _holdSlot(String time, {int? nailVariantId}) async {
     final branch = state.selectedBranch;
     final date = state.selectedDate;
     if (branch == null || date == null) return;
 
     final salonId = branch['salonId']?.toString() ?? '';
+    // Khi `noArtistSelected = true`, vẫn truyền nailArtistId rỗng để
+    // backend có thể giữ chỗ ở cấp salon (tránh race condition giữa 2 users).
     final artistId = state.noArtistSelected
         ? ''
         : (state.selectedStylist?['nailArtistId']?.toString() ?? '');
 
-    if (salonId.isEmpty || artistId.isEmpty) return;
+    if (salonId.isEmpty) return;
 
     final bookingDate = _formatDate(date);
     final formattedTime = time.length == 5 ? '$time:00' : time;
@@ -333,8 +521,27 @@ class NailBookingCubit extends Cubit<NailBookingState> {
 
     // Group extra services by ID and count duplicates for correct quantity
     final extraCounts = <String, int>{};
+
+    // 1. Service gốc (base service) — dùng cho luồng service_booking_page.
+    final baseServiceId = state.selectedBaseServiceId;
+    if (baseServiceId != null && baseServiceId.isNotEmpty) {
+      extraCounts[baseServiceId] = (extraCounts[baseServiceId] ?? 0) + 1;
+    }
+
+    // 2. Các dịch vụ thêm user chọn ở BookingServiceSelection.
     for (final id in state.selectedExtraServices.whereType<String>()) {
       extraCounts[id] = (extraCounts[id] ?? 0) + 1;
+    }
+
+    // Nếu rỗng → không thể giữ chỗ, báo lỗi ngay để khỏi spam backend.
+    if (extraCounts.isEmpty && nailVariantId == null) {
+      emit(
+        state.copyWith(
+          errorMessage:
+              'Vui lòng chọn ít nhất một dịch vụ hoặc mẫu nail trước khi giữ chỗ.',
+        ),
+      );
+      return;
     }
 
     if (isWarranty) {
@@ -372,7 +579,22 @@ class NailBookingCubit extends Cubit<NailBookingState> {
       final token = data['holdToken']?.toString();
       final expiresAtStr = data['expiresAt']?.toString();
 
-      if (token == null || token.isEmpty) return;
+      // Fix bug "app đơ khi bấm Tiếp tục":
+      // Nếu backend trả token rỗng hoặc null → không có hold. Trước fix:
+      // không emit gì cả → isHolding vẫn false → _holdSelectedSlot return false
+      // nhưng không thông báo → user thấy app đơ. Sau fix: báo lỗi rõ ràng.
+      if (token == null || token.isEmpty) {
+        emit(
+          state.copyWith(
+            clearHoldToken: true,
+            isHolding: false,
+            holdRemainingSeconds: 0,
+            errorMessage:
+                'Không thể giữ khung giờ này. Vui lòng chọn giờ khác.',
+          ),
+        );
+        return;
+      }
 
       // Bỏ qua việc tính difference từ expiresAt vì đồng hồ device có thể lệch với server.
       // Ưu tiên dùng remainingSeconds từ server trả về, nếu không có mặc định 300s (5 phút).
@@ -396,25 +618,86 @@ class NailBookingCubit extends Cubit<NailBookingState> {
 
       _startHoldTimer(token, expiresAt);
     } catch (e) {
-      // Bắt lỗi khi giờ bị người khác đặt trước (Race Condition)
-      emit(
-        state.copyWith(
-          clearHoldToken: true,
-          isHolding: false,
-          holdRemainingSeconds: 0,
-          clearTime: true, // Xoá giờ đang chọn
-          errorMessage:
-              'Khung giờ này vừa mới có người chọn. Vui lòng chọn giờ khác.',
-        ),
-      );
-
-      // Tải lại danh sách giờ để cập nhật trạng thái isHeld mới nhất
-      if (state.noArtistSelected) {
-        _loadSalonSlots();
-      } else {
-        _fetchTimeSlots();
+      // Phân biệt các loại lỗi để hiển thị message phù hợp:
+      // 1. Lỗi do người dùng chọn giờ đã kín / slot đã có người giữ
+      //    → hiển thị "vui lòng chọn giờ khác", reload slots
+      // 2. Lỗi hệ thống (network, timeout, 500...)
+      //    → hiển thị "hệ thống đang gặp sự cố"
+      //
+      // Backend .NET hiện tại trả 400 Bad Request cho cả 2 trường hợp:
+      //  - Body `{ isSucceeded: false, message: "Thợ đã đầy lịch..." }` — lỗi
+      //    nghiệp vụ (user chọn giờ kín, KHÔNG phải lỗi hệ thống).
+      //  - Body khác (validation fail...) — lỗi hệ thống.
+      // Helper `classifyHoldError` ở `core/error/exceptions.dart` xử lý
+      // phân loại (dùng chung cho nail_booking + warranty_booking).
+      final errorKind = classifyHoldError(e);
+      switch (errorKind) {
+        case HoldErrorKind.slotTakenByOther:
+          // Slot vừa bị người khác giữ trước khi mình tới lượt.
+          // Xoá giờ đang chọn + reload slots để UI cập nhật trạng thái mới nhất.
+          emit(
+            state.copyWith(
+              clearHoldToken: true,
+              isHolding: false,
+              holdRemainingSeconds: 0,
+              clearTime: true,
+              errorMessage:
+                  'Khung giờ này vừa mới có người chọn. Vui lòng chọn giờ khác.',
+            ),
+          );
+          if (state.noArtistSelected) {
+            _loadSalonSlots();
+          } else {
+            _fetchTimeSlots();
+          }
+          break;
+        case HoldErrorKind.artistFullyBooked:
+          // Backend báo thợ đã kín lịch trong khoảng thời gian user chọn.
+          // Đây KHÔNG phải lỗi hệ thống — chỉ là user chọn giờ không còn khả dụng.
+          // Hiển thị message server trả về (đã được Việt hoá) để user hiểu và chọn giờ khác.
+          // Vẫn reload slots vì giờ khác có thể đã bị người khác vừa chọn.
+          emit(
+            state.copyWith(
+              clearHoldToken: true,
+              isHolding: false,
+              holdRemainingSeconds: 0,
+              clearTime: true,
+              errorMessage: _readableError(e),
+            ),
+          );
+          if (state.noArtistSelected) {
+            _loadSalonSlots();
+          } else {
+            _fetchTimeSlots();
+          }
+          break;
+        case HoldErrorKind.systemError:
+          // Lỗi thực sự (network, 500, timeout...). Giữ nguyên UI, chỉ thông báo.
+          // Tạm thời hiển thị chung thông báo trùng lịch theo yêu cầu để tránh hiện 500
+          emit(
+            state.copyWith(
+              clearHoldToken: true,
+              isHolding: false,
+              holdRemainingSeconds: 0,
+              clearTime: true,
+              errorMessage:
+                  'Rất tiếc, khung giờ này vừa có người đặt. Vui lòng chọn giờ khác.',
+            ),
+          );
+          if (state.noArtistSelected) {
+            _loadSalonSlots();
+          } else {
+            _fetchTimeSlots();
+          }
+          break;
       }
     }
+  }
+
+  /// Trả về message thân thiện cho mọi lỗi không phải conflict.
+  String _readableError(Object error) {
+    if (error is AppException) return error.message;
+    return 'Lỗi giữ chỗ: $error';
   }
 
   /// Bộ đếm ngược từ máy client, không phụ thuộc vào đồng hồ hệ thống.
@@ -461,8 +744,44 @@ class NailBookingCubit extends Cubit<NailBookingState> {
     _repository.cancelHoldSlot(token); // fire-and-forget
   }
 
+  /// Huỷ giữ chỗ hiện tại (nếu có) — fire-and-forget, không throw.
+  /// Gọi khi user back step 3 → 2 hoặc đóng page mà chưa đặt booking xong.
+  void cancelCurrentHold() {
+    final token = state.holdToken;
+    if (token == null || token.isEmpty) return;
+    _cancelCurrentHold(token);
+    if (!isClosed) {
+      emit(
+        state.copyWith(
+          clearHoldToken: true,
+          isHolding: false,
+          holdRemainingSeconds: 0,
+        ),
+      );
+    }
+  }
+
+  /// Bắt đầu giữ chỗ (cho service_booking_page gọi thẳng vào cubit).
+  /// Trả về true nếu thành công, false nếu thất bại.
+  Future<bool> startHold() async {
+    return holdSelectedSlot();
+  }
+
   void selectPromotions(List<dynamic> promos) {
     emit(state.copyWith(selectedPromotions: promos));
+  }
+
+  /// Đặt dịch vụ gốc cho luồng `service_booking_page` — dịch vụ user đã chọn
+  /// từ trang trước khi vào booking flow.
+  ///
+  /// Service này sẽ tự động được thêm vào `bookingItems` của API hold-slot
+  /// và create-booking. Khác với `selectedExtraServices` (user chọn thêm).
+  void setBaseService(String? serviceId) {
+    if (serviceId == null || serviceId.isEmpty) {
+      emit(state.copyWith(clearBaseService: true));
+    } else {
+      emit(state.copyWith(selectedBaseServiceId: serviceId));
+    }
   }
 
   void clearError() {
@@ -530,6 +849,25 @@ class NailBookingCubit extends Cubit<NailBookingState> {
         total += subtotal * (p.discountValue / 100);
       } else {
         total += p.discountValue;
+      }
+    }
+    return total.toInt();
+  }
+
+  /// Tính số tiền giảm từ danh sách wallet voucher (dùng cho các luồng
+  /// booking mới dùng API /api/Promotions/my-wallet-vouchers).
+  int discountAmountFromVouchers({
+    required int subtotal,
+    required List<WalletVoucherModel> vouchers,
+  }) {
+    if (vouchers.isEmpty) return 0;
+    double total = 0;
+    for (final v in vouchers) {
+      final type = v.discountType.toLowerCase();
+      if (type == 'percentage') {
+        total += subtotal * (v.discountValue / 100);
+      } else {
+        total += v.discountValue;
       }
     }
     return total.toInt();
@@ -649,6 +987,7 @@ class NailBookingCubit extends Cubit<NailBookingState> {
   /// Huỷ giữ chỗ khi user thoát khỏi quá trình đặt lịch.
   @override
   Future<void> close() {
+    _slotStatusChangedSub?.cancel();
     if (state.holdToken != null) {
       _repository.cancelHoldSlot(state.holdToken!); // fire-and-forget
     }

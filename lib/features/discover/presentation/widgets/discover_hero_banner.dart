@@ -21,7 +21,7 @@ class DiscoverHeroBanner extends StatelessWidget {
               Icon(
                 Icons.auto_awesome,
                 size: 14,
-                color: Colors.white.withOpacity(0.9),
+                color: Colors.white.withValues(alpha: 0.9),
               ),
               const SizedBox(width: 6),
               Text(
@@ -30,7 +30,7 @@ class DiscoverHeroBanner extends StatelessWidget {
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 1.4,
-                  color: Colors.white.withOpacity(0.95),
+                  color: Colors.white.withValues(alpha: 0.95),
                 ),
               ),
             ],
@@ -53,7 +53,7 @@ class DiscoverHeroBanner extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
-              color: Colors.white.withOpacity(0.92),
+              color: Colors.white.withValues(alpha: 0.92),
               height: 1.4,
             ),
           ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../generated/l10n.dart';
 import '../../../nails/data/models/customer_nail_models.dart';
 import '../../../nails/data/repositories/customer_nail_repository.dart';
 import '../../../try-on/presentation/try_on_setup_screen.dart';
@@ -30,8 +31,6 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
   bool _isLoading = false;
   bool _hasMore = true;
   String? _error;
-
-  bool? _isPublicFilter;
 
   @override
   void initState() {
@@ -73,7 +72,6 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
         page: _page,
         pageSize: 10,
         name: _searchController.text.isNotEmpty ? _searchController.text : null,
-        isPublic: _isPublicFilter,
       );
 
       if (mounted) {
@@ -121,17 +119,17 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Xóa mẫu móng',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          S.of(context).deleteNailTitle,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        content: Text('Bạn có chắc muốn xóa "${nail.name}"?'),
+        content: Text(S.of(context).deleteNailConfirm(nail.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text(
-              'Hủy',
-              style: TextStyle(color: AppColors.textSecondary),
+            child: Text(
+              S.of(context).cancelBtn,
+              style: const TextStyle(color: AppColors.textSecondary),
             ),
           ),
           FilledButton(
@@ -142,7 +140,7 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text('Xóa'),
+            child: Text(S.of(context).deleteBtn),
           ),
         ],
       ),
@@ -157,7 +155,6 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
     await widget.repository.updateCustomerNail(
       customerNailId: nail.customerNailId,
       name: nail.name,
-      isPublic: nail.isPublic,
       imagePath: null,
     );
     _reload();
@@ -167,7 +164,6 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
     await widget.repository.updateCustomerNail(
       customerNailId: nail.customerNailId,
       name: nail.name,
-      isPublic: !nail.isPublic,
       imagePath: null,
     );
     _reload();
@@ -192,9 +188,12 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
         foregroundColor: Colors.white,
         elevation: 6,
         icon: const Icon(Icons.add_rounded, size: 20),
-        label: const Text(
-          'Tạo mới',
-          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+        label: Text(
+          S.of(context).createNewBtn,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
         ),
       ),
       body: Column(
@@ -213,7 +212,7 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
                       color: AppColors.textPrimary,
                     ),
                     decoration: InputDecoration(
-                      hintText: 'Tìm mẫu móng...',
+                      hintText: S.of(context).searchNailHint,
                       prefixIcon: const Icon(
                         Icons.search_rounded,
                         color: AppColors.textSecondary,
@@ -259,48 +258,6 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
                       border: Border.all(color: Colors.grey.shade100, width: 1),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<bool?>(
-                        value: _isPublicFilter,
-                        dropdownColor: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        icon: const Icon(
-                          Icons.keyboard_arrow_down_rounded,
-                          color: AppColors.textSecondary,
-                          size: 22,
-                        ),
-                        hint: const Text(
-                          'Tất cả',
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        isExpanded: true,
-                        items: const [
-                          DropdownMenuItem(value: null, child: Text('Tất cả')),
-                          DropdownMenuItem(
-                            value: true,
-                            child: Text('Công khai'),
-                          ),
-                          DropdownMenuItem(
-                            value: false,
-                            child: Text('Riêng tư'),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          setState(() => _isPublicFilter = value);
-                          _loadData(reset: true);
-                        },
-                      ),
-                    ),
                   ),
                 ),
               ],
@@ -328,7 +285,7 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
                         FilledButton.icon(
                           onPressed: () => _loadData(reset: true),
                           icon: const Icon(Icons.refresh),
-                          label: const Text('Thử lại'),
+                          label: Text(S.of(context).retryBtn),
                         ),
                       ],
                     ),
@@ -345,7 +302,7 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Chưa có mẫu móng nào',
+                          S.of(context).noNailDesigns,
                           style: TextStyle(
                             color: Colors.grey.shade600,
                             fontSize: 16,
@@ -360,7 +317,7 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
                           ),
                           onPressed: _create,
                           icon: const Icon(Icons.add),
-                          label: const Text('Tạo mẫu móng mới'),
+                          label: Text(S.of(context).createNewNailBtn),
                         ),
                       ],
                     ),

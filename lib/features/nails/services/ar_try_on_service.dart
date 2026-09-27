@@ -69,6 +69,29 @@ class ArTryOnService {
     return SnapshotResult.fromJson(imagePath, jsonStr);
   }
 
+  /// Mở Gallery ở chế độ Snapshot:
+  /// Native mở bộ sưu tập -> chọn ảnh -> chạy MediaPipe IMAGE -> trả về [SnapshotResult]
+  Future<SnapshotResult> launchCustomerGallery(
+    CustomerNailModel customerNail,
+  ) async {
+    if (!Platform.isAndroid) {
+      throw UnsupportedError('Gallery try-on chỉ hỗ trợ Android.');
+    }
+
+    final config = _convertCustomerToArFormat(customerNail);
+
+    final result = await _channel.invokeMethod<Map<dynamic, dynamic>>(
+      'launchGallerySnapshot',
+      {'config': config},
+    );
+    if (result == null) {
+      throw Exception('Native không trả về kết quả Gallery.');
+    }
+    final imagePath = result['imagePath'] as String? ?? '';
+    final jsonStr = result['landmarksJson'] as String? ?? '[]';
+    return SnapshotResult.fromJson(imagePath, jsonStr);
+  }
+
   Future<void> launch(
     NailVariantModel nailVariant, {
     NailSurfaceModel? surface,

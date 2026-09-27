@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../generated/l10n.dart';
 
 class BookingDateSelection extends StatefulWidget {
   final DateTime? selectedDate;
@@ -36,7 +37,10 @@ class _BookingDateSelectionState extends State<BookingDateSelection> {
     );
   }
 
-  final List<String> _weekDays = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+  List<String> get _weekDays =>
+      Localizations.localeOf(context).languageCode == 'vi'
+      ? ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
+      : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   @override
   Widget build(BuildContext context) {
@@ -55,9 +59,9 @@ class _BookingDateSelectionState extends State<BookingDateSelection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Chọn ngày hẹn',
-          style: TextStyle(
+        Text(
+          S.of(context).bookingSelectDateTitle,
+          style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
             color: AppColors.textPrimary,
@@ -81,7 +85,12 @@ class _BookingDateSelectionState extends State<BookingDateSelection> {
                     (monthDate) => DropdownMenuItem(
                       value: monthDate,
                       child: Text(
-                        'Tháng ${monthDate.month} năm ${monthDate.year}',
+                        S
+                            .of(context)
+                            .bookingMonthYear(
+                              monthDate.month.toString(),
+                              monthDate.year.toString(),
+                            ),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -122,8 +131,8 @@ class _BookingDateSelectionState extends State<BookingDateSelection> {
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 7,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 6,
             childAspectRatio: 1,
           ),
           itemCount: daysInMonth + firstWeekday - 1,
@@ -143,7 +152,8 @@ class _BookingDateSelectionState extends State<BookingDateSelection> {
 
             return GestureDetector(
               onTap: isPastDate ? null : () => widget.onDateChanged(thisDay),
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isSelected ? AppColors.primary : Colors.transparent,
@@ -152,14 +162,24 @@ class _BookingDateSelectionState extends State<BookingDateSelection> {
                       : Border.all(
                           color: isPastDate
                               ? Colors.grey.shade100
-                              : AppColors.borderLight,
+                              : const Color(0xFFF2ECE6),
+                          width: 1,
                         ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.35),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Center(
                   child: Text(
                     '$day',
                     style: TextStyle(
-                      fontSize: 15,
+                      fontSize: 14,
                       fontWeight: isSelected
                           ? FontWeight.bold
                           : FontWeight.w500,

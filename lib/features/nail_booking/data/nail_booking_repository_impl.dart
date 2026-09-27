@@ -37,16 +37,18 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
   Future<List<Map<String, dynamic>>> getSuggestedArtists({
     required String salonId,
     required String bookingDate,
-    required int nailVariantId,
-    required List<String> serviceIds,
+    int nailVariantId = 0,
+    List<String> serviceIds = const [],
     int? shapeMethodConfigId,
+    List<Map<String, dynamic>>? bookingItems,
   }) async {
     final list = await _bookingApi.getSuggestedArtists(
       salonId,
       bookingDate,
-      nailVariantId,
-      serviceIds,
-      shapeMethodConfigId,
+      nailVariantId: nailVariantId,
+      serviceIds: serviceIds,
+      shapeMethodConfigId: shapeMethodConfigId,
+      bookingItems: bookingItems,
     );
     return list
         .whereType<Map>()
@@ -67,10 +69,33 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
   Future<List<Map<String, dynamic>>> getArtistAvailableSlots({
     required String artistId,
     required String bookingDate,
+    List<Map<String, dynamic>>? bookingItems,
+    String? holdToken,
   }) async {
     final list = await _bookingApi.getArtistAvailableSlots(
       artistId,
       bookingDate,
+      bookingItems: bookingItems,
+      holdToken: holdToken,
+    );
+    return list
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getSalonAvailableSlots({
+    required String salonId,
+    required String bookingDate,
+    required List<Map<String, dynamic>> bookingItems,
+    String? holdToken,
+  }) async {
+    final list = await _bookingApi.getSalonAvailableSlots(
+      salonId: salonId,
+      bookingDate: bookingDate,
+      bookingItems: bookingItems,
+      holdToken: holdToken,
     );
     return list
         .whereType<Map>()
@@ -84,6 +109,23 @@ class NailBookingRepositoryImpl implements NailBookingRepository {
     required DateTime date,
   }) {
     final list = _bookingApi.getSalonOperatingSlots(salon, date);
+    return list
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+  }
+
+  @override
+  List<Map<String, dynamic>> filterSlotsByOperatingHours({
+    required List<dynamic> slots,
+    required Map<String, dynamic>? salon,
+    required DateTime? date,
+  }) {
+    final list = _bookingApi.filterSlotsByOperatingHours(
+      slots: slots,
+      salon: salon,
+      date: date,
+    );
     return list
         .whereType<Map>()
         .map((e) => Map<String, dynamic>.from(e))

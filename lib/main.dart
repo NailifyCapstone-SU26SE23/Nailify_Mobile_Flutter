@@ -9,7 +9,8 @@ import 'core/di/injection.dart';
 import 'core/network/signalr_service.dart';
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
-import 'core/localization/app_localizations.dart';
+import 'core/widgets/global_signalr_listener.dart';
+import 'generated/l10n.dart';
 import 'core/localization/locale_service.dart';
 import 'core/utils/token_utils.dart';
 
@@ -30,7 +31,7 @@ void main() async {
   try {
     await configureDependencies();
   } catch (e) {
-    print('Lỗi cấu hình Dependency Injection: $e');
+    debugPrint('Lỗi cấu hình Dependency Injection: $e');
   }
 
   // Kiểm tra token khi mở app: nếu hết hạn thì tự động xóa
@@ -68,20 +69,22 @@ class CoreApp extends StatelessWidget {
           // Cấu hình Theme hệ thống
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
-          themeMode: ThemeMode.system,
+          themeMode: ThemeMode.light,
 
           // Đa ngôn ngữ cơ bản, chưa cần dùng
           localizationsDelegates: const [
-            AppLocalizations.delegate,
+            S.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: AppLocalizations.supportedLocales,
+          supportedLocales: S.supportedLocales,
           locale: localeService.currentLocale,
 
           // Cấu hình định tuyến trung tâm GoRouter
           routerConfig: AppRouter.router,
+          builder: (context, child) =>
+              GlobalSignalRListener(child: child ?? const SizedBox.shrink()),
         );
       },
     );

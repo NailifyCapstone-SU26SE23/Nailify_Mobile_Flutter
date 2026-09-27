@@ -8,6 +8,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/duration_formatter.dart';
+import '../../../../generated/l10n.dart';
 import '../../data/models/waitlist_model.dart';
 
 // ─────────────────────────────────────────────
@@ -49,18 +51,22 @@ class _WaitlistPendingCard extends StatelessWidget {
 
   const _WaitlistPendingCard({required this.item, required this.onCancel});
 
-  String _timeSince(DateTime from) {
+  String _timeSince(BuildContext context, DateTime from) {
+    // DurationFormatter.formatDiff tu dong xu ly:
+    //  - Negative Duration (registeredAt > now) -> lay gia tri tuyet doi + prefix "-"
+    //  - Positive Duration (registeredAt < now) -> hien thi binh thuong
+    //  - Tren 24h -> hien thi "X ngay Y gio"
+    //  - Duoi 24h, tren 60p -> hien thi "X gio Y phut"
+    //  - Duoi 60p -> hien thi "X phut"
     final diff = DateTime.now().difference(from);
-    if (diff.inMinutes < 60) return '${diff.inMinutes} phút trước';
-    if (diff.inHours < 24) return '${diff.inHours} tiếng trước';
-    return '${diff.inDays} ngày trước';
+    return DurationFormatter.formatDiff(diff);
   }
 
   @override
   Widget build(BuildContext context) {
     return _CardShell(
       badge: _StatusBadge(
-        label: 'Đang xếp hàng',
+        label: S.of(context).waitlistStatusPending,
         bgColor: Colors.blue.shade50,
         textColor: Colors.blue.shade700,
         icon: Icons.hourglass_top_rounded,
@@ -73,7 +79,7 @@ class _WaitlistPendingCard extends StatelessWidget {
             Icon(Icons.schedule, size: 14, color: Colors.grey.shade400),
             const SizedBox(width: 4),
             Text(
-              'Đã đăng ký: ${_timeSince(item.registeredAt)}',
+              '${S.of(context).waitlistRegisteredAt}${_timeSince(context, item.registeredAt)}',
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.grey.shade500,
@@ -97,9 +103,9 @@ class _WaitlistPendingCard extends StatelessWidget {
               ),
               padding: const EdgeInsets.symmetric(vertical: 11),
             ),
-            child: const Text(
-              'Hủy chờ',
-              style: TextStyle(fontWeight: FontWeight.w600),
+            child: Text(
+              S.of(context).waitlistCancelBtn,
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
         ),
@@ -112,12 +118,12 @@ class _WaitlistPendingCard extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          'Xác nhận hủy chờ',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          S.of(context).waitlistCancelDialogTitle,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         content: Text(
-          'Bạn có chắc muốn rời khỏi danh sách chờ lúc ${item.time}?\nBạn sẽ mất vị trí trong hàng chờ này.',
+          S.of(context).waitlistCancelDialogContent(item.time),
           style: TextStyle(color: Colors.grey.shade600, height: 1.5),
         ),
         actionsPadding: const EdgeInsets.symmetric(
@@ -128,7 +134,7 @@ class _WaitlistPendingCard extends StatelessWidget {
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: Text(
-              'Giữ lại',
+              S.of(context).waitlistKeepBtn,
               style: TextStyle(color: Colors.grey.shade600),
             ),
           ),
@@ -144,7 +150,7 @@ class _WaitlistPendingCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: const Text('Hủy chờ'),
+            child: Text(S.of(context).waitlistCancelBtn),
           ),
         ],
       ),
@@ -223,7 +229,7 @@ class _WaitlistOpenedCardState extends State<_WaitlistOpenedCard> {
   Widget build(BuildContext context) {
     return _CardShell(
       badge: _StatusBadge(
-        label: 'CÓ CHỖ TRỐNG',
+        label: S.of(context).waitlistStatusOpened,
         bgColor: AppColors.primary.withOpacity(0.12),
         textColor: AppColors.primary,
         icon: Icons.celebration_rounded,
@@ -257,7 +263,7 @@ class _WaitlistOpenedCardState extends State<_WaitlistOpenedCard> {
               Expanded(
                 child: _expired
                     ? Text(
-                        'Thời gian giữ chỗ đã hết',
+                        S.of(context).waitlistHoldExpired,
                         style: TextStyle(
                           color: Colors.grey.shade600,
                           fontWeight: FontWeight.w500,
@@ -269,7 +275,7 @@ class _WaitlistOpenedCardState extends State<_WaitlistOpenedCard> {
                           style: const TextStyle(fontSize: 13),
                           children: [
                             TextSpan(
-                              text: 'Giữ chỗ kết thúc sau: ',
+                              text: S.of(context).waitlistHoldEndsIn,
                               style: TextStyle(color: Colors.grey.shade700),
                             ),
                             TextSpan(
@@ -305,7 +311,7 @@ class _WaitlistOpenedCardState extends State<_WaitlistOpenedCard> {
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 11),
                 ),
-                child: const Text('Từ chối'),
+                child: Text(S.of(context).waitlistDeclineBtn),
               ),
             ),
             const SizedBox(width: 10),
@@ -323,9 +329,9 @@ class _WaitlistOpenedCardState extends State<_WaitlistOpenedCard> {
                   padding: const EdgeInsets.symmetric(vertical: 11),
                   elevation: 0,
                 ),
-                child: const Text(
-                  'Xác nhận đặt lịch',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                child: Text(
+                  S.of(context).waitlistConfirmBookBtn,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
             ),

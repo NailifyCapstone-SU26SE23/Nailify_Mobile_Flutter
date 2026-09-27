@@ -21,12 +21,10 @@ class _CustomerComponentFormDialogState
     extends State<CustomerComponentFormDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _priceController = TextEditingController();
   final _customDataController = TextEditingController();
   final _picker = ImagePicker();
 
   int _componentType = 0;
-  bool _isPublic = true;
   XFile? _imageFile;
   bool _isLoading = false;
 
@@ -36,19 +34,32 @@ class _CustomerComponentFormDialogState
     final component = widget.component;
     if (component != null) {
       _nameController.text = component.name;
-      _priceController.text = component.price > 0
-          ? component.price.toString()
-          : '';
       _customDataController.text = component.customDataJson;
-      _componentType = int.tryParse(component.componentType) ?? 0;
-      _isPublic = component.isPublic;
+      _componentType = _componentTypeValue(component.componentType);
+    }
+  }
+
+  int _componentTypeValue(String value) {
+    final normalized = value.trim().toLowerCase();
+    final parsed = int.tryParse(normalized);
+    if (parsed != null) return parsed;
+    switch (normalized) {
+      case 'gem':
+        return 0;
+      case 'sticker':
+        return 1;
+      case 'charm':
+        return 2;
+      case 'art':
+        return 3;
+      default:
+        return 0;
     }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _priceController.dispose();
     _customDataController.dispose();
     super.dispose();
   }
@@ -70,9 +81,8 @@ class _CustomerComponentFormDialogState
         await repository.createCustomerComponent(
           name: _nameController.text.trim(),
           componentType: _componentType,
-          price: double.tryParse(_priceController.text.trim()),
+          price: null,
           customDataJson: _customDataController.text.trim(),
-          isPublic: _isPublic,
           imagePath: _imageFile?.path,
         );
       } else {
@@ -80,9 +90,8 @@ class _CustomerComponentFormDialogState
           customerComponentId: widget.component!.customerComponentId,
           name: _nameController.text.trim(),
           componentType: _componentType,
-          price: double.tryParse(_priceController.text.trim()),
+          price: null,
           customDataJson: _customDataController.text.trim(),
-          isPublic: _isPublic,
           imagePath: _imageFile?.path,
         );
       }
@@ -154,34 +163,6 @@ class _CustomerComponentFormDialogState
                   validator: (value) => value?.trim().isEmpty == true
                       ? 'Vui lòng nhập tên'
                       : null,
-                ),
-                const SizedBox(height: 16),
-
-                // Giá tiền
-                TextFormField(
-                  controller: _priceController,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textPrimary,
-                  ),
-                  decoration: InputDecoration(
-                    labelText: 'Giá tiền (VND)',
-                    labelStyle: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 13,
-                    ),
-                    filled: true,
-                    fillColor: const Color(0xFFF5F5F7),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-                  ),
-                  keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 16),
 
@@ -349,42 +330,6 @@ class _CustomerComponentFormDialogState
                               ],
                             ),
                           ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Trạng thái công khai
-                Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF5F5F7),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: SwitchListTile(
-                    title: const Text(
-                      'Công khai',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    subtitle: const Text(
-                      'Mọi người có thể sử dụng',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    value: _isPublic,
-                    activeThumbColor: Colors.white,
-                    activeTrackColor: AppColors.primary,
-                    inactiveThumbColor: Colors.grey.shade400,
-                    inactiveTrackColor: Colors.grey.shade200,
-                    onChanged: (value) => setState(() => _isPublic = value),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 0,
-                    ),
                   ),
                 ),
                 const SizedBox(height: 28),

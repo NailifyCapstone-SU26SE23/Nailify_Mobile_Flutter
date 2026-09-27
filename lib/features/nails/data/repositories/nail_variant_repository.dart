@@ -4,6 +4,7 @@ import '../../../../core/utils/paginated_response.dart';
 import '../models/nail_filters.dart';
 import '../models/nail_shape_model.dart';
 import '../models/nail_surface_model.dart';
+import '../models/nail_variant_rating_model.dart';
 import '../models/nail_variant_model.dart';
 import '../models/shape_method_config_model.dart';
 
@@ -22,6 +23,7 @@ class NailVariantRepository {
       queryParameters: {
         'pageNumber': page,
         'pageSize': pageSize,
+        'status': 'Active',
         if (filters.shapeId != null) 'nailShapeId': filters.shapeId,
         if (filters.surfaceId != null) 'nailSurfaceId': filters.surfaceId,
         if (filters.minPrice != null) 'minPrice': filters.minPrice,
@@ -41,13 +43,15 @@ class NailVariantRepository {
   }
 
   Future<List<NailShapeModel>> getNailShapes() async {
-    final response = await _apiClient.get<dynamic>('/NailShapes');
+    final response = await _apiClient.get<dynamic>('/NailShapes?status=Active');
     final list = ApiResponseParser.unwrapList(response.data);
     return list.map(NailShapeModel.fromJson).toList();
   }
 
   Future<List<NailSurfaceModel>> getNailSurfaces() async {
-    final response = await _apiClient.get<dynamic>('/NailSurfaces');
+    final response = await _apiClient.get<dynamic>(
+      '/NailSurfaces?status=Active',
+    );
     final list = ApiResponseParser.unwrapList(response.data);
     return list.map(NailSurfaceModel.fromJson).toList();
   }
@@ -56,7 +60,7 @@ class NailVariantRepository {
     int nailShapeId,
   ) async {
     final response = await _apiClient.get<dynamic>(
-      '/ShapeMethodConfigs/nail-shape/$nailShapeId',
+      '/ShapeMethodConfigs/nail-shape/$nailShapeId?status=Active',
     );
     final list = ApiResponseParser.unwrapList(response.data);
     return list.map(ShapeMethodConfigModel.fromJson).toList();
@@ -66,5 +70,66 @@ class NailVariantRepository {
     final response = await _apiClient.get<dynamic>('/ShapeMethodConfigs/$id');
     final data = ApiResponseParser.unwrapMap(response.data);
     return ShapeMethodConfigModel.fromJson(data);
+  }
+
+  Future<Map<String, dynamic>> getRatingStatsForVariants(
+    List<int> variantIds,
+  ) async {
+    if (variantIds.isEmpty) {
+      return {'rating': 0.0, 'reviewsCount': 0};
+    }
+
+    try {
+      final futures = variantIds.map((id) {
+        return _apiClient.get<dynamic>('/BookingRatings/by-nail-variant/$id');
+      }).toList();
+
+      final responses = await Future.wait(futures);
+
+      double totalScoreSum = 0;
+      int totalRatingCount = 0;
+
+      for (final response in responses) {
+        final data = ApiResponseParser.unwrapMap(response.data);
+        final items = data['items'] as List<dynamic>? ?? [];
+        for (final item in items) {
+          final score = ApiResponseParser.asInt(
+            item['overallScore'] ?? item['OverallScore'],
+          );
+          totalScoreSum += score;
+          totalRatingCount++;
+        }
+      }
+
+      final averageRating = totalRatingCount == 0
+          ? 0.0
+          : totalScoreSum / totalRatingCount;
+      return {'rating': averageRating, 'reviewsCount': totalRatingCount};
+    } catch (e) {
+      return {'rating': 0.0, 'reviewsCount': 0};
+    }
+  }
+
+  Future<NailVariantRatingPage> getRatingsByNailVariant({
+    required int nailVariantId,
+    required int page,
+    int pageSize = 5,
+    int? stars,
+  }) async {
+    try {
+      final response = await _apiClient.get<dynamic>(
+        '/BookingRatings/by-nail-variant/$nailVariantId',
+        queryParameters: {
+          'PageNumber': page,
+          'PageSize': pageSize,
+          'Stars': ?stars,
+        },
+      );
+      return NailVariantRatingPage.fromJson(
+        Map<String, dynamic>.from(response.data as Map),
+      );
+    } catch (_) {
+      return NailVariantRatingPage.empty(page: page);
+    }
   }
 }

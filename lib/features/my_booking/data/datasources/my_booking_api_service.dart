@@ -2,33 +2,110 @@ import 'package:dio/dio.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/network/api_client.dart';
 
+class MyBookingsPageResult {
+  final List<dynamic> items;
+  final int page;
+  final bool hasNextPage;
+
+  const MyBookingsPageResult({
+    required this.items,
+    required this.page,
+    required this.hasNextPage,
+  });
+}
+
 class MyBookingApiService {
   final ApiClient _apiClient = getIt<ApiClient>();
 
   Future<List<dynamic>> getMyBookings() async {
-    final response = await _apiClient.get('/Bookings/my-bookings');
+    final result = await getMyBookingsPage();
+    return result.items;
+  }
+
+  Future<MyBookingsPageResult> getMyBookingsPage({
+    int pageNumber = 1,
+    int pageSize = 5,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? status,
+  }) async {
+    final queryParameters = <String, dynamic>{
+      'pageNumber': pageNumber,
+      'pageSize': pageSize,
+      if (startDate != null) 'startDate': _formatDate(startDate),
+      if (endDate != null) 'endDate': _formatDate(endDate),
+      if (status != null && status.isNotEmpty) 'status': status,
+    };
+
+    final response = await _apiClient.get(
+      '/Bookings/my-bookings',
+      queryParameters: queryParameters,
+    );
     final responseData = response.data['data'];
 
     // API trả về đúng chuẩn Danh sách (List)
     if (responseData is List) {
-      return responseData;
+      return MyBookingsPageResult(
+        items: responseData,
+        page: pageNumber,
+        hasNextPage: false,
+      );
     }
 
     // API bọc dữ liệu trong một Đối tượng (Map)
     if (responseData is Map) {
       // Dò tìm danh sách bên trong Map (Thường gặp ở API phân trang)
       if (responseData.containsKey('items') && responseData['items'] is List) {
-        return responseData['items'];
+        final metaData = responseData['metaData'];
+        return MyBookingsPageResult(
+          items: responseData['items'],
+          page: _readInt(
+            metaData is Map ? metaData['currentPage'] : null,
+            pageNumber,
+          ),
+          hasNextPage: _readBool(metaData is Map ? metaData['hasNext'] : null),
+        );
       }
       if (responseData.containsKey('data') && responseData['data'] is List) {
-        return responseData['data'];
+        return MyBookingsPageResult(
+          items: responseData['data'],
+          page: pageNumber,
+          hasNextPage: false,
+        );
       }
 
       // Trường hợp API trả về đúng 1 lịch hẹn duy nhất dưới dạng Đối tượng
-      return [responseData];
+      return MyBookingsPageResult(
+        items: [responseData],
+        page: pageNumber,
+        hasNextPage: false,
+      );
     }
 
-    return [];
+    return MyBookingsPageResult(
+      items: const [],
+      page: pageNumber,
+      hasNextPage: false,
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '${date.year}-$month-$day';
+  }
+
+  int _readInt(dynamic value, int fallback) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? fallback;
+  }
+
+  bool _readBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    final text = value?.toString().toLowerCase().trim();
+    return text == 'true' || text == '1';
   }
 
   Future<Map<String, dynamic>> getBookingDetails(String bookingId) async {
@@ -204,5 +281,54 @@ class MyBookingApiService {
   Future<bool> deleteBookingRating(String ratingId) async {
     final response = await _apiClient.delete('/BookingRatings/$ratingId');
     return response.statusCode == 200 || response.statusCode == 204;
+  }
+
+  /// Phản hồi quyết định của khách hàng khi ca làm việc bị trễ (WAIT, REASSIGN, RESCHEDULE)
+  /// Endpoint: POST /api/Bookings/{id}/delay-response
+  Future<Map<String, dynamic>> respondToDelay(
+    String bookingId, {
+    required int customerDecision, // 1: Wait, 2: Reassign, 3: Reschedule
+    String? newDate,
+    String? newTime,
+  }) async {
+    try {
+      final formattedTime = (newTime != null && newTime.length == 5)
+          ? "$newTime:00"
+          : newTime;
+      final response = await _apiClient.post(
+        '/Bookings/$bookingId/delay-response',
+        data: {
+          "customerDecision": customerDecision,
+          "newDate": ?newDate,
+          "newTime": ?formattedTime,
+        },
+      );
+
+      final isSuccess =
+          response.statusCode != null &&
+          response.statusCode! >= 200 &&
+          response.statusCode! < 300;
+      final dataMap = response.data is Map ? response.data : {};
+      final message =
+          dataMap['message']?.toString() ??
+          dataMap['data']?.toString() ??
+          (isSuccess
+              ? 'Đã xử lý quyết định thành công'
+              : 'Không thể thực hiện yêu cầu');
+
+      return {'success': isSuccess, 'message': message};
+    } on DioException catch (e) {
+      final errorData = e.response?.data;
+      String message = 'Đã có lỗi xảy ra khi xử lý phản hồi.';
+      if (errorData is Map) {
+        message =
+            errorData['message']?.toString() ??
+            errorData['data']?.toString() ??
+            message;
+      }
+      return {'success': false, 'message': message};
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
   }
 }

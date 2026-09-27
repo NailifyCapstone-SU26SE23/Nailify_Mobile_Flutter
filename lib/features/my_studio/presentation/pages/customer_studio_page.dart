@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../generated/l10n.dart';
 import '../cubit/studio_cubit.dart';
 import '../widgets/studio_nail_card.dart';
 import '../../data/models/customer_nail_model.dart';
@@ -19,30 +20,29 @@ class CustomerStudioPage extends StatelessWidget {
         child: Scaffold(
           backgroundColor: AppColors.background,
           appBar: AppBar(
-            title: const Text(
-              'My Studio',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+            title: Text(
+              S.of(context).myStudioTitle,
+              style: const TextStyle(
+                color: AppColors.primaryDark,
+                fontWeight: FontWeight.w800,
+                fontFamily: 'Georgia',
               ),
             ),
             centerTitle: true,
             backgroundColor: Colors.white,
             elevation: 0,
             automaticallyImplyLeading: false,
-            bottom: const TabBar(
+            bottom: TabBar(
               isScrollable: true,
               labelColor: AppColors.primary,
               unselectedLabelColor: Colors.grey,
               indicatorColor: AppColors.primary,
               tabAlignment: TabAlignment.start,
               tabs: [
-                Tab(text: 'Tất cả'),
-                Tab(
-                  text: 'Đang xử lý',
-                ), // Pending, Review, Assigned, Reviewed, Quoted
-                Tab(text: 'Đã duyệt'),
-                Tab(text: 'Từ chối'),
+                Tab(text: S.of(context).studioAllTab),
+                Tab(text: S.of(context).studioProcessingTab),
+                Tab(text: S.of(context).studioApprovedTab),
+                Tab(text: S.of(context).studioRejectedTab),
               ],
             ),
           ),
@@ -53,7 +53,7 @@ class CustomerStudioPage extends StatelessWidget {
                 return const Center(child: CircularProgressIndicator());
               }
               if (state is StudioListError) {
-                return Center(child: Text('Lỗi: ${state.message}'));
+                return Center(child: Text(S.of(context).error));
               }
               if (state is StudioListLoaded) {
                 return TabBarView(
@@ -79,9 +79,9 @@ class CustomerStudioPage extends StatelessWidget {
             onPressed: () => context.push('/custom-nail'),
             backgroundColor: AppColors.primary,
             icon: const Icon(Icons.add, color: Colors.white),
-            label: const Text(
-              'Tạo mẫu mới',
-              style: TextStyle(
+            label: Text(
+              S.of(context).studioCreateNew,
+              style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
@@ -113,9 +113,9 @@ class CustomerStudioPage extends StatelessWidget {
               color: Colors.grey.shade300,
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Chưa có yêu cầu duyệt nào.',
-              style: TextStyle(color: Colors.grey, fontSize: 16),
+            Text(
+              S.of(context).studioNoRequests,
+              style: const TextStyle(color: Colors.grey, fontSize: 16),
             ),
           ],
         ),

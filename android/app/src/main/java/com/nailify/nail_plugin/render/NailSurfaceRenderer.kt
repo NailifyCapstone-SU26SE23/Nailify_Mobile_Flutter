@@ -70,6 +70,12 @@ class NailSurfaceRenderer {
     private var debugShowSkeleton = true
     private var debugShowBbox     = true
     private var debugShowFps      = true
+    // FIX #6: Visual compare overlay — vẽ polygon YOLO gốc (chưa affine) cạnh
+    // polygon đã ghép để thấy anchor lệch bao xa. Fix UI: default tắt (polygon
+    // đỏ chỉ phục vụ debug, không show lên UI production).
+    private var debugShowAnchorCompare = false
+    // Fix UI: vẽ U-curve boundary (xanh) sau khi ốp design. Default tắt.
+    private var debugShowUBoundary = false
 
     // Manual offset (Flutter MethodChannel sliders)
     private var offsetX    = 0f
@@ -115,6 +121,19 @@ class NailSurfaceRenderer {
         style = Paint.Style.STROKE
         strokeWidth = 2f
         color = Color.CYAN
+    }
+
+    // FIX #6: paint cho polygon YOLO gốc (chưa affine) — màu đỏ dashed.
+    private val anchorComparePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 2.5f
+        color = Color.RED
+        pathEffect = android.graphics.DashPathEffect(floatArrayOf(8f, 6f), 0f)
+        alpha = 200
+    }
+    private val anchorCompareFillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        color = Color.argb(40, 255, 0, 0)
     }
 
     private val labelBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -163,10 +182,18 @@ class NailSurfaceRenderer {
         appContext = ctx.applicationContext
     }
 
-    fun setDebugFlags(showSkeleton: Boolean, showBbox: Boolean, showFps: Boolean) {
+    fun setDebugFlags(
+        showSkeleton: Boolean,
+        showBbox: Boolean,
+        showFps: Boolean,
+        showAnchorCompare: Boolean = false,
+        showUBoundary: Boolean = false,
+    ) {
         debugShowSkeleton = showSkeleton
         debugShowBbox     = showBbox
         debugShowFps      = showFps
+        debugShowAnchorCompare = showAnchorCompare
+        debugShowUBoundary = showUBoundary
     }
 
     fun updateManualOffset(dx: Float, dy: Float, scale: Float, rotation: Float) {
@@ -354,7 +381,14 @@ class NailSurfaceRenderer {
             if (proj < minShort) minShort = proj
             if (proj > maxShort) maxShort = proj
         }
-        val wBed = Math.max(1f, maxShort - minShort)
+        var wBed = Math.max(1f, maxShort - minShort)
+        val maxWidth = 320f * 0.10f
+        if (wBed > maxWidth) {
+            val center = (maxShort + minShort) / 2f
+            minShort = center - maxWidth / 2f
+            maxShort = center + maxWidth / 2f
+            wBed = maxWidth
+        }
 
         // 3. Find precise cuticle center from polyRaw (lowest vLong projection)
         var minLong = Float.POSITIVE_INFINITY
@@ -400,19 +434,19 @@ class NailSurfaceRenderer {
         val c2_y = minLong * vLongY + renderMaxShort * vShortY
 
         if (design == null) {
-            // FALLBACK: Draw the U-Curve explicitly so the user can see it!
+            // Fallback: vẽ móng đơn sắc không viền, không bóng, không highlight.
             val fallbackPath = Path()
             fallbackPath.moveTo(pLeft_x * scaleX + padLeft, pLeft_y * scaleY + padTop)
             fallbackPath.quadTo(c1_x * scaleX + padLeft, c1_y * scaleY + padTop, pCenter_x * scaleX + padLeft, pCenter_y * scaleY + padTop)
             fallbackPath.quadTo(c2_x * scaleX + padLeft, c2_y * scaleY + padTop, pRight_x * scaleX + padLeft, pRight_y * scaleY + padTop)
-            fallbackPath.lineTo(pLeft_x * scaleX + padLeft, pLeft_y * scaleY + padTop) // Close the loop just to make it a polygon
-            
-            polygonFillPaint.color = classColor
-            polygonFillPaint.alpha = 180
-            canvas.drawPath(fallbackPath, polygonFillPaint)
-            
-            polygonPaint.color = classColor
-            canvas.drawPath(fallbackPath, polygonPaint)
+            fallbackPath.lineTo(pLeft_x * scaleX + padLeft, pLeft_y * scaleY + padTop)
+
+            val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                style = Paint.Style.FILL
+                color = classColor
+                alpha = 180
+            }
+            canvas.drawPath(fallbackPath, fillPaint)
             return
         }
 
@@ -421,7 +455,16 @@ class NailSurfaceRenderer {
         val designW = bbox.width().coerceAtLeast(1f)
         val designH = bbox.height().coerceAtLeast(1f)
         val aspectRatio = designH / designW
-        val hMapped = wBed * aspectRatio
+        val maxHeight = 320f * 0.25f
+          var hMapped = wBed * aspectRatio
+          if (hMapped > maxHeight) {
+              val scaleDown = maxHeight / hMapped
+              wBed = wBed * scaleDown
+              hMapped = maxHeight
+              val center = (maxShort + minShort) / 2f
+              minShort = center - wBed / 2f
+              maxShort = center + wBed / 2f
+          }
         val maxLong = minLong + (hMapped * scaleFudge)
         
         // 5. Build dstPts (4 corners) in raw coordinates, then scale to canvas
@@ -465,29 +508,31 @@ class NailSurfaceRenderer {
         hybridPath.lineTo(tipR_x * scaleX + padLeft, tipR_y * scaleY + padTop)
         hybridPath.close()
 
-        // 7. Render Nail (Clip with U-Curve)
-        canvas.save()
-        canvas.clipPath(hybridPath)
-        
+        // 7. Render Nail (Hardware Accelerated with BitmapShader)
         val renderPaint = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG or android.graphics.Paint.ANTI_ALIAS_FLAG)
-        canvas.drawBitmap(design, matrix, renderPaint)
+        val shader = android.graphics.BitmapShader(design, android.graphics.Shader.TileMode.CLAMP, android.graphics.Shader.TileMode.CLAMP)
+        shader.setLocalMatrix(matrix)
+        renderPaint.shader = shader
         
-        canvas.restore()
-        
+        canvas.drawPath(hybridPath, renderPaint)
+
         // 8. Draw the U-Curve Boundary for Visualization (Replacing the Square Box)
-        // Only draw the bottom part (the U-curve) to show how it fits the cuticle
-        val uCurveBoundary = Path()
-        uCurveBoundary.moveTo(pLeft_x * scaleX + padLeft, pLeft_y * scaleY + padTop)
-        uCurveBoundary.quadTo(c1_x * scaleX + padLeft, c1_y * scaleY + padTop, pCenter_x * scaleX + padLeft, pCenter_y * scaleY + padTop)
-        uCurveBoundary.quadTo(c2_x * scaleX + padLeft, c2_y * scaleY + padTop, pRight_x * scaleX + padLeft, pRight_y * scaleY + padTop)
-        
-        val boundaryPaint = android.graphics.Paint().apply {
-            color = Color.GREEN
-            style = android.graphics.Paint.Style.STROKE
-            strokeWidth = 3f
-            isAntiAlias = true
+        // Only draw the bottom part (the U-curve) to show how it fits the cuticle.
+        // Fix UI: chỉ vẽ khi debugShowUBoundary được bật (mặc định tắt).
+        if (debugShowUBoundary) {
+            val uCurveBoundary = Path()
+            uCurveBoundary.moveTo(pLeft_x * scaleX + padLeft, pLeft_y * scaleY + padTop)
+            uCurveBoundary.quadTo(c1_x * scaleX + padLeft, c1_y * scaleY + padTop, pCenter_x * scaleX + padLeft, pCenter_y * scaleY + padTop)
+            uCurveBoundary.quadTo(c2_x * scaleX + padLeft, c2_y * scaleY + padTop, pRight_x * scaleX + padLeft, pRight_y * scaleY + padTop)
+
+            val boundaryPaint = android.graphics.Paint().apply {
+                color = Color.GREEN
+                style = android.graphics.Paint.Style.STROKE
+                strokeWidth = 3f
+                isAntiAlias = true
+            }
+            canvas.drawPath(uCurveBoundary, boundaryPaint)
         }
-        canvas.drawPath(uCurveBoundary, boundaryPaint)
     }
 
     // ── Skeleton ───────────────────────────────────────────────────────────────
@@ -527,6 +572,44 @@ class NailSurfaceRenderer {
             // canvas.drawRect removed
             // canvas.drawText removed
         }
+
+        // FIX #6: vẽ polygon YOLO gốc (chưa affine) bằng dashed red để so sánh
+        // với polygon đã ghép. Nếu 2 polygon lệch nhau → anchor sai.
+        if (debugShowAnchorCompare) {
+            for (d in detections) {
+                drawAnchorCompare(canvas, d, scaleX, scaleY, padLeft, padTop)
+            }
+        }
+    }
+
+    /**
+     * FIX #6: Vẽ polygonTemplate (YOLO gốc, chưa qua affine) bằng đường viền
+     * đỏ dashed. Vị trí "đúng" của móng sẽ là chỗ này — bên cạnh polygon đã ghép
+     * (màu xanh, do drawNailOverlay vẽ). Nếu thấy khoảng cách cố định giữa 2
+     * polygon → bug anchor (nailOffsetFromJoint sai).
+     */
+    private fun drawAnchorCompare(
+        canvas: Canvas,
+        det: NailDetection,
+        scaleX: Float, scaleY: Float,
+        padLeft: Float, padTop: Float,
+    ) {
+        val template = det.polygonTemplate
+        if (template.size < 3) return
+        val path = Path()
+        path.moveTo(template[0].x * scaleX + padLeft, template[0].y * scaleY + padTop)
+        for (i in 1 until template.size) {
+            path.lineTo(template[i].x * scaleX + padLeft, template[i].y * scaleY + padTop)
+        }
+        path.close()
+        // Vẽ fill mờ đỏ + viền dashed đỏ.
+        canvas.drawPath(path, anchorCompareFillPaint)
+        canvas.drawPath(path, anchorComparePaint)
+
+        // Vẽ thêm nailBedTemplate nếu có để đối chiếu.
+        // (Lấy từ polygonTemplate đã xử lý ở State Machine — đã affine qua
+        // trong synthesize, nhưng ta muốn bed polygon gốc để so sánh; hiện tại
+        // NailDetection chỉ lưu bed đã affine, nên so sánh polygon đủ là đủ.)
     }
 
     // ── Design Bitmap loader ──────────────────────────────────────────────────

@@ -4,24 +4,85 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/price_formatter.dart';
 
-class TransactionDetailPage extends StatelessWidget {
+import '../../../../generated/l10n.dart';
+import '../../data/datasources/booking_api_service.dart';
+import '../utils/transaction_status_utils.dart';
+
+class TransactionDetailPage extends StatefulWidget {
   final Map<String, dynamic> transaction;
 
   const TransactionDetailPage({super.key, required this.transaction});
 
   @override
+  State<TransactionDetailPage> createState() => _TransactionDetailPageState();
+}
+
+class _TransactionDetailPageState extends State<TransactionDetailPage> {
+  final BookingApiService _bookingApiService = BookingApiService();
+  bool _isOpeningBooking = false;
+
+  Future<void> _openBooking() async {
+    if (_isOpeningBooking) return;
+
+    final directBookingId =
+        widget.transaction['bookingId']?.toString().trim() ?? '';
+    if (directBookingId.isNotEmpty) {
+      context.go('/my-bookings/detail', extra: directBookingId);
+      return;
+    }
+
+    final orderCode = _readInt(widget.transaction['orderCode']);
+    if (orderCode == null) return;
+
+    setState(() => _isOpeningBooking = true);
+    try {
+      final bookingId = await _bookingApiService.getBookingIdByOrderCode(
+        orderCode,
+      );
+      if (!mounted) return;
+      if (bookingId.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Không tìm thấy lịch hẹn.')),
+        );
+        return;
+      }
+      context.go('/my-bookings/detail', extra: bookingId);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Lỗi mở lịch hẹn: $error')));
+    } finally {
+      if (mounted) setState(() => _isOpeningBooking = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final bookingId = transaction['bookingId']?.toString() ?? '';
+    final transaction = widget.transaction;
+    final bookingId = transaction['bookingId']?.toString().trim() ?? '';
+    final orderCode = _readInt(transaction['orderCode']);
+    final canOpenBooking = bookingId.isNotEmpty || orderCode != null;
     final status = transaction['status']?.toString() ?? '';
+    final statusView = transactionStatusView(status);
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
-          'Chi tiet giao dich',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.primaryDark,
+            size: 20,
+          ),
+          onPressed: () => context.pop(),
+        ),
+        title: Text(
+          S.of(context).transactionDetails,
+          style: const TextStyle(
+            color: AppColors.primaryDark,
+            fontWeight: FontWeight.w800,
+            fontFamily: 'Georgia',
           ),
         ),
         centerTitle: true,
@@ -43,18 +104,8 @@ class TransactionDetailPage extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    Icon(
-                      status.toLowerCase() == 'refunded'
-                          ? Icons.check_circle
-                          : Icons.receipt_long,
-                      color: status.toLowerCase() == 'refunded'
-                          ? Colors.green
-                          : AppColors.primary,
-                      size: 72,
-                    ),
-                    const SizedBox(height: 12),
                     Text(
-                      status.isEmpty ? 'Giao dich' : status,
+                      statusView.label,
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -83,14 +134,17 @@ class TransactionDetailPage extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    _buildRow('Ma giao dich', transaction['transactionId']),
-                    _buildRow('Ma booking', bookingId),
-                    _buildRow('Order code', transaction['orderCode']),
-                    _buildRow('Reference', transaction['reference']),
-                    _buildRow('Khach hang', transaction['customerName']),
-                    _buildRow('Salon', transaction['salonName']),
-                    _buildRow('Ngay tao', transaction['createdAt']),
-                    _buildRow('Ngay thanh toan', transaction['paidAt']),
+                    _buildRow('Mã đơn hàng', transaction['orderCode']),
+                    _buildRow('Khách hàng', transaction['customerName']),
+                    _buildRow('Cửa hàng', transaction['salonName']),
+                    _buildRow(
+                      'Ngày tạo',
+                      _formatDateTime(transaction['createdAt']),
+                    ),
+                    _buildRow(
+                      'Ngày thanh toán',
+                      _formatDateTime(transaction['paidAt']),
+                    ),
                   ],
                 ),
               ),
@@ -116,9 +170,9 @@ class TransactionDetailPage extends StatelessWidget {
               ],
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: bookingId.isEmpty
-                    ? null
-                    : () => context.go('/my-bookings/detail', extra: bookingId),
+                onPressed: canOpenBooking && !_isOpeningBooking
+                    ? _openBooking
+                    : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -127,16 +181,49 @@ class TransactionDetailPage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'Xem lich hen',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
+                child: _isOpeningBooking
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        'Xem lịch hẹn',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  int? _readInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '');
+  }
+
+  String _formatDateTime(dynamic value) {
+    if (value == null) return '';
+    final str = value.toString().trim();
+    if (str.isEmpty) return '';
+    final date = DateTime.tryParse(str)?.toLocal();
+    if (date == null) return str;
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final year = date.year;
+    final hour = date.hour.toString().padLeft(2, '0');
+    final minute = date.minute.toString().padLeft(2, '0');
+    final second = date.second.toString().padLeft(2, '0');
+    return '$day/$month/$year $hour:$minute:$second';
   }
 
   Widget _buildRow(String label, dynamic value) {

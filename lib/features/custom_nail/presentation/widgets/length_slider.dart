@@ -37,7 +37,7 @@ class LengthSlider extends StatelessWidget {
             activeTrackColor: AppColors.primary,
             inactiveTrackColor: Colors.grey.shade200,
             thumbColor: Colors.white,
-            overlayColor: AppColors.primary.withOpacity(0.2),
+            overlayColor: AppColors.primary.withValues(alpha: 0.2),
             trackHeight: 8,
           ),
           child: Slider(

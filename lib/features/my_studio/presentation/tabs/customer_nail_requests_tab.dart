@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/network/signalr_service.dart';
 import '../../../../core/utils/paginated_response.dart';
+import '../../../../generated/l10n.dart';
 import '../../data/datasources/studio_api_service.dart';
 import '../../data/models/customer_nail_model.dart' as request_models;
 import '../../../nails/data/models/customer_nail_models.dart' as nail_models;
@@ -24,22 +27,38 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
       getIt<CustomerNailRepository>();
   late Future<List<request_models.CustomerNailModel>> _future;
   String? _statusFilter;
+  StreamSubscription? _quotedSub;
+  StreamSubscription? _rejectedSub;
 
-  static const Map<String, String> _statusLabels = {
-    'Pending': 'Chờ duyệt',
-    'PendingReview': 'Pending review',
-    'Review': 'Đang thẩm định',
-    'Assigned': 'Đã gán thợ',
-    'Reviewed': 'Thợ đã đánh giá',
-    'Quoted': 'Đã báo giá',
-    'Approved': 'Sẵn sàng đặt lịch',
-    'Rejected': 'Bị từ chối',
+  Map<String, String> get _statusLabels => {
+    'Pending': S.of(context).statusPending,
+    'PendingReview': S.of(context).statusPendingReview,
+    'Review': S.of(context).statusReview,
+    'Assigned': S.of(context).statusAssigned,
+    'Reviewed': S.of(context).statusReviewed,
+    'Quoted': S.of(context).statusQuoted,
+    'Approved': S.of(context).statusApproved,
+    'Rejected': S.of(context).statusRejected,
   };
 
   @override
   void initState() {
     super.initState();
     _load();
+    final signalR = getIt<SignalRService>();
+    _quotedSub = signalR.onCustomNailQuoted.listen((_) {
+      if (mounted) _load();
+    });
+    _rejectedSub = signalR.onCustomNailRejected.listen((_) {
+      if (mounted) _load();
+    });
+  }
+
+  @override
+  void dispose() {
+    _quotedSub?.cancel();
+    _rejectedSub?.cancel();
+    super.dispose();
   }
 
   void _load() {
@@ -102,9 +121,9 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      const Text(
-                        'Chọn mẫu móng thiết kế',
-                        style: TextStyle(
+                      Text(
+                        S.of(context).selectNailTitle,
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: AppColors.textPrimary,
@@ -116,7 +135,7 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                       TextField(
                         style: const TextStyle(fontSize: 13),
                         decoration: InputDecoration(
-                          hintText: 'Tìm mẫu móng...',
+                          hintText: S.of(context).searchNailHint,
                           prefixIcon: const Icon(
                             Icons.search_rounded,
                             size: 18,
@@ -150,7 +169,7 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
-                                      'Không tìm thấy mẫu móng nào',
+                                      S.of(context).noNailFound,
                                       style: TextStyle(
                                         color: Colors.grey.shade600,
                                         fontSize: 13,
@@ -285,9 +304,9 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      const Text(
-                        'Chọn chi nhánh Salon',
-                        style: TextStyle(
+                      Text(
+                        S.of(context).selectSalonTitle,
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: AppColors.textPrimary,
@@ -299,7 +318,7 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                       TextField(
                         style: const TextStyle(fontSize: 13),
                         decoration: InputDecoration(
-                          hintText: 'Tìm kiếm salon...',
+                          hintText: S.of(context).searchNailHint,
                           prefixIcon: const Icon(
                             Icons.search_rounded,
                             size: 18,
@@ -333,7 +352,7 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
-                                      'Không tìm thấy salon nào',
+                                      S.of(context).noSalonFound,
                                       style: TextStyle(
                                         color: Colors.grey.shade600,
                                         fontSize: 13,
@@ -359,7 +378,7 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                                   final address =
                                       salon['address']?.toString() ??
                                       salon['salonAddress']?.toString() ??
-                                      'Địa chỉ đang cập nhật';
+                                      S.of(context).addressUpdating;
 
                                   return ListTile(
                                     contentPadding: const EdgeInsets.symmetric(
@@ -467,7 +486,11 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                 } catch (e) {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Gửi yêu cầu thất bại: $e')),
+                      SnackBar(
+                        content: Text(
+                          S.of(context).sendRequestFail(e.toString()),
+                        ),
+                      ),
                     );
                   }
                 } finally {
@@ -490,9 +513,9 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Text(
-                          'Gửi yêu cầu thiết kế',
-                          style: TextStyle(
+                        Text(
+                          S.of(context).sendRequestTitle,
+                          style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: AppColors.textPrimary,
@@ -579,9 +602,9 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      const Text(
-                                        'Mẫu móng *',
-                                        style: TextStyle(
+                                      Text(
+                                        S.of(context).selectNailLabel,
+                                        style: const TextStyle(
                                           color: AppColors.textSecondary,
                                           fontSize: 11,
                                         ),
@@ -589,7 +612,7 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                                       const SizedBox(height: 2),
                                       Text(
                                         selectedNail?.name ??
-                                            'Chọn mẫu móng...',
+                                            S.of(context).selectNailHint,
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: selectedNail != null
@@ -687,7 +710,7 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                                                   selectedSalon!['salonName']
                                                       ?.toString() ??
                                                   'Salon')
-                                            : 'Chọn chi nhánh Salon...',
+                                            : S.of(context).selectSalonHint,
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: selectedSalon != null
@@ -734,9 +757,9 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                                 onPressed: isSubmitting
                                     ? null
                                     : () => Navigator.of(context).pop(false),
-                                child: const Text(
-                                  'Hủy',
-                                  style: TextStyle(
+                                child: Text(
+                                  S.of(context).cancelBtn,
+                                  style: const TextStyle(
                                     color: AppColors.textSecondary,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
@@ -772,9 +795,9 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                                           color: Colors.white,
                                         ),
                                       )
-                                    : const Text(
-                                        'Gửi',
-                                        style: TextStyle(
+                                    : Text(
+                                        S.of(context).sendBtn,
+                                        style: const TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 14,
                                         ),
@@ -797,15 +820,15 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
         _load();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Đã gửi yêu cầu thành công.')),
+            SnackBar(content: Text(S.of(context).sendRequestSuccess)),
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Không thể tải form: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).loadFormFail(e.toString()))),
+        );
       }
     }
   }
@@ -820,9 +843,12 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
         foregroundColor: Colors.white,
         elevation: 6,
         icon: const Icon(Icons.send_rounded, size: 18),
-        label: const Text(
-          'Gửi yêu cầu',
-          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+        label: Text(
+          S.of(context).sendRequestBtn,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
         ),
       ),
       body: Column(
@@ -856,9 +882,9 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                           color: AppColors.textSecondary,
                           size: 22,
                         ),
-                        hint: const Text(
-                          'Tất cả trạng thái',
-                          style: TextStyle(
+                        hint: Text(
+                          S.of(context).filterAllStatus,
+                          style: const TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
@@ -867,9 +893,9 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                         ),
                         isExpanded: true,
                         items: [
-                          const DropdownMenuItem<String?>(
+                          DropdownMenuItem<String?>(
                             value: null,
-                            child: Text('Tất cả trạng thái'),
+                            child: Text(S.of(context).filterAllStatus),
                           ),
                           ..._statusLabels.entries.map(
                             (entry) => DropdownMenuItem<String?>(
@@ -907,14 +933,14 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Lỗi: ${snapshot.error}',
+                          S.of(context).error,
                           style: const TextStyle(color: Colors.red),
                         ),
                         const SizedBox(height: 16),
                         FilledButton.icon(
                           onPressed: _load,
                           icon: const Icon(Icons.refresh),
-                          label: const Text('Thử lại'),
+                          label: Text(S.of(context).retryBtn),
                         ),
                       ],
                     ),
@@ -934,7 +960,7 @@ class _CustomerNailRequestsTabState extends State<CustomerNailRequestsTab> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Chưa có yêu cầu nào.',
+                          S.of(context).noRequests,
                           style: TextStyle(
                             color: Colors.grey.shade600,
                             fontSize: 16,

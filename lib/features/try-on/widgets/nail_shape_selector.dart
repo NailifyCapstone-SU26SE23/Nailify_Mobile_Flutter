@@ -32,7 +32,7 @@ class NailShapeSelector extends StatelessWidget {
           const SizedBox(height: 12),
         ],
         SizedBox(
-          height: 160,
+          height: 120, // Compact height matching card design
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: shapes.length,
@@ -69,94 +69,156 @@ class _NailShapeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: 120,
-        margin: const EdgeInsets.only(right: 12),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: isSelected ? Colors.purple : Colors.grey.shade300,
-            width: isSelected ? 2.5 : 1,
-          ),
-          borderRadius: BorderRadius.circular(12),
-          color: Colors.white,
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: Colors.purple.withAlpha(30),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image Section
-            Expanded(
-              flex: 2,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(10),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 110,
+            margin: const EdgeInsets.only(right: 12, top: 4, bottom: 4),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: Colors.white,
+              border: Border.all(
+                color: isSelected
+                    ? const Color(0xFFE91E63)
+                    : Colors.grey.shade200,
+                width: isSelected ? 2 : 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: isSelected
+                      ? const Color(0xFFE91E63).withValues(alpha: 0.12)
+                      : Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
                 ),
-                child: shape.imageUrl.isNotEmpty
-                    ? Image.network(
-                        shape.imageUrl,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        errorBuilder: (_, _, _) => const _FallbackIcon(),
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return const Center(
-                            child: SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          );
-                        },
-                      )
-                    : const _FallbackIcon(),
-              ),
+              ],
             ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Image Section
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(14),
+                    ),
+                    child: Container(
+                      color: Colors.grey.shade50,
+                      child: shape.imageUrl.isNotEmpty
+                          ? Image.network(
+                              shape.imageUrl,
+                              fit: BoxFit.contain,
+                              width: double.infinity,
+                              errorBuilder: (_, _, _) => const _FallbackIcon(),
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return const Center(
+                                      child: SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 1.5,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                            )
+                          : const _FallbackIcon(),
+                    ),
+                  ),
+                ),
 
-            // Metadata Section (Name & Price)
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    shape.name,
-                    style: TextStyle(
-                      fontWeight: isSelected
-                          ? FontWeight.bold
-                          : FontWeight.w500,
-                      fontSize: 13,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                // Metadata Section (Name & Price)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _formatPrice(shape.price),
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: isSelected ? Colors.purple : Colors.grey.shade700,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _translateName(context, shape.name),
+                        style: TextStyle(
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.w500,
+                          fontSize: 12,
+                          color: isSelected
+                              ? const Color(0xFFE91E63)
+                              : Colors.black87,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _formatPrice(context, shape.price),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: isSelected
+                              ? const Color(0xFFC2185B)
+                              : Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
+              ],
+            ),
+          ),
+          if (isSelected)
+            Positioned(
+              top: 0,
+              right: 8,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE91E63),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.check, color: Colors.white, size: 10),
               ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
 
-  String _formatPrice(double? price) {
-    if (price == null) return 'Contact for price';
+  String _translateName(BuildContext context, String name) {
+    if (Localizations.localeOf(context).languageCode == 'en') {
+      var result = name;
+      result = result.replaceAll('Dài', 'Long');
+      result = result.replaceAll('Ngắn', 'Short');
+      result = result.replaceAll('Vừa', 'Medium');
+      return result;
+    }
+    return name;
+  }
+
+  String _formatPrice(BuildContext context, double? price) {
+    if (price == null) {
+      return Localizations.localeOf(context).languageCode == 'en'
+          ? 'Contact'
+          : 'Liên hệ';
+    }
+    if (price == 0) {
+      return Localizations.localeOf(context).languageCode == 'en'
+          ? 'Free'
+          : 'Miễn phí';
+    }
+    final isEn = Localizations.localeOf(context).languageCode == 'en';
+    if (isEn) {
+      final formatter = NumberFormat.currency(
+        locale: 'en_US',
+        symbol: '\$',
+        decimalDigits: 0,
+      );
+      return formatter.format(price);
+    }
     final formatter = NumberFormat.currency(
       locale: 'vi_VN',
       symbol: '₫',

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/di/injection.dart';
 import '../../nails/data/models/customer_nail_models.dart';
@@ -9,6 +10,9 @@ import '../../nails/data/models/nail_surface_model.dart';
 import '../../nails/data/repositories/customer_nail_repository.dart';
 import '../../nails/data/repositories/nail_component_repository.dart';
 import '../../nails/services/ar_try_on_service.dart';
+import '../../../core/network/api_client.dart';
+import '../../quiz/data/datasources/quiz_repository.dart';
+import '../models/nail_variant_model.dart' as snapshot_models;
 import '../models/placed_component_draft.dart';
 import '../models/try_on_data.dart';
 import '../services/try_on_setup_service.dart';
@@ -18,13 +22,14 @@ import '../widgets/nail_shape_selector.dart';
 import '../widgets/nail_surface_selector.dart';
 import '../widgets/try_on_action_bar.dart';
 import '../widgets/try_on_color_selector.dart';
-import '../widgets/try_on_placement_controls.dart';
 import '../widgets/try_on_preview_board.dart';
+import '../widgets/save_nail_design_dialog.dart';
 
 class TryOnSetupScreen extends StatefulWidget {
   final CustomerNailModel? customerNail;
+  final Map<String, dynamic>? recommendedData;
 
-  const TryOnSetupScreen({super.key, this.customerNail});
+  const TryOnSetupScreen({super.key, this.customerNail, this.recommendedData});
 
   @override
   State<TryOnSetupScreen> createState() => _TryOnSetupScreenState();
@@ -35,16 +40,12 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
   late final TryOnSetupService _setupService;
   late final NailComponentRepository _componentRepository;
   late final CustomerNailRepository _customerNailRepository;
+  late final QuizRepository _quizRepo;
 
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _isSelectorExpanded = true;
   bool _launching = false;
-  final bool _showShapeSection = true;
-  final bool _showSurfaceSection = true;
-  final bool _showColorSection = true;
-  final bool _showPlacementSection = true;
-  final bool _showSystemComponents = true;
-  final bool _showCustomerComponents = true;
   String? _error;
   TryOnData? _tryOnData;
   CustomerNailModel? _customerNail;
@@ -81,6 +82,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
     _setupService = getIt<TryOnSetupService>();
     _componentRepository = getIt<NailComponentRepository>();
     _customerNailRepository = getIt<CustomerNailRepository>();
+    _quizRepo = QuizRepository(getIt<ApiClient>());
     _fetchData();
   }
 
@@ -104,7 +106,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
     try {
       final results = await Future.wait([
         _setupService.fetchTryOnData(),
-        if (widget.customerNail != null)
+        if ((widget.customerNail?.customerNailId ?? 0) > 0)
           _customerNailRepository.getCustomerNailById(
             widget.customerNail!.customerNailId,
           ),
@@ -167,13 +169,150 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
             initialColors[i] = singleColor;
           }
         }
+      } else if (widget.recommendedData != null) {
+        final recColors = widget.recommendedData!['colors'];
+        if (recColors is List && recColors.isNotEmpty) {
+          for (var i = 1; i <= 5; i++) {
+            final colorHex = recColors[(i - 1) % recColors.length]
+                .toString()
+                .trim();
+            if (colorHex.startsWith('#')) {
+              initialColors[i] = colorHex;
+            }
+          }
+        } else {
+          final recColor = widget.recommendedData!['color'];
+          if (recColor is String && recColor.startsWith('#')) {
+            for (var i = 1; i <= 5; i++) {
+              initialColors[i] = recColor;
+            }
+          }
+        }
+      }
+
+      NailShapeModel? selectedShape;
+      if (customerNail != null) {
+        selectedShape = _resolveShape(data.nailShapes, customerNail);
+      } else if (widget.recommendedData != null) {
+        final shapeData = widget.recommendedData!['nailShape'];
+        final shapeId = shapeData != null
+            ? asTryOnInt(shapeData['nailShapeId'] ?? shapeData['id'])
+            : null;
+        if (shapeId != null && shapeId > 0) {
+          selectedShape = data.nailShapes.firstWhereOrNull(
+            (s) => s.nailShapeId == shapeId,
+          );
+        }
+        if (selectedShape == null && shapeData != null) {
+          final shapeName = shapeData['name']?.toString().toLowerCase();
+          if (shapeName != null) {
+            selectedShape = data.nailShapes.firstWhereOrNull(
+              (s) => s.name.toLowerCase() == shapeName,
+            );
+          }
+        }
+      }
+      selectedShape ??= data.nailShapes.isEmpty ? null : data.nailShapes.first;
+
+      NailSurfaceModel? selectedSurface;
+      if (customerNail != null) {
+        selectedSurface = _resolveSurface(data.nailSurfaces, customerNail);
+      } else if (widget.recommendedData != null) {
+        final surfaceData = widget.recommendedData!['nailSurface'];
+        final surfaceId = surfaceData != null
+            ? asTryOnInt(surfaceData['nailSurfaceId'] ?? surfaceData['id'])
+            : null;
+        if (surfaceId != null && surfaceId > 0) {
+          selectedSurface = data.nailSurfaces.firstWhereOrNull(
+            (s) => s.nailSurfaceId == surfaceId,
+          );
+        }
+        if (selectedSurface == null && surfaceData != null) {
+          final surfaceName = surfaceData['name']?.toString().toLowerCase();
+          if (surfaceName != null) {
+            selectedSurface = data.nailSurfaces.firstWhereOrNull(
+              (s) => s.name.toLowerCase() == surfaceName,
+            );
+          }
+        }
+      }
+      selectedSurface ??= data.nailSurfaces.isEmpty
+          ? null
+          : data.nailSurfaces.first;
+
+      final List<PlacedComponentDraft> initialPlacements = [];
+      if (customerNail != null) {
+        initialPlacements.addAll(
+          _buildDrafts(customerNail, data.combinedComponents),
+        );
+      } else if (widget.recommendedData != null) {
+        final recComponents = widget.recommendedData!['components'];
+        if (recComponents is List) {
+          final componentCreatedAt = DateTime.now().microsecondsSinceEpoch;
+          for (var index = 0; index < recComponents.length; index++) {
+            final compMap = recComponents[index];
+            if (compMap is Map) {
+              final compId = asTryOnInt(
+                compMap['componentId'] ?? compMap['id'],
+              );
+              final custCompId = asTryOnInt(compMap['customerComponentId']);
+
+              final matchedComp = data.combinedComponents.firstWhereOrNull((c) {
+                if (custCompId > 0) {
+                  return c.isCustomerComponent &&
+                      c.customerComponentId == custCompId;
+                }
+                if (compId > 0) {
+                  return !c.isCustomerComponent && c.componentId == compId;
+                }
+                return false;
+              });
+
+              if (matchedComp != null) {
+                final fIndex = asTryOnInt(
+                  compMap['fingerIndex'] ?? compMap['FingerIndex'],
+                  fallback: 3,
+                );
+                final normFinger = normalizeFingerIndexFromApi(fIndex);
+
+                initialPlacements.add(
+                  PlacedComponentDraft(
+                    localId: componentCreatedAt + index,
+                    component: matchedComp,
+                    componentId: matchedComp.componentId,
+                    customerComponentId: matchedComp.customerComponentId,
+                    name: matchedComp.name,
+                    imageUrl: matchedComp.imageUrl,
+                    fingerIndex: normFinger,
+                    posX: asTryOnDouble(
+                      compMap['posX'] ?? compMap['PosX'],
+                      fallback: 0,
+                    ),
+                    posY: asTryOnDouble(
+                      compMap['posY'] ?? compMap['PosY'],
+                      fallback: 0,
+                    ),
+                    scale: asTryOnDouble(
+                      compMap['scale'] ?? compMap['Scale'],
+                      fallback: 0.5,
+                    ),
+                    rotation: asTryOnDouble(
+                      compMap['rotation'] ?? compMap['Rotation'],
+                      fallback: 0,
+                    ),
+                  ),
+                );
+              }
+            }
+          }
+        }
       }
 
       setState(() {
         _tryOnData = data;
         _customerNail = customerNail;
-        _selectedNailShape = _resolveShape(data.nailShapes, customerNail);
-        _selectedNailSurface = _resolveSurface(data.nailSurfaces, customerNail);
+        _selectedNailShape = selectedShape;
+        _selectedNailSurface = selectedSurface;
         _fingerColors.clear();
         _fingerColors.addAll(initialColors);
         _fingerGradients
@@ -181,7 +320,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
           ..addAll(initialGradients);
         _placements
           ..clear()
-          ..addAll(_buildDrafts(customerNail, data.combinedComponents));
+          ..addAll(initialPlacements);
         _selectedPlacementId = _placements.isEmpty
             ? null
             : _placements.first.localId;
@@ -243,8 +382,8 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
     }).toList();
   }
 
-  void _addSelectedComponent() {
-    final component = _selectedComponent;
+  void _addSelectedComponent([CombinedComponent? targetComponent]) {
+    final component = targetComponent ?? _selectedComponent;
     if (component == null) return;
     final targetFingers = _selectedFingerIndex == -1
         ? [1, 2, 3, 4, 5]
@@ -262,46 +401,40 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
           fingerIndex: targetFingers[index],
           posX: 0,
           posY: 0,
-          scale: 0.5,
+          scale: 0.28,
           rotation: 0,
         ),
     ];
     setState(() {
+      _selectedComponent = component;
       _placements.addAll(drafts);
       _selectedPlacementId = drafts.last.localId;
     });
   }
 
-  void _removeSelectedPlacement() {
-    final selected = _selectedPlacement;
-    if (selected == null) return;
+  void _updatePlacement(PlacedComponentDraft placement) {
+    final index = _placements.indexWhere(
+      (item) => item.localId == placement.localId,
+    );
+    if (index == -1) return;
+    setState(() {
+      _placements[index] = placement;
+      _selectedPlacementId = placement.localId;
+    });
+  }
+
+  void _deletePlacement(int localId) {
+    final index = _placements.indexWhere((item) => item.localId == localId);
+    if (index == -1) return;
+    final selected = _placements[index];
     setState(() {
       if (selected.customerNailComponentId != null) {
         _deletedPlacementIds.add(selected.customerNailComponentId!);
       }
-      _placements.removeWhere((item) => item.localId == selected.localId);
+      _placements.removeAt(index);
       _selectedPlacementId = _placements.isEmpty
           ? null
           : _placements.last.localId;
-    });
-  }
-
-  void _nudge({
-    double dx = 0,
-    double dy = 0,
-    double scale = 0,
-    double rotation = 0,
-  }) {
-    final index = _selectedPlacementIndex;
-    if (index == -1) return;
-    final current = _placements[index];
-    setState(() {
-      _placements[index] = current.copyWith(
-        posX: (current.posX + dx).clamp(-0.5, 0.5).toDouble(),
-        posY: (current.posY + dy).clamp(-0.5, 0.5).toDouble(),
-        scale: (current.scale + scale).clamp(0.1, 1.5).toDouble(),
-        rotation: current.rotation + rotation,
-      );
     });
   }
 
@@ -312,6 +445,172 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
           : fingerIndex;
       _selectedFingerIndex = _previewDetailFingerIndex ?? -1;
     });
+  }
+
+  Future<void> _regenerateDesign() async {
+    setState(() => _launching = true);
+    try {
+      final res = await _quizRepo.getCustomerNailComposition();
+      final data = _tryOnData;
+      if (data == null) return;
+
+      final Map<int, String> newColors = {
+        1: '#FF4081',
+        2: '#FF4081',
+        3: '#FF4081',
+        4: '#FF4081',
+        5: '#FF4081',
+      };
+      final Map<int, List<String>?> newGradients = {
+        1: null,
+        2: null,
+        3: null,
+        4: null,
+        5: null,
+      };
+
+      final recColors = res['colors'];
+      if (recColors is List && recColors.isNotEmpty) {
+        for (var i = 1; i <= 5; i++) {
+          final colorHex = recColors[(i - 1) % recColors.length]
+              .toString()
+              .trim();
+          if (colorHex.startsWith('#')) {
+            newColors[i] = colorHex;
+          }
+        }
+      } else {
+        final recColor = res['color'];
+        if (recColor is String && recColor.startsWith('#')) {
+          for (var i = 1; i <= 5; i++) {
+            newColors[i] = recColor;
+          }
+        }
+      }
+
+      NailShapeModel? selectedShape;
+      final shapeData = res['nailShape'];
+      final shapeId = shapeData != null
+          ? asTryOnInt(shapeData['nailShapeId'] ?? shapeData['id'])
+          : null;
+      if (shapeId != null && shapeId > 0) {
+        selectedShape = data.nailShapes.firstWhereOrNull(
+          (s) => s.nailShapeId == shapeId,
+        );
+      }
+      if (selectedShape == null && shapeData != null) {
+        final shapeName = shapeData['name']?.toString().toLowerCase();
+        if (shapeName != null) {
+          selectedShape = data.nailShapes.firstWhereOrNull(
+            (s) => s.name.toLowerCase() == shapeName,
+          );
+        }
+      }
+      selectedShape ??=
+          _selectedNailShape ??
+          (data.nailShapes.isEmpty ? null : data.nailShapes.first);
+
+      NailSurfaceModel? selectedSurface;
+      final surfaceData = res['nailSurface'];
+      final surfaceId = surfaceData != null
+          ? asTryOnInt(surfaceData['nailSurfaceId'] ?? surfaceData['id'])
+          : null;
+      if (surfaceId != null && surfaceId > 0) {
+        selectedSurface = data.nailSurfaces.firstWhereOrNull(
+          (s) => s.nailSurfaceId == surfaceId,
+        );
+      }
+      if (selectedSurface == null && surfaceData != null) {
+        final surfaceName = surfaceData['name']?.toString().toLowerCase();
+        if (surfaceName != null) {
+          selectedSurface = data.nailSurfaces.firstWhereOrNull(
+            (s) => s.name.toLowerCase() == surfaceName,
+          );
+        }
+      }
+      selectedSurface ??=
+          _selectedNailSurface ??
+          (data.nailSurfaces.isEmpty ? null : data.nailSurfaces.first);
+
+      final List<PlacedComponentDraft> newPlacements = [];
+      final recComponents = res['components'];
+      if (recComponents is List) {
+        final componentCreatedAt = DateTime.now().microsecondsSinceEpoch;
+        for (var index = 0; index < recComponents.length; index++) {
+          final compMap = recComponents[index];
+          if (compMap is Map) {
+            final compId = asTryOnInt(compMap['componentId'] ?? compMap['id']);
+            final custCompId = asTryOnInt(compMap['customerComponentId']);
+
+            final matchedComp = data.combinedComponents.firstWhereOrNull((c) {
+              if (custCompId > 0) {
+                return c.isCustomerComponent &&
+                    c.customerComponentId == custCompId;
+              }
+              if (compId > 0) {
+                return !c.isCustomerComponent && c.componentId == compId;
+              }
+              return false;
+            });
+
+            if (matchedComp != null) {
+              final fIndex = asTryOnInt(
+                compMap['fingerIndex'] ?? compMap['FingerIndex'],
+                fallback: 3,
+              );
+              final normFinger = normalizeFingerIndexFromApi(fIndex);
+
+              newPlacements.add(
+                PlacedComponentDraft(
+                  localId: componentCreatedAt + index,
+                  component: matchedComp,
+                  componentId: matchedComp.componentId,
+                  customerComponentId: matchedComp.customerComponentId,
+                  name: matchedComp.name,
+                  imageUrl: matchedComp.imageUrl,
+                  fingerIndex: normFinger,
+                  posX: asTryOnDouble(
+                    compMap['posX'] ?? compMap['PosX'],
+                    fallback: 0,
+                  ),
+                  posY: asTryOnDouble(
+                    compMap['posY'] ?? compMap['PosY'],
+                    fallback: 0,
+                  ),
+                  scale: asTryOnDouble(
+                    compMap['scale'] ?? compMap['Scale'],
+                    fallback: 0.5,
+                  ),
+                  rotation: asTryOnDouble(
+                    compMap['rotation'] ?? compMap['Rotation'],
+                    fallback: 0,
+                  ),
+                ),
+              );
+            }
+          }
+        }
+      }
+
+      setState(() {
+        _selectedNailShape = selectedShape;
+        _selectedNailSurface = selectedSurface;
+        _fingerColors.clear();
+        _fingerColors.addAll(newColors);
+        _fingerGradients.clear();
+        _fingerGradients.addAll(newGradients);
+        _placements.clear();
+        _placements.addAll(newPlacements);
+        _selectedPlacementId = _placements.isEmpty
+            ? null
+            : _placements.first.localId;
+      });
+      _showMessage('Đã tạo lại thiết kế mới.');
+    } catch (e) {
+      _showMessage('Lỗi khi tạo lại thiết kế: ${e.toString()}');
+    } finally {
+      setState(() => _launching = false);
+    }
   }
 
   Future<void> _launchTryOn({required bool photo}) async {
@@ -331,7 +630,15 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
         );
       }
       if (photo) {
-        await service.launchCustomerPhoto(preview);
+        // Photo try-on uses Snapshot so the user can choose camera/gallery,
+        // while keeping this custom nail selected in the editor.
+        if (mounted) {
+          //Photo try-on
+          //await service.launchCustomerPhoto(customerNail);
+
+          //Snapshot try-on
+          context.push('/snapshot-try-on', extra: _toSnapshotVariant(preview));
+        }
       } else {
         await service.launchCustomerLive(preview);
       }
@@ -368,20 +675,56 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
   Future<void> _save() async {
     final nail = _customerNail;
     final shape = _selectedNailShape;
-    if (nail == null || shape == null) {
+    if (shape == null) {
       _showMessage('Vui lòng tạo mẫu móng và chọn dáng móng.');
       return;
     }
 
+    final existingId = _existingCustomerNailId;
+    final isNew = existingId <= 0;
+
+    String nailName;
+    String? imagePath;
+
+    if (isNew) {
+      // New nail → ask user for name + image
+      final initialName = nail?.name.trim().isNotEmpty == true
+          ? nail!.name
+          : '';
+      final dialogResult = await showDialog<SaveNailDesignDialogResult>(
+        context: context,
+        builder: (context) => SaveNailDesignDialog(
+          initialName: initialName,
+          initialImageUrl: nail?.imageUrl,
+          isNew: true,
+        ),
+      );
+      if (dialogResult == null) return; // user cancelled
+      nailName = dialogResult.name;
+      imagePath = dialogResult.imagePath;
+    } else {
+      // Existing nail → save silently, keep current name + image
+      nailName = nail?.name ?? 'Custom Nail';
+      imagePath = null; // null = keep existing image on server
+    }
+
     setState(() => _isSaving = true);
     try {
+      var customerNailId = existingId;
+      if (customerNailId <= 0) {
+        customerNailId = await _customerNailRepository.createCustomerNail(
+          name: nailName,
+          imagePath: imagePath,
+        );
+      }
+
       await _customerNailRepository.updateCustomerNail(
-        customerNailId: nail.customerNailId,
-        name: nail.name,
+        customerNailId: customerNailId,
+        name: nailName,
         nailShapeId: shape.nailShapeId,
         nailSurfaceId: _selectedNailSurface?.nailSurfaceId,
         customColor: _buildColorJson(),
-        isPublic: nail.isPublic,
+        imagePath: imagePath,
       );
 
       for (final id in _deletedPlacementIds) {
@@ -389,7 +732,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
       }
 
       for (final placement in _placements) {
-        final payload = placement.toPayload(nail.customerNailId);
+        final payload = placement.toPayload(customerNailId);
         if (placement.customerNailComponentId == null) {
           await _componentRepository.createCustomerNailComponent(
             customerNailId: payload.customerNailId,
@@ -416,12 +759,18 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
 
       _deletedPlacementIds.clear();
       final fresh = await _customerNailRepository.getCustomerNailById(
-        nail.customerNailId,
+        customerNailId,
       );
       setState(() => _customerNail = fresh);
       _showMessage('Đã lưu thiết lập thử móng.');
-      await _fetchData();
-      if (mounted) Navigator.of(context).pop(true);
+
+      if (mounted) {
+        if (isNew) {
+          context.go('/my-studio');
+        } else {
+          Navigator.of(context).pop(true);
+        }
+      }
     } catch (error) {
       _showMessage(error.toString());
     } finally {
@@ -442,7 +791,6 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
       price: nail?.price,
       customColor: _buildColorJson(),
       duration: nail?.duration,
-      isPublic: nail?.isPublic ?? false,
       nailShape: shape,
       nailSurface: _selectedNailSurface ?? nail?.nailSurface,
       customerNailComponents: _placements
@@ -452,6 +800,64 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
           )
           .toList(),
     );
+  }
+
+  snapshot_models.NailVariantModel _toSnapshotVariant(CustomerNailModel nail) {
+    return snapshot_models.NailVariantModel(
+      nailVariantId: nail.customerNailId,
+      name: nail.name,
+      imageUrl: nail.imageUrl,
+      colorConfig: snapshot_models.ColorJsonConfig.fromJson(
+        nail.customColor ?? '{}',
+      ),
+      nailShape: snapshot_models.NailShape(
+        nailShapeId: nail.nailShapeId ?? nail.nailShape?.nailShapeId ?? 0,
+        name: nail.nailShape?.name ?? '',
+        imageUrl: nail.nailShape?.imageUrl ?? '',
+      ),
+      nailSurface: snapshot_models.NailSurface(
+        nailSurfaceId:
+            nail.nailSurfaceId ?? nail.nailSurface?.nailSurfaceId ?? 0,
+        name: nail.nailSurface?.name ?? '',
+        shaderParam: nail.nailSurface?.shaderParam ?? '{}',
+        lightnessOffset: nail.nailSurface?.lightnessOffset ?? 0,
+        saturationOffset: nail.nailSurface?.saturationOffset ?? 0,
+        hueOffset: nail.nailSurface?.hueOffset ?? 0,
+      ),
+      nailComponents: nail.customerNailComponents.map((component) {
+        final source = component.component;
+        final customerSource = component.customerComponent;
+        final config = _decodeComponentConfig(component.configJson);
+        return snapshot_models.NailComponentItem(
+          nailComponentId: component.customerNailComponentId,
+          posX: component.posX,
+          posY: component.posY,
+          fingerIndex: component.fingerIndex,
+          scale: (config['scale'] as num?)?.toDouble() ?? 1.0,
+          rotation: (config['rotation'] as num?)?.toDouble() ?? 0.0,
+          component: snapshot_models.ComponentDetail(
+            componentId:
+                component.componentId ??
+                component.customerComponentId ??
+                component.customerNailComponentId,
+            name: source?.name ?? customerSource?.name ?? '',
+            imageUrl: source?.imageUrl ?? customerSource?.imageUrl ?? '',
+            componentType:
+                source?.componentType ?? customerSource?.componentType ?? '',
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Map<String, dynamic> _decodeComponentConfig(String rawConfig) {
+    if (rawConfig.trim().isEmpty) return const <String, dynamic>{};
+    try {
+      final decoded = jsonDecode(rawConfig);
+      if (decoded is Map<String, dynamic>) return decoded;
+      if (decoded is Map) return Map<String, dynamic>.from(decoded);
+    } catch (_) {}
+    return const <String, dynamic>{};
   }
 
   String get _activeFingerColor {
@@ -465,6 +871,14 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
         ? _fingerGradients[2]
         : _fingerGradients[_selectedFingerIndex];
   }
+
+  int get _existingCustomerNailId {
+    final fromState = _customerNail?.customerNailId ?? 0;
+    if (fromState > 0) return fromState;
+    return widget.customerNail?.customerNailId ?? 0;
+  }
+
+  bool get _isNewCustomerNail => _existingCustomerNailId <= 0;
 
   @override
   Widget build(BuildContext context) {
@@ -491,12 +905,13 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
         ],
       ),
       bottomNavigationBar: TryOnActionBar(
-        canSave: _customerNail != null && _selectedNailShape != null,
+        canSave: _selectedNailShape != null,
         isSaving: _isSaving,
         isLaunching: _launching,
         onSave: _save,
         onLiveTryOn: () => _launchTryOn(photo: false),
         onPhotoTryOn: () => _launchTryOn(photo: true),
+        onRegenerate: widget.recommendedData != null ? _regenerateDesign : null,
       ),
     );
   }
@@ -509,9 +924,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
 
     return Column(
       children: [
-        // Phần trên: Bảng Preview cố định
-        SizedBox(
-          height: MediaQuery.of(context).size.height * 0.35,
+        Expanded(
           child: Padding(
             padding: const EdgeInsets.only(
               top: 16.0,
@@ -533,57 +946,132 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
               selectedPlacementId: _selectedPlacementId,
               onSelectPlacement: (id) =>
                   setState(() => _selectedPlacementId = id),
+              onUpdatePlacement: _updatePlacement,
+              onDeletePlacement: _deletePlacement,
               onToggleDetailFinger: _togglePreviewDetailFinger,
             ),
           ),
         ),
 
-        // Phần dưới: Điều khiển công cụ (Scrollable)
-        Expanded(
-          child: Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -5),
-                ),
-              ],
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          width: double.infinity,
+          height: _isSelectorExpanded ? 260 : 108,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, -5),
               ),
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+            ],
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
                 children: [
-                  // 1. TabBar
-                  TabBar(
-                    controller: _tabController,
-                    labelColor: Colors.pink,
-                    unselectedLabelColor: Colors.grey,
-                    indicatorColor: Colors.pink,
-                    isScrollable: true,
-                    tabAlignment: TabAlignment.start,
-                    labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-                    tabs: const [
-                      Tab(text: "Dáng móng"),
-                      Tab(text: "Bề mặt"),
-                      Tab(text: "Màu sắc"),
-                      Tab(text: "Phụ kiện"),
-                    ],
+                  Expanded(
+                    child: Container(
+                      margin: const EdgeInsets.only(
+                        left: 16,
+                        top: 12,
+                        bottom: 12,
+                        right: 8,
+                      ),
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: TabBar(
+                        controller: _tabController,
+                        indicator: BoxDecoration(
+                          borderRadius: BorderRadius.circular(28),
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFE91E63), Color(0xFFC2185B)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(
+                                0xFFE91E63,
+                              ).withValues(alpha: 0.2),
+                              blurRadius: 6,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        labelColor: Colors.white,
+                        unselectedLabelColor: Colors.grey.shade600,
+                        indicatorSize: TabBarIndicatorSize.tab,
+                        dividerColor: Colors.transparent,
+                        labelStyle: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                        unselectedLabelStyle: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                        tabs: const [
+                          Tab(text: 'Dáng móng'),
+                          Tab(text: 'Bề mặt'),
+                          Tab(text: 'Màu sắc'),
+                          Tab(text: 'Phụ kiện'),
+                        ],
+                      ),
+                    ),
                   ),
+                  IconButton(
+                    onPressed: () => setState(
+                      () => _isSelectorExpanded = !_isSelectorExpanded,
+                    ),
+                    icon: Icon(
+                      _isSelectorExpanded
+                          ? Icons.keyboard_arrow_down_rounded
+                          : Icons.keyboard_arrow_up_rounded,
+                      color: const Color(0xFFE91E63),
+                      size: 26,
+                    ),
+                    style: IconButton.styleFrom(
+                      backgroundColor: const Color(0xFFFCE4EC),
+                      padding: const EdgeInsets.all(12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                ],
+              ),
 
-                  // 2. Nội dung Tab (thay đổi theo index)
-                  Padding(
+              if (!_isSelectorExpanded)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 12, left: 16, right: 16),
+                  child: Text(
+                    'Bấm nút mũi tên bên phải để hiển thị bảng thiết kế móng',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ),
+
+              if (_isSelectorExpanded)
+                Expanded(
+                  child: SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: _buildActiveTabContent(data),
                   ),
-                ],
-              ),
-            ),
+                ),
+            ],
           ),
         ),
       ],
@@ -606,76 +1094,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
   }
 
   Widget _buildComponentsTab(TryOnData data) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Nửa trên: Danh sách phụ kiện
-        _buildComponentsTool(data),
-        const SizedBox(height: 16),
-        const Divider(height: 1),
-        const SizedBox(height: 16),
-        // Nửa dưới: Remote D-Pad
-        _buildPlacementTool(),
-      ],
-    );
-  }
-
-  Widget _buildPlacementTool() {
-    return SingleChildScrollView(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 8.0,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    _selectedPlacement?.name ?? 'Chưa chọn phụ kiện trên móng',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                FilledButton.icon(
-                  onPressed: _selectedComponent == null
-                      ? null
-                      : _addSelectedComponent,
-                  icon: const Icon(Icons.add, size: 16),
-                  label: const Text('Thêm vào móng'),
-                  style: FilledButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    backgroundColor: Colors.pink,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          TryOnPlacementControls(
-            selectedPlacement: _selectedPlacement,
-            onMoveLeft: () => _nudge(dx: -0.04),
-            onMoveRight: () => _nudge(dx: 0.04),
-            onMoveUp: () => _nudge(dy: -0.04),
-            onMoveDown: () => _nudge(dy: 0.04),
-            onScaleDown: () => _nudge(scale: -0.05),
-            onScaleUp: () => _nudge(scale: 0.05),
-            onRotateLeft: () => _nudge(rotation: -10),
-            onRotateRight: () => _nudge(rotation: 10),
-            onRemove: _removeSelectedPlacement,
-          ),
-        ],
-      ),
-    );
+    return _buildComponentsTool(data);
   }
 
   Widget _buildShapeTool(TryOnData data) {
@@ -739,13 +1158,40 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            color: Theme.of(context).colorScheme.surface,
-            child: const TabBar(
-              tabs: [
-                Tab(text: 'System'),
-                Tab(text: 'My Components'),
-              ],
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: TabBar(
+              indicator: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              labelColor: const Color(0xFFE91E63),
+              unselectedLabelColor: Colors.grey.shade600,
               indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: Colors.transparent,
+              labelStyle: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+              tabs: const [
+                Tab(text: 'Mẫu hệ thống'),
+                Tab(text: 'Phụ kiện của tôi'),
+              ],
             ),
           ),
           const SizedBox(height: 16),
@@ -759,8 +1205,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
                       .where((item) => !item.isCustomerComponent)
                       .toList(),
                   selectedComponent: _selectedComponent,
-                  onSelected: (component) =>
-                      setState(() => _selectedComponent = component),
+                  onSelected: (component) => _addSelectedComponent(component),
                 ),
                 ComponentGrid(
                   title: '',
@@ -768,8 +1213,7 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
                       .where((item) => item.isCustomerComponent)
                       .toList(),
                   selectedComponent: _selectedComponent,
-                  onSelected: (component) =>
-                      setState(() => _selectedComponent = component),
+                  onSelected: (component) => _addSelectedComponent(component),
                 ),
               ],
             ),
@@ -792,17 +1236,6 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
         ],
       ),
     );
-  }
-
-  int get _selectedPlacementIndex {
-    return _placements.indexWhere(
-      (item) => item.localId == _selectedPlacementId,
-    );
-  }
-
-  PlacedComponentDraft? get _selectedPlacement {
-    final index = _selectedPlacementIndex;
-    return index == -1 ? null : _placements[index];
   }
 
   void _showMessage(String message) {

@@ -26,6 +26,11 @@ class NailBookingState extends Equatable {
   final List<dynamic> selectedPromotions; // PromotionModel list
   final List<Map<String, dynamic>> selectedWarrantyItems;
 
+  /// ID của dịch vụ gốc (base service) — dùng cho luồng `service_booking_page`
+  /// khi user chọn 1 dịch vụ trước rồi mới vào trang booking. Nếu null thì
+  /// đây là luồng nail-variant (không có base service).
+  final String? selectedBaseServiceId;
+
   // ── Trạng thái submit ─────────────────────────────────────────────────────
   final bool isSubmitting;
   final String? errorMessage;
@@ -60,6 +65,7 @@ class NailBookingState extends Equatable {
     this.selectedTime,
     this.selectedPromotions = const [],
     this.selectedWarrantyItems = const [],
+    this.selectedBaseServiceId,
     this.isSubmitting = false,
     this.errorMessage,
     this.holdToken,
@@ -103,6 +109,8 @@ class NailBookingState extends Equatable {
     bool clearTime = false,
     List<dynamic>? selectedPromotions,
     List<Map<String, dynamic>>? selectedWarrantyItems,
+    String? selectedBaseServiceId,
+    bool clearBaseService = false,
     bool? isSubmitting,
     String? errorMessage,
     bool clearError = false,
@@ -138,6 +146,9 @@ class NailBookingState extends Equatable {
       selectedPromotions: selectedPromotions ?? this.selectedPromotions,
       selectedWarrantyItems:
           selectedWarrantyItems ?? this.selectedWarrantyItems,
+      selectedBaseServiceId: clearBaseService
+          ? null
+          : (selectedBaseServiceId ?? this.selectedBaseServiceId),
       isSubmitting: isSubmitting ?? this.isSubmitting,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       holdToken: clearHoldToken ? null : (holdToken ?? this.holdToken),
@@ -167,6 +178,7 @@ class NailBookingState extends Equatable {
     selectedTime,
     selectedPromotions,
     selectedWarrantyItems,
+    selectedBaseServiceId,
     isSubmitting,
     errorMessage,
     holdToken,

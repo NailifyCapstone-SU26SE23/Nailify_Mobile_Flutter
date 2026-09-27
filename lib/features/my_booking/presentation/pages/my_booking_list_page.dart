@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../generated/l10n.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection.dart';
@@ -9,6 +10,7 @@ import '../../data/datasources/my_booking_api_service.dart';
 import '../utils/booking_status_utils.dart';
 import '../widgets/waitlist_tab.dart';
 import '../widgets/reschedule_tab.dart';
+import '../widgets/reschedule_booking_dialog.dart';
 
 class MyBookingListPage extends StatefulWidget {
   final int initialTab;
@@ -20,7 +22,10 @@ class MyBookingListPage extends StatefulWidget {
 
 class _MyBookingListPageState extends State<MyBookingListPage>
     with SingleTickerProviderStateMixin {
+  static const int _bookingPageSize = 5;
+
   final MyBookingApiService _apiService = MyBookingApiService();
+  final ScrollController _bookingScrollController = ScrollController();
 
   late TabController _tabController;
   StreamSubscription? _rescheduleSub;
@@ -28,6 +33,9 @@ class _MyBookingListPageState extends State<MyBookingListPage>
   // Dữ liệu lịch hẹn
   List<Map<String, dynamic>> _allBookings = [];
   bool _isLoading = true;
+  bool _isLoadingMore = false;
+  int _page = 1;
+  bool _hasNextPage = false;
 
   // Cấu hình Bộ lọc (Filter State)
   int? _selectedMonth;
@@ -35,18 +43,16 @@ class _MyBookingListPageState extends State<MyBookingListPage>
   String _selectedStatus = 'Tất cả';
 
   // Danh sách trạng thái dùng cho Filter
-  final List<Map<String, String>> _statusOptions = [
-    {'key': 'Tất cả', 'label': 'Tất cả'},
-    {'key': 'Pending', 'label': 'Chờ xác nhận'},
-    {'key': 'Approved', 'label': 'Đã chấp nhận'},
-    {'key': 'Assigned', 'label': 'Đã xếp lịch'},
-    {'key': 'CheckedIn', 'label': 'Đã Check-in'},
-    {'key': 'InProgress', 'label': 'Đang thực hiện'},
-    {'key': 'Completed', 'label': 'Đã hoàn thành'},
-    {'key': 'Reviewed', 'label': 'Đã xem xét'},
-    {'key': 'Repaired', 'label': 'Đã bảo hành'},
-    {'key': 'Rejected', 'label': 'Từ chối'},
-    {'key': 'Cancelled', 'label': 'Đã hủy'},
+  List<Map<String, String>> get _statusOptions => [
+    {'key': 'Tất cả', 'label': S.of(context).allStatus},
+    {'key': 'Pending', 'label': S.of(context).statusPending},
+    {'key': 'Approved', 'label': S.of(context).statusApproved},
+    {'key': 'CheckedIn', 'label': S.of(context).statusCheckedIn},
+    {'key': 'InProgress', 'label': S.of(context).statusInProgress},
+    {'key': 'Completed', 'label': S.of(context).statusCompleted},
+    {'key': 'Repaired', 'label': S.of(context).statusRepaired},
+    {'key': 'Rejected', 'label': S.of(context).statusRejected},
+    {'key': 'Cancelled', 'label': S.of(context).statusCancelled},
   ];
 
   @override
@@ -58,7 +64,8 @@ class _MyBookingListPageState extends State<MyBookingListPage>
       initialIndex: widget.initialTab.clamp(0, 2),
     );
 
-    _fetchBookings();
+    _bookingScrollController.addListener(_onBookingScroll);
+    _fetchBookings(refresh: true);
 
     _rescheduleSub = getIt<SignalRService>().onBookingRescheduled.listen((
       event,
@@ -67,7 +74,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
         '[RescheduleTab] ⚡ Nhận sự kiện status=${event.status}, bookingId=${event.bookingId}, message=${event.message}',
       );
       if (mounted) {
-        _fetchBookings();
+        _fetchBookings(refresh: true);
       }
     });
   }
@@ -75,6 +82,8 @@ class _MyBookingListPageState extends State<MyBookingListPage>
   @override
   void dispose() {
     _rescheduleSub?.cancel();
+    _bookingScrollController.removeListener(_onBookingScroll);
+    _bookingScrollController.dispose();
     _tabController.dispose();
     super.dispose();
   }
@@ -90,20 +99,101 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     }
   }
 
-  Future<void> _fetchBookings() async {
-    try {
-      final data = await _apiService.getMyBookings();
+  void _onBookingScroll() {
+    if (_tabController.index != 0) return;
+    if (_bookingScrollController.position.extentAfter < 400) {
+      _loadMoreBookings();
+    }
+  }
 
-      final List<Map<String, dynamic>> validBookings = [];
-      for (var item in data) {
-        if (item is Map) {
-          final safeMap = <String, dynamic>{};
-          item.forEach((key, value) {
-            safeMap[key.toString()] = value;
-          });
-          validBookings.add(safeMap);
+  Future<void> _loadMoreBookings() async {
+    if (!_hasNextPage || _isLoadingMore || _isLoading) return;
+    await _fetchBookings(refresh: false);
+  }
+
+  void _onFilterChanged({
+    int? month,
+    bool monthChanged = false,
+    int? year,
+    bool yearChanged = false,
+    String? status,
+  }) {
+    setState(() {
+      if (monthChanged) _selectedMonth = month;
+      if (yearChanged) _selectedYear = year;
+      if (status != null) _selectedStatus = status;
+    });
+    _fetchBookings(refresh: true);
+  }
+
+  DateTime? get _filterStartDate {
+    if (_selectedYear == null && _selectedMonth == null) return null;
+    final year = _selectedYear ?? DateTime.now().year;
+    return DateTime(year, _selectedMonth ?? 1, 1);
+  }
+
+  DateTime? get _filterEndDate {
+    if (_selectedYear == null && _selectedMonth == null) return null;
+    final year = _selectedYear ?? DateTime.now().year;
+    final month = _selectedMonth;
+    if (month == null) return DateTime(year, 12, 31);
+    return DateTime(year, month + 1, 0);
+  }
+
+  String? get _serverStatusFilter {
+    if (_selectedStatus == 'Tất cả') return null;
+    if (_requiresClientSideStatusFilter) return null;
+    return _selectedStatus;
+  }
+
+  bool get _requiresClientSideStatusFilter {
+    return _selectedStatus == 'Completed' ||
+        _selectedStatus == 'Assigned' ||
+        _selectedStatus == 'Reviewed';
+  }
+
+  Future<void> _fetchBookings({bool refresh = true}) async {
+    if (refresh) {
+      setState(() {
+        _allBookings = [];
+        _isLoading = true;
+        _page = 1;
+        _hasNextPage = false;
+      });
+    } else {
+      setState(() => _isLoadingMore = true);
+    }
+
+    try {
+      final shouldLoadAll = refresh;
+      final validBookings = <Map<String, dynamic>>[];
+      var nextPage = refresh ? 1 : _page + 1;
+      var resultPage = _page;
+      var hasNextPage = false;
+
+      do {
+        final result = await _apiService.getMyBookingsPage(
+          pageNumber: nextPage,
+          pageSize: _bookingPageSize,
+          startDate: _filterStartDate,
+          endDate: _filterEndDate,
+          status: _serverStatusFilter,
+        );
+
+        for (var item in result.items) {
+          if (item is Map) {
+            final safeMap = <String, dynamic>{};
+            item.forEach((key, value) {
+              safeMap[key.toString()] = value;
+            });
+            validBookings.add(safeMap);
+          }
         }
-      }
+
+        resultPage = result.page;
+        hasNextPage = result.hasNextPage;
+        nextPage = result.page + 1;
+      } while (shouldLoadAll && hasNextPage);
 
       // SẮP XẾP: Ưu tiên ngày mới nhất
       validBookings.sort((a, b) {
@@ -120,12 +210,20 @@ class _MyBookingListPageState extends State<MyBookingListPage>
 
       if (!mounted) return;
       setState(() {
-        _allBookings = validBookings;
+        _allBookings = refresh
+            ? validBookings
+            : [..._allBookings, ...validBookings];
+        _page = resultPage;
+        _hasNextPage = shouldLoadAll ? false : hasNextPage;
         _isLoading = false;
+        _isLoadingMore = false;
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+        _isLoadingMore = false;
+      });
       debugPrint('==== LỖI API MY BOOKINGS: $e ====');
       ScaffoldMessenger.of(
         context,
@@ -148,15 +246,23 @@ class _MyBookingListPageState extends State<MyBookingListPage>
 
   List<Map<String, dynamic>> get _rescheduleRelatedBookings {
     return _allBookings.where((booking) {
-      final status = booking['status']?.toString();
-      return status == 'ReschedulePending' || status == 'RescheduleSuggested';
+      final status = booking['status']?.toString() ?? '';
+      return status == 'ReschedulePending' ||
+          status == 'RescheduleSuggested' ||
+          status == 'RescheduleApproved' ||
+          status == 'RescheduleRejected' ||
+          status.startsWith('Reschedule');
     }).toList();
   }
 
   List<Map<String, dynamic>> get _filteredBookings {
     return _allBookings.where((booking) {
-      final status = booking['status']?.toString();
-      if (status == 'ReschedulePending' || status == 'RescheduleSuggested') {
+      final status = booking['status']?.toString() ?? '';
+      if (status == 'ReschedulePending' ||
+          status == 'RescheduleSuggested' ||
+          status == 'RescheduleApproved' ||
+          status == 'RescheduleRejected' ||
+          status.startsWith('Reschedule')) {
         return false;
       }
       final dateStr = booking['bookingDate']?.toString() ?? '';
@@ -185,11 +291,12 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
-          'Lịch hẹn của tôi',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+        title: Text(
+          S.of(context).myBookingsTitle,
+          style: const TextStyle(
+            color: AppColors.primaryDark,
+            fontWeight: FontWeight.w800,
+            fontFamily: 'Georgia',
           ),
         ),
         centerTitle: true,
@@ -204,42 +311,27 @@ class _MyBookingListPageState extends State<MyBookingListPage>
           indicatorWeight: 2.5,
           labelStyle: const TextStyle(
             fontWeight: FontWeight.bold,
-            fontSize: 14,
+            fontSize: 12,
           ),
           unselectedLabelStyle: const TextStyle(
             fontWeight: FontWeight.normal,
-            fontSize: 14,
+            fontSize: 12,
           ),
-          tabs: const [
+          tabs: [
             Tab(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.calendar_month_outlined, size: 16),
-                  SizedBox(width: 6),
-                  Text('Lịch đặt'),
-                ],
-              ),
+              iconMargin: const EdgeInsets.only(bottom: 2),
+              icon: const Icon(Icons.calendar_month_outlined, size: 16),
+              text: S.of(context).bookingTabScheduled,
             ),
             Tab(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.notifications_outlined, size: 16),
-                  SizedBox(width: 6),
-                  Text('Lịch chờ'),
-                ],
-              ),
+              iconMargin: const EdgeInsets.only(bottom: 2),
+              icon: const Icon(Icons.notifications_outlined, size: 16),
+              text: S.of(context).bookingTabWaitlist,
             ),
             Tab(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.edit_calendar_outlined, size: 16),
-                  SizedBox(width: 6),
-                  Text('Dời lịch'),
-                ],
-              ),
+              iconMargin: const EdgeInsets.only(bottom: 2),
+              icon: const Icon(Icons.edit_calendar_outlined, size: 16),
+              text: S.of(context).bookingTabReschedule,
             ),
           ],
         ),
@@ -259,25 +351,39 @@ class _MyBookingListPageState extends State<MyBookingListPage>
                               hasDataButFilteredOut: _allBookings.isNotEmpty,
                             )
                           : ListView.builder(
+                              controller: _bookingScrollController,
                               padding: const EdgeInsets.all(20),
                               physics: const BouncingScrollPhysics(),
-                              itemCount: _filteredBookings.length,
-                              itemBuilder: (context, index) =>
-                                  _buildBookingCard(_filteredBookings[index]),
+                              itemCount:
+                                  _filteredBookings.length +
+                                  (_isLoadingMore ? 1 : 0),
+                              itemBuilder: (context, index) {
+                                if (index >= _filteredBookings.length) {
+                                  return const Padding(
+                                    padding: EdgeInsets.all(16),
+                                    child: Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  );
+                                }
+                                return _buildBookingCard(
+                                  _filteredBookings[index],
+                                );
+                              },
                             ),
                     ),
                   ],
                 ),
 
           // ─── TAB 2: Lịch chờ ───
-          WaitlistTab(onRefreshBookings: _fetchBookings),
+          WaitlistTab(onRefreshBookings: () => _fetchBookings(refresh: true)),
 
           // ─── TAB 3: Dời lịch ───
           _isLoading
               ? const Center(child: CircularProgressIndicator())
               : RescheduleTab(
                   rescheduleBookings: _rescheduleRelatedBookings,
-                  onRefreshBookings: _fetchBookings,
+                  onRefreshBookings: () => _fetchBookings(refresh: true),
                   // Sau khi accept/decline thành công → chuyển về tab Lịch đặt
                   onActionSuccess: () {
                     _tabController.animateTo(0);
@@ -300,22 +406,27 @@ class _MyBookingListPageState extends State<MyBookingListPage>
               children: [
                 Expanded(
                   child: _buildDropdown(
-                    hint: 'Tháng',
+                    hint: S.of(context).monthHint,
                     value: _selectedMonth,
                     items: [null, ...List.generate(12, (i) => i + 1)],
-                    itemLabel: (val) =>
-                        val == null ? 'Tất cả tháng' : 'Tháng $val',
-                    onChanged: (val) => setState(() => _selectedMonth = val),
+                    itemLabel: (val) => val == null
+                        ? S.of(context).allMonths
+                        : S.of(context).monthFormat(val),
+                    onChanged: (val) =>
+                        _onFilterChanged(month: val, monthChanged: true),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: _buildDropdown(
-                    hint: 'Năm',
+                    hint: S.of(context).yearHint,
                     value: _selectedYear,
                     items: [null, ..._availableYears],
-                    itemLabel: (val) => val == null ? 'Tất cả năm' : 'Năm $val',
-                    onChanged: (val) => setState(() => _selectedYear = val),
+                    itemLabel: (val) => val == null
+                        ? S.of(context).allYears
+                        : S.of(context).yearFormat(val),
+                    onChanged: (val) =>
+                        _onFilterChanged(year: val, yearChanged: true),
                   ),
                 ),
               ],
@@ -353,7 +464,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
                     ),
                     onSelected: (selected) {
                       if (selected) {
-                        setState(() => _selectedStatus = status['key']!);
+                        _onFilterChanged(status: status['key']!);
                       }
                     },
                   ),
@@ -428,8 +539,8 @@ class _MyBookingListPageState extends State<MyBookingListPage>
           Text(
             message ??
                 (hasDataButFilteredOut
-                    ? 'Không có kết quả'
-                    : 'Bạn chưa có lịch hẹn nào'),
+                    ? S.of(context).noData
+                    : S.of(context).noMatchingFound),
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -440,8 +551,8 @@ class _MyBookingListPageState extends State<MyBookingListPage>
           Text(
             subMessage ??
                 (hasDataButFilteredOut
-                    ? 'Thử thay đổi bộ lọc tháng, năm hoặc trạng thái.'
-                    : 'Hãy đặt ngay một lịch làm móng để trải nghiệm!'),
+                    ? S.of(context).tryChangeFilter
+                    : S.of(context).bookNowHint),
             style: const TextStyle(color: Colors.grey),
           ),
           const SizedBox(height: 24),
@@ -452,7 +563,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Khám phá dịch vụ'),
+              child: Text(S.of(context).exploreServices),
             ),
         ],
       ),
@@ -462,10 +573,10 @@ class _MyBookingListPageState extends State<MyBookingListPage>
   Widget _buildBookingCard(Map<String, dynamic> booking) {
     final dateStr = booking['bookingDate']?.toString() ?? '';
     final bookingDate = DateTime.tryParse(dateStr) ?? DateTime.now();
-    final status = bookingStatusView(booking['status']?.toString());
+    final status = bookingStatusView(booking['status']?.toString(), context);
     final rawStatus = booking['status']?.toString();
     final items = booking['bookingItems'] as List<dynamic>? ?? [];
-    var nailName = 'Dịch vụ làm móng';
+    var nailName = S.of(context).nailServiceDefault;
 
     if (items.isNotEmpty && items.first is Map) {
       final firstItem = items.first as Map;
@@ -485,11 +596,21 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     String timeStr = booking['startTime']?.toString() ?? '';
     if (timeStr.length >= 5) timeStr = timeStr.substring(0, 5);
 
-    final artistName = booking['artistName']?.toString() ?? 'Bất kỳ';
+    final artistName =
+        booking['artistName']?.toString() ?? S.of(context).anyArtist;
     final bookingIdStr = booking['bookingId']?.toString() ?? '';
-    final canRate =
-        (rawStatus == 'Completed' || rawStatus == 'ServiceCompleted') &&
-        !bookingIsRated(booking);
+    final canRate = (rawStatus == 'Completed' && booking['isRated'] == false);
+
+    final canReschedule = rawStatus == 'Approved' && bookingIdStr.isNotEmpty;
+
+    final warrantyForBookingId =
+        booking['warrantyForBookingId']?.toString() ??
+        booking['WarrantyForBookingId']?.toString();
+    final isWarrantyBooking =
+        warrantyForBookingId != null && warrantyForBookingId.isNotEmpty;
+    final hasWarrantyRequested =
+        _readBool(booking['isWarrantied'] ?? booking['IsWarrantied']) ||
+        _hasWarranty(bookingIdStr);
 
     return GestureDetector(
       onTap: () {
@@ -497,9 +618,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
           context.push('/my-bookings/detail', extra: bookingIdStr);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Lỗi: Lịch hẹn này bị khuyết ID từ hệ thống.'),
-            ),
+            SnackBar(content: Text(S.of(context).bookingMissingId)),
           );
         }
       },
@@ -512,7 +631,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
           border: Border.all(color: AppColors.borderLight),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.02),
+              color: Colors.black.withValues(alpha: 0.02),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -524,34 +643,81 @@ class _MyBookingListPageState extends State<MyBookingListPage>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: status.backgroundColor,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: status.textColor.withValues(alpha: 0.15),
-                      width: 1,
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: status.backgroundColor,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: status.textColor.withValues(alpha: 0.15),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(status.icon, color: status.textColor, size: 13),
+                          const SizedBox(width: 4),
+                          Text(
+                            status.label,
+                            style: TextStyle(
+                              color: status.textColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(status.icon, color: status.textColor, size: 13),
-                      const SizedBox(width: 4),
-                      Text(
-                        status.label,
-                        style: TextStyle(
-                          color: status.textColor,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
+                    if (isWarrantyBooking) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.blue.shade200),
+                        ),
+                        child: Text(
+                          'Đơn bảo hành',
+                          style: TextStyle(
+                            color: Colors.blue.shade800,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ] else if (hasWarrantyRequested) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.teal.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.teal.shade200),
+                        ),
+                        child: Text(
+                          'Đã bảo hành',
+                          style: TextStyle(
+                            color: Colors.teal.shade800,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
-                  ),
+                  ],
                 ),
                 Text(
                   '${bookingDate.day}/${bookingDate.month}/${bookingDate.year}',
@@ -597,6 +763,39 @@ class _MyBookingListPageState extends State<MyBookingListPage>
                 ),
               ],
             ),
+            if (canReschedule) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _openRescheduleDialog(bookingIdStr),
+                  icon: const Icon(
+                    Icons.edit_calendar_rounded,
+                    size: 18,
+                    color: AppColors.primary,
+                  ),
+                  label: Text(
+                    S.of(context).bookingRescheduleBtnLabel,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(
+                      color: AppColors.primary,
+                      width: 1.2,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                ),
+              ),
+            ],
             if (canRate && bookingIdStr.isNotEmpty) ...[
               const SizedBox(height: 12),
               SizedBox(
@@ -605,7 +804,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
                   onPressed: () =>
                       context.push('/my-bookings/rate', extra: bookingIdStr),
                   icon: const Icon(Icons.star_border, size: 18),
-                  label: const Text('Rate'),
+                  label: const Text('Đánh giá'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
                     side: const BorderSide(color: AppColors.primary),
@@ -619,6 +818,9 @@ class _MyBookingListPageState extends State<MyBookingListPage>
             // Check & render Warranty button
             if (rawStatus == 'Completed' &&
                 bookingIdStr.isNotEmpty &&
+                !_readBool(
+                  booking['isWarrantied'] ?? booking['IsWarrantied'],
+                ) &&
                 !_hasWarranty(bookingIdStr)) ...[
               Padding(
                 padding: const EdgeInsets.only(top: 12),
@@ -627,7 +829,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
                   child: ElevatedButton.icon(
                     onPressed: () => _handleWarrantyAction(booking),
                     icon: const Icon(Icons.shield_outlined, size: 18),
-                    label: const Text('Bảo hành'),
+                    label: Text(S.of(context).warrantyButton),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
@@ -646,6 +848,60 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     );
   }
 
+  void _openRescheduleDialog(String bookingIdStr) {
+    RescheduleBookingDialog.show(
+      context: context,
+      bookingId: bookingIdStr,
+      onConfirm: (newDate, newTime, reason) async {
+        try {
+          final success = await _apiService.requestRescheduleBooking(
+            bookingIdStr,
+            newDate: newDate,
+            newTime: newTime,
+            reason: reason,
+          );
+          if (!context.mounted) return false;
+          if (success) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(S.of(context).bookingRescheduleSuccess),
+                backgroundColor: Colors.green,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+            _fetchBookings(refresh: true);
+            _tabController.animateTo(2);
+            return true;
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(S.of(context).bookingRescheduleFail),
+                backgroundColor: Colors.red,
+              ),
+            );
+            return false;
+          }
+        } catch (e) {
+          if (!context.mounted) return false;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Lỗi: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return false;
+        }
+      },
+    );
+  }
+
+  bool _readBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    final text = value?.toString().toLowerCase().trim();
+    return text == 'true' || text == '1' || text == 'yes';
+  }
+
   bool _hasWarranty(String bookingId) {
     if (bookingId.isEmpty) return false;
     return _allBookings.any(
@@ -655,28 +911,37 @@ class _MyBookingListPageState extends State<MyBookingListPage>
 
   void _handleWarrantyAction(Map<String, dynamic> booking) {
     final items = booking['bookingItems'] as List<dynamic>? ?? [];
-    int? nailVariantId;
-    int? shapeMethodConfigId;
-    String? shapeMethodName;
-    final extraServiceIds = <String>[];
 
-    // Build booking items cho API chính xác
+    // ── Guard: thời hạn bảo hành tối đa 7 ngày từ ngày hoàn thành ──
+    // Check sớm ngay tại list page để hiện popup ngay, không nhảy qua
+    // page trung gian (như trước đây vẫn navigate sang warranty page
+    // khoảng 2s rồi mới hiện thông báo).
+    final bookingIdStr = booking['bookingId']?.toString() ?? '';
+    final salonId = booking['salonId']?.toString() ?? '';
+    final dateStr = booking['bookingDate']?.toString() ?? '';
+    final sourceBookingDate = DateTime.tryParse(dateStr);
+    if (sourceBookingDate != null &&
+        DateTime.now().difference(sourceBookingDate) >
+            const Duration(days: 7)) {
+      _showWarrantyExpiredDialog();
+      return;
+    }
+
+    // Build booking items cho API chính xác — ép kiểu tất cả field cần thiết.
     final List<Map<String, dynamic>> bookingItemsForApi = items.map((item) {
       final map = <String, dynamic>{};
       if (item is Map) {
-        if (item['nailVariantId'] != null) {
-          final idVal = int.tryParse(item['nailVariantId'].toString());
-          if (idVal != null && idVal > 0) {
-            nailVariantId = idVal;
-            map['nailVariantId'] = idVal;
-          }
+        final nailVariantIdRaw = item['nailVariantId']?.toString();
+        if (nailVariantIdRaw != null &&
+            int.tryParse(nailVariantIdRaw) != null &&
+            int.tryParse(nailVariantIdRaw)! > 0) {
+          map['nailVariantId'] = int.parse(nailVariantIdRaw);
         }
         map['nailVariantName'] = item['nailVariantName']?.toString();
 
-        if (item['serviceId'] != null) {
-          final sId = item['serviceId'].toString();
-          extraServiceIds.add(sId);
-          map['serviceId'] = sId;
+        final serviceId = item['serviceId']?.toString();
+        if (serviceId != null && serviceId.isNotEmpty) {
+          map['serviceId'] = serviceId;
         }
         map['serviceName'] = item['serviceName']?.toString();
 
@@ -684,22 +949,21 @@ class _MyBookingListPageState extends State<MyBookingListPage>
             item['shapeMethodConfigId'] ?? item['ShapeMethodConfigId'];
         if (shapeConfigVal != null) {
           final configId = int.tryParse(shapeConfigVal.toString());
-          shapeMethodConfigId = configId;
-          map['shapeMethodConfigId'] = configId;
+          if (configId != null) {
+            map['shapeMethodConfigId'] = configId;
+          }
         }
-        shapeMethodName = item['shapeMethodName']?.toString();
-        map['shapeMethodName'] = shapeMethodName;
+        map['shapeMethodName'] = item['shapeMethodName']?.toString();
 
-        if (item['customerNailId'] != null) {
-          map['customerNailId'] = int.tryParse(
-            item['customerNailId'].toString(),
-          );
+        final customerNailIdRaw = item['customerNailId']?.toString();
+        if (customerNailIdRaw != null) {
+          map['customerNailId'] = int.tryParse(customerNailIdRaw);
         }
         map['customerNailName'] = item['customerNailName']?.toString();
 
-        if (item['customerNailRequestId'] != null) {
-          map['customerNailRequestId'] = item['customerNailRequestId']
-              .toString();
+        final customerNailRequestId = item['customerNailRequestId']?.toString();
+        if (customerNailRequestId != null) {
+          map['customerNailRequestId'] = customerNailRequestId;
         }
         map['quantity'] =
             int.tryParse(item['quantity']?.toString() ?? '1') ?? 1;
@@ -708,39 +972,131 @@ class _MyBookingListPageState extends State<MyBookingListPage>
       return map;
     }).toList();
 
-    var displayName = 'Dịch vụ bảo hành';
-    if (items.isNotEmpty && items.first is Map) {
-      final firstItem = items.first as Map;
-      final variantName = firstItem['nailVariantName']?.toString().trim() ?? '';
-      final customNailName =
-          firstItem['customerNailName']?.toString().trim() ?? '';
-      final serviceName = firstItem['serviceName']?.toString().trim() ?? '';
-      if (variantName.isNotEmpty) {
-        displayName = variantName;
-      } else if (customNailName.isNotEmpty) {
-        displayName = customNailName;
-      } else if (serviceName.isNotEmpty) {
-        displayName = serviceName;
+    // Resolve nailArtistId từ response. Cấu trúc response có thể là:
+    //  - Flat:    booking['nailArtistId']
+    //  - Nested:  booking['nailArtist']['nailArtistId']
+    //  - Nested alt: booking['artist']['nailArtistId']
+    // Nếu không resolve được → truyền rỗng, user sẽ chọn lại artist.
+    String nailArtistId = '';
+    final flatArtistId = booking['nailArtistId']?.toString();
+    if (flatArtistId != null && flatArtistId.trim().isNotEmpty) {
+      nailArtistId = flatArtistId.trim();
+    } else {
+      for (final key in const ['nailArtist', 'artist']) {
+        final nested = booking[key];
+        if (nested is Map) {
+          final id =
+              nested['nailArtistId']?.toString() ??
+              nested['id']?.toString() ??
+              '';
+          if (id.trim().isNotEmpty) {
+            nailArtistId = id.trim();
+            break;
+          }
+        }
       }
     }
 
-    final bookingIdStr = booking['bookingId']?.toString() ?? '';
-    final salonId = booking['salonId']?.toString() ?? '';
+    // Build payload mới cho WarrantyBookingPage — flow riêng, KHÔNG dùng
+    // lại NailBookingPage. Salon, thợ cũ (nếu resolve được) được truyền
+    // để page pre-select + pin lên đầu. Booking items từ booking gốc
+    // được truyền để page render danh sách bảo hành.
+    Map<String, dynamic>? sourceStylist;
+    for (final key in const ['nailArtist', 'artist']) {
+      final nested = booking[key];
+      if (nested is Map) {
+        sourceStylist = Map<String, dynamic>.from(nested);
+        break;
+      }
+    }
+    if (sourceStylist != null) {
+      sourceStylist['nailArtistId'] ??= nailArtistId;
+      final existingName = sourceStylist['fullName']?.toString() ?? '';
+      if (existingName.isEmpty) {
+        sourceStylist['fullName'] = booking['artistName']?.toString() ?? '';
+      }
+    }
 
-    final nailData = {
-      'id': nailVariantId ?? 0,
-      'name': 'Bảo hành: $displayName',
-      'price': 0, // Bảo hành miễn phí
-      'shapeMethodConfigId': shapeMethodConfigId,
-      'shapeMethodPrice': 0.0, // Bảo hành tạo form miễn phí
-      'shapeMethodName': shapeMethodName,
-      'warrantyForBookingId': bookingIdStr,
+    final warrantyData = {
+      'sourceBookingId': bookingIdStr,
       'salonId': salonId,
-      'extraServiceIds': extraServiceIds,
-      'warrantyBookingItems':
-          bookingItemsForApi, // Truyền chuẩn mảng bookingItems cũ
+      'salonName': booking['salonName']?.toString() ?? '',
+      'salonAddress': booking['salonAddress']?.toString() ?? '',
+      'sourceArtistId': nailArtistId,
+      'sourceArtistName': booking['artistName']?.toString() ?? '',
+      'sourceStylist': sourceStylist,
+      'noArtistSelected': nailArtistId.isEmpty,
+      'bookingItems': bookingItemsForApi,
+      if (sourceBookingDate != null)
+        'sourceBookingDate': sourceBookingDate.toIso8601String(),
     };
 
-    context.push('/nail-booking', extra: nailData);
+    if (!mounted) return;
+    context.push('/warranty-booking', extra: warrantyData);
+  }
+
+  /// Hiện popup "Đã quá hạn bảo hành" ngay tại list page, không
+  /// navigate sang trang trung gian. Được gọi khi `DateTime.now()` trừ
+  /// đi `sourceBookingDate` > 7 ngày.
+  void _showWarrantyExpiredDialog() {
+    if (!mounted) return;
+    showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        contentPadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.access_time_filled_rounded,
+                size: 40,
+                color: Colors.orange.shade700,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              S.of(context).warrantyExpiredTitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primaryDark,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              S.of(context).warrantyExpiredDesc,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13.5,
+                color: Colors.grey.shade700,
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+            ),
+            child: Text(
+              S.of(context).warrantyExpiredBackBtn,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

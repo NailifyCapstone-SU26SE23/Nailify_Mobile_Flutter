@@ -1,11 +1,12 @@
 class BookingMockData {
-  static const List<Map<String, String>> branches = [
+  static const List<Map<String, dynamic>> branches = [
     {
       'id': 'branch_1',
       'name': 'Nailify Premium - Quận 1',
       'address': '123 Nguyễn Trãi, Phường Bến Thành, Quận 1, TP.HCM',
       'distance': '1.2 km',
       'rating': '4.9',
+      'depositConfig': '20%',
     },
     {
       'id': 'branch_2',
@@ -13,6 +14,7 @@ class BookingMockData {
       'address': '456 Lê Văn Sỹ, Phường 2, Tân Bình, TP.HCM',
       'distance': '4.5 km',
       'rating': '4.8',
+      'depositConfig': '10%',
     },
     {
       'id': 'branch_3',
@@ -20,6 +22,7 @@ class BookingMockData {
       'address': '789 Trần Hưng Đạo, Phường 1, Quận 5, TP.HCM',
       'distance': '3.0 km',
       'rating': '4.7',
+      'depositConfig': '30%',
     },
   ];
 

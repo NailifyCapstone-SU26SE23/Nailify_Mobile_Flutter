@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../generated/l10n.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../quiz/data/datasources/quiz_repository.dart';
@@ -23,11 +24,11 @@ class _AnalyzePageState extends State<AnalyzePage>
   late final AnimationController _pulseController;
   late final AnimationController _textController;
 
-  final List<String> _analysisMessages = [
-    'Đang phân tích phong cách...',
-    'Đang tìm kiếm màu sắc phù hợp...',
-    'Đang khớp với bộ sưu tập móng...',
-    'Gần xong rồi...',
+  List<String> get _analysisMessages => [
+    S.of(context).quizAnalyzingStyle,
+    S.of(context).quizFindingColors,
+    S.of(context).quizMatchingCollections,
+    S.of(context).quizAlmostDone,
   ];
   int _messageIndex = 0;
   Timer? _messageTimer;
@@ -110,11 +111,11 @@ class _AnalyzePageState extends State<AnalyzePage>
       barrierDismissible: false,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.error_outline_rounded, color: AppColors.error),
-            SizedBox(width: 10),
-            Text('Có lỗi xảy ra'),
+            const Icon(Icons.error_outline_rounded, color: AppColors.error),
+            const SizedBox(width: 10),
+            Text(S.of(context).error),
           ],
         ),
         content: Text(
@@ -131,9 +132,9 @@ class _AnalyzePageState extends State<AnalyzePage>
               Navigator.of(context).pop();
               if (context.canPop()) context.pop();
             },
-            child: const Text(
-              'Quay lại',
-              style: TextStyle(
+            child: Text(
+              S.of(context).back,
+              style: const TextStyle(
                 color: AppColors.primaryDark,
                 fontWeight: FontWeight.bold,
               ),

@@ -718,9 +718,11 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
         _imgHeight = decodedImage.height.toDouble();
       });
 
-      final result = await _worker.processFrame(
-        decodedImage,
-        confThreshold: 0.20,
+      // Hybrid flow: Roboflow segmentation (cloud) + YOLO Pose local (thanhdtPose.onnx)
+      final result = await _worker.detectWithRoboflow(
+        imageBytes,
+        imageWidth: decodedImage.width,
+        imageHeight: decodedImage.height,
       );
 
       if (!mounted) return;
@@ -733,12 +735,27 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
       if (result.polygons.isEmpty && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Không nhận diện được móng nào trong ảnh này.'),
+            content: Text(
+              'Khong nhan dien duoc mong nao trong anh nay. Vui long thu lai voi anh ro net hon.',
+            ),
           ),
         );
       }
     } catch (e) {
-      debugPrint("⚠️ Lỗi Inference Worker: $e");
+      debugPrint("Loi detection (Hybrid): $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Loi ket noi Roboflow: ${e.toString()}. Vui long kiem tra mang va thu lai.',
+            ),
+            action: SnackBarAction(
+              label: 'Thu lai',
+              onPressed: _processSelectedImage,
+            ),
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {

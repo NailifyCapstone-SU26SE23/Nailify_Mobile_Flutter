@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 
@@ -21,6 +22,18 @@ class LetterboxResult {
 }
 
 class LetterboxProcessor {
+  /// Decode raw image bytes (JPEG/PNG) and run letterbox.
+  static LetterboxResult processFromBytes(
+    Uint8List bytes, {
+    int targetSize = 640,
+  }) {
+    final decoded = img.decodeImage(bytes);
+    if (decoded == null) {
+      throw StateError('Failed to decode image bytes');
+    }
+    return process(decoded, targetSize: targetSize);
+  }
+
   static LetterboxResult process(img.Image inputImage, {int targetSize = 640}) {
     final int imgW = inputImage.width;
     final int imgH = inputImage.height;

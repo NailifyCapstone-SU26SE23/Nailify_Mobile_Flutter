@@ -36,6 +36,7 @@ class SignalRService {
       StreamController<CustomNailQuotedEvent>.broadcast();
   final _customNailRejectedCtrl =
       StreamController<CustomNailRejectedEvent>.broadcast();
+  final _slotStatusChangedCtrl = StreamController<SlotStatusChangedEvent>.broadcast();
 
   Stream<WaitlistPromotedEvent> get onWaitlistPromoted => _promotedCtrl.stream;
   Stream<WaitlistExpiredEvent> get onWaitlistExpired => _expiredCtrl.stream;
@@ -53,6 +54,7 @@ class SignalRService {
       _customNailQuotedCtrl.stream;
   Stream<CustomNailRejectedEvent> get onCustomNailRejected =>
       _customNailRejectedCtrl.stream;
+  Stream<SlotStatusChangedEvent> get onSlotStatusChanged => _slotStatusChangedCtrl.stream;
 
   bool get isConnected => _isConnected;
 
@@ -257,6 +259,12 @@ class SignalRService {
             _customNailRejectedCtrl.add(payload);
             break;
 
+          case 'SlotStatusChanged':
+            if (payloadMap != null) {
+              _slotStatusChangedCtrl.add(SlotStatusChangedEvent.fromJson(payloadMap));
+            }
+            break;
+
           default:
             if (kDebugMode) {
               debugPrint('[SignalR] messageType không xác định: $messageType');
@@ -331,5 +339,6 @@ class SignalRService {
     _delayEtaCtrl.close();
     _customNailQuotedCtrl.close();
     _customNailRejectedCtrl.close();
+    _slotStatusChangedCtrl.close();
   }
 }

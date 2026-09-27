@@ -97,8 +97,10 @@ class _NailVariantDetailScreenState extends State<NailVariantDetailScreen> {
         );
       }
 
-      // Route photo try-on through Snapshot so users can choose camera/gallery
-      // before previewing this exact variant.
+      //Photo try-on
+      //await service.launchCustomerPhoto(customerNail);
+
+      //Snapshot try-on
       if (mounted) {
         context.push(
           '/snapshot-try-on',

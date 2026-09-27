@@ -67,11 +67,17 @@ class _MainShellState extends State<MainShell> {
 
     if (token != _lastCheckedToken) {
       _lastCheckedToken = token;
-      _checkRecommendations();
+      if (mounted && _hasRecommendations != localQuizCompleted) {
+        setState(() {
+          _hasRecommendations = localQuizCompleted;
+        });
+      }
     } else if (localQuizCompleted != _hasRecommendations) {
-      setState(() {
-        _hasRecommendations = localQuizCompleted;
-      });
+      if (mounted) {
+        setState(() {
+          _hasRecommendations = localQuizCompleted;
+        });
+      }
     }
   }
 

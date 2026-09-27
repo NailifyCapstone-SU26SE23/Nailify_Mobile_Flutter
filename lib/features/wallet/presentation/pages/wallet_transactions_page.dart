@@ -59,7 +59,7 @@ class _WalletTransactionsPageState extends State<WalletTransactionsPage> {
   }
 
   String _formatVnd(double amount) {
-    return NumberFormat.currency(locale: 'vi_VN', symbol: 'đ').format(amount);
+    return NumberFormat.currency(locale: 'vi_VN', symbol: 'đ').format(amount.abs());
   }
 
   String _formatDateTime(DateTime date) {

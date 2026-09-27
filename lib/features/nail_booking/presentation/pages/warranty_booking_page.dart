@@ -4,6 +4,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/di/injection.dart';
+import '../../../../core/network/signalr_service.dart';
+import '../../../../core/network/signalr_events.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../../../generated/l10n.dart';
 
@@ -67,6 +70,8 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
   final List<WalletVoucherModel> _promotions = [];
   int? _selectedPromotionId;
 
+  StreamSubscription? _slotStatusChangedSub;
+
   List<Map<String, dynamic>> get _bookingSteps => [
     {
       'title': S.of(context).warrantyStepArtist,
@@ -95,6 +100,38 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
       );
       _fetchWalletBalance();
     });
+
+    final signalR = getIt<SignalRService>();
+    _slotStatusChangedSub = signalR.onSlotStatusChanged.listen(_onSlotStatusChanged);
+  }
+
+  void _onSlotStatusChanged(SlotStatusChangedEvent event) {
+    if (!mounted) return;
+    
+    final cubit = context.read<WarrantyBookingCubit>();
+    if (cubit.isClosed) return;
+    final state = cubit.state;
+    final currentBranch = state.selectedBranch;
+    if (currentBranch == null || _selectedDate == null) return;
+    
+    final currentSalonId = currentBranch['salonId']?.toString() ?? '';
+    if (event.salonId.toLowerCase() != currentSalonId.toLowerCase()) return;
+    
+    final String y = _selectedDate!.year.toString().padLeft(4, '0');
+    final String m = _selectedDate!.month.toString().padLeft(2, '0');
+    final String d = _selectedDate!.day.toString().padLeft(2, '0');
+    final formattedDate = '$y-$m-$d';
+    if (!event.bookingDate.startsWith(formattedDate)) return;
+
+    final currentArtistId = _noArtistSelected ? '' : (_selectedStylistId ?? state.selectedStylist?['nailArtistId']?.toString() ?? '');
+    
+    if (_noArtistSelected || event.artistId.toLowerCase() == currentArtistId.toLowerCase() || event.artistId == '') {
+       if (event.action == 'Held' || event.action == 'Released' || event.action == 'Booked') {
+         if (_currentStep == 2) {
+           _fetchTimeSlots();
+         }
+       }
+    }
   }
 
   Future<void> _fetchWalletBalance() async {
@@ -115,6 +152,7 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
 
   @override
   void dispose() {
+    _slotStatusChangedSub?.cancel();
     _holdTimer?.cancel();
     // Bug fix: Gọi cancelCurrentHold() để notify backend hủy hold slot.
     // Trước đây chỉ cancel timer cục bộ, phụ thuộc vào BlocProvider close cubit.

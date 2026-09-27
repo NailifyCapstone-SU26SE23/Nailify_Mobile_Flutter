@@ -12,6 +12,7 @@ import '../../data/models/wallet_voucher_model.dart';
 import '../../data/repositories/wallet_repository.dart';
 import '../cubit/wallet_overview_cubit.dart';
 import '../widgets/cash_wallet_card.dart';
+import '../widgets/convert_points_sheet.dart';
 import '../widgets/deposit_sheet.dart';
 import '../widgets/empty_wallet_state.dart';
 import '../widgets/loyalty_rewards_card.dart';
@@ -106,6 +107,22 @@ class _WalletOverviewViewState extends State<_WalletOverviewView> {
             }
             return success;
           },
+    );
+  }
+
+  void _openConvertPointsSheet(BuildContext context, double availableBalance) {
+    final cubit = context.read<WalletOverviewCubit>();
+    ConvertPointsSheet.show(
+      context,
+      availableBalance: availableBalance,
+      onConfirmConvert: (moneyAmount) async {
+        final repo = getIt<WalletRepository>();
+        final msg = await repo.convertMoneyToPoints(moneyAmount);
+        if (mounted) {
+          cubit.refresh();
+        }
+        return msg;
+      },
     );
   }
 
@@ -208,6 +225,8 @@ class _WalletOverviewViewState extends State<_WalletOverviewView> {
                     onDepositPressed: () => _openDepositSheet(context),
                     onWithdrawPressed: () =>
                         _openWithdrawSheet(context, availableBalance),
+                    onConvertPointsPressed: () =>
+                        _openConvertPointsSheet(context, availableBalance),
                     onHistoryPressed: () => _openTransactionsPage(context),
                   ),
                   const SizedBox(height: 16),
@@ -221,6 +240,8 @@ class _WalletOverviewViewState extends State<_WalletOverviewView> {
                     pointsToNext: snapshot.loyalty.pointsToNextTier,
                     hasNextTier: snapshot.loyalty.hasNextTier,
                     usableVoucherCount: snapshot.usableVoucherCount,
+                    onConvertPointsPressed: () =>
+                        _openConvertPointsSheet(context, availableBalance),
                     onRedeemPressed: () =>
                         context.push('/profile/wallet/redeem'),
                     onMyVouchersPressed: () =>

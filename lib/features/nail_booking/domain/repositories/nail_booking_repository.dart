@@ -27,6 +27,7 @@ abstract class NailBookingRepository {
     required String artistId,
     required String bookingDate,
     List<Map<String, dynamic>>? bookingItems,
+    String? holdToken,
   });
 
   /// Lấy danh sách slot giờ rảnh của salon (không chọn thợ).
@@ -34,6 +35,7 @@ abstract class NailBookingRepository {
     required String salonId,
     required String bookingDate,
     required List<Map<String, dynamic>> bookingItems,
+    String? holdToken,
   });
 
   /// Tạo danh sách slot từ lịch hoạt động của salon (khi không chọn thợ).

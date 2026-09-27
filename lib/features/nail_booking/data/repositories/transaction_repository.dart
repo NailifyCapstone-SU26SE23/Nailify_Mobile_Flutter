@@ -26,7 +26,27 @@ class TransactionRepository {
     );
     return PaginatedResponse.fromJson(
       response.data,
-      (json) => Map<String, dynamic>.from(json as Map),
+      (json) {
+        final map = Map<String, dynamic>.from(json as Map);
+        final method = map['paymentMethod']?.toString() ?? '';
+        final linkId = map['paymentLinkId']?.toString();
+        final walletId = map['walletId']?.toString();
+
+        String label = 'Chuyển khoản / PayOS';
+        if (method == 'Ví' || linkId?.toUpperCase() == 'WALLET_PAYMENT') {
+          label = 'Ví Nailify';
+        } else if (method == 'Tiền mặt' || ((linkId == null || linkId.isEmpty) && (walletId == null || walletId.isEmpty))) {
+          label = 'Tiền mặt';
+        } else if (method == 'Nạp tiền vào ví' || (linkId != null && linkId.isNotEmpty && walletId != null && walletId.isNotEmpty)) {
+          label = 'Nạp tiền vào ví';
+        }
+
+        map['paymentMethodName'] = label;
+        if (map['salonName'] == null || map['salonName'].toString().isEmpty) {
+          map['salonName'] = label;
+        }
+        return map;
+      },
     );
   }
 
@@ -34,11 +54,31 @@ class TransactionRepository {
     String bookingId,
   ) async {
     try {
-      final response = await _apiClient.get<dynamic>(
-        '/Transactions/booking/$bookingId',
+                  final response = await _apiClient.get<dynamic>(
+        '/Transactions/booking/$bookingId/payment-history',
       );
       final list = ApiResponseParser.unwrapList(response.data);
-      if (list.isNotEmpty) return list;
+      if (list.isNotEmpty) {
+        return list.map((e) {
+          final method = e['paymentMethod']?.toString() ?? '';
+          String label = 'Chuyển khoản / PayOS';
+          if (method == 'Ví') {
+            label = 'Ví Nailify';
+          } else if (method == 'Tiền mặt') {
+            label = 'Tiền mặt';
+          } else if (method == 'Nạp tiền vào ví') {
+            label = 'Nạp tiền vào ví';
+          }
+          return {
+            'transactionId': e['id'],
+            'amount': e['amount'],
+            'status': e['status'],
+            'orderCode': e['description'],
+            'salonName': label,
+            'createdAt': e['createdAt'],
+          };
+        }).toList();
+      }
     } catch (_) {}
 
     try {
@@ -61,3 +101,6 @@ class TransactionRepository {
     return '${date.year}-$month-$day';
   }
 }
+
+
+

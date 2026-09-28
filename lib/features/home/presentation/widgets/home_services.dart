@@ -80,18 +80,18 @@ class HomeServices extends StatelessWidget {
               ),
               GestureDetector(
                 onTap: () => context.push('/services'),
-                child: const Row(
+                child: Row(
                   children: [
                     Text(
-                      'Tất cả',
-                      style: TextStyle(
+                      S.of(context).viewAll,
+                      style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: Color(0xFFE02B6D),
                       ),
                     ),
-                    SizedBox(width: 2),
-                    Icon(
+                    const SizedBox(width: 2),
+                    const Icon(
                       Icons.chevron_right_rounded,
                       size: 16,
                       color: Color(0xFFE02B6D),

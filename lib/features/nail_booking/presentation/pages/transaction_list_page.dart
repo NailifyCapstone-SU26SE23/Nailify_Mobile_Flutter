@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
@@ -229,8 +229,11 @@ class _TransactionListPageState extends State<TransactionListPage> {
             if (widget.bookingId == null) _buildFilters(),
             if (!_isLoading &&
                 _errorMessage == null &&
-                _transactions.isNotEmpty)
+                _transactions.isNotEmpty) ...[
               _buildSummaryHeader(),
+              if (_buildRefundPolicyBanner() != null)
+                _buildRefundPolicyBanner()!,
+            ],
             if (_isLoading)
               const Padding(
                 padding: EdgeInsets.only(top: 120),
@@ -350,6 +353,154 @@ class _TransactionListPageState extends State<TransactionListPage> {
                 fontWeight: FontWeight.w600,
                 color: Colors.grey.shade700,
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget? _buildRefundPolicyBanner() {
+    Map<String, dynamic>? depositTx;
+    Map<String, dynamic>? refundTx;
+
+    for (final tx in _transactions) {
+      final code = (tx['orderCode'] ?? tx['description'] ?? '').toString().toLowerCase();
+      final status = (tx['status'] ?? '').toString().toLowerCase();
+
+      if (code.contains('hoàn') || code.contains('refund') || status == 'refunded') {
+        refundTx = tx;
+      } else if (code.contains('cọc') ||
+          code.contains('thanh toán') ||
+          status == 'paid' ||
+          status == 'completed' ||
+          status == 'success') {
+        depositTx ??= tx;
+      }
+    }
+
+    if (refundTx == null) return null;
+
+    bool isFullRefund = true;
+
+    // Priority 1: Check by amount ratio if both amounts exist
+    if (depositTx != null && depositTx['amount'] != null && refundTx['amount'] != null) {
+      final depAmt = (depositTx['amount'] as num).toDouble();
+      final refAmt = (refundTx['amount'] as num).toDouble();
+      if (depAmt > 0) {
+        final ratio = refAmt / depAmt;
+        if (ratio <= 0.88) {
+          isFullRefund = false;
+        } else if (ratio >= 0.95) {
+          isFullRefund = true;
+        }
+      }
+    } else {
+      // Priority 2: Check by timestamp comparison
+      DateTime? bookingTime;
+      if (widget.bookingData != null) {
+        final bDateRaw = widget.bookingData!['bookingDate'] ??
+            widget.bookingData!['startTime'] ??
+            widget.bookingData!['appointmentTime'];
+        if (bDateRaw != null) {
+          bookingTime = DateTime.tryParse(bDateRaw.toString());
+        }
+      }
+
+      DateTime? depositTime;
+      if (depositTx != null) {
+        final dTimeRaw = depositTx['createdAt'] ?? depositTx['transactionDate'];
+        if (dTimeRaw != null) {
+          depositTime = DateTime.tryParse(dTimeRaw.toString());
+        }
+      }
+
+      DateTime? refundTime;
+      final rTimeRaw = refundTx['createdAt'] ?? refundTx['transactionDate'];
+      if (rTimeRaw != null) {
+        refundTime = DateTime.tryParse(rTimeRaw.toString());
+      }
+
+      if (refundTime != null) {
+        final targetTime = bookingTime ?? depositTime;
+        if (targetTime != null) {
+          final diffInHours = targetTime.difference(refundTime).inHours.abs();
+          if (diffInHours < 24) {
+            isFullRefund = false;
+          }
+        }
+      }
+    }
+
+    final refundAmountStr = refundTx['amount'] != null
+        ? PriceFormatter.format(refundTx['amount'])
+        : '';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isFullRefund ? const Color(0xFFECFDF5) : const Color(0xFFFFFBEB),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isFullRefund ? const Color(0xFFA7F3D0) : const Color(0xFFFDE68A),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isFullRefund
+                  ? const Color(0xFF10B981).withValues(alpha: 0.15)
+                  : const Color(0xFFF59E0B).withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isFullRefund ? Icons.verified_rounded : Icons.info_rounded,
+              color: isFullRefund ? const Color(0xFF059669) : const Color(0xFFD97706),
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isFullRefund
+                      ? 'Thông báo: Hoàn tiền 100% cọc'
+                      : 'Thông báo: Hoàn tiền 80% cọc',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: isFullRefund
+                        ? const Color(0xFF065F46)
+                        : const Color(0xFF92400E),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  isFullRefund
+                      ? 'Hủy lịch trước thời gian đặt lịch 24 tiếng. Hệ thống đã hoàn trả 100% tiền cọc ($refundAmountStr) vào ví của bạn.'
+                      : 'Hủy lịch trong thời gian đặt lịch 24 tiếng. Theo chính sách quy định, bạn được hoàn trả 80% tiền cọc ($refundAmountStr) vào ví.',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: isFullRefund
+                        ? const Color(0xFF047857)
+                        : const Color(0xFFB45309),
+                    height: 1.35,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -500,16 +651,24 @@ class _TransactionListPageState extends State<TransactionListPage> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          if (orderCode != null && orderCode.isNotEmpty) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              'Mã HĐ: #$orderCode',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
+                          () {
+                            final rawDesc = orderCode ?? transaction['description'];
+                            final cleanDesc = formatTransactionDescription(rawDesc);
+                            final isPureNumber = RegExp(r'^\d+$').hasMatch(cleanDesc);
+                            if (cleanDesc.isEmpty) return const SizedBox.shrink();
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: Text(
+                                isPureNumber ? 'Mã HĐ: #$cleanDesc' : cleanDesc,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                          ],
+                            );
+                          }(),
                         ],
                       ),
                     ),

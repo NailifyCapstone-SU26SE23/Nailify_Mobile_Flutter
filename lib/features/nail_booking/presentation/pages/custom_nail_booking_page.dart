@@ -915,7 +915,6 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                     value: method.shapeMethodConfigId,
                     groupValue: _selectedShapeMethodConfigId,
                     onChanged: (_) {
-                      _cancelCurrentHold();
                       setState(() {
                         _selectedShapeMethod = method;
                         _priceReview = null;
@@ -1327,7 +1326,9 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                   )
                 else if (hasSelected)
                   Text(
-                    '${selectedVoucher!.promotionName} (-${selectedVoucher.displayDiscount})',
+                    _selectedPromotions.length > 1
+                        ? 'Đã chọn ${_selectedPromotions.length} voucher'
+                        : '${selectedVoucher!.promotionName} (-${selectedVoucher.displayDiscount})',
                     style: const TextStyle(
                       color: Color(0xFFE02B6D),
                       fontSize: 12,

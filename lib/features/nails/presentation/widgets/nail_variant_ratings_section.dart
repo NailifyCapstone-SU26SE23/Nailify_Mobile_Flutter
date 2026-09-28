@@ -115,6 +115,7 @@ class _NailVariantRatingsSectionState extends State<NailVariantRatingsSection> {
                         ? page.totalItems
                         : page.items.length,
                     averageScore: _calcAverageScore(page.items),
+                    items: page.items,
                   ),
                   ...page.items.map((rating) {
                     return Padding(
@@ -140,7 +141,7 @@ class _NailVariantRatingsSectionState extends State<NailVariantRatingsSection> {
   }
 
   double _calcAverageScore(List<NailVariantRatingModel> items) {
-    if (items.isEmpty) return 2.8;
+    if (items.isEmpty) return 5.0;
     final total = items.fold<double>(0, (sum, item) => sum + item.overallScore);
     return total / items.length;
   }
@@ -232,15 +233,23 @@ class _EmptyRatingsMessage extends StatelessWidget {
 class _RatingsSummaryHeader extends StatelessWidget {
   final int totalCount;
   final double averageScore;
+  final List<NailVariantRatingModel> items;
 
   const _RatingsSummaryHeader({
     required this.totalCount,
     required this.averageScore,
+    required this.items,
   });
+
+  double _getStarRatio(int star) {
+    if (items.isEmpty) return 0.0;
+    final count = items.where((i) => i.overallScore == star).length;
+    return count / items.length;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final scoreStr = averageScore > 0 ? averageScore.toStringAsFixed(1) : '2.8';
+    final scoreStr = averageScore > 0 ? averageScore.toStringAsFixed(1) : '5.0';
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 16),
@@ -311,11 +320,11 @@ class _RatingsSummaryHeader extends StatelessWidget {
           Expanded(
             child: Column(
               children: [
-                _buildRatingBar(5, 0.75),
-                _buildRatingBar(4, 0.15),
-                _buildRatingBar(3, 0.08),
-                _buildRatingBar(2, 0.02),
-                _buildRatingBar(1, 0.0),
+                _buildRatingBar(5, _getStarRatio(5)),
+                _buildRatingBar(4, _getStarRatio(4)),
+                _buildRatingBar(3, _getStarRatio(3)),
+                _buildRatingBar(2, _getStarRatio(2)),
+                _buildRatingBar(1, _getStarRatio(1)),
               ],
             ),
           ),

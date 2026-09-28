@@ -1019,14 +1019,14 @@ class _ProfilePageState extends State<ProfilePage> {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.primary, AppColors.secondary.withOpacity(0.8)],
+          colors: [AppColors.primary, AppColors.secondary.withValues(alpha: 0.8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
+            color: AppColors.primary.withValues(alpha: 0.3),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -1146,7 +1146,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -1213,6 +1213,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     File? selectedImage;
     bool isSubmitting = false;
+    final messenger = ScaffoldMessenger.of(context);
 
     showDialog(
       context: context,
@@ -1230,167 +1231,311 @@ class _ProfilePageState extends State<ProfilePage> {
               }
             }
 
-            return AlertDialog(
+            return Dialog(
               backgroundColor: Colors.white,
+              surfaceTintColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(28),
               ),
-              title: const Text(
-                'Cập nhật hồ sơ',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-              ),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    GestureDetector(
-                      onTap: pickImage,
-                      child: Stack(
-                        alignment: Alignment.bottomRight,
+              insetPadding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: Container(
+                padding: const EdgeInsets.all(22),
+                constraints: const BoxConstraints(maxWidth: 400),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Header Row
+                      Row(
                         children: [
-                          CircleAvatar(
-                            radius: 50,
-                            backgroundColor: Colors.grey.shade200,
-                            backgroundImage: selectedImage != null
-                                ? FileImage(selectedImage!) as ImageProvider
-                                : avatarUrl.isNotEmpty
-                                ? NetworkImage(avatarUrl)
-                                : null,
-                            onBackgroundImageError: avatarUrl.isNotEmpty
-                                ? (e, s) => debugPrint('Lỗi ảnh popup')
-                                : null,
-                            child: (selectedImage == null && avatarUrl.isEmpty)
-                                ? const Icon(
-                                    Icons.person,
-                                    size: 50,
-                                    color: Colors.grey,
-                                  )
-                                : null,
-                          ),
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: const BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle,
+                          const SizedBox(width: 32),
+                          const Expanded(
+                            child: Text(
+                              'Cập nhật hồ sơ',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontFamily: 'Georgia',
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20,
+                                color: AppColors.primaryDark,
+                              ),
                             ),
-                            child: const Icon(
-                              Icons.camera_alt,
-                              color: Colors.white,
-                              size: 16,
+                          ),
+                          InkWell(
+                            onTap: isSubmitting
+                                ? null
+                                : () => Navigator.pop(dialogContext),
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.close_rounded,
+                                color: Colors.grey.shade600,
+                                size: 18,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    _buildTextField(
-                      emailController,
-                      'Email',
-                      Icons.email_outlined,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildTextField(
-                      firstNameController,
-                      'Tên (First Name)',
-                      Icons.person_outline,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildTextField(
-                      lastNameController,
-                      'Họ (Last Name)',
-                      Icons.badge_outlined,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildTextField(
-                      phoneController,
-                      'Số điện thoại',
-                      Icons.phone_outlined,
-                      isNumber: true,
-                    ),
-                    const SizedBox(height: 16),
-                    OutlinedButton.icon(
-                      onPressed: isSubmitting
-                          ? null
-                          : () {
-                              Navigator.pop(dialogContext);
-                              _showUpdatePasswordPopup();
-                            },
-                      icon: const Icon(Icons.lock_reset),
-                      label: const Text('Đổi mật khẩu'),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: isSubmitting
-                      ? null
-                      : () => Navigator.pop(dialogContext),
-                  child: const Text(
-                    'Hủy',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: isSubmitting
-                      ? null
-                      : () async {
-                          setStateDialog(() => isSubmitting = true);
+                      const SizedBox(height: 18),
 
-                          final success = await _updateProfile(
-                            emailController.text.trim(),
-                            firstNameController.text.trim(),
-                            lastNameController.text.trim(),
-                            phoneController.text.trim(),
-                            selectedImage,
-                          );
-
-                          if (success) {
-                            if (dialogContext.mounted) {
-                              Navigator.pop(dialogContext);
-                            }
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Cập nhật hồ sơ thành công!'),
+                      // Avatar Selector
+                      GestureDetector(
+                        onTap: pickImage,
+                        child: Stack(
+                          alignment: Alignment.bottomRight,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(3.5),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    AppColors.primary,
+                                    Color(0xFFFF80AB),
+                                  ],
                                 ),
-                              );
-                              setState(() => _isLoading = true);
-                              _fetchProfile(); // reload Data
-                            }
-                          } else {
-                            if (dialogContext.mounted) {
-                              setStateDialog(() => isSubmitting = false);
-                            }
-                          }
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: isSubmitting
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.primary
+                                        .withValues(alpha: 0.25),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: CircleAvatar(
+                                radius: 46,
+                                backgroundColor: Colors.white,
+                                child: CircleAvatar(
+                                  radius: 43,
+                                  backgroundColor: Colors.grey.shade100,
+                                  backgroundImage: selectedImage != null
+                                      ? FileImage(selectedImage!)
+                                          as ImageProvider
+                                      : avatarUrl.isNotEmpty
+                                      ? NetworkImage(avatarUrl)
+                                      : null,
+                                  onBackgroundImageError: avatarUrl.isNotEmpty
+                                      ? (e, s) => debugPrint('Lỗi ảnh popup')
+                                      : null,
+                                  child: (selectedImage == null &&
+                                          avatarUrl.isEmpty)
+                                      ? const Icon(
+                                          Icons.person_rounded,
+                                          size: 44,
+                                          color: Colors.grey,
+                                        )
+                                      : null,
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.all(7),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                                border:
+                                    Border.all(color: Colors.white, width: 2),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black
+                                        .withValues(alpha: 0.15),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.camera_alt_rounded,
+                                color: Colors.white,
+                                size: 15,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+
+                      _buildTextField(
+                        emailController,
+                        'Email',
+                        Icons.email_outlined,
+                      ),
+                      const SizedBox(height: 14),
+                      _buildTextField(
+                        firstNameController,
+                        'Tên (First Name)',
+                        Icons.person_outline_rounded,
+                      ),
+                      const SizedBox(height: 14),
+                      _buildTextField(
+                        lastNameController,
+                        'Họ (Last Name)',
+                        Icons.badge_outlined,
+                      ),
+                      const SizedBox(height: 14),
+                      _buildTextField(
+                        phoneController,
+                        'Số điện thoại',
+                        Icons.phone_outlined,
+                        isNumber: true,
+                      ),
+                      const SizedBox(height: 18),
+
+                      // Đổi mật khẩu pill button
+                      InkWell(
+                        onTap: isSubmitting
+                            ? null
+                            : () {
+                                Navigator.pop(dialogContext);
+                                _showUpdatePasswordPopup();
+                              },
+                        borderRadius: BorderRadius.circular(14),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF5F8),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: AppColors.primary
+                                  .withValues(alpha: 0.25),
+                              width: 1,
+                            ),
                           ),
-                        )
-                      : const Text(
-                          'Lưu thay đổi',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.lock_reset_rounded,
+                                size: 18,
+                                color: AppColors.primary,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Đổi mật khẩu',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
+                      ),
+                      const SizedBox(height: 22),
+
+                      // Action buttons: Cancel & Save
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SizedBox(
+                              height: 48,
+                              child: TextButton(
+                                onPressed: isSubmitting
+                                    ? null
+                                    : () => Navigator.pop(dialogContext),
+                                style: TextButton.styleFrom(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  foregroundColor: Colors.grey.shade600,
+                                ),
+                                child: const Text(
+                                  'Hủy',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: SizedBox(
+                              height: 48,
+                              child: ElevatedButton(
+                                onPressed: isSubmitting
+                                    ? null
+                                    : () async {
+                                        setStateDialog(
+                                          () => isSubmitting = true,
+                                        );
+
+                                        final success = await _updateProfile(
+                                          emailController.text.trim(),
+                                          firstNameController.text.trim(),
+                                          lastNameController.text.trim(),
+                                          phoneController.text.trim(),
+                                          selectedImage,
+                                        );
+
+                                        if (success) {
+                                          if (dialogContext.mounted) {
+                                            Navigator.pop(dialogContext);
+                                          }
+                                          if (mounted) {
+                                            messenger.showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'Cập nhật hồ sơ thành công!',
+                                                ),
+                                              ),
+                                            );
+                                            setState(() => _isLoading = true);
+                                            _fetchProfile(); // reload Data
+                                          }
+                                        } else {
+                                          if (dialogContext.mounted) {
+                                            setStateDialog(
+                                              () => isSubmitting = false,
+                                            );
+                                          }
+                                        }
+                                      },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: Colors.white,
+                                  elevation: 3,
+                                  shadowColor: AppColors.primary
+                                      .withValues(alpha: 0.3),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                                child: isSubmitting
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Text(
+                                        'Lưu thay đổi',
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ],
+              ),
             );
           },
         );
@@ -1460,81 +1605,145 @@ class _ProfilePageState extends State<ProfilePage> {
               }
             }
 
-            return AlertDialog(
+            return Dialog(
               backgroundColor: Colors.white,
+              surfaceTintColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(28),
               ),
-              title: const Text(
-                'Đổi mật khẩu',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-              ),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildTextField(
-                      oldPasswordController,
-                      'Mật khẩu cũ',
-                      Icons.lock_outline,
-                      isPassword: true,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildTextField(
-                      newPasswordController,
-                      'Mật khẩu mới',
-                      Icons.lock_reset,
-                      isPassword: true,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildTextField(
-                      confirmPasswordController,
-                      'Xác nhận mật khẩu',
-                      Icons.verified_user_outlined,
-                      isPassword: true,
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: isSubmitting
-                      ? null
-                      : () => Navigator.pop(dialogContext),
-                  child: const Text(
-                    'Hủy',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontWeight: FontWeight.bold,
-                    ),
+              insetPadding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: Container(
+                padding: const EdgeInsets.all(22),
+                constraints: const BoxConstraints(maxWidth: 400),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Header Row
+                      Row(
+                        children: [
+                          const SizedBox(width: 32),
+                          const Expanded(
+                            child: Text(
+                              'Đổi mật khẩu',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontFamily: 'Georgia',
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20,
+                                color: AppColors.primaryDark,
+                              ),
+                            ),
+                          ),
+                          InkWell(
+                            onTap: isSubmitting
+                                ? null
+                                : () => Navigator.pop(dialogContext),
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.close_rounded,
+                                color: Colors.grey.shade600,
+                                size: 18,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 22),
+                      _buildTextField(
+                        oldPasswordController,
+                        'Mật khẩu cũ',
+                        Icons.lock_outline_rounded,
+                        isPassword: true,
+                      ),
+                      const SizedBox(height: 14),
+                      _buildTextField(
+                        newPasswordController,
+                        'Mật khẩu mới',
+                        Icons.lock_reset_rounded,
+                        isPassword: true,
+                      ),
+                      const SizedBox(height: 14),
+                      _buildTextField(
+                        confirmPasswordController,
+                        'Xác nhận mật khẩu',
+                        Icons.verified_user_outlined,
+                        isPassword: true,
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SizedBox(
+                              height: 48,
+                              child: TextButton(
+                                onPressed: isSubmitting
+                                    ? null
+                                    : () => Navigator.pop(dialogContext),
+                                style: TextButton.styleFrom(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  foregroundColor: Colors.grey.shade600,
+                                ),
+                                child: const Text(
+                                  'Hủy',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: SizedBox(
+                              height: 48,
+                              child: ElevatedButton(
+                                onPressed: isSubmitting ? null : submit,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: Colors.white,
+                                  elevation: 3,
+                                  shadowColor: AppColors.primary
+                                      .withValues(alpha: 0.3),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                                child: isSubmitting
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Text(
+                                        'Cập nhật',
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-                ElevatedButton(
-                  onPressed: isSubmitting ? null : submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: isSubmitting
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text(
-                          'Cập nhật',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                ),
-              ],
+              ),
             );
           },
         );
@@ -1942,26 +2151,40 @@ class _ProfilePageState extends State<ProfilePage> {
       controller: controller,
       keyboardType: isNumber ? TextInputType.phone : TextInputType.text,
       obscureText: isPassword,
+      style: const TextStyle(
+        fontSize: 14.5,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textPrimary,
+      ),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: Colors.grey),
+        labelStyle: TextStyle(
+          color: Colors.grey.shade600,
+          fontSize: 13.5,
+          fontWeight: FontWeight.w500,
+        ),
+        prefixIcon: Icon(
+          icon,
+          color: AppColors.primary.withValues(alpha: 0.75),
+          size: 20,
+        ),
         filled: true,
-        fillColor: Colors.grey.shade50,
+        fillColor: const Color(0xFFFAFAFC),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
-          vertical: 12,
+          vertical: 14,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
       ),
     );

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../generated/l10n.dart';
 import '../../data/models/home_data_models.dart';
 import '../../data/repositories/home_repository.dart';
 import '../cubit/home_cubit.dart';
@@ -112,8 +113,8 @@ class HomeOurSalonsBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const title = 'Hệ Thống Salon Nailify';
-    const subtitle = 'Tìm salon gần bạn nhất - Khám phá toàn bộ hệ thống';
+    final title = S.of(context).homeSalonsTitle;
+    final subtitle = S.of(context).homeSalonsSubtitle;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),

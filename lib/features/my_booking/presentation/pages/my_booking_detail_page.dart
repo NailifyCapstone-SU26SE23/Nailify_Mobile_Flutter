@@ -273,10 +273,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     return booking['amountPaid'] != null;
   }
 
-  bool _isRefunded(Map<String, dynamic> booking) {
-    return booking['isRefunded'] == true ||
-        booking['isRefunded']?.toString().toLowerCase() == 'true';
-  }
+
 
   Future<void> _createPayment(String bookingId) async {
     if (_isCreatingPayment || bookingId.isEmpty) return;
@@ -427,10 +424,6 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     final canReschedule = rawStatus == 'Approved';
     final canRate = rawStatus == 'Completed' && !isRated;
     final canPay = rawStatus == 'Pending' && !_hasPaidAmount(booking);
-    final canRequestRefund =
-        rawStatus == 'Cancelled' &&
-        _hasPaidAmount(booking) &&
-        !_isRefunded(booking);
 
     final warrantyForBookingId =
         booking['warrantyForBookingId']?.toString() ??
@@ -445,12 +438,11 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(
-            Icons.arrow_back_ios,
+            Icons.arrow_back_ios_new_rounded,
             color: AppColors.primaryDark,
             size: 20,
           ),
           onPressed: () => context.go('/my-bookings'),
-          // context.pop(),
         ),
         title: Text(
           S.of(context).bookingDetailsTitle,
@@ -458,73 +450,127 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
             color: AppColors.primaryDark,
             fontWeight: FontWeight.w800,
             fontFamily: 'Georgia',
+            fontSize: 20,
           ),
         ),
         centerTitle: true,
         backgroundColor: Colors.white,
-        elevation: 0,
+        elevation: 0.5,
+        scrolledUnderElevation: 0.5,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         physics: const BouncingScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Trạng thái
-            Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: status.backgroundColor,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: status.textColor.withValues(alpha: 0.15),
-                    width: 1,
+            // Status Hero Banner Card
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.borderLight),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(status.icon, color: status.textColor, size: 16),
-                    const SizedBox(width: 6),
-                    Text(
-                      status.label,
-                      style: TextStyle(
-                        color: status.textColor,
-                        fontWeight: FontWeight.bold,
+                ],
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Đơn #${widget.bookingId.length > 8 ? widget.bookingId.substring(0, 8) : widget.bookingId}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.grey.shade600,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: status.backgroundColor,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: status.textColor.withValues(alpha: 0.2),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(status.icon, color: status.textColor, size: 15),
+                            const SizedBox(width: 6),
+                            Text(
+                              status.label,
+                              style: TextStyle(
+                                color: status.textColor,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
 
             // Banner Đơn Bảo Hành
             if (isWarrantyBooking) ...[
               Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: Colors.blue.shade200),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.shield_outlined, color: Colors.blue),
-                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade100,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.shield_outlined, color: Colors.blue, size: 20),
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
-                        'Đây là đơn bảo hành cho lịch hẹn gốc #$warrantyForBookingId',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue.shade800,
-                          fontSize: 13,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Đơn bảo hành dịch vụ',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue.shade900,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Bảo hành cho đơn gốc #${warrantyForBookingId.length > 8 ? warrantyForBookingId.substring(0, 8) : warrantyForBookingId}',
+                            style: TextStyle(
+                              color: Colors.blue.shade800,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     InkWell(
@@ -532,19 +578,30 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                         '/my-bookings/detail',
                         extra: warrantyForBookingId,
                       ),
-                      child: Padding(
+                      child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
+                          horizontal: 10,
+                          vertical: 6,
                         ),
-                        child: Text(
-                          'Xem đơn gốc →',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue.shade900,
-                            decoration: TextDecoration.underline,
-                          ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.blue.shade300),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Đơn gốc',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue.shade900,
+                              ),
+                            ),
+                            const SizedBox(width: 2),
+                            Icon(Icons.arrow_forward_ios_rounded, size: 10, color: Colors.blue.shade900),
+                          ],
                         ),
                       ),
                     ),
@@ -553,23 +610,30 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
               ),
             ] else if (isWarrantiedBooking) ...[
               Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: Colors.teal.shade50,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: Colors.teal.shade200),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.verified_outlined, color: Colors.teal),
-                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.teal.shade100,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.verified_outlined, color: Colors.teal, size: 20),
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Lịch hẹn này đã được tạo đơn bảo hành.',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: Colors.teal.shade800,
+                          color: Colors.teal.shade900,
                           fontSize: 13,
                         ),
                       ),
@@ -578,24 +642,50 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                 ),
               ),
             ],
-            const SizedBox(height: 8),
-            Text(
-              S.of(context).bookingGeneralInfo,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+
+            // Section: Thông tin lịch hẹn
+            Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  S.of(context).bookingGeneralInfo,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
+
+            // Card Thông tin lịch hẹn
             Container(
-              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: AppColors.borderLight),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.02),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Column(
                 children: [
+                  // Branch/Salon row with map trigger styling
                   Material(
-                    color: Colors
-                        .transparent, // Đảm bảo hiệu ứng chạm hiển thị đúng
+                    color: Colors.transparent,
                     child: InkWell(
                       onTap: () {
                         final sName = _getBookingSalonName(_booking);
@@ -613,38 +703,87 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                           longitude,
                         );
                       },
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        padding: const EdgeInsets.all(16),
                         child: Row(
                           children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.storefront_rounded,
+                                color: AppColors.primary,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
                             Expanded(
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     S.of(context).bookingBranchLabel,
                                     style: const TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 15,
+                                      color: AppColors.textSecondary,
+                                      fontSize: 12,
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      _getBookingSalonName(_booking).isNotEmpty
-                                          ? _getBookingSalonName(_booking)
-                                          : 'Nailify Salon',
-                                      textAlign: TextAlign.right,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 15,
-                                        color: AppColors.primary,
-                                        decorationColor: AppColors.primary,
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    _getBookingSalonName(_booking).isNotEmpty
+                                        ? _getBookingSalonName(_booking)
+                                        : 'Nailify Salon',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  if (_getBookingSalonAddress(_booking).isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      _getBookingSalonAddress(_booking),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade600,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Row(
+                                children: [
+                                  Icon(
+                                    Icons.map_outlined,
+                                    size: 14,
+                                    color: AppColors.primary,
+                                  ),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Bản đồ',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.primary,
                                     ),
                                   ),
                                 ],
@@ -655,189 +794,402 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                       ),
                     ),
                   ),
-                  _buildRow(
-                    S.of(context).bookingStylistLabel,
-                    _getBookingArtistName(booking).isNotEmpty
-                        ? _getBookingArtistName(booking)
-                        : S.of(context).anyArtist,
-                  ),
-                  _buildRow(
-                    S.of(context).bookingDateLabel,
-                    '${bookingDate.day}/${bookingDate.month}/${bookingDate.year}',
-                  ),
-                  _buildRow(
-                    S.of(context).bookingStartTimeLabel,
-                    booking['startTime']?.toString().substring(0, 5),
-                  ),
-                  _buildRow(
-                    S.of(context).bookingDurationLabel,
-                    S
-                        .of(context)
-                        .bookingDurationValue(
-                          booking['totalDuration']?.toString() ?? '0',
-                        ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              S.of(context).bookingServicesBooked,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            ...items.map(_buildBookingItem),
-            const SizedBox(height: 24),
+                  const Divider(height: 1, indent: 16, endIndent: 16),
 
-            // Thanh toán
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.2),
-                ),
-              ),
-              child: Column(
-                children: [
-                  // 1. Giá gốc
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        S.of(context).bookingOriginalPriceLabel,
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 14,
-                        ),
-                      ),
-                      Text(
-                        PriceFormatter.format(booking['price'] ?? 0),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-
-                  // 2. Khuyến mãi (Giảm giá)
-                  if (discounts.isNotEmpty)
-                    ...discounts.map(_buildDiscountRow)
-                  else
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  // Stylist item row
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
                       children: [
-                        Text(
-                          S.of(context).bookingDiscountLabel,
-                          style: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 14,
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.face_retouching_natural_rounded,
+                            color: Colors.amber,
+                            size: 22,
                           ),
                         ),
-                        Text(
-                          PriceFormatter.format(booking['discount'] ?? 0),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            color: Colors
-                                .green, // Dùng màu xanh lá để nhấn mạnh số tiền được giảm
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                S.of(context).bookingStylistLabel,
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                _getBookingArtistName(booking).isNotEmpty
+                                    ? _getBookingArtistName(booking)
+                                    : S.of(context).anyArtist,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                  const Divider(height: 24),
+                  ),
+                  const Divider(height: 1, indent: 16, endIndent: 16),
 
-                  // 3. Tổng thanh toán
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            S.of(context).bookingTotalPaymentLabel,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          Text(
-                            PriceFormatter.format(booking['totalPrice'] ?? 0),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      if (booking['amountPaid'] != null)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(S.of(context).bookingPaidAmount),
-                            Text(
-                              PriceFormatter.format(booking['amountPaid']),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color: AppColors.primary,
+                  // Date & Time grid
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(
+                                  Icons.calendar_today_rounded,
+                                  size: 16,
+                                  color: Colors.blue,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      if (booking['amountDue'] != null)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(S.of(context).bookingRemainingAmount),
-                            Text(
-                              PriceFormatter.format(booking['amountDue']),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color: AppColors.primary,
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      S.of(context).bookingDateLabel,
+                                      style: const TextStyle(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${bookingDate.day}/${bookingDate.month}/${bookingDate.year}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                    ],
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.purple.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(
+                                  Icons.access_time_rounded,
+                                  size: 16,
+                                  color: Colors.purple,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      S.of(context).bookingStartTimeLabel,
+                                      style: const TextStyle(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                    Text(
+                                      booking['startTime']?.toString().substring(0, 5) ?? '--:--',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
+
+            // Section: Dịch vụ đã đặt
+            Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  S.of(context).bookingServicesBooked,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ...items.map(_buildBookingItem),
+            const SizedBox(height: 20),
+
+            // Section: Thanh toán (Receipt style)
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.borderLight),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.02),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.05),
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.receipt_long_rounded,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          S.of(context).bookingTotalPaymentLabel,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primaryDark,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        // 1. Giá gốc
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              S.of(context).bookingOriginalPriceLabel,
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 14,
+                              ),
+                            ),
+                            Text(
+                              PriceFormatter.format(booking['price'] ?? 0),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+
+                        // 2. Khuyến mãi (Giảm giá)
+                        if (discounts.isNotEmpty)
+                          ...discounts.map(_buildDiscountRow)
+                        else
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                S.of(context).bookingDiscountLabel,
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              Text(
+                                PriceFormatter.format(booking['discount'] ?? 0),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                  color: Colors.green,
+                                ),
+                              ),
+                            ],
+                          ),
+                        const Divider(height: 20),
+
+                        // 3. Tổng thanh toán
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Tổng cộng',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
+                            Text(
+                              PriceFormatter.format(booking['totalPrice'] ?? 0),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 18,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (booking['amountPaid'] != null) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                S.of(context).bookingPaidAmount,
+                                style: const TextStyle(
+                                  color: Colors.teal,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                PriceFormatter.format(booking['amountPaid']),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: Colors.teal,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                        if (booking['amountDue'] != null) ...[
+                          const SizedBox(height: 6),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                S.of(context).bookingRemainingAmount,
+                                style: TextStyle(
+                                  color: Colors.orange.shade800,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                PriceFormatter.format(booking['amountDue']),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: Colors.orange.shade800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
 
             // Mã QR CODE
             if (isRated) ...[
-              Text(
-                S.of(context).bookingYourRating,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+              Row(
+                children: [
+                  Container(
+                    width: 4,
+                    height: 18,
+                    decoration: BoxDecoration(
+                      color: Colors.amber,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    S.of(context).bookingYourRating,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               _buildRatingCard(),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
             ],
 
             if (!isRated && rawQrString != null && rawQrString.isNotEmpty) ...[
-              Text(
-                S.of(context).bookingCheckInCode,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+              Row(
+                children: [
+                  Container(
+                    width: 4,
+                    height: 18,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    S.of(context).bookingCheckInCode,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
@@ -854,20 +1206,33 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   children: [
                     Text(
                       S.of(context).bookingCheckInInstruction,
-                      style: const TextStyle(color: Colors.grey, fontSize: 13),
+                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
                     ),
                     const SizedBox(height: 16),
-
                     if (qrImageBytes != null)
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.memory(
-                          qrImageBytes,
-                          width: 200,
-                          height: 200,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) =>
-                              const _QrErrorPlaceholder(),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.borderLight),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 10,
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.memory(
+                            qrImageBytes,
+                            width: 180,
+                            height: 180,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) =>
+                                const _QrErrorPlaceholder(),
+                          ),
                         ),
                       )
                     else
@@ -875,9 +1240,11 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   ],
                 ),
               ),
+              const SizedBox(height: 20),
             ],
+
+            // Action Buttons
             if (canPay) ...[
-              const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -891,7 +1258,8 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    elevation: 0,
+                    elevation: 2,
+                    shadowColor: AppColors.primary.withValues(alpha: 0.4),
                   ),
                   icon: _isCreatingPayment
                       ? const SizedBox(
@@ -912,9 +1280,9 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   ),
                 ),
               ),
+              const SizedBox(height: 12),
             ],
             if (_hasPaidAmount(booking)) ...[
-              const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
@@ -924,22 +1292,22 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    side: const BorderSide(color: AppColors.primary, width: 1.5),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  icon: const Icon(Icons.receipt_long),
+                  icon: const Icon(Icons.receipt_long_rounded, size: 20),
                   label: const Text(
-                    'Xem giao dịch',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    'Xem giao dịch',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
+              const SizedBox(height: 12),
             ],
             if (canReschedule) ...[
-              SizedBox(height: (canPay || _hasPaidAmount(booking)) ? 12 : 24),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -967,7 +1335,6 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                                 duration: const Duration(seconds: 2),
                               ),
                             );
-                            // Chuyển về trang danh sách lịch đặt, tab Dời lịch (index 2)
                             context.go(
                               '/my-bookings',
                               extra: {'initialTab': 2},
@@ -1004,11 +1371,12 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    elevation: 0,
+                    elevation: 1,
                   ),
                   icon: const Icon(
                     Icons.edit_calendar_rounded,
                     color: Colors.white,
+                    size: 20,
                   ),
                   label: Text(
                     S.of(context).bookingRescheduleBtnLabel,
@@ -1019,12 +1387,12 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   ),
                 ),
               ),
+              const SizedBox(height: 12),
             ],
             if (canCancel) ...[
-              SizedBox(height: canReschedule ? 12 : 24),
               SizedBox(
                 width: double.infinity,
-                child: OutlinedButton(
+                child: OutlinedButton.icon(
                   onPressed: () {
                     showDialog(
                       context: context,
@@ -1075,25 +1443,27 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                     );
                   },
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red,
-                    side: const BorderSide(color: Colors.red),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    foregroundColor: Colors.red.shade700,
+                    side: BorderSide(color: Colors.red.shade300, width: 1.2),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  child: Text(
+                  icon: Icon(Icons.cancel_outlined, size: 20, color: Colors.red.shade700),
+                  label: Text(
                     S.of(context).bookingCancelBtnLabel,
-                    style: const TextStyle(
-                      fontSize: 16,
+                    style: TextStyle(
+                      fontSize: 15,
                       fontWeight: FontWeight.bold,
+                      color: Colors.red.shade700,
                     ),
                   ),
                 ),
               ),
+              const SizedBox(height: 12),
             ],
             if (canRate) ...[
-              const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -1102,22 +1472,24 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                     extra: widget.bookingId,
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: Colors.amber.shade700,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                     ),
+                    elevation: 1,
                   ),
-                  icon: const Icon(Icons.star, color: Colors.white),
+                  icon: const Icon(Icons.star_rounded, color: Colors.white, size: 22),
                   label: const Text(
-                    'Đánh giá',
+                    'Đánh giá dịch vụ',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
+              const SizedBox(height: 12),
             ],
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
           ],
         ),
       ),
@@ -1143,40 +1515,60 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
 
     final itemCard = Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.borderLight),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 flex: 10,
                 child: Text(
                   name,
                   style: const TextStyle(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.bold,
                     fontSize: 14,
+                    color: AppColors.textPrimary,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               Expanded(
-                flex: 5,
-                child: Text(
-                  S
-                      .of(context)
-                      .bookingQuantityLabel(
-                        _readInt(item['quantity'], fallback: 1).toString(),
-                      ),
-                  style: const TextStyle(color: Colors.grey, fontSize: 13),
-                  textAlign: TextAlign.center,
+                flex: 4,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    S
+                        .of(context)
+                        .bookingQuantityLabel(
+                          _readInt(item['quantity'], fallback: 1).toString(),
+                        ),
+                    style: TextStyle(
+                      color: Colors.grey.shade700,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ),
               Expanded(
@@ -1191,19 +1583,18 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                             _getItemCount(item),
                       ),
                       style: const TextStyle(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w800,
                         color: AppColors.primary,
-                        fontSize: 14,
+                        fontSize: 15,
                       ),
                       textAlign: TextAlign.right,
                     ),
-                    // Show unit price and finger count as subtitle
                     if (_getItemCount(item) > 1) ...[
                       const SizedBox(height: 2),
                       Text(
                         '${PriceFormatter.format(_bookingItemUnitPrice(item))} × ${_getItemCount(item)} ${S.of(context).bookingFingersLabel}',
                         style: const TextStyle(
-                          color: Colors.grey,
+                          color: AppColors.textSecondary,
                           fontSize: 11,
                         ),
                         textAlign: TextAlign.right,
@@ -1215,12 +1606,21 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
             ],
           ),
           if (detailLines.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            const Divider(height: 1),
-            const SizedBox(height: 8),
-            const _PriceTableHeader(),
-            const SizedBox(height: 2),
-            ...detailLines.map(_buildBookingComponentLine),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                children: [
+                  const _PriceTableHeader(),
+                  const SizedBox(height: 4),
+                  ...detailLines.map(_buildBookingComponentLine),
+                ],
+              ),
+            ),
           ],
         ],
       ),
@@ -1236,11 +1636,18 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
   Widget _buildCustomFeeBookingItem(num price) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.borderLight),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1249,17 +1656,32 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
             flex: 10,
             child: Text(
               'Phí custom',
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: AppColors.textPrimary,
+              ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
           ),
           Expanded(
-            flex: 5,
-            child: Text(
-              S.of(context).bookingQuantityLabel('1'),
-              style: const TextStyle(color: Colors.grey, fontSize: 13),
-              textAlign: TextAlign.center,
+            flex: 4,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                S.of(context).bookingQuantityLabel('1'),
+                style: TextStyle(
+                  color: Colors.grey.shade700,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
             ),
           ),
           Expanded(
@@ -1267,9 +1689,9 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
             child: Text(
               PriceFormatter.format(price),
               style: const TextStyle(
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w800,
                 color: AppColors.primary,
-                fontSize: 14,
+                fontSize: 15,
               ),
               textAlign: TextAlign.right,
             ),
@@ -1679,26 +2101,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     );
   }
 
-  Widget _buildRow(String label, String? value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(color: Colors.grey)),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              value ?? 'N/A',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-              textAlign: TextAlign.right,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   String _formatDiscountDisplay(String value) {
     var text = value.trim();

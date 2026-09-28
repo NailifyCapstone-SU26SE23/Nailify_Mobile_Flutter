@@ -315,7 +315,7 @@ class _SalonCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 5),
                           Text(
-                            isOpen ? 'Đang mở cửa' : 'Tạm đóng cửa',
+                            isOpen ? l10n.salonOpenStatus : l10n.salonClosedStatus,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 11,

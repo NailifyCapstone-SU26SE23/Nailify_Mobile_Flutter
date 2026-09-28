@@ -232,16 +232,44 @@ class _MyBookingListPageState extends State<MyBookingListPage>
   }
 
   List<int> get _availableYears {
-    final years = _allBookings
-        .map((b) {
-          final dateStr = b['bookingDate']?.toString() ?? '';
-          return (DateTime.tryParse(dateStr) ?? DateTime.now()).year;
-        })
-        .toSet()
-        .toList();
-    if (years.isEmpty) years.add(DateTime.now().year);
-    years.sort((a, b) => b.compareTo(a));
+    final yearsSet = <int>{};
+    for (int y = 2024; y <= 2030; y++) {
+      yearsSet.add(y);
+    }
+    for (var b in _allBookings) {
+      final dateStr = b['bookingDate']?.toString() ?? '';
+      final parsed = DateTime.tryParse(dateStr);
+      if (parsed != null) {
+        yearsSet.add(parsed.year);
+      }
+    }
+    final years = yearsSet.toList()..sort((a, b) => b.compareTo(a));
     return years;
+  }
+
+  String _formatMonthLabel(int? val) {
+    if (val == null) return S.of(context).allMonths;
+    final isEn = Localizations.localeOf(context).languageCode == 'en';
+    if (isEn) {
+      const englishMonths = [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December',
+      ];
+      if (val >= 1 && val <= 12) {
+        return englishMonths[val - 1];
+      }
+    }
+    return S.of(context).monthFormat(val);
   }
 
   List<Map<String, dynamic>> get _rescheduleRelatedBookings {
@@ -409,9 +437,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
                     hint: S.of(context).monthHint,
                     value: _selectedMonth,
                     items: [null, ...List.generate(12, (i) => i + 1)],
-                    itemLabel: (val) => val == null
-                        ? S.of(context).allMonths
-                        : S.of(context).monthFormat(val),
+                    itemLabel: _formatMonthLabel,
                     onChanged: (val) =>
                         _onFilterChanged(month: val, monthChanged: true),
                   ),

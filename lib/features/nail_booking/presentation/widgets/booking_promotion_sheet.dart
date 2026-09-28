@@ -76,10 +76,12 @@ class _BookingPromotionSheetState extends State<BookingPromotionSheet>
 
   void _togglePromotion(WalletVoucherModel voucher) {
     setState(() {
-      if (_tempSelected.any((v) => v.promotionId == voucher.promotionId)) {
-        _tempSelected.clear();
+      final index = _tempSelected.indexWhere(
+        (v) => v.promotionId == voucher.promotionId,
+      );
+      if (index >= 0) {
+        _tempSelected.removeAt(index);
       } else {
-        _tempSelected.clear();
         _tempSelected.add(voucher);
       }
     });

@@ -532,6 +532,7 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
       }
       if (remaining <= 0) {
         _holdTimer?.cancel();
+        cancelCurrentHold();
         emit(
           state.copyWith(
             clearHoldToken: true,

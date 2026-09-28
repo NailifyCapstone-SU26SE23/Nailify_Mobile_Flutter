@@ -89,7 +89,9 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
   List<String?> _selectedExtraServices = [];
   DateTime? _selectedDate;
   String? _selectedTime;
-  int? _selectedPromotionId;
+  List<WalletVoucherModel> _selectedPromotions = [];
+  List<int> get _selectedPromotionIds =>
+      _selectedPromotions.map((p) => p.promotionId).toList();
   StreamSubscription<SlotStatusChangedEvent>? _slotStatusChangedSub;
 
   @override
@@ -576,9 +578,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
       'holdToken': holdToken,
       'useWalletBalance': _useWalletBalance,
       'bookingItems': _buildBookingItems(),
-      'selectedPromotionIds': _selectedPromotionId == null
-          ? null
-          : [_selectedPromotionId!],
+      'selectedPromotionIds': _selectedPromotionIds,
     };
   }
 
@@ -694,9 +694,9 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
     });
   }
 
-  void _handlePromotionChanged(int? id) {
+  void _handlePromotionsChanged(List<WalletVoucherModel> list) {
     setState(() {
-      _selectedPromotionId = id;
+      _selectedPromotions = list;
       _priceReviewKey = null;
       _isReviewingPrice = true;
     });
@@ -717,7 +717,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
       _selectedNailVariantId.toString(),
       _selectedShapeMethod?.shapeMethodConfigId.toString() ?? '',
       serviceIds.join(','),
-      (_selectedPromotionId?.toString() ?? ''),
+      _selectedPromotionIds.join(','),
       _useWalletBalance.toString(),
     ].join('|');
   }
@@ -745,9 +745,8 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
               : _selectedStylist?['nailArtistId'] as String?,
           nailVariantId: _selectedNailVariantId,
           serviceIds: _selectedExtraServices.whereType<String>().toList(),
-          selectedPromotionIds: _selectedPromotionId == null
-              ? null
-              : [_selectedPromotionId!],
+          selectedPromotionIds:
+              _selectedPromotionIds.isEmpty ? null : _selectedPromotionIds,
           shapeMethodConfigId: _selectedShapeMethod?.shapeMethodConfigId,
         );
         if (!mounted) return;
@@ -829,7 +828,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
     // Step 1: Chọn thợ quen
     if (_currentStep == 1) {
       if (!_noArtistSelected && _selectedStylist == null) {
-        _showSnackBar('Vui lòng chọn thợ nail hoặc chọn "Để Nailify sắp xếp"!');
+        _showSnackBar(S.of(context).pleaseSelectArtistOrAutoAssign);
         return;
       }
     }
@@ -839,7 +838,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
       final hasNail = _selectedNailVariant != null;
       final hasServices = _selectedExtraServices.whereType<String>().isNotEmpty;
       if (!hasNail && !hasServices) {
-        _showSnackBar('Vui lòng chọn ít nhất một mẫu nail hoặc dịch vụ!');
+        _showSnackBar(S.of(context).pleaseSelectServiceMin);
         return;
       }
     }
@@ -847,11 +846,11 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
     // Step 3: Chọn ngày & khung giờ
     if (_currentStep == 3) {
       if (_selectedDate == null) {
-        _showSnackBar('Vui lòng chọn ngày đặt lịch!');
+        _showSnackBar(S.of(context).pleaseSelectBookingDate);
         return;
       }
       if (_selectedTime == null) {
-        _showSnackBar('Vui lòng chọn khung giờ rảnh!');
+        _showSnackBar(S.of(context).pleaseSelectTimeSlot);
         return;
       }
     }
@@ -923,7 +922,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
           onPressed: _handleBack,
         ),
         title: Text(
-          'Đặt lịch nhanh',
+          S.of(context).quickBookingTitle,
           style: const TextStyle(
             fontWeight: FontWeight.w800,
             fontFamily: 'Georgia',
@@ -1020,7 +1019,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
             ElevatedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Thử lại'),
+              label: Text(S.of(context).bookingRetry),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -1072,7 +1071,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                       ),
                       child: Center(
                         child: Text(
-                          'Tự chọn thợ quen',
+                          S.of(context).choosePreferredArtist,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -1108,7 +1107,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                       ),
                       child: Center(
                         child: Text(
-                          'Để Nailify sắp xếp',
+                          S.of(context).letNailifyAssign,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -1495,12 +1494,9 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
   }
 
   Widget _buildVoucherRow() {
-    final selectedPromotion = _promotions.where(
-      (v) => v.promotionId == _selectedPromotionId,
-    );
-    final hasSelected = selectedPromotion.isNotEmpty;
+    final hasSelected = _selectedPromotions.isNotEmpty;
     final count = _promotions.length;
-    final selectedVoucher = hasSelected ? selectedPromotion.first : null;
+    final selectedVoucher = hasSelected ? _selectedPromotions.first : null;
 
     return GestureDetector(
       onTap: _isLoadingPromotions
@@ -1511,14 +1507,8 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
                 builder: (_) => BookingPromotionSheet(
-                  selectedPromotions: selectedPromotion.toList(),
-                  onConfirm: (list) {
-                    if (list.isNotEmpty) {
-                      _handlePromotionChanged(list.first.promotionId);
-                    } else {
-                      _handlePromotionChanged(null);
-                    }
-                  },
+                  selectedPromotions: _selectedPromotions,
+                  onConfirm: _handlePromotionsChanged,
                 ),
               );
             },
@@ -1590,7 +1580,9 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                   )
                 else if (hasSelected)
                   Text(
-                    '${selectedVoucher!.promotionName} (-${selectedVoucher.displayDiscount})',
+                    _selectedPromotions.length > 1
+                        ? 'Đã chọn ${_selectedPromotions.length} voucher'
+                        : '${selectedVoucher!.promotionName} (-${selectedVoucher.displayDiscount})',
                     style: const TextStyle(
                       color: Color(0xFFE02B6D),
                       fontSize: 12,
@@ -1616,7 +1608,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                 color: Color(0xFFE02B6D),
                 size: 20,
               ),
-              onPressed: () => _handlePromotionChanged(null),
+              onPressed: () => _handlePromotionsChanged([]),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
             )

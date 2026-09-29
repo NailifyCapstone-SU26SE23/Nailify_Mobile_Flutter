@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 
+import '../../../../generated/l10n.dart';
+
 /// Khối AI (Trọng tâm đề tài Nailify):
 /// - 2 thẻ bo góc 20px kính mờ Glassmorphism viền mảnh
 /// - Thẻ 1: Icon Camera AR 3D + "Thử móng AR" + tag "Hot"
@@ -13,6 +15,8 @@ class HomeAiSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = S.of(context);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Row(
@@ -23,10 +27,10 @@ class HomeAiSection extends StatelessWidget {
               context: context,
               icon: Icons.view_in_ar_rounded,
               iconGradient: const [Color(0xFFFF4B72), Color(0xFFFF7E53)],
-              tagText: 'HOT',
+              tagText: l10n.tagHot,
               tagBgColor: const Color(0xFFFF4B72),
-              title: 'Thử móng AR',
-              subtitle: 'Trải nghiệm móng 3D',
+              title: l10n.arTryOnTitle,
+              subtitle: l10n.arTryOnSubtitle,
               onTap: () => context.push('/snapshot-try-on'),
             ),
           ),
@@ -39,10 +43,10 @@ class HomeAiSection extends StatelessWidget {
               context: context,
               icon: Icons.palette_outlined,
               iconGradient: const [Color(0xFFE02B6D), Color(0xFFFF66C4)],
-              tagText: 'GỢI Ý',
+              tagText: l10n.tagRecommend,
               tagBgColor: const Color(0xFFE02B6D),
-              title: 'AI Match Style',
-              subtitle: 'Gợi ý phong cách',
+              title: l10n.homeQuizTitle,
+              subtitle: l10n.aiMatchStyleSubtitle,
               onTap: () => context.push('/quiz'),
             ),
           ),

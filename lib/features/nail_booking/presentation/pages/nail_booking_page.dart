@@ -80,7 +80,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
   DateTime? _selectedDate;
   Map<String, dynamic>? _selectedStylist;
   String? _selectedTime;
-  int? _selectedPromotionId;
+  List<WalletVoucherModel> _selectedPromotions = [];
   bool _noArtistSelected = false;
 
   List<Map<String, dynamic>> get _bookingSteps => [
@@ -276,8 +276,8 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   List<int>? get _selectedPromotionIds {
-    final id = _selectedPromotionId;
-    return id == null ? null : [id];
+    if (_selectedPromotions.isEmpty) return null;
+    return _selectedPromotions.map((p) => p.promotionId).toList();
   }
 
   List<Map<String, dynamic>> get _discountBreakdown {
@@ -964,9 +964,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
     }
   }
 
-  void _handlePromotionChanged(int? promotionId) {
+  void _handlePromotionsChanged(List<WalletVoucherModel> list) {
     setState(() {
-      _selectedPromotionId = promotionId;
+      _selectedPromotions = list;
       _priceReviewKey = null;
       _isReviewingPrice = true;
     });
@@ -1032,16 +1032,16 @@ class _NailBookingPageState extends State<NailBookingPage> {
       }
     }
     if (_currentStep == 2 && _selectedDate == null) {
-      _showSnackBar('Vui lòng chọn 1 ngày đặt lịch!');
+      _showSnackBar(S.of(context).pleaseSelectBookingDate);
       return;
     }
     if (_currentStep == 3) {
       if (!_noArtistSelected && _selectedStylist == null) {
-        _showSnackBar('Vui lòng chọn thợ nail hoặc chọn "Để Nailify sắp xếp"!');
+        _showSnackBar(S.of(context).pleaseSelectArtistOrAutoAssign);
         return;
       }
       if (_selectedTime == null) {
-        _showSnackBar('Vui lòng chọn khung giờ rảnh!');
+        _showSnackBar(S.of(context).pleaseSelectTimeSlot);
         return;
       }
     }
@@ -1273,7 +1273,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                       ),
                       child: Center(
                         child: Text(
-                          'Tự chọn thợ',
+                          S.of(context).choosePreferredArtist,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -1309,7 +1309,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                       ),
                       child: Center(
                         child: Text(
-                          'Để Nailify sắp xếp',
+                          S.of(context).letNailifyAssign,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -1644,12 +1644,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   Widget _buildVoucherRow() {
-    final selectedPromotion = _promotions.where(
-      (v) => v.promotionId == _selectedPromotionId,
-    );
-    final hasSelected = selectedPromotion.isNotEmpty;
+    final hasSelected = _selectedPromotions.isNotEmpty;
     final count = _promotions.length;
-    final selectedVoucher = hasSelected ? selectedPromotion.first : null;
+    final selectedVoucher = hasSelected ? _selectedPromotions.first : null;
 
     return GestureDetector(
       onTap: _isLoadingPromotions
@@ -1660,14 +1657,8 @@ class _NailBookingPageState extends State<NailBookingPage> {
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
                 builder: (_) => BookingPromotionSheet(
-                  selectedPromotions: selectedPromotion.toList(),
-                  onConfirm: (list) {
-                    if (list.isNotEmpty) {
-                      _handlePromotionChanged(list.first.promotionId);
-                    } else {
-                      _handlePromotionChanged(null);
-                    }
-                  },
+                  selectedPromotions: _selectedPromotions,
+                  onConfirm: _handlePromotionsChanged,
                 ),
               );
             },
@@ -1739,7 +1730,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
                   )
                 else if (hasSelected)
                   Text(
-                    '${selectedVoucher!.promotionName} (-${selectedVoucher.displayDiscount})',
+                    _selectedPromotions.length > 1
+                        ? 'Đã chọn ${_selectedPromotions.length} voucher'
+                        : '${selectedVoucher!.promotionName} (-${selectedVoucher.displayDiscount})',
                     style: const TextStyle(
                       color: Color(0xFFE02B6D),
                       fontSize: 12,
@@ -1765,7 +1758,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                 color: Color(0xFFE02B6D),
                 size: 20,
               ),
-              onPressed: () => _handlePromotionChanged(null),
+              onPressed: () => _handlePromotionsChanged([]),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
             )
@@ -2573,11 +2566,12 @@ class _NailBookingPageState extends State<NailBookingPage> {
   String _formatDiscountDisplay(String value) {
     var text = value.trim();
     if (text.isEmpty) return text;
-    text = text.replaceAll(RegExp(r'^-+'), '');
-    text = '-$text';
-    final lower = text.toLowerCase();
-    if (lower.contains('đ') || lower.contains('vnd')) return text;
-    return '$text VNĐ';
+    text = text.replaceAll(RegExp(r'^-+'), '').trim();
+    if (text.endsWith('%')) {
+      return '-$text';
+    }
+    text = text.replaceAll(RegExp(r'\s*(d|đ|vnd|vnđ)\s*$', caseSensitive: false), '').trim();
+    return '-$text VNĐ';
   }
 
   Widget _buildWalletBalanceToggle() {
@@ -2702,12 +2696,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   Widget _buildPromotionSelector() {
-    final selectedPromotion = _promotions.where(
-      (v) => v.promotionId == _selectedPromotionId,
-    );
-    final hasSelected = selectedPromotion.isNotEmpty;
+    final hasSelected = _selectedPromotions.isNotEmpty;
     final count = _promotions.length;
-    final selectedVoucher = hasSelected ? selectedPromotion.first : null;
+    final selectedVoucher = hasSelected ? _selectedPromotions.first : null;
 
     return GestureDetector(
       onTap: _isLoadingPromotions
@@ -2718,14 +2709,8 @@ class _NailBookingPageState extends State<NailBookingPage> {
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
                 builder: (_) => BookingPromotionSheet(
-                  selectedPromotions: selectedPromotion.toList(),
-                  onConfirm: (list) {
-                    if (list.isNotEmpty) {
-                      _handlePromotionChanged(list.first.promotionId);
-                    } else {
-                      _handlePromotionChanged(null);
-                    }
-                  },
+                  selectedPromotions: _selectedPromotions,
+                  onConfirm: _handlePromotionsChanged,
                 ),
               );
             },
@@ -2817,7 +2802,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
                     )
                   else if (hasSelected)
                     Text(
-                      '${selectedVoucher!.promotionName} • ${selectedVoucher.displayDiscount}',
+                      _selectedPromotions.length > 1
+                          ? 'Đã chọn ${_selectedPromotions.length} voucher'
+                          : '${selectedVoucher!.promotionName} • ${selectedVoucher.displayDiscount}',
                       style: const TextStyle(
                         color: Color(0xFFE02B6D),
                         fontSize: 12,

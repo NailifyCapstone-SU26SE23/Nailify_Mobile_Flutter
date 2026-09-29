@@ -868,7 +868,7 @@ abstract class S {
   /// No description provided for @yearFormat.
   ///
   /// In en, this message translates to:
-  /// **'Year {y}'**
+  /// **'{y}'**
   String yearFormat(Object y);
 
   /// No description provided for @allStatus.
@@ -886,7 +886,7 @@ abstract class S {
   /// No description provided for @statusApproved.
   ///
   /// In en, this message translates to:
-  /// **'Ready to Book'**
+  /// **'Approved'**
   String get statusApproved;
 
   /// No description provided for @statusAssigned.
@@ -2770,13 +2770,13 @@ abstract class S {
   /// No description provided for @bookingPaidAmount.
   ///
   /// In en, this message translates to:
-  /// **'Paid:'**
+  /// **'Deposit (Paid):'**
   String get bookingPaidAmount;
 
   /// No description provided for @bookingRemainingAmount.
   ///
   /// In en, this message translates to:
-  /// **'Remaining:'**
+  /// **'Remaining to Pay:'**
   String get bookingRemainingAmount;
 
   /// No description provided for @bookingYourRating.
@@ -3622,7 +3622,7 @@ abstract class S {
   /// No description provided for @warrantyServiceNote.
   ///
   /// In en, this message translates to:
-  /// **'Warranty items are listed from your previous appointment. You can uncheck any service you don\'t need to maintain.'**
+  /// **'Warranty items from your previous appointment are automatically included for free.'**
   String get warrantyServiceNote;
 
   /// No description provided for @warrantySuccessTitle.
@@ -3876,6 +3876,246 @@ abstract class S {
   /// In en, this message translates to:
   /// **'Applied Offers'**
   String get bookingAppliedOffers;
+
+  /// No description provided for @arTryOnTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AR Try-On'**
+  String get arTryOnTitle;
+
+  /// No description provided for @arTryOnSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'3D Nail Experience'**
+  String get arTryOnSubtitle;
+
+  /// No description provided for @aiMatchStyleSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Style Recommendation'**
+  String get aiMatchStyleSubtitle;
+
+  /// No description provided for @tagRecommend.
+  ///
+  /// In en, this message translates to:
+  /// **'SUGGESTED'**
+  String get tagRecommend;
+
+  /// No description provided for @tagHot.
+  ///
+  /// In en, this message translates to:
+  /// **'HOT'**
+  String get tagHot;
+
+  /// No description provided for @exploreBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore'**
+  String get exploreBtn;
+
+  /// No description provided for @customerDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer'**
+  String get customerDefault;
+
+  /// No description provided for @justNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Just now'**
+  String get justNow;
+
+  /// No description provided for @retakePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Retake'**
+  String get retakePhoto;
+
+  /// No description provided for @takePhotoButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Take Photo'**
+  String get takePhotoButton;
+
+  /// No description provided for @chooseFromGalleryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from Gallery'**
+  String get chooseFromGalleryButton;
+
+  /// No description provided for @noNailDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'No nail detected in this photo.'**
+  String get noNailDetected;
+
+  /// No description provided for @timeMinutesAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} minutes ago'**
+  String timeMinutesAgo(String n);
+
+  /// No description provided for @timeHoursAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} hours ago'**
+  String timeHoursAgo(String n);
+
+  /// No description provided for @timeDaysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} days ago'**
+  String timeDaysAgo(String n);
+
+  /// No description provided for @timeMonthsAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} months ago'**
+  String timeMonthsAgo(String n);
+
+  /// No description provided for @quickBookingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Booking'**
+  String get quickBookingTitle;
+
+  /// No description provided for @choosePreferredArtist.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Preferred Artist'**
+  String get choosePreferredArtist;
+
+  /// No description provided for @letNailifyAssign.
+  ///
+  /// In en, this message translates to:
+  /// **'Let Nailify Arrange'**
+  String get letNailifyAssign;
+
+  /// No description provided for @pleaseSelectArtistOrAutoAssign.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a nail artist or choose \'Let Nailify Arrange\'!'**
+  String get pleaseSelectArtistOrAutoAssign;
+
+  /// No description provided for @chooseServiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your services'**
+  String get chooseServiceTitle;
+
+  /// No description provided for @chooseServiceSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unleash creativity with a new nail set or add accompanying services'**
+  String get chooseServiceSubtitle;
+
+  /// No description provided for @doNailsTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Nail Design'**
+  String get doNailsTab;
+
+  /// No description provided for @otherServicesTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Other Services'**
+  String get otherServicesTab;
+
+  /// No description provided for @pleaseSelectArtistFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select an artist first'**
+  String get pleaseSelectArtistFirst;
+
+  /// No description provided for @pleaseSelectArtistFirstDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'To view the nail designs this artist can perform, please go back to the artist selection step.'**
+  String get pleaseSelectArtistFirstDesc;
+
+  /// No description provided for @artistHasNoNailVariants.
+  ///
+  /// In en, this message translates to:
+  /// **'This artist has no nail samples yet'**
+  String get artistHasNoNailVariants;
+
+  /// No description provided for @artistHasNoNailVariantsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'You can still choose other services in the adjacent tab.'**
+  String get artistHasNoNailVariantsDesc;
+
+  /// No description provided for @cannotLoadNailVariants.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load nail list'**
+  String get cannotLoadNailVariants;
+
+  /// No description provided for @detailsBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get detailsBtn;
+
+  /// No description provided for @selectBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Select'**
+  String get selectBtn;
+
+  /// No description provided for @selectedBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected'**
+  String get selectedBtn;
+
+  /// No description provided for @pleaseSelectServiceMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select at least one nail design or service!'**
+  String get pleaseSelectServiceMin;
+
+  /// No description provided for @pleaseSelectBookingDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a booking date!'**
+  String get pleaseSelectBookingDate;
+
+  /// No description provided for @pleaseSelectTimeSlot.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select an available time slot!'**
+  String get pleaseSelectTimeSlot;
+
+  /// No description provided for @cannotHoldSlot.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot hold this time slot. Please choose another time.'**
+  String get cannotHoldSlot;
+
+  /// No description provided for @holdTimeExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold time has expired. Please reselect your time slot.'**
+  String get holdTimeExpired;
+
+  /// No description provided for @customFee.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Fee'**
+  String get customFee;
+
+  /// No description provided for @viewTransactions.
+  ///
+  /// In en, this message translates to:
+  /// **'View Transactions'**
+  String get viewTransactions;
+
+  /// No description provided for @rateServiceBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate Service'**
+  String get rateServiceBtn;
 }
 
 class _SDelegate extends LocalizationsDelegate<S> {

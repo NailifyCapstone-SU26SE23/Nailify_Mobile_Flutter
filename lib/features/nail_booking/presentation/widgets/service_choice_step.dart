@@ -4,6 +4,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../../../core/utils/duration_formatter.dart';
+import '../../../../generated/l10n.dart';
 import '../../../nails/data/models/nail_variant_model.dart';
 import '../../../nails/data/models/shape_method_config_model.dart';
 import '../../../nails/data/repositories/nail_variant_repository.dart';
@@ -114,9 +115,9 @@ class _ServiceChoiceStepState extends State<ServiceChoiceStep>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Chọn dịch vụ cho bạn',
-          style: TextStyle(
+        Text(
+          S.of(context).chooseServiceTitle,
+          style: const TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
             color: AppColors.textPrimary,
@@ -125,7 +126,7 @@ class _ServiceChoiceStepState extends State<ServiceChoiceStep>
         ),
         const SizedBox(height: 4),
         Text(
-          'Thỏa sức sáng tạo với bộ nail mới hoặc thêm dịch vụ đi kèm',
+          S.of(context).chooseServiceSubtitle,
           style: TextStyle(
             fontSize: 13,
             color: Colors.grey.shade600,
@@ -170,15 +171,15 @@ class _ServiceChoiceStepState extends State<ServiceChoiceStep>
           fontSize: 14,
           fontWeight: FontWeight.w600,
         ),
-        tabs: const [
+        tabs: [
           Tab(
             height: 44,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.spa_rounded, size: 18),
-                SizedBox(width: 8),
-                Text('Làm nail'),
+                const Icon(Icons.spa_rounded, size: 18),
+                const SizedBox(width: 8),
+                Text(S.of(context).doNailsTab),
               ],
             ),
           ),
@@ -187,9 +188,9 @@ class _ServiceChoiceStepState extends State<ServiceChoiceStep>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.room_service_rounded, size: 18),
-                SizedBox(width: 8),
-                Text('Dịch vụ khác'),
+                const Icon(Icons.room_service_rounded, size: 18),
+                const SizedBox(width: 8),
+                Text(S.of(context).otherServicesTab),
               ],
             ),
           ),
@@ -342,9 +343,9 @@ class _ServiceChoiceStepState extends State<ServiceChoiceStep>
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Vui lòng chọn thợ trước',
-              style: TextStyle(
+            Text(
+              S.of(context).pleaseSelectArtistFirst,
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
@@ -353,7 +354,7 @@ class _ServiceChoiceStepState extends State<ServiceChoiceStep>
             ),
             const SizedBox(height: 8),
             Text(
-              'Để xem các mẫu nail mà thợ có thể thực hiện, hãy quay lại bước chọn thợ nhé.',
+              S.of(context).pleaseSelectArtistFirstDesc,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,
@@ -376,9 +377,9 @@ class _ServiceChoiceStepState extends State<ServiceChoiceStep>
           children: [
             Icon(Icons.spa_outlined, size: 48, color: Colors.grey.shade400),
             const SizedBox(height: 12),
-            const Text(
-              'Thợ này chưa có mẫu nail nào',
-              style: TextStyle(
+            Text(
+              S.of(context).artistHasNoNailVariants,
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
@@ -386,7 +387,7 @@ class _ServiceChoiceStepState extends State<ServiceChoiceStep>
             ),
             const SizedBox(height: 4),
             Text(
-              'Bạn vẫn có thể chọn dịch vụ khác ở tab bên cạnh.',
+              S.of(context).artistHasNoNailVariantsDesc,
               style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             ),
           ],
@@ -405,7 +406,7 @@ class _ServiceChoiceStepState extends State<ServiceChoiceStep>
             Icon(Icons.error_outline, size: 48, color: Colors.red.shade400),
             const SizedBox(height: 12),
             Text(
-              'Không tải được danh sách nail',
+              S.of(context).cannotLoadNailVariants,
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -428,7 +429,7 @@ class _ServiceChoiceStepState extends State<ServiceChoiceStep>
                 });
               },
               icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Thử lại'),
+              label: Text(S.of(context).bookingRetry),
             ),
           ],
         ),
@@ -576,9 +577,9 @@ class _NailVariantCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             alignment: Alignment.center,
-                            child: const Text(
-                              'Chi tiết',
-                              style: TextStyle(
+                            child: Text(
+                              S.of(context).detailsBtn,
+                              style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textPrimary,
@@ -609,7 +610,7 @@ class _NailVariantCard extends StatelessWidget {
                             ),
                             alignment: Alignment.center,
                             child: Text(
-                              isSelected ? 'Đã chọn' : 'Chọn',
+                              isSelected ? S.of(context).selectedBtn : S.of(context).selectBtn,
                               style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,

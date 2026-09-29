@@ -29,6 +29,9 @@ class _MyBookingListPageState extends State<MyBookingListPage>
 
   late TabController _tabController;
   StreamSubscription? _rescheduleSub;
+  StreamSubscription? _confirmedSub;
+  StreamSubscription? _rejectedSub;
+  StreamSubscription? _cancelledSub;
 
   // Dữ liệu lịch hẹn
   List<Map<String, dynamic>> _allBookings = [];
@@ -67,21 +70,42 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     _bookingScrollController.addListener(_onBookingScroll);
     _fetchBookings(refresh: true);
 
-    _rescheduleSub = getIt<SignalRService>().onBookingRescheduled.listen((
-      event,
-    ) {
+    final signalR = getIt<SignalRService>();
+    _rescheduleSub = signalR.onBookingRescheduled.listen((event) {
       debugPrint(
-        '[RescheduleTab] ⚡ Nhận sự kiện status=${event.status}, bookingId=${event.bookingId}, message=${event.message}',
+        '[MyBookingListPage] ⚡ Nhận sự kiện Rescheduled: ${event.message}',
       );
-      if (mounted) {
-        _fetchBookings(refresh: true);
-      }
+      if (mounted) _fetchBookings(refresh: true);
+    });
+
+    _confirmedSub = signalR.onBookingConfirmed.listen((event) {
+      debugPrint(
+        '[MyBookingListPage] ⚡ Nhận sự kiện BookingConfirmed: ${event.message}',
+      );
+      if (mounted) _fetchBookings(refresh: true);
+    });
+
+    _rejectedSub = signalR.onBookingRejected.listen((event) {
+      debugPrint(
+        '[MyBookingListPage] ⚡ Nhận sự kiện BookingRejected: ${event.message}',
+      );
+      if (mounted) _fetchBookings(refresh: true);
+    });
+
+    _cancelledSub = signalR.onBookingCancelled.listen((event) {
+      debugPrint(
+        '[MyBookingListPage] ⚡ Nhận sự kiện BookingCancelled: ${event.message}',
+      );
+      if (mounted) _fetchBookings(refresh: true);
     });
   }
 
   @override
   void dispose() {
     _rescheduleSub?.cancel();
+    _confirmedSub?.cancel();
+    _rejectedSub?.cancel();
+    _cancelledSub?.cancel();
     _bookingScrollController.removeListener(_onBookingScroll);
     _bookingScrollController.dispose();
     _tabController.dispose();
@@ -232,16 +256,44 @@ class _MyBookingListPageState extends State<MyBookingListPage>
   }
 
   List<int> get _availableYears {
-    final years = _allBookings
-        .map((b) {
-          final dateStr = b['bookingDate']?.toString() ?? '';
-          return (DateTime.tryParse(dateStr) ?? DateTime.now()).year;
-        })
-        .toSet()
-        .toList();
-    if (years.isEmpty) years.add(DateTime.now().year);
-    years.sort((a, b) => b.compareTo(a));
+    final yearsSet = <int>{};
+    for (int y = 2024; y <= 2030; y++) {
+      yearsSet.add(y);
+    }
+    for (var b in _allBookings) {
+      final dateStr = b['bookingDate']?.toString() ?? '';
+      final parsed = DateTime.tryParse(dateStr);
+      if (parsed != null) {
+        yearsSet.add(parsed.year);
+      }
+    }
+    final years = yearsSet.toList()..sort((a, b) => b.compareTo(a));
     return years;
+  }
+
+  String _formatMonthLabel(int? val) {
+    if (val == null) return S.of(context).allMonths;
+    final isEn = Localizations.localeOf(context).languageCode == 'en';
+    if (isEn) {
+      const englishMonths = [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December',
+      ];
+      if (val >= 1 && val <= 12) {
+        return englishMonths[val - 1];
+      }
+    }
+    return S.of(context).monthFormat(val);
   }
 
   List<Map<String, dynamic>> get _rescheduleRelatedBookings {
@@ -409,9 +461,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
                     hint: S.of(context).monthHint,
                     value: _selectedMonth,
                     items: [null, ...List.generate(12, (i) => i + 1)],
-                    itemLabel: (val) => val == null
-                        ? S.of(context).allMonths
-                        : S.of(context).monthFormat(val),
+                    itemLabel: _formatMonthLabel,
                     onChanged: (val) =>
                         _onFilterChanged(month: val, monthChanged: true),
                   ),
@@ -768,7 +818,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: () => _openRescheduleDialog(bookingIdStr),
+                  onPressed: () => _openRescheduleDialog(booking),
                   icon: const Icon(
                     Icons.edit_calendar_rounded,
                     size: 18,
@@ -815,13 +865,14 @@ class _MyBookingListPageState extends State<MyBookingListPage>
                 ),
               ),
             ],
-            // Check & render Warranty button
+            // Check & render Warranty button (Chỉ hiển thị với đơn có mẫu nail)
             if (rawStatus == 'Completed' &&
                 bookingIdStr.isNotEmpty &&
                 !_readBool(
                   booking['isWarrantied'] ?? booking['IsWarrantied'],
                 ) &&
-                !_hasWarranty(bookingIdStr)) ...[
+                !_hasWarranty(bookingIdStr) &&
+                _hasNailDesign(booking)) ...[
               Padding(
                 padding: const EdgeInsets.only(top: 12),
                 child: SizedBox(
@@ -848,10 +899,14 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     );
   }
 
-  void _openRescheduleDialog(String bookingIdStr) {
+  void _openRescheduleDialog(Map<String, dynamic> booking) {
+    final bookingIdStr = booking['bookingId']?.toString() ?? '';
+    final salonId = booking['salonId']?.toString() ?? '';
     RescheduleBookingDialog.show(
       context: context,
       bookingId: bookingIdStr,
+      salonId: salonId,
+      bookingData: booking,
       onConfirm: (newDate, newTime, reason) async {
         try {
           final success = await _apiService.requestRescheduleBooking(
@@ -907,6 +962,45 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     return _allBookings.any(
       (b) => b['warrantyForBookingId']?.toString() == bookingId,
     );
+  }
+
+  bool _hasNailDesign(Map<String, dynamic> booking) {
+    final items = booking['bookingItems'] as List<dynamic>? ?? [];
+    for (final item in items) {
+      if (item is Map) {
+        final nailVariantId = item['nailVariantId'] ?? item['NailVariantId'];
+        final nailVariantName =
+            item['nailVariantName'] ?? item['NailVariantName'];
+        final customerNailId = item['customerNailId'] ?? item['CustomerNailId'];
+        final customerNailName =
+            item['customerNailName'] ?? item['CustomerNailName'];
+        final customerNailRequestId =
+            item['customerNailRequestId'] ?? item['CustomerNailRequestId'];
+
+        if (nailVariantId != null &&
+            int.tryParse(nailVariantId.toString()) != null &&
+            int.tryParse(nailVariantId.toString())! > 0) {
+          return true;
+        }
+        if (nailVariantName != null &&
+            nailVariantName.toString().trim().isNotEmpty) {
+          return true;
+        }
+        if (customerNailId != null &&
+            customerNailId.toString().trim().isNotEmpty) {
+          return true;
+        }
+        if (customerNailName != null &&
+            customerNailName.toString().trim().isNotEmpty) {
+          return true;
+        }
+        if (customerNailRequestId != null &&
+            customerNailRequestId.toString().trim().isNotEmpty) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   void _handleWarrantyAction(Map<String, dynamic> booking) {

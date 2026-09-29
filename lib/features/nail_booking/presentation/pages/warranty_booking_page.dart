@@ -886,14 +886,16 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
     Map<String, dynamic> item,
     WarrantyBookingState state,
   ) {
-    final names = [
+    final nailNames = [
       item['nailVariantName']?.toString().trim() ?? '',
       item['customerNailName']?.toString().trim() ?? '',
-      item['serviceName']?.toString().trim() ?? '',
     ].where((n) => n.isNotEmpty).toList();
-    final name = names.isEmpty
-        ? S.of(context).bookingWarrantyDefault
-        : names.join(' & ');
+    final serviceName = item['serviceName']?.toString().trim() ?? '';
+    final name = nailNames.isNotEmpty
+        ? nailNames.join(' & ')
+        : (serviceName.isNotEmpty
+            ? serviceName
+            : S.of(context).bookingWarrantyDefault);
 
     final qty = (item['quantity'] is num)
         ? (item['quantity'] as num).toInt()

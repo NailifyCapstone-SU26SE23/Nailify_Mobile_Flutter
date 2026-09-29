@@ -1458,10 +1458,10 @@ class SEn extends S {
   String get bookingNotFound => 'Booking information not found.';
 
   @override
-  String get bookingPaidAmount => 'Paid:';
+  String get bookingPaidAmount => 'Deposit (Paid):';
 
   @override
-  String get bookingRemainingAmount => 'Remaining:';
+  String get bookingRemainingAmount => 'Remaining to Pay:';
 
   @override
   String get bookingYourRating => 'Your Rating';

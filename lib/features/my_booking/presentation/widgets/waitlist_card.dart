@@ -45,21 +45,37 @@ class WaitlistCard extends StatelessWidget {
 // ─────────────────────────────────────────────
 // TRẠNG THÁI A: ĐANG XẾP HÀNG (Pending)
 // ─────────────────────────────────────────────
-class _WaitlistPendingCard extends StatelessWidget {
+class _WaitlistPendingCard extends StatefulWidget {
   final WaitlistModel item;
   final VoidCallback onCancel;
 
   const _WaitlistPendingCard({required this.item, required this.onCancel});
 
+  @override
+  State<_WaitlistPendingCard> createState() => _WaitlistPendingCardState();
+}
+
+class _WaitlistPendingCardState extends State<_WaitlistPendingCard> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Tự động cập nhật giao diện mỗi 1 giây để thời gian chờ tăng liên tục theo thời gian thực khi treo máy
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
   String _timeSince(BuildContext context, DateTime from) {
-    // DurationFormatter.formatDiff tu dong xu ly:
-    //  - Negative Duration (registeredAt > now) -> lay gia tri tuyet doi + prefix "-"
-    //  - Positive Duration (registeredAt < now) -> hien thi binh thuong
-    //  - Tren 24h -> hien thi "X ngay Y gio"
-    //  - Duoi 24h, tren 60p -> hien thi "X gio Y phut"
-    //  - Duoi 60p -> hien thi "X phut"
     final diff = DateTime.now().difference(from);
-    return DurationFormatter.formatDiff(diff);
+    return DurationFormatter.formatDiff(diff, context: context);
   }
 
   @override
@@ -71,7 +87,7 @@ class _WaitlistPendingCard extends StatelessWidget {
         textColor: Colors.blue.shade700,
         icon: Icons.hourglass_top_rounded,
       ),
-      item: item,
+      item: widget.item,
       extraBody: Padding(
         padding: const EdgeInsets.only(top: 6),
         child: Row(
@@ -79,7 +95,7 @@ class _WaitlistPendingCard extends StatelessWidget {
             Icon(Icons.schedule, size: 14, color: Colors.grey.shade400),
             const SizedBox(width: 4),
             Text(
-              '${S.of(context).waitlistRegisteredAt}${_timeSince(context, item.registeredAt)}',
+              '${S.of(context).waitlistRegisteredAt}${_timeSince(context, widget.item.registeredAt)}',
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.grey.shade500,
@@ -123,7 +139,7 @@ class _WaitlistPendingCard extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         content: Text(
-          S.of(context).waitlistCancelDialogContent(item.time),
+          S.of(context).waitlistCancelDialogContent(widget.item.time),
           style: TextStyle(color: Colors.grey.shade600, height: 1.5),
         ),
         actionsPadding: const EdgeInsets.symmetric(
@@ -141,7 +157,7 @@ class _WaitlistPendingCard extends StatelessWidget {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
-              onCancel();
+              widget.onCancel();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red.shade400,
@@ -230,7 +246,7 @@ class _WaitlistOpenedCardState extends State<_WaitlistOpenedCard> {
     return _CardShell(
       badge: _StatusBadge(
         label: S.of(context).waitlistStatusOpened,
-        bgColor: AppColors.primary.withOpacity(0.12),
+        bgColor: AppColors.primary.withValues(alpha: 0.12),
         textColor: AppColors.primary,
         icon: Icons.celebration_rounded,
         pulse: true,
@@ -244,12 +260,12 @@ class _WaitlistOpenedCardState extends State<_WaitlistOpenedCard> {
           decoration: BoxDecoration(
             color: _expired
                 ? Colors.grey.shade100
-                : AppColors.primary.withOpacity(0.06),
+                : AppColors.primary.withValues(alpha: 0.06),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: _expired
                   ? Colors.grey.shade300
-                  : AppColors.primary.withOpacity(0.3),
+                  : AppColors.primary.withValues(alpha: 0.3),
             ),
           ),
           child: Row(
@@ -372,15 +388,15 @@ class _CardShell extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: highlightBorder
-              ? AppColors.primary.withOpacity(0.4)
+              ? AppColors.primary.withValues(alpha: 0.4)
               : Colors.grey.shade200,
           width: highlightBorder ? 1.5 : 1,
         ),
         boxShadow: [
           BoxShadow(
             color: highlightBorder
-                ? AppColors.primary.withOpacity(0.08)
-                : Colors.black.withOpacity(0.03),
+                ? AppColors.primary.withValues(alpha: 0.08)
+                : Colors.black.withValues(alpha: 0.03),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),

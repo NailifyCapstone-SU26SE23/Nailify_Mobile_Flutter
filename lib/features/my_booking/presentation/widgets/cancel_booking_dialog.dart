@@ -276,9 +276,9 @@ class _CancelBookingDialogState extends State<CancelBookingDialog> {
                                       );
                                       if (!mounted) return;
                                       if (success) {
-                                        nav.pop();
+                                        nav.pop(true);
                                       } else {
-                                        setState(() => _isSubmitting = false);
+                                        nav.pop(false);
                                       }
                                     }
                                   },

@@ -1,8 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
-import 'package:latlong2/latlong.dart';
 import '../../../../generated/l10n.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection.dart';
@@ -18,6 +16,7 @@ import '../../../my_studio/data/models/customer_nail_model.dart' as studio;
 import '../../data/datasources/my_booking_api_service.dart';
 import '../utils/booking_status_utils.dart';
 import '../widgets/cancel_booking_dialog.dart';
+import '../widgets/cancellation_result_dialog.dart';
 import '../widgets/reschedule_booking_dialog.dart';
 
 class MyBookingDetailPage extends StatefulWidget {
@@ -155,125 +154,11 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     }
   }
 
-  void _showMapPopup(
-    BuildContext context,
-    String salonName,
-    String? address,
-    double? latitude,
-    double? longitude,
-  ) {
-    // Tọa độ
-    final double lat = latitude ?? 10.993592755518687;
-    final double lng = longitude ?? 106.65636465428618;
-    final LatLng targetPosition = LatLng(lat, lng);
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (BuildContext context) {
-        final double height = MediaQuery.of(context).size.height * 0.8;
-
-        return Container(
-          height: height,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            children: [
-              // Thanh kéo & Thông tin
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 12,
-                  horizontal: 20,
-                ),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Vị trí: $salonName',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      address ?? 'Chi nhánh của Nailify',
-                      style: const TextStyle(fontSize: 13, color: Colors.grey),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1),
-
-              // Bản đồ
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    bottom: Radius.circular(20),
-                  ),
-                  child: FlutterMap(
-                    options: MapOptions(
-                      initialCenter: targetPosition,
-                      initialZoom: 16.0,
-                    ),
-                    children: [
-                      TileLayer(
-                        // Dùng CartoDB
-                        urlTemplate:
-                            'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-                        userAgentPackageName: 'com.nailify.app',
-                      ),
-                      MarkerLayer(
-                        markers: [
-                          Marker(
-                            point: targetPosition,
-                            width: 50,
-                            height: 50,
-                            child: const Icon(
-                              Icons.location_on,
-                              color: AppColors.primary,
-                              size: 40,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  double? _toDouble(dynamic value) {
-    if (value == null) return null;
-    if (value is num) return value.toDouble();
-    return double.tryParse(value.toString());
-  }
-
   bool _isCancelling = false;
 
   bool _hasPaidAmount(Map<String, dynamic> booking) {
     return booking['amountPaid'] != null;
   }
-
-
 
   Future<void> _createPayment(String bookingId) async {
     if (_isCreatingPayment || bookingId.isEmpty) return;
@@ -331,40 +216,6 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
       if (addr != null && addr.trim().isNotEmpty) return addr.trim();
     }
     return '';
-  }
-
-  double? _getBookingLatitude(Map<String, dynamic>? booking) {
-    if (booking == null) return null;
-    final direct = booking['latitude'];
-    if (direct != null) return _toDouble(direct);
-    final nestedMap = booking['salon'];
-    if (nestedMap is Map) {
-      final lat = nestedMap['latitude'];
-      if (lat != null) return _toDouble(lat);
-    }
-    final matched = _getMatchingSalon();
-    if (matched != null) {
-      final lat = matched['latitude'];
-      if (lat != null) return _toDouble(lat);
-    }
-    return null;
-  }
-
-  double? _getBookingLongitude(Map<String, dynamic>? booking) {
-    if (booking == null) return null;
-    final direct = booking['longitude'];
-    if (direct != null) return _toDouble(direct);
-    final nestedMap = booking['salon'];
-    if (nestedMap is Map) {
-      final lng = nestedMap['longitude'];
-      if (lng != null) return _toDouble(lng);
-    }
-    final matched = _getMatchingSalon();
-    if (matched != null) {
-      final lng = matched['longitude'];
-      if (lng != null) return _toDouble(lng);
-    }
-    return null;
   }
 
   String _getBookingArtistName(Map<String, dynamic>? booking) {
@@ -467,7 +318,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
             // Status Hero Banner Card
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
@@ -480,49 +331,55 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   ),
                 ],
               ),
-              child: Column(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Đơn #${widget.bookingId.length > 8 ? widget.bookingId.substring(0, 8) : widget.bookingId}',
+                      Icon(
+                        Icons.bookmark_outline_rounded,
+                        color: status.textColor,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Trạng thái đơn',
                         style: TextStyle(
                           fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: status.backgroundColor,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: status.textColor.withValues(alpha: 0.2),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(status.icon, color: status.textColor, size: 15),
-                            const SizedBox(width: 6),
-                            Text(
-                              status.label,
-                              style: TextStyle(
-                                color: status.textColor,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                     ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: status.backgroundColor,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: status.textColor.withValues(alpha: 0.2),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(status.icon, color: status.textColor, size: 15),
+                        const SizedBox(width: 6),
+                        Text(
+                          status.label,
+                          style: TextStyle(
+                            color: status.textColor,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -547,7 +404,11 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                         color: Colors.blue.shade100,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.shield_outlined, color: Colors.blue, size: 20),
+                      child: const Icon(
+                        Icons.shield_outlined,
+                        color: Colors.blue,
+                        size: 20,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -600,7 +461,11 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                               ),
                             ),
                             const SizedBox(width: 2),
-                            Icon(Icons.arrow_forward_ios_rounded, size: 10, color: Colors.blue.shade900),
+                            Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              size: 10,
+                              color: Colors.blue.shade900,
+                            ),
                           ],
                         ),
                       ),
@@ -625,7 +490,11 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                         color: Colors.teal.shade100,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.verified_outlined, color: Colors.teal, size: 20),
+                      child: const Icon(
+                        Icons.verified_outlined,
+                        color: Colors.teal,
+                        size: 20,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -683,115 +552,66 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
               ),
               child: Column(
                 children: [
-                  // Branch/Salon row with map trigger styling
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        final sName = _getBookingSalonName(_booking);
-                        final salonName = sName.isNotEmpty
-                            ? sName
-                            : 'Nailify Salon';
-                        final address = _getBookingSalonAddress(_booking);
-                        final latitude = _getBookingLatitude(_booking);
-                        final longitude = _getBookingLongitude(_booking);
-                        _showMapPopup(
-                          context,
-                          salonName,
-                          address,
-                          latitude,
-                          longitude,
-                        );
-                      },
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Icon(
-                                Icons.storefront_rounded,
-                                color: AppColors.primary,
-                                size: 22,
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    S.of(context).bookingBranchLabel,
-                                    style: const TextStyle(
-                                      color: AppColors.textSecondary,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    _getBookingSalonName(_booking).isNotEmpty
-                                        ? _getBookingSalonName(_booking)
-                                        : 'Nailify Salon',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  if (_getBookingSalonAddress(_booking).isNotEmpty) ...[
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      _getBookingSalonAddress(_booking),
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey.shade600,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: const Row(
-                                children: [
-                                  Icon(
-                                    Icons.map_outlined,
-                                    size: 14,
-                                    color: AppColors.primary,
-                                  ),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'Bản đồ',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.primary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                  // Branch/Salon row
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.storefront_rounded,
+                            color: AppColors.primary,
+                            size: 22,
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                S.of(context).bookingBranchLabel,
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                _getBookingSalonName(_booking).isNotEmpty
+                                    ? _getBookingSalonName(_booking)
+                                    : 'Nailify Salon',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                  color: AppColors.textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (_getBookingSalonAddress(
+                                _booking,
+                              ).isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  _getBookingSalonAddress(_booking),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const Divider(height: 1, indent: 16, endIndent: 16),
@@ -918,7 +738,10 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                                       ),
                                     ),
                                     Text(
-                                      booking['startTime']?.toString().substring(0, 5) ?? '--:--',
+                                      booking['startTime']
+                                              ?.toString()
+                                              .substring(0, 5) ??
+                                          '--:--',
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 13,
@@ -986,7 +809,9 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.05),
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(16),
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -1068,6 +893,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 15,
+                                color: AppColors.textPrimary,
                               ),
                             ),
                             Text(
@@ -1080,52 +906,103 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                             ),
                           ],
                         ),
-                        if (booking['amountPaid'] != null) ...[
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                S.of(context).bookingPaidAmount,
-                                style: const TextStyle(
-                                  color: Colors.teal,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              Text(
-                                PriceFormatter.format(booking['amountPaid']),
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                  color: Colors.teal,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                        if (booking['amountDue'] != null) ...[
-                          const SizedBox(height: 6),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                S.of(context).bookingRemainingAmount,
-                                style: TextStyle(
-                                  color: Colors.orange.shade800,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              Text(
-                                PriceFormatter.format(booking['amountDue']),
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                  color: Colors.orange.shade800,
-                                ),
-                              ),
-                            ],
+                        if (booking['amountPaid'] != null ||
+                            booking['amountDue'] != null) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.background,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey.shade200),
+                            ),
+                            child: Column(
+                              children: [
+                                if (booking['amountPaid'] != null) ...[
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.check_circle_rounded,
+                                            size: 16,
+                                            color: Colors.teal,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            S.of(context).bookingPaidAmount,
+                                            style: const TextStyle(
+                                              color: Colors.teal,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      Text(
+                                        PriceFormatter.format(
+                                          booking['amountPaid'],
+                                        ),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                          color: Colors.teal,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                                if (booking['amountPaid'] != null &&
+                                    booking['amountDue'] != null)
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 8),
+                                    child: Divider(
+                                      height: 1,
+                                      color: Color(0xFFE5E7EB),
+                                    ),
+                                  ),
+                                if (booking['amountDue'] != null) ...[
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.pending_actions_rounded,
+                                            size: 16,
+                                            color: Colors.orange.shade800,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            S
+                                                .of(context)
+                                                .bookingRemainingAmount,
+                                            style: TextStyle(
+                                              color: Colors.orange.shade800,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      Text(
+                                        PriceFormatter.format(
+                                          booking['amountDue'],
+                                        ),
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                          color: Colors.orange.shade800,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ],
+                            ),
                           ),
                         ],
                       ],
@@ -1206,7 +1083,10 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   children: [
                     Text(
                       S.of(context).bookingCheckInInstruction,
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     if (qrImageBytes != null)
@@ -1292,7 +1172,10 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary, width: 1.5),
+                    side: const BorderSide(
+                      color: AppColors.primary,
+                      width: 1.5,
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -1315,6 +1198,8 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                     RescheduleBookingDialog.show(
                       context: context,
                       bookingId: widget.bookingId,
+                      salonId: _booking?['salonId']?.toString(),
+                      bookingData: _booking,
                       onConfirm: (newDate, newTime, reason) async {
                         try {
                           final success = await _apiService
@@ -1393,8 +1278,8 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: () {
-                    showDialog(
+                  onPressed: () async {
+                    final result = await showDialog<bool>(
                       context: context,
                       builder: (dialogContext) => CancelBookingDialog(
                         bookingId: widget.bookingId,
@@ -1406,32 +1291,8 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                               widget.bookingId,
                               reason: reason,
                             );
-                            if (!context.mounted) return false;
-                            if (success) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    S.of(context).bookingCancelSuccess,
-                                  ),
-                                ),
-                              );
-                              await _fetchBookingDetail();
-                              return true;
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    S.of(context).bookingCancelFail,
-                                  ),
-                                ),
-                              );
-                              return false;
-                            }
+                            return success;
                           } catch (e) {
-                            if (!context.mounted) return false;
-                            ScaffoldMessenger.of(
-                              context,
-                            ).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
                             return false;
                           } finally {
                             if (mounted) {
@@ -1441,6 +1302,27 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                         },
                       ),
                     );
+
+                    if (!context.mounted) return;
+                    final s = S.of(context);
+                    if (result == true) {
+                      _fetchBookingDetail();
+                      CancellationResultDialog.show(
+                        context: context,
+                        isSuccess: true,
+                        title: 'Hủy đặt lịch thành công',
+                        message: s.bookingCancelSuccess,
+                        subMessage:
+                            'Tiền cọc (nếu có) sẽ được hoàn trả theo chính sách của Nailify.',
+                      );
+                    } else if (result == false) {
+                      CancellationResultDialog.show(
+                        context: context,
+                        isSuccess: false,
+                        title: 'Hủy đặt lịch thất bại',
+                        message: s.bookingCancelFail,
+                      );
+                    }
                   },
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.red.shade700,
@@ -1450,7 +1332,11 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  icon: Icon(Icons.cancel_outlined, size: 20, color: Colors.red.shade700),
+                  icon: Icon(
+                    Icons.cancel_outlined,
+                    size: 20,
+                    color: Colors.red.shade700,
+                  ),
                   label: Text(
                     S.of(context).bookingCancelBtnLabel,
                     style: TextStyle(
@@ -1480,7 +1366,11 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                     ),
                     elevation: 1,
                   ),
-                  icon: const Icon(Icons.star_rounded, color: Colors.white, size: 22),
+                  icon: const Icon(
+                    Icons.star_rounded,
+                    color: Colors.white,
+                    size: 22,
+                  ),
                   label: const Text(
                     'Đánh giá dịch vụ',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -1551,7 +1441,10 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
               Expanded(
                 flex: 4,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(8),
@@ -2101,16 +1994,17 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     );
   }
 
-
-
   String _formatDiscountDisplay(String value) {
     var text = value.trim();
     if (text.isEmpty) return text;
-    text = text.replaceAll(RegExp(r'^-+'), '');
-    text = '-$text';
-    final lower = text.toLowerCase();
-    if (lower.contains('đ') || lower.contains('vnd')) return text;
-    return '$text VNĐ';
+    text = text.replaceAll(RegExp(r'^-+'), '').trim();
+    if (text.endsWith('%')) {
+      return '-$text';
+    }
+    text = text
+        .replaceAll(RegExp(r'\s*(d|đ|vnd|vnđ)\s*$', caseSensitive: false), '')
+        .trim();
+    return '-$text VNĐ';
   }
 
   Widget _buildRatingCard() {

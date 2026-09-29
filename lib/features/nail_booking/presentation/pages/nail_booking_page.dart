@@ -2566,11 +2566,12 @@ class _NailBookingPageState extends State<NailBookingPage> {
   String _formatDiscountDisplay(String value) {
     var text = value.trim();
     if (text.isEmpty) return text;
-    text = text.replaceAll(RegExp(r'^-+'), '');
-    text = '-$text';
-    final lower = text.toLowerCase();
-    if (lower.contains('đ') || lower.contains('vnd')) return text;
-    return '$text VNĐ';
+    text = text.replaceAll(RegExp(r'^-+'), '').trim();
+    if (text.endsWith('%')) {
+      return '-$text';
+    }
+    text = text.replaceAll(RegExp(r'\s*(d|đ|vnd|vnđ)\s*$', caseSensitive: false), '').trim();
+    return '-$text VNĐ';
   }
 
   Widget _buildWalletBalanceToggle() {

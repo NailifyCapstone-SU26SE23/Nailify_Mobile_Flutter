@@ -13,6 +13,8 @@ import '../../../../core/localization/locale_service.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../generated/l10n_x.dart';
 
+import '../../../../core/services/in_app_notification_store.dart';
+import '../../../auth/data/repositories/auth_repository.dart';
 import '../../../../features/wallet/data/models/loyalty_model.dart';
 import '../../../../features/wallet/data/repositories/wallet_repository.dart';
 import '../../../../features/wallet/presentation/widgets/wallet_entry_card.dart';
@@ -84,6 +86,10 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _logout() async {
     await getIt<SharedPreferences>().remove(AppConstants.authTokenKey);
     await getIt<SharedPreferences>().remove('has_completed_quiz');
+    try {
+      getIt<InAppNotificationStore>().clear();
+      getIt<AuthRepository>().logout();
+    } catch (_) {}
     // Clear wallet cache để user mới không thấy dữ liệu của user cũ.
     try {
       await getIt<WalletRepository>().clearCache();

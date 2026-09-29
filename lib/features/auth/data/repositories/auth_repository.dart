@@ -1,7 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/signalr_service.dart';
+import '../../../../core/services/in_app_notification_store.dart';
 import '../../../../core/utils/api_response_parser.dart';
 import '../models/user_profile.dart';
 
@@ -152,8 +154,11 @@ class AuthRepository {
   }
 
   void logout() {
-    // Ngắt kết nối SignalR trước khi xóa token
+    // Ngắt kết nối SignalR và xóa toàn bộ thông báo tạm thời trước khi xóa token
     _signalR.disconnect();
+    try {
+      getIt<InAppNotificationStore>().clear();
+    } catch (_) {}
     _apiClient.removeAuthToken();
   }
 

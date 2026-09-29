@@ -17,6 +17,7 @@ import '../../features/wallet/data/repositories/wallet_repository.dart';
 import '../../features/auth/data/repositories/auth_repository.dart';
 import '../../features/home/data/repositories/home_repository.dart';
 import '../network/signalr_service.dart';
+import '../services/in_app_notification_store.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -36,7 +37,10 @@ Future<void> configureDependencies() async {
     () => ApiClient(preferences: getIt<SharedPreferences>()),
   );
 
-  // 3b. SignalR Service (Real-time notifications)
+  // 3b. SignalR Service & Notification Store
+  getIt.registerLazySingleton<InAppNotificationStore>(
+    () => InAppNotificationStore(),
+  );
   getIt.registerLazySingleton<SignalRService>(() => SignalRService());
 
   // 4. Repositories (directly using ApiClient)

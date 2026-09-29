@@ -1460,10 +1460,10 @@ class SVi extends S {
   String get bookingNotFound => 'Không tìm thấy thông tin lịch hẹn.';
 
   @override
-  String get bookingPaidAmount => 'Đã thanh toán:';
+  String get bookingPaidAmount => 'Tiền cọc (Đã trả):';
 
   @override
-  String get bookingRemainingAmount => 'Còn lại:';
+  String get bookingRemainingAmount => 'Còn lại cần trả:';
 
   @override
   String get bookingYourRating => 'Đánh giá của bạn';

@@ -2770,13 +2770,13 @@ abstract class S {
   /// No description provided for @bookingPaidAmount.
   ///
   /// In en, this message translates to:
-  /// **'Paid:'**
+  /// **'Deposit (Paid):'**
   String get bookingPaidAmount;
 
   /// No description provided for @bookingRemainingAmount.
   ///
   /// In en, this message translates to:
-  /// **'Remaining:'**
+  /// **'Remaining to Pay:'**
   String get bookingRemainingAmount;
 
   /// No description provided for @bookingYourRating.

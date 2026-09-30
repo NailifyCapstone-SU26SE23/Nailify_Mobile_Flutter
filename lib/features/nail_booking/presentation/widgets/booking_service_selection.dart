@@ -263,7 +263,7 @@ class BookingServiceSelection extends StatelessWidget {
 
         // ── 3. Service cards (grouped into ONE single container) ──────────
         if (availableServices.isNotEmpty) ...[
-          if (counts.isNotEmpty) ...[
+          if (counts.isNotEmpty)
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -313,8 +313,6 @@ class BookingServiceSelection extends StatelessWidget {
                 }(),
               ),
             ),
-          ] else
-            _buildAddButton(context, availableServices),
         ] else
           Center(
             child: Padding(
@@ -636,51 +634,6 @@ class BookingServiceSelection extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildAddButton(
-    BuildContext context,
-    List<Map<String, dynamic>> availableServices,
-  ) {
-    return InkWell(
-      onTap: () => _showServicesBottomSheet(context, availableServices),
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFF8FA),
-          border: Border.all(color: AppColors.primary, width: 1.2),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.add_rounded,
-                size: 14,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              S.of(context).bookingAddAddonService,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-                fontSize: 14.5,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 

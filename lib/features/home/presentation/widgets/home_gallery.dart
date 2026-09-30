@@ -163,18 +163,18 @@ class _HomeGalleryState extends State<HomeGallery> {
               ),
               GestureDetector(
                 onTap: () => context.push('/nails'),
-                child: const Row(
+                child: Row(
                   children: [
                     Text(
-                      'Khám phá',
-                      style: TextStyle(
+                      S.of(context).exploreBtn,
+                      style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: Color(0xFFE02B6D),
                       ),
                     ),
-                    SizedBox(width: 2),
-                    Icon(
+                    const SizedBox(width: 2),
+                    const Icon(
                       Icons.chevron_right_rounded,
                       size: 16,
                       color: Color(0xFFE02B6D),

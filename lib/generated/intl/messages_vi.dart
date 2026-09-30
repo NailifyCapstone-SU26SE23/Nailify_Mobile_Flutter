@@ -612,8 +612,10 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingNotFound": MessageLookupByLibrary.simpleMessage(
       "Không tìm thấy thông tin lịch hẹn.",
     ),
-    "bookingPaidAmount": MessageLookupByLibrary.simpleMessage("Đã thanh toán:"),
-    "bookingRemainingAmount": MessageLookupByLibrary.simpleMessage("Còn lại:"),
+    "bookingPaidAmount":
+        MessageLookupByLibrary.simpleMessage("Tiền cọc (Đã trả):"),
+    "bookingRemainingAmount":
+        MessageLookupByLibrary.simpleMessage("Còn lại cần trả:"),
     "bookingYourRating": MessageLookupByLibrary.simpleMessage(
       "Đánh giá của bạn",
     ),

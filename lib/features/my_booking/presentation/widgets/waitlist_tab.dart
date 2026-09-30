@@ -28,11 +28,43 @@ class _WaitlistTabState extends State<WaitlistTab> {
   List<WaitlistModel> _waitlist = [];
   bool _isLoading = true;
   String? _error;
+  Timer? _pollingTimer;
 
   @override
   void initState() {
     super.initState();
     _fetchWaitlists();
+    // Polling ngầm mỗi 10 giây để cập nhật trạng thái mới nhất khi người dùng treo màn hình
+    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      _silentFetchWaitlists();
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _silentFetchWaitlists() async {
+    try {
+      final apiItems = await _apiService.getMyWaitlists();
+      final models = apiItems.map((e) => WaitlistModel.fromApi(e)).toList();
+      models.sort((a, b) {
+        if (a.status == WaitlistStatus.opened &&
+            b.status != WaitlistStatus.opened) {
+          return -1;
+        }
+        if (a.status != WaitlistStatus.opened &&
+            b.status == WaitlistStatus.opened) {
+          return 1;
+        }
+        return 0;
+      });
+      if (mounted) setState(() => _waitlist = models);
+    } catch (e) {
+      debugPrint('==== LỖI SILENT FETCH WAITLIST: $e ====');
+    }
   }
 
   Future<void> _fetchWaitlists() async {

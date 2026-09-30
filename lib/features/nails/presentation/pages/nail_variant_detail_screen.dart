@@ -1343,36 +1343,6 @@ class _DetailContentState extends State<_DetailContent> {
                           ],
                         ),
                         const SizedBox(height: 5),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.access_time_rounded,
-                              size: 11,
-                              color: selected
-                                  ? AppColors.primary.withValues(alpha: 0.8)
-                                  : Colors.grey.shade500,
-                            ),
-                            const SizedBox(width: 3),
-                            Expanded(
-                              child: Text(
-                                DurationFormatter.format(
-                                  method.duration,
-                                  context: context,
-                                ),
-                                style: TextStyle(
-                                  color: selected
-                                      ? AppColors.primary.withValues(alpha: 0.9)
-                                      : Colors.grey.shade600,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 5),
                         Text(
                           PriceFormatter.format(method.price),
                           style: TextStyle(

@@ -48,6 +48,20 @@ class WaitlistApiModel {
   bool get isPending =>
       status.toLowerCase() == 'pending' || status.toLowerCase() == 'waiting';
 
+  static DateTime? _parseServerDateTime(dynamic value) {
+    if (value == null) return null;
+    final raw = value.toString().trim();
+    if (raw.isEmpty) return null;
+
+    final parsed = DateTime.tryParse(raw);
+    if (parsed == null) return null;
+
+    // DateTime.tryParse tự động chuyển đổi chuỗi ISO có ký tự 'Z' (UTC)
+    // về đúng giờ Local của thiết bị khi gọi .toLocal()
+    // (ví dụ: 04:15:43 UTC -> 11:15:43 giờ Việt Nam UTC+7).
+    return parsed.toLocal();
+  }
+
   factory WaitlistApiModel.fromJson(Map<String, dynamic> json) {
     return WaitlistApiModel(
       waitlistId:
@@ -58,9 +72,7 @@ class WaitlistApiModel {
       salonName: json['salonName']?.toString(),
       preferredNailArtistId: json['preferredNailArtistId']?.toString(),
       preferredNailArtistName: json['preferredNailArtistName']?.toString(),
-      requestedDate: json['requestedDate'] != null
-          ? DateTime.tryParse(json['requestedDate'].toString())
-          : null,
+      requestedDate: _parseServerDateTime(json['requestedDate']),
       requestedStartTime: json['requestedStartTime']?.toString(),
       estimatedDuration: json['estimatedDuration'] is int
           ? json['estimatedDuration'] as int
@@ -69,15 +81,9 @@ class WaitlistApiModel {
           ? json['position'] as int
           : int.tryParse(json['position']?.toString() ?? ''),
       status: json['status']?.toString() ?? 'Pending',
-      createdAt: json['createdAt'] != null
-          ? DateTime.tryParse(json['createdAt'].toString())
-          : null,
-      notifiedAt: json['notifiedAt'] != null
-          ? DateTime.tryParse(json['notifiedAt'].toString())
-          : null,
-      expiresAt: json['expiresAt'] != null
-          ? DateTime.tryParse(json['expiresAt'].toString())
-          : null,
+      createdAt: _parseServerDateTime(json['createdAt']),
+      notifiedAt: _parseServerDateTime(json['notifiedAt']),
+      expiresAt: _parseServerDateTime(json['expiresAt']),
       convertedBookingId: json['convertedBookingId']?.toString(),
     );
   }

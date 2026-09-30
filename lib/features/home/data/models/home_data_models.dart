@@ -1,3 +1,6 @@
+import 'package:flutter/widgets.dart';
+import '../../../../generated/l10n.dart';
+
 /// Models cho dữ liệu động hiển thị tại Trang chủ Nailify
 class HomeCategoryItem {
   final dynamic id;
@@ -111,40 +114,137 @@ class HomeGalleryItem {
 
 class HomeReviewItem {
   final String id;
+  final String customerId;
   final String name;
   final String initials;
   final String review;
   final int stars;
   final String timeAgo;
+  final DateTime? createdAt;
   final String? imageUrl;
 
   const HomeReviewItem({
     required this.id,
+    this.customerId = '',
     required this.name,
     required this.initials,
     required this.review,
     required this.stars,
     required this.timeAgo,
+    this.createdAt,
     this.imageUrl,
   });
 
-  factory HomeReviewItem.fromJson(Map<String, dynamic> json) {
-    final fullName =
-        json['customerName'] as String? ??
-        json['name'] as String? ??
-        json['userName'] as String? ??
-        'Khách hàng';
+  HomeReviewItem copyWith({
+    String? id,
+    String? customerId,
+    String? name,
+    String? initials,
+    String? review,
+    int? stars,
+    String? timeAgo,
+    DateTime? createdAt,
+    String? imageUrl,
+  }) {
+    return HomeReviewItem(
+      id: id ?? this.id,
+      customerId: customerId ?? this.customerId,
+      name: name ?? this.name,
+      initials: initials ?? this.initials,
+      review: review ?? this.review,
+      stars: stars ?? this.stars,
+      timeAgo: timeAgo ?? this.timeAgo,
+      createdAt: createdAt ?? this.createdAt,
+      imageUrl: imageUrl ?? this.imageUrl,
+    );
+  }
+
+  static String calculateInitials(String fullName) {
     final parts = fullName.trim().split(' ');
-    String init = 'KH';
     if (parts.isNotEmpty && parts.first.isNotEmpty) {
       if (parts.length > 1 && parts.last.isNotEmpty) {
-        init = '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+        return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
       } else {
-        init = parts.first
+        return parts.first
             .substring(0, parts.first.length.clamp(1, 2))
             .toUpperCase();
       }
     }
+    return 'KH';
+  }
+
+  String getLocalizedName(BuildContext context) {
+    if (name == 'Khách hàng' || name == 'Customer' || name.isEmpty) {
+      return S.of(context).customerDefault;
+    }
+    return name;
+  }
+
+  String getLocalizedTimeAgo(BuildContext context) {
+    if (createdAt == null) {
+      return S.of(context).timeDaysAgo('1');
+    }
+    final diff = DateTime.now().difference(createdAt!.toLocal());
+    if (diff.inDays > 30) {
+      return S.of(context).timeMonthsAgo('${(diff.inDays / 30).floor()}');
+    } else if (diff.inDays > 0) {
+      return S.of(context).timeDaysAgo('${diff.inDays}');
+    } else if (diff.inHours > 0) {
+      return S.of(context).timeHoursAgo('${diff.inHours}');
+    } else if (diff.inMinutes > 0) {
+      return S.of(context).timeMinutesAgo('${diff.inMinutes}');
+    } else {
+      return S.of(context).justNow;
+    }
+  }
+
+  factory HomeReviewItem.fromJson(Map<String, dynamic> json) {
+    final rawCustomerId =
+        json['customerId'] ??
+        json['CustomerId'] ??
+        json['userId'] ??
+        json['UserId'] ??
+        '';
+    final customerId = rawCustomerId.toString().trim();
+
+    final userObj =
+        json['user'] ??
+        json['User'] ??
+        json['customer'] ??
+        json['Customer'] ??
+        json['userInfo'] ??
+        json['UserInfo'];
+
+    String fn = '';
+    String ln = '';
+    if (userObj is Map) {
+      fn = (userObj['firstName'] ?? userObj['FirstName'] ?? '').toString().trim();
+      ln = (userObj['lastName'] ?? userObj['LastName'] ?? '').toString().trim();
+    }
+    if (fn.isEmpty && ln.isEmpty) {
+      fn = (json['firstName'] ?? json['FirstName'] ?? '').toString().trim();
+      ln = (json['lastName'] ?? json['LastName'] ?? '').toString().trim();
+    }
+
+    String fullName = '';
+    if (ln.isNotEmpty && fn.isNotEmpty) {
+      fullName = '$ln $fn';
+    } else if (fn.isNotEmpty) {
+      fullName = fn;
+    } else if (ln.isNotEmpty) {
+      fullName = ln;
+    } else {
+      fullName =
+          json['customerName'] as String? ??
+          json['CustomerName'] as String? ??
+          json['name'] as String? ??
+          json['Name'] as String? ??
+          json['userName'] as String? ??
+          json['UserName'] as String? ??
+          'Khách hàng';
+    }
+
+    final init = calculateInitials(fullName);
 
     final rawScore =
         json['overallScore'] ??
@@ -168,9 +268,10 @@ class HomeReviewItem {
         json['CreatedAt'] ??
         json['createdDate'] ??
         json['CreatedDate'];
-    String timeAgoStr = '2 ngày trước';
+    DateTime? parsedDate;
+    String timeAgoStr = '1 ngày trước';
     if (rawDate != null) {
-      final parsedDate = DateTime.tryParse(rawDate.toString());
+      parsedDate = DateTime.tryParse(rawDate.toString());
       if (parsedDate != null) {
         final diff = DateTime.now().difference(parsedDate.toLocal());
         if (diff.inDays > 30) {
@@ -193,6 +294,7 @@ class HomeReviewItem {
           json['bookingRatingId']?.toString() ??
           json['BookingRatingId']?.toString() ??
           '',
+      customerId: customerId,
       name: fullName,
       initials: init,
       review:
@@ -203,6 +305,7 @@ class HomeReviewItem {
           'Dịch vụ rất tuyệt vời!',
       stars: scoreInt.clamp(1, 5),
       timeAgo: timeAgoStr,
+      createdAt: parsedDate,
       imageUrl: imageUrl,
     );
   }

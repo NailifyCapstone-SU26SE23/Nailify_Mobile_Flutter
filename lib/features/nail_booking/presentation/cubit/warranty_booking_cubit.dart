@@ -51,7 +51,12 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
     final warrantyItems = <Map<String, dynamic>>[];
     if (rawItems is List) {
       for (final e in rawItems) {
-        if (e is Map) warrantyItems.add(Map<String, dynamic>.from(e));
+        if (e is Map) {
+          final itemMap = Map<String, dynamic>.from(e);
+          if (_isNailItem(itemMap)) {
+            warrantyItems.add(itemMap);
+          }
+        }
       }
     }
 
@@ -532,6 +537,7 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
       }
       if (remaining <= 0) {
         _holdTimer?.cancel();
+        cancelCurrentHold();
         emit(
           state.copyWith(
             clearHoldToken: true,
@@ -888,6 +894,38 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
     final m = date.month.toString().padLeft(2, '0');
     final d = date.day.toString().padLeft(2, '0');
     return '$y-$m-${d}T00:00:00';
+  }
+
+  static bool _isNailItem(Map<String, dynamic> item) {
+    final nailVariantId = item['nailVariantId'] ?? item['NailVariantId'];
+    final nailVariantName = item['nailVariantName'] ?? item['NailVariantName'];
+    final customerNailId = item['customerNailId'] ?? item['CustomerNailId'];
+    final customerNailName = item['customerNailName'] ?? item['CustomerNailName'];
+    final customerNailRequestId =
+        item['customerNailRequestId'] ?? item['CustomerNailRequestId'];
+
+    if (nailVariantId != null &&
+        int.tryParse(nailVariantId.toString()) != null &&
+        int.tryParse(nailVariantId.toString())! > 0) {
+      return true;
+    }
+    if (nailVariantName != null &&
+        nailVariantName.toString().trim().isNotEmpty) {
+      return true;
+    }
+    if (customerNailId != null &&
+        customerNailId.toString().trim().isNotEmpty) {
+      return true;
+    }
+    if (customerNailName != null &&
+        customerNailName.toString().trim().isNotEmpty) {
+      return true;
+    }
+    if (customerNailRequestId != null &&
+        customerNailRequestId.toString().trim().isNotEmpty) {
+      return true;
+    }
+    return false;
   }
 
   String _readableError(Object e) {

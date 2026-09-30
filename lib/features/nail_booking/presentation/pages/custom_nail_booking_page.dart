@@ -915,7 +915,6 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                     value: method.shapeMethodConfigId,
                     groupValue: _selectedShapeMethodConfigId,
                     onChanged: (_) {
-                      _cancelCurrentHold();
                       setState(() {
                         _selectedShapeMethod = method;
                         _priceReview = null;
@@ -1327,7 +1326,9 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                   )
                 else if (hasSelected)
                   Text(
-                    '${selectedVoucher!.promotionName} (-${selectedVoucher.displayDiscount})',
+                    _selectedPromotions.length > 1
+                        ? 'Đã chọn ${_selectedPromotions.length} voucher'
+                        : '${selectedVoucher!.promotionName} (-${selectedVoucher.displayDiscount})',
                     style: const TextStyle(
                       color: Color(0xFFE02B6D),
                       fontSize: 12,
@@ -1924,11 +1925,12 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   String _formatDiscountDisplay(String value) {
     var text = value.trim();
     if (text.isEmpty) return text;
-    text = text.replaceAll(RegExp(r'^-+'), '');
-    text = '-$text';
-    final lower = text.toLowerCase();
-    if (lower.contains('đ') || lower.contains('vnd')) return text;
-    return '$text VNĐ';
+    text = text.replaceAll(RegExp(r'^-+'), '').trim();
+    if (text.endsWith('%')) {
+      return '-$text';
+    }
+    text = text.replaceAll(RegExp(r'\s*(d|đ|vnd|vnđ)\s*$', caseSensitive: false), '').trim();
+    return '-$text VNĐ';
   }
 
   Widget _buildFooter() {

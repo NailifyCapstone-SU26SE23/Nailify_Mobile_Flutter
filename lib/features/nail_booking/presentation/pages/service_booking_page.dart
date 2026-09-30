@@ -372,16 +372,16 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
       return;
     }
     if (_currentStep == 2 && state.selectedDate == null) {
-      _showSnackBar('Vui lòng chọn ngày hẹn!');
+      _showSnackBar(S.of(context).pleaseSelectBookingDate);
       return;
     }
     if (_currentStep == 3) {
       if (!state.noArtistSelected && state.selectedStylist == null) {
-        _showSnackBar('Vui lòng chọn thợ nail hoặc chọn "Để Nailify sắp xếp"!');
+        _showSnackBar(S.of(context).pleaseSelectArtistOrAutoAssign);
         return;
       }
       if (state.selectedTime == null) {
-        _showSnackBar('Vui lòng chọn khung giờ rảnh!');
+        _showSnackBar(S.of(context).pleaseSelectTimeSlot);
         return;
       }
       if (state.holdToken == null || !state.isHolding) {
@@ -718,7 +718,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                       ),
                       child: Center(
                         child: Text(
-                          'Tự chọn thợ',
+                          S.of(context).choosePreferredArtist,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -754,7 +754,7 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                       ),
                       child: Center(
                         child: Text(
-                          'Để Nailify sắp xếp',
+                          S.of(context).letNailifyAssign,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -1152,9 +1152,11 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        hasSelected
-                            ? '${selectedVoucher.promotionName} (-${selectedVoucher.displayDiscount})'
-                            : 'Chưa chọn voucher',
+                        promos.length > 1
+                            ? 'Đã chọn ${promos.length} voucher'
+                            : (hasSelected
+                                ? '${selectedVoucher.promotionName} (-${selectedVoucher.displayDiscount})'
+                                : 'Chưa chọn voucher'),
                         style: TextStyle(
                           color: hasSelected
                               ? const Color(0xFFE02B6D)

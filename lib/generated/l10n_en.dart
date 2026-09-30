@@ -574,8 +574,7 @@ class SEn extends S {
       'An error occurred while fetching recommended nail design based on your preferences.';
 
   @override
-  String get tryChangeFilter =>
-      'Try changing the month, year, or status filter.';
+  String get tryChangeFilter => 'Try changing the date or status filter.';
 
   @override
   String get bookNowHint => 'Book a nail appointment now to get started!';
@@ -1420,6 +1419,15 @@ class SEn extends S {
   String get bookingServicesBooked => 'Services Booked';
 
   @override
+  String get bookingServiceNameHeader => 'Service Name';
+
+  @override
+  String get bookingQuantityHeader => 'Quantity';
+
+  @override
+  String get bookingPriceHeader => 'Price';
+
+  @override
   String bookingQuantityLabel(String qty) {
     return 'Qty: $qty';
   }
@@ -2078,10 +2086,13 @@ class SEn extends S {
   String get bookingAppliedOffers => 'Applied Offers';
 
   @override
-  String get arTryOnTitle => 'AR Try-On';
+  String get arTryOnTitle => 'Virtual Try-On';
 
   @override
-  String get arTryOnSubtitle => '3D Nail Experience';
+  String get arTryOnSubtitle => 'Virtual Nail Experience';
+
+  @override
+  String get allStars => 'All stars';
 
   @override
   String get aiMatchStyleSubtitle => 'Style Recommendation';

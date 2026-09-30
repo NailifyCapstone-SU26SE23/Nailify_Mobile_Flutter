@@ -41,6 +41,8 @@ class SignalRService {
   final _customNailRejectedCtrl =
       StreamController<CustomNailRejectedEvent>.broadcast();
   final _slotStatusChangedCtrl = StreamController<SlotStatusChangedEvent>.broadcast();
+  final _artistReassignedCtrl =
+      StreamController<ArtistReassignedEvent>.broadcast();
 
   Stream<WaitlistPromotedEvent> get onWaitlistPromoted => _promotedCtrl.stream;
   Stream<WaitlistExpiredEvent> get onWaitlistExpired => _expiredCtrl.stream;
@@ -63,6 +65,8 @@ class SignalRService {
   Stream<CustomNailRejectedEvent> get onCustomNailRejected =>
       _customNailRejectedCtrl.stream;
   Stream<SlotStatusChangedEvent> get onSlotStatusChanged => _slotStatusChangedCtrl.stream;
+  Stream<ArtistReassignedEvent> get onArtistReassigned =>
+      _artistReassignedCtrl.stream;
 
   bool get isConnected => _isConnected;
 
@@ -349,6 +353,27 @@ class SignalRService {
             _customNailRejectedCtrl.add(payload);
             break;
 
+          case 'ArtistReassigned':
+          case 'ARTIST_REASSIGNED':
+          case 'artist_reassigned':
+          case 'ArtistReassignedEvent':
+            final payload = payloadMap != null
+                ? ArtistReassignedEvent.fromJson(payloadMap)
+                : ArtistReassignedEvent(
+                    bookingId: payloadMap?['bookingId']?.toString() ??
+                        payloadMap?['BookingId']?.toString() ??
+                        '',
+                    newArtistName: payloadMap?['newArtistName']?.toString() ??
+                        payloadMap?['NewArtistName']?.toString() ??
+                        'Thợ mới',
+                    message: rawPayload?.toString() ??
+                        'Lịch hẹn của bạn đã được chuyển sang thợ làm móng mới.',
+                  );
+            debugPrint(
+                '[SignalR] 🔵 Phá sóng ArtistReassigned: ${payload.message}');
+            _artistReassignedCtrl.add(payload);
+            break;
+
           case 'SlotStatusChanged':
             if (payloadMap != null) {
               _slotStatusChangedCtrl.add(SlotStatusChangedEvent.fromJson(payloadMap));
@@ -362,6 +387,29 @@ class SignalRService {
         }
       } catch (e) {
         debugPrint('[SignalR] Lỗi xử lý ReceiveNotification: $e');
+      }
+    });
+
+    // Lắng nghe trực tiếp method "ArtistReassigned" nếu backend bắn trực tiếp
+    _hub!.on('ArtistReassigned', (args) {
+      try {
+        if (args == null || args.isEmpty) return;
+        final rawData = args[0];
+        final Map<String, dynamic>? payloadMap = rawData is Map
+            ? Map<String, dynamic>.from(rawData)
+            : null;
+        final payload = payloadMap != null
+            ? ArtistReassignedEvent.fromJson(payloadMap)
+            : ArtistReassignedEvent(
+                bookingId: '',
+                newArtistName: rawData?.toString() ?? 'Thợ mới',
+                message: 'Lịch hẹn của bạn đã được chuyển sang thợ làm móng mới.',
+              );
+        debugPrint(
+            '[SignalR] 🔵 Phá sóng ArtistReassigned (Direct): ${payload.message}');
+        _artistReassignedCtrl.add(payload);
+      } catch (e) {
+        debugPrint('[SignalR] Lỗi xử lý ArtistReassigned direct: $e');
       }
     });
 
@@ -432,5 +480,6 @@ class SignalRService {
     _customNailQuotedCtrl.close();
     _customNailRejectedCtrl.close();
     _slotStatusChangedCtrl.close();
+    _artistReassignedCtrl.close();
   }
 }

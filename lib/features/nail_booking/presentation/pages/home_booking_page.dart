@@ -157,6 +157,50 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
       _noArtistSelected = false;
     }
 
+    if (init['serviceIds'] is List) {
+      _selectedExtraServices = List<String?>.from(
+        (init['serviceIds'] as List).map((e) => e.toString()),
+      );
+    }
+
+    if (init['nailVariantId'] != null) {
+      final vId = int.tryParse(init['nailVariantId'].toString());
+      if (vId != null && vId > 0) {
+        _selectedNailVariant = NailVariantModel(
+          nailVariantId: vId,
+          name: init['nailVariantName']?.toString() ?? 'Mẫu móng',
+          nailShapeId: 0,
+          nailSurfaceId: 0,
+          nailDesignId: 0,
+          price: 0,
+          duration: 0,
+          imageUrl: init['nailVariantImageUrl']?.toString() ?? '',
+        );
+      }
+    }
+
+    if (init['shapeMethodConfigId'] != null) {
+      final sId = int.tryParse(init['shapeMethodConfigId'].toString());
+      if (sId != null && sId > 0) {
+        _selectedShapeMethod = ShapeMethodConfigModel(
+          shapeMethodConfigId: sId,
+          nailShapeId: 0,
+          nailShapeName: '',
+          name: init['shapeMethodName']?.toString() ?? 'Phom dáng',
+          price: 0,
+          duration: 0,
+          status: 'Active',
+        );
+      }
+    }
+
+    if (init['date'] is DateTime) {
+      _selectedDate = init['date'] as DateTime;
+    }
+    if (init['time'] != null) {
+      _selectedTime = init['time'].toString();
+    }
+
     if (_selectedBranch != null && _selectedStylist != null) {
       _currentStep = 2;
     } else if (_selectedBranch != null) {

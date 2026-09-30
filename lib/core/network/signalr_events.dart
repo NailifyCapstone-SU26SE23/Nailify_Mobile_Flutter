@@ -351,3 +351,35 @@ class SlotStatusChangedEvent {
     );
   }
 }
+
+/// Sự kiện: Thợ (Nail Artist) làm móng được phân công lại cho đơn đặt lịch
+class ArtistReassignedEvent {
+  final String bookingId;
+  final String newArtistName;
+  final String message;
+
+  const ArtistReassignedEvent({
+    required this.bookingId,
+    required this.newArtistName,
+    required this.message,
+  });
+
+  factory ArtistReassignedEvent.fromJson(Map<String, dynamic> json) {
+    final bId =
+        json['bookingId']?.toString() ?? json['BookingId']?.toString() ?? '';
+    final artistName = json['newArtistName']?.toString() ??
+        json['NewArtistName']?.toString() ??
+        json['artistName']?.toString() ??
+        json['ArtistName']?.toString() ??
+        'Thợ mới';
+    final msgText = json['message']?.toString() ??
+        json['Message']?.toString() ??
+        'Đơn đặt lịch của bạn đã được chuyển sang thợ làm móng mới: $artistName.';
+
+    return ArtistReassignedEvent(
+      bookingId: bId,
+      newArtistName: artistName,
+      message: msgText,
+    );
+  }
+}

@@ -83,9 +83,133 @@ class _WaitlistCheckoutSheetState extends State<WaitlistCheckoutSheet> {
     }
   }
 
+  void _handleChangeServices(BuildContext context) {
+    Navigator.pop(context); // Đóng modal
+
+    final items = widget.waitlist.waitlistItems;
+    final String? salonId = widget.waitlist.salonId;
+    final String salonName = widget.waitlist.salonName;
+    final String? artistId = widget.waitlist.staffId;
+    final String artistName = widget.waitlist.staffName;
+
+    final List<String> serviceIds = items
+        .map((e) => e.serviceId)
+        .whereType<String>()
+        .where((s) => s.trim().isNotEmpty)
+        .toList();
+
+    int? nailVariantId;
+    String? nailVariantName;
+    String? nailVariantImageUrl;
+    for (final it in items) {
+      if (it.nailVariantId != null && it.nailVariantId! > 0) {
+        nailVariantId = it.nailVariantId;
+        nailVariantName = it.nailVariantName;
+        nailVariantImageUrl = it.nailVariantImageUrl;
+        break;
+      }
+    }
+
+    int? customerNailId;
+    String? customerNailName;
+    String? customerNailImageUrl;
+    for (final it in items) {
+      if (it.customerNailId != null && it.customerNailId! > 0) {
+        customerNailId = it.customerNailId;
+        customerNailName = it.customerNailName;
+        customerNailImageUrl = it.customerNailImageUrl;
+        break;
+      }
+    }
+
+    String? customerNailRequestId;
+    for (final it in items) {
+      if (it.customerNailRequestId != null &&
+          it.customerNailRequestId!.trim().isNotEmpty) {
+        customerNailRequestId = it.customerNailRequestId;
+        break;
+      }
+    }
+
+    int? shapeConfigId;
+    String? shapeConfigName;
+    for (final it in items) {
+      if (it.shapeMethodConfigId != null && it.shapeMethodConfigId! > 0) {
+        shapeConfigId = it.shapeMethodConfigId;
+        shapeConfigName = it.shapeMethodConfigName;
+        break;
+      }
+    }
+
+    final Map<String, dynamic> bookingExtra = {
+      if (salonId != null && salonId.isNotEmpty)
+        'salon': {
+          'salonId': salonId,
+          'name': salonName,
+        },
+      if (artistId != null && artistId.isNotEmpty)
+        'artist': {
+          'nailArtistId': artistId,
+          'fullName': artistName,
+          'salonId': salonId ?? '',
+        },
+      'date': widget.waitlist.date,
+      'time': widget.waitlist.time,
+      'serviceIds': serviceIds,
+      if (nailVariantId != null) 'nailVariantId': nailVariantId,
+      if (nailVariantName != null) 'nailVariantName': nailVariantName,
+      if (nailVariantImageUrl != null) 'nailVariantImageUrl': nailVariantImageUrl,
+      if (customerNailId != null) 'customerNailId': customerNailId,
+      if (customerNailName != null) 'customerNailName': customerNailName,
+      if (customerNailImageUrl != null) 'customerNailImageUrl': customerNailImageUrl,
+      if (customerNailRequestId != null) 'customerNailRequestId': customerNailRequestId,
+      if (shapeConfigId != null) 'shapeMethodConfigId': shapeConfigId,
+      if (shapeConfigName != null) 'shapeMethodName': shapeConfigName,
+      'waitlistItems': items.map((e) => e.toJson()).toList(),
+    };
+
+    context.push('/home-booking', extra: bookingExtra);
+  }
+
+  String _clean(String? s) {
+    if (s == null) return '';
+    final trimmed = s.trim();
+    if (trimmed.toLowerCase() == 'string') return '';
+    return trimmed;
+  }
+
+  String _getCleanTitle(WaitlistItemModel item) {
+    final vName = _clean(item.nailVariantName);
+    if (vName.isNotEmpty) return vName;
+
+    final cName = _clean(item.customerNailName);
+    if (cName.isNotEmpty) return cName;
+
+    final sName = _clean(item.serviceName);
+    if (sName.isNotEmpty) return sName;
+
+    final shapeName = _clean(item.shapeMethodConfigName);
+    if (shapeName.isNotEmpty) return 'Làm dáng móng: $shapeName';
+
+    if (widget.waitlist.services.isNotEmpty) {
+      return widget.waitlist.services.first;
+    }
+
+    return 'Dịch vụ làm móng';
+  }
+
+  String? _getCleanImgUrl(WaitlistItemModel item) {
+    final vUrl = _clean(item.nailVariantImageUrl);
+    if (vUrl.startsWith('http')) return vUrl;
+    final cUrl = _clean(item.customerNailImageUrl);
+    if (cUrl.startsWith('http')) return cUrl;
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final dateStr = "${widget.waitlist.date.day.toString().padLeft(2, '0')}/${widget.waitlist.date.month.toString().padLeft(2, '0')}/${widget.waitlist.date.year}";
+    final isOpened = widget.waitlist.status == WaitlistStatus.opened;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -100,9 +224,9 @@ class _WaitlistCheckoutSheetState extends State<WaitlistCheckoutSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Xác nhận Lịch hẹn',
-                style: TextStyle(
+              Text(
+                isOpened ? 'Xác nhận Lịch hẹn' : 'Chi tiết Lịch chờ',
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
@@ -116,7 +240,7 @@ class _WaitlistCheckoutSheetState extends State<WaitlistCheckoutSheet> {
           ),
           const SizedBox(height: 16),
           
-          // Thêm tóm tắt thời gian
+          // Thêm tóm tắt thời gian & thợ
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -137,7 +261,7 @@ class _WaitlistCheckoutSheetState extends State<WaitlistCheckoutSheet> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        widget.waitlist.salonName,
+                        '${widget.waitlist.salonName} • Thợ: ${widget.waitlist.staffName}',
                         style: const TextStyle(color: Colors.grey, fontSize: 12),
                       ),
                     ],
@@ -146,123 +270,287 @@ class _WaitlistCheckoutSheetState extends State<WaitlistCheckoutSheet> {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
 
-          // Chọn Voucher
-          GestureDetector(
-            onTap: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (_) => BookingPromotionSheet(
-                  selectedPromotions: _selectedPromotions,
-                  onConfirm: (list) {
-                    setState(() {
-                      _selectedPromotions = list;
-                    });
-                  },
-                ),
-              );
-            },
-            child: Row(
+          // ── CHI TIẾT MẪU NAIL & DỊCH VỤ ĐÃ ĐẶT ───────────────────────────
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF7F9),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFFCE3EC)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFFFF0F5),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.confirmation_number_rounded,
-                    size: 20,
-                    color: Color(0xFFE02B6D),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    _selectedPromotions.isNotEmpty 
-                        ? 'Đã chọn ${_selectedPromotions.length} voucher'
-                        : 'Voucher giảm giá',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: AppColors.primaryDark,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.brush_rounded, size: 16, color: AppColors.primary),
+                        SizedBox(width: 6),
+                        Text(
+                          'Dịch vụ & Mẫu nail đã chọn',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: AppColors.primaryDark,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
+                    InkWell(
+                      onTap: () => _handleChangeServices(context),
+                      borderRadius: BorderRadius.circular(8),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit_rounded, size: 14, color: AppColors.primary),
+                            SizedBox(width: 4),
+                            Text(
+                              'Thay đổi dịch vụ',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const Icon(Icons.chevron_right, color: Colors.grey),
+                const SizedBox(height: 8),
+                const Divider(height: 1, color: Color(0xFFFCE3EC)),
+                const SizedBox(height: 8),
+                if (widget.waitlist.waitlistItems.isNotEmpty)
+                  ...widget.waitlist.waitlistItems.map((item) {
+                    final imgUrl = _getCleanImgUrl(item);
+                    final title = _getCleanTitle(item);
+                    final shapeName = _clean(item.shapeMethodConfigName);
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          if (imgUrl != null && imgUrl.isNotEmpty)
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: Image.network(
+                                imgUrl,
+                                width: 28,
+                                height: 28,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const Icon(Icons.spa_rounded, size: 18, color: AppColors.primary),
+                              ),
+                            )
+                          else
+                            const Icon(Icons.check_circle_outline_rounded, size: 18, color: AppColors.primary),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  title,
+                                  style: const TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                if (shapeName.isNotEmpty)
+                                  Text(
+                                    'Phom: $shapeName',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          if (item.quantity != null && item.quantity! > 1)
+                            Text(
+                              'x${item.quantity}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                        ],
+                      ),
+                    );
+                  })
+                else if (widget.waitlist.services.isNotEmpty)
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: widget.waitlist.services.map((s) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFFCE3EC)),
+                        ),
+                        child: Text(
+                          s,
+                          style: const TextStyle(fontSize: 11.5, color: AppColors.textPrimary),
+                        ),
+                      );
+                    }).toList(),
+                  )
+                else
+                  Text(
+                    'Chưa có thông tin dịch vụ chi tiết',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+                  ),
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          const Divider(),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
 
-          // Toggle Wallet
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.account_balance_wallet_rounded,
-                  size: 20,
-                  color: Colors.amber,
-                ),
+          if (isOpened) ...[
+            // Chọn Voucher
+            GestureDetector(
+              onTap: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => BookingPromotionSheet(
+                    selectedPromotions: _selectedPromotions,
+                    onConfirm: (list) {
+                      setState(() {
+                        _selectedPromotions = list;
+                      });
+                    },
+                  ),
+                );
+              },
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFFF0F5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.confirmation_number_rounded,
+                      size: 20,
+                      color: Color(0xFFE02B6D),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _selectedPromotions.isNotEmpty 
+                          ? 'Đã chọn ${_selectedPromotions.length} voucher'
+                          : 'Voucher giảm giá',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: AppColors.primaryDark,
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, color: Colors.grey),
+                ],
               ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  'Sử dụng số dư ví',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+            ),
+            const SizedBox(height: 12),
+            const Divider(),
+            const SizedBox(height: 12),
+
+            // Toggle Wallet
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.account_balance_wallet_rounded,
+                    size: 20,
+                    color: Colors.amber,
                   ),
                 ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Sử dụng số dư ví',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                Switch(
+                  value: _useWalletBalance,
+                  activeColor: AppColors.primary,
+                  onChanged: (val) {
+                    setState(() {
+                      _useWalletBalance = val;
+                    });
+                  },
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // Nút Xác nhận
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: _isConfirming ? null : _handleConfirm,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: _isConfirming
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
+                    : const Text(
+                        'Xác nhận & Tạo Lịch',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
               ),
-              Switch(
-                value: _useWalletBalance,
-                activeColor: AppColors.primary,
-                onChanged: (val) {
-                  setState(() {
-                    _useWalletBalance = val;
-                  });
-                },
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: 32),
-          
-          // Nút Xác nhận
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
-              onPressed: _isConfirming ? null : _handleConfirm,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            ),
+          ] else ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton(
+                onPressed: () => Navigator.pop(context),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: Colors.grey.shade300),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Đóng',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                 ),
               ),
-              child: _isConfirming
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                    )
-                  : const Text(
-                      'Xác nhận & Tạo Lịch',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                    ),
             ),
-          ),
+          ],
           const SizedBox(height: 16),
         ],
       ),

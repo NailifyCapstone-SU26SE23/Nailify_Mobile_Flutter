@@ -433,7 +433,7 @@ class SVi extends S {
   String get statusPending => 'Chờ duyệt';
 
   @override
-  String get statusApproved => 'Sẵn sàng đặt lịch';
+  String get statusApproved => 'Đã duyệt';
 
   @override
   String get statusAssigned => 'Đã gán thợ';
@@ -575,8 +575,7 @@ class SVi extends S {
       'Đã xảy ra lỗi khi lấy gợi ý cấu hình móng từ sở thích của bạn.';
 
   @override
-  String get tryChangeFilter =>
-      'Thử thay đổi bộ lọc tháng, năm hoặc trạng thái.';
+  String get tryChangeFilter => 'Thử thay đổi bộ lọc ngày hoặc trạng thái.';
 
   @override
   String get bookNowHint => 'Hãy đặt ngay một lịch làm móng để trải nghiệm!';
@@ -1422,6 +1421,15 @@ class SVi extends S {
   String get bookingServicesBooked => 'Dịch vụ đã đặt';
 
   @override
+  String get bookingServiceNameHeader => 'Tên dịch vụ';
+
+  @override
+  String get bookingQuantityHeader => 'Số lượng';
+
+  @override
+  String get bookingPriceHeader => 'Giá';
+
+  @override
   String bookingQuantityLabel(String qty) {
     return 'SL: $qty';
   }
@@ -1460,10 +1468,10 @@ class SVi extends S {
   String get bookingNotFound => 'Không tìm thấy thông tin lịch hẹn.';
 
   @override
-  String get bookingPaidAmount => 'Đã thanh toán:';
+  String get bookingPaidAmount => 'Tiền cọc (Đã trả):';
 
   @override
-  String get bookingRemainingAmount => 'Còn lại:';
+  String get bookingRemainingAmount => 'Còn lại cần trả:';
 
   @override
   String get bookingYourRating => 'Đánh giá của bạn';
@@ -1934,7 +1942,7 @@ class SVi extends S {
 
   @override
   String get warrantyServiceNote =>
-      'Các dịch vụ bảo hành đã được liệt kê sẵn từ lịch hẹn trước. Bạn có thể bỏ chọn nếu không cần bảo hành mục nào.';
+      'Các dịch vụ bảo hành từ lịch hẹn trước của bạn được tự động áp dụng miễn phí.';
 
   @override
   String get warrantySuccessTitle => 'Đặt lịch bảo hành thành công!';
@@ -2078,4 +2086,142 @@ class SVi extends S {
 
   @override
   String get bookingAppliedOffers => 'Ưu đãi được áp dụng';
+
+  @override
+  String get arTryOnTitle => 'Thử móng ảo';
+
+  @override
+  String get arTryOnSubtitle => 'Trải nghiệm móng ảo';
+
+  @override
+  String get allStars => 'Tất cả sao';
+
+  @override
+  String get aiMatchStyleSubtitle => 'Gợi ý phong cách';
+
+  @override
+  String get tagRecommend => 'GỢI Ý';
+
+  @override
+  String get tagHot => 'HOT';
+
+  @override
+  String get exploreBtn => 'Khám phá';
+
+  @override
+  String get customerDefault => 'Khách hàng';
+
+  @override
+  String get justNow => 'Vừa xong';
+
+  @override
+  String get retakePhoto => 'Chụp lại';
+
+  @override
+  String get takePhotoButton => 'Chụp ảnh';
+
+  @override
+  String get chooseFromGalleryButton => 'Chọn từ máy';
+
+  @override
+  String get noNailDetected => 'Không nhận diện được móng nào trong ảnh này.';
+
+  @override
+  String timeMinutesAgo(String n) {
+    return '$n phút trước';
+  }
+
+  @override
+  String timeHoursAgo(String n) {
+    return '$n tiếng trước';
+  }
+
+  @override
+  String timeDaysAgo(String n) {
+    return '$n ngày trước';
+  }
+
+  @override
+  String timeMonthsAgo(String n) {
+    return '$n tháng trước';
+  }
+
+  @override
+  String get quickBookingTitle => 'Đặt lịch nhanh';
+
+  @override
+  String get choosePreferredArtist => 'Tự chọn thợ quen';
+
+  @override
+  String get letNailifyAssign => 'Để Nailify sắp xếp';
+
+  @override
+  String get pleaseSelectArtistOrAutoAssign =>
+      'Vui lòng chọn thợ nail hoặc chọn \"Để Nailify sắp xếp\"!';
+
+  @override
+  String get chooseServiceTitle => 'Chọn dịch vụ cho bạn';
+
+  @override
+  String get chooseServiceSubtitle =>
+      'Thỏa sức sáng tạo với bộ nail mới hoặc thêm dịch vụ đi kèm';
+
+  @override
+  String get doNailsTab => 'Làm nail';
+
+  @override
+  String get otherServicesTab => 'Dịch vụ khác';
+
+  @override
+  String get pleaseSelectArtistFirst => 'Vui lòng chọn thợ trước';
+
+  @override
+  String get pleaseSelectArtistFirstDesc =>
+      'Để xem các mẫu nail mà thợ có thể thực hiện, hãy quay lại bước chọn thợ nhé.';
+
+  @override
+  String get artistHasNoNailVariants => 'Thợ này chưa có mẫu nail nào';
+
+  @override
+  String get artistHasNoNailVariantsDesc =>
+      'Bạn vẫn có thể chọn dịch vụ khác ở tab bên cạnh.';
+
+  @override
+  String get cannotLoadNailVariants => 'Không tải được danh sách nail';
+
+  @override
+  String get detailsBtn => 'Chi tiết';
+
+  @override
+  String get selectBtn => 'Chọn';
+
+  @override
+  String get selectedBtn => 'Đã chọn';
+
+  @override
+  String get pleaseSelectServiceMin =>
+      'Vui lòng chọn ít nhất một mẫu nail hoặc dịch vụ!';
+
+  @override
+  String get pleaseSelectBookingDate => 'Vui lòng chọn ngày đặt lịch!';
+
+  @override
+  String get pleaseSelectTimeSlot => 'Vui lòng chọn khung giờ rảnh!';
+
+  @override
+  String get cannotHoldSlot =>
+      'Không thể giữ khung giờ này. Vui lòng chọn giờ khác.';
+
+  @override
+  String get holdTimeExpired =>
+      'Thời gian giữ chỗ đã hết. Vui lòng chọn lại khung giờ.';
+
+  @override
+  String get customFee => 'Phí custom';
+
+  @override
+  String get viewTransactions => 'Xem giao dịch';
+
+  @override
+  String get rateServiceBtn => 'Đánh giá dịch vụ';
 }

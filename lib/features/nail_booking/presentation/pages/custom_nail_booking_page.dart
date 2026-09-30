@@ -5,6 +5,8 @@ import '../../../../generated/l10n.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/network/signalr_service.dart';
+import '../../../../core/network/signalr_events.dart';
 import '../../../../core/utils/auth_guard.dart';
 import '../../../../core/utils/duration_formatter.dart';
 import '../../../../core/utils/price_formatter.dart';
@@ -61,6 +63,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   Timer? _holdTimer;
   int _holdRemainingSeconds = 0;
   bool _isHolding = false;
+  StreamSubscription? _slotStatusChangedSub;
 
   Future<List<ShapeMethodConfigModel>>? _shapeMethodsFuture;
   ShapeMethodConfigModel? _selectedShapeMethod;
@@ -96,6 +99,31 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
     _fetchServices();
     _fetchPromotions();
     _fetchWalletBalance();
+
+    final signalR = getIt<SignalRService>();
+    _slotStatusChangedSub = signalR.onSlotStatusChanged.listen(_onSlotStatusChanged);
+  }
+
+  void _onSlotStatusChanged(SlotStatusChangedEvent event) {
+    if (!mounted) return;
+    
+    final currentSalonId = widget.nail.salonId;
+    if (event.salonId.toLowerCase() != currentSalonId.toLowerCase()) return;
+    
+    if (_selectedDate != null) {
+      final String currentFormattedDate = _formatBookingDate(_selectedDate!); 
+      if (!event.bookingDate.startsWith(currentFormattedDate.split('T')[0])) return;
+    }
+
+    final currentArtistId = widget.nail.nailArtistId ?? '';
+    
+    if (currentArtistId.isEmpty || event.artistId.toLowerCase() == currentArtistId.toLowerCase() || event.artistId == '') {
+       if (event.action == 'Held' || event.action == 'Released' || event.action == 'Booked') {
+         if (_currentStep == 1) {
+           _fetchTimeSlots();
+         }
+       }
+    }
   }
 
   Future<void> _fetchWalletBalance() async {
@@ -116,6 +144,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
 
   @override
   void dispose() {
+    _slotStatusChangedSub?.cancel();
     _holdTimer?.cancel();
     _cancelCurrentHold();
     _pageController.dispose();
@@ -148,7 +177,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   }
 
   int get _estimatedTotalPrice {
-    final customPrice = widget.nail.price.round();
+    final basePrice = widget.nail.customerNailPrice.round();
     final shapePrice = (_selectedShapeMethod?.price ?? 0).round();
     int extraPrice = 0;
     for (final id in _selectedExtraServices.whereType<String>()) {
@@ -160,11 +189,11 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
         if (p is num) extraPrice += p.round();
       }
     }
-    return customPrice + shapePrice + extraPrice;
+    return basePrice  + shapePrice + extraPrice;
   }
 
   int get _estimatedTotalDuration {
-    final customDur = widget.nail.duration;
+    final customDur = widget.nail.estimatedDuration ?? 0;
     final shapeDur = _selectedShapeMethod?.duration ?? 0;
     int extraDur = 0;
     for (final id in _selectedExtraServices.whereType<String>()) {
@@ -444,7 +473,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
       // API trả về 400 (ví dụ: "Thợ đã đầy lịch trong khoảng thời gian này...")
       // → hiển thị message server để user biết lý do thay vì message chung chung.
       debugPrint('holdSlot failed: $e');
-      _showHoldFailureMessage(e.toString());
+      _showHoldFailureMessage('Rất tiếc, khung giờ này vừa có người đặt. Vui lòng chọn giờ khác.');
       return false;
     }
   }
@@ -699,9 +728,15 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
       _showSnackBar('Vui long chon hoac xoa dich vu dang bo trong.');
       return;
     }
-    if (_currentStep == 1 && (_selectedDate == null || _selectedTime == null)) {
-      _showSnackBar('Vui long chon ngay va khung gio.');
-      return;
+    if (_currentStep == 1) {
+      if (_selectedDate == null) {
+        _showSnackBar('Vui lòng chọn ngày đặt lịch!');
+        return;
+      }
+      if (_selectedTime == null) {
+        _showSnackBar('Vui lòng chọn khung giờ rảnh!');
+        return;
+      }
     }
 
     if (_currentStep < 2) {
@@ -880,7 +915,6 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                     value: method.shapeMethodConfigId,
                     groupValue: _selectedShapeMethodConfigId,
                     onChanged: (_) {
-                      _cancelCurrentHold();
                       setState(() {
                         _selectedShapeMethod = method;
                         _priceReview = null;
@@ -940,6 +974,7 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
             selectedDate: _selectedDate,
             salonId: widget.nail.salonId,
             artistId: widget.nail.nailArtistId,
+            waitlistItems: _buildBookingItems(),
             onTimeChanged: (time) {
               _cancelCurrentHold();
               setState(() => _selectedTime = time);
@@ -1291,7 +1326,9 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                   )
                 else if (hasSelected)
                   Text(
-                    '${selectedVoucher!.promotionName} (-${selectedVoucher.displayDiscount})',
+                    _selectedPromotions.length > 1
+                        ? 'Đã chọn ${_selectedPromotions.length} voucher'
+                        : '${selectedVoucher!.promotionName} (-${selectedVoucher.displayDiscount})',
                     style: const TextStyle(
                       color: Color(0xFFE02B6D),
                       fontSize: 12,
@@ -1718,6 +1755,8 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
 
   Widget _buildDiscountInvoiceRow(Map<String, dynamic> discount) {
     final name = discount['name']?.toString() ?? 'Ưu đãi';
+    final description = discount['description']?.toString();
+    final isAutoApplied = discount['isAutoApplied'] == true;
     final amount = discount['amount'];
     final amountDisplay = discount['amountDisplay']?.toString();
     final rawDisplay = (amountDisplay?.isNotEmpty == true)
@@ -1725,30 +1764,80 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
         : (amount != null ? PriceFormatter.format(amount) : '');
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(
-              name,
-              style: TextStyle(
-                fontSize: 13.5,
-                color: Colors.grey.shade700,
-                fontWeight: FontWeight.w500,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        name,
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          color: Colors.grey.shade800,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (isAutoApplied) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE02B6D).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: const Color(0xFFE02B6D).withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: const Text(
+                          'Tự động áp dụng',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFFE02B6D),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
-              maxLines: 1,
+              const SizedBox(width: 8),
+              Text(
+                _formatDiscountDisplay(rawDisplay),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13.5,
+                  color: Color(0xFFE02B6D),
+                ),
+              ),
+            ],
+          ),
+          if (description != null && description.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              description,
+              style: TextStyle(
+                fontSize: 11.5,
+                color: Colors.grey.shade500,
+                fontStyle: FontStyle.italic,
+              ),
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-          ),
-          Text(
-            _formatDiscountDisplay(rawDisplay),
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 13.5,
-              color: Color(0xFFE02B6D),
-            ),
-          ),
+          ],
         ],
       ),
     );
@@ -1797,15 +1886,29 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
 
   List<PaymentTableItem> get _paymentTableItems {
     final items = <PaymentTableItem>[];
+    final shape = _selectedShapeMethod;
+    final shapeExtra = (shape != null && shape.price > 0) ? shape.price : 0;
+
+    if (widget.nail.customerNailPrice > 0) {
+      items.add(
+        PaymentTableItem(
+          name: 'Giá mẫu',
+          quantity: 1,
+          unitPrice: widget.nail.customerNailPrice + shapeExtra,
+        ),
+      );
+    }
+
     if (widget.nail.price > 0) {
       items.add(
         PaymentTableItem(
-          name: 'Thiết kế riêng (Custom)',
+          name: 'Phí custom',
           quantity: 1,
           unitPrice: widget.nail.price,
         ),
       );
     }
+
     for (final entry in _groupedServicesMap.entries) {
       final unit = _servicePriceById(entry.key);
       items.add(
@@ -1822,11 +1925,12 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
   String _formatDiscountDisplay(String value) {
     var text = value.trim();
     if (text.isEmpty) return text;
-    text = text.replaceAll(RegExp(r'^-+'), '');
-    text = '-$text';
-    final lower = text.toLowerCase();
-    if (lower.contains('đ') || lower.contains('vnd')) return text;
-    return '$text VNĐ';
+    text = text.replaceAll(RegExp(r'^-+'), '').trim();
+    if (text.endsWith('%')) {
+      return '-$text';
+    }
+    text = text.replaceAll(RegExp(r'\s*(d|đ|vnd|vnđ)\s*$', caseSensitive: false), '').trim();
+    return '-$text VNĐ';
   }
 
   Widget _buildFooter() {

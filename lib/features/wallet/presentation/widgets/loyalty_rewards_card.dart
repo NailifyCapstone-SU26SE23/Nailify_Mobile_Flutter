@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/constants/app_colors.dart';
 import '../../../../generated/l10n_x.dart';
 import '../../data/models/loyalty_tier_model.dart';
 
@@ -12,6 +11,7 @@ class LoyaltyRewardsCard extends StatelessWidget {
   final int? pointsToNext;
   final bool hasNextTier;
   final int usableVoucherCount;
+  final VoidCallback? onConvertPointsPressed;
   final VoidCallback onRedeemPressed;
   final VoidCallback onMyVouchersPressed;
   final VoidCallback onHistoryPressed;
@@ -25,39 +25,96 @@ class LoyaltyRewardsCard extends StatelessWidget {
     required this.pointsToNext,
     required this.hasNextTier,
     required this.usableVoucherCount,
+    this.onConvertPointsPressed,
     required this.onRedeemPressed,
     required this.onMyVouchersPressed,
     required this.onHistoryPressed,
   });
 
+  List<Color> _getTierGradient(LoyaltyTierModel? tier) {
+    // 1. Ưu tiên lấy dải màu trực tiếp từ API nếu backend có trả về backgroundColor
+    final apiColor = tier?.parsedBackgroundColor;
+    if (apiColor != null && apiColor != Colors.transparent) {
+      final darker = Color.lerp(apiColor, Colors.black, 0.35) ?? apiColor;
+      final deepest = Color.lerp(darker, Colors.black, 0.3) ?? darker;
+      return [apiColor, darker, deepest];
+    }
+
+    final tierNameLower = (tier?.name ?? '').toLowerCase();
+
+    // 2. ĐỒNG (Bronze)
+    if (tierNameLower.contains('đồng') ||
+        tierNameLower.contains('dong') ||
+        tierNameLower.contains('bronz')) {
+      return const [
+        Color(0xFFA77044),
+        Color(0xFF7B4A26),
+        Color(0xFF4A2B12),
+      ];
+    }
+
+    // 3. BẠC (Silver)
+    if (tierNameLower.contains('bạc') ||
+        tierNameLower.contains('bac') ||
+        tierNameLower.contains('silv')) {
+      return const [
+        Color(0xFFB0B0B0),
+        Color(0xFF757575),
+        Color(0xFF424242),
+      ];
+    }
+
+    // 4. VÀNG (Gold)
+    if (tierNameLower.contains('vàng') ||
+        tierNameLower.contains('vang') ||
+        tierNameLower.contains('gold')) {
+      return const [
+        Color(0xFFFFD700),
+        Color(0xFFC59B27),
+        Color(0xFF7A5C07),
+      ];
+    }
+
+    // 5. KIM CƯƠNG (Diamond)
+    if (tierNameLower.contains('kim') || tierNameLower.contains('diamond')) {
+      return const [
+        Color(0xFFB9E3DE),
+        Color(0xFF5C8D89),
+        Color(0xFF284845),
+      ];
+    }
+
+    // Default fallback to Silver metallic
+    return const [
+      Color(0xFFB0B0B0),
+      Color(0xFF757575),
+      Color(0xFF424242),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
-    final baseColor = tier?.parsedBackgroundColor ?? AppColors.primary;
-    final tierColor = baseColor == AppColors.primary
-        ? const Color(0xFF6B46C1)
-        : baseColor;
+    final gradientColors = _getTierGradient(tier);
+    final primaryColor = gradientColors[1];
     final tierTextColor = tier?.parsedTextColor ?? Colors.white;
 
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            tierColor,
-            Color.lerp(tierColor, Colors.black, 0.4) ?? tierColor,
-          ],
+          colors: gradientColors,
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(26),
         boxShadow: [
           BoxShadow(
-            color: tierColor.withValues(alpha: 0.35),
+            color: primaryColor.withValues(alpha: 0.35),
             blurRadius: 22,
             offset: const Offset(0, 10),
           ),
         ],
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.18),
+          color: Colors.white.withValues(alpha: 0.25),
           width: 1.5,
         ),
       ),
@@ -86,7 +143,7 @@ class LoyaltyRewardsCard extends StatelessWidget {
                   // 1. Tier Header: Icon, Name, Lifetime points, Discount rate
                   Row(
                     children: [
-                      _buildTierIcon(tierColor),
+                      _buildTierIcon(primaryColor),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Column(
@@ -167,7 +224,7 @@ class LoyaltyRewardsCard extends StatelessWidget {
                       Container(
                         height: 9,
                         decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.25),
+                          color: Colors.white.withValues(alpha: 0.25),
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
@@ -256,6 +313,44 @@ class LoyaltyRewardsCard extends StatelessWidget {
                           ],
                         ),
                       ),
+                      if (onConvertPointsPressed != null) ...[
+                        InkWell(
+                          onTap: onConvertPointsPressed,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFD700).withValues(alpha: 0.22),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFFFFD700).withValues(alpha: 0.4),
+                              ),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(
+                                  Icons.published_with_changes_rounded,
+                                  size: 14,
+                                  color: Color(0xFFFFD700),
+                                ),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Đổi từ ví',
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFFFFD700),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
                       InkWell(
                         onTap: onHistoryPressed,
                         borderRadius: BorderRadius.circular(12),

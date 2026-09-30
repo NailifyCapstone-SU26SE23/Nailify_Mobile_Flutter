@@ -122,7 +122,7 @@ class _SalonDetailPageState extends State<SalonDetailPage> {
                     icon: isOpen
                         ? Icons.check_circle_rounded
                         : Icons.cancel_rounded,
-                    label: isOpen ? 'Đang mở cửa' : 'Tạm đóng cửa',
+                    label: isOpen ? l10n.salonOpenStatus : l10n.salonClosedStatus,
                     color: isOpen ? Colors.green.shade700 : Colors.red.shade700,
                   ),
                 ],
@@ -396,9 +396,9 @@ class _ArtistTile extends StatelessWidget {
                               color: AppColors.primary.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Text(
-                              'Thợ làm móng',
-                              style: TextStyle(
+                            child: Text(
+                              S.of(context).nailArtistLabel,
+                              style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.primary,

@@ -121,8 +121,8 @@ class TicketVoucherWidget extends StatelessWidget {
                             // Radio button representation
                             Icon(
                               isSelected
-                                  ? Icons.radio_button_checked
-                                  : Icons.radio_button_unchecked,
+                                  ? Icons.check_box_rounded
+                                  : Icons.check_box_outline_blank_rounded,
                               color: isSelected
                                   ? AppColors.primary
                                   : Colors.grey.shade400,

@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../nail_booking/data/datasources/booking_api_service.dart';
 
 class RescheduleBookingDialog extends StatefulWidget {
   final String bookingId;
+  final String? salonId;
+  final Map<String, dynamic>? salonData;
+  final Map<String, dynamic>? bookingData;
   final Future<bool> Function(String newDate, String newTime, String reason)
   onConfirm;
 
   const RescheduleBookingDialog({
     super.key,
     required this.bookingId,
+    this.salonId,
+    this.salonData,
+    this.bookingData,
     required this.onConfirm,
   });
 
@@ -16,6 +23,9 @@ class RescheduleBookingDialog extends StatefulWidget {
   static Future<bool?> show({
     required BuildContext context,
     required String bookingId,
+    String? salonId,
+    Map<String, dynamic>? salonData,
+    Map<String, dynamic>? bookingData,
     required Future<bool> Function(
       String newDate,
       String newTime,
@@ -29,8 +39,13 @@ class RescheduleBookingDialog extends StatefulWidget {
       barrierLabel: 'RescheduleBookingDialog',
       barrierColor: Colors.black.withValues(alpha: 0.54),
       transitionDuration: const Duration(milliseconds: 280),
-      pageBuilder: (ctx, anim1, anim2) =>
-          RescheduleBookingDialog(bookingId: bookingId, onConfirm: onConfirm),
+      pageBuilder: (ctx, anim1, anim2) => RescheduleBookingDialog(
+        bookingId: bookingId,
+        salonId: salonId,
+        salonData: salonData,
+        bookingData: bookingData,
+        onConfirm: onConfirm,
+      ),
       transitionBuilder: (ctx, anim1, anim2, child) {
         final curve = CurvedAnimation(
           parent: anim1,
@@ -50,6 +65,8 @@ class RescheduleBookingDialog extends StatefulWidget {
 }
 
 class _RescheduleBookingDialogState extends State<RescheduleBookingDialog> {
+  final BookingApiService _apiService = BookingApiService();
+
   DateTime? _selectedDate;
   String? _selectedTimeStr;
   String _selectedPeriod = 'Sáng'; // 'Sáng', 'Chiều', 'Tối'
@@ -57,41 +74,164 @@ class _RescheduleBookingDialogState extends State<RescheduleBookingDialog> {
   final _formKey = GlobalKey<FormState>();
   bool _isSubmitting = false;
 
-  List<String> _getSlotsForPeriod(String period) {
-    if (period == 'Sáng') {
-      return [
-        "08:00",
-        "08:30",
-        "09:00",
-        "09:30",
-        "10:00",
-        "10:30",
-        "11:00",
-        "11:30",
-      ];
-    } else if (period == 'Chiều') {
-      return [
-        "13:00",
-        "13:30",
-        "14:00",
-        "14:30",
-        "15:00",
-        "15:30",
-        "16:00",
-        "16:30",
-        "17:00",
-        "17:30",
-      ];
-    } else {
-      return ["18:00", "18:30", "19:00", "19:30", "20:00"];
+  Map<String, dynamic>? _salonData;
+  bool _isLoadingSlots = false;
+  List<Map<String, dynamic>> _rawTimeSlots = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _initSalonData();
+  }
+
+  Future<void> _initSalonData() async {
+    if (widget.salonData != null) {
+      _salonData = widget.salonData;
+    } else if (widget.bookingData?['salon'] is Map) {
+      _salonData = Map<String, dynamic>.from(widget.bookingData!['salon'] as Map);
     }
+
+    final salonId = widget.salonId ??
+        widget.bookingData?['salonId']?.toString() ??
+        _salonData?['salonId']?.toString() ??
+        '';
+
+    if ((_salonData == null || _salonData!['operatingHours'] == null) &&
+        salonId.isNotEmpty) {
+      try {
+        final detail = await _apiService.getSalonDetail(salonId);
+        if (detail != null && mounted) {
+          setState(() {
+            _salonData = detail;
+          });
+        }
+      } catch (e) {
+        debugPrint('Error fetching salon detail for reschedule: $e');
+      }
+    }
+  }
+
+  Future<void> _loadSlotsForDate(DateTime date) async {
+    setState(() {
+      _isLoadingSlots = true;
+      _rawTimeSlots = [];
+      _selectedTimeStr = null;
+    });
+
+    final salonId = widget.salonId ??
+        widget.bookingData?['salonId']?.toString() ??
+        _salonData?['salonId']?.toString() ??
+        '';
+    final artistId = widget.bookingData?['nailArtistId']?.toString() ??
+        widget.bookingData?['artistId']?.toString();
+    final itemsRaw = widget.bookingData?['bookingItems'];
+    final List<Map<String, dynamic>> bookingItems = [];
+    if (itemsRaw is List) {
+      for (final item in itemsRaw) {
+        if (item is Map) bookingItems.add(Map<String, dynamic>.from(item));
+      }
+    }
+
+    final dateStr =
+        '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+    List<dynamic> slots = [];
+    try {
+      if (artistId != null && artistId.isNotEmpty) {
+        slots = await _apiService.getArtistAvailableSlots(
+          artistId,
+          dateStr,
+          bookingItems: bookingItems,
+        );
+      } else if (salonId.isNotEmpty) {
+        slots = await _apiService.getSalonAvailableSlots(
+          salonId: salonId,
+          bookingDate: dateStr,
+          bookingItems: bookingItems,
+        );
+      }
+    } catch (e) {
+      debugPrint('Error loading API slots for reschedule: $e');
+    }
+
+    // Fallback nếu API trả về rỗng nhưng có thông tin salon operatingHours
+    if (slots.isEmpty && _salonData != null) {
+      slots = _apiService.getSalonOperatingSlots(_salonData!, date);
+    }
+
+    // Lọc theo giờ hoạt động salon nếu có thông tin salon
+    if (_salonData != null && slots.isNotEmpty) {
+      slots = _apiService.filterSlotsByOperatingHours(
+        slots: slots,
+        salon: _salonData,
+        date: date,
+      );
+    }
+
+    final parsedSlots =
+        slots.whereType<Map>().map((s) => Map<String, dynamic>.from(s)).toList();
+
+    if (mounted) {
+      setState(() {
+        _rawTimeSlots = parsedSlots;
+        _isLoadingSlots = false;
+
+        // Auto select period that has slots if current period is empty
+        final morning = _getSlotsForPeriod('Sáng');
+        final afternoon = _getSlotsForPeriod('Chiều');
+        final evening = _getSlotsForPeriod('Tối');
+
+        if (_selectedPeriod == 'Sáng' && morning.isEmpty) {
+          if (afternoon.isNotEmpty) {
+            _selectedPeriod = 'Chiều';
+          } else if (evening.isNotEmpty) {
+            _selectedPeriod = 'Tối';
+          }
+        } else if (_selectedPeriod == 'Chiều' && afternoon.isEmpty) {
+          if (morning.isNotEmpty) {
+            _selectedPeriod = 'Sáng';
+          } else if (evening.isNotEmpty) {
+            _selectedPeriod = 'Tối';
+          }
+        } else if (_selectedPeriod == 'Tối' && evening.isEmpty) {
+          if (afternoon.isNotEmpty) {
+            _selectedPeriod = 'Chiều';
+          } else if (morning.isNotEmpty) {
+            _selectedPeriod = 'Sáng';
+          }
+        }
+      });
+    }
+  }
+
+  List<Map<String, dynamic>> _getSlotsForPeriod(String period) {
+    if (_rawTimeSlots.isEmpty) return [];
+
+    return _rawTimeSlots.where((slot) {
+      final String startTime = slot['startTime']?.toString() ?? '00:00';
+      final parts = startTime.split(':');
+      final hour = int.tryParse(parts[0]) ?? 0;
+
+      if (period == 'Sáng') {
+        return hour < 12;
+      } else if (period == 'Chiều') {
+        return hour >= 12 && hour < 17;
+      } else {
+        return hour >= 17;
+      }
+    }).toList();
   }
 
   void _setPeriod(String period) {
     setState(() {
       _selectedPeriod = period;
       final newSlots = _getSlotsForPeriod(period);
-      if (_selectedTimeStr != null && !newSlots.contains(_selectedTimeStr)) {
+      final newTimes = newSlots.map((s) {
+        final t = s['startTime']?.toString() ?? '';
+        return t.length >= 5 ? t.substring(0, 5) : t;
+      }).toList();
+
+      if (_selectedTimeStr != null && !newTimes.contains(_selectedTimeStr)) {
         _selectedTimeStr = null;
       }
     });
@@ -131,11 +271,14 @@ class _RescheduleBookingDialogState extends State<RescheduleBookingDialog> {
       setState(() {
         _selectedDate = picked;
       });
+      _loadSlotsForDate(picked);
     }
   }
 
   Widget _buildPeriodTab(String label, IconData icon) {
     final isSelected = _selectedPeriod == label;
+    final slotsCount = _getSlotsForPeriod(label).length;
+
     return Expanded(
       child: InkWell(
         onTap: () => _setPeriod(label),
@@ -163,13 +306,17 @@ class _RescheduleBookingDialogState extends State<RescheduleBookingDialog> {
               Icon(
                 icon,
                 size: 16,
-                color: isSelected ? Colors.white : AppColors.textSecondary,
+                color: isSelected
+                    ? Colors.white
+                    : (slotsCount == 0 ? Colors.grey.shade400 : AppColors.textSecondary),
               ),
               const SizedBox(width: 6),
               Text(
                 label,
                 style: TextStyle(
-                  color: isSelected ? Colors.white : AppColors.textSecondary,
+                  color: isSelected
+                      ? Colors.white
+                      : (slotsCount == 0 ? Colors.grey.shade400 : AppColors.textSecondary),
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                   fontSize: 13,
                 ),
@@ -417,153 +564,344 @@ class _RescheduleBookingDialogState extends State<RescheduleBookingDialog> {
                                     ),
                                     const SizedBox(height: 10),
 
-                                    // Tabs chọn buổi: Sáng / Chiều / Tối
-                                    Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFF2F2F7),
-                                        borderRadius: BorderRadius.circular(14),
+                                    if (_isLoadingSlots)
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 24,
+                                        ),
+                                        child: Center(
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const SizedBox(
+                                                width: 16,
+                                                height: 16,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  color: AppColors.primary,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Text(
+                                                'Đang tải khung giờ hoạt động...',
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  color: Colors.grey.shade600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      )
+                                    else if (_rawTimeSlots.isEmpty)
+                                      Container(
+                                        margin: const EdgeInsets.only(top: 8),
+                                        padding: const EdgeInsets.all(16),
+                                        decoration: BoxDecoration(
+                                          color: Colors.orange.shade50,
+                                          borderRadius: BorderRadius.circular(14),
+                                          border: Border.all(
+                                            color: Colors.orange.shade200,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.info_outline_rounded,
+                                              color: Colors.orange,
+                                              size: 20,
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Text(
+                                                'Salon nghỉ hoạt động hoặc không có khung giờ rảnh vào ngày này. Vui lòng chọn ngày khác.',
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  color: Colors.orange.shade900,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      )
+                                    else ...[
+                                      // Tabs chọn buổi: Sáng / Chiều / Tối
+                                      Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF2F2F7),
+                                          borderRadius: BorderRadius.circular(14),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            _buildPeriodTab(
+                                              'Sáng',
+                                              Icons.wb_sunny_rounded,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            _buildPeriodTab(
+                                              'Chiều',
+                                              Icons.wb_twilight_rounded,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            _buildPeriodTab(
+                                              'Tối',
+                                              Icons.nightlight_round,
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                      child: Row(
-                                        children: [
-                                          _buildPeriodTab(
-                                            'Sáng',
-                                            Icons.wb_sunny_rounded,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          _buildPeriodTab(
-                                            'Chiều',
-                                            Icons.wb_twilight_rounded,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          _buildPeriodTab(
-                                            'Tối',
-                                            Icons.nightlight_round,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
+                                      const SizedBox(height: 12),
 
-                                    // Slots giờ (Chuyển tab mượt mà với AnimatedSwitcher)
-                                    AnimatedSwitcher(
-                                      duration: const Duration(
-                                        milliseconds: 220,
-                                      ),
-                                      switchInCurve: Curves.easeOutCubic,
-                                      switchOutCurve: Curves.easeInCubic,
-                                      transitionBuilder: (child, animation) {
-                                        return FadeTransition(
-                                          opacity: animation,
-                                          child: SlideTransition(
-                                            position: Tween<Offset>(
-                                              begin: const Offset(0, 0.04),
-                                              end: Offset.zero,
-                                            ).animate(animation),
-                                            child: child,
-                                          ),
-                                        );
-                                      },
-                                      child: LayoutBuilder(
-                                        key: ValueKey(_selectedPeriod),
-                                        builder: (context, constraints) {
-                                          final itemWidth =
-                                              (constraints.maxWidth - 24) / 4;
-                                          final slots = _getSlotsForPeriod(
-                                            _selectedPeriod,
+                                      // Slots giờ (Chuyển tab mượt mà với AnimatedSwitcher)
+                                      AnimatedSwitcher(
+                                        duration: const Duration(
+                                          milliseconds: 220,
+                                        ),
+                                        switchInCurve: Curves.easeOutCubic,
+                                        switchOutCurve: Curves.easeInCubic,
+                                        transitionBuilder: (child, animation) {
+                                          return FadeTransition(
+                                            opacity: animation,
+                                            child: SlideTransition(
+                                              position: Tween<Offset>(
+                                                begin: const Offset(0, 0.04),
+                                                end: Offset.zero,
+                                              ).animate(animation),
+                                              child: child,
+                                            ),
                                           );
-                                          return Wrap(
-                                            spacing: 8,
-                                            runSpacing: 8,
-                                            children: slots.map((slot) {
-                                              final isSelected =
-                                                  _selectedTimeStr == slot;
-                                              return InkWell(
-                                                onTap: () {
-                                                  setState(() {
-                                                    _selectedTimeStr = slot;
-                                                  });
-                                                },
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                                child: AnimatedScale(
-                                                  scale: isSelected
-                                                      ? 1.02
-                                                      : 1.0,
-                                                  duration: const Duration(
-                                                    milliseconds: 150,
+                                        },
+                                        child: LayoutBuilder(
+                                          key: ValueKey(_selectedPeriod),
+                                          builder: (context, constraints) {
+                                            final itemWidth =
+                                                (constraints.maxWidth - 24) / 4;
+                                            final slots = _getSlotsForPeriod(
+                                              _selectedPeriod,
+                                            );
+                                            if (slots.isEmpty) {
+                                              return Container(
+                                                width: double.infinity,
+                                                padding: const EdgeInsets.symmetric(
+                                                  vertical: 16,
+                                                ),
+                                                child: Text(
+                                                  'Không có khung giờ cho buổi này',
+                                                  textAlign: TextAlign.center,
+                                                  style: TextStyle(
+                                                    fontSize: 13,
+                                                    color: Colors.grey.shade600,
+                                                    fontStyle: FontStyle.italic,
                                                   ),
-                                                  curve: Curves.easeOutBack,
-                                                  child: AnimatedContainer(
-                                                    duration: const Duration(
-                                                      milliseconds: 180,
-                                                    ),
-                                                    width: itemWidth,
-                                                    height: 42,
-                                                    decoration: BoxDecoration(
-                                                      gradient: isSelected
-                                                          ? AppColors
-                                                                .quizGradient
-                                                          : null,
-                                                      color: isSelected
-                                                          ? null
-                                                          : const Color(
-                                                              0xFFF7F7FA,
-                                                            ),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            12,
+                                                ),
+                                              );
+                                            }
+                                            return Wrap(
+                                              spacing: 8,
+                                              runSpacing: 8,
+                                              children: slots.map((slot) {
+                                                final rawTimeStr =
+                                                    slot['startTime']?.toString() ??
+                                                    '00:00';
+                                                final timeDisplay =
+                                                    rawTimeStr.length >= 5
+                                                        ? rawTimeStr.substring(0, 5)
+                                                        : rawTimeStr;
+
+                                                bool isPast = false;
+                                                if (_selectedDate != null) {
+                                                  final now = DateTime.now();
+                                                  final todayStart = DateTime(
+                                                    now.year,
+                                                    now.month,
+                                                    now.day,
+                                                  );
+                                                  final selStart = DateTime(
+                                                    _selectedDate!.year,
+                                                    _selectedDate!.month,
+                                                    _selectedDate!.day,
+                                                  );
+
+                                                  if (selStart.isBefore(
+                                                    todayStart,
+                                                  )) {
+                                                    isPast = true;
+                                                  } else if (selStart
+                                                      .isAtSameMomentAs(
+                                                        todayStart,
+                                                      )) {
+                                                    final parts =
+                                                        rawTimeStr.split(':');
+                                                    final slotHour =
+                                                        int.tryParse(parts[0]) ?? 0;
+                                                    final slotMinute =
+                                                        int.tryParse(parts[1]) ?? 0;
+                                                    if (slotHour < now.hour ||
+                                                        (slotHour == now.hour &&
+                                                            slotMinute <=
+                                                                now.minute)) {
+                                                      isPast = true;
+                                                    }
+                                                  }
+                                                }
+
+                                                final bool isAvailableApi =
+                                                    slot['isAvailable'] != false;
+                                                final bool isHeld =
+                                                    slot['isHeld'] == true;
+                                                final bool isAvail =
+                                                    isAvailableApi &&
+                                                    !isHeld &&
+                                                    !isPast;
+
+                                                final isSelected =
+                                                    _selectedTimeStr ==
+                                                        timeDisplay ||
+                                                    _selectedTimeStr == rawTimeStr;
+
+                                                Color bgColor;
+                                                Color borderColor;
+                                                Color textColor;
+                                                bool lineThrough = false;
+                                                FontWeight fontWeight =
+                                                    FontWeight.w500;
+
+                                                if (isSelected) {
+                                                  bgColor = AppColors.primary;
+                                                  borderColor = AppColors.primary;
+                                                  textColor = Colors.white;
+                                                  fontWeight = FontWeight.bold;
+                                                } else if (isAvail) {
+                                                  bgColor = const Color(0xFFF7F7FA);
+                                                  borderColor = const Color(
+                                                    0xFFE5E5EA,
+                                                  );
+                                                  textColor = AppColors.textPrimary;
+                                                  fontWeight = FontWeight.w600;
+                                                } else if (isPast) {
+                                                  bgColor = Colors.grey.shade100;
+                                                  borderColor = Colors.transparent;
+                                                  textColor = Colors.grey.shade400;
+                                                  lineThrough = true;
+                                                } else {
+                                                  bgColor = Colors.grey.shade100;
+                                                  borderColor = Colors.grey.shade200;
+                                                  textColor = Colors.grey.shade400;
+                                                }
+
+                                                return InkWell(
+                                                  onTap: () {
+                                                    if (isPast) {
+                                                      ScaffoldMessenger.of(
+                                                        context,
+                                                      ).showSnackBar(
+                                                        const SnackBar(
+                                                          content: Text(
+                                                            'Khung giờ này đã trôi qua',
                                                           ),
-                                                      border: Border.all(
-                                                        color: isSelected
-                                                            ? Colors.transparent
-                                                            : const Color(
-                                                                0xFFE5E5EA,
-                                                              ),
-                                                        width: 1.0,
-                                                      ),
-                                                      boxShadow: isSelected
-                                                          ? [
-                                                              BoxShadow(
-                                                                color: AppColors
-                                                                    .primary
-                                                                    .withValues(
-                                                                      alpha:
-                                                                          0.35,
-                                                                    ),
-                                                                blurRadius: 8,
-                                                                offset:
-                                                                    const Offset(
-                                                                      0,
-                                                                      3,
-                                                                    ),
-                                                              ),
-                                                            ]
-                                                          : null,
+                                                          backgroundColor:
+                                                              Colors.redAccent,
+                                                        ),
+                                                      );
+                                                      return;
+                                                    }
+                                                    if (!isAvail) {
+                                                      ScaffoldMessenger.of(
+                                                        context,
+                                                      ).showSnackBar(
+                                                        const SnackBar(
+                                                          content: Text(
+                                                            'Khung giờ này không khả dụng hoặc đã kín chỗ',
+                                                          ),
+                                                        ),
+                                                      );
+                                                      return;
+                                                    }
+                                                    setState(() {
+                                                      _selectedTimeStr =
+                                                          timeDisplay;
+                                                    });
+                                                  },
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                  child: AnimatedScale(
+                                                    scale: isSelected
+                                                        ? 1.02
+                                                        : 1.0,
+                                                    duration: const Duration(
+                                                      milliseconds: 150,
                                                     ),
-                                                    child: Center(
-                                                      child: Text(
-                                                        slot,
-                                                        style: TextStyle(
+                                                    curve: Curves.easeOutBack,
+                                                    child: AnimatedContainer(
+                                                      duration: const Duration(
+                                                        milliseconds: 180,
+                                                      ),
+                                                      width: itemWidth,
+                                                      height: 42,
+                                                      decoration: BoxDecoration(
+                                                        gradient: isSelected
+                                                            ? AppColors
+                                                                  .quizGradient
+                                                            : null,
+                                                        color: isSelected
+                                                            ? null
+                                                            : bgColor,
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              12,
+                                                            ),
+                                                        border: Border.all(
                                                           color: isSelected
-                                                              ? Colors.white
-                                                              : AppColors
-                                                                    .textPrimary,
-                                                          fontWeight: isSelected
-                                                              ? FontWeight.bold
-                                                              : FontWeight.w500,
-                                                          fontSize: 13,
+                                                              ? Colors.transparent
+                                                              : borderColor,
+                                                          width: 1.0,
+                                                        ),
+                                                        boxShadow: isSelected
+                                                            ? [
+                                                                BoxShadow(
+                                                                  color: AppColors
+                                                                      .primary
+                                                                      .withValues(
+                                                                        alpha:
+                                                                            0.35,
+                                                                      ),
+                                                                  blurRadius: 8,
+                                                                  offset:
+                                                                      const Offset(
+                                                                        0,
+                                                                        3,
+                                                                      ),
+                                                                ),
+                                                              ]
+                                                            : null,
+                                                      ),
+                                                      child: Center(
+                                                        child: Text(
+                                                          timeDisplay,
+                                                          style: TextStyle(
+                                                            color: textColor,
+                                                            fontWeight: fontWeight,
+                                                            fontSize: 13,
+                                                            decoration: lineThrough
+                                                                ? TextDecoration
+                                                                      .lineThrough
+                                                                : null,
+                                                            decorationColor: Colors
+                                                                .grey
+                                                                .shade400,
+                                                          ),
                                                         ),
                                                       ),
                                                     ),
                                                   ),
-                                                ),
-                                              );
-                                            }).toList(),
-                                          );
-                                        },
+                                                );
+                                              }).toList(),
+                                            );
+                                          },
+                                        ),
                                       ),
-                                    ),
+                                    ],
                                   ],
                                 ),
                         ),
@@ -797,12 +1135,6 @@ class _RescheduleBookingDialogState extends State<RescheduleBookingDialog> {
                                           fontWeight: FontWeight.bold,
                                           fontSize: 14,
                                         ),
-                                      ),
-                                      SizedBox(width: 6),
-                                      Icon(
-                                        Icons.send_rounded,
-                                        color: Colors.white,
-                                        size: 16,
                                       ),
                                     ],
                                   ),

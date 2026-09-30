@@ -29,6 +29,10 @@ class _MyBookingListPageState extends State<MyBookingListPage>
 
   late TabController _tabController;
   StreamSubscription? _rescheduleSub;
+  StreamSubscription? _confirmedSub;
+  StreamSubscription? _rejectedSub;
+  StreamSubscription? _cancelledSub;
+  StreamSubscription? _artistReassignedSub;
 
   // Dữ liệu lịch hẹn
   List<Map<String, dynamic>> _allBookings = [];
@@ -38,8 +42,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
   bool _hasNextPage = false;
 
   // Cấu hình Bộ lọc (Filter State)
-  int? _selectedMonth;
-  int? _selectedYear;
+  DateTime? _selectedDate;
   String _selectedStatus = 'Tất cả';
 
   // Danh sách trạng thái dùng cho Filter
@@ -67,21 +70,50 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     _bookingScrollController.addListener(_onBookingScroll);
     _fetchBookings(refresh: true);
 
-    _rescheduleSub = getIt<SignalRService>().onBookingRescheduled.listen((
-      event,
-    ) {
+    final signalR = getIt<SignalRService>();
+    _rescheduleSub = signalR.onBookingRescheduled.listen((event) {
       debugPrint(
-        '[RescheduleTab] ⚡ Nhận sự kiện status=${event.status}, bookingId=${event.bookingId}, message=${event.message}',
+        '[MyBookingListPage] ⚡ Nhận sự kiện Rescheduled: ${event.message}',
       );
-      if (mounted) {
-        _fetchBookings(refresh: true);
-      }
+      if (mounted) _fetchBookings(refresh: true);
+    });
+
+    _confirmedSub = signalR.onBookingConfirmed.listen((event) {
+      debugPrint(
+        '[MyBookingListPage] ⚡ Nhận sự kiện BookingConfirmed: ${event.message}',
+      );
+      if (mounted) _fetchBookings(refresh: true);
+    });
+
+    _rejectedSub = signalR.onBookingRejected.listen((event) {
+      debugPrint(
+        '[MyBookingListPage] ⚡ Nhận sự kiện BookingRejected: ${event.message}',
+      );
+      if (mounted) _fetchBookings(refresh: true);
+    });
+
+    _cancelledSub = signalR.onBookingCancelled.listen((event) {
+      debugPrint(
+        '[MyBookingListPage] ⚡ Nhận sự kiện BookingCancelled: ${event.message}',
+      );
+      if (mounted) _fetchBookings(refresh: true);
+    });
+
+    _artistReassignedSub = signalR.onArtistReassigned.listen((event) {
+      debugPrint(
+        '[MyBookingListPage] ⚡ Nhận sự kiện ArtistReassigned: ${event.message}',
+      );
+      if (mounted) _fetchBookings(refresh: true);
     });
   }
 
   @override
   void dispose() {
     _rescheduleSub?.cancel();
+    _confirmedSub?.cancel();
+    _rejectedSub?.cancel();
+    _cancelledSub?.cancel();
+    _artistReassignedSub?.cancel();
     _bookingScrollController.removeListener(_onBookingScroll);
     _bookingScrollController.dispose();
     _tabController.dispose();
@@ -112,32 +144,25 @@ class _MyBookingListPageState extends State<MyBookingListPage>
   }
 
   void _onFilterChanged({
-    int? month,
-    bool monthChanged = false,
-    int? year,
-    bool yearChanged = false,
+    DateTime? date,
+    bool dateChanged = false,
     String? status,
   }) {
     setState(() {
-      if (monthChanged) _selectedMonth = month;
-      if (yearChanged) _selectedYear = year;
+      if (dateChanged) _selectedDate = date;
       if (status != null) _selectedStatus = status;
     });
     _fetchBookings(refresh: true);
   }
 
   DateTime? get _filterStartDate {
-    if (_selectedYear == null && _selectedMonth == null) return null;
-    final year = _selectedYear ?? DateTime.now().year;
-    return DateTime(year, _selectedMonth ?? 1, 1);
+    if (_selectedDate == null) return null;
+    return DateTime(_selectedDate!.year, _selectedDate!.month, _selectedDate!.day, 0, 0, 0);
   }
 
   DateTime? get _filterEndDate {
-    if (_selectedYear == null && _selectedMonth == null) return null;
-    final year = _selectedYear ?? DateTime.now().year;
-    final month = _selectedMonth;
-    if (month == null) return DateTime(year, 12, 31);
-    return DateTime(year, month + 1, 0);
+    if (_selectedDate == null) return null;
+    return DateTime(_selectedDate!.year, _selectedDate!.month, _selectedDate!.day, 23, 59, 59);
   }
 
   String? get _serverStatusFilter {
@@ -231,19 +256,6 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     }
   }
 
-  List<int> get _availableYears {
-    final years = _allBookings
-        .map((b) {
-          final dateStr = b['bookingDate']?.toString() ?? '';
-          return (DateTime.tryParse(dateStr) ?? DateTime.now()).year;
-        })
-        .toSet()
-        .toList();
-    if (years.isEmpty) years.add(DateTime.now().year);
-    years.sort((a, b) => b.compareTo(a));
-    return years;
-  }
-
   List<Map<String, dynamic>> get _rescheduleRelatedBookings {
     return _allBookings.where((booking) {
       final status = booking['status']?.toString() ?? '';
@@ -268,8 +280,13 @@ class _MyBookingListPageState extends State<MyBookingListPage>
       final dateStr = booking['bookingDate']?.toString() ?? '';
       final date =
           DateTime.tryParse(dateStr) ?? DateTime.fromMillisecondsSinceEpoch(0);
-      if (_selectedMonth != null && date.month != _selectedMonth) return false;
-      if (_selectedYear != null && date.year != _selectedYear) return false;
+      if (_selectedDate != null) {
+        if (date.year != _selectedDate!.year ||
+            date.month != _selectedDate!.month ||
+            date.day != _selectedDate!.day) {
+          return false;
+        }
+      }
       if (_selectedStatus != 'Tất cả') {
         final bStatus = booking['status']?.toString();
         if (_selectedStatus == 'Completed') {
@@ -402,35 +419,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildDropdown(
-                    hint: S.of(context).monthHint,
-                    value: _selectedMonth,
-                    items: [null, ...List.generate(12, (i) => i + 1)],
-                    itemLabel: (val) => val == null
-                        ? S.of(context).allMonths
-                        : S.of(context).monthFormat(val),
-                    onChanged: (val) =>
-                        _onFilterChanged(month: val, monthChanged: true),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildDropdown(
-                    hint: S.of(context).yearHint,
-                    value: _selectedYear,
-                    items: [null, ..._availableYears],
-                    itemLabel: (val) => val == null
-                        ? S.of(context).allYears
-                        : S.of(context).yearFormat(val),
-                    onChanged: (val) =>
-                        _onFilterChanged(year: val, yearChanged: true),
-                  ),
-                ),
-              ],
-            ),
+            child: _buildDateFilter(),
           ),
           const SizedBox(height: 16),
           SingleChildScrollView(
@@ -477,45 +466,85 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     );
   }
 
-  Widget _buildDropdown<T>({
-    required String hint,
-    required T? value,
-    required List<T?> items,
-    required String Function(T?) itemLabel,
-    required ValueChanged<T?> onChanged,
-  }) {
-    return Container(
-      height: 44,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<T?>(
-          value: value,
-          isExpanded: true,
-          icon: const Icon(
-            Icons.keyboard_arrow_down,
-            size: 20,
-            color: Colors.grey,
+  Widget _buildDateFilter() {
+    final hasDate = _selectedDate != null;
+    final dateText = hasDate
+        ? '${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}'
+        : S.of(context).selectDate;
+
+    return InkWell(
+      onTap: () async {
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: _selectedDate ?? DateTime.now(),
+          firstDate: DateTime(2020),
+          lastDate: DateTime(2030),
+          builder: (context, child) {
+            return Theme(
+              data: Theme.of(context).copyWith(
+                colorScheme: const ColorScheme.light(
+                  primary: AppColors.primary,
+                  onPrimary: Colors.white,
+                  onSurface: AppColors.textPrimary,
+                ),
+              ),
+              child: child!,
+            );
+          },
+        );
+        if (picked != null) {
+          _onFilterChanged(date: picked, dateChanged: true);
+        }
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          border: Border.all(
+            color: hasDate ? AppColors.primary : Colors.grey.shade300,
           ),
-          items: items
-              .map(
-                (item) => DropdownMenuItem<T?>(
-                  value: item,
-                  child: Text(
-                    itemLabel(item),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.calendar_today_outlined,
+              size: 18,
+              color: hasDate ? AppColors.primary : Colors.grey.shade600,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                dateText,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: hasDate ? FontWeight.bold : FontWeight.w500,
+                  color: hasDate ? AppColors.primary : Colors.grey.shade700,
+                ),
+              ),
+            ),
+            if (hasDate)
+              GestureDetector(
+                onTap: () {
+                  _onFilterChanged(date: null, dateChanged: true);
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: Icon(
+                    Icons.cancel,
+                    size: 18,
+                    color: Colors.grey.shade500,
                   ),
                 ),
               )
-              .toList(),
-          onChanged: onChanged,
+            else
+              Icon(
+                Icons.keyboard_arrow_down,
+                color: Colors.grey.shade600,
+              ),
+          ],
         ),
       ),
     );
@@ -536,17 +565,17 @@ class _MyBookingListPageState extends State<MyBookingListPage>
             color: Colors.grey.shade300,
           ),
           const SizedBox(height: 16),
-          Text(
-            message ??
-                (hasDataButFilteredOut
-                    ? S.of(context).noData
-                    : S.of(context).noMatchingFound),
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
+          // Text(
+          //   message ??
+          //       (hasDataButFilteredOut
+          //           ? S.of(context).noData
+          //           : S.of(context).noMatchingFound),
+          //   style: const TextStyle(
+          //     fontSize: 18,
+          //     fontWeight: FontWeight.bold,
+          //     color: AppColors.textPrimary,
+          //   ),
+          // ),
           const SizedBox(height: 8),
           Text(
             subMessage ??
@@ -571,41 +600,40 @@ class _MyBookingListPageState extends State<MyBookingListPage>
   }
 
   Widget _buildBookingCard(Map<String, dynamic> booking) {
-    final dateStr = booking['bookingDate']?.toString() ?? '';
+    final dateStr =
+        (booking['bookingDate'] ?? booking['BookingDate'])?.toString() ?? '';
     final bookingDate = DateTime.tryParse(dateStr) ?? DateTime.now();
-    final status = bookingStatusView(booking['status']?.toString(), context);
-    final rawStatus = booking['status']?.toString();
-    final items = booking['bookingItems'] as List<dynamic>? ?? [];
-    var nailName = S.of(context).nailServiceDefault;
+    final status = bookingStatusView(
+      (booking['status'] ?? booking['Status'])?.toString(),
+      context,
+    );
+    final rawStatus = (booking['status'] ?? booking['Status'])?.toString();
+    final bookingIdStr =
+        (booking['bookingId'] ?? booking['BookingId'])?.toString() ?? '';
 
-    if (items.isNotEmpty && items.first is Map) {
-      final firstItem = items.first as Map;
-      final variantName = firstItem['nailVariantName']?.toString().trim() ?? '';
-      final customNailName =
-          firstItem['customerNailName']?.toString().trim() ?? '';
-      final serviceName = firstItem['serviceName']?.toString().trim() ?? '';
-      if (variantName.isNotEmpty) {
-        nailName = variantName;
-      } else if (customNailName.isNotEmpty) {
-        nailName = customNailName;
-      } else if (serviceName.isNotEmpty) {
-        nailName = serviceName;
-      }
-    }
+    final parsedItems = _parseBookingItems(booking);
 
-    String timeStr = booking['startTime']?.toString() ?? '';
+    String timeStr =
+        (booking['startTime'] ?? booking['StartTime'])?.toString() ?? '';
     if (timeStr.length >= 5) timeStr = timeStr.substring(0, 5);
 
     final artistName =
-        booking['artistName']?.toString() ?? S.of(context).anyArtist;
-    final bookingIdStr = booking['bookingId']?.toString() ?? '';
-    final canRate = (rawStatus == 'Completed' && booking['isRated'] == false);
+        (booking['artistName'] ??
+                booking['ArtistName'] ??
+                booking['nailArtistName'] ??
+                booking['NailArtistName'])
+            ?.toString() ??
+        S.of(context).anyArtist;
 
+    final canRate =
+        (rawStatus == 'Completed' &&
+            (booking['isRated'] ?? booking['IsRated']) == false);
     final canReschedule = rawStatus == 'Approved' && bookingIdStr.isNotEmpty;
 
     final warrantyForBookingId =
-        booking['warrantyForBookingId']?.toString() ??
-        booking['WarrantyForBookingId']?.toString();
+        (booking['warrantyForBookingId'] ??
+                booking['WarrantyForBookingId'])
+            ?.toString();
     final isWarrantyBooking =
         warrantyForBookingId != null && warrantyForBookingId.isNotEmpty;
     final hasWarrantyRequested =
@@ -631,8 +659,8 @@ class _MyBookingListPageState extends State<MyBookingListPage>
           border: Border.all(color: AppColors.borderLight),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
-              blurRadius: 10,
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 12,
               offset: const Offset(0, 4),
             ),
           ],
@@ -640,6 +668,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Status Badges & Booking Date
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -719,56 +748,94 @@ class _MyBookingListPageState extends State<MyBookingListPage>
                     ],
                   ],
                 ),
-                Text(
-                  '${bookingDate.day}/${bookingDate.month}/${bookingDate.year}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey,
-                  ),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      size: 13,
+                      color: Colors.grey.shade600,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${bookingDate.day}/${bookingDate.month}/${bookingDate.year}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
             const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
+              padding: EdgeInsets.symmetric(vertical: 10),
               child: Divider(height: 1, color: AppColors.borderLight),
             ),
-            Text(
-              nailName,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+
+            // Booked Services List breakdown
+            _buildBookedServicesWidget(parsedItems),
+
+            const SizedBox(height: 12),
+
+            // Time & Stylist bar
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Icon(Icons.access_time, size: 16, color: Colors.grey),
-                const SizedBox(width: 4),
-                Text(
-                  timeStr,
-                  style: const TextStyle(color: Colors.grey, fontSize: 13),
-                ),
-                const SizedBox(width: 16),
-                const Icon(Icons.face_2, size: 16, color: Colors.grey),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    artistName,
-                    style: const TextStyle(color: Colors.grey, fontSize: 13),
-                    overflow: TextOverflow.ellipsis,
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.access_time_filled,
+                    size: 14,
+                    color: AppColors.primary,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 4),
+                  Text(
+                    timeStr,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12.5,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 10),
+                    width: 1,
+                    height: 12,
+                    color: Colors.grey.shade300,
+                  ),
+                  Icon(
+                    Icons.face_2_outlined,
+                    size: 15,
+                    color: Colors.grey.shade700,
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      artistName,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey.shade800,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
             ),
+
             if (canReschedule) ...[
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: () => _openRescheduleDialog(bookingIdStr),
+                  onPressed: () => _openRescheduleDialog(booking),
                   icon: const Icon(
                     Icons.edit_calendar_rounded,
                     size: 18,
@@ -815,13 +882,14 @@ class _MyBookingListPageState extends State<MyBookingListPage>
                 ),
               ),
             ],
-            // Check & render Warranty button
+            // Check & render Warranty button (Chỉ hiển thị với đơn có mẫu nail)
             if (rawStatus == 'Completed' &&
                 bookingIdStr.isNotEmpty &&
                 !_readBool(
                   booking['isWarrantied'] ?? booking['IsWarrantied'],
                 ) &&
-                !_hasWarranty(bookingIdStr)) ...[
+                !_hasWarranty(bookingIdStr) &&
+                _hasNailDesign(booking)) ...[
               Padding(
                 padding: const EdgeInsets.only(top: 12),
                 child: SizedBox(
@@ -848,10 +916,216 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     );
   }
 
-  void _openRescheduleDialog(String bookingIdStr) {
+  List<_BookingItemDisplay> _parseBookingItems(Map<String, dynamic> booking) {
+    final rawItems = booking['bookingItems'] ??
+        booking['BookingItems'] ??
+        booking['items'] ??
+        booking['Items'];
+    final items = rawItems is List ? rawItems : <dynamic>[];
+    final result = <_BookingItemDisplay>[];
+
+    for (final item in items) {
+      if (item is Map) {
+        final variantName =
+            (item['nailVariantName'] ?? item['NailVariantName'])
+                ?.toString()
+                .trim() ??
+            '';
+        final customNailName =
+            (item['customerNailName'] ?? item['CustomerNailName'])
+                ?.toString()
+                .trim() ??
+            '';
+        final serviceName =
+            (item['serviceName'] ?? item['ServiceName'])
+                ?.toString()
+                .trim() ??
+            '';
+        final shapeName =
+            (item['shapeMethodName'] ?? item['ShapeMethodName'])
+                ?.toString()
+                .trim();
+        final qtyRaw = item['quantity'] ?? item['Quantity'] ?? 1;
+        final qty = (qtyRaw is num)
+            ? qtyRaw.toInt()
+            : (int.tryParse(qtyRaw.toString()) ?? 1);
+
+        String name = '';
+        bool isNailDesign = false;
+
+        if (variantName.isNotEmpty) {
+          name = variantName;
+          isNailDesign = true;
+        } else if (customNailName.isNotEmpty) {
+          name = customNailName;
+          isNailDesign = true;
+        } else if (serviceName.isNotEmpty) {
+          name = serviceName;
+        }
+
+        if (name.isNotEmpty) {
+          result.add(
+            _BookingItemDisplay(
+              name: name,
+              shapeName:
+                  (shapeName != null && shapeName.isNotEmpty) ? shapeName : null,
+              quantity: qty,
+              isNailDesign: isNailDesign,
+            ),
+          );
+        }
+      }
+    }
+    return result;
+  }
+
+  Widget _buildBookedServicesWidget(List<_BookingItemDisplay> items) {
+    if (items.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF7F9),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFFCE3EC)),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.auto_awesome,
+              size: 14,
+              color: AppColors.primary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              S.of(context).nailServiceDefault,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7F9),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFCE3EC)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.auto_awesome,
+                    size: 14,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Dịch vụ đã đặt (${items.length})',
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...items.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final item = entry.value;
+            return Padding(
+              padding:
+                  EdgeInsets.only(bottom: idx == items.length - 1 ? 0 : 6),
+              child: Row(
+                children: [
+                  Icon(
+                    item.isNailDesign
+                        ? Icons.brush_rounded
+                        : Icons.check_circle_outline_rounded,
+                    size: 14,
+                    color: item.isNailDesign
+                        ? AppColors.primary
+                        : Colors.teal.shade600,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      item.name,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: item.isNailDesign
+                            ? FontWeight.bold
+                            : FontWeight.w500,
+                        color: AppColors.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (item.shapeName != null) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 1.5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF3E8FF),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        item.shapeName!,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF6B21A8),
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (item.quantity > 1) ...[
+                    const SizedBox(width: 6),
+                    Text(
+                      'x${item.quantity}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  void _openRescheduleDialog(Map<String, dynamic> booking) {
+    final bookingIdStr = booking['bookingId']?.toString() ?? '';
+    final salonId = booking['salonId']?.toString() ?? '';
     RescheduleBookingDialog.show(
       context: context,
       bookingId: bookingIdStr,
+      salonId: salonId,
+      bookingData: booking,
       onConfirm: (newDate, newTime, reason) async {
         try {
           final success = await _apiService.requestRescheduleBooking(
@@ -909,16 +1183,62 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     );
   }
 
-  void _handleWarrantyAction(Map<String, dynamic> booking) {
+  bool _hasNailDesign(Map<String, dynamic> booking) {
     final items = booking['bookingItems'] as List<dynamic>? ?? [];
+    for (final item in items) {
+      if (item is Map) {
+        final nailVariantId = item['nailVariantId'] ?? item['NailVariantId'];
+        final nailVariantName =
+            item['nailVariantName'] ?? item['NailVariantName'];
+        final customerNailId = item['customerNailId'] ?? item['CustomerNailId'];
+        final customerNailName =
+            item['customerNailName'] ?? item['CustomerNailName'];
+        final customerNailRequestId =
+            item['customerNailRequestId'] ?? item['CustomerNailRequestId'];
+
+        if (nailVariantId != null &&
+            int.tryParse(nailVariantId.toString()) != null &&
+            int.tryParse(nailVariantId.toString())! > 0) {
+          return true;
+        }
+        if (nailVariantName != null &&
+            nailVariantName.toString().trim().isNotEmpty) {
+          return true;
+        }
+        if (customerNailId != null &&
+            customerNailId.toString().trim().isNotEmpty) {
+          return true;
+        }
+        if (customerNailName != null &&
+            customerNailName.toString().trim().isNotEmpty) {
+          return true;
+        }
+        if (customerNailRequestId != null &&
+            customerNailRequestId.toString().trim().isNotEmpty) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  void _handleWarrantyAction(Map<String, dynamic> booking) {
+    final rawItems = booking['bookingItems'] ??
+        booking['BookingItems'] ??
+        booking['items'] ??
+        booking['Items'];
+    final items = rawItems is List ? rawItems : <dynamic>[];
 
     // ── Guard: thời hạn bảo hành tối đa 7 ngày từ ngày hoàn thành ──
     // Check sớm ngay tại list page để hiện popup ngay, không nhảy qua
     // page trung gian (như trước đây vẫn navigate sang warranty page
     // khoảng 2s rồi mới hiện thông báo).
-    final bookingIdStr = booking['bookingId']?.toString() ?? '';
-    final salonId = booking['salonId']?.toString() ?? '';
-    final dateStr = booking['bookingDate']?.toString() ?? '';
+    final bookingIdStr =
+        (booking['bookingId'] ?? booking['BookingId'])?.toString() ?? '';
+    final salonId =
+        (booking['salonId'] ?? booking['SalonId'])?.toString() ?? '';
+    final dateStr =
+        (booking['bookingDate'] ?? booking['BookingDate'])?.toString() ?? '';
     final sourceBookingDate = DateTime.tryParse(dateStr);
     if (sourceBookingDate != null &&
         DateTime.now().difference(sourceBookingDate) >
@@ -931,43 +1251,57 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     final List<Map<String, dynamic>> bookingItemsForApi = items.map((item) {
       final map = <String, dynamic>{};
       if (item is Map) {
-        final nailVariantIdRaw = item['nailVariantId']?.toString();
+        final nailVariantIdRaw =
+            (item['nailVariantId'] ?? item['NailVariantId'])?.toString();
         if (nailVariantIdRaw != null &&
             int.tryParse(nailVariantIdRaw) != null &&
             int.tryParse(nailVariantIdRaw)! > 0) {
           map['nailVariantId'] = int.parse(nailVariantIdRaw);
         }
-        map['nailVariantName'] = item['nailVariantName']?.toString();
+        map['nailVariantName'] =
+            (item['nailVariantName'] ?? item['NailVariantName'])?.toString();
 
-        final serviceId = item['serviceId']?.toString();
+        final serviceId =
+            (item['serviceId'] ?? item['ServiceId'])?.toString();
         if (serviceId != null && serviceId.isNotEmpty) {
           map['serviceId'] = serviceId;
         }
-        map['serviceName'] = item['serviceName']?.toString();
+        map['serviceName'] =
+            (item['serviceName'] ?? item['ServiceName'])?.toString();
 
         final shapeConfigVal =
             item['shapeMethodConfigId'] ?? item['ShapeMethodConfigId'];
         if (shapeConfigVal != null) {
           final configId = int.tryParse(shapeConfigVal.toString());
-          if (configId != null) {
+          if (configId != null && configId > 0) {
             map['shapeMethodConfigId'] = configId;
           }
         }
-        map['shapeMethodName'] = item['shapeMethodName']?.toString();
+        map['shapeMethodName'] =
+            (item['shapeMethodName'] ?? item['ShapeMethodName'])?.toString();
 
-        final customerNailIdRaw = item['customerNailId']?.toString();
-        if (customerNailIdRaw != null) {
-          map['customerNailId'] = int.tryParse(customerNailIdRaw);
+        final customerNailIdRaw =
+            (item['customerNailId'] ?? item['CustomerNailId'])?.toString();
+        if (customerNailIdRaw != null && customerNailIdRaw.isNotEmpty) {
+          final parsed = int.tryParse(customerNailIdRaw);
+          if (parsed != null) {
+            map['customerNailId'] = parsed;
+          }
         }
-        map['customerNailName'] = item['customerNailName']?.toString();
+        map['customerNailName'] =
+            (item['customerNailName'] ?? item['CustomerNailName'])?.toString();
 
-        final customerNailRequestId = item['customerNailRequestId']?.toString();
-        if (customerNailRequestId != null) {
+        final customerNailRequestId =
+            (item['customerNailRequestId'] ?? item['CustomerNailRequestId'])
+                ?.toString();
+        if (customerNailRequestId != null && customerNailRequestId.isNotEmpty) {
           map['customerNailRequestId'] = customerNailRequestId;
         }
+        final qtyRaw = item['quantity'] ?? item['Quantity'];
         map['quantity'] =
-            int.tryParse(item['quantity']?.toString() ?? '1') ?? 1;
-        map['price'] = item['price'] ?? item['basePrice'] ?? 0;
+            int.tryParse(qtyRaw?.toString() ?? '1') ?? 1;
+        map['price'] =
+            item['price'] ?? item['Price'] ?? item['basePrice'] ?? 0;
       }
       return map;
     }).toList();
@@ -1100,3 +1434,18 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     );
   }
 }
+
+class _BookingItemDisplay {
+  final String name;
+  final String? shapeName;
+  final int quantity;
+  final bool isNailDesign;
+
+  _BookingItemDisplay({
+    required this.name,
+    this.shapeName,
+    required this.quantity,
+    required this.isNailDesign,
+  });
+}
+

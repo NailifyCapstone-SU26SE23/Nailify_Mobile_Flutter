@@ -97,8 +97,10 @@ class _NailVariantDetailScreenState extends State<NailVariantDetailScreen> {
         );
       }
 
-      // Route photo try-on through Snapshot so users can choose camera/gallery
-      // before previewing this exact variant.
+      //Photo try-on
+      //await service.launchCustomerPhoto(customerNail);
+
+      //Snapshot try-on
       if (mounted) {
         context.push(
           '/snapshot-try-on',
@@ -1337,36 +1339,6 @@ class _DetailContentState extends State<_DetailContent> {
                                       color: Colors.white,
                                     )
                                   : null,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 5),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.access_time_rounded,
-                              size: 11,
-                              color: selected
-                                  ? AppColors.primary.withValues(alpha: 0.8)
-                                  : Colors.grey.shade500,
-                            ),
-                            const SizedBox(width: 3),
-                            Expanded(
-                              child: Text(
-                                DurationFormatter.format(
-                                  method.duration,
-                                  context: context,
-                                ),
-                                style: TextStyle(
-                                  color: selected
-                                      ? AppColors.primary.withValues(alpha: 0.9)
-                                      : Colors.grey.shade600,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
                             ),
                           ],
                         ),

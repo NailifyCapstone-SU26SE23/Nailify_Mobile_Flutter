@@ -24,6 +24,10 @@ class SignalRService {
   final _promotedCtrl = StreamController<WaitlistPromotedEvent>.broadcast();
   final _expiredCtrl = StreamController<WaitlistExpiredEvent>.broadcast();
   final _cancelledCtrl = StreamController<BookingCancelledEvent>.broadcast();
+  final _bookingConfirmedCtrl =
+      StreamController<BookingConfirmedEvent>.broadcast();
+  final _bookingRejectedCtrl =
+      StreamController<BookingRejectedEvent>.broadcast();
   final _rescheduleCtrl = StreamController<BookingRescheduleEvent>.broadcast();
   final _walletPointsCtrl =
       StreamController<WalletPointsChangedEvent>.broadcast();
@@ -36,10 +40,17 @@ class SignalRService {
       StreamController<CustomNailQuotedEvent>.broadcast();
   final _customNailRejectedCtrl =
       StreamController<CustomNailRejectedEvent>.broadcast();
+  final _slotStatusChangedCtrl = StreamController<SlotStatusChangedEvent>.broadcast();
+  final _artistReassignedCtrl =
+      StreamController<ArtistReassignedEvent>.broadcast();
 
   Stream<WaitlistPromotedEvent> get onWaitlistPromoted => _promotedCtrl.stream;
   Stream<WaitlistExpiredEvent> get onWaitlistExpired => _expiredCtrl.stream;
   Stream<BookingCancelledEvent> get onBookingCancelled => _cancelledCtrl.stream;
+  Stream<BookingConfirmedEvent> get onBookingConfirmed =>
+      _bookingConfirmedCtrl.stream;
+  Stream<BookingRejectedEvent> get onBookingRejected =>
+      _bookingRejectedCtrl.stream;
   Stream<BookingRescheduleEvent> get onBookingRescheduled =>
       _rescheduleCtrl.stream;
   Stream<WalletPointsChangedEvent> get onWalletPointsChanged =>
@@ -53,6 +64,9 @@ class SignalRService {
       _customNailQuotedCtrl.stream;
   Stream<CustomNailRejectedEvent> get onCustomNailRejected =>
       _customNailRejectedCtrl.stream;
+  Stream<SlotStatusChangedEvent> get onSlotStatusChanged => _slotStatusChangedCtrl.stream;
+  Stream<ArtistReassignedEvent> get onArtistReassigned =>
+      _artistReassignedCtrl.stream;
 
   bool get isConnected => _isConnected;
 
@@ -132,16 +146,90 @@ class SignalRService {
             _expiredCtrl.add(payload);
             break;
 
+          case 'Thông báo Hủy lịch hẹn':
+          case 'BookingCancelled':
+          case 'BOOKING_CANCELLED':
+          case 'booking_cancelled':
+          case 'BookingCancelledEvent':
           case 'BookingAutoCancelled':
+            final messageText = (payloadMap?['message'] ??
+                    payloadMap?['Message'] ??
+                    rawPayload?.toString())
+                ?.toString();
             final payload = payloadMap != null
                 ? BookingCancelledEvent.fromJson(payloadMap)
                 : BookingCancelledEvent(
-                    bookingId: '',
-                    message:
-                        rawPayload?.toString() ??
-                        'Lịch hẹn của bạn đã tự động hủy do trễ quá 15 phút.',
+                    bookingId: payloadMap?['bookingId']?.toString() ??
+                        payloadMap?['BookingId']?.toString() ??
+                        '',
+                    bookingCode: payloadMap?['bookingCode']?.toString() ??
+                        payloadMap?['BookingCode']?.toString(),
+                    salonName: payloadMap?['salonName']?.toString() ??
+                        payloadMap?['SalonName']?.toString(),
+                    customerName: payloadMap?['customerName']?.toString() ??
+                        payloadMap?['CustomerName']?.toString(),
+                    reason: payloadMap?['reason']?.toString() ??
+                        payloadMap?['Reason']?.toString(),
+                    message: (messageText != null && messageText.isNotEmpty)
+                        ? messageText
+                        : 'Lịch hẹn đã bị hủy.',
                   );
+            debugPrint('[SignalR] 🔴 Phá sóng Hủy lịch: ${payload.message}');
             _cancelledCtrl.add(payload);
+            break;
+
+          case 'BookingConfirmed':
+          case 'BOOKING_CONFIRMED':
+          case 'booking_confirmed':
+          case 'BookingConfirmedEvent':
+            final messageText = (payloadMap?['message'] ??
+                    payloadMap?['Message'] ??
+                    rawPayload?.toString())
+                ?.toString();
+            final payload = payloadMap != null
+                ? BookingConfirmedEvent.fromJson(payloadMap)
+                : BookingConfirmedEvent(
+                    bookingId: payloadMap?['bookingId']?.toString() ??
+                        payloadMap?['BookingId']?.toString() ??
+                        '',
+                    message: (messageText != null && messageText.isNotEmpty)
+                        ? messageText
+                        : 'Đơn đặt lịch của bạn đã được Salon xác nhận.',
+                  );
+            debugPrint(
+                '[SignalR] 🟢 Phá sóng BookingConfirmed: ${payload.message}');
+            _bookingConfirmedCtrl.add(payload);
+            break;
+
+          case 'BookingRejected':
+          case 'BOOKING_REJECTED':
+          case 'booking_rejected':
+          case 'BookingRejectedEvent':
+            final messageText = (payloadMap?['message'] ??
+                    payloadMap?['Message'] ??
+                    rawPayload?.toString())
+                ?.toString();
+            final payload = payloadMap != null
+                ? BookingRejectedEvent.fromJson(payloadMap)
+                : BookingRejectedEvent(
+                    bookingId: payloadMap?['bookingId']?.toString() ??
+                        payloadMap?['BookingId']?.toString() ??
+                        '',
+                    bookingCode: payloadMap?['bookingCode']?.toString() ??
+                        payloadMap?['BookingCode']?.toString(),
+                    salonName: payloadMap?['salonName']?.toString() ??
+                        payloadMap?['SalonName']?.toString(),
+                    customerName: payloadMap?['customerName']?.toString() ??
+                        payloadMap?['CustomerName']?.toString(),
+                    reason: payloadMap?['reason']?.toString() ??
+                        payloadMap?['Reason']?.toString(),
+                    message: (messageText != null && messageText.isNotEmpty)
+                        ? messageText
+                        : 'Đơn đặt lịch của bạn đã bị Salon từ chối.',
+                  );
+            debugPrint(
+                '[SignalR] 🔴 Phá sóng BookingRejected: ${payload.message}');
+            _bookingRejectedCtrl.add(payload);
             break;
 
           case 'BookingRescheduleApproved':
@@ -157,16 +245,24 @@ class SignalRService {
             _rescheduleCtrl.add(payload);
             break;
 
+          case 'Đề xuất thay đổi giờ hẹn':
           case 'BookingRescheduleSuggested':
+            final messageText = (payloadMap?['message'] ??
+                    payloadMap?['Message'] ??
+                    rawPayload?.toString())
+                ?.toString();
             final payload = payloadMap != null
                 ? BookingRescheduleEvent.fromJson(payloadMap, 'Suggested')
                 : BookingRescheduleEvent(
-                    bookingId: '',
+                    bookingId: payloadMap?['bookingId']?.toString() ??
+                        payloadMap?['BookingId']?.toString() ??
+                        '',
                     status: 'Suggested',
-                    message:
-                        rawPayload?.toString() ??
-                        'Salon đề xuất khung giờ hẹn mới cho bạn.',
+                    message: (messageText != null && messageText.isNotEmpty)
+                        ? messageText
+                        : 'Salon đề xuất dời lịch của bạn.',
                   );
+            debugPrint('[SignalR] 🟠 Phá sóng Đề xuất dời lịch: ${payload.message}');
             _rescheduleCtrl.add(payload);
             break;
 
@@ -257,6 +353,33 @@ class SignalRService {
             _customNailRejectedCtrl.add(payload);
             break;
 
+          case 'ArtistReassigned':
+          case 'ARTIST_REASSIGNED':
+          case 'artist_reassigned':
+          case 'ArtistReassignedEvent':
+            final payload = payloadMap != null
+                ? ArtistReassignedEvent.fromJson(payloadMap)
+                : ArtistReassignedEvent(
+                    bookingId: payloadMap?['bookingId']?.toString() ??
+                        payloadMap?['BookingId']?.toString() ??
+                        '',
+                    newArtistName: payloadMap?['newArtistName']?.toString() ??
+                        payloadMap?['NewArtistName']?.toString() ??
+                        'Thợ mới',
+                    message: rawPayload?.toString() ??
+                        'Lịch hẹn của bạn đã được chuyển sang thợ làm móng mới.',
+                  );
+            debugPrint(
+                '[SignalR] 🔵 Phá sóng ArtistReassigned: ${payload.message}');
+            _artistReassignedCtrl.add(payload);
+            break;
+
+          case 'SlotStatusChanged':
+            if (payloadMap != null) {
+              _slotStatusChangedCtrl.add(SlotStatusChangedEvent.fromJson(payloadMap));
+            }
+            break;
+
           default:
             if (kDebugMode) {
               debugPrint('[SignalR] messageType không xác định: $messageType');
@@ -264,6 +387,29 @@ class SignalRService {
         }
       } catch (e) {
         debugPrint('[SignalR] Lỗi xử lý ReceiveNotification: $e');
+      }
+    });
+
+    // Lắng nghe trực tiếp method "ArtistReassigned" nếu backend bắn trực tiếp
+    _hub!.on('ArtistReassigned', (args) {
+      try {
+        if (args == null || args.isEmpty) return;
+        final rawData = args[0];
+        final Map<String, dynamic>? payloadMap = rawData is Map
+            ? Map<String, dynamic>.from(rawData)
+            : null;
+        final payload = payloadMap != null
+            ? ArtistReassignedEvent.fromJson(payloadMap)
+            : ArtistReassignedEvent(
+                bookingId: '',
+                newArtistName: rawData?.toString() ?? 'Thợ mới',
+                message: 'Lịch hẹn của bạn đã được chuyển sang thợ làm móng mới.',
+              );
+        debugPrint(
+            '[SignalR] 🔵 Phá sóng ArtistReassigned (Direct): ${payload.message}');
+        _artistReassignedCtrl.add(payload);
+      } catch (e) {
+        debugPrint('[SignalR] Lỗi xử lý ArtistReassigned direct: $e');
       }
     });
 
@@ -324,6 +470,8 @@ class SignalRService {
     _promotedCtrl.close();
     _expiredCtrl.close();
     _cancelledCtrl.close();
+    _bookingConfirmedCtrl.close();
+    _bookingRejectedCtrl.close();
     _rescheduleCtrl.close();
     _walletPointsCtrl.close();
     _voucherReceivedCtrl.close();
@@ -331,5 +479,7 @@ class SignalRService {
     _delayEtaCtrl.close();
     _customNailQuotedCtrl.close();
     _customNailRejectedCtrl.close();
+    _slotStatusChangedCtrl.close();
+    _artistReassignedCtrl.close();
   }
 }

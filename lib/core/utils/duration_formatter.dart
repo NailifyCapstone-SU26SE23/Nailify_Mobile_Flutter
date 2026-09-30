@@ -105,6 +105,13 @@ class DurationFormatter {
     bool isEnglish = false,
     BuildContext? context,
   }) {
+    final bool useEn =
+        isEnglish ||
+        (context != null &&
+            Localizations.localeOf(context).languageCode == 'en');
+    if (diff.isNegative || diff.inMinutes < 1) {
+      return useEn ? 'Just now' : 'Vừa xong';
+    }
     return format(diff.inMinutes, isEnglish: isEnglish, context: context);
   }
 }

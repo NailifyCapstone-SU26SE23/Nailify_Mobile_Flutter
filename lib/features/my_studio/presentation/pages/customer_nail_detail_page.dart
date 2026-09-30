@@ -58,11 +58,11 @@ class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
     return BlocProvider.value(
       value: _cubit,
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: const Color(0xFFFDFBF7),
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(
-              Icons.arrow_back_ios,
+              Icons.arrow_back_ios_new_rounded,
               color: AppColors.primaryDark,
               size: 20,
             ),
@@ -77,81 +77,58 @@ class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
             ),
           ),
           centerTitle: true,
-          backgroundColor: Colors.white,
+          backgroundColor: const Color(0xFFFDFBF7),
           elevation: 0,
+          scrolledUnderElevation: 0,
         ),
         body: BlocBuilder<StudioDetailCubit, StudioDetailState>(
           builder: (context, state) {
             if (state is StudioDetailLoading) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              );
             }
             if (state is StudioDetailError) {
-              return Center(child: Text('Lỗi: ${state.message}'));
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.error_outline_rounded, size: 48, color: Colors.grey),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Lỗi: ${state.message}',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey.shade700),
+                      ),
+                    ],
+                  ),
+                ),
+              );
             }
             if (state is StudioDetailLoaded) {
               final nail = state.nail;
+              final hasActionFooter = nail.status == 'Approved' || nail.status == 'Quoted';
+
               return SingleChildScrollView(
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Ảnh mẫu nail
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: nail.imageUrl != null
-                          ? Image.network(
-                              nail.imageUrl!,
-                              width: double.infinity,
-                              height: 250,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) => _fallbackImage(),
-                            )
-                          : _fallbackImage(),
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      nail.name,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
+                    // ── Hero Header Image & Title Card ────────────────
+                    _buildHeroHeader(nail),
+                    const SizedBox(height: 18),
 
-                    // Tên salon
-                    if (nail.salonName != null && nail.salonName!.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.storefront,
-                              size: 18,
-                              color: AppColors.textSecondary,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              nail.salonName!,
-                              style: const TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                    // --- TRẠNG THÁI: TỪ CHỐI ---
+                    // ── Status Alerts & Pricing Cards ─────────────────
                     if (nail.status == 'Rejected' && nail.rejectReason != null)
                       _buildAlertBox(
-                        Colors.red,
-                        Icons.error_outline,
+                        Colors.red.shade600,
+                        Icons.error_outline_rounded,
                         'Lý do từ chối:',
                         nail.rejectReason!,
                       ),
 
-                    // --- TRẠNG THÁI: ĐANG XỬ LÝ ---
                     if ([
                       'Pending',
                       'PendingReview',
@@ -160,164 +137,23 @@ class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
                       'Reviewed',
                     ].contains(nail.status))
                       _buildAlertBox(
-                        Colors.orange,
-                        Icons.hourglass_top,
+                        Colors.orange.shade800,
+                        Icons.hourglass_top_rounded,
                         'Đang xử lý:',
                         'Mẫu móng của bạn đang được chuyên viên tại tiệm đánh giá tính khả thi và báo giá.',
                       ),
 
-                    // --- TRẠNG THÁI: CHỜ XÁC NHẬN BÁO GIÁ (QUOTED) ---
                     if (nail.status == 'Quoted')
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 20),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.amber.shade50,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.amber.shade300),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.monetization_on_rounded,
-                                  color: Colors.amber.shade800,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Salon đã gửi Báo Giá!',
-                                  style: TextStyle(
-                                    color: Colors.amber.shade900,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const Divider(color: Colors.amber),
-                            const SizedBox(height: 8),
-                            _buildPriceDurationRow(
-                              'Giá mẫu:',
-                              PriceFormatter.format(nail.customerNailPrice),
-                            ),
-                            if (nail.price > 0) ...[
-                              const SizedBox(height: 8),
-                              _buildPriceDurationRow(
-                                'Phí custom:',
-                                PriceFormatter.format(nail.price),
-                              ),
-                            ],
-                            const SizedBox(height: 8),
-                            _buildPriceDurationRow(
-                              'Thời gian dự kiến:',
-                              DurationFormatter.format(nail.duration),
-                            ),
-                            if (nail.stylistName.isNotEmpty) ...[
-                              const SizedBox(height: 8),
-                              _buildPriceDurationRow(
-                                'Thợ chỉ định:',
-                                nail.stylistName,
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
+                      _buildQuotedStatusCard(nail),
 
-                    // --- TRẠNG THÁI: ĐÃ DUYỆT (APPROVED) ---
                     if (nail.status == 'Approved')
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 20),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.green.shade200),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Row(
-                              children: [
-                                Icon(Icons.check_circle, color: Colors.green),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Đã duyệt khả thi!',
-                                  style: TextStyle(
-                                    color: Colors.green,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const Divider(color: Colors.green),
-                            const SizedBox(height: 8),
-                            _buildPriceDurationRow(
-                              'Giá:',
-                              PriceFormatter.format(nail.customerNailPrice),
-                            ),
-                            if (nail.price > 0) ...[
-                              const SizedBox(height: 8),
-                              _buildPriceDurationRow(
-                                'Phí custom:',
-                                PriceFormatter.format(nail.price),
-                              ),
-                            ],
-                            const SizedBox(height: 8),
-                            _buildPriceDurationRow(
-                              'Thời gian dự kiến:',
-                              DurationFormatter.format(nail.duration),
-                            ),
-                            const SizedBox(height: 8),
-                            _buildPriceDurationRow(
-                              'Thợ chỉ định:',
-                              nail.stylistName,
-                            ),
-                          ],
-                        ),
-                      ),
+                      _buildApprovedStatusCard(nail),
 
-                    // --- CHI TIẾT KỸ THUẬT ---
-                    const Text(
-                      'Chi tiết kỹ thuật',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.borderLight),
-                      ),
-                      child: Column(
-                        children: [
-                          _buildRow(
-                            S.of(context).nailShapeLabel,
-                            nail.shapeName,
-                          ),
-                          _buildRow(
-                            S.of(context).nailSurfaceLabel,
-                            nail.surfaceName,
-                          ),
-                          _buildRow(
-                            S.of(context).accessoriesTab,
-                            nail.accessoryNames.isEmpty
-                                ? S.of(context).noneLabel
-                                : nail.accessoryNames.join(', '),
-                            isLast: true,
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (nail.status == 'Approved' ||
-                        nail.status == 'Quoted') ...[
-                      const SizedBox(height: 20),
-                    ],
+                    // ── Technical Details Card ────────────────────────
+                    _buildTechnicalDetailsCard(nail),
+
+                    // Extra bottom space so fixed footer never obscures list content
+                    if (hasActionFooter) const SizedBox(height: 80),
                   ],
                 ),
               );
@@ -338,12 +174,415 @@ class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
     );
   }
 
+  Widget _buildHeroHeader(CustomerNailModel nail) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFF0EAE1), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(19)),
+            child: nail.imageUrl != null
+                ? Image.network(
+                    nail.imageUrl!,
+                    width: double.infinity,
+                    height: 260,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => _fallbackImage(),
+                  )
+                : _fallbackImage(),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  nail.name,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Georgia',
+                    color: AppColors.primaryDark,
+                  ),
+                ),
+                if (nail.salonName != null && nail.salonName!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFFF0F5),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.storefront_rounded,
+                          size: 16,
+                          color: Color(0xFFE02B6D),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        nail.salonName!,
+                        style: TextStyle(
+                          color: Colors.grey.shade700,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildApprovedStatusCard(CustomerNailModel nail) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 18),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFFECFDF5),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFA7F3D0), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF10B981).withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_circle_rounded,
+                  color: Color(0xFF10B981),
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Text(
+                'Đã duyệt khả thi!',
+                style: TextStyle(
+                  color: Color(0xFF065F46),
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16.5,
+                ),
+              ),
+            ],
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Divider(height: 1, color: Color(0xFFA7F3D0)),
+          ),
+          _buildStatusInfoRow(
+            icon: Icons.sell_rounded,
+            label: 'Giá mẫu:',
+            value: PriceFormatter.format(nail.customerNailPrice),
+            color: const Color(0xFF047857),
+          ),
+          if (nail.price > 0) ...[
+            const SizedBox(height: 10),
+            _buildStatusInfoRow(
+              icon: Icons.auto_awesome_rounded,
+              label: 'Phí custom:',
+              value: PriceFormatter.format(nail.price),
+              color: const Color(0xFF047857),
+            ),
+          ],
+          const SizedBox(height: 10),
+          _buildStatusInfoRow(
+            icon: Icons.schedule_rounded,
+            label: 'Thời gian dự kiến:',
+            value: nail.estimatedDuration != null
+                ? DurationFormatter.format(nail.estimatedDuration!)
+                : '—',
+            color: const Color(0xFF047857),
+          ),
+          if (nail.stylistName.isNotEmpty && nail.stylistName != 'Chưa gán') ...[
+            const SizedBox(height: 10),
+            _buildStatusInfoRow(
+              icon: Icons.person_pin_rounded,
+              label: 'Thợ chỉ định:',
+              value: nail.stylistName,
+              color: const Color(0xFF047857),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuotedStatusCard(CustomerNailModel nail) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 18),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFBEB),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFFDE68A), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFD97706).withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD97706).withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.monetization_on_rounded,
+                  color: Color(0xFFD97706),
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Text(
+                'Salon đã gửi Báo Giá!',
+                style: TextStyle(
+                  color: Color(0xFF92400E),
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16.5,
+                ),
+              ),
+            ],
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Divider(height: 1, color: Color(0xFFFDE68A)),
+          ),
+          _buildStatusInfoRow(
+            icon: Icons.sell_rounded,
+            label: 'Giá mẫu:',
+            value: PriceFormatter.format(nail.customerNailPrice),
+            color: const Color(0xFFB45309),
+          ),
+          if (nail.price > 0) ...[
+            const SizedBox(height: 10),
+            _buildStatusInfoRow(
+              icon: Icons.auto_awesome_rounded,
+              label: 'Phí custom:',
+              value: PriceFormatter.format(nail.price),
+              color: const Color(0xFFB45309),
+            ),
+          ],
+          const SizedBox(height: 10),
+          _buildStatusInfoRow(
+            icon: Icons.schedule_rounded,
+            label: 'Thời gian dự kiến:',
+            value: nail.estimatedDuration != null
+                ? DurationFormatter.format(nail.estimatedDuration!)
+                : '—',
+            color: const Color(0xFFB45309),
+          ),
+          if (nail.stylistName.isNotEmpty && nail.stylistName != 'Chưa gán') ...[
+            const SizedBox(height: 10),
+            _buildStatusInfoRow(
+              icon: Icons.person_pin_rounded,
+              label: 'Thợ chỉ định:',
+              value: nail.stylistName,
+              color: const Color(0xFFB45309),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusInfoRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: color.withValues(alpha: 0.85),
+                fontSize: 13.5,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.bold,
+            fontSize: 15,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTechnicalDetailsCard(CustomerNailModel nail) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFF0EAE1), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(
+                Icons.palette_rounded,
+                size: 18,
+                color: Color(0xFFE02B6D),
+              ),
+              SizedBox(width: 8),
+              Text(
+                'Chi tiết kỹ thuật',
+                style: TextStyle(
+                  fontSize: 15.5,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryDark,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Divider(height: 1, color: Color(0xFFF5F5F5)),
+          const SizedBox(height: 12),
+          _buildTechDetailRow(
+            icon: Icons.category_rounded,
+            label: S.of(context).nailShapeLabel,
+            value: nail.shapeName,
+          ),
+          _buildTechDetailRow(
+            icon: Icons.layers_rounded,
+            label: S.of(context).nailSurfaceLabel,
+            value: nail.surfaceName,
+          ),
+          _buildTechDetailRow(
+            icon: Icons.extension_rounded,
+            label: S.of(context).accessoriesTab,
+            value: nail.accessoryNames.isEmpty
+                ? S.of(context).noneLabel
+                : nail.accessoryNames.join(', '),
+            isLast: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTechDetailRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    bool isLast = false,
+  }) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF0F5),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, size: 16, color: const Color(0xFFE02B6D)),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13.5,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  value,
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (!isLast)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 10),
+            child: Divider(height: 1, color: Color(0xFFF5F5F5)),
+          ),
+      ],
+    );
+  }
+
   Widget _fallbackImage() => Container(
-    height: 250,
-    width: double.infinity,
-    color: Colors.pink.shade50,
-    child: const Icon(Icons.image, size: 50, color: Colors.grey),
-  );
+        height: 260,
+        width: double.infinity,
+        color: const Color(0xFFFFF0F5),
+        child: const Center(
+          child: Icon(Icons.image_not_supported_rounded, size: 48, color: Color(0xFFFFD1DC)),
+        ),
+      );
 
   Widget _buildAlertBox(
     Color color,
@@ -352,11 +591,11 @@ class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
     String content,
   ) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
+      margin: const EdgeInsets.only(bottom: 18),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
@@ -364,56 +603,18 @@ class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
         children: [
           Row(
             children: [
-              Icon(icon, color: color),
+              Icon(icon, color: color, size: 20),
               const SizedBox(width: 8),
               Text(
                 title,
-                style: TextStyle(color: color, fontWeight: FontWeight.bold),
+                style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14.5),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(content, style: TextStyle(color: color)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPriceDurationRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: const TextStyle(color: Colors.green)),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.green,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRow(String label, String value, {bool isLast = false}) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(label, style: const TextStyle(color: Colors.grey)),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
+          const SizedBox(height: 6),
+          Text(
+            content,
+            style: TextStyle(color: color, fontSize: 13.5, height: 1.4),
           ),
         ],
       ),
@@ -500,35 +701,55 @@ class _CustomerNailDetailPageState extends State<CustomerNailDetailPage> {
   Widget? _buildFooterAction(BuildContext context, CustomerNailModel nail) {
     if (nail.status == 'Approved') {
       return Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         decoration: BoxDecoration(
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 14,
+              offset: const Offset(0, -4),
             ),
           ],
         ),
         child: SafeArea(
           top: false,
-          child: ElevatedButton.icon(
-            onPressed: () => _openCustomNailBooking(context, nail),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+          child: Container(
+            height: 50,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(25),
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFF4081), Color(0xFFD81B60)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFD81B60).withValues(alpha: 0.35),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            icon: const Icon(Icons.calendar_month, color: Colors.white),
-            label: const Text(
-              'Đặt lịch ngay',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
+            child: ElevatedButton.icon(
+              onPressed: () => _openCustomNailBooking(context, nail),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                foregroundColor: Colors.white,
+                shadowColor: Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                elevation: 0,
+              ),
+              icon: const Icon(Icons.calendar_month_rounded, color: Colors.white, size: 20),
+              label: const Text(
+                'Đặt lịch ngay',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
             ),
           ),

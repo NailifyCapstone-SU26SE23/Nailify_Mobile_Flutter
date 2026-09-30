@@ -5,6 +5,8 @@ import '../../../../generated/l10n.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/injection.dart';
+import '../../../../core/network/signalr_service.dart';
+import '../../../../core/network/signalr_events.dart';
 import '../../../../core/utils/auth_guard.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../../../core/utils/retry_helper.dart';
@@ -78,7 +80,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
   DateTime? _selectedDate;
   Map<String, dynamic>? _selectedStylist;
   String? _selectedTime;
-  int? _selectedPromotionId;
+  List<WalletVoucherModel> _selectedPromotions = [];
   bool _noArtistSelected = false;
 
   List<Map<String, dynamic>> get _bookingSteps => [
@@ -101,6 +103,8 @@ class _NailBookingPageState extends State<NailBookingPage> {
     },
   ];
 
+  StreamSubscription<SlotStatusChangedEvent>? _slotStatusChangedSub;
+
   @override
   void initState() {
     super.initState();
@@ -111,10 +115,38 @@ class _NailBookingPageState extends State<NailBookingPage> {
     _fetchPromotions();
     _fetchNailVariantDetail();
     _fetchWalletBalance();
+
+    try {
+      final signalR = getIt<SignalRService>();
+      _slotStatusChangedSub = signalR.onSlotStatusChanged.listen(_onSlotStatusChanged);
+    } catch (_) {}
+  }
+
+  void _onSlotStatusChanged(SlotStatusChangedEvent event) {
+    if (!mounted || _selectedDate == null) return;
+    
+    final currentSalonId = _selectedBranch?['salonId']?.toString() ?? '';
+    if (currentSalonId.isNotEmpty && event.salonId.toLowerCase() != currentSalonId.toLowerCase()) return;
+    
+    final String currentFormattedDate = _formatBookingDate(_selectedDate!); 
+    if (!event.bookingDate.startsWith(currentFormattedDate.split('T')[0])) return;
+
+    final currentArtistId = _noArtistSelected ? '' : (_selectedStylist?['nailArtistId']?.toString() ?? '');
+    
+    if (_noArtistSelected || event.artistId.isEmpty || event.artistId.toLowerCase() == currentArtistId.toLowerCase()) {
+      if (event.action == 'Held' || event.action == 'Released' || event.action == 'Booked') {
+        if (_noArtistSelected) {
+          _loadSalonSlots();
+        } else {
+          _fetchTimeSlots();
+        }
+      }
+    }
   }
 
   @override
   void dispose() {
+    _slotStatusChangedSub?.cancel();
     _holdTimer?.cancel();
     _cancelCurrentHold();
     _pageController.dispose();
@@ -244,8 +276,8 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   List<int>? get _selectedPromotionIds {
-    final id = _selectedPromotionId;
-    return id == null ? null : [id];
+    if (_selectedPromotions.isEmpty) return null;
+    return _selectedPromotions.map((p) => p.promotionId).toList();
   }
 
   List<Map<String, dynamic>> get _discountBreakdown {
@@ -461,24 +493,28 @@ class _NailBookingPageState extends State<NailBookingPage> {
 
     setState(() => _isReviewingPrice = true);
     final reviewFuture = () async {
-      final review = await _apiService.reviewBookingPrice(
-        salonId: _selectedBranch!['salonId'],
-        bookingDate: _formatBookingDate(_selectedDate!),
-        startTime: _normalizedSelectedTime,
-        artistId: _noArtistSelected
-            ? null
-            : _selectedStylist?['nailArtistId'] as String?,
-        nailVariantId: _nailVariantId,
-        serviceIds: _selectedExtraServices.whereType<String>().toList(),
-        selectedPromotionIds: _selectedPromotionIds,
-        shapeMethodConfigId: _shapeMethodConfigId,
-      );
-      if (!mounted) return;
-      if (_priceReviewRequestKey != requestKey) return;
-      setState(() {
-        _priceReview = review;
-        _priceReviewKey = requestKey;
-      });
+      try {
+        final review = await _apiService.reviewBookingPrice(
+          salonId: _selectedBranch!['salonId'],
+          bookingDate: _formatBookingDate(_selectedDate!),
+          startTime: _normalizedSelectedTime,
+          artistId: _noArtistSelected
+              ? null
+              : _selectedStylist?['nailArtistId'] as String?,
+          nailVariantId: _nailVariantId,
+          serviceIds: _selectedExtraServices.whereType<String>().toList(),
+          selectedPromotionIds: _selectedPromotionIds,
+          shapeMethodConfigId: _shapeMethodConfigId,
+        );
+        if (!mounted) return;
+        if (_priceReviewRequestKey != requestKey) return;
+        setState(() {
+          _priceReview = review;
+          _priceReviewKey = requestKey;
+        });
+      } catch (e) {
+        debugPrint('reviewBookingPrice exception: $e');
+      }
     }();
 
     _inFlightPriceReviewKey = requestKey;
@@ -577,7 +613,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
       // API trả về 400 (ví dụ: "Thợ đã đầy lịch trong khoảng thời gian này...")
       // → hiển thị message server để user biết lý do.
       debugPrint('holdSlot failed: $e');
-      _showHoldFailureMessage(e.toString());
+      _showHoldFailureMessage('Rất tiếc, khung giờ này vừa có người đặt. Vui lòng chọn giờ khác.');
       return false;
     }
   }
@@ -928,9 +964,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
     }
   }
 
-  void _handlePromotionChanged(int? promotionId) {
+  void _handlePromotionsChanged(List<WalletVoucherModel> list) {
     setState(() {
-      _selectedPromotionId = promotionId;
+      _selectedPromotions = list;
       _priceReviewKey = null;
       _isReviewingPrice = true;
     });
@@ -996,16 +1032,16 @@ class _NailBookingPageState extends State<NailBookingPage> {
       }
     }
     if (_currentStep == 2 && _selectedDate == null) {
-      _showSnackBar('Vui lòng chọn 1 ngày đặt lịch!');
+      _showSnackBar(S.of(context).pleaseSelectBookingDate);
       return;
     }
     if (_currentStep == 3) {
       if (!_noArtistSelected && _selectedStylist == null) {
-        _showSnackBar('Vui lòng chọn thợ nail hoặc chọn "Để Nailify sắp xếp"!');
+        _showSnackBar(S.of(context).pleaseSelectArtistOrAutoAssign);
         return;
       }
       if (_selectedTime == null) {
-        _showSnackBar('Vui lòng chọn khung giờ rảnh!');
+        _showSnackBar(S.of(context).pleaseSelectTimeSlot);
         return;
       }
     }
@@ -1237,7 +1273,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                       ),
                       child: Center(
                         child: Text(
-                          'Tự chọn thợ',
+                          S.of(context).choosePreferredArtist,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -1273,7 +1309,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                       ),
                       child: Center(
                         child: Text(
-                          'Để Nailify sắp xếp',
+                          S.of(context).letNailifyAssign,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -1320,6 +1356,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                   selectedDate: _selectedDate,
                   salonId: _selectedBranch?['salonId'],
                   artistId: _selectedStylist?['nailArtistId'],
+                  waitlistItems: _buildBookingItems(),
                   onTimeChanged: (time) {
                     _cancelCurrentHold();
                     setState(() {
@@ -1345,6 +1382,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                 selectedDate: _selectedDate,
                 salonId: _selectedBranch?['salonId'],
                 artistId: null,
+                waitlistItems: _buildBookingItems(),
                 onTimeChanged: (time) {
                   _cancelCurrentHold();
                   setState(() {
@@ -1606,12 +1644,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   Widget _buildVoucherRow() {
-    final selectedPromotion = _promotions.where(
-      (v) => v.promotionId == _selectedPromotionId,
-    );
-    final hasSelected = selectedPromotion.isNotEmpty;
+    final hasSelected = _selectedPromotions.isNotEmpty;
     final count = _promotions.length;
-    final selectedVoucher = hasSelected ? selectedPromotion.first : null;
+    final selectedVoucher = hasSelected ? _selectedPromotions.first : null;
 
     return GestureDetector(
       onTap: _isLoadingPromotions
@@ -1622,14 +1657,8 @@ class _NailBookingPageState extends State<NailBookingPage> {
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
                 builder: (_) => BookingPromotionSheet(
-                  selectedPromotions: selectedPromotion.toList(),
-                  onConfirm: (list) {
-                    if (list.isNotEmpty) {
-                      _handlePromotionChanged(list.first.promotionId);
-                    } else {
-                      _handlePromotionChanged(null);
-                    }
-                  },
+                  selectedPromotions: _selectedPromotions,
+                  onConfirm: _handlePromotionsChanged,
                 ),
               );
             },
@@ -1701,7 +1730,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
                   )
                 else if (hasSelected)
                   Text(
-                    '${selectedVoucher!.promotionName} (-${selectedVoucher.displayDiscount})',
+                    _selectedPromotions.length > 1
+                        ? 'Đã chọn ${_selectedPromotions.length} voucher'
+                        : '${selectedVoucher!.promotionName} (-${selectedVoucher.displayDiscount})',
                     style: const TextStyle(
                       color: Color(0xFFE02B6D),
                       fontSize: 12,
@@ -1727,7 +1758,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
                 color: Color(0xFFE02B6D),
                 size: 20,
               ),
-              onPressed: () => _handlePromotionChanged(null),
+              onPressed: () => _handlePromotionsChanged([]),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
             )
@@ -2040,6 +2071,13 @@ class _NailBookingPageState extends State<NailBookingPage> {
 
   Widget _buildDiscountInvoiceRow(Map<String, dynamic> discount) {
     final name = discount['name']?.toString() ?? 'Ưu đãi';
+    String? description = discount['description']?.toString();
+    if (description == null || description.isEmpty) {
+      if (name == 'Perfect Match') {
+        description = 'Giảm 15% tất cả thiết kế móng dòng SkinTone';
+      }
+    }
+    final isAutoApplied = discount['isAutoApplied'] == true;
     final amount = discount['amount'];
     final amountDisplay = discount['amountDisplay']?.toString();
     final rawDisplay = (amountDisplay?.isNotEmpty == true)
@@ -2047,30 +2085,80 @@ class _NailBookingPageState extends State<NailBookingPage> {
         : (amount != null ? PriceFormatter.format(amount) : '');
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(
-              name,
-              style: TextStyle(
-                fontSize: 13.5,
-                color: Colors.grey.shade700,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        name,
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          color: Colors.grey.shade800,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (isAutoApplied) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE02B6D).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: const Color(0xFFE02B6D).withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: const Text(
+                          'Tự động áp dụng',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFFE02B6D),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                _formatDiscountDisplay(rawDisplay),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13.5,
+                  color: Color(0xFFE02B6D),
+                ),
+              ),
+            ],
+          ),
+          if (description != null && description.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              description,
+              style: const TextStyle(
+                fontSize: 11.5,
+                color: Color(0xFFE02B6D),
                 fontWeight: FontWeight.w500,
               ),
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-          ),
-          Text(
-            _formatDiscountDisplay(rawDisplay),
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 13.5,
-              color: Color(0xFFE02B6D),
-            ),
-          ),
+          ],
         ],
       ),
     );
@@ -2478,11 +2566,12 @@ class _NailBookingPageState extends State<NailBookingPage> {
   String _formatDiscountDisplay(String value) {
     var text = value.trim();
     if (text.isEmpty) return text;
-    text = text.replaceAll(RegExp(r'^-+'), '');
-    text = '-$text';
-    final lower = text.toLowerCase();
-    if (lower.contains('đ') || lower.contains('vnd')) return text;
-    return '$text VNĐ';
+    text = text.replaceAll(RegExp(r'^-+'), '').trim();
+    if (text.endsWith('%')) {
+      return '-$text';
+    }
+    text = text.replaceAll(RegExp(r'\s*(d|đ|vnd|vnđ)\s*$', caseSensitive: false), '').trim();
+    return '-$text VNĐ';
   }
 
   Widget _buildWalletBalanceToggle() {
@@ -2607,12 +2696,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
   }
 
   Widget _buildPromotionSelector() {
-    final selectedPromotion = _promotions.where(
-      (v) => v.promotionId == _selectedPromotionId,
-    );
-    final hasSelected = selectedPromotion.isNotEmpty;
+    final hasSelected = _selectedPromotions.isNotEmpty;
     final count = _promotions.length;
-    final selectedVoucher = hasSelected ? selectedPromotion.first : null;
+    final selectedVoucher = hasSelected ? _selectedPromotions.first : null;
 
     return GestureDetector(
       onTap: _isLoadingPromotions
@@ -2623,14 +2709,8 @@ class _NailBookingPageState extends State<NailBookingPage> {
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
                 builder: (_) => BookingPromotionSheet(
-                  selectedPromotions: selectedPromotion.toList(),
-                  onConfirm: (list) {
-                    if (list.isNotEmpty) {
-                      _handlePromotionChanged(list.first.promotionId);
-                    } else {
-                      _handlePromotionChanged(null);
-                    }
-                  },
+                  selectedPromotions: _selectedPromotions,
+                  onConfirm: _handlePromotionsChanged,
                 ),
               );
             },
@@ -2722,7 +2802,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
                     )
                   else if (hasSelected)
                     Text(
-                      '${selectedVoucher!.promotionName} • ${selectedVoucher.displayDiscount}',
+                      _selectedPromotions.length > 1
+                          ? 'Đã chọn ${_selectedPromotions.length} voucher'
+                          : '${selectedVoucher!.promotionName} • ${selectedVoucher.displayDiscount}',
                       style: const TextStyle(
                         color: Color(0xFFE02B6D),
                         fontSize: 12,

@@ -45,19 +45,93 @@ class WaitlistExpiredEvent {
   }
 }
 
-/// Sự kiện: Lịch hẹn bị hủy tự động — trễ quá 15 phút
+/// Sự kiện: Lịch hẹn bị hủy (Khách hủy hoặc Salon/Hệ thống hủy)
 class BookingCancelledEvent {
   final String bookingId;
+  final String? bookingCode;
+  final String? salonName;
+  final String? customerName;
+  final String? reason;
   final String message;
 
-  const BookingCancelledEvent({required this.bookingId, required this.message});
+  const BookingCancelledEvent({
+    required this.bookingId,
+    this.bookingCode,
+    this.salonName,
+    this.customerName,
+    this.reason,
+    required this.message,
+  });
 
   factory BookingCancelledEvent.fromJson(Map<String, dynamic> json) {
     return BookingCancelledEvent(
-      bookingId: json['bookingId']?.toString() ?? '',
+      bookingId: json['bookingId']?.toString() ?? json['BookingId']?.toString() ?? '',
+      bookingCode: json['bookingCode']?.toString() ?? json['BookingCode']?.toString(),
+      salonName: json['salonName']?.toString() ?? json['SalonName']?.toString(),
+      customerName: json['customerName']?.toString() ?? json['CustomerName']?.toString(),
+      reason: json['reason']?.toString() ?? json['Reason']?.toString(),
+      message: json['message']?.toString() ??
+          json['Message']?.toString() ??
+          'Lịch hẹn đã bị hủy.',
+    );
+  }
+}
+
+/// Sự kiện: Đơn đặt lịch được Salon xác nhận/duyệt
+class BookingConfirmedEvent {
+  final String bookingId;
+  final String message;
+
+  const BookingConfirmedEvent({
+    required this.bookingId,
+    required this.message,
+  });
+
+  factory BookingConfirmedEvent.fromJson(Map<String, dynamic> json) {
+    return BookingConfirmedEvent(
+      bookingId:
+          json['bookingId']?.toString() ?? json['BookingId']?.toString() ?? '',
       message:
           json['message']?.toString() ??
-          'Lịch hẹn của bạn đã tự động hủy do trễ quá 15 phút.',
+          json['Message']?.toString() ??
+          'Đơn đặt lịch của bạn đã được Salon xác nhận.',
+    );
+  }
+}
+
+/// Sự kiện: Đơn đặt lịch bị Salon từ chối
+class BookingRejectedEvent {
+  final String bookingId;
+  final String? bookingCode;
+  final String? salonName;
+  final String? customerName;
+  final String? reason;
+  final String message;
+
+  const BookingRejectedEvent({
+    required this.bookingId,
+    this.bookingCode,
+    this.salonName,
+    this.customerName,
+    this.reason,
+    required this.message,
+  });
+
+  factory BookingRejectedEvent.fromJson(Map<String, dynamic> json) {
+    return BookingRejectedEvent(
+      bookingId:
+          json['bookingId']?.toString() ?? json['BookingId']?.toString() ?? '',
+      bookingCode:
+          json['bookingCode']?.toString() ?? json['BookingCode']?.toString(),
+      salonName:
+          json['salonName']?.toString() ?? json['SalonName']?.toString(),
+      customerName:
+          json['customerName']?.toString() ?? json['CustomerName']?.toString(),
+      reason: json['reason']?.toString() ?? json['Reason']?.toString(),
+      message:
+          json['message']?.toString() ??
+          json['Message']?.toString() ??
+          'Đơn đặt lịch của bạn đã bị Salon từ chối.',
     );
   }
 }
@@ -248,6 +322,64 @@ class CustomNailRejectedEvent {
           json['message']?.toString() ??
           json['Message']?.toString() ??
           'Mẫu nail custom của bạn đã bị salon từ chối.',
+    );
+  }
+}
+
+class SlotStatusChangedEvent {
+  final String salonId;
+  final String artistId;
+  final String bookingDate;
+  final String startTime;
+  final String action; // Held, Released, Booked
+  
+  SlotStatusChangedEvent({
+    required this.salonId,
+    required this.artistId,
+    required this.bookingDate,
+    required this.startTime,
+    required this.action,
+  });
+
+  factory SlotStatusChangedEvent.fromJson(Map<String, dynamic> json) {
+    return SlotStatusChangedEvent(
+      salonId: json['salonId']?.toString() ?? json['SalonId']?.toString() ?? '',
+      artistId: json['artistId']?.toString() ?? json['ArtistId']?.toString() ?? '',
+      bookingDate: json['bookingDate']?.toString() ?? json['BookingDate']?.toString() ?? '',
+      startTime: json['startTime']?.toString() ?? json['StartTime']?.toString() ?? '',
+      action: json['action']?.toString() ?? json['Action']?.toString() ?? '',
+    );
+  }
+}
+
+/// Sự kiện: Thợ (Nail Artist) làm móng được phân công lại cho đơn đặt lịch
+class ArtistReassignedEvent {
+  final String bookingId;
+  final String newArtistName;
+  final String message;
+
+  const ArtistReassignedEvent({
+    required this.bookingId,
+    required this.newArtistName,
+    required this.message,
+  });
+
+  factory ArtistReassignedEvent.fromJson(Map<String, dynamic> json) {
+    final bId =
+        json['bookingId']?.toString() ?? json['BookingId']?.toString() ?? '';
+    final artistName = json['newArtistName']?.toString() ??
+        json['NewArtistName']?.toString() ??
+        json['artistName']?.toString() ??
+        json['ArtistName']?.toString() ??
+        'Thợ mới';
+    final msgText = json['message']?.toString() ??
+        json['Message']?.toString() ??
+        'Đơn đặt lịch của bạn đã được chuyển sang thợ làm móng mới: $artistName.';
+
+    return ArtistReassignedEvent(
+      bookingId: bId,
+      newArtistName: artistName,
+      message: msgText,
     );
   }
 }

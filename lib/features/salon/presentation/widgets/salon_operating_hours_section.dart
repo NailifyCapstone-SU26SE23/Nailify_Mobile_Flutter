@@ -117,9 +117,9 @@ class _OperatingDayRow extends StatelessWidget {
                     color: AppColors.primary,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Text(
-                    'Hôm nay',
-                    style: TextStyle(
+                  child: Text(
+                    l10n.todayBadge,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,

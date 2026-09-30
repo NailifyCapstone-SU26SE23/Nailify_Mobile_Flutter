@@ -588,6 +588,13 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingServicesBooked": MessageLookupByLibrary.simpleMessage(
       "Dịch vụ đã đặt",
     ),
+    "bookingServiceNameHeader": MessageLookupByLibrary.simpleMessage(
+      "Tên dịch vụ",
+    ),
+    "bookingQuantityHeader": MessageLookupByLibrary.simpleMessage(
+      "Số lượng",
+    ),
+    "bookingPriceHeader": MessageLookupByLibrary.simpleMessage("Giá"),
     "bookingQuantityLabel": m30,
     "bookingOriginalPriceLabel": MessageLookupByLibrary.simpleMessage(
       "Giá gốc:",
@@ -612,8 +619,10 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingNotFound": MessageLookupByLibrary.simpleMessage(
       "Không tìm thấy thông tin lịch hẹn.",
     ),
-    "bookingPaidAmount": MessageLookupByLibrary.simpleMessage("Đã thanh toán:"),
-    "bookingRemainingAmount": MessageLookupByLibrary.simpleMessage("Còn lại:"),
+    "bookingPaidAmount":
+        MessageLookupByLibrary.simpleMessage("Tiền cọc (Đã trả):"),
+    "bookingRemainingAmount":
+        MessageLookupByLibrary.simpleMessage("Còn lại cần trả:"),
     "bookingYourRating": MessageLookupByLibrary.simpleMessage(
       "Đánh giá của bạn",
     ),

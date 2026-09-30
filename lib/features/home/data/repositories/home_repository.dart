@@ -1,4 +1,5 @@
 import '../../../../core/network/api_client.dart';
+import '../../../../core/utils/api_response_parser.dart';
 import '../models/home_data_models.dart';
 
 class HomeRepository {
@@ -64,12 +65,61 @@ class HomeRepository {
       if (response.data != null && response.data['data'] != null) {
         final List items = response.data['data']['items'] ?? [];
         if (items.isNotEmpty) {
-          final reviews = items
-              .map(
-                (item) => HomeReviewItem.fromJson(item as Map<String, dynamic>),
-              )
+          final reviewFutures = items.map((item) async {
+            var review = HomeReviewItem.fromJson(item as Map<String, dynamic>);
+
+            if (review.customerId.isNotEmpty &&
+                (review.name.isEmpty ||
+                    review.name == 'Khách hàng' ||
+                    review.name == 'Customer')) {
+              try {
+                final userRes = await _apiClient.get<dynamic>(
+                  '/Users/${review.customerId}',
+                );
+                final userData = ApiResponseParser.unwrapMap(userRes.data);
+                final firstName =
+                    (userData['firstName'] ?? userData['FirstName'] ?? '')
+                        .toString()
+                        .trim();
+                final lastName =
+                    (userData['lastName'] ?? userData['LastName'] ?? '')
+                        .toString()
+                        .trim();
+
+                String fetchedName = '';
+                if (lastName.isNotEmpty && firstName.isNotEmpty) {
+                  fetchedName = '$lastName $firstName';
+                } else if (firstName.isNotEmpty) {
+                  fetchedName = firstName;
+                } else if (lastName.isNotEmpty) {
+                  fetchedName = lastName;
+                } else {
+                  fetchedName = (userData['fullName'] ??
+                          userData['FullName'] ??
+                          userData['name'] ??
+                          userData['userName'] ??
+                          '')
+                      .toString()
+                      .trim();
+                }
+
+                if (fetchedName.isNotEmpty) {
+                  review = review.copyWith(
+                    name: fetchedName,
+                    initials: HomeReviewItem.calculateInitials(fetchedName),
+                  );
+                }
+              } catch (_) {
+                // If user fetch fails, retain default parsed review
+              }
+            }
+            return review;
+          }).toList();
+
+          final reviews = (await Future.wait(reviewFutures))
               .where((r) => r.stars >= 3)
               .toList();
+
           if (reviews.isNotEmpty) {
             return reviews;
           }

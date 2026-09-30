@@ -571,6 +571,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingServicesBooked": MessageLookupByLibrary.simpleMessage(
       "Services Booked",
     ),
+    "bookingServiceNameHeader": MessageLookupByLibrary.simpleMessage(
+      "Service Name",
+    ),
+    "bookingQuantityHeader": MessageLookupByLibrary.simpleMessage(
+      "Quantity",
+    ),
+    "bookingPriceHeader": MessageLookupByLibrary.simpleMessage(
+      "Price",
+    ),
     "bookingQuantityLabel": m30,
     "bookingOriginalPriceLabel": MessageLookupByLibrary.simpleMessage(
       "Original Price:",
@@ -595,9 +604,10 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingNotFound": MessageLookupByLibrary.simpleMessage(
       "Booking information not found.",
     ),
-    "bookingPaidAmount": MessageLookupByLibrary.simpleMessage("Paid:"),
+    "bookingPaidAmount":
+        MessageLookupByLibrary.simpleMessage("Deposit (Paid):"),
     "bookingRemainingAmount": MessageLookupByLibrary.simpleMessage(
-      "Remaining:",
+      "Remaining to Pay:",
     ),
     "bookingYourRating": MessageLookupByLibrary.simpleMessage("Your Rating"),
     "bookingCheckInCode": MessageLookupByLibrary.simpleMessage("Check-in Code"),

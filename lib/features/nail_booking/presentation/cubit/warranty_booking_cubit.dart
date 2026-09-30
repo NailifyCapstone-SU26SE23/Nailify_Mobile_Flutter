@@ -51,7 +51,12 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
     final warrantyItems = <Map<String, dynamic>>[];
     if (rawItems is List) {
       for (final e in rawItems) {
-        if (e is Map) warrantyItems.add(Map<String, dynamic>.from(e));
+        if (e is Map) {
+          final itemMap = Map<String, dynamic>.from(e);
+          if (_isNailItem(itemMap)) {
+            warrantyItems.add(itemMap);
+          }
+        }
       }
     }
 
@@ -250,11 +255,13 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
             salonId: salonId,
             bookingDate: _formatDate(date),
             bookingItems: bookingItems,
+            holdToken: state.holdToken,
           );
         } else {
           slots = await _repository.getArtistAvailableSlots(
             artistId: artistId,
             bookingDate: _formatDate(date),
+            holdToken: state.holdToken,
           );
         }
         if (isClosed) return slots;
@@ -497,6 +504,7 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
             break;
           case HoldErrorKind.systemError:
             // Lỗi hệ thống thực sự — vẫn clear hold + giờ để tránh UI kẹt.
+            // Tạm thời hiển thị chung thông báo trùng lịch theo yêu cầu để tránh hiện 500
             emit(
               state.copyWith(
                 isSubmitting: false,
@@ -504,7 +512,8 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
                 isHolding: false,
                 holdRemainingSeconds: 0,
                 clearTime: true,
-                errorMessage: _readableError(e),
+                errorMessage:
+                    'Rất tiếc, khung giờ này vừa có người đặt. Vui lòng chọn giờ khác.',
               ),
             );
             break;
@@ -528,6 +537,7 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
       }
       if (remaining <= 0) {
         _holdTimer?.cancel();
+        cancelCurrentHold();
         emit(
           state.copyWith(
             clearHoldToken: true,
@@ -805,6 +815,24 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
         ? null
         : state.selectedStylist?['nailArtistId']?.toString();
 
+    final sanitizedWarrantyItems = state.selectedWarrantyItems
+        .map((e) => _sanitizeItemForApi(e))
+        .where((e) =>
+            e.containsKey('nailVariantId') ||
+            e.containsKey('serviceId') ||
+            e.containsKey('customerNailId') ||
+            e.containsKey('customerNailRequestId'))
+        .toList();
+
+    // Gộp cả dịch vụ bổ sung (extra services) vào bookingItems
+    final mergedItems = <Map<String, dynamic>>[
+      ...sanitizedWarrantyItems,
+      ...state.selectedExtraServices
+          .whereType<String>()
+          .where((id) => id.isNotEmpty)
+          .map((id) => <String, dynamic>{'serviceId': id, 'quantity': 1}),
+    ];
+
     return _repository.createBooking(
       salonId: branch['salonId']?.toString() ?? '',
       bookingDate: _formatDate(date),
@@ -814,7 +842,7 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
       serviceIds: const [],
       holdToken: state.holdToken,
       warrantyForBookingId: state.sourceBookingId,
-      warrantyBookingItems: state.selectedWarrantyItems,
+      warrantyBookingItems: mergedItems,
     );
   }
 
@@ -830,13 +858,23 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
         ? null
         : state.selectedStylist?['nailArtistId']?.toString();
 
-    // Gộp các dịch vụ phát sinh (extra services) vào warrantyBookingItems
+    final sanitizedWarrantyItems = state.selectedWarrantyItems
+        .map((e) => _sanitizeItemForApi(e))
+        .where((e) =>
+            e.containsKey('nailVariantId') ||
+            e.containsKey('serviceId') ||
+            e.containsKey('customerNailId') ||
+            e.containsKey('customerNailRequestId'))
+        .toList();
+
+    // Gộp các dịch vụ phát sinh (extra services) vào bookingItems
     // để backend có thể tính duration + giá đúng.
     final mergedItems = <Map<String, dynamic>>[
-      ...state.selectedWarrantyItems,
-      ...state.selectedExtraServices.whereType<String>().map(
-        (id) => <String, dynamic>{'serviceId': id, 'quantity': 1},
-      ),
+      ...sanitizedWarrantyItems,
+      ...state.selectedExtraServices
+          .whereType<String>()
+          .where((id) => id.isNotEmpty)
+          .map((id) => <String, dynamic>{'serviceId': id, 'quantity': 1}),
     ];
 
     final payload = <String, dynamic>{
@@ -864,17 +902,18 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
 
   List<Map<String, dynamic>> _buildBookingItemsForHold() {
     final items = state.selectedWarrantyItems
-        .map(
-          (e) =>
-              Map<String, dynamic>.from(e)
-                ..['quantity'] = (e['quantity'] is num)
-                    ? (e['quantity'] as num).toInt()
-                    : (int.tryParse(e['quantity']?.toString() ?? '1') ?? 1),
-        )
+        .map((e) => _sanitizeItemForApi(e))
+        .where((e) =>
+            e.containsKey('nailVariantId') ||
+            e.containsKey('serviceId') ||
+            e.containsKey('customerNailId') ||
+            e.containsKey('customerNailRequestId'))
         .toList();
     // Append extra services để backend tính duration chính xác.
     for (final sId in state.selectedExtraServices.whereType<String>()) {
-      items.add({'serviceId': sId, 'quantity': 1});
+      if (sId.isNotEmpty) {
+        items.add({'serviceId': sId, 'quantity': 1});
+      }
     }
     return items;
   }
@@ -884,6 +923,88 @@ class WarrantyBookingCubit extends Cubit<WarrantyBookingState> {
     final m = date.month.toString().padLeft(2, '0');
     final d = date.day.toString().padLeft(2, '0');
     return '$y-$m-${d}T00:00:00';
+  }
+
+  static bool _isNailItem(Map<String, dynamic> item) {
+    final nailVariantId = item['nailVariantId'] ?? item['NailVariantId'];
+    final nailVariantName = item['nailVariantName'] ?? item['NailVariantName'];
+    final customerNailId = item['customerNailId'] ?? item['CustomerNailId'];
+    final customerNailName = item['customerNailName'] ?? item['CustomerNailName'];
+    final customerNailRequestId =
+        item['customerNailRequestId'] ?? item['CustomerNailRequestId'];
+
+    if (nailVariantId != null &&
+        int.tryParse(nailVariantId.toString()) != null &&
+        int.tryParse(nailVariantId.toString())! > 0) {
+      return true;
+    }
+    if (nailVariantName != null &&
+        nailVariantName.toString().trim().isNotEmpty) {
+      return true;
+    }
+    if (customerNailId != null &&
+        customerNailId.toString().trim().isNotEmpty) {
+      return true;
+    }
+    if (customerNailName != null &&
+        customerNailName.toString().trim().isNotEmpty) {
+      return true;
+    }
+    if (customerNailRequestId != null &&
+        customerNailRequestId.toString().trim().isNotEmpty) {
+      return true;
+    }
+    return false;
+  }
+
+  static Map<String, dynamic> _sanitizeItemForApi(Map<String, dynamic> item) {
+    final clean = <String, dynamic>{};
+
+    final nailVariantIdRaw = item['nailVariantId'] ?? item['NailVariantId'];
+    if (nailVariantIdRaw != null) {
+      final parsed = int.tryParse(nailVariantIdRaw.toString());
+      if (parsed != null && parsed > 0) {
+        clean['nailVariantId'] = parsed;
+      }
+    }
+
+    final serviceIdRaw = item['serviceId'] ?? item['ServiceId'];
+    if (serviceIdRaw != null && serviceIdRaw.toString().trim().isNotEmpty) {
+      clean['serviceId'] = serviceIdRaw.toString().trim();
+    }
+
+    final shapeConfigVal =
+        item['shapeMethodConfigId'] ?? item['ShapeMethodConfigId'];
+    if (shapeConfigVal != null) {
+      final configId = int.tryParse(shapeConfigVal.toString());
+      if (configId != null && configId > 0) {
+        clean['shapeMethodConfigId'] = configId;
+      }
+    }
+
+    final customerNailIdRaw = item['customerNailId'] ?? item['CustomerNailId'];
+    if (customerNailIdRaw != null &&
+        customerNailIdRaw.toString().trim().isNotEmpty) {
+      final parsed = int.tryParse(customerNailIdRaw.toString());
+      if (parsed != null) {
+        clean['customerNailId'] = parsed;
+      }
+    }
+
+    final customerNailRequestIdRaw =
+        item['customerNailRequestId'] ?? item['CustomerNailRequestId'];
+    if (customerNailRequestIdRaw != null &&
+        customerNailRequestIdRaw.toString().trim().isNotEmpty) {
+      clean['customerNailRequestId'] =
+          customerNailRequestIdRaw.toString().trim();
+    }
+
+    final qtyRaw = item['quantity'] ?? item['Quantity'];
+    clean['quantity'] = (qtyRaw is num)
+        ? qtyRaw.toInt()
+        : (int.tryParse(qtyRaw?.toString() ?? '1') ?? 1);
+
+    return clean;
   }
 
   String _readableError(Object e) {

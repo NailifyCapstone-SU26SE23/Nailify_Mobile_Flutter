@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/constants/app_colors.dart';
 import '../../../../generated/l10n_x.dart';
 import '../../data/models/loyalty_tier_model.dart';
 
@@ -23,13 +22,75 @@ class WalletEntryCard extends StatelessWidget {
     this.tier,
   });
 
+  List<Color> _getTierGradient(LoyaltyTierModel? tier) {
+    // 1. Ưu tiên lấy dải màu trực tiếp từ API nếu backend có trả về backgroundColor
+    final apiColor = tier?.parsedBackgroundColor;
+    if (apiColor != null && apiColor != Colors.transparent) {
+      final darker = Color.lerp(apiColor, Colors.black, 0.35) ?? apiColor;
+      final deepest = Color.lerp(darker, Colors.black, 0.3) ?? darker;
+      return [apiColor, darker, deepest];
+    }
+
+    final tierNameLower = (tier?.name ?? '').toLowerCase();
+
+    // 2. ĐỒNG (Bronze)
+    if (tierNameLower.contains('đồng') ||
+        tierNameLower.contains('dong') ||
+        tierNameLower.contains('bronz')) {
+      return const [
+        Color(0xFFA77044),
+        Color(0xFF7B4A26),
+        Color(0xFF4A2B12),
+      ];
+    }
+
+    // 3. BẠC (Silver)
+    if (tierNameLower.contains('bạc') ||
+        tierNameLower.contains('bac') ||
+        tierNameLower.contains('silv')) {
+      return const [
+        Color(0xFFB0B0B0),
+        Color(0xFF757575),
+        Color(0xFF424242),
+      ];
+    }
+
+    // 4. VÀNG (Gold)
+    if (tierNameLower.contains('vàng') ||
+        tierNameLower.contains('vang') ||
+        tierNameLower.contains('gold')) {
+      return const [
+        Color(0xFFFFD700),
+        Color(0xFFC59B27),
+        Color(0xFF7A5C07),
+      ];
+    }
+
+    // 5. KIM CƯƠNG (Diamond)
+    if (tierNameLower.contains('kim') || tierNameLower.contains('diamond')) {
+      return const [
+        Color(0xFFB9E3DE),
+        Color(0xFF5C8D89),
+        Color(0xFF284845),
+      ];
+    }
+
+    // Default fallback to Silver metallic
+    return const [
+      Color(0xFFB0B0B0),
+      Color(0xFF757575),
+      Color(0xFF424242),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
-    final tierColor = tier?.parsedBackgroundColor ?? AppColors.primary;
+    final gradientColors = _getTierGradient(tier);
+    final primaryColor = gradientColors[1];
     final tierTextColor = tier?.parsedTextColor ?? Colors.white;
 
     return Material(
-      color: Colors.white,
+      color: Colors.transparent,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
@@ -39,16 +100,13 @@ class WalletEntryCard extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             gradient: LinearGradient(
-              colors: [
-                tierColor,
-                Color.lerp(tierColor, Colors.white, 0.55) ?? tierColor,
-              ],
+              colors: gradientColors,
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             boxShadow: [
               BoxShadow(
-                color: tierColor.withValues(alpha: 0.25),
+                color: primaryColor.withValues(alpha: 0.3),
                 blurRadius: 16,
                 offset: const Offset(0, 8),
               ),

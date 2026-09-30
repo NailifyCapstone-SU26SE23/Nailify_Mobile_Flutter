@@ -21,7 +21,7 @@ BookingStatusView bookingStatusView(String? status, BuildContext context) {
       'Đang chờ xác nhận': 'Pending',
       'Đã xếp lịch': 'Scheduled',
       'Đã xem xét': 'Reviewed',
-      'Đã chấp nhận': 'Approved',
+      'Đã duyệt': 'Approved',
       'Đã từ chối': 'Rejected',
       'Đã hủy': 'Cancelled',
       'Đã Checked In': 'Checked In',
@@ -69,7 +69,7 @@ BookingStatusView _rawBookingStatusView(String? status) {
       );
     case 'Approved':
       return BookingStatusView(
-        'Đã chấp nhận',
+        'Đã duyệt',
         Colors.green.shade50,
         Colors.green.shade800,
         Icons.check_circle_outline_rounded,

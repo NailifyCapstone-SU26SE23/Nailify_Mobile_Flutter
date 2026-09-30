@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/di/injection.dart';
+import '../../../../core/network/api_client.dart';
+import '../../../../core/utils/api_response_parser.dart';
 import '../../../../generated/l10n.dart';
 import '../../data/models/home_data_models.dart';
 
@@ -70,201 +73,14 @@ class CustomerReviews extends StatelessWidget {
             itemCount: reviews.length,
             itemBuilder: (context, index) {
               final review = reviews[index];
-              return _buildMiniReviewCard(
-                context: context,
-                initials: review.initials,
-                name: review.name,
-                reviewText: review.review,
-                stars: review.stars,
+              return _MiniReviewCard(
+                review: review,
                 gradientColors: gradients[index % gradients.length],
-                timeAgo: review.timeAgo,
-                imageUrl: review.imageUrl,
               );
             },
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildMiniReviewCard({
-    required BuildContext context,
-    required String initials,
-    required String name,
-    required String reviewText,
-    required int stars,
-    required List<Color> gradientColors,
-    required String timeAgo,
-    String? imageUrl,
-  }) {
-    final hasImage = imageUrl != null && imageUrl.trim().isNotEmpty;
-
-    return Container(
-      width: 255,
-      margin: const EdgeInsets.only(right: 12.0),
-      padding: const EdgeInsets.all(12.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFFE3ED), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            spreadRadius: 1,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header: Avatar + Tên + Badge xác minh
-          Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: gradientColors,
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: gradientColors.first.withValues(alpha: 0.25),
-                      blurRadius: 4,
-                    ),
-                  ],
-                ),
-                child: Text(
-                  initials,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 11,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            name,
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        const Icon(
-                          Icons.verified_rounded,
-                          color: Color(0xFFFF4B72),
-                          size: 13,
-                        ),
-                      ],
-                    ),
-                    Text(
-                      timeAgo,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.grey.shade500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Rating 5 sao (filled & outline)
-              Row(
-                children: List.generate(
-                  5,
-                  (index) => Icon(
-                    index < stars
-                        ? Icons.star_rounded
-                        : Icons.star_outline_rounded,
-                    color: index < stars
-                        ? const Color(0xFFFFD54F)
-                        : Colors.grey.shade300,
-                    size: 12,
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 8),
-
-          // Nội dung review + Ảnh đính kèm (nếu có)
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Text(
-                    '"$reviewText"',
-                    style: TextStyle(
-                      color: Colors.grey.shade800,
-                      fontSize: 11,
-                      fontStyle: FontStyle.italic,
-                      height: 1.3,
-                    ),
-                    maxLines: 4,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (hasImage) ...[
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (_) => Dialog(
-                          backgroundColor: Colors.transparent,
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: Image.network(imageUrl, fit: BoxFit.contain),
-                          ),
-                        ),
-                      );
-                    },
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: SizedBox(
-                        width: 54,
-                        height: 54,
-                        child: Image.network(
-                          imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => Container(
-                            color: Colors.grey.shade200,
-                            child: const Icon(
-                              Icons.broken_image_rounded,
-                              size: 20,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -375,6 +191,251 @@ class CustomerReviews extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _MiniReviewCard extends StatefulWidget {
+  final HomeReviewItem review;
+  final List<Color> gradientColors;
+
+  const _MiniReviewCard({
+    required this.review,
+    required this.gradientColors,
+  });
+
+  @override
+  State<_MiniReviewCard> createState() => _MiniReviewCardState();
+}
+
+class _MiniReviewCardState extends State<_MiniReviewCard> {
+  String? _fetchedName;
+  String? _fetchedInitials;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.review.customerId.isNotEmpty &&
+        (widget.review.name == 'Khách hàng' ||
+            widget.review.name == 'Customer' ||
+            widget.review.name.isEmpty)) {
+      _loadUserInfo(widget.review.customerId);
+    }
+  }
+
+  Future<void> _loadUserInfo(String customerId) async {
+    try {
+      final response =
+          await getIt<ApiClient>().get<dynamic>('/Users/$customerId');
+      final data = ApiResponseParser.unwrapMap(response.data);
+      final firstName =
+          (data['firstName'] ?? data['FirstName'] ?? '').toString().trim();
+      final lastName =
+          (data['lastName'] ?? data['LastName'] ?? '').toString().trim();
+      String name = '';
+      if (lastName.isNotEmpty && firstName.isNotEmpty) {
+        name = '$lastName $firstName';
+      } else if (firstName.isNotEmpty) {
+        name = firstName;
+      } else if (lastName.isNotEmpty) {
+        name = lastName;
+      } else {
+        name = (data['fullName'] ??
+                data['FullName'] ??
+                data['name'] ??
+                data['userName'] ??
+                '')
+            .toString()
+            .trim();
+      }
+
+      if (mounted && name.isNotEmpty) {
+        setState(() {
+          _fetchedName = name;
+          _fetchedInitials = HomeReviewItem.calculateInitials(name);
+        });
+      }
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final review = widget.review;
+    final displayName = _fetchedName ?? review.getLocalizedName(context);
+    final initials = _fetchedInitials ?? review.initials;
+    final reviewText = review.review;
+    final stars = review.stars;
+    final gradientColors = widget.gradientColors;
+    final timeAgo = review.getLocalizedTimeAgo(context);
+    final imageUrl = review.imageUrl;
+    final hasImage = imageUrl != null && imageUrl.trim().isNotEmpty;
+
+    return Container(
+      width: 255,
+      margin: const EdgeInsets.only(right: 12.0),
+      padding: const EdgeInsets.all(12.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFFE3ED), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            spreadRadius: 1,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header: Avatar + Tên + Badge xác minh
+          Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: gradientColors,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: gradientColors.first.withValues(alpha: 0.25),
+                      blurRadius: 4,
+                    ),
+                  ],
+                ),
+                child: Text(
+                  initials,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            displayName,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(
+                          Icons.verified_rounded,
+                          color: Color(0xFFFF4B72),
+                          size: 13,
+                        ),
+                      ],
+                    ),
+                    Text(
+                      timeAgo,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Rating 5 sao (filled & outline)
+              Row(
+                children: List.generate(
+                  5,
+                  (index) => Icon(
+                    index < stars
+                        ? Icons.star_rounded
+                        : Icons.star_outline_rounded,
+                    color: index < stars
+                        ? const Color(0xFFFFD54F)
+                        : Colors.grey.shade300,
+                    size: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 8),
+
+          // Nội dung review + Ảnh đính kèm (nếu có)
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    '"$reviewText"',
+                    style: TextStyle(
+                      color: Colors.grey.shade800,
+                      fontSize: 11,
+                      fontStyle: FontStyle.italic,
+                      height: 1.3,
+                    ),
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (hasImage) ...[
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => Dialog(
+                          backgroundColor: Colors.transparent,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Image.network(imageUrl, fit: BoxFit.contain),
+                          ),
+                        ),
+                      );
+                    },
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: SizedBox(
+                        width: 54,
+                        height: 54,
+                        child: Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => Container(
+                            color: Colors.grey.shade200,
+                            child: const Icon(
+                              Icons.broken_image_rounded,
+                              size: 20,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

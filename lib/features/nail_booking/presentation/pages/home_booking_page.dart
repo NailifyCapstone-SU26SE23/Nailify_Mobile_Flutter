@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/di/injection.dart';
+import '../../../../core/network/signalr_service.dart';
+import '../../../../core/network/signalr_events.dart';
 import '../../../../core/utils/auth_guard.dart';
 import '../../../../core/utils/price_formatter.dart';
 import '../../../../core/utils/retry_helper.dart';
@@ -86,7 +89,10 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
   List<String?> _selectedExtraServices = [];
   DateTime? _selectedDate;
   String? _selectedTime;
-  int? _selectedPromotionId;
+  List<WalletVoucherModel> _selectedPromotions = [];
+  List<int> get _selectedPromotionIds =>
+      _selectedPromotions.map((p) => p.promotionId).toList();
+  StreamSubscription<SlotStatusChangedEvent>? _slotStatusChangedSub;
 
   @override
   void initState() {
@@ -97,6 +103,33 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
     _fetchServices();
     _fetchPromotions();
     _fetchWalletBalance();
+
+    try {
+      final signalR = getIt<SignalRService>();
+      _slotStatusChangedSub = signalR.onSlotStatusChanged.listen(_onSlotStatusChanged);
+    } catch (_) {}
+  }
+
+  void _onSlotStatusChanged(SlotStatusChangedEvent event) {
+    if (!mounted || _selectedDate == null) return;
+    
+    final currentSalonId = _selectedBranch?['salonId']?.toString() ?? '';
+    if (currentSalonId.isNotEmpty && event.salonId.toLowerCase() != currentSalonId.toLowerCase()) return;
+    
+    final String currentFormattedDate = _formatBookingDate(_selectedDate!); 
+    if (!event.bookingDate.startsWith(currentFormattedDate.split('T')[0])) return;
+
+    final currentArtistId = _noArtistSelected ? '' : (_selectedStylist?['nailArtistId']?.toString() ?? '');
+    
+    if (_noArtistSelected || event.artistId.isEmpty || event.artistId.toLowerCase() == currentArtistId.toLowerCase()) {
+      if (event.action == 'Held' || event.action == 'Released' || event.action == 'Booked') {
+        if (_noArtistSelected) {
+          _loadSalonSlots();
+        } else {
+          _fetchTimeSlots();
+        }
+      }
+    }
   }
 
   void _parseInitialData() {
@@ -124,6 +157,50 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
       _noArtistSelected = false;
     }
 
+    if (init['serviceIds'] is List) {
+      _selectedExtraServices = List<String?>.from(
+        (init['serviceIds'] as List).map((e) => e.toString()),
+      );
+    }
+
+    if (init['nailVariantId'] != null) {
+      final vId = int.tryParse(init['nailVariantId'].toString());
+      if (vId != null && vId > 0) {
+        _selectedNailVariant = NailVariantModel(
+          nailVariantId: vId,
+          name: init['nailVariantName']?.toString() ?? 'Mẫu móng',
+          nailShapeId: 0,
+          nailSurfaceId: 0,
+          nailDesignId: 0,
+          price: 0,
+          duration: 0,
+          imageUrl: init['nailVariantImageUrl']?.toString() ?? '',
+        );
+      }
+    }
+
+    if (init['shapeMethodConfigId'] != null) {
+      final sId = int.tryParse(init['shapeMethodConfigId'].toString());
+      if (sId != null && sId > 0) {
+        _selectedShapeMethod = ShapeMethodConfigModel(
+          shapeMethodConfigId: sId,
+          nailShapeId: 0,
+          nailShapeName: '',
+          name: init['shapeMethodName']?.toString() ?? 'Phom dáng',
+          price: 0,
+          duration: 0,
+          status: 'Active',
+        );
+      }
+    }
+
+    if (init['date'] is DateTime) {
+      _selectedDate = init['date'] as DateTime;
+    }
+    if (init['time'] != null) {
+      _selectedTime = init['time'].toString();
+    }
+
     if (_selectedBranch != null && _selectedStylist != null) {
       _currentStep = 2;
     } else if (_selectedBranch != null) {
@@ -133,6 +210,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
 
   @override
   void dispose() {
+    _slotStatusChangedSub?.cancel();
     _holdTimer?.cancel();
     _cancelCurrentHold();
     _pageController.dispose();
@@ -442,7 +520,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
       return true;
     } catch (e) {
       debugPrint('holdSlot failed: $e');
-      _showHoldFailureMessage(e.toString());
+      _showHoldFailureMessage('Rất tiếc, khung giờ này vừa có người đặt. Vui lòng chọn giờ khác.');
       return false;
     }
   }
@@ -544,9 +622,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
       'holdToken': holdToken,
       'useWalletBalance': _useWalletBalance,
       'bookingItems': _buildBookingItems(),
-      'selectedPromotionIds': _selectedPromotionId == null
-          ? null
-          : [_selectedPromotionId!],
+      'selectedPromotionIds': _selectedPromotionIds,
     };
   }
 
@@ -662,9 +738,9 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
     });
   }
 
-  void _handlePromotionChanged(int? id) {
+  void _handlePromotionsChanged(List<WalletVoucherModel> list) {
     setState(() {
-      _selectedPromotionId = id;
+      _selectedPromotions = list;
       _priceReviewKey = null;
       _isReviewingPrice = true;
     });
@@ -685,7 +761,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
       _selectedNailVariantId.toString(),
       _selectedShapeMethod?.shapeMethodConfigId.toString() ?? '',
       serviceIds.join(','),
-      (_selectedPromotionId?.toString() ?? ''),
+      _selectedPromotionIds.join(','),
       _useWalletBalance.toString(),
     ].join('|');
   }
@@ -713,9 +789,8 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
               : _selectedStylist?['nailArtistId'] as String?,
           nailVariantId: _selectedNailVariantId,
           serviceIds: _selectedExtraServices.whereType<String>().toList(),
-          selectedPromotionIds: _selectedPromotionId == null
-              ? null
-              : [_selectedPromotionId!],
+          selectedPromotionIds:
+              _selectedPromotionIds.isEmpty ? null : _selectedPromotionIds,
           shapeMethodConfigId: _selectedShapeMethod?.shapeMethodConfigId,
         );
         if (!mounted) return;
@@ -797,7 +872,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
     // Step 1: Chọn thợ quen
     if (_currentStep == 1) {
       if (!_noArtistSelected && _selectedStylist == null) {
-        _showSnackBar('Vui lòng chọn thợ nail hoặc chọn "Để Nailify sắp xếp"!');
+        _showSnackBar(S.of(context).pleaseSelectArtistOrAutoAssign);
         return;
       }
     }
@@ -807,7 +882,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
       final hasNail = _selectedNailVariant != null;
       final hasServices = _selectedExtraServices.whereType<String>().isNotEmpty;
       if (!hasNail && !hasServices) {
-        _showSnackBar('Vui lòng chọn ít nhất một mẫu nail hoặc dịch vụ!');
+        _showSnackBar(S.of(context).pleaseSelectServiceMin);
         return;
       }
     }
@@ -815,11 +890,11 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
     // Step 3: Chọn ngày & khung giờ
     if (_currentStep == 3) {
       if (_selectedDate == null) {
-        _showSnackBar('Vui lòng chọn ngày đặt lịch!');
+        _showSnackBar(S.of(context).pleaseSelectBookingDate);
         return;
       }
       if (_selectedTime == null) {
-        _showSnackBar('Vui lòng chọn khung giờ!');
+        _showSnackBar(S.of(context).pleaseSelectTimeSlot);
         return;
       }
     }
@@ -891,7 +966,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
           onPressed: _handleBack,
         ),
         title: Text(
-          'Đặt lịch nhanh',
+          S.of(context).quickBookingTitle,
           style: const TextStyle(
             fontWeight: FontWeight.w800,
             fontFamily: 'Georgia',
@@ -988,7 +1063,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
             ElevatedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Thử lại'),
+              label: Text(S.of(context).bookingRetry),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -1040,7 +1115,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                       ),
                       child: Center(
                         child: Text(
-                          'Tự chọn thợ quen',
+                          S.of(context).choosePreferredArtist,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -1076,7 +1151,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                       ),
                       child: Center(
                         child: Text(
-                          'Để Nailify sắp xếp',
+                          S.of(context).letNailifyAssign,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -1191,6 +1266,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                 artistId: _noArtistSelected
                     ? null
                     : _selectedStylist?['nailArtistId'],
+                waitlistItems: _buildBookingItems(),
                 onTimeChanged: (time) {
                   _cancelCurrentHold();
                   setState(() {
@@ -1462,12 +1538,9 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
   }
 
   Widget _buildVoucherRow() {
-    final selectedPromotion = _promotions.where(
-      (v) => v.promotionId == _selectedPromotionId,
-    );
-    final hasSelected = selectedPromotion.isNotEmpty;
+    final hasSelected = _selectedPromotions.isNotEmpty;
     final count = _promotions.length;
-    final selectedVoucher = hasSelected ? selectedPromotion.first : null;
+    final selectedVoucher = hasSelected ? _selectedPromotions.first : null;
 
     return GestureDetector(
       onTap: _isLoadingPromotions
@@ -1478,14 +1551,8 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
                 builder: (_) => BookingPromotionSheet(
-                  selectedPromotions: selectedPromotion.toList(),
-                  onConfirm: (list) {
-                    if (list.isNotEmpty) {
-                      _handlePromotionChanged(list.first.promotionId);
-                    } else {
-                      _handlePromotionChanged(null);
-                    }
-                  },
+                  selectedPromotions: _selectedPromotions,
+                  onConfirm: _handlePromotionsChanged,
                 ),
               );
             },
@@ -1557,7 +1624,9 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                   )
                 else if (hasSelected)
                   Text(
-                    '${selectedVoucher!.promotionName} (-${selectedVoucher.displayDiscount})',
+                    _selectedPromotions.length > 1
+                        ? 'Đã chọn ${_selectedPromotions.length} voucher'
+                        : '${selectedVoucher!.promotionName} (-${selectedVoucher.displayDiscount})',
                     style: const TextStyle(
                       color: Color(0xFFE02B6D),
                       fontSize: 12,
@@ -1583,7 +1652,7 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
                 color: Color(0xFFE02B6D),
                 size: 20,
               ),
-              onPressed: () => _handlePromotionChanged(null),
+              onPressed: () => _handlePromotionsChanged([]),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
             )
@@ -1876,6 +1945,8 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
 
   Widget _buildDiscountInvoiceRow(Map<String, dynamic> discount) {
     final name = discount['name']?.toString() ?? 'Ưu đãi';
+    final description = discount['description']?.toString();
+    final isAutoApplied = discount['isAutoApplied'] == true;
     final amount = discount['amount'];
     final amountDisplay = discount['amountDisplay']?.toString();
     final rawDisplay = (amountDisplay?.isNotEmpty == true)
@@ -1883,30 +1954,80 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
         : (amount != null ? PriceFormatter.format(amount) : '');
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(
-              name,
-              style: TextStyle(
-                fontSize: 13.5,
-                color: Colors.grey.shade700,
-                fontWeight: FontWeight.w500,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        name,
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          color: Colors.grey.shade800,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (isAutoApplied) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE02B6D).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: const Color(0xFFE02B6D).withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: const Text(
+                          'Tự động áp dụng',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFFE02B6D),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
-              maxLines: 1,
+              const SizedBox(width: 8),
+              Text(
+                _formatDiscountDisplay(rawDisplay),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13.5,
+                  color: Color(0xFFE02B6D),
+                ),
+              ),
+            ],
+          ),
+          if (description != null && description.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              description,
+              style: TextStyle(
+                fontSize: 11.5,
+                color: Colors.grey.shade500,
+                fontStyle: FontStyle.italic,
+              ),
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-          ),
-          Text(
-            _formatDiscountDisplay(rawDisplay),
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 13.5,
-              color: Color(0xFFE02B6D),
-            ),
-          ),
+          ],
         ],
       ),
     );
@@ -1915,11 +2036,12 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
   String _formatDiscountDisplay(String value) {
     var text = value.trim();
     if (text.isEmpty) return text;
-    text = text.replaceAll(RegExp(r'^-+'), '');
-    text = '-$text';
-    final lower = text.toLowerCase();
-    if (lower.contains('đ') || lower.contains('vnd')) return text;
-    return '$text VNĐ';
+    text = text.replaceAll(RegExp(r'^-+'), '').trim();
+    if (text.endsWith('%')) {
+      return '-$text';
+    }
+    text = text.replaceAll(RegExp(r'\s*(d|đ|vnd|vnđ)\s*$', caseSensitive: false), '').trim();
+    return '-$text VNĐ';
   }
 
   Widget _buildDepositDetails(

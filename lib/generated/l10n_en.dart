@@ -420,7 +420,7 @@ class SEn extends S {
 
   @override
   String yearFormat(Object y) {
-    return 'Year $y';
+    return '$y';
   }
 
   @override
@@ -430,7 +430,7 @@ class SEn extends S {
   String get statusPending => 'Pending Approval';
 
   @override
-  String get statusApproved => 'Ready to Book';
+  String get statusApproved => 'Approved';
 
   @override
   String get statusAssigned => 'Artist Assigned';
@@ -574,8 +574,7 @@ class SEn extends S {
       'An error occurred while fetching recommended nail design based on your preferences.';
 
   @override
-  String get tryChangeFilter =>
-      'Try changing the month, year, or status filter.';
+  String get tryChangeFilter => 'Try changing the date or status filter.';
 
   @override
   String get bookNowHint => 'Book a nail appointment now to get started!';
@@ -1420,6 +1419,15 @@ class SEn extends S {
   String get bookingServicesBooked => 'Services Booked';
 
   @override
+  String get bookingServiceNameHeader => 'Service Name';
+
+  @override
+  String get bookingQuantityHeader => 'Quantity';
+
+  @override
+  String get bookingPriceHeader => 'Price';
+
+  @override
   String bookingQuantityLabel(String qty) {
     return 'Qty: $qty';
   }
@@ -1458,10 +1466,10 @@ class SEn extends S {
   String get bookingNotFound => 'Booking information not found.';
 
   @override
-  String get bookingPaidAmount => 'Paid:';
+  String get bookingPaidAmount => 'Deposit (Paid):';
 
   @override
-  String get bookingRemainingAmount => 'Remaining:';
+  String get bookingRemainingAmount => 'Remaining to Pay:';
 
   @override
   String get bookingYourRating => 'Your Rating';
@@ -1932,7 +1940,7 @@ class SEn extends S {
 
   @override
   String get warrantyServiceNote =>
-      'Warranty items are listed from your previous appointment. You can uncheck any service you don\'t need to maintain.';
+      'Warranty items from your previous appointment are automatically included for free.';
 
   @override
   String get warrantySuccessTitle => 'Warranty booking successful!';
@@ -2076,4 +2084,142 @@ class SEn extends S {
 
   @override
   String get bookingAppliedOffers => 'Applied Offers';
+
+  @override
+  String get arTryOnTitle => 'Virtual Try-On';
+
+  @override
+  String get arTryOnSubtitle => 'Virtual Nail Experience';
+
+  @override
+  String get allStars => 'All stars';
+
+  @override
+  String get aiMatchStyleSubtitle => 'Style Recommendation';
+
+  @override
+  String get tagRecommend => 'SUGGESTED';
+
+  @override
+  String get tagHot => 'HOT';
+
+  @override
+  String get exploreBtn => 'Explore';
+
+  @override
+  String get customerDefault => 'Customer';
+
+  @override
+  String get justNow => 'Just now';
+
+  @override
+  String get retakePhoto => 'Retake';
+
+  @override
+  String get takePhotoButton => 'Take Photo';
+
+  @override
+  String get chooseFromGalleryButton => 'Choose from Gallery';
+
+  @override
+  String get noNailDetected => 'No nail detected in this photo.';
+
+  @override
+  String timeMinutesAgo(String n) {
+    return '$n minutes ago';
+  }
+
+  @override
+  String timeHoursAgo(String n) {
+    return '$n hours ago';
+  }
+
+  @override
+  String timeDaysAgo(String n) {
+    return '$n days ago';
+  }
+
+  @override
+  String timeMonthsAgo(String n) {
+    return '$n months ago';
+  }
+
+  @override
+  String get quickBookingTitle => 'Quick Booking';
+
+  @override
+  String get choosePreferredArtist => 'Select Preferred Artist';
+
+  @override
+  String get letNailifyAssign => 'Let Nailify Arrange';
+
+  @override
+  String get pleaseSelectArtistOrAutoAssign =>
+      'Please select a nail artist or choose \'Let Nailify Arrange\'!';
+
+  @override
+  String get chooseServiceTitle => 'Choose your services';
+
+  @override
+  String get chooseServiceSubtitle =>
+      'Unleash creativity with a new nail set or add accompanying services';
+
+  @override
+  String get doNailsTab => 'Nail Design';
+
+  @override
+  String get otherServicesTab => 'Other Services';
+
+  @override
+  String get pleaseSelectArtistFirst => 'Please select an artist first';
+
+  @override
+  String get pleaseSelectArtistFirstDesc =>
+      'To view the nail designs this artist can perform, please go back to the artist selection step.';
+
+  @override
+  String get artistHasNoNailVariants => 'This artist has no nail samples yet';
+
+  @override
+  String get artistHasNoNailVariantsDesc =>
+      'You can still choose other services in the adjacent tab.';
+
+  @override
+  String get cannotLoadNailVariants => 'Could not load nail list';
+
+  @override
+  String get detailsBtn => 'Details';
+
+  @override
+  String get selectBtn => 'Select';
+
+  @override
+  String get selectedBtn => 'Selected';
+
+  @override
+  String get pleaseSelectServiceMin =>
+      'Please select at least one nail design or service!';
+
+  @override
+  String get pleaseSelectBookingDate => 'Please select a booking date!';
+
+  @override
+  String get pleaseSelectTimeSlot => 'Please select an available time slot!';
+
+  @override
+  String get cannotHoldSlot =>
+      'Cannot hold this time slot. Please choose another time.';
+
+  @override
+  String get holdTimeExpired =>
+      'Hold time has expired. Please reselect your time slot.';
+
+  @override
+  String get customFee => 'Custom Fee';
+
+  @override
+  String get viewTransactions => 'View Transactions';
+
+  @override
+  String get rateServiceBtn => 'Rate Service';
 }

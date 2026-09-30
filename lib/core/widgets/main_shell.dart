@@ -11,6 +11,7 @@ import '../constants/app_constants.dart';
 import '../di/injection.dart';
 import '../network/api_client.dart';
 import '../../features/quiz/data/datasources/quiz_repository.dart';
+import '../services/in_app_notification_store.dart';
 import '../../generated/l10n.dart';
 
 class MainShell extends StatefulWidget {
@@ -69,9 +70,11 @@ class _MainShellState extends State<MainShell> {
       _lastCheckedToken = token;
       _checkRecommendations();
     } else if (localQuizCompleted != _hasRecommendations) {
-      setState(() {
-        _hasRecommendations = localQuizCompleted;
-      });
+      if (mounted) {
+        setState(() {
+          _hasRecommendations = localQuizCompleted;
+        });
+      }
     }
   }
 
@@ -302,7 +305,18 @@ class _MainShellState extends State<MainShell> {
     );
   }
 
+  String _formatNotificationTime(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inSeconds < 60) return 'Vừa xong';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m';
+    if (diff.inHours < 24) return '${diff.inHours}h';
+    return '${dt.day}/${dt.month} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  }
+
   List<Widget> _buildLoggedInActions(BuildContext context) {
+    final notificationStore = getIt<InAppNotificationStore>();
+
     return [
       Container(
         margin: const EdgeInsets.only(right: 8),
@@ -320,175 +334,345 @@ class _MainShellState extends State<MainShell> {
           onPressed: () => context.push('/snapshot-try-on'),
         ),
       ),
-      Container(
-        margin: const EdgeInsets.only(right: 12),
-        decoration: BoxDecoration(
-          color: AppColors.primarySurface.withValues(alpha: 0.6),
-          shape: BoxShape.circle,
-        ),
-        child: PopupMenuButton<void>(
-          offset: const Offset(0, 50),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(
-              color: AppColors.primary.withValues(alpha: 0.15),
-              width: 1,
+      ListenableBuilder(
+        listenable: notificationStore,
+        builder: (context, _) {
+          final unreadCount = notificationStore.unreadCount;
+          final hasSignalRNotifs = notificationStore.hasNotifications;
+          final showBadge = unreadCount > 0 || _hasRecommendations;
+
+          return Container(
+            margin: const EdgeInsets.only(right: 12),
+            decoration: BoxDecoration(
+              color: AppColors.primarySurface.withValues(alpha: 0.6),
+              shape: BoxShape.circle,
             ),
-          ),
-          color: Colors.white,
-          elevation: 8,
-          shadowColor: AppColors.primary.withValues(alpha: 0.2),
-          child: Stack(
-            clipBehavior: Clip.none,
-            alignment: Alignment.center,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Icon(
-                  _hasRecommendations
-                      ? Icons.notifications_active_rounded
-                      : Icons.notifications_outlined,
-                  color: _hasRecommendations
-                      ? AppColors.primary
-                      : AppColors.primaryDark,
-                  size: 24,
+            child: PopupMenuButton<void>(
+              offset: const Offset(0, 50),
+              constraints: const BoxConstraints(maxWidth: 320, maxHeight: 450),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                  width: 1,
                 ),
               ),
-              if (_hasRecommendations)
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    width: 9,
-                    height: 9,
-                    decoration: BoxDecoration(
-                      color: Colors.redAccent,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 1.5),
+              color: Colors.white,
+              elevation: 8,
+              shadowColor: AppColors.primary.withValues(alpha: 0.2),
+              child: Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.center,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Icon(
+                      showBadge
+                          ? Icons.notifications_active_rounded
+                          : Icons.notifications_outlined,
+                      color: showBadge
+                          ? AppColors.primary
+                          : AppColors.primaryDark,
+                      size: 24,
                     ),
                   ),
-                ),
-            ],
-          ),
-          itemBuilder: (context) => [
-            PopupMenuItem<void>(
-              enabled: false,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.notifications_rounded,
-                        color: AppColors.primary,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        S.of(context).notifications,
-                        style: const TextStyle(
-                          fontFamily: 'Georgia',
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primaryDark,
+                  if (showBadge)
+                    Positioned(
+                      right: unreadCount > 0 ? 4 : 8,
+                      top: unreadCount > 0 ? 4 : 8,
+                      child: Container(
+                        padding: unreadCount > 0
+                            ? const EdgeInsets.symmetric(
+                                horizontal: 4, vertical: 1)
+                            : EdgeInsets.zero,
+                        constraints: BoxConstraints(
+                          minWidth: unreadCount > 0 ? 16 : 9,
+                          minHeight: unreadCount > 0 ? 16 : 9,
                         ),
+                        decoration: BoxDecoration(
+                          color: Colors.redAccent,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
+                        child: unreadCount > 0
+                            ? Text(
+                                unreadCount > 99 ? '99+' : '$unreadCount',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              )
+                            : null,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Divider(
-                    height: 1,
-                    color: AppColors.primary.withValues(alpha: 0.12),
-                  ),
+                    ),
                 ],
               ),
-            ),
-            if (_hasRecommendations)
-              PopupMenuItem<void>(
-                onTap: () {
-                  Future.delayed(const Duration(milliseconds: 100), () {
-                    if (context.mounted) {
-                      context.go('/perfect-match');
-                    }
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF5F8),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.2),
+              itemBuilder: (context) {
+                final items = <PopupMenuEntry<void>>[];
+
+                // Header
+                items.add(
+                  PopupMenuItem<void>(
+                    enabled: false,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.notifications_rounded,
+                                  color: AppColors.primary,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  S.of(context).notifications,
+                                  style: const TextStyle(
+                                    fontFamily: 'Georgia',
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primaryDark,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (hasSignalRNotifs)
+                              InkWell(
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  notificationStore.markAllAsRead();
+                                },
+                                child: const Padding(
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 4, vertical: 2),
+                                  child: Text(
+                                    'Đã đọc tất cả',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Divider(
+                          height: 1,
+                          color: AppColors.primary.withValues(alpha: 0.12),
+                        ),
+                      ],
                     ),
                   ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.auto_awesome_rounded,
-                          size: 18,
-                          color: AppColors.primary,
+                );
+
+                // SignalR Notification List Items
+                if (hasSignalRNotifs) {
+                  for (final notif in notificationStore.notifications) {
+                    items.add(
+                      PopupMenuItem<void>(
+                        onTap: () {
+                          notificationStore.markAsRead(notif.id);
+                          if (notif.route != null) {
+                            Future.delayed(const Duration(milliseconds: 100), () {
+                              if (context.mounted) {
+                                if (notif.extra != null) {
+                                  context.go(notif.route!, extra: notif.extra);
+                                } else {
+                                  context.go(notif.route!);
+                                }
+                              }
+                            });
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          margin: const EdgeInsets.symmetric(vertical: 2),
+                          decoration: BoxDecoration(
+                            color: notif.isRead
+                                ? Colors.transparent
+                                : const Color(0xFFFFF5F8),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: notif.isRead
+                                  ? Colors.grey.shade200
+                                  : AppColors.primary.withValues(alpha: 0.2),
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: notif.color.withValues(alpha: 0.12),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  notif.icon,
+                                  size: 16,
+                                  color: notif.color,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            notif.title,
+                                            style: TextStyle(
+                                              fontWeight: notif.isRead
+                                                  ? FontWeight.w600
+                                                  : FontWeight.bold,
+                                              fontSize: 12,
+                                              color: AppColors.textPrimary,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          _formatNotificationTime(notif.timestamp),
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: Colors.grey.shade500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      notif.message,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey.shade700,
+                                        height: 1.3,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    );
+                  }
+                }
+
+                // AI Nail recommendation item
+                if (_hasRecommendations) {
+                  items.add(
+                    PopupMenuItem<void>(
+                      onTap: () {
+                        Future.delayed(const Duration(milliseconds: 100), () {
+                          if (context.mounted) {
+                            context.go('/perfect-match');
+                          }
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF5F8),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppColors.primary.withValues(alpha: 0.2),
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Text(
-                              S.of(context).nailRecommendation,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12.5,
-                                color: AppColors.textPrimary,
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: const BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.auto_awesome_rounded,
+                                size: 18,
+                                color: AppColors.primary,
                               ),
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              S.of(context).viewDetail,
-                              style: const TextStyle(
-                                fontSize: 11.5,
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w600,
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    S.of(context).nailRecommendation,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12.5,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    S.of(context).viewDetail,
+                                    style: const TextStyle(
+                                      fontSize: 11.5,
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
                               ),
+                            ),
+                            const Icon(
+                              Icons.chevron_right_rounded,
+                              color: AppColors.primary,
+                              size: 20,
                             ),
                           ],
                         ),
                       ),
-                      const Icon(
-                        Icons.chevron_right_rounded,
-                        color: AppColors.primary,
-                        size: 20,
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            else
-              const PopupMenuItem<void>(
-                enabled: false,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12.0),
-                  child: Center(
-                    child: Text(
-                      'Không có thông báo mới.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                        fontStyle: FontStyle.italic,
+                    ),
+                  );
+                }
+
+                if (!hasSignalRNotifs && !_hasRecommendations) {
+                  items.add(
+                    const PopupMenuItem<void>(
+                      enabled: false,
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12.0),
+                        child: Center(
+                          child: Text(
+                            'Không có thông báo mới.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-              ),
-          ],
-        ),
+                  );
+                }
+
+                return items;
+              },
+            ),
+          );
+        },
       ),
     ];
   }

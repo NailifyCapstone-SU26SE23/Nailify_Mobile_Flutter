@@ -31,6 +31,7 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
   StreamSubscription<DelayETAEvent>? _delayEtaSub;
   StreamSubscription<CustomNailQuotedEvent>? _customNailQuotedSub;
   StreamSubscription<CustomNailRejectedEvent>? _customNailRejectedSub;
+  StreamSubscription<ArtistReassignedEvent>? _artistReassignedSub;
 
   @override
   void initState() {
@@ -50,6 +51,7 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
     _delayEtaSub?.cancel();
     _customNailQuotedSub?.cancel();
     _customNailRejectedSub?.cancel();
+    _artistReassignedSub?.cancel();
     super.dispose();
   }
 
@@ -304,6 +306,32 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
         _showCustomNailRejectedDialog(context, event);
       });
     });
+
+    _artistReassignedSub = signalR.onArtistReassigned.listen((event) {
+      final route = '/my-bookings';
+      final msg = event.message.isNotEmpty
+          ? event.message
+          : 'Lịch hẹn đã được đổi sang thợ làm móng mới: ${event.newArtistName}';
+      notificationStore.addNotification(
+        title: 'Thay đổi thợ làm móng',
+        message: msg,
+        icon: Icons.swap_horiz_rounded,
+        color: Colors.blue.shade600,
+        route: route,
+      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final context = rootNavigatorKey.currentContext;
+        if (context == null) return;
+        _showStyledSnackBar(
+          context,
+          message: 'Thay đổi thợ: $msg',
+          icon: Icons.swap_horiz_rounded,
+          color: Colors.blue.shade600,
+          actionLabel: 'Xem',
+          onAction: () => context.push(route),
+        );
+      });
+    });
   }
 
   String _cleanNotificationMessage(String msg) {
@@ -465,138 +493,277 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
   ) {
     showDialog(
       context: context,
+      barrierDismissible: true,
       builder: (dialogContext) {
-        return AlertDialog(
+        return Dialog(
+          backgroundColor: Colors.white,
+          elevation: 16,
+          shadowColor: Colors.black.withValues(alpha: 0.2),
+          clipBehavior: Clip.antiAlias,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(28),
           ),
-          icon: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.amber.shade50,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.monetization_on_rounded,
-              color: Colors.amber.shade800,
-              size: 36,
-            ),
-          ),
-          title: const Text(
-            'Salon đã gửi Báo Giá!',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF4A3543),
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          child: Stack(
             children: [
-              Text(
-                _cleanNotificationMessage(event.message),
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14, color: Colors.black87),
-              ),
-              if (event.price > 0 || event.duration > 0) ...[
-                const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.amber.shade200),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      if (event.price > 0)
-                        Column(
+              Padding(
+                padding: const EdgeInsets.fromLTRB(22, 28, 22, 22),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Icon Header Badge (Gold/Amber Coin Theme)
+                    Container(
+                      width: 68,
+                      height: 68,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFFFBEB), Color(0xFFFEF3C7)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFFFDE68A),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFF59E0B).withValues(alpha: 0.2),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.monetization_on_rounded,
+                          color: Color(0xFFD97706),
+                          size: 36,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Dialog Title
+                    const Text(
+                      'Salon đã gửi Báo Giá!',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Notification Message Body
+                    Text(
+                      _cleanNotificationMessage(event.message),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        color: Colors.grey.shade700,
+                        height: 1.45,
+                      ),
+                    ),
+
+                    // Price & Estimated Duration Box
+                    if (event.price > 0 || event.duration > 0) ...[
+                      const SizedBox(height: 18),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFFF7F9), Color(0xFFFDE8F0)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: const Color(0xFFFCE3EC),
+                            width: 1.2,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            const Text(
-                              'Giá đề xuất',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey,
+                            if (event.price > 0)
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    const Text(
+                                      'GIÁ ĐỀ XUẤT',
+                                      style: TextStyle(
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColors.primary,
+                                        letterSpacing: 0.6,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      PriceFormatter.format(event.price),
+                                      style: const TextStyle(
+                                        fontSize: 18.5,
+                                        fontWeight: FontWeight.w900,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              PriceFormatter.format(event.price),
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.amber.shade900,
+                            if (event.price > 0 && event.duration > 0)
+                              Container(
+                                width: 1,
+                                height: 34,
+                                color: const Color(0xFFF7C8D8),
                               ),
-                            ),
+                            if (event.duration > 0)
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      'THỜI GIAN DỰ KIẾN',
+                                      style: TextStyle(
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.grey.shade600,
+                                        letterSpacing: 0.6,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.schedule_rounded,
+                                          size: 16,
+                                          color: Colors.grey.shade700,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          '${event.duration} phút',
+                                          style: const TextStyle(
+                                            fontSize: 15.5,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
                           ],
                         ),
-                      if (event.duration > 0)
-                        Column(
-                          children: [
-                            const Text(
-                              'Thời gian dự kiến',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '${event.duration} phút',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF4A3543),
-                              ),
-                            ),
-                          ],
-                        ),
+                      ),
                     ],
-                  ),
+
+                    const SizedBox(height: 14),
+                    Text(
+                      'Bạn có muốn Đồng ý hoặc Từ chối mức giá này không?',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+
+                    // Action Buttons Row
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 46,
+                            child: OutlinedButton(
+                              onPressed: () =>
+                                  Navigator.of(dialogContext).pop(),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.grey.shade700,
+                                side: BorderSide(
+                                  color: Colors.grey.shade300,
+                                  width: 1.2,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                padding: EdgeInsets.zero,
+                              ),
+                              child: const Text(
+                                'Để sau',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: SizedBox(
+                            height: 46,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.of(dialogContext).pop();
+                                if (event.customerNailRequestId.isNotEmpty) {
+                                  context.push(
+                                      '/my-studio/${event.customerNailRequestId}');
+                                } else {
+                                  context.go('/my-studio');
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                elevation: 3,
+                                shadowColor: AppColors.primary
+                                    .withValues(alpha: 0.35),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                padding: EdgeInsets.zero,
+                              ),
+                              child: const Text(
+                                'Xem & Phản hồi giá',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
-              const SizedBox(height: 12),
-              Text(
-                'Bạn có muốn Đồng ý hoặc Từ chối mức giá này không?',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey.shade700,
+              ),
+
+              // Close X button at top right
+              Positioned(
+                top: 8,
+                right: 8,
+                child: IconButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: Colors.black38,
+                    size: 22,
+                  ),
+                  tooltip: 'Đóng',
                 ),
               ),
             ],
           ),
-          actionsAlignment: MainAxisAlignment.spaceEvenly,
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Để sau', style: TextStyle(color: Colors.grey)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                if (event.customerNailRequestId.isNotEmpty) {
-                  context.push('/my-studio/${event.customerNailRequestId}');
-                } else {
-                  context.go('/my-studio');
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text('Xem & Phản hồi giá'),
-            ),
-          ],
         );
       },
     );
@@ -608,62 +775,158 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
   ) {
     showDialog(
       context: context,
+      barrierDismissible: true,
       builder: (dialogContext) {
-        return AlertDialog(
+        return Dialog(
+          backgroundColor: Colors.white,
+          elevation: 16,
+          shadowColor: Colors.black.withValues(alpha: 0.2),
+          clipBehavior: Clip.antiAlias,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(28),
           ),
-          icon: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.red.shade50,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.cancel_outlined,
-              color: Colors.red.shade600,
-              size: 36,
-            ),
-          ),
-          title: const Text(
-            'Mẫu nail custom bị từ chối',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF4A3543),
-            ),
-          ),
-          content: Text(
-            _cleanNotificationMessage(event.message),
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 14, color: Colors.black87),
-          ),
-          actionsAlignment: MainAxisAlignment.spaceEvenly,
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Đóng', style: TextStyle(color: Colors.grey)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                if (event.customerNailRequestId.isNotEmpty) {
-                  context.push('/my-studio/${event.customerNailRequestId}');
-                } else {
-                  context.go('/my-studio');
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade500,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          child: Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(22, 28, 22, 22),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 68,
+                      height: 68,
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.red.shade200,
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.red.shade200.withValues(alpha: 0.3),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.cancel_outlined,
+                          color: Colors.red.shade600,
+                          size: 36,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    const Text(
+                      'Mẫu nail custom bị từ chối',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      _cleanNotificationMessage(event.message),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        color: Colors.grey.shade700,
+                        height: 1.45,
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 46,
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.of(dialogContext).pop(),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.grey.shade700,
+                                side: BorderSide(
+                                  color: Colors.grey.shade300,
+                                  width: 1.2,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                padding: EdgeInsets.zero,
+                              ),
+                              child: const Text(
+                                'Đóng',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: SizedBox(
+                            height: 46,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.of(dialogContext).pop();
+                                if (event.customerNailRequestId.isNotEmpty) {
+                                  context.push(
+                                      '/my-studio/${event.customerNailRequestId}');
+                                } else {
+                                  context.go('/my-studio');
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red.shade500,
+                                foregroundColor: Colors.white,
+                                elevation: 3,
+                                shadowColor:
+                                    Colors.red.shade500.withValues(alpha: 0.35),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                padding: EdgeInsets.zero,
+                              ),
+                              child: const Text(
+                                'Xem chi tiết',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              child: const Text('Xem chi tiết'),
-            ),
-          ],
+
+              // Close X button at top right
+              Positioned(
+                top: 8,
+                right: 8,
+                child: IconButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: Colors.black38,
+                    size: 22,
+                  ),
+                  tooltip: 'Đóng',
+                ),
+              ),
+            ],
+          ),
         );
       },
     );

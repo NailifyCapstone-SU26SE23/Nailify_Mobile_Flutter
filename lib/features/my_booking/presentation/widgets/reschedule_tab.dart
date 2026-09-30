@@ -305,23 +305,12 @@ class _RescheduleTabState extends State<RescheduleTab> {
         '';
     final newBookingDate = DateTime.tryParse(newDateStr) ?? bookingDate;
 
-    final items = booking['bookingItems'] as List<dynamic>? ?? [];
-    var nailName = S.of(context).nailServiceDefault;
-
-    if (items.isNotEmpty && items.first is Map) {
-      final firstItem = items.first as Map;
-      final variantName = firstItem['nailVariantName']?.toString().trim() ?? '';
-      final customNailName =
-          firstItem['customerNailName']?.toString().trim() ?? '';
-      final serviceName = firstItem['serviceName']?.toString().trim() ?? '';
-      if (variantName.isNotEmpty) {
-        nailName = variantName;
-      } else if (customNailName.isNotEmpty) {
-        nailName = customNailName;
-      } else if (serviceName.isNotEmpty) {
-        nailName = serviceName;
-      }
-    }
+    final rawItems = booking['bookingItems'] ??
+        booking['BookingItems'] ??
+        booking['items'] ??
+        booking['Items'];
+    final items = rawItems is List ? rawItems : <dynamic>[];
+    final parsedItems = _parseBookingItems(items);
 
     String timeStr = booking['startTime']?.toString() ?? '';
     if (timeStr.length >= 5) timeStr = timeStr.substring(0, 5);
@@ -516,33 +505,24 @@ class _RescheduleTabState extends State<RescheduleTab> {
             ),
             const SizedBox(height: 12),
 
-            // Dịch vụ & Thợ
+            // Dịch vụ đã đặt
+            _buildBookedServicesWidget(parsedItems),
+            const SizedBox(height: 8),
             Row(
               children: [
-                Icon(Icons.cut_rounded, size: 15, color: Colors.grey.shade500),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    nailName,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                      color: AppColors.textPrimary,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: 12),
                 Icon(
                   Icons.person_outline,
                   size: 15,
-                  color: Colors.grey.shade500,
+                  color: Colors.grey.shade600,
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  artistName,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                  'Thợ: $artistName',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: Colors.grey.shade700,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
@@ -718,4 +698,210 @@ class _RescheduleTabState extends State<RescheduleTab> {
       ),
     );
   }
+
+  List<_BookingItemDisplay> _parseBookingItems(List<dynamic> items) {
+    final result = <_BookingItemDisplay>[];
+    for (final item in items) {
+      if (item is Map) {
+        final variantName =
+            (item['nailVariantName'] ?? item['NailVariantName'])
+                ?.toString()
+                .trim() ??
+            '';
+        final customNailName =
+            (item['customerNailName'] ?? item['CustomerNailName'])
+                ?.toString()
+                .trim() ??
+            '';
+        final serviceName =
+            (item['serviceName'] ?? item['ServiceName'])
+                ?.toString()
+                .trim() ??
+            '';
+        final shapeName =
+            (item['shapeMethodName'] ?? item['ShapeMethodName'])
+                ?.toString()
+                .trim();
+        final qtyRaw = item['quantity'] ?? item['Quantity'] ?? 1;
+        final qty = (qtyRaw is num)
+            ? qtyRaw.toInt()
+            : (int.tryParse(qtyRaw.toString()) ?? 1);
+
+        String name = '';
+        bool isNailDesign = false;
+
+        if (variantName.isNotEmpty) {
+          name = variantName;
+          isNailDesign = true;
+        } else if (customNailName.isNotEmpty) {
+          name = customNailName;
+          isNailDesign = true;
+        } else if (serviceName.isNotEmpty) {
+          name = serviceName;
+        }
+
+        if (name.isNotEmpty) {
+          result.add(
+            _BookingItemDisplay(
+              name: name,
+              shapeName:
+                  (shapeName != null && shapeName.isNotEmpty) ? shapeName : null,
+              quantity: qty,
+              isNailDesign: isNailDesign,
+            ),
+          );
+        }
+      }
+    }
+    return result;
+  }
+
+  Widget _buildBookedServicesWidget(List<_BookingItemDisplay> items) {
+    if (items.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF7F9),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFFCE3EC)),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.auto_awesome,
+              size: 14,
+              color: AppColors.primary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              S.of(context).nailServiceDefault,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7F9),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFCE3EC)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.auto_awesome,
+                size: 14,
+                color: AppColors.primary,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Dịch vụ đã đặt (${items.length})',
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...items.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final item = entry.value;
+            return Padding(
+              padding:
+                  EdgeInsets.only(bottom: idx == items.length - 1 ? 0 : 6),
+              child: Row(
+                children: [
+                  Icon(
+                    item.isNailDesign
+                        ? Icons.brush_rounded
+                        : Icons.check_circle_outline_rounded,
+                    size: 14,
+                    color: item.isNailDesign
+                        ? AppColors.primary
+                        : Colors.teal.shade600,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      item.name,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: item.isNailDesign
+                            ? FontWeight.bold
+                            : FontWeight.w500,
+                        color: AppColors.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (item.shapeName != null) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 1.5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF3E8FF),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        item.shapeName!,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF6B21A8),
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (item.quantity > 1) ...[
+                    const SizedBox(width: 6),
+                    Text(
+                      'x${item.quantity}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
 }
+
+class _BookingItemDisplay {
+  final String name;
+  final String? shapeName;
+  final int quantity;
+  final bool isNailDesign;
+
+  _BookingItemDisplay({
+    required this.name,
+    this.shapeName,
+    required this.quantity,
+    required this.isNailDesign,
+  });
+}
+

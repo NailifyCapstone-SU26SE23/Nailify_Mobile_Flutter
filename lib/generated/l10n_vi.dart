@@ -575,8 +575,7 @@ class SVi extends S {
       'Đã xảy ra lỗi khi lấy gợi ý cấu hình móng từ sở thích của bạn.';
 
   @override
-  String get tryChangeFilter =>
-      'Thử thay đổi bộ lọc tháng, năm hoặc trạng thái.';
+  String get tryChangeFilter => 'Thử thay đổi bộ lọc ngày hoặc trạng thái.';
 
   @override
   String get bookNowHint => 'Hãy đặt ngay một lịch làm móng để trải nghiệm!';
@@ -1422,6 +1421,15 @@ class SVi extends S {
   String get bookingServicesBooked => 'Dịch vụ đã đặt';
 
   @override
+  String get bookingServiceNameHeader => 'Tên dịch vụ';
+
+  @override
+  String get bookingQuantityHeader => 'Số lượng';
+
+  @override
+  String get bookingPriceHeader => 'Giá';
+
+  @override
   String bookingQuantityLabel(String qty) {
     return 'SL: $qty';
   }
@@ -2080,10 +2088,13 @@ class SVi extends S {
   String get bookingAppliedOffers => 'Ưu đãi được áp dụng';
 
   @override
-  String get arTryOnTitle => 'Thử móng AR';
+  String get arTryOnTitle => 'Thử móng ảo';
 
   @override
-  String get arTryOnSubtitle => 'Trải nghiệm móng 3D';
+  String get arTryOnSubtitle => 'Trải nghiệm móng ảo';
+
+  @override
+  String get allStars => 'Tất cả sao';
 
   @override
   String get aiMatchStyleSubtitle => 'Gợi ý phong cách';

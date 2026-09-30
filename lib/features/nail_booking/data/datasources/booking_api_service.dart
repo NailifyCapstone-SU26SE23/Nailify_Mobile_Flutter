@@ -579,7 +579,7 @@ class BookingApiService {
             warrantyBookingItems ??
             _buildBookingItems(nailVariantId, serviceIds, shapeMethodConfigId),
         'selectedPromotionIds': selectedPromotionIds,
-        'warrantyForBookingId': ?warrantyForBookingId,
+        'warrantyForBookingId': warrantyForBookingId,
       },
     );
     return response.data['data'] ?? {};
@@ -715,7 +715,7 @@ class BookingApiService {
     final bookingItems = <Map<String, dynamic>>[
       {
         'customerNailRequestId': customerNailRequestId,
-        'shapeMethodConfigId': ?shapeMethodConfigId,
+        'shapeMethodConfigId': shapeMethodConfigId,
         'quantity': 1,
       },
     ];
@@ -750,7 +750,7 @@ class BookingApiService {
     final bookingItems = <Map<String, dynamic>>[
       {
         'customerNailRequestId': customerNailRequestId,
-        'shapeMethodConfigId': ?shapeMethodConfigId,
+        'shapeMethodConfigId': shapeMethodConfigId,
         'quantity': 1,
       },
     ];

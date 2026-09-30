@@ -166,12 +166,12 @@ class _StarFilterDropdown extends StatelessWidget {
         child: DropdownButtonHideUnderline(
           child: DropdownButton<int?>(
             value: value,
-            hint: const Text('All stars'),
+            hint: Text(S.of(context).allStars),
             icon: const Icon(Icons.keyboard_arrow_down_rounded),
             items: [
-              const DropdownMenuItem<int?>(
+              DropdownMenuItem<int?>(
                 value: null,
-                child: Text('All stars'),
+                child: Text(S.of(context).allStars),
               ),
               ...List.generate(5, (index) {
                 final stars = index + 1;

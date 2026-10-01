@@ -3160,18 +3160,18 @@ class _PriceTableHeader extends StatelessWidget {
       fontWeight: FontWeight.bold,
     );
     return const Padding(
-      padding: EdgeInsets.only(left: 12, top: 4),
+      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       child: Row(
         children: [
-          Expanded(flex: 5, child: Text('Thành phần', style: style)),
+          Expanded(child: Text('Thành phần', style: style)),
           SizedBox(
-            width: 38,
+            width: 36,
             child: Text('SL', style: style, textAlign: TextAlign.center),
           ),
-          SizedBox(width: 10),
+          SizedBox(width: 8),
           SizedBox(
-            width: 92,
-            child: Text('Giá', style: style, textAlign: TextAlign.right),
+            width: 115,
+            child: Text('Giá', style: style, textAlign: TextAlign.right),
           ),
         ],
       ),

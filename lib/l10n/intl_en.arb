@@ -493,7 +493,7 @@
   "bookingServiceNameHeader": "Service Name",
   "bookingQuantityHeader": "Quantity",
   "bookingPriceHeader": "Price",
-  "bookingQuantityLabel": "Qty: {qty}",
+  "bookingQuantityLabel": "{qty}",
   "@bookingQuantityLabel": { "placeholders": { "qty": { "type": "String" } } },
   "bookingOriginalPriceLabel": "Original Price:",
   "bookingDiscountLabel": "Discount:",

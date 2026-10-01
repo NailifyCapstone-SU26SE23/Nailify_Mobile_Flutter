@@ -1429,7 +1429,7 @@ class SEn extends S {
 
   @override
   String bookingQuantityLabel(String qty) {
-    return 'Qty: $qty';
+    return '$qty';
   }
 
   @override

@@ -1725,11 +1725,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    S
-                        .of(context)
-                        .bookingQuantityLabel(
-                          _readInt(item['quantity'], fallback: 1).toString(),
-                        ),
+                    _readInt(item['quantity'], fallback: 1).toString(),
                     style: TextStyle(
                       color: Colors.grey.shade700,
                       fontSize: 12,
@@ -1848,7 +1844,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                S.of(context).bookingQuantityLabel('1'),
+                '1',
                 style: TextStyle(
                   color: Colors.grey.shade700,
                   fontSize: 12,
@@ -1894,37 +1890,40 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     final name = component['name']?.toString() ?? _componentName(component);
 
     return Padding(
-      padding: const EdgeInsets.only(top: 6, left: 8),
+      padding: const EdgeInsets.only(top: 6, left: 4, right: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
-            flex: 5,
-            child: Text(
-              name,
-              style: const TextStyle(color: Colors.grey, fontSize: 13),
-            ),
-          ),
-          const SizedBox(width: 10),
-          SizedBox(
-            width: 38,
-            child: Text(
-              'x$count',
-              style: const TextStyle(
-                color: Colors.grey,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: name,
+                    style: const TextStyle(color: Colors.grey, fontSize: 13),
+                  ),
+                  if (count > 1)
+                    TextSpan(
+                      text: '  (x$count)',
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                ],
               ),
-              textAlign: TextAlign.center,
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           SizedBox(
-            width: 92,
+            width: 115,
             child: Text(
               isWarranty
                   ? '0 VNĐ'
                   : (price > 0 ? PriceFormatter.format(price * count) : '-'),
+              maxLines: 1,
+              softWrap: false,
               style: TextStyle(
                 color: isWarranty
                     ? const Color(0xFF2E7D32)
@@ -2445,18 +2444,13 @@ class _PriceTableHeader extends StatelessWidget {
       fontWeight: FontWeight.bold,
     );
     return const Padding(
-      padding: EdgeInsets.only(left: 8),
+      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       child: Row(
         children: [
-          Expanded(flex: 5, child: Text('Thành phần', style: style)),
+          Expanded(child: Text('Thành phần', style: style)),
           SizedBox(
-            width: 38,
-            child: Text('SL', style: style, textAlign: TextAlign.center),
-          ),
-          SizedBox(width: 10),
-          SizedBox(
-            width: 92,
-            child: Text('Giá', style: style, textAlign: TextAlign.right),
+            width: 115,
+            child: Text('Giá', style: style, textAlign: TextAlign.right),
           ),
         ],
       ),

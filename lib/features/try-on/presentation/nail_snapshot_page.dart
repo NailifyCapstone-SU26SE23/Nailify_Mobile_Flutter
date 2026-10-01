@@ -61,6 +61,7 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
   int?
   _selectedComponentId; // Currently active accessory item ID for Bounding Box handles
   _DragMode _dragMode = _DragMode.none;
+  bool _isCustomPanelCollapsed = false;
 
   // Zoom & Focus Transformation controllers
   late TransformationController _transformationController;
@@ -349,15 +350,46 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
 
   void _handleTapDown(TapDownDetails details) {
     if (_selectedVariant == null) return;
-    final Offset tapPos = _transformationController.toScene(
-      details.localPosition,
-    );
+    // details.localPosition is ALREADY in the local coordinate space of the child SizedBox inside InteractiveViewer (scene coordinates).
+    final Offset tapPos = details.localPosition;
     final transforms = _getFingerTransforms();
 
-    // 1. Check Delete handle ('X') or Scale/Rotate handle of selected component
+    // =========================================================================
+    // SCENARIO 1: NOT ZOOMED IN (_selectedFingerIndex == -1)
+    // Priority: Tapping a fingernail/finger MUST zoom in on that finger!
+    // =========================================================================
+    if (_selectedFingerIndex == -1) {
+      for (final info in transforms) {
+        final isInsidePoly = _isPointInPolygon(tapPos, info.polygonPoints);
+        final isInsideRect = info.destRect.inflate(16.0).contains(tapPos);
+        final distToCentroid = (tapPos - info.polygonCentroid).distance;
+        final maxRadius = math.max(info.destRect.width, info.destRect.height);
+
+        if (isInsidePoly || isInsideRect || distToCentroid <= maxRadius * 0.8) {
+          setState(() {
+            _selectedFingerIndex = info.fingerIndex;
+            _selectedComponentId = null;
+          });
+          _zoomToFinger(info.fingerIndex);
+          return;
+        }
+      }
+      return;
+    }
+
+    // =========================================================================
+    // SCENARIO 2: ZOOMED IN (_selectedFingerIndex != -1)
+    // Priority 1: Check Delete ('X') handle or Scale/Rotate handle of selected component
+    // =========================================================================
     if (_selectedComponentId != null) {
       for (final compItem in _selectedVariant!.nailComponents) {
         if (compItem.nailComponentId == _selectedComponentId) {
+          final int itemFinger =
+              compItem.fingerIndex != -1 ? compItem.fingerIndex : 1;
+          if (_selectedFingerIndex != -1 &&
+              itemFinger != _selectedFingerIndex) {
+            continue;
+          }
           final info = _findTransformForComponent(compItem, transforms);
           if (info != null) {
             final charmImage =
@@ -381,25 +413,25 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
                 info.angle + compItem.rotation * math.pi / 180.0;
 
             final Offset blLocal = Offset(
-              -charmWidth / 2 - 3,
-              charmHeight / 2 + 3,
+              -charmWidth / 2 - 4,
+              charmHeight / 2 + 4,
             );
             final Offset deleteHandleCanvas =
                 charmCanvasCenter + _rotateVector(blLocal, totalAngle);
 
             final Offset trLocal = Offset(
-              charmWidth / 2 + 3,
-              -charmHeight / 2 - 3,
+              charmWidth / 2 + 4,
+              -charmHeight / 2 - 4,
             );
             final Offset trHandleCanvas =
                 charmCanvasCenter + _rotateVector(trLocal, totalAngle);
 
-            if ((tapPos - deleteHandleCanvas).distance <= 24.0) {
+            if ((tapPos - deleteHandleCanvas).distance <= 16.0) {
               _deleteComponent(compItem.nailComponentId);
               return;
             }
 
-            if ((tapPos - trHandleCanvas).distance <= 24.0) {
+            if ((tapPos - trHandleCanvas).distance <= 18.0) {
               _dragMode = _DragMode.scaleRotate;
               return;
             }
@@ -408,27 +440,39 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
       }
     }
 
-    // 2. Check any placed charm
+    // Priority 2: Check any placed charm (accessory) on the zoomed finger
     for (final compItem in _selectedVariant!.nailComponents.reversed) {
+      final int itemFinger =
+          compItem.fingerIndex != -1 ? compItem.fingerIndex : 1;
+      if (_selectedFingerIndex != -1 && itemFinger != _selectedFingerIndex) {
+        continue;
+      }
       final info = _findTransformForComponent(compItem, transforms);
       if (info != null) {
-        final charmLocalX =
+        final charmImage =
+            _selectedComponentImages[compItem.component.componentId];
+        final double charmWidth = info.destRect.width * compItem.scale;
+        final double charmHeight = charmImage != null
+            ? charmWidth * (charmImage.height / charmImage.width)
+            : charmWidth;
+
+        final double charmLocalX =
             info.destRect.center.dx + compItem.posX * (info.destRect.width / 2);
-        final charmLocalY =
+        final double charmLocalY =
             info.destRect.center.dy +
             compItem.posY * (info.destRect.height / 2);
         final Offset charmCanvasCenter = info.localToCanvas(
           Offset(charmLocalX, charmLocalY),
         );
 
-        final double charmWidth = info.destRect.width * compItem.scale;
-        if ((tapPos - charmCanvasCenter).distance <=
-            math.max(charmWidth / 2, 35.0)) {
+        final double hitRadius = math.max(
+          math.max(charmWidth, charmHeight) * 0.8,
+          50.0,
+        );
+
+        if ((tapPos - charmCanvasCenter).distance <= hitRadius) {
           setState(() {
             _selectedComponentId = compItem.nailComponentId;
-            if (compItem.fingerIndex != -1) {
-              _selectedFingerIndex = compItem.fingerIndex;
-            }
           });
           _dragMode = _DragMode.move;
           return;
@@ -436,9 +480,12 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
       }
     }
 
-    // 3. Check inside fingernail polygon
+    // Priority 3: Check if tap is on another finger while zoomed -> Switch zoom to that finger
     for (final info in transforms) {
-      if (_isPointInPolygon(tapPos, info.polygonPoints)) {
+      if (info.fingerIndex == _selectedFingerIndex) continue;
+      final isInsidePoly = _isPointInPolygon(tapPos, info.polygonPoints);
+      final isInsideRect = info.destRect.inflate(16.0).contains(tapPos);
+      if (isInsidePoly || isInsideRect) {
         setState(() {
           _selectedFingerIndex = info.fingerIndex;
           _selectedComponentId = null;
@@ -448,7 +495,7 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
       }
     }
 
-    // 4. Background tap
+    // Priority 4: Background tap on zoomed nail -> clear active accessory selection
     setState(() {
       _selectedComponentId = null;
     });
@@ -456,9 +503,7 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
 
   void _handlePanStart(DragStartDetails details) {
     if (_selectedComponentId == null || _selectedVariant == null) return;
-    final Offset tapPos = _transformationController.toScene(
-      details.localPosition,
-    );
+    final Offset tapPos = details.localPosition;
     final transforms = _getFingerTransforms();
 
     for (final compItem in _selectedVariant!.nailComponents) {
@@ -485,13 +530,13 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
           final double totalAngle =
               info.angle + compItem.rotation * math.pi / 180.0;
           final Offset trLocal = Offset(
-            charmWidth / 2 + 3,
-            -charmHeight / 2 - 3,
+            charmWidth / 2 + 4,
+            -charmHeight / 2 - 4,
           );
           final Offset trHandleCanvas =
               charmCanvasCenter + _rotateVector(trLocal, totalAngle);
 
-          if ((tapPos - trHandleCanvas).distance <= 32.0) {
+          if ((tapPos - trHandleCanvas).distance <= 18.0) {
             _dragMode = _DragMode.scaleRotate;
           } else {
             _dragMode = _DragMode.move;
@@ -519,27 +564,47 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
     final info = _findTransformForComponent(compItem, transforms);
     if (info == null) return;
 
-    final Offset currentPos = _transformationController.toScene(
-      details.localPosition,
-    );
-    final Offset previousPos = _transformationController.toScene(
-      details.localPosition - details.delta,
-    );
-    final Offset delta = currentPos - previousPos;
+    final Offset currentPos = details.localPosition;
+    final Offset delta = details.delta;
+
+    final charmImage =
+        _selectedComponentImages[compItem.component.componentId];
+    final double charmAspect =
+        (charmImage != null && charmImage.width > 0)
+            ? charmImage.height / charmImage.width
+            : 1.0;
 
     if (_dragMode == _DragMode.move) {
+      final double charmWidth = info.destRect.width * compItem.scale;
+      final double charmHeight = charmWidth * charmAspect;
+
+      final double rad = (compItem.rotation * math.pi / 180.0).abs();
+      final double cosR = math.cos(rad).abs();
+      final double sinR = math.sin(rad).abs();
+
+      // Effective rotated bounding size of charm
+      final double effWidth = charmWidth * cosR + charmHeight * sinR;
+      final double effHeight = charmWidth * sinR + charmHeight * cosR;
+
+      // Calculate max normalized offset so edges never cross nail destRect bounds
+      final double maxPosX = math.max(
+        0.0,
+        1.0 - (effWidth / info.destRect.width),
+      );
+      final double maxPosY = math.max(
+        0.0,
+        1.0 - (effHeight / info.destRect.height),
+      );
+
       final Offset localDelta =
           info.canvasToLocal(delta) - info.canvasToLocal(Offset.zero);
-      final double newPosX =
-          (compItem.posX + localDelta.dx / (info.destRect.width / 2)).clamp(
-            -10.0,
-            10.0,
-          );
-      final double newPosY =
-          (compItem.posY + localDelta.dy / (info.destRect.height / 2)).clamp(
-            -10.0,
-            10.0,
-          );
+      final double candidatePosX =
+          compItem.posX + localDelta.dx / (info.destRect.width / 2);
+      final double candidatePosY =
+          compItem.posY + localDelta.dy / (info.destRect.height / 2);
+
+      final double newPosX = candidatePosX.clamp(-maxPosX, maxPosX);
+      final double newPosY = candidatePosY.clamp(-maxPosY, maxPosY);
 
       final updatedItem = compItem.copyWith(posX: newPosX, posY: newPosY);
       final updatedList = List<NailComponentItem>.from(
@@ -565,15 +630,52 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
       final double dist = relTouch.distance;
 
       final double baseRadius = info.destRect.width / 2;
-      final double newScale = (dist / baseRadius).clamp(0.2, 3.0);
+      final double rawScale = dist / baseRadius;
 
       final double touchAngle = math.atan2(relTouch.dy, relTouch.dx);
       final double newRotation =
           ((touchAngle - info.angle) * 180.0 / math.pi) + 45.0;
 
+      // Calculate max scale allowed so accessory width/height never exceeds nail dimensions
+      final double rad = (newRotation * math.pi / 180.0).abs();
+      final double cosR = math.cos(rad).abs();
+      final double sinR = math.sin(rad).abs();
+
+      final double unitEffWidth = cosR + charmAspect * sinR;
+      final double unitEffHeight = sinR + charmAspect * cosR;
+
+      final double maxScaleX = 1.0 / math.max(0.001, unitEffWidth);
+      final double maxScaleY =
+          (info.destRect.height / info.destRect.width) /
+          math.max(0.001, unitEffHeight);
+      final double maxScale = math.min(1.0, math.min(maxScaleX, maxScaleY))
+          .clamp(0.15, 1.0);
+
+      final double newScale = rawScale.clamp(0.15, maxScale);
+
+      // Re-clamp posX and posY so new scale/rotation stays strictly inside nail bounds
+      final double charmWidth = info.destRect.width * newScale;
+      final double charmHeight = charmWidth * charmAspect;
+      final double effWidth = charmWidth * cosR + charmHeight * sinR;
+      final double effHeight = charmWidth * sinR + charmHeight * cosR;
+
+      final double maxPosX = math.max(
+        0.0,
+        1.0 - (effWidth / info.destRect.width),
+      );
+      final double maxPosY = math.max(
+        0.0,
+        1.0 - (effHeight / info.destRect.height),
+      );
+
+      final double newPosX = compItem.posX.clamp(-maxPosX, maxPosX);
+      final double newPosY = compItem.posY.clamp(-maxPosY, maxPosY);
+
       final updatedItem = compItem.copyWith(
         scale: newScale,
         rotation: newRotation,
+        posX: newPosX,
+        posY: newPosY,
       );
       final updatedList = List<NailComponentItem>.from(
         _selectedVariant!.nailComponents,
@@ -635,19 +737,43 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
   Future<void> _onSelectComponent(ComponentDetail newComponent) async {
     if (_selectedVariant == null) return;
 
-    final newItem = NailComponentItem(
-      nailComponentId: DateTime.now().microsecondsSinceEpoch,
-      posX: 0.0,
-      posY: 0.0,
-      fingerIndex: _selectedFingerIndex,
-      scale: 0.5,
-      rotation: 0.0,
-      component: newComponent,
+    final targetFinger = _selectedFingerIndex != -1 ? _selectedFingerIndex : 1;
+
+    final existingIdx = _selectedVariant!.nailComponents.indexWhere(
+      (c) => c.nailComponentId == _selectedComponentId,
     );
 
-    final updatedComponents = List<NailComponentItem>.from(
-      _selectedVariant!.nailComponents,
-    )..add(newItem);
+    List<NailComponentItem> updatedComponents;
+    int targetComponentId;
+
+    if (existingIdx != -1) {
+      // Đổi phụ kiện đang chọn bằng phụ kiện mới (giữ vị trí, góc xoay, tỷ lệ)
+      final existingItem = _selectedVariant!.nailComponents[existingIdx];
+      final updatedItem = existingItem.copyWith(
+        component: newComponent,
+        fingerIndex: targetFinger,
+      );
+      updatedComponents = List<NailComponentItem>.from(
+        _selectedVariant!.nailComponents,
+      );
+      updatedComponents[existingIdx] = updatedItem;
+      targetComponentId = existingItem.nailComponentId;
+    } else {
+      // Thêm phụ kiện mới vào ngón đang chọn
+      final newItem = NailComponentItem(
+        nailComponentId: DateTime.now().microsecondsSinceEpoch,
+        posX: 0.0,
+        posY: 0.0,
+        fingerIndex: targetFinger,
+        scale: 0.5,
+        rotation: 0.0,
+        component: newComponent,
+      );
+      updatedComponents = List<NailComponentItem>.from(
+        _selectedVariant!.nailComponents,
+      )..add(newItem);
+      targetComponentId = newItem.nailComponentId;
+    }
 
     final updatedVariant = _selectedVariant!.copyWith(
       nailComponents: updatedComponents,
@@ -655,8 +781,13 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
 
     setState(() {
       _selectedVariant = updatedVariant;
-      _selectedComponentId = newItem.nailComponentId;
+      _selectedComponentId = targetComponentId;
+      if (_selectedFingerIndex == -1) {
+        _selectedFingerIndex = targetFinger;
+      }
     });
+
+    _zoomToFinger(targetFinger);
 
     final img = await NailVariantApiService.loadUiImageFromUrl(
       newComponent.imageUrl,
@@ -862,7 +993,50 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
                               ),
                             ),
                           ),
-                          if (_nailPolygons.isNotEmpty)
+                           if (_selectedFingerIndex != -1)
+                            Positioned(
+                              top: 12,
+                              left: 12,
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _selectedFingerIndex = -1;
+                                    _selectedComponentId = null;
+                                  });
+                                  _zoomToFinger(-1);
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.95),
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.1),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.arrow_back_rounded, size: 14, color: AppColors.primary),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        _getFingerName(_selectedFingerIndex),
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          if (_nailPolygons.isNotEmpty) ...[
                             Positioned(
                               top: 12,
                               right: 12,
@@ -874,7 +1048,10 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
                                 foregroundColor: AppColors.primary,
                                 elevation: 2,
                                 onPressed: () {
-                                  setState(() => _selectedFingerIndex = -1);
+                                  setState(() {
+                                    _selectedFingerIndex = -1;
+                                    _selectedComponentId = null;
+                                  });
                                   _zoomToFinger(-1);
                                 },
                                 child: const Icon(
@@ -883,6 +1060,31 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
                                 ),
                               ),
                             ),
+                            Positioned(
+                              bottom: 12,
+                              right: 12,
+                              child: FloatingActionButton.small(
+                                heroTag: 'togglePanelBtn',
+                                backgroundColor: Colors.white.withValues(
+                                  alpha: 0.95,
+                                ),
+                                foregroundColor: AppColors.primary,
+                                elevation: 3,
+                                onPressed: () {
+                                  setState(() {
+                                    _isCustomPanelCollapsed =
+                                        !_isCustomPanelCollapsed;
+                                  });
+                                },
+                                child: Icon(
+                                  _isCustomPanelCollapsed
+                                      ? Icons.unfold_more_rounded
+                                      : Icons.unfold_less_rounded,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
               ),
@@ -900,7 +1102,9 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
 
           // 2. Bảng tùy chỉnh (chỉ hiện khi đã chọn ảnh)
           if (_imageFile != null && !_isProcessing)
-            Container(
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOutCubic,
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: const BorderRadius.vertical(
@@ -908,7 +1112,7 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.06),
+                    color: Colors.black.withValues(alpha: 0.08),
                     blurRadius: 16,
                     offset: const Offset(0, -4),
                   ),
@@ -919,111 +1123,180 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const SizedBox(height: 10),
-                    Container(
-                      width: 36,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    DefaultTabController(
-                      length: widget.lockVariantSelection ? 3 : 4,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          TabBar(
-                            labelColor: AppColors.primary,
-                            unselectedLabelColor: Colors.black54,
-                            indicatorColor: AppColors.primary,
-                            indicatorSize: TabBarIndicatorSize.label,
-                            labelStyle: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
+                    // Nút kéo / bấm để thu gọn / mở rộng bảng tùy chỉnh
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onVerticalDragUpdate: (details) {
+                        if (details.delta.dy > 3 && !_isCustomPanelCollapsed) {
+                          setState(() => _isCustomPanelCollapsed = true);
+                        } else if (details.delta.dy < -3 &&
+                            _isCustomPanelCollapsed) {
+                          setState(() => _isCustomPanelCollapsed = false);
+                        }
+                      },
+                      onTap: () {
+                        setState(() {
+                          _isCustomPanelCollapsed = !_isCustomPanelCollapsed;
+                        });
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 5,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade300,
+                                borderRadius: BorderRadius.circular(2.5),
+                              ),
                             ),
-                            unselectedLabelStyle: const TextStyle(fontSize: 13),
-                            tabs: [
-                              if (!widget.lockVariantSelection)
-                                const Tab(text: "Mẫu"),
-                              const Tab(text: "Dáng móng"),
-                              const Tab(text: "Bề mặt"),
-                              const Tab(text: "Phụ kiện"),
-                            ],
-                          ),
-                          SizedBox(
-                            height: 155,
-                            child: TabBarView(
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                if (!widget.lockVariantSelection)
-                                  _buildVariantsList(),
-                                _buildShapesList(),
-                                _buildSurfacesList(),
-                                _buildComponentsList(),
+                                Text(
+                                  _isCustomPanelCollapsed
+                                      ? "Vuốt lên hoặc nhấn để mở lại bảng tùy chỉnh"
+                                      : "Kéo xuống để thu gọn",
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade600,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Icon(
+                                  _isCustomPanelCollapsed
+                                      ? Icons.keyboard_arrow_up_rounded
+                                      : Icons.keyboard_arrow_down_rounded,
+                                  size: 18,
+                                  color: Colors.grey.shade600,
+                                ),
                               ],
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
 
-                    // 3. Hai nút Chụp ảnh & Chọn từ máy
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: FilledButton.icon(
-                              onPressed: () => _pickImage(ImageSource.camera),
-                              icon: const Icon(
-                                Icons.camera_alt_outlined,
-                                size: 20,
-                              ),
-                              label: const Text(
-                                'Chụp ảnh',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              style: FilledButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOutCubic,
+                      child: _isCustomPanelCollapsed
+                          ? const SizedBox.shrink()
+                          : DefaultTabController(
+                              length: widget.lockVariantSelection ? 3 : 4,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  TabBar(
+                                    labelColor: AppColors.primary,
+                                    unselectedLabelColor: Colors.black54,
+                                    indicatorColor: AppColors.primary,
+                                    indicatorSize: TabBarIndicatorSize.label,
+                                    labelStyle: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                    unselectedLabelStyle:
+                                        const TextStyle(fontSize: 13),
+                                    tabs: [
+                                      if (!widget.lockVariantSelection)
+                                        const Tab(text: "Mẫu"),
+                                      const Tab(text: "Dáng móng"),
+                                      const Tab(text: "Bề mặt"),
+                                      const Tab(text: "Phụ kiện"),
+                                    ],
+                                  ),
+                                  SizedBox(
+                                    height: 155,
+                                    child: TabBarView(
+                                      children: [
+                                        if (!widget.lockVariantSelection)
+                                          _buildVariantsList(),
+                                        _buildShapesList(),
+                                        _buildSurfacesList(),
+                                        _buildComponentsList(),
+                                      ],
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.fromLTRB(
+                                      16,
+                                      8,
+                                      16,
+                                      12,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: FilledButton.icon(
+                                            onPressed: () =>
+                                                _pickImage(ImageSource.camera),
+                                            icon: const Icon(
+                                              Icons.camera_alt_outlined,
+                                              size: 20,
+                                            ),
+                                            label: const Text(
+                                              'Chụp ảnh',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            style: FilledButton.styleFrom(
+                                              backgroundColor:
+                                                  AppColors.primary,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 14,
+                                                  ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(16),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: OutlinedButton.icon(
+                                            onPressed: () =>
+                                                _pickImage(ImageSource.gallery),
+                                            icon: const Icon(
+                                              Icons.photo_library_outlined,
+                                              size: 20,
+                                            ),
+                                            label: const Text(
+                                              'Chọn từ máy',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            style: OutlinedButton.styleFrom(
+                                              foregroundColor:
+                                                  AppColors.primary,
+                                              side: const BorderSide(
+                                                color: AppColors.primary,
+                                                width: 1.5,
+                                              ),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 14,
+                                                  ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(16),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () => _pickImage(ImageSource.gallery),
-                              icon: const Icon(
-                                Icons.photo_library_outlined,
-                                size: 20,
-                              ),
-                              label: const Text(
-                                'Chọn từ máy',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.primary,
-                                side: const BorderSide(
-                                  color: AppColors.primary,
-                                  width: 1.5,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
                   ],
                 ),
@@ -1349,5 +1622,21 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
         ),
       ),
     );
+  }
+  String _getFingerName(int index) {
+    switch (index) {
+      case 1:
+        return 'Ngón cái';
+      case 2:
+        return 'Ngón trỏ';
+      case 3:
+        return 'Ngón giữa';
+      case 4:
+        return 'Ngón áp út';
+      case 5:
+        return 'Ngón út';
+      default:
+        return 'Tất cả móng';
+    }
   }
 }

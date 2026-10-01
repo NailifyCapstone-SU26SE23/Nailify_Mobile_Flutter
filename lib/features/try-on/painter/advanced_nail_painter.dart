@@ -494,11 +494,32 @@ class AdvancedNailPainter extends CustomPainter {
       return axis;
     }
 
-    // 📌 TRAP 2 FIX: MULTI-NAIL PALM CONTEXT
+    // 📌 TRAP 2 FIX: MULTI-NAIL PALM ANATOMICAL RADIAL ALIGNMENT
     if (palmReliable) {
       final Offset radial = center - palmCenter;
-      final double proj = axis.dx * radial.dx + axis.dy * radial.dy;
-      return proj >= 0 ? axis : -axis;
+      final double rLen = radial.distance;
+      if (rLen > 1e-4) {
+        final Offset unitRadial = Offset(radial.dx / rLen, radial.dy / rLen);
+        final double dot =
+            (axis.dx * unitRadial.dx + axis.dy * unitRadial.dy).abs();
+
+        // If PCA axis is near-perpendicular (dot < 0.65), force the anatomical radial vector from palm to fingertip!
+        if (dot < 0.65) {
+          return unitRadial;
+        } else {
+          final double proj = axis.dx * unitRadial.dx + axis.dy * unitRadial.dy;
+          final Offset alignedAxis = proj >= 0 ? axis : -axis;
+          // Blend 70% anatomical radial direction + 30% PCA direction for smooth alignment
+          final Offset blended = Offset(
+            alignedAxis.dx * 0.3 + unitRadial.dx * 0.7,
+            alignedAxis.dy * 0.3 + unitRadial.dy * 0.7,
+          );
+          final double bLen = blended.distance;
+          return bLen > 1e-4
+              ? Offset(blended.dx / bLen, blended.dy / bLen)
+              : unitRadial;
+        }
+      }
     }
 
     // 📌 TRAP 3 FIX: SINGLE-NAIL EXTREMITY TAPERING (Polygon Curvature Width Ratio)
@@ -684,7 +705,9 @@ class AdvancedNailPainter extends CustomPainter {
     int fingerIndex,
   ) {
     for (final compItem in variant.nailComponents) {
-      if (compItem.fingerIndex != -1 && compItem.fingerIndex != fingerIndex) {
+      final int itemFinger =
+          compItem.fingerIndex != -1 ? compItem.fingerIndex : 1;
+      if (itemFinger != fingerIndex) {
         continue;
       }
 
@@ -746,7 +769,9 @@ class AdvancedNailPainter extends CustomPainter {
 
     for (final compItem in variant.nailComponents) {
       if (compItem.nailComponentId != selectedComponentId) continue;
-      if (compItem.fingerIndex != -1 && compItem.fingerIndex != fingerIndex) {
+      final int itemFinger =
+          compItem.fingerIndex != -1 ? compItem.fingerIndex : 1;
+      if (itemFinger != fingerIndex) {
         continue;
       }
 

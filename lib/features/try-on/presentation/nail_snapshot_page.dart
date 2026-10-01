@@ -862,27 +862,57 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
                               ),
                             ),
                           ),
-                          if (_nailPolygons.isNotEmpty)
-                            Positioned(
-                              top: 12,
-                              right: 12,
-                              child: FloatingActionButton.small(
-                                heroTag: 'resetZoomBtn',
-                                backgroundColor: Colors.white.withValues(
-                                  alpha: 0.9,
+                          Positioned(
+                            top: 12,
+                            right: 12,
+                            child: Column(
+                              children: [
+                                if (_nailPolygons.isNotEmpty) ...[
+                                  GestureDetector(
+                                    onTap: () {
+                                      setState(() => _selectedFingerIndex = -1);
+                                      _zoomToFinger(-1);
+                                    },
+                                    child: Container(
+                                      width: 36,
+                                      height: 36,
+                                      margin: const EdgeInsets.only(bottom: 12),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withValues(alpha: 0.35),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(Icons.center_focus_strong, color: Colors.white, size: 18),
+                                    ),
+                                  ),
+                                ],
+                                GestureDetector(
+                                  onTap: () => _pickImage(ImageSource.camera),
+                                  child: Container(
+                                    width: 36,
+                                    height: 36,
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(alpha: 0.35),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.cameraswitch_outlined, color: Colors.white, size: 18),
+                                  ),
                                 ),
-                                foregroundColor: AppColors.primary,
-                                elevation: 2,
-                                onPressed: () {
-                                  setState(() => _selectedFingerIndex = -1);
-                                  _zoomToFinger(-1);
-                                },
-                                child: const Icon(
-                                  Icons.center_focus_strong,
-                                  size: 20,
+                                GestureDetector(
+                                  onTap: () => _pickImage(ImageSource.gallery),
+                                  child: Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(alpha: 0.35),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.photo_library_outlined, color: Colors.white, size: 18),
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
+                          ),
                         ],
                       ),
               ),
@@ -968,61 +998,34 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
                       ),
                     ),
 
-                    // 3. Hai nút Chụp ảnh & Chọn từ máy
+                    // 3. Nút Lưu / Hành động chính
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: FilledButton.icon(
-                              onPressed: () => _pickImage(ImageSource.camera),
-                              icon: const Icon(
-                                Icons.camera_alt_outlined,
-                                size: 20,
-                              ),
-                              label: const Text(
-                                'Chụp ảnh',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              style: FilledButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: () {
+                             ScaffoldMessenger.of(context).showSnackBar(
+                               const SnackBar(content: Text('Chức năng đang được phát triển')),
+                             );
+                          },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            'Lưu thiết kế & Đặt lịch',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.2,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () => _pickImage(ImageSource.gallery),
-                              icon: const Icon(
-                                Icons.photo_library_outlined,
-                                size: 20,
-                              ),
-                              label: const Text(
-                                'Chọn từ máy',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.primary,
-                                side: const BorderSide(
-                                  color: AppColors.primary,
-                                  width: 1.5,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ],
@@ -1302,49 +1305,78 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        width: 80,
         margin: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 12.0),
-        padding: const EdgeInsets.all(4.0),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? const Color(0xFFFF4081) : Colors.grey.shade300,
-            width: isSelected ? 2.5 : 1.0,
+            color: isSelected ? AppColors.primary : Colors.grey.shade200,
+            width: isSelected ? 1.5 : 1.0,
           ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (imageUrl != null && imageUrl.isNotEmpty)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: Image.network(
-                  imageUrl,
-                  width: 45,
-                  height: 45,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.image_not_supported, size: 30),
-                ),
-              )
-            else if (icon != null)
-              Icon(icon, size: 40, color: Colors.pink.shade300)
-            else
-              const Icon(Icons.brush, size: 40),
-            const SizedBox(height: 4),
-            SizedBox(
-              width: 70,
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
+          boxShadow: [
+            if (isSelected)
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.15),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
+                    child: (imageUrl != null && imageUrl.isNotEmpty)
+                        ? Image.network(
+                            imageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(Icons.image_not_supported, size: 30),
+                          )
+                        : Container(
+                            color: Colors.grey.shade50,
+                            child: icon != null
+                                ? Icon(icon, size: 30, color: AppColors.primary.withValues(alpha: 0.6))
+                                : const Icon(Icons.brush, size: 30, color: Colors.grey),
+                          ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                  alignment: Alignment.center,
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      color: isSelected ? AppColors.primary : Colors.black87,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    height: 1.1,
+                  ),
+                ),
+              ],
             ),
+            if (isSelected)
+              Positioned(
+                top: 4,
+                right: 4,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: const BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.check, size: 10, color: Colors.white),
+                ),
+              ),
           ],
         ),
       ),

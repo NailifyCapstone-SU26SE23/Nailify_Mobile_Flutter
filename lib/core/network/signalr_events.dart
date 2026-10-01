@@ -3,6 +3,31 @@
 // Mô tả: Models cho các sự kiện real-time từ SignalR Hub
 // ====================================================================
 
+String? _cleanSignalRReason(String? rawReason) {
+  if (rawReason == null) return null;
+  final trimmed = rawReason.trim();
+  if (trimmed.isEmpty) return trimmed;
+  final lower = trimmed.toLowerCase();
+  if (lower == 'no_response' || lower == 'noresponse') {
+    return 'Khách hàng không phản hồi';
+  }
+  if (lower == 'no_artist' || lower == 'no_artist_available') {
+    return 'Không tìm thấy thợ phù hợp';
+  }
+  return trimmed;
+}
+
+String _cleanSignalRMessage(String? rawMsg, String fallback) {
+  if (rawMsg == null || rawMsg.trim().isEmpty) return fallback;
+  var msg = rawMsg.trim();
+  return msg
+      .replaceAll(RegExp(r'\bno_response\b', caseSensitive: false), 'Khách hàng không phản hồi')
+      .replaceAll(RegExp(r'\bNO_RESPONSE\b', caseSensitive: false), 'Khách hàng không phản hồi')
+      .replaceAll(RegExp(r'\bnoresponse\b', caseSensitive: false), 'Khách hàng không phản hồi')
+      .replaceAll(RegExp(r'\bno_artist\b', caseSensitive: false), 'Không có thợ phù hợp')
+      .replaceAll(RegExp(r'\bno_artist_available\b', caseSensitive: false), 'Không có thợ phù hợp');
+}
+
 /// Sự kiện: Hàng chờ được đôn lên — có slot trống, user có 15 phút để xác nhận
 class WaitlistPromotedEvent {
   final String waitlistId;
@@ -21,9 +46,10 @@ class WaitlistPromotedEvent {
       expiresAt: json['expiresAt'] != null
           ? DateTime.tryParse(json['expiresAt'].toString())
           : null,
-      message:
-          json['message']?.toString() ??
-          'Đã có slot trống! Bạn có 15 phút để xác nhận.',
+      message: _cleanSignalRMessage(
+        json['message']?.toString(),
+        'Đã có slot trống! Bạn có 15 phút để xác nhận.',
+      ),
     );
   }
 }
@@ -38,9 +64,10 @@ class WaitlistExpiredEvent {
   factory WaitlistExpiredEvent.fromJson(Map<String, dynamic> json) {
     return WaitlistExpiredEvent(
       waitlistId: json['waitlistId']?.toString(),
-      message:
-          json['message']?.toString() ??
-          'Thời gian xác nhận lịch hẹn từ hàng chờ (15 phút) đã hết hạn.',
+      message: _cleanSignalRMessage(
+        json['message']?.toString(),
+        'Thời gian xác nhận lịch hẹn từ hàng chờ (15 phút) đã hết hạn.',
+      ),
     );
   }
 }
@@ -69,10 +96,11 @@ class BookingCancelledEvent {
       bookingCode: json['bookingCode']?.toString() ?? json['BookingCode']?.toString(),
       salonName: json['salonName']?.toString() ?? json['SalonName']?.toString(),
       customerName: json['customerName']?.toString() ?? json['CustomerName']?.toString(),
-      reason: json['reason']?.toString() ?? json['Reason']?.toString(),
-      message: json['message']?.toString() ??
-          json['Message']?.toString() ??
-          'Lịch hẹn đã bị hủy.',
+      reason: _cleanSignalRReason(json['reason']?.toString() ?? json['Reason']?.toString()),
+      message: _cleanSignalRMessage(
+        json['message']?.toString() ?? json['Message']?.toString(),
+        'Lịch hẹn đã bị hủy.',
+      ),
     );
   }
 }
@@ -91,10 +119,10 @@ class BookingConfirmedEvent {
     return BookingConfirmedEvent(
       bookingId:
           json['bookingId']?.toString() ?? json['BookingId']?.toString() ?? '',
-      message:
-          json['message']?.toString() ??
-          json['Message']?.toString() ??
-          'Đơn đặt lịch của bạn đã được Salon xác nhận.',
+      message: _cleanSignalRMessage(
+        json['message']?.toString() ?? json['Message']?.toString(),
+        'Đơn đặt lịch của bạn đã được Salon xác nhận.',
+      ),
     );
   }
 }
@@ -127,11 +155,11 @@ class BookingRejectedEvent {
           json['salonName']?.toString() ?? json['SalonName']?.toString(),
       customerName:
           json['customerName']?.toString() ?? json['CustomerName']?.toString(),
-      reason: json['reason']?.toString() ?? json['Reason']?.toString(),
-      message:
-          json['message']?.toString() ??
-          json['Message']?.toString() ??
-          'Đơn đặt lịch của bạn đã bị Salon từ chối.',
+      reason: _cleanSignalRReason(json['reason']?.toString() ?? json['Reason']?.toString()),
+      message: _cleanSignalRMessage(
+        json['message']?.toString() ?? json['Message']?.toString(),
+        'Đơn đặt lịch của bạn đã bị Salon từ chối.',
+      ),
     );
   }
 }
@@ -312,16 +340,18 @@ class CustomNailRejectedEvent {
   });
 
   factory CustomNailRejectedEvent.fromJson(Map<String, dynamic> json) {
+    final rawReason = json['reason']?.toString() ?? json['Reason']?.toString() ?? '';
+    final cleanedReason = _cleanSignalRReason(rawReason) ?? rawReason;
     return CustomNailRejectedEvent(
       customerNailRequestId:
           json['customerNailRequestId']?.toString() ??
           json['CustomerNailRequestId']?.toString() ??
           '',
-      reason: json['reason']?.toString() ?? json['Reason']?.toString() ?? '',
-      message:
-          json['message']?.toString() ??
-          json['Message']?.toString() ??
-          'Mẫu nail custom của bạn đã bị salon từ chối.',
+      reason: cleanedReason,
+      message: _cleanSignalRMessage(
+        json['message']?.toString() ?? json['Message']?.toString(),
+        'Mẫu nail custom của bạn đã bị salon từ chối.',
+      ),
     );
   }
 }
@@ -356,11 +386,15 @@ class SlotStatusChangedEvent {
 class ArtistReassignedEvent {
   final String bookingId;
   final String newArtistName;
+  final String? salonName;
+  final String? customerName;
   final String message;
 
   const ArtistReassignedEvent({
     required this.bookingId,
     required this.newArtistName,
+    this.salonName,
+    this.customerName,
     required this.message,
   });
 
@@ -372,13 +406,21 @@ class ArtistReassignedEvent {
         json['artistName']?.toString() ??
         json['ArtistName']?.toString() ??
         'Thợ mới';
-    final msgText = json['message']?.toString() ??
-        json['Message']?.toString() ??
-        'Đơn đặt lịch của bạn đã được chuyển sang thợ làm móng mới: $artistName.';
+    final sName = json['salonName']?.toString() ?? json['SalonName']?.toString();
+    final cName = json['customerName']?.toString() ?? json['CustomerName']?.toString();
+
+    final rawMsg = json['message']?.toString() ?? json['Message']?.toString();
+    final fallbackMsg = (sName != null && sName.isNotEmpty)
+        ? 'Đơn đặt lịch của bạn tại $sName đã được chuyển sang Thợ $artistName.'
+        : 'Lịch hẹn của bạn đã được chuyển sang Thợ $artistName.';
+
+    final msgText = _cleanSignalRMessage(rawMsg, fallbackMsg);
 
     return ArtistReassignedEvent(
       bookingId: bId,
       newArtistName: artistName,
+      salonName: sName,
+      customerName: cName,
       message: msgText,
     );
   }

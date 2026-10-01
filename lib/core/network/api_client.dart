@@ -64,6 +64,7 @@ class ApiClient {
           handler.reject(
             DioException(
               requestOptions: error.requestOptions,
+              response: error.response,
               error: exception,
               type: error.type,
             ),
@@ -95,6 +96,7 @@ class ApiClient {
         options: options,
       );
     } on DioException catch (e) {
+      if (e.error is AppException) throw e.error as AppException;
       throw _handleDioError(e);
     }
   }
@@ -113,6 +115,7 @@ class ApiClient {
         options: options,
       );
     } on DioException catch (e) {
+      if (e.error is AppException) throw e.error as AppException;
       throw _handleDioError(e);
     }
   }
@@ -131,6 +134,7 @@ class ApiClient {
         options: options,
       );
     } on DioException catch (e) {
+      if (e.error is AppException) throw e.error as AppException;
       throw _handleDioError(e);
     }
   }
@@ -149,6 +153,7 @@ class ApiClient {
         options: options,
       );
     } on DioException catch (e) {
+      if (e.error is AppException) throw e.error as AppException;
       throw _handleDioError(e);
     }
   }
@@ -167,6 +172,7 @@ class ApiClient {
         options: options,
       );
     } on DioException catch (e) {
+      if (e.error is AppException) throw e.error as AppException;
       throw _handleDioError(e);
     }
   }

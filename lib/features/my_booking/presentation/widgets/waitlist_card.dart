@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/duration_formatter.dart';
 import '../../../../generated/l10n.dart';
+import '../../data/datasources/waitlist_api_service.dart';
 import '../../data/models/waitlist_model.dart';
 import 'waitlist_checkout_sheet.dart';
 
@@ -709,7 +710,18 @@ class _CardShell extends StatelessWidget {
     );
   }
 
-  void _handleChangeServices(BuildContext context) {
+  Future<void> _handleChangeServices(BuildContext context) async {
+    final String waitlistId = item.id;
+    if (waitlistId.isNotEmpty) {
+      try {
+        await WaitlistApiService().cancelWaitlist(waitlistId);
+      } catch (e) {
+        debugPrint('[WaitlistCard] cancelWaitlist error before re-booking: $e');
+      }
+    }
+
+    if (!context.mounted) return;
+
     final items = item.waitlistItems;
     final String? salonId = item.salonId;
     final String salonName = item.salonName;

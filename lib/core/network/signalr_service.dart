@@ -107,20 +107,50 @@ class SignalRService {
 
     // ─── Lắng nghe DUY NHẤT method chung mà backend gọi: "ReceiveNotification" ───
     // Backend gửi theo dạng: Clients.User(id).SendAsync("ReceiveNotification", eventName, payload)
-    // args[0] = tên loại event (string), args[1] = payload (Map)
+    // Hoặc SendAsync("ReceiveNotification", payload)
     _hub!.on('ReceiveNotification', (args) {
       try {
         if (args == null || args.isEmpty) return;
 
-        final messageType = args[0]?.toString() ?? '';
-        final rawPayload = args.length > 1 ? args[1] : null;
-        final Map<String, dynamic>? payloadMap = rawPayload is Map
-            ? Map<String, dynamic>.from(rawPayload)
-            : null;
+        String messageType = '';
+        dynamic rawPayload;
+        Map<String, dynamic>? payloadMap;
+
+        if (args.length == 1) {
+          if (args[0] is Map) {
+            payloadMap = Map<String, dynamic>.from(args[0] as Map);
+            messageType = (payloadMap['type'] ??
+                    payloadMap['Type'] ??
+                    payloadMap['title'] ??
+                    payloadMap['Title'] ??
+                    payloadMap['eventName'] ??
+                    payloadMap['EventName'] ??
+                    '')
+                .toString();
+            rawPayload = payloadMap;
+          } else {
+            messageType = args[0]?.toString() ?? '';
+            rawPayload = args[0];
+          }
+        } else {
+          messageType = args[0]?.toString() ?? '';
+          rawPayload = args[1];
+          if (rawPayload is Map) {
+            payloadMap = Map<String, dynamic>.from(rawPayload);
+          }
+        }
 
         if (kDebugMode) {
-          debugPrint('[SignalR] Nhận event: $messageType');
+          debugPrint('[SignalR] Nhận event: type="$messageType", rawPayload=$rawPayload');
         }
+
+        final lowerType = messageType.toLowerCase().trim();
+        final isArtistReassigned = lowerType.contains('đổi thợ') ||
+            lowerType.contains('doi tho') ||
+            lowerType.contains('chuyển thợ') ||
+            lowerType.contains('chuyen tho') ||
+            lowerType.contains('reassign') ||
+            lowerType.contains('artistreassigned');
 
         switch (messageType) {
           case 'WaitlistPromoted':
@@ -353,10 +383,16 @@ class SignalRService {
             _customNailRejectedCtrl.add(payload);
             break;
 
+          case 'Thông báo đổi thợ phụ trách':
+          case 'Thông báo thay đổi thợ phụ trách':
           case 'ArtistReassigned':
           case 'ARTIST_REASSIGNED':
           case 'artist_reassigned':
           case 'ArtistReassignedEvent':
+            final messageText = (payloadMap?['message'] ??
+                    payloadMap?['Message'] ??
+                    rawPayload?.toString())
+                ?.toString();
             final payload = payloadMap != null
                 ? ArtistReassignedEvent.fromJson(payloadMap)
                 : ArtistReassignedEvent(
@@ -366,8 +402,9 @@ class SignalRService {
                     newArtistName: payloadMap?['newArtistName']?.toString() ??
                         payloadMap?['NewArtistName']?.toString() ??
                         'Thợ mới',
-                    message: rawPayload?.toString() ??
-                        'Lịch hẹn của bạn đã được chuyển sang thợ làm móng mới.',
+                    message: (messageText != null && messageText.isNotEmpty)
+                        ? messageText
+                        : 'Lịch hẹn của bạn đã được chuyển sang thợ làm móng mới.',
                   );
             debugPrint(
                 '[SignalR] 🔵 Phá sóng ArtistReassigned: ${payload.message}');
@@ -381,7 +418,28 @@ class SignalRService {
             break;
 
           default:
-            if (kDebugMode) {
+            if (isArtistReassigned) {
+              final messageText = (payloadMap?['message'] ??
+                      payloadMap?['Message'] ??
+                      rawPayload?.toString())
+                  ?.toString();
+              final payload = payloadMap != null
+                  ? ArtistReassignedEvent.fromJson(payloadMap)
+                  : ArtistReassignedEvent(
+                      bookingId: payloadMap?['bookingId']?.toString() ??
+                          payloadMap?['BookingId']?.toString() ??
+                          '',
+                      newArtistName: payloadMap?['newArtistName']?.toString() ??
+                          payloadMap?['NewArtistName']?.toString() ??
+                          'Thợ mới',
+                      message: (messageText != null && messageText.isNotEmpty)
+                          ? messageText
+                          : 'Lịch hẹn của bạn đã được chuyển sang thợ làm móng mới.',
+                    );
+              debugPrint(
+                  '[SignalR] 🔵 Phá sóng ArtistReassigned (Pattern match): ${payload.message}');
+              _artistReassignedCtrl.add(payload);
+            } else if (kDebugMode) {
               debugPrint('[SignalR] messageType không xác định: $messageType');
             }
         }
@@ -390,28 +448,38 @@ class SignalRService {
       }
     });
 
-    // Lắng nghe trực tiếp method "ArtistReassigned" nếu backend bắn trực tiếp
-    _hub!.on('ArtistReassigned', (args) {
+    // Lắng nghe trực tiếp method "ArtistReassigned" hoặc "Thông báo đổi thợ phụ trách" nếu backend bắn trực tiếp
+    void handleDirectArtistReassigned(List<Object?>? args, String eventTag) {
       try {
         if (args == null || args.isEmpty) return;
         final rawData = args[0];
         final Map<String, dynamic>? payloadMap = rawData is Map
             ? Map<String, dynamic>.from(rawData)
             : null;
+        final messageText = payloadMap?['message']?.toString() ??
+            payloadMap?['Message'] ??
+            rawData?.toString() ??
+            'Lịch hẹn của bạn đã được chuyển sang thợ làm móng mới.';
         final payload = payloadMap != null
             ? ArtistReassignedEvent.fromJson(payloadMap)
             : ArtistReassignedEvent(
                 bookingId: '',
-                newArtistName: rawData?.toString() ?? 'Thợ mới',
-                message: 'Lịch hẹn của bạn đã được chuyển sang thợ làm móng mới.',
+                newArtistName: 'Thợ mới',
+                message: messageText.toString(),
               );
         debugPrint(
-            '[SignalR] 🔵 Phá sóng ArtistReassigned (Direct): ${payload.message}');
+            '[SignalR] 🔵 Phá sóng $eventTag (Direct): ${payload.message}');
         _artistReassignedCtrl.add(payload);
       } catch (e) {
-        debugPrint('[SignalR] Lỗi xử lý ArtistReassigned direct: $e');
+        debugPrint('[SignalR] Lỗi xử lý $eventTag direct: $e');
       }
-    });
+    }
+
+    _hub!.on('ArtistReassigned', (args) => handleDirectArtistReassigned(args, 'ArtistReassigned'));
+    _hub!.on('Thông báo đổi thợ phụ trách', (args) => handleDirectArtistReassigned(args, 'Thông báo đổi thợ phụ trách'));
+    _hub!.on('Thông báo thay đổi thợ phụ trách', (args) => handleDirectArtistReassigned(args, 'Thông báo thay đổi thợ phụ trách'));
+    _hub!.on('ARTIST_REASSIGNED', (args) => handleDirectArtistReassigned(args, 'ARTIST_REASSIGNED'));
+    _hub!.on('artist_reassigned', (args) => handleDirectArtistReassigned(args, 'artist_reassigned'));
 
     // Sự kiện vòng đời kết nối
     _hub!.onclose(({error}) {

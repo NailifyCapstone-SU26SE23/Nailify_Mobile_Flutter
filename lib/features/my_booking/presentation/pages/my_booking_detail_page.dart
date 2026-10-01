@@ -1538,7 +1538,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                     final s = S.of(context);
                     if (result == true) {
                       _fetchBookingDetail();
-                      CancellationResultDialog.show(
+                      await CancellationResultDialog.show(
                         context: context,
                         isSuccess: true,
                         title: 'Hủy đặt lịch thành công',
@@ -1546,6 +1546,13 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                         subMessage:
                             'Tiền cọc (nếu có) sẽ được hoàn trả theo chính sách của Nailify.',
                       );
+                      if (context.mounted) {
+                        if (Navigator.canPop(context)) {
+                          Navigator.pop(context, true);
+                        } else {
+                          context.go('/my-bookings');
+                        }
+                      }
                     } else if (result == false) {
                       CancellationResultDialog.show(
                         context: context,

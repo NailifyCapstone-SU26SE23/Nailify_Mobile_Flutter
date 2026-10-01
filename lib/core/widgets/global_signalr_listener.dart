@@ -313,7 +313,7 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
           ? event.message
           : 'Lịch hẹn đã được đổi sang thợ làm móng mới: ${event.newArtistName}';
       notificationStore.addNotification(
-        title: 'Thay đổi thợ làm móng',
+        title: 'Thay đổi thợ phụ trách',
         message: msg,
         icon: Icons.swap_horiz_rounded,
         color: Colors.blue.shade600,
@@ -322,9 +322,13 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final context = rootNavigatorKey.currentContext;
         if (context == null) return;
+        final displayMsg = msg.toLowerCase().startsWith('lịch hẹn') ||
+                msg.toLowerCase().contains('chuyển sang thợ')
+            ? msg
+            : 'Thay đổi thợ: $msg';
         _showStyledSnackBar(
           context,
-          message: 'Thay đổi thợ: $msg',
+          message: displayMsg,
           icon: Icons.swap_horiz_rounded,
           color: Colors.blue.shade600,
           actionLabel: 'Xem',
@@ -343,6 +347,13 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
     String cleaned = msg
         .replaceAll(uuidRegex, '')
         .replaceAll(objectIdRegex, '');
+
+    cleaned = cleaned
+        .replaceAll(RegExp(r'\bno_response\b', caseSensitive: false), 'Khách hàng không phản hồi')
+        .replaceAll(RegExp(r'\bNO_RESPONSE\b', caseSensitive: false), 'Khách hàng không phản hồi')
+        .replaceAll(RegExp(r'\bnoresponse\b', caseSensitive: false), 'Khách hàng không phản hồi')
+        .replaceAll(RegExp(r'\bno_artist\b', caseSensitive: false), 'Không có thợ phù hợp')
+        .replaceAll(RegExp(r'\bno_artist_available\b', caseSensitive: false), 'Không có thợ phù hợp');
 
     cleaned = cleaned
         .replaceAll(RegExp(r'\(\s*[Mm]ã\s*:\s*\)'), '')

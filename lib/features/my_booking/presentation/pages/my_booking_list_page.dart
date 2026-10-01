@@ -641,9 +641,12 @@ class _MyBookingListPageState extends State<MyBookingListPage>
         _hasWarranty(bookingIdStr);
 
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
         if (bookingIdStr.isNotEmpty) {
-          context.push('/my-bookings/detail', extra: bookingIdStr);
+          final res = await context.push('/my-bookings/detail', extra: bookingIdStr);
+          if (res == true && mounted) {
+            _fetchBookings(refresh: true);
+          }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(S.of(context).bookingMissingId)),

@@ -493,10 +493,12 @@ class _NailVariantDetailSheetState extends State<NailVariantDetailSheet> {
                       fontSize: 14,
                     ),
                   ),
-                  subtitle: Text(
-                    DurationFormatter.format(method.duration, context: context),
-                    style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
-                  ),
+                  subtitle: method.duration > 0
+                      ? Text(
+                          DurationFormatter.format(method.duration, context: context),
+                          style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                        )
+                      : null,
                   secondary: Text(
                     PriceFormatter.format(method.price),
                     style: const TextStyle(

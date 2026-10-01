@@ -579,7 +579,7 @@ class BookingApiService {
             warrantyBookingItems ??
             _buildBookingItems(nailVariantId, serviceIds, shapeMethodConfigId),
         'selectedPromotionIds': selectedPromotionIds,
-        'warrantyForBookingId': ?warrantyForBookingId,
+        'warrantyForBookingId': warrantyForBookingId,
       },
     );
     return response.data['data'] ?? {};
@@ -609,6 +609,39 @@ class BookingApiService {
             serviceIds,
             shapeMethodConfigId,
           ),
+          'selectedPromotionIds': selectedPromotionIds,
+        },
+      );
+      if (response.data is Map) {
+        final dataMap = response.data['data'] ?? response.data;
+        if (dataMap is Map) {
+          return Map<String, dynamic>.from(dataMap);
+        }
+      }
+      return {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  Future<Map<String, dynamic>> reviewPriceWithItems({
+    required String salonId,
+    required String bookingDate,
+    required String startTime,
+    required String? artistId,
+    required List<Map<String, dynamic>> bookingItems,
+    List<int>? selectedPromotionIds,
+  }) async {
+    try {
+      final response = await _apiClient.post(
+        '/Bookings/price',
+        data: {
+          'salonId': salonId,
+          'bookingDate': bookingDate,
+          'startTime': startTime,
+          'nailArtistId': (artistId == null || artistId.isEmpty) ? null : artistId,
+          'holdToken': null,
+          'bookingItems': bookingItems,
           'selectedPromotionIds': selectedPromotionIds,
         },
       );
@@ -715,7 +748,7 @@ class BookingApiService {
     final bookingItems = <Map<String, dynamic>>[
       {
         'customerNailRequestId': customerNailRequestId,
-        'shapeMethodConfigId': ?shapeMethodConfigId,
+        'shapeMethodConfigId': shapeMethodConfigId,
         'quantity': 1,
       },
     ];
@@ -750,7 +783,7 @@ class BookingApiService {
     final bookingItems = <Map<String, dynamic>>[
       {
         'customerNailRequestId': customerNailRequestId,
-        'shapeMethodConfigId': ?shapeMethodConfigId,
+        'shapeMethodConfigId': shapeMethodConfigId,
         'quantity': 1,
       },
     ];

@@ -35,12 +35,14 @@ class WaitlistApiService {
     String waitlistId, {
     bool useWalletBalance = true,
     List<int>? selectedPromotionIds,
+    List<Map<String, dynamic>>? bookingItems,
   }) async {
     final response = await _apiClient.post(
       '/Waitlists/$waitlistId/confirm',
       data: {
-        "useWalletBalance": useWalletBalance,
+        "bookingItems": bookingItems ?? [],
         "selectedPromotionIds": selectedPromotionIds ?? [],
+        "useWalletBalance": useWalletBalance,
       },
     );
     if (response.statusCode == 200) {

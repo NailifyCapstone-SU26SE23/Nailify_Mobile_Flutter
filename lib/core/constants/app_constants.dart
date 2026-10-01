@@ -2,7 +2,8 @@ class AppConstants {
   static const String appName = 'Mo Nailify Project';
   // static const String baseUrl = 'http://10.0.2.2:5004';
   // Android emulator -> host HTTP backend
-  static const String baseUrl = 'https://nailify-be.onrender.com/';
+  // static const String baseUrl = 'https://nailify-be.onrender.com/';
+  static const String baseUrl = 'https://nailify-api-dngpb5e9d6dcbydz.southeastasia-01.azurewebsites.net/';
 
   static const String apiVersion = '/api';
   static const String authTokenKey = 'auth_token';

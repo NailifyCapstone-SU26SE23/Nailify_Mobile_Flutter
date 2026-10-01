@@ -6,11 +6,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/duration_formatter.dart';
 import '../../../../generated/l10n.dart';
+import '../../data/datasources/waitlist_api_service.dart';
 import '../../data/models/waitlist_model.dart';
+import 'waitlist_checkout_sheet.dart';
 
 // ─────────────────────────────────────────────
 // MAIN CARD: Phân loại trạng thái
@@ -81,6 +84,7 @@ class _WaitlistPendingCardState extends State<_WaitlistPendingCard> {
   @override
   Widget build(BuildContext context) {
     return _CardShell(
+      onTap: () => _openDetailSheet(context),
       badge: _StatusBadge(
         label: S.of(context).waitlistStatusPending,
         bgColor: Colors.blue.shade50,
@@ -125,6 +129,18 @@ class _WaitlistPendingCardState extends State<_WaitlistPendingCard> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _openDetailSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => WaitlistCheckoutSheet(
+        waitlist: widget.item,
+        onSuccess: () {},
       ),
     );
   }
@@ -367,6 +383,7 @@ class _CardShell extends StatelessWidget {
   final Widget? extraBody;
   final Widget? actions;
   final bool highlightBorder;
+  final VoidCallback? onTap;
 
   const _CardShell({
     required this.badge,
@@ -374,10 +391,46 @@ class _CardShell extends StatelessWidget {
     this.extraBody,
     this.actions,
     this.highlightBorder = false,
+    this.onTap,
   });
 
   String _formatDate(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+
+  String _clean(String? s) {
+    if (s == null) return '';
+    final trimmed = s.trim();
+    if (trimmed.toLowerCase() == 'string') return '';
+    return trimmed;
+  }
+
+  String _getCleanTitle(WaitlistItemModel it) {
+    final vName = _clean(it.nailVariantName);
+    if (vName.isNotEmpty) return vName;
+
+    final cName = _clean(it.customerNailName);
+    if (cName.isNotEmpty) return cName;
+
+    final sName = _clean(it.serviceName);
+    if (sName.isNotEmpty) return sName;
+
+    final shapeName = _clean(it.shapeMethodConfigName);
+    if (shapeName.isNotEmpty) return 'Làm dáng móng: $shapeName';
+
+    if (item.services.isNotEmpty) {
+      return item.services.first;
+    }
+
+    return 'Dịch vụ làm móng';
+  }
+
+  String? _getCleanImgUrl(WaitlistItemModel it) {
+    final vUrl = _clean(it.nailVariantImageUrl);
+    if (vUrl.startsWith('http')) return vUrl;
+    final cUrl = _clean(it.customerNailImageUrl);
+    if (cUrl.startsWith('http')) return cUrl;
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -402,139 +455,356 @@ class _CardShell extends StatelessWidget {
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header: Badge trạng thái góc phải
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                badge,
-                Text(
-                  _formatDate(item.date),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade500,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            const Divider(height: 1, color: Color(0xFFF0F0F0)),
-            const SizedBox(height: 12),
-
-            // Tên chi nhánh & địa chỉ
-            Row(
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.storefront_outlined,
-                  size: 16,
-                  color: Colors.grey.shade500,
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.salonName,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: AppColors.textPrimary,
+                // Header: Badge trạng thái góc phải
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    badge,
+                    Row(
+                      children: [
+                        Text(
+                          _formatDate(item.date),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade500,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        item.address,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-
-            // Khung giờ (in đậm)
-            Row(
-              children: [
-                Icon(
-                  Icons.access_time_filled,
-                  size: 15,
-                  color: AppColors.primary,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  item.time,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '• ${_formatDate(item.date)}',
-                  style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // Kỹ thuật viên
-            Row(
-              children: [
-                Icon(
-                  Icons.person_outline,
-                  size: 15,
-                  color: Colors.grey.shade500,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  item.staffName,
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-
-            // Dịch vụ — Wrap + Chip
-            Wrap(
-              spacing: 6,
-              runSpacing: 4,
-              children: item.services
-                  .map(
-                    (svc) => Chip(
-                      label: Text(svc, style: const TextStyle(fontSize: 11)),
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      visualDensity: VisualDensity.compact,
-                      backgroundColor: Colors.grey.shade100,
-                      side: BorderSide(color: Colors.grey.shade200),
-                      padding: EdgeInsets.zero,
+                        if (onTap != null) ...[
+                          const SizedBox(width: 4),
+                          Icon(Icons.chevron_right_rounded, size: 18, color: Colors.grey.shade400),
+                        ],
+                      ],
                     ),
-                  )
-                  .toList(),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                const Divider(height: 1, color: Color(0xFFF0F0F0)),
+                const SizedBox(height: 12),
+
+                // Tên chi nhánh & địa chỉ
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.storefront_outlined,
+                      size: 16,
+                      color: Colors.grey.shade500,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.salonName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          if (item.address.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              item.address,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+
+                // Khung giờ (in đậm)
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.access_time_filled,
+                      size: 15,
+                      color: AppColors.primary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      item.time,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '• ${_formatDate(item.date)}',
+                      style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                // Kỹ thuật viên
+                Row(
+                  children: [
+                    Icon(
+                      Icons.person_outline,
+                      size: 15,
+                      color: Colors.grey.shade500,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      item.staffName,
+                      style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+
+                // Dịch vụ / Mẫu móng — Chi tiết
+                if (item.waitlistItems.isNotEmpty) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF7F9),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFFCE3EC)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ...item.waitlistItems.map((it) {
+                          final imgUrl = _getCleanImgUrl(it);
+                          final title = _getCleanTitle(it);
+                          final shapeName = _clean(it.shapeMethodConfigName);
+
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 3),
+                            child: Row(
+                              children: [
+                                if (imgUrl != null && imgUrl.isNotEmpty)
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: Image.network(
+                                      imgUrl,
+                                      width: 24,
+                                      height: 24,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => const Icon(
+                                        Icons.spa_rounded,
+                                        size: 16,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  const Icon(
+                                    Icons.check_circle_outline_rounded,
+                                    size: 16,
+                                    color: AppColors.primary,
+                                  ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    title + (shapeName.isNotEmpty ? ' ($shapeName)' : ''),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (it.quantity != null && it.quantity! > 1)
+                                  Text(
+                                    'x${it.quantity}',
+                                    style: const TextStyle(
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ] else if (item.services.isNotEmpty) ...[
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: item.services
+                        .map(
+                          (svc) => Chip(
+                            label: Text(svc, style: const TextStyle(fontSize: 11)),
+                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            visualDensity: VisualDensity.compact,
+                            backgroundColor: Colors.grey.shade100,
+                            side: BorderSide(color: Colors.grey.shade200),
+                            padding: EdgeInsets.zero,
+                          ),
+                        )
+                        .toList(),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+
+                // Nút Thay đổi dịch vụ
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: InkWell(
+                    onTap: () => _handleChangeServices(context),
+                    borderRadius: BorderRadius.circular(8),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.edit_rounded, size: 14, color: AppColors.primary),
+                          SizedBox(width: 4),
+                          Text(
+                            'Thay đổi dịch vụ',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Extra body (thời gian đăng ký / countdown)
+                ?extraBody,
+
+                // Action buttons
+                ?actions,
+              ],
             ),
-
-            // Extra body (thời gian đăng ký / countdown)
-            ?extraBody,
-
-            // Action buttons
-            ?actions,
-          ],
+          ),
         ),
       ),
     );
+  }
+
+  Future<void> _handleChangeServices(BuildContext context) async {
+    final String waitlistId = item.id;
+    if (waitlistId.isNotEmpty) {
+      try {
+        await WaitlistApiService().cancelWaitlist(waitlistId);
+      } catch (e) {
+        debugPrint('[WaitlistCard] cancelWaitlist error before re-booking: $e');
+      }
+    }
+
+    if (!context.mounted) return;
+
+    final items = item.waitlistItems;
+    final String? salonId = item.salonId;
+    final String salonName = item.salonName;
+    final String? artistId = item.staffId;
+    final String artistName = item.staffName;
+
+    final List<String> serviceIds = items
+        .map((e) => e.serviceId)
+        .whereType<String>()
+        .where((s) => s.trim().isNotEmpty)
+        .toList();
+
+    int? nailVariantId;
+    String? nailVariantName;
+    String? nailVariantImageUrl;
+    for (final it in items) {
+      if (it.nailVariantId != null && it.nailVariantId! > 0) {
+        nailVariantId = it.nailVariantId;
+        nailVariantName = it.nailVariantName;
+        nailVariantImageUrl = it.nailVariantImageUrl;
+        break;
+      }
+    }
+
+    int? customerNailId;
+    String? customerNailName;
+    String? customerNailImageUrl;
+    for (final it in items) {
+      if (it.customerNailId != null && it.customerNailId! > 0) {
+        customerNailId = it.customerNailId;
+        customerNailName = it.customerNailName;
+        customerNailImageUrl = it.customerNailImageUrl;
+        break;
+      }
+    }
+
+    String? customerNailRequestId;
+    for (final it in items) {
+      if (it.customerNailRequestId != null &&
+          it.customerNailRequestId!.trim().isNotEmpty) {
+        customerNailRequestId = it.customerNailRequestId;
+        break;
+      }
+    }
+
+    int? shapeConfigId;
+    String? shapeConfigName;
+    for (final it in items) {
+      if (it.shapeMethodConfigId != null && it.shapeMethodConfigId! > 0) {
+        shapeConfigId = it.shapeMethodConfigId;
+        shapeConfigName = it.shapeMethodConfigName;
+        break;
+      }
+    }
+
+    final Map<String, dynamic> bookingExtra = {
+      if (salonId != null && salonId.isNotEmpty)
+        'salon': {
+          'salonId': salonId,
+          'name': salonName,
+        },
+      if (artistId != null && artistId.isNotEmpty)
+        'artist': {
+          'nailArtistId': artistId,
+          'fullName': artistName,
+          'salonId': salonId ?? '',
+        },
+      'date': item.date,
+      'time': item.time,
+      'serviceIds': serviceIds,
+      if (nailVariantId != null) 'nailVariantId': nailVariantId,
+      if (nailVariantName != null) 'nailVariantName': nailVariantName,
+      if (nailVariantImageUrl != null) 'nailVariantImageUrl': nailVariantImageUrl,
+      if (customerNailId != null) 'customerNailId': customerNailId,
+      if (customerNailName != null) 'customerNailName': customerNailName,
+      if (customerNailImageUrl != null) 'customerNailImageUrl': customerNailImageUrl,
+      if (customerNailRequestId != null) 'customerNailRequestId': customerNailRequestId,
+      if (shapeConfigId != null) 'shapeMethodConfigId': shapeConfigId,
+      if (shapeConfigName != null) 'shapeMethodName': shapeConfigName,
+      'waitlistItems': items.map((e) => e.toJson()).toList(),
+    };
+
+    context.push('/home-booking', extra: bookingExtra);
   }
 }
 

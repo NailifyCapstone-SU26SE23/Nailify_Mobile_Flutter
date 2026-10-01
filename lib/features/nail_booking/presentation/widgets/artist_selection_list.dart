@@ -133,16 +133,20 @@ class _ArtistSelectionListState extends State<ArtistSelectionList> {
               ),
             ),
             const SizedBox(width: 10),
-            Text(
-              S.of(context).bookingSelectArtistTitle,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Georgia',
-                color: AppColors.primaryDark,
+            Expanded(
+              child: Text(
+                S.of(context).bookingSelectArtistTitle,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Georgia',
+                  color: AppColors.primaryDark,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            const Spacer(),
+            const SizedBox(width: 8),
 
             // ── MODERN FILTER / SORT BUTTON ───────────────────────
             PopupMenuButton<String>(

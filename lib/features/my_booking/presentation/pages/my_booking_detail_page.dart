@@ -284,6 +284,43 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     final isWarrantiedBooking =
         booking['isWarrantied'] == true || booking['IsWarrantied'] == true;
 
+    final warrantyItems = <Map<String, dynamic>>[];
+    final extraServices = <Map<String, dynamic>>[];
+    num extraServicesTotalPrice = 0;
+
+    if (isWarrantyBooking) {
+      for (final raw in items) {
+        if (raw is Map<String, dynamic>) {
+          if (_isItemWarranty(raw)) {
+            warrantyItems.add(raw);
+          } else {
+            extraServices.add(raw);
+          }
+        }
+      }
+      if (warrantyItems.isEmpty && items.isNotEmpty) {
+        for (final raw in items) {
+          if (raw is Map<String, dynamic>) {
+            final price = _bookingItemUnitPrice(raw);
+            if (raw['serviceId'] != null &&
+                raw['nailVariantId'] == null &&
+                raw['customerNailRequestId'] == null &&
+                price > 0) {
+              extraServices.add(raw);
+            } else {
+              warrantyItems.add(raw);
+            }
+          }
+        }
+      }
+      for (final item in extraServices) {
+        final q = _readInt(item['quantity'], fallback: 1);
+        final c = _getItemCount(item);
+        final u = _bookingItemUnitPrice(item);
+        extraServicesTotalPrice += u * q * c;
+      }
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -762,31 +799,182 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
             ),
             const SizedBox(height: 20),
 
-            // Section: Dịch vụ đã đặt
-            Row(
-              children: [
-                Container(
-                  width: 4,
-                  height: 18,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(2),
+            // Section: Dịch vụ đã đặt / Bảo hành
+            if (isWarrantyBooking) ...[
+              // Part 1: Dịch vụ bảo hành
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade100,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.shield_outlined,
+                      color: Colors.blue,
+                      size: 16,
+                    ),
                   ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Dịch vụ bảo hành',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F5E9),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFA5D6A7)),
+                    ),
+                    child: const Text(
+                      'Miễn phí 0đ',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2E7D32),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              if (warrantyItems.isNotEmpty) ...[
+                const _ServicesTableHeader(),
+                const SizedBox(height: 6),
+                ...warrantyItems.map(
+                  (item) => _buildBookingItem(item, isWarranty: true),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  S.of(context).bookingServicesBooked,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
+              ] else ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.borderLight),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.verified_rounded,
+                        color: Colors.blue.shade400,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Chi tiết bảo hành dịch vụ gốc',
+                        style: TextStyle(
+                          color: Colors.grey.shade700,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 10),
-            ...items.map(_buildBookingItem),
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
+
+              // Part 2: Dịch vụ phát sinh thêm
+              Row(
+                children: [
+                  Container(
+                    width: 4,
+                    height: 18,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Dịch vụ phát sinh thêm',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              if (extraServices.isNotEmpty) ...[
+                const _ServicesTableHeader(),
+                const SizedBox(height: 6),
+                ...extraServices.map(
+                  (item) => _buildBookingItem(item, isWarranty: false),
+                ),
+              ] else ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.borderLight),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.check_circle_outline_rounded,
+                        color: Colors.grey.shade500,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Không có dịch vụ phát sinh thêm (0 VNĐ)',
+                        style: TextStyle(
+                          color: Colors.grey.shade700,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 20),
+            ] else ...[
+              // Section: Dịch vụ đã đặt (Đơn thường)
+              Row(
+                children: [
+                  Container(
+                    width: 4,
+                    height: 18,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    S.of(context).bookingServicesBooked,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              const _ServicesTableHeader(),
+              const SizedBox(height: 6),
+              ...items.map(
+                (item) => _buildBookingItem(item, isWarranty: false),
+              ),
+              const SizedBox(height: 20),
+            ],
 
             // Section: Thanh toán (Receipt style)
             Container(
@@ -836,26 +1024,69 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       children: [
-                        // 1. Giá gốc
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              S.of(context).bookingOriginalPriceLabel,
-                              style: const TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 14,
+                        // 1. Giá gốc / Bảo hành & Phát sinh
+                        if (isWarrantyBooking) ...[
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Dịch vụ bảo hành:',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 14,
+                                ),
                               ),
-                            ),
-                            Text(
-                              PriceFormatter.format(booking['price'] ?? 0),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
+                              const Text(
+                                '0 VNĐ (Miễn phí)',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                  color: Color(0xFF2E7D32),
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Dịch vụ phát sinh thêm:',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              Text(
+                                PriceFormatter.format(extraServicesTotalPrice),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ] else ...[
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                S.of(context).bookingOriginalPriceLabel,
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              Text(
+                                PriceFormatter.format(booking['price'] ?? 0),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                         const SizedBox(height: 8),
 
                         // 2. Khuyến mãi (Giảm giá)
@@ -1307,7 +1538,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                     final s = S.of(context);
                     if (result == true) {
                       _fetchBookingDetail();
-                      CancellationResultDialog.show(
+                      await CancellationResultDialog.show(
                         context: context,
                         isSuccess: true,
                         title: 'Hủy đặt lịch thành công',
@@ -1315,6 +1546,13 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                         subMessage:
                             'Tiền cọc (nếu có) sẽ được hoàn trả theo chính sách của Nailify.',
                       );
+                      if (context.mounted) {
+                        if (Navigator.canPop(context)) {
+                          Navigator.pop(context, true);
+                        } else {
+                          context.go('/my-bookings');
+                        }
+                      }
                     } else if (result == false) {
                       CancellationResultDialog.show(
                         context: context,
@@ -1386,7 +1624,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     );
   }
 
-  Widget _buildBookingItem(dynamic rawItem) {
+  Widget _buildBookingItem(dynamic rawItem, {bool isWarranty = false}) {
     final item = rawItem as Map<String, dynamic>;
     final request = _customerNailRequestForItem(item);
     final names = [
@@ -1403,13 +1641,24 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
         ? S.of(context).bookingInfoService
         : names.join(' & ');
 
+    final unitPrice = isWarranty ? 0 : _bookingItemUnitPrice(item);
+    final totalPrice = isWarranty
+        ? 0
+        : unitPrice *
+            _readInt(item['quantity'], fallback: 1) *
+            _getItemCount(item);
+
     final itemCard = Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isWarranty ? const Color(0xFFFFF9FA) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderLight),
+        border: Border.all(
+          color: isWarranty
+              ? AppColors.primary.withValues(alpha: 0.2)
+              : AppColors.borderLight,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -1427,15 +1676,41 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
             children: [
               Expanded(
                 flex: 10,
-                child: Text(
-                  name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: AppColors.textPrimary,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: AppColors.textPrimary,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (isWarranty) ...[
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8F5E9),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text(
+                          'Bảo hành 0đ',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF2E7D32),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
               Expanded(
@@ -1470,22 +1745,20 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      PriceFormatter.format(
-                        _bookingItemUnitPrice(item) *
-                            _readInt(item['quantity'], fallback: 1) *
-                            _getItemCount(item),
-                      ),
-                      style: const TextStyle(
+                      isWarranty ? '0 VNĐ' : PriceFormatter.format(totalPrice),
+                      style: TextStyle(
                         fontWeight: FontWeight.w800,
-                        color: AppColors.primary,
+                        color: isWarranty
+                            ? const Color(0xFF2E7D32)
+                            : AppColors.primary,
                         fontSize: 15,
                       ),
                       textAlign: TextAlign.right,
                     ),
-                    if (_getItemCount(item) > 1) ...[
+                    if (!isWarranty && _getItemCount(item) > 1) ...[
                       const SizedBox(height: 2),
                       Text(
-                        '${PriceFormatter.format(_bookingItemUnitPrice(item))} × ${_getItemCount(item)} ${S.of(context).bookingFingersLabel}',
+                        '${PriceFormatter.format(unitPrice)} × ${_getItemCount(item)} ${S.of(context).bookingFingersLabel}',
                         style: const TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 11,
@@ -1510,7 +1783,12 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                 children: [
                   const _PriceTableHeader(),
                   const SizedBox(height: 4),
-                  ...detailLines.map(_buildBookingComponentLine),
+                  ...detailLines.map(
+                    (comp) => _buildBookingComponentLine(
+                      comp,
+                      isWarranty: isWarranty,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1522,7 +1800,10 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     if (request == null || request.price <= 0) return itemCard;
 
     return Column(
-      children: [itemCard, _buildCustomFeeBookingItem(request.price)],
+      children: [
+        itemCard,
+        _buildCustomFeeBookingItem(isWarranty ? 0 : request.price),
+      ],
     );
   }
 
@@ -1594,10 +1875,13 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     );
   }
 
-  Widget _buildBookingComponentLine(Map<String, dynamic> component) {
+  Widget _buildBookingComponentLine(
+    Map<String, dynamic> component, {
+    bool isWarranty = false,
+  }) {
     // Get the actual component data (nested inside 'component' key)
     final componentData = component['component'] as Map? ?? component;
-    final price = componentData['price'] as num? ?? 0;
+    final price = isWarranty ? 0 : (componentData['price'] as num? ?? 0);
 
     // Get fingerIndex from the component (not from the nested 'component' object)
     final fingerIndex = _readNullableInt(
@@ -1638,9 +1922,13 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
           SizedBox(
             width: 92,
             child: Text(
-              price > 0 ? PriceFormatter.format(price * count) : '-',
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              isWarranty
+                  ? '0 VNĐ'
+                  : (price > 0 ? PriceFormatter.format(price * count) : '-'),
+              style: TextStyle(
+                color: isWarranty
+                    ? const Color(0xFF2E7D32)
+                    : AppColors.textPrimary,
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
               ),
@@ -1650,6 +1938,19 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
         ],
       ),
     );
+  }
+
+  bool _isItemWarranty(Map<String, dynamic> item) {
+    if (item['isWarranty'] == true || item['isWarrantyItem'] == true) return true;
+    final isNail = item['nailVariantId'] != null ||
+        (item['nailVariantName'] != null &&
+            item['nailVariantName'].toString().trim().isNotEmpty) ||
+        item['customerNailRequestId'] != null ||
+        item['customerNailId'] != null ||
+        (item['customerNailName'] != null &&
+            item['customerNailName'].toString().trim().isNotEmpty);
+    if (isNail) return true;
+    return false;
   }
 
   int _getItemCountFromFingerIndex(int? fingerIndex) {
@@ -2156,6 +2457,50 @@ class _PriceTableHeader extends StatelessWidget {
           SizedBox(
             width: 92,
             child: Text('Giá', style: style, textAlign: TextAlign.right),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ServicesTableHeader extends StatelessWidget {
+  const _ServicesTableHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    const style = TextStyle(
+      color: AppColors.textSecondary,
+      fontSize: 12,
+      fontWeight: FontWeight.bold,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 10,
+            child: Text(
+              S.of(context).bookingServiceNameHeader,
+              style: style,
+            ),
+          ),
+          Expanded(
+            flex: 4,
+            child: Text(
+              S.of(context).bookingQuantityHeader,
+              style: style,
+              textAlign: TextAlign.center,
+            ),
+          ),
+          Expanded(
+            flex: 9,
+            child: Text(
+              S.of(context).bookingPriceHeader,
+              style: style,
+              textAlign: TextAlign.right,
+            ),
           ),
         ],
       ),

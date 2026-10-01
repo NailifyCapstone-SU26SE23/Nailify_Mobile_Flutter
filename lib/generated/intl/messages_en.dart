@@ -571,6 +571,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingServicesBooked": MessageLookupByLibrary.simpleMessage(
       "Services Booked",
     ),
+    "bookingServiceNameHeader": MessageLookupByLibrary.simpleMessage(
+      "Service Name",
+    ),
+    "bookingQuantityHeader": MessageLookupByLibrary.simpleMessage(
+      "Quantity",
+    ),
+    "bookingPriceHeader": MessageLookupByLibrary.simpleMessage(
+      "Price",
+    ),
     "bookingQuantityLabel": m30,
     "bookingOriginalPriceLabel": MessageLookupByLibrary.simpleMessage(
       "Original Price:",

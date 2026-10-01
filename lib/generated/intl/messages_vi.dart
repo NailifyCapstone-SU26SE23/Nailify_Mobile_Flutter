@@ -588,6 +588,13 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingServicesBooked": MessageLookupByLibrary.simpleMessage(
       "Dịch vụ đã đặt",
     ),
+    "bookingServiceNameHeader": MessageLookupByLibrary.simpleMessage(
+      "Tên dịch vụ",
+    ),
+    "bookingQuantityHeader": MessageLookupByLibrary.simpleMessage(
+      "Số lượng",
+    ),
+    "bookingPriceHeader": MessageLookupByLibrary.simpleMessage("Giá"),
     "bookingQuantityLabel": m30,
     "bookingOriginalPriceLabel": MessageLookupByLibrary.simpleMessage(
       "Giá gốc:",

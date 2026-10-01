@@ -50,6 +50,7 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
         backgroundColor: Colors.transparent,
         builder: (_) => _WaitlistJoinSheet(
           time: time.substring(0, 5),
+          date: widget.selectedDate,
           onJoin: () {
             setState(() => _waitlistedTimes.add(time));
           },
@@ -65,6 +66,7 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
       backgroundColor: Colors.transparent,
       builder: (_) => _WaitlistJoinSheet(
         time: time.substring(0, 5),
+        date: widget.selectedDate,
         onJoin: () async {
           if (_isJoining) return;
           _isJoining = true;
@@ -343,12 +345,23 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
     );
   }
 
+  bool _isSameTime(dynamic timeA, dynamic timeB) {
+    if (timeA == null || timeB == null) return false;
+    final strA = timeA.toString().trim();
+    final strB = timeB.toString().trim();
+    if (strA.isEmpty || strB.isEmpty) return false;
+    if (strA == strB) return true;
+    final normA = strA.length >= 5 ? strA.substring(0, 5) : strA;
+    final normB = strB.length >= 5 ? strB.substring(0, 5) : strB;
+    return normA == normB;
+  }
+
   Widget _buildSlotTile(dynamic slot) {
     final String time = slot['startTime'] ?? '00:00:00'; // "09:30:00"
     final bool isAvailableApi = slot['isAvailable'] == true;
     final bool isHeld = slot['isHeld'] == true;
-    final bool isSelected = widget.selectedTime == time;
-    final bool isWaitlisted = _waitlistedTimes.contains(time);
+    final bool isSelected = _isSameTime(widget.selectedTime, time);
+    final bool isWaitlisted = _waitlistedTimes.any((w) => _isSameTime(w, time));
 
     bool isPast = false;
 
@@ -554,11 +567,13 @@ class _BookingTimeSelectionState extends State<BookingTimeSelection> {
 // ────────────────────────────────────────────────
 class _WaitlistJoinSheet extends StatefulWidget {
   final String time;
+  final DateTime? date;
   final VoidCallback onJoin;
   final VoidCallback onPickOther;
 
   const _WaitlistJoinSheet({
     required this.time,
+    this.date,
     required this.onJoin,
     required this.onPickOther,
   });
@@ -569,6 +584,14 @@ class _WaitlistJoinSheet extends StatefulWidget {
 
 class _WaitlistJoinSheetState extends State<_WaitlistJoinSheet> {
   bool _isSuccess = false;
+
+  String get _dateStr {
+    if (widget.date == null) return '';
+    final d = widget.date!;
+    final day = d.day.toString().padLeft(2, '0');
+    final month = d.month.toString().padLeft(2, '0');
+    return ' ($day/$month/${d.year})';
+  }
 
   void _handleJoin() {
     widget.onJoin(); // Cập nhật UI (hiện chuông) ở trang booking phía dưới
@@ -626,7 +649,7 @@ class _WaitlistJoinSheetState extends State<_WaitlistJoinSheet> {
 
         // Tiêu đề
         Text(
-          'Khung giờ ${widget.time} đã kín chỗ!',
+          'Khung giờ ${widget.time}$_dateStr đã kín chỗ!',
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -711,7 +734,7 @@ class _WaitlistJoinSheetState extends State<_WaitlistJoinSheet> {
 
         // Tiêu đề
         Text(
-          'Đã thêm khung giờ ${widget.time} vào hàng chờ thành công!',
+          'Đã thêm khung giờ ${widget.time}$_dateStr vào hàng chờ thành công!',
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,

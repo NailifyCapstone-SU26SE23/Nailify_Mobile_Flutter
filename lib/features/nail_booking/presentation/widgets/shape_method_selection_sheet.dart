@@ -201,16 +201,18 @@ class _ShapeMethodSelectionSheetState extends State<ShapeMethodSelectionSheet> {
                                 : AppColors.textPrimary,
                           ),
                         ),
-                        subtitle: Text(
-                          DurationFormatter.format(
-                            method.duration,
-                            context: context,
-                          ),
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 12,
-                          ),
-                        ),
+                        subtitle: method.duration > 0
+                            ? Text(
+                                DurationFormatter.format(
+                                  method.duration,
+                                  context: context,
+                                ),
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 12,
+                                ),
+                              )
+                            : null,
                         secondary: Text(
                           PriceFormatter.format(method.price),
                           style: const TextStyle(

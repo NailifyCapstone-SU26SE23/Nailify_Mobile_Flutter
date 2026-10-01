@@ -3,6 +3,99 @@
 // Mô tả: Model cho tính năng Slot Waitlist (API thật + Mock data fallback)
 // ====================================================================
 
+class WaitlistItemModel {
+  final String waitlistItemId;
+  final String waitlistId;
+  final int? nailVariantId;
+  final String? nailVariantName;
+  final String? nailVariantImageUrl;
+  final String? serviceId;
+  final String? serviceName;
+  final int? customerNailId;
+  final String? customerNailName;
+  final String? customerNailImageUrl;
+  final int? shapeMethodConfigId;
+  final String? shapeMethodConfigName;
+  final String? customerNailRequestId;
+  final int? quantity;
+
+  const WaitlistItemModel({
+    required this.waitlistItemId,
+    required this.waitlistId,
+    this.nailVariantId,
+    this.nailVariantName,
+    this.nailVariantImageUrl,
+    this.serviceId,
+    this.serviceName,
+    this.customerNailId,
+    this.customerNailName,
+    this.customerNailImageUrl,
+    this.shapeMethodConfigId,
+    this.shapeMethodConfigName,
+    this.customerNailRequestId,
+    this.quantity,
+  });
+
+  factory WaitlistItemModel.fromJson(Map<String, dynamic> json) {
+    int? parseNullableInt(dynamic val) {
+      if (val is int) return val;
+      if (val is num) return val.toInt();
+      return int.tryParse(val?.toString() ?? '');
+    }
+
+    return WaitlistItemModel(
+      waitlistItemId: json['waitlistItemId']?.toString() ??
+          json['WaitlistItemId']?.toString() ??
+          '',
+      waitlistId: json['waitlistId']?.toString() ??
+          json['WaitlistId']?.toString() ??
+          '',
+      nailVariantId:
+          parseNullableInt(json['nailVariantId'] ?? json['NailVariantId']),
+      nailVariantName: json['nailVariantName']?.toString() ??
+          json['NailVariantName']?.toString(),
+      nailVariantImageUrl: json['nailVariantImageUrl']?.toString() ??
+          json['NailVariantImageUrl']?.toString(),
+      serviceId:
+          json['serviceId']?.toString() ?? json['ServiceId']?.toString(),
+      serviceName:
+          json['serviceName']?.toString() ?? json['ServiceName']?.toString(),
+      customerNailId:
+          parseNullableInt(json['customerNailId'] ?? json['CustomerNailId']),
+      customerNailName: json['customerNailName']?.toString() ??
+          json['CustomerNailName']?.toString(),
+      customerNailImageUrl: json['customerNailImageUrl']?.toString() ??
+          json['CustomerNailImageUrl']?.toString(),
+      shapeMethodConfigId: parseNullableInt(
+          json['shapeMethodConfigId'] ?? json['ShapeMethodConfigId']),
+      shapeMethodConfigName: json['shapeMethodConfigName']?.toString() ??
+          json['ShapeMethodConfigName']?.toString(),
+      customerNailRequestId: json['customerNailRequestId']?.toString() ??
+          json['CustomerNailRequestId']?.toString(),
+      quantity: parseNullableInt(json['quantity'] ?? json['Quantity']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'waitlistItemId': waitlistItemId,
+      'waitlistId': waitlistId,
+      'nailVariantId': nailVariantId,
+      'nailVariantName': nailVariantName,
+      'nailVariantImageUrl': nailVariantImageUrl,
+      'serviceId': serviceId,
+      'serviceName': serviceName,
+      'customerNailId': customerNailId,
+      'customerNailName': customerNailName,
+      'customerNailImageUrl': customerNailImageUrl,
+      'shapeMethodConfigId': shapeMethodConfigId,
+      'shapeMethodConfigName': shapeMethodConfigName,
+      'customerNailRequestId': customerNailRequestId,
+      'quantity': quantity,
+    };
+  }
+}
+
 // ─────────────────────────────────────────────────────────────
 // MODEL DÙNG VỚI API THẬT (/api/Waitlists/me, join, confirm, cancel)
 // ─────────────────────────────────────────────────────────────
@@ -23,6 +116,7 @@ class WaitlistApiModel {
   final DateTime? notifiedAt;
   final DateTime? expiresAt;
   final String? convertedBookingId;
+  final List<WaitlistItemModel> waitlistItems;
 
   const WaitlistApiModel({
     required this.waitlistId,
@@ -41,6 +135,7 @@ class WaitlistApiModel {
     this.notifiedAt,
     this.expiresAt,
     this.convertedBookingId,
+    this.waitlistItems = const [],
   });
 
   bool get isOpened =>
@@ -53,91 +148,149 @@ class WaitlistApiModel {
     final raw = value.toString().trim();
     if (raw.isEmpty) return null;
 
-    final parsed = DateTime.tryParse(raw);
+    String isoStr = raw;
+    if (!isoStr.contains('Z') &&
+        !isoStr.contains('+') &&
+        !RegExp(r'-\d{2}:\d{2}$').hasMatch(isoStr)) {
+      isoStr = '${isoStr}Z';
+    }
+
+    final parsed = DateTime.tryParse(isoStr) ?? DateTime.tryParse(raw);
     if (parsed == null) return null;
 
-    // DateTime.tryParse tự động chuyển đổi chuỗi ISO có ký tự 'Z' (UTC)
-    // về đúng giờ Local của thiết bị khi gọi .toLocal()
-    // (ví dụ: 04:15:43 UTC -> 11:15:43 giờ Việt Nam UTC+7).
     return parsed.toLocal();
   }
 
   factory WaitlistApiModel.fromJson(Map<String, dynamic> json) {
+    final rawItems = json['waitlistItems'] ?? json['WaitlistItems'];
+    List<WaitlistItemModel> parsedItems = [];
+    if (rawItems is List) {
+      parsedItems = rawItems
+          .whereType<Map>()
+          .map((e) => WaitlistItemModel.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    }
+
+    dynamic getValue(List<String> keys) {
+      for (final key in keys) {
+        final val = json[key];
+        if (val != null && val.toString().trim().isNotEmpty) {
+          return val;
+        }
+      }
+      return null;
+    }
+
+    final createdAtRaw = getValue([
+      'createdAt',
+      'CreatedAt',
+      'createdDate',
+      'CreatedDate',
+      'joinedAt',
+      'JoinedAt',
+      'created_at',
+    ]);
+    final notifiedAtRaw = getValue(['notifiedAt', 'NotifiedAt', 'notified_at']);
+    final expiresAtRaw = getValue(['expiresAt', 'ExpiresAt', 'expires_at']);
+    final requestedDateRaw = getValue([
+      'requestedDate',
+      'RequestedDate',
+      'requested_date',
+    ]);
+
     return WaitlistApiModel(
-      waitlistId:
-          json['wailistId']?.toString() ?? json['waitlistId']?.toString() ?? '',
-      customerId: json['customerId']?.toString(),
-      customerName: json['customerName']?.toString(),
-      salonId: json['salonId']?.toString(),
-      salonName: json['salonName']?.toString(),
-      preferredNailArtistId: json['preferredNailArtistId']?.toString(),
-      preferredNailArtistName: json['preferredNailArtistName']?.toString(),
-      requestedDate: _parseServerDateTime(json['requestedDate']),
-      requestedStartTime: json['requestedStartTime']?.toString(),
+      waitlistId: json['waitlistId']?.toString() ??
+          json['WaitlistId']?.toString() ??
+          json['wailistId']?.toString() ??
+          json['id']?.toString() ??
+          json['Id']?.toString() ??
+          '',
+      customerId: json['customerId']?.toString() ?? json['CustomerId']?.toString(),
+      customerName: json['customerName']?.toString() ?? json['CustomerName']?.toString(),
+      salonId: json['salonId']?.toString() ?? json['SalonId']?.toString(),
+      salonName: json['salonName']?.toString() ?? json['SalonName']?.toString(),
+      preferredNailArtistId: json['preferredNailArtistId']?.toString() ?? json['PreferredNailArtistId']?.toString(),
+      preferredNailArtistName: json['preferredNailArtistName']?.toString() ?? json['PreferredNailArtistName']?.toString(),
+      requestedDate: _parseServerDateTime(requestedDateRaw),
+      requestedStartTime: json['requestedStartTime']?.toString() ?? json['RequestedStartTime']?.toString(),
       estimatedDuration: json['estimatedDuration'] is int
           ? json['estimatedDuration'] as int
-          : int.tryParse(json['estimatedDuration']?.toString() ?? ''),
+          : int.tryParse(json['estimatedDuration']?.toString() ?? json['EstimatedDuration']?.toString() ?? ''),
       position: json['position'] is int
           ? json['position'] as int
-          : int.tryParse(json['position']?.toString() ?? ''),
-      status: json['status']?.toString() ?? 'Pending',
-      createdAt: _parseServerDateTime(json['createdAt']),
-      notifiedAt: _parseServerDateTime(json['notifiedAt']),
-      expiresAt: _parseServerDateTime(json['expiresAt']),
-      convertedBookingId: json['convertedBookingId']?.toString(),
+          : int.tryParse(json['position']?.toString() ?? json['Position']?.toString() ?? ''),
+      status: json['status']?.toString() ?? json['Status']?.toString() ?? 'Pending',
+      createdAt: _parseServerDateTime(createdAtRaw),
+      notifiedAt: _parseServerDateTime(notifiedAtRaw),
+      expiresAt: _parseServerDateTime(expiresAtRaw),
+      convertedBookingId: json['convertedBookingId']?.toString() ?? json['ConvertedBookingId']?.toString(),
+      waitlistItems: parsedItems,
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────
-// MODEL CŨ - Giữ lại để WaitlistCard vẫn tương thích (sẽ loại bỏ dần)
+// MODEL CŨ - Giữ lại để WaitlistCard vẫn tương thích
 // ─────────────────────────────────────────────────────────────
 enum WaitlistStatus { pending, opened }
 
 class WaitlistModel {
   final String id;
+  final String? salonId;
   final String salonName;
   final String address;
   final String time; // "09:00"
   final DateTime date;
+  final String? staffId;
   final String staffName;
   final List<String> services;
   final WaitlistStatus status;
-  final DateTime
-  holdUntil; // Thời hạn giữ chỗ (chỉ có ý nghĩa khi status == opened)
-  final DateTime registeredAt; // Thời điểm đăng ký
+  final DateTime holdUntil;
+  final DateTime registeredAt;
+  final List<WaitlistItemModel> waitlistItems;
 
   const WaitlistModel({
     required this.id,
+    this.salonId,
     required this.salonName,
     required this.address,
     required this.time,
     required this.date,
+    this.staffId,
     required this.staffName,
     required this.services,
     required this.status,
     required this.holdUntil,
     required this.registeredAt,
+    this.waitlistItems = const [],
   });
 
-  /// Tạo WaitlistModel từ WaitlistApiModel (để tương thích WaitlistCard)
   factory WaitlistModel.fromApi(WaitlistApiModel api) {
     final timeRaw = api.requestedStartTime ?? '00:00';
     final timeFormatted = timeRaw.length >= 5
         ? timeRaw.substring(0, 5)
         : timeRaw;
+    final extractedServices = api.waitlistItems
+        .map((e) => e.serviceName ?? e.nailVariantName ?? e.customerNailName)
+        .whereType<String>()
+        .where((s) => s.trim().isNotEmpty)
+        .toList();
+
     return WaitlistModel(
       id: api.waitlistId,
+      salonId: api.salonId,
       salonName: api.salonName ?? 'Salon',
       address: '',
       time: timeFormatted,
       date: api.requestedDate ?? DateTime.now(),
+      staffId: api.preferredNailArtistId,
       staffName: api.preferredNailArtistName ?? 'Bất kỳ',
-      services: [],
+      services: extractedServices,
       status: api.isOpened ? WaitlistStatus.opened : WaitlistStatus.pending,
       holdUntil:
           api.expiresAt ?? DateTime.now().add(const Duration(minutes: 30)),
       registeredAt: api.createdAt ?? DateTime.now(),
+      waitlistItems: api.waitlistItems,
     );
   }
 

@@ -1156,7 +1156,7 @@ abstract class S {
   /// No description provided for @tryChangeFilter.
   ///
   /// In en, this message translates to:
-  /// **'Try changing the month, year, or status filter.'**
+  /// **'Try changing the date or status filter.'**
   String get tryChangeFilter;
 
   /// No description provided for @bookNowHint.
@@ -2695,6 +2695,24 @@ abstract class S {
   /// **'Services Booked'**
   String get bookingServicesBooked;
 
+  /// No description provided for @bookingServiceNameHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Service Name'**
+  String get bookingServiceNameHeader;
+
+  /// No description provided for @bookingQuantityHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity'**
+  String get bookingQuantityHeader;
+
+  /// No description provided for @bookingPriceHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Price'**
+  String get bookingPriceHeader;
+
   /// No description provided for @bookingQuantityLabel.
   ///
   /// In en, this message translates to:
@@ -3880,14 +3898,20 @@ abstract class S {
   /// No description provided for @arTryOnTitle.
   ///
   /// In en, this message translates to:
-  /// **'AR Try-On'**
+  /// **'Virtual Try-On'**
   String get arTryOnTitle;
 
   /// No description provided for @arTryOnSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'3D Nail Experience'**
+  /// **'Virtual Nail Experience'**
   String get arTryOnSubtitle;
+
+  /// No description provided for @allStars.
+  ///
+  /// In en, this message translates to:
+  /// **'All stars'**
+  String get allStars;
 
   /// No description provided for @aiMatchStyleSubtitle.
   ///

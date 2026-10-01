@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../generated/l10n.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/error/exceptions.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/network/signalr_service.dart';
 import '../../../../core/network/signalr_events.dart';
@@ -344,6 +345,17 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
     }
   }
 
+  bool _isSameTime(dynamic timeA, dynamic timeB) {
+    if (timeA == null || timeB == null) return false;
+    final strA = timeA.toString().trim();
+    final strB = timeB.toString().trim();
+    if (strA.isEmpty || strB.isEmpty) return false;
+    if (strA == strB) return true;
+    final normA = strA.length >= 5 ? strA.substring(0, 5) : strA;
+    final normB = strB.length >= 5 ? strB.substring(0, 5) : strB;
+    return normA == normB;
+  }
+
   Future<void> _fetchTimeSlots() async {
     if (_selectedDate == null) return;
 
@@ -375,8 +387,8 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
         if (previousSelectedTime != null &&
             filtered.any(
               (s) =>
-                  s['startTime'] == previousSelectedTime ||
-                  s['time'] == previousSelectedTime,
+                  _isSameTime(s['startTime'], previousSelectedTime) ||
+                  _isSameTime(s['time'], previousSelectedTime),
             )) {
           _selectedTime = previousSelectedTime;
         } else {
@@ -473,7 +485,8 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
       // API trả về 400 (ví dụ: "Thợ đã đầy lịch trong khoảng thời gian này...")
       // → hiển thị message server để user biết lý do thay vì message chung chung.
       debugPrint('holdSlot failed: $e');
-      _showHoldFailureMessage('Rất tiếc, khung giờ này vừa có người đặt. Vui lòng chọn giờ khác.');
+      final msg = e is AppException ? e.message : e.toString();
+      _showHoldFailureMessage(msg);
       return false;
     }
   }
@@ -925,12 +938,14 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
                       method.name,
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
-                    subtitle: Text(
-                      DurationFormatter.format(
-                        method.duration,
-                        context: context,
-                      ),
-                    ),
+                    subtitle: method.duration > 0
+                        ? Text(
+                            DurationFormatter.format(
+                              method.duration,
+                              context: context,
+                            ),
+                          )
+                        : null,
                     secondary: Text(
                       PriceFormatter.format(method.price),
                       style: const TextStyle(
@@ -1659,14 +1674,16 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
             isNegative: true,
           ),
         ],
-        const SizedBox(height: 8),
-        _buildInvoiceRow(
-          S.of(context).bookingDepositAmountLabel,
-          depositAmountToPay,
-          isNegative: false,
-          isBold: true,
-          isPrimaryColor: true,
-        ),
+        if (depositAmountToPay > 0) ...[
+          const SizedBox(height: 8),
+          _buildInvoiceRow(
+            S.of(context).bookingDepositAmountLabel,
+            depositAmountToPay,
+            isNegative: false,
+            isBold: true,
+            isPrimaryColor: true,
+          ),
+        ],
         if (_useWalletBalance && walletDeduction > 0) ...[
           const SizedBox(height: 8),
           _buildInvoiceRowWithText(

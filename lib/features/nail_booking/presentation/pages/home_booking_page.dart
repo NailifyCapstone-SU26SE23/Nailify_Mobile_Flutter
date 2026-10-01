@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/error/exceptions.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/network/signalr_service.dart';
 import '../../../../core/network/signalr_events.dart';
@@ -155,6 +156,50 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
         'salonId': init['salonId']?.toString() ?? '',
       };
       _noArtistSelected = false;
+    }
+
+    if (init['serviceIds'] is List) {
+      _selectedExtraServices = List<String?>.from(
+        (init['serviceIds'] as List).map((e) => e.toString()),
+      );
+    }
+
+    if (init['nailVariantId'] != null) {
+      final vId = int.tryParse(init['nailVariantId'].toString());
+      if (vId != null && vId > 0) {
+        _selectedNailVariant = NailVariantModel(
+          nailVariantId: vId,
+          name: init['nailVariantName']?.toString() ?? 'Mẫu móng',
+          nailShapeId: 0,
+          nailSurfaceId: 0,
+          nailDesignId: 0,
+          price: 0,
+          duration: 0,
+          imageUrl: init['nailVariantImageUrl']?.toString() ?? '',
+        );
+      }
+    }
+
+    if (init['shapeMethodConfigId'] != null) {
+      final sId = int.tryParse(init['shapeMethodConfigId'].toString());
+      if (sId != null && sId > 0) {
+        _selectedShapeMethod = ShapeMethodConfigModel(
+          shapeMethodConfigId: sId,
+          nailShapeId: 0,
+          nailShapeName: '',
+          name: init['shapeMethodName']?.toString() ?? 'Phom dáng',
+          price: 0,
+          duration: 0,
+          status: 'Active',
+        );
+      }
+    }
+
+    if (init['date'] is DateTime) {
+      _selectedDate = init['date'] as DateTime;
+    }
+    if (init['time'] != null) {
+      _selectedTime = init['time'].toString();
     }
 
     if (_selectedBranch != null && _selectedStylist != null) {
@@ -320,6 +365,17 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
     }
   }
 
+  bool _isSameTime(dynamic timeA, dynamic timeB) {
+    if (timeA == null || timeB == null) return false;
+    final strA = timeA.toString().trim();
+    final strB = timeB.toString().trim();
+    if (strA.isEmpty || strB.isEmpty) return false;
+    if (strA == strB) return true;
+    final normA = strA.length >= 5 ? strA.substring(0, 5) : strA;
+    final normB = strB.length >= 5 ? strB.substring(0, 5) : strB;
+    return normA == normB;
+  }
+
   Future<void> _fetchTimeSlots() async {
     if (_noArtistSelected) {
       _loadSalonSlots();
@@ -352,8 +408,8 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
         if (previousSelectedTime != null &&
             filtered.any(
               (s) =>
-                  s['startTime'] == previousSelectedTime ||
-                  s['time'] == previousSelectedTime,
+                  _isSameTime(s['startTime'], previousSelectedTime) ||
+                  _isSameTime(s['time'], previousSelectedTime),
             )) {
           _selectedTime = previousSelectedTime;
         } else {
@@ -399,8 +455,8 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
         if (previousSelectedTime != null &&
             filtered.any(
               (s) =>
-                  s['startTime'] == previousSelectedTime ||
-                  s['time'] == previousSelectedTime,
+                  _isSameTime(s['startTime'], previousSelectedTime) ||
+                  _isSameTime(s['time'], previousSelectedTime),
             )) {
           _selectedTime = previousSelectedTime;
         } else {
@@ -476,7 +532,8 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
       return true;
     } catch (e) {
       debugPrint('holdSlot failed: $e');
-      _showHoldFailureMessage('Rất tiếc, khung giờ này vừa có người đặt. Vui lòng chọn giờ khác.');
+      final msg = e is AppException ? e.message : e.toString();
+      _showHoldFailureMessage(msg);
       return false;
     }
   }
@@ -2041,24 +2098,26 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
             isNegative: true,
           ),
         ],
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              S.of(context).bookingDepositAmountLabel,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            Text(
-              PriceFormatter.format(depositAmountToPay),
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Color(0xFFE02B6D),
-                fontSize: 16,
+        if (depositAmountToPay > 0) ...[
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                S.of(context).bookingDepositAmountLabel,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
               ),
-            ),
-          ],
-        ),
+              Text(
+                PriceFormatter.format(depositAmountToPay),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFE02B6D),
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }

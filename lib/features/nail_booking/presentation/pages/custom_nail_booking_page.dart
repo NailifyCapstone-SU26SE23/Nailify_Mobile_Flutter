@@ -1659,14 +1659,16 @@ class _CustomNailBookingPageState extends State<CustomNailBookingPage> {
             isNegative: true,
           ),
         ],
-        const SizedBox(height: 8),
-        _buildInvoiceRow(
-          S.of(context).bookingDepositAmountLabel,
-          depositAmountToPay,
-          isNegative: false,
-          isBold: true,
-          isPrimaryColor: true,
-        ),
+        if (depositAmountToPay > 0) ...[
+          const SizedBox(height: 8),
+          _buildInvoiceRow(
+            S.of(context).bookingDepositAmountLabel,
+            depositAmountToPay,
+            isNegative: false,
+            isBold: true,
+            isPrimaryColor: true,
+          ),
+        ],
         if (_useWalletBalance && walletDeduction > 0) ...[
           const SizedBox(height: 8),
           _buildInvoiceRowWithText(

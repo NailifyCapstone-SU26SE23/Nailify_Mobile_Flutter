@@ -301,9 +301,11 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
       if (warrantyItems.isEmpty && items.isNotEmpty) {
         for (final raw in items) {
           if (raw is Map<String, dynamic>) {
+            final price = _bookingItemUnitPrice(raw);
             if (raw['serviceId'] != null &&
                 raw['nailVariantId'] == null &&
-                raw['customerNailRequestId'] == null) {
+                raw['customerNailRequestId'] == null &&
+                price > 0) {
               extraServices.add(raw);
             } else {
               warrantyItems.add(raw);
@@ -1933,21 +1935,14 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
 
   bool _isItemWarranty(Map<String, dynamic> item) {
     if (item['isWarranty'] == true || item['isWarrantyItem'] == true) return true;
-    if (item['nailVariantId'] != null ||
+    final isNail = item['nailVariantId'] != null ||
         (item['nailVariantName'] != null &&
-            item['nailVariantName'].toString().trim().isNotEmpty)) {
-      return true;
-    }
-    if (item['customerNailRequestId'] != null ||
+            item['nailVariantName'].toString().trim().isNotEmpty) ||
+        item['customerNailRequestId'] != null ||
         item['customerNailId'] != null ||
         (item['customerNailName'] != null &&
-            item['customerNailName'].toString().trim().isNotEmpty)) {
-      return true;
-    }
-    final price = _bookingItemUnitPrice(item);
-    if (price == 0 && item['serviceId'] == null) {
-      return true;
-    }
+            item['customerNailName'].toString().trim().isNotEmpty);
+    if (isNail) return true;
     return false;
   }
 

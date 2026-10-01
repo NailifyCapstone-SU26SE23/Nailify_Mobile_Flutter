@@ -2412,13 +2412,15 @@ class _NailBookingPageState extends State<NailBookingPage> {
             isNegative: true,
           ),
         ],
-        const SizedBox(height: 8),
-        _buildPaymentRow(
-          S.of(context).bookingDepositAmountLabel,
-          depositAmountToPay,
-          strong: true,
-          highlight: true,
-        ),
+        if (depositAmountToPay > 0) ...[
+          const SizedBox(height: 8),
+          _buildPaymentRow(
+            S.of(context).bookingDepositAmountLabel,
+            depositAmountToPay,
+            strong: true,
+            highlight: true,
+          ),
+        ],
         if (_useWalletBalance && walletDeduction > 0) ...[
           const SizedBox(height: 8),
           _buildPaymentRowWithText(

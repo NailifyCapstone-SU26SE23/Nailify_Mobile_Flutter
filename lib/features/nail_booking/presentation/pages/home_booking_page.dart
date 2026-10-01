@@ -2085,24 +2085,26 @@ class _HomeBookingPageState extends State<HomeBookingPage> {
             isNegative: true,
           ),
         ],
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              S.of(context).bookingDepositAmountLabel,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            Text(
-              PriceFormatter.format(depositAmountToPay),
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Color(0xFFE02B6D),
-                fontSize: 16,
+        if (depositAmountToPay > 0) ...[
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                S.of(context).bookingDepositAmountLabel,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
               ),
-            ),
-          ],
-        ),
+              Text(
+                PriceFormatter.format(depositAmountToPay),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFE02B6D),
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }

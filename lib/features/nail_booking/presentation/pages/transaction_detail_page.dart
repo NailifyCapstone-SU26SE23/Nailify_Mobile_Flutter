@@ -28,38 +28,47 @@ class TransactionDetailPage extends StatelessWidget {
     final paidAtStr = _formatDateTime(transaction['paidAt']);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: AppColors.primaryDark,
-            size: 20,
+        elevation: 0,
+        scrolledUnderElevation: 0.5,
+        backgroundColor: Colors.white,
+        centerTitle: true,
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Material(
+            color: const Color(0xFFF1F5F9),
+            shape: const CircleBorder(),
+            clipBehavior: Clip.antiAlias,
+            child: IconButton(
+              icon: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: AppColors.textPrimary,
+                size: 18,
+              ),
+              onPressed: () => context.pop(),
+            ),
           ),
-          onPressed: () => context.pop(),
         ),
         title: Text(
           S.of(context).transactionDetails,
           style: const TextStyle(
-            color: AppColors.primaryDark,
-            fontWeight: FontWeight.w800,
-            fontFamily: 'Georgia',
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+            letterSpacing: -0.3,
           ),
         ),
-        centerTitle: true,
-        backgroundColor: const Color(0xFFFDFBF7),
-        elevation: 0,
-        scrolledUnderElevation: 0,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // ── Header Card (Status & Amount) ─────────────────────
               _buildHeroHeader(statusView, amount),
-              const SizedBox(height: 18),
+              const SizedBox(height: 16),
 
               // ── Details Card ─────────────────────────────────────
               Container(
@@ -67,7 +76,7 @@ class TransactionDetailPage extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFF0EAE1), width: 1.2),
+                  border: Border.all(color: const Color(0xFFF1F5F9), width: 1.2),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.03),
@@ -84,7 +93,7 @@ class TransactionDetailPage extends StatelessWidget {
                         Icon(
                           Icons.receipt_long_rounded,
                           size: 18,
-                          color: Color(0xFFE02B6D),
+                          color: AppColors.primaryDark,
                         ),
                         SizedBox(width: 8),
                         Text(
@@ -92,13 +101,13 @@ class TransactionDetailPage extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.primaryDark,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
-                    const Divider(height: 1, color: Color(0xFFF5F5F5)),
+                    const Divider(height: 1, color: Color(0xFFF1F5F9)),
                     const SizedBox(height: 12),
 
                     if (cleanDesc.isNotEmpty)
@@ -140,13 +149,13 @@ class TransactionDetailPage extends StatelessWidget {
 
               // ── Policy Banner (if present) ────────────────────────
               if (policy.isNotEmpty) ...[
-                const SizedBox(height: 18),
+                const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFF8E1),
+                    color: const Color(0xFFFFFBEB),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFFFE082)),
+                    border: Border.all(color: const Color(0xFFFDE68A)),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -154,14 +163,14 @@ class TransactionDetailPage extends StatelessWidget {
                       const Icon(
                         Icons.info_outline_rounded,
                         size: 20,
-                        color: Color(0xFFF57C00),
+                        color: Color(0xFFD97706),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           policy,
                           style: const TextStyle(
-                            color: Color(0xFF5D4037),
+                            color: Color(0xFF92400E),
                             fontSize: 13,
                             height: 1.4,
                             fontWeight: FontWeight.w500,
@@ -186,7 +195,7 @@ class TransactionDetailPage extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFF0EAE1), width: 1.2),
+        border: Border.all(color: const Color(0xFFF1F5F9), width: 1.2),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -235,7 +244,7 @@ class TransactionDetailPage extends StatelessWidget {
             style: const TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.w900,
-              color: Color(0xFFE02B6D),
+              color: AppColors.primaryDark,
               letterSpacing: -0.5,
             ),
           ),
@@ -259,17 +268,17 @@ class TransactionDetailPage extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(7),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF0F5),
+                  color: AppColors.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(icon, size: 16, color: const Color(0xFFE02B6D)),
+                child: Icon(icon, size: 16, color: AppColors.primaryDark),
               ),
               const SizedBox(width: 12),
               Text(
                 label,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 13.5,
-                  color: Colors.grey.shade600,
+                  color: Color(0xFF64748B),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -291,7 +300,7 @@ class TransactionDetailPage extends StatelessWidget {
         if (!isLast)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 10),
-            child: Divider(height: 1, color: Color(0xFFF5F5F5)),
+            child: Divider(height: 1, color: Color(0xFFF1F5F9)),
           ),
       ],
     );

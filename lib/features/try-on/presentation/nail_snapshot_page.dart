@@ -882,7 +882,7 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: _isProcessing ? const Color(0xFFFFFDF9) : Colors.grey.shade50,
       appBar: AppBar(
         title: const Text(
           'Snapshot Try-On AI',
@@ -910,9 +910,11 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
           },
         ),
       ),
-      body: Column(
-        children: [
-          // 1. Khung hiển thị ảnh bàn tay
+      body: _isProcessing
+          ? _buildProcessingLoadingScreen()
+          : Column(
+              children: [
+                // 1. Khung hiển thị ảnh bàn tay
           Expanded(
             child: Container(
               width: double.infinity,
@@ -1297,11 +1299,107 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
                                 ],
                               ),
                             ),
-                    ),
-                  ],
-                ),
+                          ),
+                ],
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProcessingLoadingScreen() {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      color: const Color(0xFFFFFDF9),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Spacer(flex: 2),
+          TweenAnimationBuilder<double>(
+            duration: const Duration(milliseconds: 1200),
+            tween: Tween<double>(begin: 0.95, end: 1.05),
+            curve: Curves.easeInOut,
+            builder: (context, scale, child) {
+              return Transform.scale(
+                scale: scale,
+                child: Container(
+                  width: 150,
+                  height: 150,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFDE8F3).withValues(alpha: 0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Container(
+                    width: 115,
+                    height: 115,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFCE4EC),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.15),
+                          blurRadius: 20,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    alignment: Alignment.center,
+                    child: Container(
+                      width: 85,
+                      height: 85,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFFF0F5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.auto_awesome_rounded,
+                        size: 42,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 36),
+          const Text(
+            'HỆ THỐNG ĐANG XỬ LÝ...',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              color: AppColors.primaryDark,
+              letterSpacing: 0.3,
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Xin vui lòng đợi trong giây lát...',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF757575),
+            ),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: 150,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: const LinearProgressIndicator(
+                minHeight: 4,
+                color: AppColors.primary,
+                backgroundColor: Color(0xFFF1F5F9),
+              ),
+            ),
+          ),
+          const Spacer(flex: 3),
         ],
       ),
     );

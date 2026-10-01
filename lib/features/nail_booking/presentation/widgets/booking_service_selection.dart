@@ -648,9 +648,53 @@ class BookingServiceSelection extends StatelessWidget {
         nailData!['thumbnail'];
     final String name =
         nailData!['name']?.toString() ?? 'Nail Design - Dark Burgundy';
-    final num? duration =
-        (nailData!['duration'] as num?) ?? (nailData!['estimatedTime'] as num?);
-    final dynamic price = nailData!['price'] ?? nailData!['basePrice'];
+
+    final num baseDuration = (nailData!['duration'] is num)
+        ? nailData!['duration'] as num
+        : (nailData!['estimatedTime'] is num)
+            ? nailData!['estimatedTime'] as num
+            : (num.tryParse(nailData!['duration']?.toString() ??
+                    nailData!['estimatedTime']?.toString() ??
+                    '') ??
+                0);
+    final shapeMethodDurationVal =
+        nailData!['shapeMethodDuration'] ??
+        nailData!['shapeDuration'] ??
+        (nailData!['selectedShapeMethod'] is Map
+            ? nailData!['selectedShapeMethod']['duration']
+            : null);
+    final num shapeMethodDuration = (shapeMethodDurationVal is num)
+        ? shapeMethodDurationVal
+        : (num.tryParse(shapeMethodDurationVal?.toString() ?? '') ?? 0);
+    final num totalDuration = baseDuration + shapeMethodDuration;
+
+    final num basePrice = (nailData!['price'] is num)
+        ? nailData!['price'] as num
+        : (nailData!['basePrice'] is num)
+            ? nailData!['basePrice'] as num
+            : (num.tryParse(nailData!['price']?.toString() ??
+                    nailData!['basePrice']?.toString() ??
+                    '') ??
+                0);
+    final shapeMethodPriceVal =
+        nailData!['shapeMethodPrice'] ??
+        nailData!['shapePrice'] ??
+        nailData!['shapeMethodConfigPrice'] ??
+        (nailData!['selectedShapeMethod'] is Map
+            ? nailData!['selectedShapeMethod']['price']
+            : null);
+    final num shapeMethodPrice = (shapeMethodPriceVal is num)
+        ? shapeMethodPriceVal
+        : (num.tryParse(shapeMethodPriceVal?.toString() ?? '') ?? 0);
+    final num totalPrice = basePrice + shapeMethodPrice;
+
+    final String? rawShapeName = nailData!['shapeMethodName']?.toString().trim() ??
+        (nailData!['selectedShapeMethod'] is Map
+            ? nailData!['selectedShapeMethod']['name']?.toString().trim()
+            : null);
+    final String shapeSubtitle = (rawShapeName != null && rawShapeName.isNotEmpty)
+        ? 'Dịch vụ thiết kế Nail ($rawShapeName)'
+        : 'Dịch vụ thiết kế Nail (Mặc định)';
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -707,7 +751,7 @@ class BookingServiceSelection extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Dịch vụ thiết kế Nail (Mặc định)',
+                  shapeSubtitle,
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
@@ -727,7 +771,7 @@ class BookingServiceSelection extends StatelessWidget {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    if (duration != null && duration > 0) ...[
+                    if (totalDuration > 0) ...[
                       Icon(
                         Icons.access_time_rounded,
                         size: 12,
@@ -735,7 +779,7 @@ class BookingServiceSelection extends StatelessWidget {
                       ),
                       const SizedBox(width: 3),
                       Text(
-                        DurationFormatter.format(duration, context: context),
+                        DurationFormatter.format(totalDuration, context: context),
                         style: TextStyle(
                           fontSize: 11.5,
                           color: Colors.grey.shade600,
@@ -744,15 +788,14 @@ class BookingServiceSelection extends StatelessWidget {
                       ),
                       const SizedBox(width: 10),
                     ],
-                    if (price != null)
-                      Text(
-                        PriceFormatter.format(price),
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
-                        ),
+                    Text(
+                      PriceFormatter.format(totalPrice),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
                       ),
+                    ),
                   ],
                 ),
               ],

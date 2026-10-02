@@ -280,12 +280,14 @@ class DelayWarningWithAutonomyEvent {
 
 /// Sự kiện: Cập nhật ETA dự kiến cho ca trễ
 class DelayETAEvent {
+  final String bookingId;
   final String message;
 
-  const DelayETAEvent({required this.message});
+  const DelayETAEvent({this.bookingId = '', required this.message});
 
   factory DelayETAEvent.fromJson(Map<String, dynamic> json) {
     return DelayETAEvent(
+      bookingId: json['bookingId']?.toString() ?? json['BookingId']?.toString() ?? '',
       message: json['message']?.toString() ?? json['Message']?.toString() ?? '',
     );
   }

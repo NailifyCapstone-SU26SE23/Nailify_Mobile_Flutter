@@ -7,6 +7,18 @@ import 'nms.dart';
 import 'onnx_service.dart';
 import 'polygon_resampler.dart';
 
+/// Kết quả phân vùng 1 móng: polygon gốc + class ID của ngón tay.
+class NailSegResult {
+  final List<Offset> polygon;
+  /// Class ID từ YOLO: 0=index, 1=middle, 2=pinky, 3=ring, 4=thumb
+  final int classId;
+
+  const NailSegResult({required this.polygon, required this.classId});
+
+  /// Tên ngón tay tương ứng với classId
+  String get fingerLabel => YoloSegDecoder.getClassName(classId);
+}
+
 class YoloSegDecoder {
   static double _sigmoid(double x) => 1.0 / (1.0 + exp(-x));
 
@@ -22,17 +34,20 @@ class YoloSegDecoder {
   }
 
   /// Master Ultralytics Decoder: Anchor Parsing -> NMS -> ROI Reconstruct -> Contour -> Undo Letterbox
-  static List<List<Offset>> decode({
+  /// Trả về danh sách [NailSegResult] — mỗi kết quả mang cả polygon lẫn classId
+  /// của ngón tay (0=index, 1=middle, 2=pinky, 3=ring, 4=thumb) để painter
+  /// có thể áp đúng thiết kế cho từng ngón.
+  static List<NailSegResult> decode({
     required YoloSegOutputs rawOutputs,
-    double confThreshold = 0.60,
+    double confThreshold = 0.50,
     double iouThreshold = 0.45,
     double maskThreshold = 0.5,
   }) {
     if (rawOutputs.pred == null) return [];
 
-    final List<List<Offset>> resultPolygons = [];
+    final List<NailSegResult> results = [];
 
-    // Step 1: Parse prediction anchors
+    // Step 1: Parse prediction anchors (only candidates >= confThreshold)
     final candidates = _parseOutput0(rawOutputs.pred, confThreshold);
     if (candidates.isEmpty) {
       debugPrint(
@@ -42,21 +57,33 @@ class YoloSegDecoder {
     }
 
     // Step 2: NMS Filtering (Cap at 5 fingernails max per hand)
+    // iouThreshold=0.30 -> Tight suppression: nails that are close together
+    // are correctly kept (they don't overlap much in IoU terms) while true
+    // duplicates on the same nail are removed.
     final nmsDetections = NmsProcessor.filter(
       candidates: candidates,
-      iouThreshold: 0.35,
+      iouThreshold: 0.30,
       maxKeep: 5,
     );
 
     if (nmsDetections.isEmpty) return [];
 
+    // Step 2b: Post-NMS confidence gate — belt-and-suspenders filter
+    // Guarantees only detections >= confThreshold make it to rendering,
+    // even if the NMS kept a borderline candidate via IoU sorting.
+    final highConfDetections = nmsDetections
+        .where((d) => d.score >= confThreshold)
+        .toList();
+
+    if (highConfDetections.isEmpty) return [];
+
     debugPrint("--------------------------------------------------");
     debugPrint("🤖 [YOLO SEG DECODER RESULTS]");
     debugPrint(
-      "🔍 Anchors ứng viên: ${candidates.length} -> NMS giữ lại: ${nmsDetections.length} móng",
+      "🔍 Anchors ứng viên: ${candidates.length} -> NMS giữ lại: ${nmsDetections.length} móng -> Sau lọc độ tin cậy (>=${(confThreshold * 100).toStringAsFixed(0)}%): ${highConfDetections.length} móng",
     );
-    for (int i = 0; i < nmsDetections.length; i++) {
-      final det = nmsDetections[i];
+    for (int i = 0; i < highConfDetections.length; i++) {
+      final det = highConfDetections[i];
       final label = getClassName(det.classId);
       debugPrint(
         "   📌 Móng #${i + 1}: ClassID = ${det.classId} ($label) | Score = ${(det.score * 100).toStringAsFixed(1)}% | Box = (cx: ${det.cx.toStringAsFixed(1)}, cy: ${det.cy.toStringAsFixed(1)}, w: ${det.w.toStringAsFixed(1)}, h: ${det.h.toStringAsFixed(1)})",
@@ -68,7 +95,7 @@ class YoloSegDecoder {
     final double imgH = rawOutputs.letterbox.originalHeight.toDouble();
 
     // Step 3 & 4: Mask ROI Reconstruction & Marching Squares Contour Extraction
-    for (var det in nmsDetections) {
+    for (var det in highConfDetections) {
       LocalizedMaskRoi? maskRoi;
       if (rawOutputs.proto != null) {
         maskRoi = MaskReconstructionProcessor.reconstructRoiMask(
@@ -108,11 +135,12 @@ class YoloSegDecoder {
       }
 
       if (origPolygon.length >= 3) {
-        resultPolygons.add(origPolygon);
+        // Giữ nguyên classId từ YOLO để painter biết đây là ngón tay nào
+        results.add(NailSegResult(polygon: origPolygon, classId: det.classId));
       }
     }
 
-    return resultPolygons;
+    return results;
   }
 
   static List<YoloDetection> _parseOutput0(

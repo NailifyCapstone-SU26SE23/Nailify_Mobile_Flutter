@@ -93,7 +93,8 @@ class AdvancedNailPainter extends CustomPainter {
     }
   }
 
-  int _labelToFingerIndex(String label, {required int defaultIdx}) {
+  static int labelToFingerIndex(String? label, {required int defaultIdx}) {
+    if (label == null) return defaultIdx;
     final l = label.toLowerCase();
     if (l.contains('thumb')) return 1;
     if (l.contains('index')) return 2;
@@ -103,8 +104,43 @@ class AdvancedNailPainter extends CustomPainter {
     return defaultIdx;
   }
 
+  static int _labelToFingerIndex(String? label, {required int defaultIdx}) =>
+      labelToFingerIndex(label, defaultIdx: defaultIdx);
+
+  /// Computes the true fingertip direction unit vector for a nail polygon.
+  static Offset getNailDirection({
+    required List<Offset> poly,
+    required List<List<Offset>> allPolygons,
+    int fingerIndex = 1,
+    List<String>? labels,
+    NailPoseKeypoints? poseKeypoint,
+  }) {
+    if (poseKeypoint != null &&
+        (poseKeypoint.tip - poseKeypoint.base).distance >= 2.0 &&
+        poseKeypoint.tip.dx > 5 &&
+        poseKeypoint.tip.dy > 5 &&
+        poseKeypoint.base.dx > 5 &&
+        poseKeypoint.base.dy > 5) {
+      return poseKeypoint.direction;
+    }
+
+    final Offset center = _centroid(poly);
+    final Offset? across = _acrossHandAxis(allPolygons);
+    final palmInfo = _estimatePalmCenter(allPolygons, across, labels: labels);
+
+    return _tipDirection(
+      poly,
+      center,
+      across,
+      palmInfo.center,
+      palmInfo.reliable,
+      fingerIndex,
+      palmInfo.indexCentroid,
+    );
+  }
+
   /// PCA of a single nail polygon: unit major/minor axes, elongation ratio & eigenvalues.
-  ({Offset major, Offset minor, double elongation, double lMajor}) _nailPca(
+  static ({Offset major, Offset minor, double elongation, double lMajor}) _nailPca(
     List<Offset> poly,
     Offset c,
   ) {
@@ -136,7 +172,7 @@ class AdvancedNailPainter extends CustomPainter {
   }
 
   /// Global "across the hand" axis from nail centroids layout (Pinky -> Index).
-  Offset? _acrossHandAxis(List<List<Offset>> polys) {
+  static Offset? _acrossHandAxis(List<List<Offset>> polys) {
     final List<Offset> cs = [];
     for (final poly in polys) {
       if (poly.length >= 3) cs.add(_centroid(poly));
@@ -177,53 +213,61 @@ class AdvancedNailPainter extends CustomPainter {
   }
 
   /// Selects major or minor PCA axis based on alignment with hand orientation.
-  ({Offset dir, double conf}) _fingerAxis(
+  static ({Offset dir, double conf}) _fingerAxis(
     List<Offset> poly,
     Offset c,
     Offset? across, {
     int fingerIndex = 0,
   }) {
     final pca = _nailPca(poly, c);
-    // For thumb (fingerIndex == 1), always use pca.major because thumb spreads out
+    // Elongation penalty: near-square polygons give unreliable PCA axes
+    final double elongPenalty = pca.elongation < 1.5 ? 0.35 : 1.0;
+
+    // For thumb or no across-hand axis: use PCA major
     if (fingerIndex == 1 || across == null) {
       final double conf = pca.elongation.isFinite
-          ? (1 - 1 / pca.elongation).clamp(0.0, 1.0)
+          ? ((1 - 1 / pca.elongation) * elongPenalty).clamp(0.0, 1.0)
           : 1.0;
       return (dir: pca.major, conf: conf);
     }
+    // For other fingers: pick the PCA axis most aligned with the finger direction
     final Offset perpA = Offset(-across.dy, across.dx);
     final double alignMajor =
         (pca.major.dx * perpA.dx + pca.major.dy * perpA.dy).abs();
     final double alignMinor =
         (pca.minor.dx * perpA.dx + pca.minor.dy * perpA.dy).abs();
-    return alignMajor >= alignMinor
-        ? (dir: pca.major, conf: alignMajor)
-        : (dir: pca.minor, conf: alignMinor);
+    final Offset chosenDir = alignMajor >= alignMinor ? pca.major : pca.minor;
+    final double chosenAlign = math.max(alignMajor, alignMinor) * elongPenalty;
+    return (dir: chosenDir, conf: chosenAlign);
   }
 
   /// Estimates palm center & retrieves index finger centroid for thumb reference.
-  ({Offset center, bool reliable, Offset? indexCentroid}) _estimatePalmCenter(
+  static ({Offset center, bool reliable, Offset? indexCentroid}) _estimatePalmCenter(
     List<List<Offset>> polys,
-    Offset? across,
-  ) {
+    Offset? across, {
+    List<String>? labels,
+  }) {
     double a11 = 0, a12 = 0, a22 = 0, b1 = 0, b2 = 0;
     double sumCos2 = 0, sumSin2 = 0, wSum = 0;
     int used = 0;
     double meanX = 0, meanY = 0;
     int count = 0;
     Offset? idxCentroid;
+    final List<Offset> centroids = [];
+    Offset sumUpAxis = Offset.zero;
 
     for (int i = 0; i < polys.length; i++) {
       final poly = polys[i];
       if (poly.length < 3) continue;
       final Offset c = _centroid(poly);
+      centroids.add(c);
       meanX += c.dx;
       meanY += c.dy;
       count++;
 
       int fingerIdx = i + 1;
-      if (labels != null && i < labels!.length) {
-        fingerIdx = _labelToFingerIndex(labels![i], defaultIdx: fingerIdx);
+      if (labels != null && i < labels.length) {
+        fingerIdx = _labelToFingerIndex(labels[i], defaultIdx: fingerIdx);
       }
 
       if (fingerIdx == 2) {
@@ -234,6 +278,10 @@ class AdvancedNailPainter extends CustomPainter {
       final double w = fa.conf;
       if (w < 0.35) continue;
       final double dx = fa.dir.dx, dy = fa.dir.dy;
+
+      // Accumulate a prior vector that points UPWARD (negative dy in image coords)
+      final Offset upAxis = dy > 0 ? Offset(-dx, -dy) : Offset(dx, dy);
+      sumUpAxis += upAxis * w;
 
       final double m11 = w * (1 - dx * dx);
       final double m12 = w * (-dx * dy);
@@ -255,27 +303,67 @@ class AdvancedNailPainter extends CustomPainter {
         ? Offset(meanX / count, meanY / count)
         : Offset.zero;
 
+    // Estimate hand span
+    double maxSpan = 120.0;
+    for (int i = 0; i < centroids.length; i++) {
+      for (int j = i + 1; j < centroids.length; j++) {
+        final double d = (centroids[i] - centroids[j]).distance;
+        if (d > maxSpan) maxSpan = d;
+      }
+    }
+
+    // Global hand direction (pointing towards fingertips / top of screen)
+    final double upLen = sumUpAxis.distance;
+    final Offset globalHandDir = upLen > 1e-4
+        ? Offset(sumUpAxis.dx / upLen, sumUpAxis.dy / upLen)
+        : const Offset(0, -1);
+
+    // Robust synthesized palm (placed behind the nails along the hand axis)
+    final Offset synthPalm = meanCentroid - Offset(
+      globalHandDir.dx * maxSpan * 1.5,
+      globalHandDir.dy * maxSpan * 1.5,
+    );
+
     if (used < 2 || wSum < 1e-6) {
       return (
-        center: meanCentroid,
-        reliable: false,
+        center: synthPalm,
+        reliable: count >= 2,
         indexCentroid: idxCentroid,
       );
     }
 
     final double r = math.sqrt(sumCos2 * sumCos2 + sumSin2 * sumSin2) / wSum;
     final double det = a11 * a22 - a12 * a12;
-    if (r > 0.97 || det.abs() < 1e-6) {
+
+    if (r > 0.95 || det.abs() < 1e-6) {
+      // Fingers are nearly parallel -> ray intersection is ill-conditioned,
+      // but synthesized palm is 100% anatomically reliable!
       return (
-        center: meanCentroid,
-        reliable: false,
+        center: synthPalm,
+        reliable: true,
         indexCentroid: idxCentroid,
       );
     }
 
     final double px = (a22 * b1 - a12 * b2) / det;
     final double py = (a11 * b2 - a12 * b1) / det;
-    return (center: Offset(px, py), reliable: true, indexCentroid: idxCentroid);
+    final Offset candPalm = Offset(px, py);
+
+    // Anatomical validation: candidate palm MUST be located BEHIND the fingernails
+    // (i.e. in the opposite direction of globalHandDir)
+    final Offset toNails = meanCentroid - candPalm;
+    final double palmAlignment =
+        toNails.dx * globalHandDir.dx + toNails.dy * globalHandDir.dy;
+    final double palmDist = toNails.distance;
+
+    if (palmAlignment > 0 &&
+        palmDist >= 0.4 * maxSpan &&
+        palmDist <= 3.5 * maxSpan) {
+      return (center: candPalm, reliable: true, indexCentroid: idxCentroid);
+    }
+
+    // Otherwise use the robust synthesized palm
+    return (center: synthPalm, reliable: true, indexCentroid: idxCentroid);
   }
 
   void _paintSingleNail(
@@ -469,8 +557,8 @@ class AdvancedNailPainter extends CustomPainter {
   }
 
   /// Unit vector from cuticle toward fingertip.
-  /// Solves TRAP 1 (Thumb Spreading), TRAP 2 (Hand Direction), and TRAP 3 (Single-Nail Extremity Tapering).
-  Offset _tipDirection(
+  /// Solves TRAP 1 (Thumb Spreading), TRAP 2 (Hand Direction), and TRAP 3 (Multi-Zone Taper).
+  static Offset _tipDirection(
     List<Offset> poly,
     Offset center,
     Offset? across,
@@ -481,54 +569,80 @@ class AdvancedNailPainter extends CustomPainter {
   ) {
     final fa = _fingerAxis(poly, center, across, fingerIndex: fingerIndex);
     Offset axis = fa.dir;
+    Offset finalDir;
 
-    // 📌 TRAP 1 FIX: THUMB ANATOMICAL SPREAD (fingerIndex == 1)
-    if (fingerIndex == 1) {
-      if (palmReliable) {
-        final Offset radial = center - palmCenter;
-        final double proj = axis.dx * radial.dx + axis.dy * radial.dy;
-        axis = proj >= 0 ? axis : -axis;
-      } else {
-        axis = _signByExtremityTaper(poly, center, axis);
-      }
-      return axis;
-    }
-
-    // 📌 TRAP 2 FIX: MULTI-NAIL PALM ANATOMICAL RADIAL ALIGNMENT
     if (palmReliable) {
       final Offset radial = center - palmCenter;
       final double rLen = radial.distance;
-      if (rLen > 1e-4) {
-        final Offset unitRadial = Offset(radial.dx / rLen, radial.dy / rLen);
+      final Offset unitRadial = rLen > 1e-4
+          ? Offset(radial.dx / rLen, radial.dy / rLen)
+          : const Offset(0, -1);
+
+      // Align PCA axis with palm-to-nail outward vector
+      final double proj = axis.dx * unitRadial.dx + axis.dy * unitRadial.dy;
+      final Offset alignedAxis = proj >= 0 ? axis : -axis;
+
+      if (fingerIndex == 1) {
+        // 📌 THUMB: blend 60% radial + 40% PCA to respect anatomical diagonal spread
+        final Offset blended = Offset(
+          alignedAxis.dx * 0.40 + unitRadial.dx * 0.60,
+          alignedAxis.dy * 0.40 + unitRadial.dy * 0.60,
+        );
+        final double bLen = blended.distance;
+        finalDir = bLen > 1e-4
+            ? Offset(blended.dx / bLen, blended.dy / bLen)
+            : unitRadial;
+      } else {
+        // 📌 OTHER FINGERS: Palm radial is the primary anatomical guide
         final double dot =
             (axis.dx * unitRadial.dx + axis.dy * unitRadial.dy).abs();
-
-        // If PCA axis is near-perpendicular (dot < 0.65), force the anatomical radial vector from palm to fingertip!
-        if (dot < 0.65) {
-          return unitRadial;
+        if (dot < 0.50) {
+          finalDir = unitRadial;
         } else {
-          final double proj = axis.dx * unitRadial.dx + axis.dy * unitRadial.dy;
-          final Offset alignedAxis = proj >= 0 ? axis : -axis;
-          // Blend 70% anatomical radial direction + 30% PCA direction for smooth alignment
           final Offset blended = Offset(
-            alignedAxis.dx * 0.3 + unitRadial.dx * 0.7,
-            alignedAxis.dy * 0.3 + unitRadial.dy * 0.7,
+            alignedAxis.dx * 0.15 + unitRadial.dx * 0.85,
+            alignedAxis.dy * 0.15 + unitRadial.dy * 0.85,
           );
           final double bLen = blended.distance;
-          return bLen > 1e-4
+          finalDir = bLen > 1e-4
               ? Offset(blended.dx / bLen, blended.dy / bLen)
               : unitRadial;
         }
       }
+    } else {
+      // 📌 SINGLE-NAIL FALLBACK: Multi-Zone Width Analysis
+      finalDir = _signByExtremityTaper(poly, center, axis);
+      // Screen-up prior: in mobile phone photography of hands, fingers point up (negative dy)
+      if (finalDir.dy > 0.2) {
+        finalDir = -finalDir;
+      }
     }
 
-    // 📌 TRAP 3 FIX: SINGLE-NAIL EXTREMITY TAPERING (Polygon Curvature Width Ratio)
-    return _signByExtremityTaper(poly, center, axis);
+    // 🛡️ UNIVERSAL SANITY CHECK:
+    // A fingertip must NEVER point back towards the palm/wrist!
+    if (palmReliable) {
+      final Offset radialCheck = center - palmCenter;
+      final double sanityDot =
+          finalDir.dx * radialCheck.dx + finalDir.dy * radialCheck.dy;
+      if (sanityDot < 0) {
+        finalDir = -finalDir;
+      }
+    } else {
+      if (finalDir.dy > 0.3) {
+        finalDir = -finalDir;
+      }
+    }
+
+    return finalDir;
   }
 
-  /// 📌 TRAP 3 ENGINE: Measures contour width at +25% vs -25% along the candidate axis.
-  /// Tip is narrower than Cuticle. Points vector from Cuticle -> Tip.
-  Offset _signByExtremityTaper(List<Offset> poly, Offset center, Offset axis) {
+  /// 📌 TRAP 3 ENGINE: Multi-zone width analysis — robust against noisy YOLO contours.
+  ///
+  /// Samples 6 slices along the candidate axis and computes the
+  /// width-weighted centroid. Fingernails are wider at the cuticle than at
+  /// the tip, so the cuticle half has a higher total width-mass. The vector
+  /// that points *away* from the heavier half is the tip direction.
+  static Offset _signByExtremityTaper(List<Offset> poly, Offset center, Offset axis) {
     final double angle = math.atan2(axis.dx, -axis.dy);
     double minL = double.infinity, maxL = -double.infinity;
 
@@ -543,20 +657,27 @@ class AdvancedNailPainter extends CustomPainter {
     final double height = maxL - minL;
     if (height < 2) return axis.dy > 0 ? -axis : axis;
 
-    final double yTop = minL + height * 0.25;
-    final double yBottom = minL + height * 0.75;
-
-    final double topWidth = _polygonWidthAtY(localPts, yTop);
-    final double bottomWidth = _polygonWidthAtY(localPts, yBottom);
-
-    if (topWidth <= bottomWidth) {
-      return axis;
-    } else {
-      return -axis;
+    // Sample 6 evenly-spaced slices; weight by position to get centre-of-mass
+    const int zones = 6;
+    double topMass = 0, bottomMass = 0;
+    for (int z = 0; z < zones; z++) {
+      final double t = (z + 0.5) / zones; // 0.08, 0.25, 0.42, 0.58, 0.75, 0.92
+      final double y = minL + height * t;
+      final double w = _polygonWidthAtY(localPts, y);
+      if (t < 0.5) {
+        topMass += w * (1 - t); // top slices weighted toward tip candidate
+      } else {
+        bottomMass += w * t; // bottom slices weighted toward cuticle candidate
+      }
     }
+
+    // The END with less mass is the tip (narrower); axis should point that way.
+    // If top is lighter → axis already points to tip → return as-is.
+    // If bottom is lighter → tip is at bottom → flip axis.
+    return topMass <= bottomMass ? axis : -axis;
   }
 
-  double _polygonWidthAtY(List<Offset> localPts, double targetY) {
+  static double _polygonWidthAtY(List<Offset> localPts, double targetY) {
     double minX = double.infinity;
     double maxX = -double.infinity;
 
@@ -597,34 +718,58 @@ class AdvancedNailPainter extends CustomPainter {
   /// Extracts color for the specific finger from colorConfig JSON
   Color _getFingerColor(int fingerIndex) {
     if (variant.colorConfig.fingers.isNotEmpty) {
+      // 1. Exact match (1-based fingerIndex: 1=Thumb, 2=Index, 3=Middle, 4=Ring, 5=Pinky)
       for (final f in variant.colorConfig.fingers) {
         if (f.fingerIndex == fingerIndex) {
           return _hexToColor(f.color);
         }
       }
+      // 2. 0-based match if data was 0-indexed (0=Thumb..4=Pinky)
+      for (final f in variant.colorConfig.fingers) {
+        if (f.fingerIndex == fingerIndex - 1) {
+          return _hexToColor(f.color);
+        }
+      }
+      // 3. Positional fallback if list has elements
+      if (fingerIndex >= 1 && fingerIndex <= variant.colorConfig.fingers.length) {
+        return _hexToColor(variant.colorConfig.fingers[fingerIndex - 1].color);
+      }
+      // 4. First element fallback
       return _hexToColor(variant.colorConfig.fingers.first.color);
+    }
+    if (variant.colorConfig.solidColor != null &&
+        variant.colorConfig.solidColor!.isNotEmpty) {
+      return _hexToColor(variant.colorConfig.solidColor!);
     }
     return const Color(0xFFFF4081); // Default Pink
   }
 
   Color _hexToColor(String hexString) {
-    final buffer = StringBuffer();
-    if (hexString.length == 6 || hexString.length == 7) buffer.write('ff');
-    buffer.write(hexString.replaceFirst('#', ''));
-    return Color(int.parse(buffer.toString(), radix: 16));
+    var hex = hexString.trim().replaceAll('#', '').replaceAll('0x', '');
+    if (hex.isEmpty) return const Color(0xFFFF4081);
+    if (hex.length == 3) {
+      hex = hex.split('').map((c) => '$c$c').join();
+    }
+    if (hex.length == 6) {
+      hex = 'FF$hex';
+    }
+    final int? val = int.tryParse(hex, radix: 16);
+    if (val != null) {
+      return Color(val);
+    }
+    return const Color(0xFFFF4081);
   }
 
-  /// Applies surface lightness/saturation/hue offsets
+  /// Applies surface lightness/saturation offsets without distorting base nail hue
   Color _applySurfaceHsl(Color color, NailSurface surface) {
+    // Preserve the exact hue of the designer's nail variant colors (avoids shifting yellow into green)
     double frac(double v) => v.abs() > 1.0 ? v / 100.0 : v;
-    final double dl = frac(surface.lightnessOffset);
-    final double ds = frac(surface.saturationOffset);
-    final double dh = surface.hueOffset % 360.0;
-    if (dl == 0 && ds == 0 && dh == 0) return color;
+    final double dl = frac(surface.lightnessOffset).clamp(-0.15, 0.15);
+    final double ds = frac(surface.saturationOffset).clamp(-0.15, 0.15);
+    if (dl == 0 && ds == 0) return color;
 
     HSLColor hsl = HSLColor.fromColor(color);
     hsl = hsl
-        .withHue((hsl.hue + dh) % 360.0)
         .withSaturation((hsl.saturation + ds).clamp(0.0, 1.0))
         .withLightness((hsl.lightness + dl).clamp(0.0, 1.0));
     return hsl.toColor();

@@ -12,6 +12,7 @@ import '../di/injection.dart';
 import '../network/api_client.dart';
 import '../../features/quiz/data/datasources/quiz_repository.dart';
 import '../services/in_app_notification_store.dart';
+import '../routing/app_router.dart';
 import '../../generated/l10n.dart';
 
 class MainShell extends StatefulWidget {
@@ -483,11 +484,19 @@ class _MainShellState extends State<MainShell> {
                           notificationStore.markAsRead(notif.id);
                           if (notif.route != null) {
                             Future.delayed(const Duration(milliseconds: 100), () {
-                              if (context.mounted) {
-                                if (notif.extra != null) {
-                                  context.go(notif.route!, extra: notif.extra);
+                              final navCtx =
+                                  rootNavigatorKey.currentContext ?? context;
+                              if (navCtx.mounted) {
+                                if (notif.route == '/my-bookings/detail') {
+                                  navCtx.push('/my-bookings/detail',
+                                      extra: notif.extra);
+                                } else if (notif.route == '/my-bookings' &&
+                                    notif.extra is Map) {
+                                  navCtx.go(notif.route!, extra: notif.extra);
+                                } else if (notif.extra != null) {
+                                  navCtx.push(notif.route!, extra: notif.extra);
                                 } else {
-                                  context.go(notif.route!);
+                                  navCtx.push(notif.route!);
                                 }
                               }
                             });

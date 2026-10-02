@@ -11,6 +11,9 @@ import 'raw_camera_frame.dart';
 class InferenceWorkerResult {
   final List<List<Offset>> polygons;
   final List<NailPoseKeypoints?> poseKeypoints;
+  /// Nhãn ngón tay đúngg nối với classId YOLO của từng polygon.
+  /// Ví dụ: ['thumb', 'index', 'middle', 'ring', 'pinky']
+  final List<String> fingerLabels;
   final int originalWidth;
   final int originalHeight;
   final Duration inferenceTime;
@@ -18,6 +21,7 @@ class InferenceWorkerResult {
   InferenceWorkerResult({
     required this.polygons,
     this.poseKeypoints = const [],
+    this.fingerLabels = const [],
     required this.originalWidth,
     required this.originalHeight,
     required this.inferenceTime,
@@ -47,12 +51,16 @@ class InferenceWorker {
       frameImage,
       useArModel: false,
     );
-    final polygons = YoloSegDecoder.decode(
+    // decode() now returns NailSegResult list (polygon + classId per nail)
+    final segResults = YoloSegDecoder.decode(
       rawOutputs: rawOutputs,
       confThreshold: confThreshold,
       iouThreshold: iouThreshold,
       maskThreshold: maskThreshold,
     );
+
+    final polygons = segResults.map((r) => r.polygon).toList();
+    final rawLabels = segResults.map((r) => r.fingerLabel).toList();
 
     final rawPoses = await _onnxService.runPoseInferenceOnTensor(
       rawOutputs.letterbox,
@@ -89,20 +97,24 @@ class InferenceWorker {
       }
     }
 
+    // Sắp xếp theo cx để thứ tự hiển thị từ trái sang phải
     final List<Map<String, dynamic>> combined = [];
     for (int i = 0; i < polygons.length; i++) {
       combined.add({
         'poly': polygons[i],
         'pose': matchedPoses[i],
+        'label': rawLabels[i],
         'cx': _centroid(polygons[i]).dx,
       });
     }
     combined.sort((a, b) => (a['cx'] as double).compareTo(b['cx'] as double));
     final List<List<Offset>> sortedPolygons = [];
     final List<NailPoseKeypoints?> sortedPoses = [];
+    final List<String> sortedLabels = [];
     for (final item in combined) {
       sortedPolygons.add(item['poly'] as List<Offset>);
       sortedPoses.add(item['pose'] as NailPoseKeypoints?);
+      sortedLabels.add(item['label'] as String);
     }
     stopwatch.stop();
 
@@ -110,6 +122,7 @@ class InferenceWorker {
     debugPrint('🤖 [LOCAL ONNX PIPELINE RESULTS]');
     debugPrint('💅 Móng nhận diện (best.onnx): ${sortedPolygons.length}');
     debugPrint('🎯 Pose nhận diện (thanhdtPose.onnx): ${rawPoses.length}');
+    debugPrint('🏷️ Labels ngón tay: $sortedLabels');
     debugPrint(
       '⏱️ Tổng thời gian chạy local: ${stopwatch.elapsedMilliseconds} ms',
     );
@@ -117,6 +130,7 @@ class InferenceWorker {
     return InferenceWorkerResult(
       polygons: sortedPolygons,
       poseKeypoints: sortedPoses,
+      fingerLabels: sortedLabels,
       originalWidth: frameImage.width,
       originalHeight: frameImage.height,
       inferenceTime: stopwatch.elapsed,
@@ -136,7 +150,8 @@ class InferenceWorker {
       letterboxResult,
       useArModel: true,
     );
-    final polygons = await compute(
+    // decodePolygons now returns NailSegResult (polygon + classId per nail)
+    final segResults = await compute(
       decodePolygons,
       DecodeInput(
         pred: rawOutputs.pred,
@@ -147,6 +162,8 @@ class InferenceWorker {
         maskThreshold: maskThreshold,
       ),
     );
+    final polygons = segResults.map((r) => r.polygon).toList();
+    final rawLabels = segResults.map((r) => r.fingerLabel).toList();
     final List<NailPoseKeypoints?> matchedPoses = List.filled(
       polygons.length,
       null,
@@ -156,20 +173,24 @@ class InferenceWorker {
       combined.add({
         'poly': polygons[i],
         'pose': matchedPoses[i],
+        'label': rawLabels[i],
         'cx': _centroid(polygons[i]).dx,
       });
     }
     combined.sort((a, b) => (a['cx'] as double).compareTo(b['cx'] as double));
     final List<List<Offset>> sortedPolygons = [];
     final List<NailPoseKeypoints?> sortedPoses = [];
+    final List<String> sortedLabels = [];
     for (final item in combined) {
       sortedPolygons.add(item['poly'] as List<Offset>);
       sortedPoses.add(item['pose'] as NailPoseKeypoints?);
+      sortedLabels.add(item['label'] as String);
     }
     stopwatch.stop();
     return InferenceWorkerResult(
       polygons: sortedPolygons,
       poseKeypoints: sortedPoses,
+      fingerLabels: sortedLabels,
       originalWidth: rawFrame.width,
       originalHeight: rawFrame.height,
       inferenceTime: stopwatch.elapsed,

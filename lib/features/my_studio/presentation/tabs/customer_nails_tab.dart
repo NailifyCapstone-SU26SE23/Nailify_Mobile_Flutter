@@ -198,69 +198,48 @@ class _CustomerNailsTabState extends State<CustomerNailsTab> {
       ),
       body: Column(
         children: [
-          // Thanh tìm kiếm và bộ lọc cải tiến
+          // Thanh tìm kiếm
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 5,
-                  child: TextField(
-                    controller: _searchController,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textPrimary,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: S.of(context).searchNailHint,
-                      prefixIcon: const Icon(
-                        Icons.search_rounded,
-                        color: AppColors.textSecondary,
-                        size: 20,
-                      ),
-                      suffixIcon: _searchController.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(
-                                Icons.clear_rounded,
-                                color: AppColors.textSecondary,
-                                size: 18,
-                              ),
-                              onPressed: () {
-                                _searchController.clear();
-                                _loadData(reset: true);
-                              },
-                            )
-                          : null,
-                      filled: true,
-                      fillColor: const Color(0xFFF5F5F7),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        vertical: 0,
-                        horizontal: 16,
-                      ),
-                    ),
-                    onSubmitted: (_) => _loadData(reset: true),
-                    onChanged: (_) => setState(() {}),
-                  ),
+            child: TextField(
+              controller: _searchController,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textPrimary,
+              ),
+              decoration: InputDecoration(
+                hintText: S.of(context).searchNailHint,
+                prefixIcon: const Icon(
+                  Icons.search_rounded,
+                  color: AppColors.textSecondary,
+                  size: 20,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 3,
-                  child: Container(
-                    height: 48,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF5F5F7),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey.shade100, width: 1),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                  ),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(
+                          Icons.clear_rounded,
+                          color: AppColors.textSecondary,
+                          size: 18,
+                        ),
+                        onPressed: () {
+                          _searchController.clear();
+                          _loadData(reset: true);
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: const Color(0xFFF5F5F7),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
                 ),
-              ],
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 0,
+                  horizontal: 16,
+                ),
+              ),
+              onSubmitted: (_) => _loadData(reset: true),
+              onChanged: (_) => setState(() {}),
             ),
           ),
 

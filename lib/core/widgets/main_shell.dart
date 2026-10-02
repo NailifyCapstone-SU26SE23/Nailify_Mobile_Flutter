@@ -148,7 +148,9 @@ class _MainShellState extends State<MainShell> {
 
   bool get _hideBottomNav {
     final loc = widget.currentLocation;
-    return loc.startsWith('/nails/') || loc.startsWith('/nail-variants/');
+    return loc.startsWith('/nails/') || 
+           loc.startsWith('/nail-variants/') ||
+           loc.startsWith('/snapshot-try-on');
   }
 
   Widget _buildShellBody(Widget child) {

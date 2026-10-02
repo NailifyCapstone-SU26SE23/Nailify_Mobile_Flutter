@@ -231,6 +231,7 @@ class _BookingTimeSlotWaitlistState extends State<BookingTimeSlotWaitlist> {
       backgroundColor: Colors.transparent,
       builder: (_) => _WaitlistJoinSheet(
         time: slot.time,
+        date: widget.selectedDate,
         onJoin: () {
           Navigator.pop(context);
           setState(() {
@@ -442,14 +443,23 @@ class _SlotStyle {
 // ────────────────────────────────────────────────
 class _WaitlistJoinSheet extends StatelessWidget {
   final String time;
+  final DateTime? date;
   final VoidCallback onJoin;
   final VoidCallback onPickOther;
 
   const _WaitlistJoinSheet({
     required this.time,
+    this.date,
     required this.onJoin,
     required this.onPickOther,
   });
+
+  String get _dateStr {
+    if (date == null) return '';
+    final day = date!.day.toString().padLeft(2, '0');
+    final month = date!.month.toString().padLeft(2, '0');
+    return ' ($day/$month/${date!.year})';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -490,7 +500,7 @@ class _WaitlistJoinSheet extends StatelessWidget {
 
           // Tiêu đề
           Text(
-            'Khung giờ $time đã kín chỗ!',
+            'Khung giờ $time$_dateStr đã kín chỗ!',
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,

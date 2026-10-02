@@ -62,10 +62,11 @@ class _GeneratorScreenState extends State<_GeneratorScreen> {
       final Map<String, String> paths = {};
       final fingerNames = ['thumb', 'index', 'middle', 'ring', 'pinky'];
       final tempDir = await getTemporaryDirectory();
+      if (!mounted) return;
 
       for (int i = 0; i < 5; i++) {
         final ctx = _keys[i].currentContext;
-        if (ctx == null) {
+        if (ctx == null || !ctx.mounted) {
           debugPrint('[NailGen] finger $i: context is null — skipping');
           continue;
         }
@@ -83,6 +84,7 @@ class _GeneratorScreenState extends State<_GeneratorScreen> {
             '[NailGen] finger $i: still needs paint, waiting a bit...',
           );
           await Future.delayed(const Duration(milliseconds: 100));
+          if (!mounted) return;
           if (boundary.debugNeedsPaint) {
             debugPrint(
               '[NailGen] finger $i: STILL needs paint, skipping to avoid crash',

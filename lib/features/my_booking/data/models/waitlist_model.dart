@@ -148,7 +148,14 @@ class WaitlistApiModel {
     final raw = value.toString().trim();
     if (raw.isEmpty) return null;
 
-    final parsed = DateTime.tryParse(raw);
+    String isoStr = raw;
+    if (!isoStr.contains('Z') &&
+        !isoStr.contains('+') &&
+        !RegExp(r'-\d{2}:\d{2}$').hasMatch(isoStr)) {
+      isoStr = '${isoStr}Z';
+    }
+
+    final parsed = DateTime.tryParse(isoStr) ?? DateTime.tryParse(raw);
     if (parsed == null) return null;
 
     return parsed.toLocal();
@@ -164,28 +171,59 @@ class WaitlistApiModel {
           .toList();
     }
 
+    dynamic getValue(List<String> keys) {
+      for (final key in keys) {
+        final val = json[key];
+        if (val != null && val.toString().trim().isNotEmpty) {
+          return val;
+        }
+      }
+      return null;
+    }
+
+    final createdAtRaw = getValue([
+      'createdAt',
+      'CreatedAt',
+      'createdDate',
+      'CreatedDate',
+      'joinedAt',
+      'JoinedAt',
+      'created_at',
+    ]);
+    final notifiedAtRaw = getValue(['notifiedAt', 'NotifiedAt', 'notified_at']);
+    final expiresAtRaw = getValue(['expiresAt', 'ExpiresAt', 'expires_at']);
+    final requestedDateRaw = getValue([
+      'requestedDate',
+      'RequestedDate',
+      'requested_date',
+    ]);
+
     return WaitlistApiModel(
-      waitlistId:
-          json['wailistId']?.toString() ?? json['waitlistId']?.toString() ?? '',
-      customerId: json['customerId']?.toString(),
-      customerName: json['customerName']?.toString(),
-      salonId: json['salonId']?.toString(),
-      salonName: json['salonName']?.toString(),
-      preferredNailArtistId: json['preferredNailArtistId']?.toString(),
-      preferredNailArtistName: json['preferredNailArtistName']?.toString(),
-      requestedDate: _parseServerDateTime(json['requestedDate']),
-      requestedStartTime: json['requestedStartTime']?.toString(),
+      waitlistId: json['waitlistId']?.toString() ??
+          json['WaitlistId']?.toString() ??
+          json['wailistId']?.toString() ??
+          json['id']?.toString() ??
+          json['Id']?.toString() ??
+          '',
+      customerId: json['customerId']?.toString() ?? json['CustomerId']?.toString(),
+      customerName: json['customerName']?.toString() ?? json['CustomerName']?.toString(),
+      salonId: json['salonId']?.toString() ?? json['SalonId']?.toString(),
+      salonName: json['salonName']?.toString() ?? json['SalonName']?.toString(),
+      preferredNailArtistId: json['preferredNailArtistId']?.toString() ?? json['PreferredNailArtistId']?.toString(),
+      preferredNailArtistName: json['preferredNailArtistName']?.toString() ?? json['PreferredNailArtistName']?.toString(),
+      requestedDate: _parseServerDateTime(requestedDateRaw),
+      requestedStartTime: json['requestedStartTime']?.toString() ?? json['RequestedStartTime']?.toString(),
       estimatedDuration: json['estimatedDuration'] is int
           ? json['estimatedDuration'] as int
-          : int.tryParse(json['estimatedDuration']?.toString() ?? ''),
+          : int.tryParse(json['estimatedDuration']?.toString() ?? json['EstimatedDuration']?.toString() ?? ''),
       position: json['position'] is int
           ? json['position'] as int
-          : int.tryParse(json['position']?.toString() ?? ''),
-      status: json['status']?.toString() ?? 'Pending',
-      createdAt: _parseServerDateTime(json['createdAt']),
-      notifiedAt: _parseServerDateTime(json['notifiedAt']),
-      expiresAt: _parseServerDateTime(json['expiresAt']),
-      convertedBookingId: json['convertedBookingId']?.toString(),
+          : int.tryParse(json['position']?.toString() ?? json['Position']?.toString() ?? ''),
+      status: json['status']?.toString() ?? json['Status']?.toString() ?? 'Pending',
+      createdAt: _parseServerDateTime(createdAtRaw),
+      notifiedAt: _parseServerDateTime(notifiedAtRaw),
+      expiresAt: _parseServerDateTime(expiresAtRaw),
+      convertedBookingId: json['convertedBookingId']?.toString() ?? json['ConvertedBookingId']?.toString(),
       waitlistItems: parsedItems,
     );
   }

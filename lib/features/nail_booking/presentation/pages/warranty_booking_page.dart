@@ -423,8 +423,17 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
       final totalPrice = cubit.estimatedTotalPrice;
 
       if (mode == 'paid') {
-        // Có phát sinh phí → qua payment-qr.
-        context.go('/payment-qr', extra: result);
+        final status = result['status']?.toString().toUpperCase() ?? '';
+        final qrCode = result['qrCode']?.toString() ?? '';
+        final paymentUrl = result['paymentUrl']?.toString() ?? '';
+
+        if (status == 'PAID' ||
+            status == 'SUCCESS' ||
+            (qrCode.isEmpty && paymentUrl.isEmpty)) {
+          context.go('/payment-success', extra: result);
+        } else {
+          context.go('/payment-qr', extra: result);
+        }
         return;
       }
 
@@ -1449,41 +1458,6 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              InkWell(
-                onTap: () {
-                  _pageController.animateToPage(
-                    2,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                  );
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Text(
-                        'Đổi lịch',
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFFE02B6D),
-                        ),
-                      ),
-                      SizedBox(width: 2),
-                      Icon(
-                        Icons.chevron_right_rounded,
-                        size: 16,
-                        color: Color(0xFFE02B6D),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -1864,8 +1838,23 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
 
   Widget _buildPaymentDetailsCard(WarrantyBookingState state) {
     final cubit = context.read<WarrantyBookingCubit>();
-    final int totalPrice = cubit.estimatedTotalPrice;
     final int extraTotal = cubit.extraServicesTotal;
+
+    int promotionDiscount = 0;
+    if (_selectedPromotions.isNotEmpty && extraTotal > 0) {
+      for (final p in _selectedPromotions) {
+        final discountType = p.discountType.toLowerCase();
+        final val = p.discountValue;
+        if (discountType.contains('percent') || discountType == 'percentage') {
+          promotionDiscount += (extraTotal * (val / 100.0)).round();
+        } else {
+          promotionDiscount += val.round();
+        }
+      }
+      promotionDiscount = promotionDiscount.clamp(0, extraTotal);
+    }
+
+    final int totalPrice = (extraTotal - promotionDiscount).clamp(0, 1 << 30);
 
     final depositInfo = PriceFormatter.getDepositInfo(
       state.selectedBranch?['depositConfig'],
@@ -1945,6 +1934,14 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
             extraTotal,
             isNegative: false,
           ),
+          if (promotionDiscount > 0) ...[
+            const SizedBox(height: 6),
+            _buildInvoiceRow(
+              'Giảm giá Voucher',
+              promotionDiscount,
+              isNegative: true,
+            ),
+          ],
 
           const SizedBox(height: 6),
           const Divider(height: 1, color: Color(0xFFF0F0F0)),
@@ -2130,31 +2127,33 @@ class _WarrantyBookingViewState extends State<_WarrantyBookingView> {
             isNegative: true,
           ),
         ],
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                S.of(context).bookingDepositAmountLabel,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.bold,
+        if (depositAmountToPay > 0) ...[
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  S.of(context).bookingDepositAmountLabel,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              Text(
-                PriceFormatter.format(depositAmountToPay),
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFFE02B6D),
-                  fontSize: 17,
+                Text(
+                  PriceFormatter.format(depositAmountToPay),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFE02B6D),
+                    fontSize: 17,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+        ],
         if (_useWalletBalance && walletDeduction > 0) ...[
           const SizedBox(height: 8),
           _buildInvoiceRowText(

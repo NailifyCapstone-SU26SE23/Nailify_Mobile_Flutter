@@ -493,10 +493,18 @@ class _NailVariantDetailSheetState extends State<NailVariantDetailSheet> {
                       fontSize: 14,
                     ),
                   ),
-                  subtitle: Text(
-                    DurationFormatter.format(method.duration, context: context),
-                    style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
-                  ),
+                  subtitle: method.duration > 0
+                      ? Text(
+                          DurationFormatter.format(
+                            method.duration,
+                            context: context,
+                          ),
+                          style: TextStyle(
+                            color: Colors.grey.shade500,
+                            fontSize: 12,
+                          ),
+                        )
+                      : null,
                   secondary: Text(
                     PriceFormatter.format(method.price),
                     style: const TextStyle(
@@ -789,20 +797,22 @@ class _TableHeader extends StatelessWidget {
       fontSize: 12,
       fontWeight: FontWeight.bold,
     );
-    return Row(
-      children: [
-        const Expanded(flex: 5, child: Text('Thành phần', style: style)),
-        const SizedBox(width: 10),
-        SizedBox(
-          width: 38,
-          child: Text('SL', style: style, textAlign: TextAlign.center),
-        ),
-        const SizedBox(width: 10),
-        SizedBox(
-          width: 92,
-          child: Text('Giá', style: style, textAlign: TextAlign.right),
-        ),
-      ],
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      child: Row(
+        children: [
+          Expanded(child: Text('Thành phần', style: style)),
+          SizedBox(
+            width: 36,
+            child: Text('SL', style: style, textAlign: TextAlign.center),
+          ),
+          SizedBox(width: 8),
+          SizedBox(
+            width: 115,
+            child: Text('Giá', style: style, textAlign: TextAlign.right),
+          ),
+        ],
+      ),
     );
   }
 }

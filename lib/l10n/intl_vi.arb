@@ -480,7 +480,7 @@
   "bookingServiceNameHeader": "Tên dịch vụ",
   "bookingQuantityHeader": "Số lượng",
   "bookingPriceHeader": "Giá",
-  "bookingQuantityLabel": "SL: {qty}",
+  "bookingQuantityLabel": "{qty}",
   "bookingOriginalPriceLabel": "Giá gốc:",
   "bookingDiscountLabel": "Khuyến mãi:",
   "bookingTotalPaymentLabel": "Tổng thanh toán:",

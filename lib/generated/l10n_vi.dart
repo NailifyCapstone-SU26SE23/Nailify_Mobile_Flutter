@@ -1431,7 +1431,7 @@ class SVi extends S {
 
   @override
   String bookingQuantityLabel(String qty) {
-    return 'SL: $qty';
+    return '$qty';
   }
 
   @override

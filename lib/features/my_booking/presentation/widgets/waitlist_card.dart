@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/duration_formatter.dart';
 import '../../../../generated/l10n.dart';
+import '../../data/datasources/waitlist_api_service.dart';
 import '../../data/models/waitlist_model.dart';
 import 'waitlist_checkout_sheet.dart';
 
@@ -137,10 +138,8 @@ class _WaitlistPendingCardState extends State<_WaitlistPendingCard> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => WaitlistCheckoutSheet(
-        waitlist: widget.item,
-        onSuccess: () {},
-      ),
+      builder: (_) =>
+          WaitlistCheckoutSheet(waitlist: widget.item, onSuccess: () {}),
     );
   }
 
@@ -482,7 +481,11 @@ class _CardShell extends StatelessWidget {
                         ),
                         if (onTap != null) ...[
                           const SizedBox(width: 4),
-                          Icon(Icons.chevron_right_rounded, size: 18, color: Colors.grey.shade400),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            size: 18,
+                            color: Colors.grey.shade400,
+                          ),
                         ],
                       ],
                     ),
@@ -553,7 +556,10 @@ class _CardShell extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       '• ${_formatDate(item.date)}',
-                      style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
@@ -570,7 +576,10 @@ class _CardShell extends StatelessWidget {
                     const SizedBox(width: 6),
                     Text(
                       item.staffName,
-                      style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade700,
+                      ),
                     ),
                   ],
                 ),
@@ -622,7 +631,10 @@ class _CardShell extends StatelessWidget {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    title + (shapeName.isNotEmpty ? ' ($shapeName)' : ''),
+                                    title +
+                                        (shapeName.isNotEmpty
+                                            ? ' ($shapeName)'
+                                            : ''),
                                     style: const TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
@@ -656,8 +668,12 @@ class _CardShell extends StatelessWidget {
                     children: item.services
                         .map(
                           (svc) => Chip(
-                            label: Text(svc, style: const TextStyle(fontSize: 11)),
-                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            label: Text(
+                              svc,
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
                             visualDensity: VisualDensity.compact,
                             backgroundColor: Colors.grey.shade100,
                             side: BorderSide(color: Colors.grey.shade200),
@@ -680,7 +696,11 @@ class _CardShell extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.edit_rounded, size: 14, color: AppColors.primary),
+                          Icon(
+                            Icons.edit_rounded,
+                            size: 14,
+                            color: AppColors.primary,
+                          ),
                           SizedBox(width: 4),
                           Text(
                             'Thay đổi dịch vụ',
@@ -709,7 +729,18 @@ class _CardShell extends StatelessWidget {
     );
   }
 
-  void _handleChangeServices(BuildContext context) {
+  Future<void> _handleChangeServices(BuildContext context) async {
+    final String waitlistId = item.id;
+    if (waitlistId.isNotEmpty) {
+      try {
+        await WaitlistApiService().cancelWaitlist(waitlistId);
+      } catch (e) {
+        debugPrint('[WaitlistCard] cancelWaitlist error before re-booking: $e');
+      }
+    }
+
+    if (!context.mounted) return;
+
     final items = item.waitlistItems;
     final String? salonId = item.salonId;
     final String salonName = item.salonName;
@@ -767,10 +798,7 @@ class _CardShell extends StatelessWidget {
 
     final Map<String, dynamic> bookingExtra = {
       if (salonId != null && salonId.isNotEmpty)
-        'salon': {
-          'salonId': salonId,
-          'name': salonName,
-        },
+        'salon': {'salonId': salonId, 'name': salonName},
       if (artistId != null && artistId.isNotEmpty)
         'artist': {
           'nailArtistId': artistId,
@@ -782,11 +810,14 @@ class _CardShell extends StatelessWidget {
       'serviceIds': serviceIds,
       if (nailVariantId != null) 'nailVariantId': nailVariantId,
       if (nailVariantName != null) 'nailVariantName': nailVariantName,
-      if (nailVariantImageUrl != null) 'nailVariantImageUrl': nailVariantImageUrl,
+      if (nailVariantImageUrl != null)
+        'nailVariantImageUrl': nailVariantImageUrl,
       if (customerNailId != null) 'customerNailId': customerNailId,
       if (customerNailName != null) 'customerNailName': customerNailName,
-      if (customerNailImageUrl != null) 'customerNailImageUrl': customerNailImageUrl,
-      if (customerNailRequestId != null) 'customerNailRequestId': customerNailRequestId,
+      if (customerNailImageUrl != null)
+        'customerNailImageUrl': customerNailImageUrl,
+      if (customerNailRequestId != null)
+        'customerNailRequestId': customerNailRequestId,
       if (shapeConfigId != null) 'shapeMethodConfigId': shapeConfigId,
       if (shapeConfigName != null) 'shapeMethodName': shapeConfigName,
       'waitlistItems': items.map((e) => e.toJson()).toList(),

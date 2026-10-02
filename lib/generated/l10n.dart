@@ -2716,7 +2716,7 @@ abstract class S {
   /// No description provided for @bookingQuantityLabel.
   ///
   /// In en, this message translates to:
-  /// **'Qty: {qty}'**
+  /// **'{qty}'**
   String bookingQuantityLabel(String qty);
 
   /// No description provided for @bookingOriginalPriceLabel.

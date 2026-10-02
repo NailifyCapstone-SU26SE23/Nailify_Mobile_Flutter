@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../generated/l10n.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/error/exceptions.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/network/signalr_service.dart';
 import '../../../../core/network/signalr_events.dart';
@@ -118,23 +119,34 @@ class _NailBookingPageState extends State<NailBookingPage> {
 
     try {
       final signalR = getIt<SignalRService>();
-      _slotStatusChangedSub = signalR.onSlotStatusChanged.listen(_onSlotStatusChanged);
+      _slotStatusChangedSub = signalR.onSlotStatusChanged.listen(
+        _onSlotStatusChanged,
+      );
     } catch (_) {}
   }
 
   void _onSlotStatusChanged(SlotStatusChangedEvent event) {
     if (!mounted || _selectedDate == null) return;
-    
-    final currentSalonId = _selectedBranch?['salonId']?.toString() ?? '';
-    if (currentSalonId.isNotEmpty && event.salonId.toLowerCase() != currentSalonId.toLowerCase()) return;
-    
-    final String currentFormattedDate = _formatBookingDate(_selectedDate!); 
-    if (!event.bookingDate.startsWith(currentFormattedDate.split('T')[0])) return;
 
-    final currentArtistId = _noArtistSelected ? '' : (_selectedStylist?['nailArtistId']?.toString() ?? '');
-    
-    if (_noArtistSelected || event.artistId.isEmpty || event.artistId.toLowerCase() == currentArtistId.toLowerCase()) {
-      if (event.action == 'Held' || event.action == 'Released' || event.action == 'Booked') {
+    final currentSalonId = _selectedBranch?['salonId']?.toString() ?? '';
+    if (currentSalonId.isNotEmpty &&
+        event.salonId.toLowerCase() != currentSalonId.toLowerCase())
+      return;
+
+    final String currentFormattedDate = _formatBookingDate(_selectedDate!);
+    if (!event.bookingDate.startsWith(currentFormattedDate.split('T')[0]))
+      return;
+
+    final currentArtistId = _noArtistSelected
+        ? ''
+        : (_selectedStylist?['nailArtistId']?.toString() ?? '');
+
+    if (_noArtistSelected ||
+        event.artistId.isEmpty ||
+        event.artistId.toLowerCase() == currentArtistId.toLowerCase()) {
+      if (event.action == 'Held' ||
+          event.action == 'Released' ||
+          event.action == 'Booked') {
         if (_noArtistSelected) {
           _loadSalonSlots();
         } else {
@@ -376,6 +388,17 @@ class _NailBookingPageState extends State<NailBookingPage> {
     }
   }
 
+  bool _isSameTime(dynamic timeA, dynamic timeB) {
+    if (timeA == null || timeB == null) return false;
+    final strA = timeA.toString().trim();
+    final strB = timeB.toString().trim();
+    if (strA.isEmpty || strB.isEmpty) return false;
+    if (strA == strB) return true;
+    final normA = strA.length >= 5 ? strA.substring(0, 5) : strA;
+    final normB = strB.length >= 5 ? strB.substring(0, 5) : strB;
+    return normA == normB;
+  }
+
   Future<void> _fetchTimeSlots() async {
     if (_noArtistSelected) {
       _loadSalonSlots();
@@ -410,8 +433,8 @@ class _NailBookingPageState extends State<NailBookingPage> {
         if (previousSelectedTime != null &&
             filtered.any(
               (s) =>
-                  s['startTime'] == previousSelectedTime ||
-                  s['time'] == previousSelectedTime,
+                  _isSameTime(s['startTime'], previousSelectedTime) ||
+                  _isSameTime(s['time'], previousSelectedTime),
             )) {
           _selectedTime = previousSelectedTime;
         } else {
@@ -458,8 +481,8 @@ class _NailBookingPageState extends State<NailBookingPage> {
         if (previousSelectedTime != null &&
             filtered.any(
               (s) =>
-                  s['startTime'] == previousSelectedTime ||
-                  s['time'] == previousSelectedTime,
+                  _isSameTime(s['startTime'], previousSelectedTime) ||
+                  _isSameTime(s['time'], previousSelectedTime),
             )) {
           _selectedTime = previousSelectedTime;
         } else {
@@ -613,7 +636,8 @@ class _NailBookingPageState extends State<NailBookingPage> {
       // API trả về 400 (ví dụ: "Thợ đã đầy lịch trong khoảng thời gian này...")
       // → hiển thị message server để user biết lý do.
       debugPrint('holdSlot failed: $e');
-      _showHoldFailureMessage('Rất tiếc, khung giờ này vừa có người đặt. Vui lòng chọn giờ khác.');
+      final msg = e is AppException ? e.message : e.toString();
+      _showHoldFailureMessage(msg);
       return false;
     }
   }
@@ -1444,7 +1468,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Dòng 1: Icon Salon + Tên chi nhánh + Nút Đổi lịch ──
+          // ── Dòng 1: Icon Salon + Tên chi nhánh ──
           Row(
             children: [
               Container(
@@ -1470,35 +1494,6 @@ class _NailBookingPageState extends State<NailBookingPage> {
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              InkWell(
-                onTap: () => setState(() => _currentStep = 1),
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Text(
-                        'Đổi lịch',
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFFE02B6D),
-                        ),
-                      ),
-                      SizedBox(width: 2),
-                      Icon(
-                        Icons.chevron_right_rounded,
-                        size: 16,
-                        color: Color(0xFFE02B6D),
-                      ),
-                    ],
-                  ),
                 ),
               ),
             ],
@@ -2119,7 +2114,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
                           color: const Color(0xFFE02B6D).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color: const Color(0xFFE02B6D).withValues(alpha: 0.3),
+                            color: const Color(
+                              0xFFE02B6D,
+                            ).withValues(alpha: 0.3),
                           ),
                         ),
                         child: const Text(
@@ -2412,13 +2409,15 @@ class _NailBookingPageState extends State<NailBookingPage> {
             isNegative: true,
           ),
         ],
-        const SizedBox(height: 8),
-        _buildPaymentRow(
-          S.of(context).bookingDepositAmountLabel,
-          depositAmountToPay,
-          strong: true,
-          highlight: true,
-        ),
+        if (depositAmountToPay > 0) ...[
+          const SizedBox(height: 8),
+          _buildPaymentRow(
+            S.of(context).bookingDepositAmountLabel,
+            depositAmountToPay,
+            strong: true,
+            highlight: true,
+          ),
+        ],
         if (_useWalletBalance && walletDeduction > 0) ...[
           const SizedBox(height: 8),
           _buildPaymentRowWithText(
@@ -2570,7 +2569,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
     if (text.endsWith('%')) {
       return '-$text';
     }
-    text = text.replaceAll(RegExp(r'\s*(d|đ|vnd|vnđ)\s*$', caseSensitive: false), '').trim();
+    text = text
+        .replaceAll(RegExp(r'\s*(d|đ|vnd|vnđ)\s*$', caseSensitive: false), '')
+        .trim();
     return '-$text VNĐ';
   }
 
@@ -3145,18 +3146,18 @@ class _PriceTableHeader extends StatelessWidget {
       fontWeight: FontWeight.bold,
     );
     return const Padding(
-      padding: EdgeInsets.only(left: 12, top: 4),
+      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       child: Row(
         children: [
-          Expanded(flex: 5, child: Text('Thành phần', style: style)),
+          Expanded(child: Text('Thành phần', style: style)),
           SizedBox(
-            width: 38,
+            width: 36,
             child: Text('SL', style: style, textAlign: TextAlign.center),
           ),
-          SizedBox(width: 10),
+          SizedBox(width: 8),
           SizedBox(
-            width: 92,
-            child: Text('Giá', style: style, textAlign: TextAlign.right),
+            width: 115,
+            child: Text('Giá', style: style, textAlign: TextAlign.right),
           ),
         ],
       ),

@@ -301,9 +301,11 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
       if (warrantyItems.isEmpty && items.isNotEmpty) {
         for (final raw in items) {
           if (raw is Map<String, dynamic>) {
+            final price = _bookingItemUnitPrice(raw);
             if (raw['serviceId'] != null &&
                 raw['nailVariantId'] == null &&
-                raw['customerNailRequestId'] == null) {
+                raw['customerNailRequestId'] == null &&
+                price > 0) {
               extraServices.add(raw);
             } else {
               warrantyItems.add(raw);
@@ -1536,7 +1538,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                     final s = S.of(context);
                     if (result == true) {
                       _fetchBookingDetail();
-                      CancellationResultDialog.show(
+                      await CancellationResultDialog.show(
                         context: context,
                         isSuccess: true,
                         title: 'Hủy đặt lịch thành công',
@@ -1544,6 +1546,13 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                         subMessage:
                             'Tiền cọc (nếu có) sẽ được hoàn trả theo chính sách của Nailify.',
                       );
+                      if (context.mounted) {
+                        if (Navigator.canPop(context)) {
+                          Navigator.pop(context, true);
+                        } else {
+                          context.go('/my-bookings');
+                        }
+                      }
                     } else if (result == false) {
                       CancellationResultDialog.show(
                         context: context,
@@ -1716,11 +1725,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    S
-                        .of(context)
-                        .bookingQuantityLabel(
-                          _readInt(item['quantity'], fallback: 1).toString(),
-                        ),
+                    _readInt(item['quantity'], fallback: 1).toString(),
                     style: TextStyle(
                       color: Colors.grey.shade700,
                       fontSize: 12,
@@ -1763,17 +1768,15 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
             ],
           ),
           if (detailLines.isNotEmpty) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: AppColors.background,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Column(
                 children: [
-                  const _PriceTableHeader(),
-                  const SizedBox(height: 4),
                   ...detailLines.map(
                     (comp) => _buildBookingComponentLine(
                       comp,
@@ -1839,7 +1842,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                S.of(context).bookingQuantityLabel('1'),
+                '1',
                 style: TextStyle(
                   color: Colors.grey.shade700,
                   fontSize: 12,
@@ -1885,37 +1888,40 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     final name = component['name']?.toString() ?? _componentName(component);
 
     return Padding(
-      padding: const EdgeInsets.only(top: 6, left: 8),
+      padding: const EdgeInsets.symmetric(vertical: 2.5, horizontal: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
-            flex: 5,
-            child: Text(
-              name,
-              style: const TextStyle(color: Colors.grey, fontSize: 13),
-            ),
-          ),
-          const SizedBox(width: 10),
-          SizedBox(
-            width: 38,
-            child: Text(
-              'x$count',
-              style: const TextStyle(
-                color: Colors.grey,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: name,
+                    style: const TextStyle(color: Colors.grey, fontSize: 13),
+                  ),
+                  if (count > 1)
+                    TextSpan(
+                      text: '  (x$count)',
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                ],
               ),
-              textAlign: TextAlign.center,
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           SizedBox(
-            width: 92,
+            width: 115,
             child: Text(
               isWarranty
                   ? '0 VNĐ'
                   : (price > 0 ? PriceFormatter.format(price * count) : '-'),
+              maxLines: 1,
+              softWrap: false,
               style: TextStyle(
                 color: isWarranty
                     ? const Color(0xFF2E7D32)
@@ -1933,21 +1939,14 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
 
   bool _isItemWarranty(Map<String, dynamic> item) {
     if (item['isWarranty'] == true || item['isWarrantyItem'] == true) return true;
-    if (item['nailVariantId'] != null ||
+    final isNail = item['nailVariantId'] != null ||
         (item['nailVariantName'] != null &&
-            item['nailVariantName'].toString().trim().isNotEmpty)) {
-      return true;
-    }
-    if (item['customerNailRequestId'] != null ||
+            item['nailVariantName'].toString().trim().isNotEmpty) ||
+        item['customerNailRequestId'] != null ||
         item['customerNailId'] != null ||
         (item['customerNailName'] != null &&
-            item['customerNailName'].toString().trim().isNotEmpty)) {
-      return true;
-    }
-    final price = _bookingItemUnitPrice(item);
-    if (price == 0 && item['serviceId'] == null) {
-      return true;
-    }
+            item['customerNailName'].toString().trim().isNotEmpty);
+    if (isNail) return true;
     return false;
   }
 
@@ -2432,35 +2431,6 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
   }
 }
 
-class _PriceTableHeader extends StatelessWidget {
-  const _PriceTableHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    const style = TextStyle(
-      color: AppColors.textSecondary,
-      fontSize: 12,
-      fontWeight: FontWeight.bold,
-    );
-    return const Padding(
-      padding: EdgeInsets.only(left: 8),
-      child: Row(
-        children: [
-          Expanded(flex: 5, child: Text('Thành phần', style: style)),
-          SizedBox(
-            width: 38,
-            child: Text('SL', style: style, textAlign: TextAlign.center),
-          ),
-          SizedBox(width: 10),
-          SizedBox(
-            width: 92,
-            child: Text('Giá', style: style, textAlign: TextAlign.right),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _ServicesTableHeader extends StatelessWidget {
   const _ServicesTableHeader();

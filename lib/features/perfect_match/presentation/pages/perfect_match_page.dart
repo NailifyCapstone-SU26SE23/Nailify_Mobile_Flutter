@@ -260,9 +260,7 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
 class _PM {
   static const Color bg = Color(0xFFFDFBF7);
   static const Color cardBg = Colors.white;
-  static const Color pinkLight = Color(0xFFFFF0F5);
   static const Color pinkBorder = Color(0xFFFFD1E1);
-  static const Color accent = Color(0xFFFF4081);
 
   static final TextStyle sectionTitle = const TextStyle(
     fontSize: 20,

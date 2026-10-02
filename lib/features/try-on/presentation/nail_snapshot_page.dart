@@ -45,9 +45,8 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
   double _imgWidth = 0;
   double _imgHeight = 0;
 
-  // Preview mode: show debug outline for 10s before applying nail design
+  // Toggle debug outline overlay on demand via eye icon button
   bool _showDebugPreview = false;
-  Timer? _previewTimer;
 
   // Backend API Nail Variants state
   List<NailVariantModel> _apiVariants = [];
@@ -120,7 +119,6 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
   void dispose() {
     _transformationController.dispose();
     _zoomAnimationController?.dispose();
-    _previewTimer?.cancel();
     _worker.dispose();
     super.dispose();
   }
@@ -354,10 +352,19 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
     _zoomAnimationController!.forward(from: 0.0);
   }
 
+  double _getHandRefWidth(List<FingerTransformInfo> transforms) {
+    double maxW = 0.0;
+    for (final t in transforms) {
+      if (t.destRect.width > maxW) maxW = t.destRect.width;
+    }
+    return maxW;
+  }
+
   void _handleTapDown(TapDownDetails details) {
     if (_selectedVariant == null) return;
     final Offset tapPos = details.localPosition;
     final transforms = _getFingerTransforms();
+    final double handRefWidth = _getHandRefWidth(transforms);
 
     // SCENARIO 1: NOT ZOOMED IN (_selectedFingerIndex == -1)
     if (_selectedFingerIndex == -1) {
@@ -393,7 +400,12 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
           if (info != null) {
             final charmImage =
                 _selectedComponentImages[compItem.component.componentId];
-            final double charmWidth = info.destRect.width * compItem.scale;
+            final double baseWidth = handRefWidth > 0
+                ? math.max(info.destRect.width, handRefWidth * 0.90)
+                : info.destRect.width;
+            final double charmWidth = baseWidth *
+                compItem.scale *
+                AdvancedNailPainter.accessoryScaleMultiplier;
             final double charmHeight = charmImage != null
                 ? charmWidth * (charmImage.height / charmImage.width)
                 : charmWidth;
@@ -450,7 +462,12 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
       if (info != null) {
         final charmImage =
             _selectedComponentImages[compItem.component.componentId];
-        final double charmWidth = info.destRect.width * compItem.scale;
+        final double baseWidth = handRefWidth > 0
+            ? math.max(info.destRect.width, handRefWidth * 0.90)
+            : info.destRect.width;
+        final double charmWidth = baseWidth *
+            compItem.scale *
+            AdvancedNailPainter.accessoryScaleMultiplier;
         final double charmHeight = charmImage != null
             ? charmWidth * (charmImage.height / charmImage.width)
             : charmWidth;
@@ -504,6 +521,7 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
     if (_selectedComponentId == null || _selectedVariant == null) return;
     final Offset tapPos = details.localPosition;
     final transforms = _getFingerTransforms();
+    final double handRefWidth = _getHandRefWidth(transforms);
 
     for (final compItem in _selectedVariant!.nailComponents) {
       if (compItem.nailComponentId == _selectedComponentId) {
@@ -511,7 +529,12 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
         if (info != null) {
           final charmImage =
               _selectedComponentImages[compItem.component.componentId];
-          final double charmWidth = info.destRect.width * compItem.scale;
+          final double baseWidth = handRefWidth > 0
+              ? math.max(info.destRect.width, handRefWidth * 0.90)
+              : info.destRect.width;
+          final double charmWidth = baseWidth *
+              compItem.scale *
+              AdvancedNailPainter.accessoryScaleMultiplier;
           final double charmHeight = charmImage != null
               ? charmWidth * (charmImage.height / charmImage.width)
               : charmWidth;
@@ -554,6 +577,7 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
     }
 
     final transforms = _getFingerTransforms();
+    final double handRefWidth = _getHandRefWidth(transforms);
     final int idx = _selectedVariant!.nailComponents.indexWhere(
       (c) => c.nailComponentId == _selectedComponentId,
     );
@@ -573,8 +597,14 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
             ? charmImage.height / charmImage.width
             : 1.0;
 
+    final double baseWidth = handRefWidth > 0
+        ? math.max(info.destRect.width, handRefWidth * 0.90)
+        : info.destRect.width;
+
     if (_dragMode == _DragMode.move) {
-      final double charmWidth = info.destRect.width * compItem.scale;
+      final double charmWidth = baseWidth *
+          compItem.scale *
+          AdvancedNailPainter.accessoryScaleMultiplier;
       final double charmHeight = charmWidth * charmAspect;
 
       final double rad = (compItem.rotation * math.pi / 180.0).abs();
@@ -626,7 +656,9 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
       final Offset relTouch = currentPos - charmCanvasCenter;
       final double dist = relTouch.distance;
 
-      final double baseRadius = info.destRect.width / 2;
+      final double baseRadius = (baseWidth *
+              AdvancedNailPainter.accessoryScaleMultiplier) /
+          2;
       final double rawScale = dist / baseRadius;
 
       final double touchAngle = math.atan2(relTouch.dy, relTouch.dx);
@@ -866,16 +898,7 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
         _nailPolygons = result.polygons;
         _nailPoseKeypoints = result.poseKeypoints;
         _nailLabels = result.fingerLabels;
-        _showDebugPreview = true;
-      });
-
-      _previewTimer?.cancel();
-      _previewTimer = Timer(const Duration(seconds: 10), () {
-        if (mounted) {
-          setState(() {
-            _showDebugPreview = false;
-          });
-        }
+        _showDebugPreview = false;
       });
 
       if (result.polygons.isEmpty && mounted) {
@@ -1165,36 +1188,34 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
                                               if (_nailPolygons.isNotEmpty)
                                                 Positioned.fill(
                                                   child: CustomPaint(
-                                                    painter: (_showDebugPreview ||
-                                                            _showDebugOverlay)
-                                                        ? NailDebugPainter(
-                                                            polygons:
-                                                                _nailPolygons,
-                                                            labels: _nailLabels,
-                                                            poseKeypoints:
-                                                                _nailPoseKeypoints,
-                                                          )
-                                                        : (_selectedVariant !=
-                                                                null
-                                                            ? AdvancedNailPainter(
-                                                                polygons:
-                                                                    _nailPolygons,
-                                                                labels:
-                                                                    _nailLabels,
-                                                                poseKeypoints:
-                                                                    _nailPoseKeypoints,
-                                                                variant:
-                                                                    _selectedVariant!,
-                                                                nailShapeImage:
-                                                                    _selectedShapeImage,
-                                                                componentImages:
-                                                                    _selectedComponentImages,
-                                                                selectedFingerIndex:
-                                                                    _selectedFingerIndex,
-                                                                selectedComponentId:
-                                                                    _selectedComponentId,
-                                                              )
-                                                            : null),
+                                                    painter: _selectedVariant != null
+                                                         ? AdvancedNailPainter(
+                                                             polygons:
+                                                                 _nailPolygons,
+                                                             labels: _nailLabels,
+                                                             poseKeypoints:
+                                                                 _nailPoseKeypoints,
+                                                             variant:
+                                                                 _selectedVariant!,
+                                                             nailShapeImage:
+                                                                 _selectedShapeImage,
+                                                             componentImages:
+                                                                 _selectedComponentImages,
+                                                             selectedFingerIndex:
+                                                                 _selectedFingerIndex,
+                                                             selectedComponentId:
+                                                                 _selectedComponentId,
+                                                           )
+                                                         : null,
+                                                     foregroundPainter: (_showDebugPreview || _showDebugOverlay)
+                                                         ? NailDebugPainter(
+                                                             polygons:
+                                                                 _nailPolygons,
+                                                             labels: _nailLabels,
+                                                             poseKeypoints:
+                                                                 _nailPoseKeypoints,
+                                                           )
+                                                         : null,
                                                   ),
                                                 ),
                                             ],
@@ -1291,88 +1312,79 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
                                         ),
                                 ),
 
-                                // Top Right Actions: Countdown or Zoom Controls
-                                Positioned(
-                                  top: 12,
-                                  right: 12,
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      if (_showDebugPreview)
-                                        _PreviewCountdownBadge(
-                                          duration:
-                                              const Duration(seconds: 10),
-                                          onDone: () {
-                                            if (mounted) {
-                                              setState(() {
-                                                _showDebugPreview = false;
-                                              });
-                                              _previewTimer?.cancel();
-                                            }
-                                          },
-                                        )
-                                      else if (_nailPolygons.isNotEmpty) ...[
-                                        GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              _showDebugPreview =
-                                                  !_showDebugPreview;
-                                            });
-                                          },
-                                          child: Container(
-                                            width: 38,
-                                            height: 38,
-                                            decoration: BoxDecoration(
-                                              color: Colors.white.withValues(
-                                                alpha: 0.92,
-                                              ),
-                                              shape: BoxShape.circle,
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: Colors.black
-                                                      .withValues(alpha: 0.1),
-                                                  blurRadius: 8,
-                                                  offset: const Offset(0, 2),
-                                                ),
-                                              ],
-                                            ),
-                                            child: Icon(
-                                              _showDebugPreview
-                                                  ? Icons.visibility_off_outlined
-                                                  : Icons.visibility_outlined,
-                                              size: 19,
-                                              color: AppColors.primary,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              _selectedFingerIndex = -1;
-                                              _selectedComponentId = null;
-                                            });
-                                            _zoomToFinger(-1);
-                                          },
-                                          child: Container(
-                                            width: 38,
-                                            height: 38,
-                                            decoration: BoxDecoration(
-                                              color: Colors.white.withValues(
-                                                alpha: 0.92,
-                                              ),
-                                              shape: BoxShape.circle,
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: Colors.black
-                                                      .withValues(alpha: 0.1),
-                                                  blurRadius: 8,
-                                                  offset: const Offset(0, 2),
-                                                ),
-                                              ],
-                                            ),
-                                            child: const Icon(
-                                              Icons.center_focus_strong_rounded,
+                                // Top Right Actions: Contour visibility toggle or Zoom Controls
+                                 Positioned(
+                                   top: 12,
+                                   right: 12,
+                                   child: Row(
+                                     mainAxisSize: MainAxisSize.min,
+                                     children: [
+                                       if (_nailPolygons.isNotEmpty) ...[
+                                         GestureDetector(
+                                           onTap: () {
+                                             setState(() {
+                                               _showDebugPreview =
+                                                   !_showDebugPreview;
+                                             });
+                                           },
+                                           child: Container(
+                                             width: 38,
+                                             height: 38,
+                                             decoration: BoxDecoration(
+                                               color: _showDebugPreview
+                                                   ? AppColors.primary
+                                                   : Colors.white.withValues(
+                                                       alpha: 0.92,
+                                                     ),
+                                               shape: BoxShape.circle,
+                                               boxShadow: [
+                                                 BoxShadow(
+                                                   color: Colors.black
+                                                       .withValues(alpha: 0.1),
+                                                   blurRadius: 8,
+                                                   offset: const Offset(0, 2),
+                                                 ),
+                                               ],
+                                             ),
+                                             child: Icon(
+                                               _showDebugPreview
+                                                   ? Icons.visibility_rounded
+                                                   : Icons.visibility_outlined,
+                                               size: 19,
+                                               color: _showDebugPreview
+                                                   ? Colors.white
+                                                   : AppColors.primary,
+                                             ),
+                                           ),
+                                         ),
+                                         const SizedBox(width: 8),
+                                         GestureDetector(
+                                           onTap: () {
+                                             setState(() {
+                                               _selectedFingerIndex = -1;
+                                               _selectedComponentId = null;
+                                             });
+                                             _zoomToFinger(-1);
+                                           },
+                                           child: Container(
+                                             width: 38,
+                                             height: 38,
+                                             decoration: BoxDecoration(
+                                               color: Colors.white.withValues(
+                                                 alpha: 0.92,
+                                               ),
+                                               shape: BoxShape.circle,
+                                               boxShadow: [
+                                                 BoxShadow(
+                                                   color: Colors.black
+                                                       .withValues(alpha: 0.1),
+                                                   blurRadius: 8,
+                                                   offset: const Offset(0, 2),
+                                                 ),
+                                               ],
+                                             ),
+                                             child: const Icon(
+                                               Icons.center_focus_strong_rounded,
                                               size: 19,
                                               color: AppColors.primary,
                                             ),
@@ -2455,120 +2467,5 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
       default:
         return 'Tất cả móng';
     }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Countdown badge hiển thị trong suốt 10s preview outline móng
-// ---------------------------------------------------------------------------
-
-/// Badge tròn đếm ngược, hiển thị số giây còn lại trước khi áp nail design.
-/// Bấm vào để bỏ qua ngay.
-class _PreviewCountdownBadge extends StatefulWidget {
-  final Duration duration;
-  final VoidCallback onDone;
-
-  const _PreviewCountdownBadge({required this.duration, required this.onDone});
-
-  @override
-  State<_PreviewCountdownBadge> createState() => _PreviewCountdownBadgeState();
-}
-
-class _PreviewCountdownBadgeState extends State<_PreviewCountdownBadge>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  late int _secondsLeft;
-  Timer? _ticker;
-
-  @override
-  void initState() {
-    super.initState();
-    _secondsLeft = widget.duration.inSeconds;
-    _ctrl = AnimationController(vsync: this, duration: widget.duration)
-      ..forward();
-
-    _ticker = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (!mounted) return;
-      setState(() {
-        _secondsLeft = widget.duration.inSeconds - t.tick;
-      });
-      if (t.tick >= widget.duration.inSeconds) {
-        t.cancel();
-        widget.onDone();
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    _ticker?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        _ticker?.cancel();
-        widget.onDone();
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.7),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: const Color(0xFFFF66C4).withValues(alpha: 0.8),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFFF66C4).withValues(alpha: 0.3),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 18,
-              height: 18,
-              child: AnimatedBuilder(
-                animation: _ctrl,
-                builder: (context, child) => CircularProgressIndicator(
-                  value: 1.0 - _ctrl.value,
-                  strokeWidth: 2.5,
-                  backgroundColor: Colors.white24,
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    Color(0xFFFF66C4),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              '${_secondsLeft}s',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(width: 4),
-            const Text(
-              '• Bỏ qua',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

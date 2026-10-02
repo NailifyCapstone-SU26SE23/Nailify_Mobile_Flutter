@@ -1292,69 +1292,6 @@ class _ServiceBookingViewState extends State<_ServiceBookingView> {
     );
   }
 
-  Widget _buildPromotionSelector(
-    BuildContext context,
-    NailBookingState state,
-    NailBookingCubit cubit,
-  ) {
-    final promos = state.selectedPromotions
-        .whereType<WalletVoucherModel>()
-        .toList();
-    final hasPromos = promos.isNotEmpty;
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      tileColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: hasPromos
-              ? AppColors.primary.withOpacity(0.5)
-              : Colors.grey.shade200,
-        ),
-      ),
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: hasPromos
-              ? AppColors.primary.withOpacity(0.1)
-              : Colors.orange.shade50,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          Icons.local_offer_rounded,
-          size: 20,
-          color: hasPromos ? AppColors.primary : Colors.orange.shade700,
-        ),
-      ),
-      title: Text(
-        'Khuyến mãi',
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 15.5,
-          color: hasPromos ? AppColors.primaryDark : Colors.black87,
-        ),
-      ),
-      subtitle: Text(
-        hasPromos
-            ? 'Đã chọn ${promos.length} khuyến mãi'
-            : 'Chọn voucher / khuyến mãi',
-        style: TextStyle(
-          color: hasPromos ? AppColors.primary : Colors.grey.shade600,
-          fontSize: 13,
-        ),
-      ),
-      trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-      onTap: () => showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (_) => BookingPromotionSheet(
-          selectedPromotions: promos,
-          onConfirm: (list) => cubit.selectPromotions(list),
-        ),
-      ),
-    );
-  }
 
   Widget _buildBaseServiceCard() {
     return Container(

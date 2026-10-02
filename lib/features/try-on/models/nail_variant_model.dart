@@ -49,11 +49,13 @@ class ColorJsonConfig {
   final String mode; // 'perFinger', 'solid', 'gradient'
   final List<ColorFingerConfig> fingers;
   final String? solidColor;
+  final Map<String, dynamic>? gradient;
 
   ColorJsonConfig({
     required this.mode,
     required this.fingers,
     this.solidColor,
+    this.gradient,
   });
 
   factory ColorJsonConfig.fromJson(dynamic raw) {
@@ -101,16 +103,29 @@ class ColorJsonConfig {
         final dynamic rawFingers = data['fingers'] ?? data['Fingers'];
         final String? singleColor =
             (data['color'] ?? data['Color'])?.toString();
+        final dynamic grad = data['gradient'] ?? data['Gradient'];
+        final Map<String, dynamic>? globalGradient = grad is Map<String, dynamic>
+            ? grad
+            : grad is Map
+                ? Map<String, dynamic>.from(grad)
+                : null;
 
         List<ColorFingerConfig> parsedFingers = [];
-        if (rawFingers is List) {
+        if (rawFingers is List && rawFingers.isNotEmpty) {
           parsedFingers = rawFingers
               .map((f) => ColorFingerConfig.fromJson(f))
               .toList();
-        } else if (singleColor != null && singleColor.isNotEmpty) {
+        } else {
+          final fallbackCol = (singleColor != null && singleColor.isNotEmpty)
+              ? singleColor
+              : '#FF4081';
           parsedFingers = List.generate(
             5,
-            (i) => ColorFingerConfig(fingerIndex: i + 1, color: singleColor),
+            (i) => ColorFingerConfig(
+              fingerIndex: i + 1,
+              color: fallbackCol,
+              gradient: globalGradient,
+            ),
           );
         }
 
@@ -118,6 +133,7 @@ class ColorJsonConfig {
           mode: mode,
           fingers: parsedFingers,
           solidColor: singleColor,
+          gradient: globalGradient,
         );
       }
     } catch (e) {
@@ -131,6 +147,7 @@ class ColorJsonConfig {
     'mode': mode,
     'fingers': fingers.map((f) => f.toJson()).toList(),
     if (solidColor != null) 'color': solidColor,
+    if (gradient != null) 'gradient': gradient,
   };
 }
 

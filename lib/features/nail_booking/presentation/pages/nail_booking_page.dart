@@ -119,23 +119,34 @@ class _NailBookingPageState extends State<NailBookingPage> {
 
     try {
       final signalR = getIt<SignalRService>();
-      _slotStatusChangedSub = signalR.onSlotStatusChanged.listen(_onSlotStatusChanged);
+      _slotStatusChangedSub = signalR.onSlotStatusChanged.listen(
+        _onSlotStatusChanged,
+      );
     } catch (_) {}
   }
 
   void _onSlotStatusChanged(SlotStatusChangedEvent event) {
     if (!mounted || _selectedDate == null) return;
-    
-    final currentSalonId = _selectedBranch?['salonId']?.toString() ?? '';
-    if (currentSalonId.isNotEmpty && event.salonId.toLowerCase() != currentSalonId.toLowerCase()) return;
-    
-    final String currentFormattedDate = _formatBookingDate(_selectedDate!); 
-    if (!event.bookingDate.startsWith(currentFormattedDate.split('T')[0])) return;
 
-    final currentArtistId = _noArtistSelected ? '' : (_selectedStylist?['nailArtistId']?.toString() ?? '');
-    
-    if (_noArtistSelected || event.artistId.isEmpty || event.artistId.toLowerCase() == currentArtistId.toLowerCase()) {
-      if (event.action == 'Held' || event.action == 'Released' || event.action == 'Booked') {
+    final currentSalonId = _selectedBranch?['salonId']?.toString() ?? '';
+    if (currentSalonId.isNotEmpty &&
+        event.salonId.toLowerCase() != currentSalonId.toLowerCase())
+      return;
+
+    final String currentFormattedDate = _formatBookingDate(_selectedDate!);
+    if (!event.bookingDate.startsWith(currentFormattedDate.split('T')[0]))
+      return;
+
+    final currentArtistId = _noArtistSelected
+        ? ''
+        : (_selectedStylist?['nailArtistId']?.toString() ?? '');
+
+    if (_noArtistSelected ||
+        event.artistId.isEmpty ||
+        event.artistId.toLowerCase() == currentArtistId.toLowerCase()) {
+      if (event.action == 'Held' ||
+          event.action == 'Released' ||
+          event.action == 'Booked') {
         if (_noArtistSelected) {
           _loadSalonSlots();
         } else {
@@ -2103,7 +2114,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
                           color: const Color(0xFFE02B6D).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color: const Color(0xFFE02B6D).withValues(alpha: 0.3),
+                            color: const Color(
+                              0xFFE02B6D,
+                            ).withValues(alpha: 0.3),
                           ),
                         ),
                         child: const Text(
@@ -2556,7 +2569,9 @@ class _NailBookingPageState extends State<NailBookingPage> {
     if (text.endsWith('%')) {
       return '-$text';
     }
-    text = text.replaceAll(RegExp(r'\s*(d|đ|vnd|vnđ)\s*$', caseSensitive: false), '').trim();
+    text = text
+        .replaceAll(RegExp(r'\s*(d|đ|vnd|vnđ)\s*$', caseSensitive: false), '')
+        .trim();
     return '-$text VNĐ';
   }
 

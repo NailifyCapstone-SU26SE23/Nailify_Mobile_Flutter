@@ -45,6 +45,9 @@ class AdvancedNailPainter extends CustomPainter {
   /// Anchor overlap past the cuticle so no skin gap shows at the nail base.
   static const double _cuticleOverlap = 0.02;
 
+  /// Scale multiplier for accessories (charms/stickers) to match Live AR Try-On visual proportion.
+  static const double accessoryScaleMultiplier = 2.4;
+
   AdvancedNailPainter({
     required this.polygons,
     this.labels,
@@ -417,9 +420,9 @@ class AdvancedNailPainter extends CustomPainter {
     final Rect localBounds = Rect.fromLTRB(minX, minY, maxX, maxY);
     if (localBounds.width < 2 || localBounds.height < 2) return;
 
-    // 3. Base gel color + HSL offsets from API
+    final appearance = _getFingerAppearance(fingerIndex);
     final Color nailColor = _applySurfaceHsl(
-      _getFingerColor(fingerIndex),
+      appearance.color,
       variant.nailSurface,
     );
 
@@ -438,9 +441,17 @@ class AdvancedNailPainter extends CustomPainter {
         nailColor,
         fingerIndex,
         poseLength: poseLength,
+        gradient: appearance.gradient,
       );
     } else {
-      _paintNaturalNail(canvas, localPts, localBounds, nailColor, fingerIndex);
+      _paintNaturalNail(
+        canvas,
+        localPts,
+        localBounds,
+        nailColor,
+        fingerIndex,
+        gradient: appearance.gradient,
+      );
     }
 
     if (selectedFingerIndex != null &&
@@ -466,6 +477,7 @@ class AdvancedNailPainter extends CustomPainter {
     Color color,
     int fingerIndex, {
     double? poseLength,
+    Map<String, dynamic>? gradient,
   }) {
     final ui.Image shape = nailShapeImage!;
     final Rect src = Rect.fromLTWH(
@@ -498,14 +510,21 @@ class AdvancedNailPainter extends CustomPainter {
 
     canvas.saveLayer(dest.inflate(dest.width), Paint());
 
-    // Tint Almond 3D white shape PNG with gel color using BlendMode.modulate
-    final Paint shapePaint = Paint()
-      ..isAntiAlias = true
-      ..colorFilter = ColorFilter.mode(
-        color.withValues(alpha: 0.96),
-        BlendMode.modulate,
-      );
-    canvas.drawImageRect(shape, src, dest, shapePaint);
+    if (gradient != null && _isGradientEnabled(gradient)) {
+      canvas.drawImageRect(shape, src, dest, Paint()..isAntiAlias = true);
+      final Paint gradPaint = _createNailFillPaint(color, gradient, dest)
+        ..blendMode = BlendMode.srcIn;
+      canvas.drawRect(dest, gradPaint);
+    } else {
+      // Tint Almond 3D white shape PNG with gel color using BlendMode.modulate
+      final Paint shapePaint = Paint()
+        ..isAntiAlias = true
+        ..colorFilter = ColorFilter.mode(
+          color.withValues(alpha: 0.96),
+          BlendMode.modulate,
+        );
+      canvas.drawImageRect(shape, src, dest, shapePaint);
+    }
 
     // ✨ Surface Shader Effects (Glossy, Chrome, Matte...)
     _applySurfaceShader(canvas, dest, variant.nailSurface);
@@ -536,18 +555,18 @@ class AdvancedNailPainter extends CustomPainter {
     List<Offset> localPts,
     Rect nb,
     Color color,
-    int fingerIndex,
-  ) {
+    int fingerIndex, {
+    Map<String, dynamic>? gradient,
+  }) {
     final Path nailPath = Path()..addPolygon(localPts, true);
 
     canvas.save();
     canvas.clipPath(nailPath);
 
+    final Paint fillPaint = _createNailFillPaint(color, gradient, nb);
     canvas.drawPath(
       nailPath,
-      Paint()
-        ..color = color.withValues(alpha: 0.88)
-        ..style = PaintingStyle.fill,
+      fillPaint,
     );
 
     _applySurfaceShader(canvas, nb, variant.nailSurface);
@@ -715,33 +734,129 @@ class AdvancedNailPainter extends CustomPainter {
     return Offset(v.dx * c - v.dy * s, v.dx * s + v.dy * c);
   }
 
-  /// Extracts color for the specific finger from colorConfig JSON
-  Color _getFingerColor(int fingerIndex) {
+  /// Extracts finger appearance (Color + Gradient) matching Live AR logic
+  ({Color color, Map<String, dynamic>? gradient}) _getFingerAppearance(
+    int fingerIndex,
+  ) {
     if (variant.colorConfig.fingers.isNotEmpty) {
       // 1. Exact match (1-based fingerIndex: 1=Thumb, 2=Index, 3=Middle, 4=Ring, 5=Pinky)
       for (final f in variant.colorConfig.fingers) {
         if (f.fingerIndex == fingerIndex) {
-          return _hexToColor(f.color);
+          return (
+            color: _hexToColor(f.color),
+            gradient: f.gradient ?? variant.colorConfig.gradient,
+          );
         }
       }
       // 2. 0-based match if data was 0-indexed (0=Thumb..4=Pinky)
       for (final f in variant.colorConfig.fingers) {
         if (f.fingerIndex == fingerIndex - 1) {
-          return _hexToColor(f.color);
+          return (
+            color: _hexToColor(f.color),
+            gradient: f.gradient ?? variant.colorConfig.gradient,
+          );
         }
       }
       // 3. Positional fallback if list has elements
-      if (fingerIndex >= 1 && fingerIndex <= variant.colorConfig.fingers.length) {
-        return _hexToColor(variant.colorConfig.fingers[fingerIndex - 1].color);
+      if (fingerIndex >= 1 &&
+          fingerIndex <= variant.colorConfig.fingers.length) {
+        final f = variant.colorConfig.fingers[fingerIndex - 1];
+        return (
+          color: _hexToColor(f.color),
+          gradient: f.gradient ?? variant.colorConfig.gradient,
+        );
       }
       // 4. First element fallback
-      return _hexToColor(variant.colorConfig.fingers.first.color);
+      final first = variant.colorConfig.fingers.first;
+      return (
+        color: _hexToColor(first.color),
+        gradient: first.gradient ?? variant.colorConfig.gradient,
+      );
     }
+
+    Color baseColor = const Color(0xFFFF4081);
     if (variant.colorConfig.solidColor != null &&
         variant.colorConfig.solidColor!.isNotEmpty) {
-      return _hexToColor(variant.colorConfig.solidColor!);
+      baseColor = _hexToColor(variant.colorConfig.solidColor!);
     }
-    return const Color(0xFFFF4081); // Default Pink
+    return (
+      color: baseColor,
+      gradient: variant.colorConfig.gradient,
+    );
+  }
+
+  bool _isGradientEnabled(Map<String, dynamic>? grad) {
+    if (grad == null) return false;
+    final enabled = grad['enabled'] ?? grad['Enabled'];
+    if (enabled == false) return false;
+    final stops = grad['stops'] ?? grad['Stops'];
+    return stops is List && stops.isNotEmpty;
+  }
+
+  Paint _createNailFillPaint(
+    Color baseColor,
+    Map<String, dynamic>? gradient,
+    Rect bounds,
+  ) {
+    if (gradient != null && _isGradientEnabled(gradient)) {
+      final stopsRaw = (gradient['stops'] ?? gradient['Stops']) as List;
+      final int stopCount =
+          ((gradient['stopCount'] ?? gradient['StopCount']) as num?)?.toInt() ??
+              stopsRaw.length;
+      final List<Color> colors = stopsRaw
+          .take(stopCount.clamp(2, 5))
+          .map(
+            (s) => _applySurfaceHsl(
+              _hexToColor(s.toString()),
+              variant.nailSurface,
+            ),
+          )
+          .toList();
+
+      if (colors.length >= 2) {
+        final type = (gradient['type'] ?? gradient['Type'] ?? 'linear')
+            .toString()
+            .toLowerCase();
+        final List<double>? colorStops = colors.length == 2
+            ? null
+            : List<double>.generate(
+                colors.length,
+                (i) => i / (colors.length - 1),
+              );
+
+        ui.Gradient shader;
+        if (type == 'horizontal') {
+          shader = ui.Gradient.linear(
+            bounds.centerLeft,
+            bounds.centerRight,
+            colors,
+            colorStops,
+          );
+        } else if (type == 'radial') {
+          shader = ui.Gradient.radial(
+            bounds.center,
+            math.max(bounds.width, bounds.height) / 2,
+            colors,
+            colorStops,
+          );
+        } else {
+          shader = ui.Gradient.linear(
+            bounds.topCenter,
+            bounds.bottomCenter,
+            colors,
+            colorStops,
+          );
+        }
+
+        return Paint()
+          ..isAntiAlias = true
+          ..shader = shader;
+      }
+    }
+
+    return Paint()
+      ..isAntiAlias = true
+      ..color = baseColor;
   }
 
   Color _hexToColor(String hexString) {
@@ -841,6 +956,21 @@ class AdvancedNailPainter extends CustomPainter {
     }
   }
 
+  double _computeHandRefWidth() {
+    double maxW = 0.0;
+    for (final poly in polygons) {
+      if (poly.length < 3) continue;
+      double minX = double.infinity, maxX = -double.infinity;
+      for (final p in poly) {
+        if (p.dx < minX) minX = p.dx;
+        if (p.dx > maxX) maxX = p.dx;
+      }
+      final w = (maxX - minX) * _widthCover;
+      if (w > maxW) maxW = w;
+    }
+    return maxW;
+  }
+
   /// Renders Charms/Stickers from normalized posX/posY (-1 to 1)
   void _renderComponents(
     Canvas canvas,
@@ -849,6 +979,11 @@ class AdvancedNailPainter extends CustomPainter {
     double nailHeight,
     int fingerIndex,
   ) {
+    final double handRefWidth = _computeHandRefWidth();
+    final double baseWidth = handRefWidth > 0
+        ? math.max(nailWidth, handRefWidth * 0.90)
+        : nailWidth;
+
     for (final compItem in variant.nailComponents) {
       final int itemFinger =
           compItem.fingerIndex != -1 ? compItem.fingerIndex : 1;
@@ -863,7 +998,8 @@ class AdvancedNailPainter extends CustomPainter {
       final double charmPixelX = center.dx + compItem.posX * (nailWidth / 2);
       final double charmPixelY = center.dy + compItem.posY * (nailHeight / 2);
 
-      final double charmTargetWidth = nailWidth * compItem.scale;
+      final double charmTargetWidth =
+          baseWidth * compItem.scale * accessoryScaleMultiplier;
       final double charmAspectRatio = charmImage.height / charmImage.width;
       final double charmTargetHeight = charmTargetWidth * charmAspectRatio;
 
@@ -912,6 +1048,8 @@ class AdvancedNailPainter extends CustomPainter {
   }) {
     if (selectedComponentId == null) return;
 
+    final double handRefWidth = _computeHandRefWidth();
+
     for (final compItem in variant.nailComponents) {
       if (compItem.nailComponentId != selectedComponentId) continue;
       final int itemFinger =
@@ -949,7 +1087,12 @@ class AdvancedNailPainter extends CustomPainter {
       final double charmPixelY =
           dest.center.dy + compItem.posY * (dest.height / 2);
 
-      final double charmTargetWidth = dest.width * compItem.scale;
+      final double baseWidth = handRefWidth > 0
+          ? math.max(dest.width, handRefWidth * 0.90)
+          : dest.width;
+
+      final double charmTargetWidth =
+          baseWidth * compItem.scale * accessoryScaleMultiplier;
       final double charmAspectRatio = charmImage.height / charmImage.width;
       final double charmTargetHeight = charmTargetWidth * charmAspectRatio;
 

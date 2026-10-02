@@ -306,52 +306,6 @@ class _WithdrawSheetState extends State<WithdrawSheet> {
     );
   }
 
-  Widget _buildMaxChip() {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: _setMaxAmount,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFFFF66C4), Color(0xFFFF4D4D)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.3),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.flash_on_rounded,
-                size: 15,
-                color: Colors.white,
-              ),
-              SizedBox(width: 4),
-              Text(
-                'Rút tối đa',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {

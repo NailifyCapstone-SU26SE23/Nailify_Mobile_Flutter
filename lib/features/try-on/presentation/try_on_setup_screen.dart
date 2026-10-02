@@ -878,8 +878,6 @@ class _TryOnSetupScreenState extends State<TryOnSetupScreen>
     return widget.customerNail?.customerNailId ?? 0;
   }
 
-  bool get _isNewCustomerNail => _existingCustomerNailId <= 0;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

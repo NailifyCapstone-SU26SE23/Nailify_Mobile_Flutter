@@ -157,12 +157,26 @@ class _MyBookingListPageState extends State<MyBookingListPage>
 
   DateTime? get _filterStartDate {
     if (_selectedDate == null) return null;
-    return DateTime(_selectedDate!.year, _selectedDate!.month, _selectedDate!.day, 0, 0, 0);
+    return DateTime(
+      _selectedDate!.year,
+      _selectedDate!.month,
+      _selectedDate!.day,
+      0,
+      0,
+      0,
+    );
   }
 
   DateTime? get _filterEndDate {
     if (_selectedDate == null) return null;
-    return DateTime(_selectedDate!.year, _selectedDate!.month, _selectedDate!.day, 23, 59, 59);
+    return DateTime(
+      _selectedDate!.year,
+      _selectedDate!.month,
+      _selectedDate!.day,
+      23,
+      59,
+      59,
+    );
   }
 
   String? get _serverStatusFilter {
@@ -540,10 +554,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
                 ),
               )
             else
-              Icon(
-                Icons.keyboard_arrow_down,
-                color: Colors.grey.shade600,
-              ),
+              Icon(Icons.keyboard_arrow_down, color: Colors.grey.shade600),
           ],
         ),
       ),
@@ -627,12 +638,11 @@ class _MyBookingListPageState extends State<MyBookingListPage>
 
     final canRate =
         (rawStatus == 'Completed' &&
-            (booking['isRated'] ?? booking['IsRated']) == false);
+        (booking['isRated'] ?? booking['IsRated']) == false);
     final canReschedule = rawStatus == 'Approved' && bookingIdStr.isNotEmpty;
 
     final warrantyForBookingId =
-        (booking['warrantyForBookingId'] ??
-                booking['WarrantyForBookingId'])
+        (booking['warrantyForBookingId'] ?? booking['WarrantyForBookingId'])
             ?.toString();
     final isWarrantyBooking =
         warrantyForBookingId != null && warrantyForBookingId.isNotEmpty;
@@ -643,7 +653,10 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     return GestureDetector(
       onTap: () async {
         if (bookingIdStr.isNotEmpty) {
-          final res = await context.push('/my-bookings/detail', extra: bookingIdStr);
+          final res = await context.push(
+            '/my-bookings/detail',
+            extra: bookingIdStr,
+          );
           if (res == true && mounted) {
             _fetchBookings(refresh: true);
           }
@@ -783,8 +796,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
 
             // Time & Stylist bar
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.circular(10),
@@ -920,7 +932,8 @@ class _MyBookingListPageState extends State<MyBookingListPage>
   }
 
   List<_BookingItemDisplay> _parseBookingItems(Map<String, dynamic> booking) {
-    final rawItems = booking['bookingItems'] ??
+    final rawItems =
+        booking['bookingItems'] ??
         booking['BookingItems'] ??
         booking['items'] ??
         booking['Items'];
@@ -940,14 +953,11 @@ class _MyBookingListPageState extends State<MyBookingListPage>
                 .trim() ??
             '';
         final serviceName =
-            (item['serviceName'] ?? item['ServiceName'])
-                ?.toString()
-                .trim() ??
+            (item['serviceName'] ?? item['ServiceName'])?.toString().trim() ??
             '';
-        final shapeName =
-            (item['shapeMethodName'] ?? item['ShapeMethodName'])
-                ?.toString()
-                .trim();
+        final shapeName = (item['shapeMethodName'] ?? item['ShapeMethodName'])
+            ?.toString()
+            .trim();
         final qtyRaw = item['quantity'] ?? item['Quantity'] ?? 1;
         final qty = (qtyRaw is num)
             ? qtyRaw.toInt()
@@ -970,8 +980,9 @@ class _MyBookingListPageState extends State<MyBookingListPage>
           result.add(
             _BookingItemDisplay(
               name: name,
-              shapeName:
-                  (shapeName != null && shapeName.isNotEmpty) ? shapeName : null,
+              shapeName: (shapeName != null && shapeName.isNotEmpty)
+                  ? shapeName
+                  : null,
               quantity: qty,
               isNailDesign: isNailDesign,
             ),
@@ -994,11 +1005,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
         ),
         child: Row(
           children: [
-            const Icon(
-              Icons.auto_awesome,
-              size: 14,
-              color: AppColors.primary,
-            ),
+            const Icon(Icons.auto_awesome, size: 14, color: AppColors.primary),
             const SizedBox(width: 8),
             Text(
               S.of(context).nailServiceDefault,
@@ -1052,8 +1059,7 @@ class _MyBookingListPageState extends State<MyBookingListPage>
             final idx = entry.key;
             final item = entry.value;
             return Padding(
-              padding:
-                  EdgeInsets.only(bottom: idx == items.length - 1 ? 0 : 6),
+              padding: EdgeInsets.only(bottom: idx == items.length - 1 ? 0 : 6),
               child: Row(
                 children: [
                   Icon(
@@ -1226,7 +1232,8 @@ class _MyBookingListPageState extends State<MyBookingListPage>
   }
 
   void _handleWarrantyAction(Map<String, dynamic> booking) {
-    final rawItems = booking['bookingItems'] ??
+    final rawItems =
+        booking['bookingItems'] ??
         booking['BookingItems'] ??
         booking['items'] ??
         booking['Items'];
@@ -1264,13 +1271,12 @@ class _MyBookingListPageState extends State<MyBookingListPage>
         map['nailVariantName'] =
             (item['nailVariantName'] ?? item['NailVariantName'])?.toString();
 
-        final serviceId =
-            (item['serviceId'] ?? item['ServiceId'])?.toString();
+        final serviceId = (item['serviceId'] ?? item['ServiceId'])?.toString();
         if (serviceId != null && serviceId.isNotEmpty) {
           map['serviceId'] = serviceId;
         }
-        map['serviceName'] =
-            (item['serviceName'] ?? item['ServiceName'])?.toString();
+        map['serviceName'] = (item['serviceName'] ?? item['ServiceName'])
+            ?.toString();
 
         final shapeConfigVal =
             item['shapeMethodConfigId'] ?? item['ShapeMethodConfigId'];
@@ -1301,10 +1307,8 @@ class _MyBookingListPageState extends State<MyBookingListPage>
           map['customerNailRequestId'] = customerNailRequestId;
         }
         final qtyRaw = item['quantity'] ?? item['Quantity'];
-        map['quantity'] =
-            int.tryParse(qtyRaw?.toString() ?? '1') ?? 1;
-        map['price'] =
-            item['price'] ?? item['Price'] ?? item['basePrice'] ?? 0;
+        map['quantity'] = int.tryParse(qtyRaw?.toString() ?? '1') ?? 1;
+        map['price'] = item['price'] ?? item['Price'] ?? item['basePrice'] ?? 0;
       }
       return map;
     }).toList();
@@ -1451,4 +1455,3 @@ class _BookingItemDisplay {
     required this.isNailDesign,
   });
 }
-

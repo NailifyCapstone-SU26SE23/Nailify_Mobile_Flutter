@@ -495,8 +495,14 @@ class _NailVariantDetailSheetState extends State<NailVariantDetailSheet> {
                   ),
                   subtitle: method.duration > 0
                       ? Text(
-                          DurationFormatter.format(method.duration, context: context),
-                          style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                          DurationFormatter.format(
+                            method.duration,
+                            context: context,
+                          ),
+                          style: TextStyle(
+                            color: Colors.grey.shade500,
+                            fontSize: 12,
+                          ),
                         )
                       : null,
                   secondary: Text(

@@ -1,9 +1,11 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'advanced_nail_painter.dart';
 
 /// Custom Painter to visualize AI Detection Output:
-/// 1. Nail Polygons (from best.onnx / Segmentation)
+/// 1. Nail Polygons (from best.onnx / Segmentation) với viền + fill màu
 /// 2. Keypoints & Direction Lines (from thanhdtPose.onnx / Pose)
+/// 3. Mũi tên hướng ngón tay ước tính từ PCA polygon (khi không có pose)
 class NailDebugPainter extends CustomPainter {
   final List<List<Offset>> polygons;
   final List<String>? labels;
@@ -11,27 +13,60 @@ class NailDebugPainter extends CustomPainter {
 
   NailDebugPainter({required this.polygons, this.labels, this.poseKeypoints});
 
+  // Màu sắc cho từng ngón tay
+  static const List<Color> _fingerColors = [
+    Color(0xFF00E5FF), // Cyan   - index
+    Color(0xFF69FF47), // Green  - middle
+    Color(0xFFFF1744), // Red    - pinky
+    Color(0xFFFF9100), // Orange - ring
+    Color(0xFFD500F9), // Purple - thumb
+  ];
+
+  Color _colorForLabel(String? label, int fallbackIdx) {
+    if (label == null) return _fingerColors[fallbackIdx % _fingerColors.length];
+    switch (label.toLowerCase()) {
+      case 'thumb':  return _fingerColors[4];
+      case 'index':  return _fingerColors[0];
+      case 'middle': return _fingerColors[1];
+      case 'ring':   return _fingerColors[3];
+      case 'pinky':  return _fingerColors[2];
+      default:       return _fingerColors[fallbackIdx % _fingerColors.length];
+    }
+  }
+
+  String _viLabel(String? label) {
+    switch (label?.toLowerCase()) {
+      case 'thumb':  return 'Ngón cái';
+      case 'index':  return 'Ngón trỏ';
+      case 'middle': return 'Ngón giữa';
+      case 'ring':   return 'Ngón áp út';
+      case 'pinky':  return 'Ngón út';
+      default:       return label ?? 'Móng';
+    }
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
     if (polygons.isEmpty && (poseKeypoints == null || poseKeypoints!.isEmpty)) {
       return;
     }
 
-    // 1. Vẽ viền đa giác móng (Polygons từ best.onnx)
-    final Paint polyFillPaint = Paint()
-      ..color =
-          const Color(0x4000E5FF) // Màu xanh cyan trong suốt
-      ..style = PaintingStyle.fill;
-
-    final Paint polyBorderPaint = Paint()
-      ..color =
-          const Color(0xFF00E5FF) // Viền xanh cyan rực rỡ
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0;
-
+    // ── 1. Vẽ viền đa giác móng (Polygons từ best.onnx) ──────────────────────
     for (int i = 0; i < polygons.length; i++) {
       final poly = polygons[i];
       if (poly.length < 3) continue;
+
+      final String? label = (labels != null && i < labels!.length) ? labels![i] : null;
+      final Color col = _colorForLabel(label, i);
+
+      final Paint fillPaint = Paint()
+        ..color = col.withValues(alpha: 0.22)
+        ..style = PaintingStyle.fill;
+
+      final Paint borderPaint = Paint()
+        ..color = col
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3.0;
 
       final path = Path();
       path.moveTo(poly.first.dx, poly.first.dy);
@@ -40,96 +75,139 @@ class NailDebugPainter extends CustomPainter {
       }
       path.close();
 
-      canvas.drawPath(path, polyFillPaint);
-      canvas.drawPath(path, polyBorderPaint);
+      canvas.drawPath(path, fillPaint);
+      canvas.drawPath(path, borderPaint);
 
-      // Nhãn tên ngón tay
-      final String label = (labels != null && i < labels!.length)
-          ? labels![i]
-          : "nail #${i + 1}";
-      final textSpan = TextSpan(
-        text: label,
-        style: const TextStyle(
-          color: Colors.yellowAccent,
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-          backgroundColor: Colors.black87,
-        ),
-      );
-      final textPainter = TextPainter(
-        text: textSpan,
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout();
+      // Chấm ở từng đỉnh polygon để thấy độ chi tiết contour
+      final Paint dotPaint = Paint()
+        ..color = col
+        ..style = PaintingStyle.fill;
+      for (final pt in poly) {
+        canvas.drawCircle(pt, 2.5, dotPaint);
+      }
+
+      // ── Nhãn tên ngón tay ─────────────────────────────────────────────────
+      final String viLabel = _viLabel(label);
       final Offset centroid = _centroid(poly);
-      textPainter.paint(canvas, centroid - Offset(textPainter.width / 2, 24));
+      _drawLabel(canvas, viLabel, centroid - Offset(0, 22), col);
+
+      // ── Mũi tên hướng móng (hướng áp dụng nail thực tế) ───────────────────
+      final int fingerIndex =
+          AdvancedNailPainter.labelToFingerIndex(label, defaultIdx: i + 1);
+      final NailPoseKeypoints? poseKpt = (poseKeypoints != null &&
+              i < poseKeypoints!.length)
+          ? poseKeypoints![i]
+          : null;
+
+      final Offset arrowDir = AdvancedNailPainter.getNailDirection(
+        poly: poly,
+        allPolygons: polygons,
+        fingerIndex: fingerIndex,
+        labels: labels,
+        poseKeypoint: poseKpt,
+      );
+      _drawArrow(canvas, centroid, arrowDir, col, length: 42);
     }
 
-    // 2. Vẽ Hướng Móng & Keypoints (từ thanhdtPose.onnx / erikdev/2)
+    // ── 2. Vẽ Hướng Móng & Keypoints (từ thanhdtPose.onnx) ───────────────────
     if (poseKeypoints != null && poseKeypoints!.isNotEmpty) {
-      final Paint linePaint = Paint()
-        ..color =
-            const Color(0xFFFFEA00) // Đường màu vàng nối gốc -> đỉnh
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 4.5;
-
-      final Paint tipPaint = Paint()
-        ..color =
-            const Color(0xFF00FF00) // Chấm xanh lá rực rỡ tại Đỉnh móng (Tip)
-        ..style = PaintingStyle.fill;
-
-      final Paint basePaint = Paint()
-        ..color =
-            const Color(0xFFFF1744) // Chấm đỏ tươi tại Gốc móng (Base)
-        ..style = PaintingStyle.fill;
-
-      final Paint blackBorderPaint = Paint()
-        ..color = Colors.black
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.5;
-
       for (int i = 0; i < poseKeypoints!.length; i++) {
         final kpt = poseKeypoints![i];
         if (kpt == null) continue;
 
-        // A. Đường kẻ trục móng nối Gốc (Red) -> Đỉnh (Green)
+        final String? label = (labels != null && i < labels!.length) ? labels![i] : null;
+        final Color col = _colorForLabel(label, i);
+
+        // A. Đường kẻ trục móng nối Gốc -> Đỉnh
+        final Paint linePaint = Paint()
+          ..color = col
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 4.5
+          ..strokeCap = StrokeCap.round;
         canvas.drawLine(kpt.base, kpt.tip, linePaint);
 
-        // B. Chấm Gốc móng (🔴 Đỏ)
-        canvas.drawCircle(kpt.base, 9.0, basePaint);
-        canvas.drawCircle(kpt.base, 10.5, blackBorderPaint);
+        // B. Vẽ mũi tên tại đỉnh
+        final Offset dir = kpt.direction;
+        _drawArrowHead(canvas, kpt.tip, dir, col, size: 12);
 
-        // C. Chấm Đỉnh móng (🟢 Xanh lá)
-        canvas.drawCircle(kpt.tip, 9.0, tipPaint);
-        canvas.drawCircle(kpt.tip, 10.5, blackBorderPaint);
+        // C. Chấm Gốc móng (đỏ)
+        final Paint basePaint = Paint()..color = Colors.redAccent..style = PaintingStyle.fill;
+        final Paint blackBorder = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 2.5;
+        canvas.drawCircle(kpt.base, 8.0, basePaint);
+        canvas.drawCircle(kpt.base, 9.5, blackBorder);
 
-        // D. Nhãn chú thích Gốc & Đỉnh
-        _drawSmallLabel(canvas, "Gốc", kpt.base, Colors.redAccent);
-        _drawSmallLabel(canvas, "Đỉnh", kpt.tip, Colors.greenAccent);
+        // D. Chấm Đỉnh móng (xanh lá)
+        final Paint tipPaint = Paint()..color = Colors.greenAccent..style = PaintingStyle.fill;
+        canvas.drawCircle(kpt.tip, 8.0, tipPaint);
+        canvas.drawCircle(kpt.tip, 9.5, blackBorder);
+
+        _drawSmallLabel(canvas, 'Gốc', kpt.base, Colors.redAccent);
+        _drawSmallLabel(canvas, 'Đỉnh', kpt.tip, Colors.greenAccent);
       }
     }
   }
 
-  static void _drawSmallLabel(
-    Canvas canvas,
-    String text,
-    Offset pos,
-    Color color,
-  ) {
-    final textSpan = TextSpan(
-      text: text,
-      style: TextStyle(
-        color: color,
-        fontSize: 11,
-        fontWeight: FontWeight.bold,
-        backgroundColor: Colors.black87,
-      ),
+  /// Vẽ mũi tên từ origin theo hướng dir với độ dài length
+  void _drawArrow(Canvas canvas, Offset origin, Offset dir, Color color, {double length = 45}) {
+    final Paint paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.5
+      ..strokeCap = StrokeCap.round;
+
+    final Offset tip = origin + Offset(dir.dx * length, dir.dy * length);
+    canvas.drawLine(origin, tip, paint);
+    _drawArrowHead(canvas, tip, dir, color, size: 10);
+  }
+
+  /// Vẽ đầu mũi tên tại điểm tip
+  void _drawArrowHead(Canvas canvas, Offset tip, Offset dir, Color color, {double size = 10}) {
+    final double angle = math.atan2(dir.dy, dir.dx);
+    final Offset left = Offset(
+      tip.dx - size * math.cos(angle - 0.45),
+      tip.dy - size * math.sin(angle - 0.45),
     );
+    final Offset right = Offset(
+      tip.dx - size * math.cos(angle + 0.45),
+      tip.dy - size * math.sin(angle + 0.45),
+    );
+    final Path head = Path()
+      ..moveTo(tip.dx, tip.dy)
+      ..lineTo(left.dx, left.dy)
+      ..lineTo(right.dx, right.dy)
+      ..close();
+    canvas.drawPath(head, Paint()..color = color..style = PaintingStyle.fill);
+  }
+
+  void _drawLabel(Canvas canvas, String text, Offset pos, Color color) {
     final textPainter = TextPainter(
-      text: textSpan,
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 13,
+          fontWeight: FontWeight.bold,
+          backgroundColor: color.withValues(alpha: 0.85),
+        ),
+      ),
       textDirection: TextDirection.ltr,
-    );
-    textPainter.layout();
+    )..layout();
+    textPainter.paint(canvas, pos - Offset(textPainter.width / 2, 0));
+  }
+
+  static void _drawSmallLabel(Canvas canvas, String text, Offset pos, Color color) {
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          backgroundColor: Colors.black87,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
     textPainter.paint(canvas, pos + const Offset(12, -8));
   }
 

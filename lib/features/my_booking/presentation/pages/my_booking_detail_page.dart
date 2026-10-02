@@ -1768,17 +1768,15 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
             ],
           ),
           if (detailLines.isNotEmpty) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: AppColors.background,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Column(
                 children: [
-                  const _PriceTableHeader(),
-                  const SizedBox(height: 4),
                   ...detailLines.map(
                     (comp) => _buildBookingComponentLine(
                       comp,
@@ -1890,7 +1888,7 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
     final name = component['name']?.toString() ?? _componentName(component);
 
     return Padding(
-      padding: const EdgeInsets.only(top: 6, left: 4, right: 4),
+      padding: const EdgeInsets.symmetric(vertical: 2.5, horizontal: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -2433,30 +2431,6 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
   }
 }
 
-class _PriceTableHeader extends StatelessWidget {
-  const _PriceTableHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    const style = TextStyle(
-      color: AppColors.textSecondary,
-      fontSize: 12,
-      fontWeight: FontWeight.bold,
-    );
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-      child: Row(
-        children: [
-          Expanded(child: Text('Thành phần', style: style)),
-          SizedBox(
-            width: 115,
-            child: Text('Giá', style: style, textAlign: TextAlign.right),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _ServicesTableHeader extends StatelessWidget {
   const _ServicesTableHeader();

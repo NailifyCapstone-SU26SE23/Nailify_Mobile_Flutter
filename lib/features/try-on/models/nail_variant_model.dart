@@ -1,39 +1,137 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 
 class ColorFingerConfig {
   final int fingerIndex;
   final String color;
+  final Map<String, dynamic>? gradient;
 
-  ColorFingerConfig({required this.fingerIndex, required this.color});
+  ColorFingerConfig({
+    required this.fingerIndex,
+    required this.color,
+    this.gradient,
+  });
 
-  factory ColorFingerConfig.fromJson(Map<String, dynamic> json) {
+  factory ColorFingerConfig.fromJson(dynamic json) {
+    if (json is! Map) {
+      return ColorFingerConfig(
+        fingerIndex: -1,
+        color: json?.toString() ?? '#FF4081',
+      );
+    }
+    final rawIndex =
+        json['fingerIndex'] ?? json['FingerIndex'] ?? json['index'] ?? -1;
+    final int idx = rawIndex is int
+        ? rawIndex
+        : int.tryParse(rawIndex.toString()) ?? -1;
+    final String col =
+        (json['color'] ?? json['Color'] ?? json['hex'] ?? '#FF4081').toString();
+    final grad = json['gradient'] ?? json['Gradient'];
     return ColorFingerConfig(
-      fingerIndex: json['fingerIndex'] ?? -1,
-      color: json['color'] ?? '#FF0000',
+      fingerIndex: idx,
+      color: col,
+      gradient: grad is Map<String, dynamic>
+          ? grad
+          : grad is Map
+              ? Map<String, dynamic>.from(grad)
+              : null,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'fingerIndex': fingerIndex,
+    'color': color,
+    if (gradient != null) 'gradient': gradient,
+  };
 }
 
 class ColorJsonConfig {
   final String mode; // 'perFinger', 'solid', 'gradient'
   final List<ColorFingerConfig> fingers;
+  final String? solidColor;
 
-  ColorJsonConfig({required this.mode, required this.fingers});
+  ColorJsonConfig({
+    required this.mode,
+    required this.fingers,
+    this.solidColor,
+  });
 
-  factory ColorJsonConfig.fromJson(String rawJson) {
-    try {
-      final Map<String, dynamic> data = jsonDecode(rawJson);
-      final String mode = data['mode'] ?? 'solid';
-      final List<dynamic> fingerList = data['fingers'] ?? [];
-
-      return ColorJsonConfig(
-        mode: mode,
-        fingers: fingerList.map((f) => ColorFingerConfig.fromJson(f)).toList(),
-      );
-    } catch (_) {
+  factory ColorJsonConfig.fromJson(dynamic raw) {
+    if (raw == null) {
       return ColorJsonConfig(mode: 'solid', fingers: []);
     }
+
+    try {
+      dynamic data = raw;
+      if (raw is String) {
+        final trimmed = raw.trim();
+        if (trimmed.isEmpty || trimmed == '{}') {
+          return ColorJsonConfig(mode: 'solid', fingers: []);
+        }
+        if (trimmed.startsWith('#') ||
+            (trimmed.length == 6 && int.tryParse(trimmed, radix: 16) != null)) {
+          return ColorJsonConfig(
+            mode: 'solid',
+            solidColor: trimmed,
+            fingers: List.generate(
+              5,
+              (i) => ColorFingerConfig(fingerIndex: i + 1, color: trimmed),
+            ),
+          );
+        }
+        data = jsonDecode(trimmed);
+      }
+
+      if (data is List) {
+        final List<ColorFingerConfig> parsed = [];
+        for (int i = 0; i < data.length; i++) {
+          final item = data[i];
+          if (item is Map) {
+            parsed.add(ColorFingerConfig.fromJson(item));
+          } else if (item is String) {
+            parsed.add(ColorFingerConfig(fingerIndex: i + 1, color: item));
+          }
+        }
+        return ColorJsonConfig(mode: 'perFinger', fingers: parsed);
+      }
+
+      if (data is Map) {
+        final String mode =
+            (data['mode'] ?? data['Mode'] ?? 'solid').toString();
+        final dynamic rawFingers = data['fingers'] ?? data['Fingers'];
+        final String? singleColor =
+            (data['color'] ?? data['Color'])?.toString();
+
+        List<ColorFingerConfig> parsedFingers = [];
+        if (rawFingers is List) {
+          parsedFingers = rawFingers
+              .map((f) => ColorFingerConfig.fromJson(f))
+              .toList();
+        } else if (singleColor != null && singleColor.isNotEmpty) {
+          parsedFingers = List.generate(
+            5,
+            (i) => ColorFingerConfig(fingerIndex: i + 1, color: singleColor),
+          );
+        }
+
+        return ColorJsonConfig(
+          mode: mode,
+          fingers: parsedFingers,
+          solidColor: singleColor,
+        );
+      }
+    } catch (e) {
+      debugPrint("⚠️ Lỗi parse ColorJsonConfig: $e");
+    }
+
+    return ColorJsonConfig(mode: 'solid', fingers: []);
   }
+
+  Map<String, dynamic> toJson() => {
+    'mode': mode,
+    'fingers': fingers.map((f) => f.toJson()).toList(),
+    if (solidColor != null) 'color': solidColor,
+  };
 }
 
 class NailShape {
@@ -257,13 +355,31 @@ class NailVariantModel {
 
   factory NailVariantModel.fromJson(Map<String, dynamic> json) {
     return NailVariantModel(
-      nailVariantId: json['nailVariantId'] ?? 0,
-      name: json['name'] ?? '',
-      imageUrl: json['imageUrl'] ?? '',
-      colorConfig: ColorJsonConfig.fromJson(json['colorJson'] ?? '{}'),
-      nailShape: NailShape.fromJson(json['nailShape'] ?? {}),
-      nailSurface: NailSurface.fromJson(json['nailSurface'] ?? {}),
-      nailComponents: (json['nailComponents'] as List<dynamic>? ?? [])
+      nailVariantId: json['nailVariantId'] ??
+          json['NailVariantId'] ??
+          json['customerNailId'] ??
+          json['CustomerNailId'] ??
+          0,
+      name: (json['name'] ?? json['Name'] ?? '').toString(),
+      imageUrl: (json['imageUrl'] ?? json['ImageUrl'] ?? '').toString(),
+      colorConfig: ColorJsonConfig.fromJson(
+        json['colorJson'] ??
+            json['ColorJson'] ??
+            json['customColor'] ??
+            json['CustomColor'] ??
+            '{}',
+      ),
+      nailShape: NailShape.fromJson(
+        json['nailShape'] ?? json['NailShape'] ?? {},
+      ),
+      nailSurface: NailSurface.fromJson(
+        json['nailSurface'] ?? json['NailSurface'] ?? {},
+      ),
+      nailComponents: (json['nailComponents'] ??
+              json['NailComponents'] ??
+              json['customerNailComponents'] ??
+              json['CustomerNailComponents'] as List<dynamic>? ??
+              [])
           .map((c) => NailComponentItem.fromJson(c))
           .toList(),
     );

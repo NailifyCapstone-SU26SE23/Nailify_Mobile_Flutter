@@ -1,4 +1,3 @@
-import 'dart:ui';
 import '../ai/letterbox.dart';
 import '../ai/onnx_service.dart';
 import '../ai/yolo_seg_decoder.dart';
@@ -33,8 +32,11 @@ class DecodeInput {
 /// reconstruction, marching-squares contour tracing and radial resampling.
 /// Pure Dart / pure math — no plugin or platform-channel calls, so it is
 /// always safe off the UI isolate.
-List<List<Offset>> decodePolygons(DecodeInput input) {
-  final results = YoloSegDecoder.decode(
+///
+/// Trả về [NailSegResult] thay vì raw polygon để classId (tên ngón tay) được
+/// truyền theo toàn bộ pipeline và painter có thể áp đúng móng cho từng ngón.
+List<NailSegResult> decodePolygons(DecodeInput input) {
+  return YoloSegDecoder.decode(
     rawOutputs: YoloSegOutputs(
       pred: input.pred,
       proto: input.proto,

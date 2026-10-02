@@ -38,7 +38,7 @@ class CustomerNailCard extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () {}, // Ripple effect
+        onTap: onSetupTryOn,
         borderRadius: BorderRadius.circular(20),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -126,29 +126,8 @@ class CustomerNailCard extends StatelessWidget {
                       if (value == 'edit') onEdit();
                       if (value == 'delete') onDelete();
                       if (value == 'toggle_public') onTogglePublic();
-                      if (value == 'try_on') onSetupTryOn();
                     },
                     itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 'try_on',
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.visibility_rounded,
-                              size: 18,
-                              color: AppColors.primary,
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              'Thiết lập Try-On',
-                              style: TextStyle(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
                       const PopupMenuItem(
                         value: 'edit',
                         child: Row(

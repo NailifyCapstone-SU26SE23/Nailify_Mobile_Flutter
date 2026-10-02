@@ -8,7 +8,7 @@ class InAppNotificationItem {
   final IconData icon;
   final Color color;
   final String? route;
-  final Map<String, dynamic>? extra;
+  final dynamic extra;
   bool isRead;
 
   InAppNotificationItem({
@@ -40,7 +40,7 @@ class InAppNotificationStore extends ChangeNotifier {
     required IconData icon,
     required Color color,
     String? route,
-    Map<String, dynamic>? extra,
+    dynamic extra,
   }) {
     final item = InAppNotificationItem(
       id: DateTime.now().microsecondsSinceEpoch.toString(),

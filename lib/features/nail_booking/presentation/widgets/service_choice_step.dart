@@ -314,6 +314,16 @@ class _ServiceChoiceStepState extends State<ServiceChoiceStep>
             ? {
                 'id': widget.selectedNailVariant!.nailVariantId.toString(),
                 'name': widget.selectedNailVariant!.name,
+                'image': widget.selectedNailVariant!.imageUrl,
+                'price': widget.selectedNailVariant!.price,
+                'duration': widget.selectedNailVariant!.duration,
+                if (widget.selectedShapeMethod != null) ...{
+                  'shapeMethodConfigId':
+                      widget.selectedShapeMethod!.shapeMethodConfigId,
+                  'shapeMethodName': widget.selectedShapeMethod!.name,
+                  'shapeMethodPrice': widget.selectedShapeMethod!.price,
+                  'shapeMethodDuration': widget.selectedShapeMethod!.duration,
+                },
               }
             : null,
         services: widget.services,

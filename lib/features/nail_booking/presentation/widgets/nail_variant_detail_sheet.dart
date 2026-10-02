@@ -791,20 +791,22 @@ class _TableHeader extends StatelessWidget {
       fontSize: 12,
       fontWeight: FontWeight.bold,
     );
-    return Row(
-      children: [
-        const Expanded(flex: 5, child: Text('Thành phần', style: style)),
-        const SizedBox(width: 10),
-        SizedBox(
-          width: 38,
-          child: Text('SL', style: style, textAlign: TextAlign.center),
-        ),
-        const SizedBox(width: 10),
-        SizedBox(
-          width: 92,
-          child: Text('Giá', style: style, textAlign: TextAlign.right),
-        ),
-      ],
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      child: Row(
+        children: [
+          Expanded(child: Text('Thành phần', style: style)),
+          SizedBox(
+            width: 36,
+            child: Text('SL', style: style, textAlign: TextAlign.center),
+          ),
+          SizedBox(width: 8),
+          SizedBox(
+            width: 115,
+            child: Text('Giá', style: style, textAlign: TextAlign.right),
+          ),
+        ],
+      ),
     );
   }
 }

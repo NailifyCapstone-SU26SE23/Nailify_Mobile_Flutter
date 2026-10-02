@@ -81,7 +81,7 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m29(dynamic minutes) => "${minutes} phút";
 
-  static String m30(dynamic qty) => "SL: ${qty}";
+  static String m30(dynamic qty) => "${qty}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{

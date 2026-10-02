@@ -17,7 +17,8 @@ class TransactionListPage extends StatefulWidget {
   State<TransactionListPage> createState() => _TransactionListPageState();
 }
 
-class _TransactionListPageState extends State<TransactionListPage> {
+class _TransactionListPageState extends State<TransactionListPage>
+    with SingleTickerProviderStateMixin {
   final TransactionRepository _repository = getIt<TransactionRepository>();
   final ScrollController _scrollController = ScrollController();
   final List<Map<String, dynamic>> _transactions = [];
@@ -31,15 +32,22 @@ class _TransactionListPageState extends State<TransactionListPage> {
   DateTime? _endDate;
   String? _status;
 
+  late AnimationController _shimmerController;
+
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
     _loadTransactions(refresh: true);
   }
 
   @override
   void dispose() {
+    _shimmerController.dispose();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
@@ -167,6 +175,18 @@ class _TransactionListPageState extends State<TransactionListPage> {
       initialDate: initialDate,
       firstDate: DateTime(2020),
       lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primary,
+              onPrimary: Colors.white,
+              onSurface: AppColors.textPrimary,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked == null) return;
     setState(() {
@@ -191,42 +211,57 @@ class _TransactionListPageState extends State<TransactionListPage> {
     _loadTransactions(refresh: true);
   }
 
+  bool get _hasActiveFilters =>
+      _startDate != null || _endDate != null || _status != null;
+
   @override
   Widget build(BuildContext context) {
     final title = widget.bookingId == null
         ? 'Giao dịch của tôi'
         : 'Giao dịch lịch hẹn';
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: AppColors.primaryDark,
-            size: 20,
+        elevation: 0,
+        scrolledUnderElevation: 0.5,
+        backgroundColor: Colors.white,
+        centerTitle: true,
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Material(
+            color: const Color(0xFFF1F5F9),
+            shape: const CircleBorder(),
+            clipBehavior: Clip.antiAlias,
+            child: IconButton(
+              icon: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: AppColors.textPrimary,
+                size: 18,
+              ),
+              onPressed: () => context.pop(),
+            ),
           ),
-          onPressed: () => context.pop(),
         ),
         title: Text(
           title,
           style: const TextStyle(
-            color: AppColors.primaryDark,
-            fontWeight: FontWeight.w800,
-            fontFamily: 'Georgia',
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+            letterSpacing: -0.3,
           ),
         ),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
       ),
       body: RefreshIndicator(
+        color: AppColors.primary,
         onRefresh: () => _loadTransactions(refresh: true),
         child: ListView(
           controller: _scrollController,
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
-            if (widget.bookingId == null) _buildFilters(),
+            if (widget.bookingId == null) _buildFilterSection(),
             if (!_isLoading &&
                 _errorMessage == null &&
                 _transactions.isNotEmpty) ...[
@@ -235,12 +270,7 @@ class _TransactionListPageState extends State<TransactionListPage> {
                 _buildRefundPolicyBanner()!,
             ],
             if (_isLoading)
-              const Padding(
-                padding: EdgeInsets.only(top: 120),
-                child: Center(
-                  child: CircularProgressIndicator(color: AppColors.primary),
-                ),
-              )
+              _buildSkeletonLoader()
             else if (_errorMessage != null)
               _MessageState(
                 icon: Icons.error_outline_rounded,
@@ -249,27 +279,256 @@ class _TransactionListPageState extends State<TransactionListPage> {
                 onAction: () => _loadTransactions(refresh: true),
               )
             else if (_transactions.isEmpty)
-              const _MessageState(
+              _MessageState(
                 icon: Icons.receipt_long_outlined,
-                message: 'Chưa có giao dịch nào cho lịch hẹn này.',
+                message: 'Chưa có giao dịch nào phù hợp.',
+                actionLabel: _hasActiveFilters ? 'Xóa bộ lọc' : null,
+                onAction: _hasActiveFilters ? _clearFilters : null,
               )
             else ...[
-              ..._transactions.map(_buildTransactionCard),
+              ..._transactions.asMap().entries.map((entry) {
+                final index = entry.key;
+                final tx = entry.value;
+                return TweenAnimationBuilder<double>(
+                  key: ValueKey(tx['transactionId'] ?? index),
+                  duration: Duration(milliseconds: 300 + (index % 5) * 80),
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  builder: (context, value, child) {
+                    return Transform.translate(
+                      offset: Offset(0, 20 * (1 - value)),
+                      child: Opacity(opacity: value, child: child),
+                    );
+                  },
+                  child: _buildTransactionCard(tx),
+                );
+              }),
               if (_isLoadingMore)
                 const Padding(
-                  padding: EdgeInsets.all(16),
+                  padding: EdgeInsets.symmetric(vertical: 16),
                   child: Center(
-                    child: CircularProgressIndicator(color: AppColors.primary),
+                    child: CircularProgressIndicator(
+                      color: AppColors.primary,
+                      strokeWidth: 2.5,
+                    ),
                   ),
                 ),
             ],
+            const SizedBox(height: 24),
           ],
         ),
       ),
     );
   }
 
-    Widget _buildSummaryHeader() {
+  Widget _buildFilterSection() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Row 1: Header title & reset button
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.filter_list_rounded,
+                      size: 16,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Bộ lọc giao dịch',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              if (_hasActiveFilters)
+                InkWell(
+                  onTap: _clearFilters,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(
+                          Icons.restart_alt_rounded,
+                          size: 14,
+                          color: AppColors.primaryDark,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          'Đặt lại',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primaryDark,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Row 2: Status horizontal chips
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: Row(
+              children: [
+                _buildStatusChipItem(
+                  label: 'Tất cả',
+                  statusValue: null,
+                  color: AppColors.primary,
+                ),
+                ...transactionStatusOptions.map((st) {
+                  final stView = transactionStatusView(st);
+                  return _buildStatusChipItem(
+                    label: stView.label,
+                    statusValue: st,
+                    color: stView.color,
+                  );
+                }),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Row 3: Date Selectors
+          Row(
+            children: [
+              Expanded(
+                child: _DateSelectorTile(
+                  label: 'Từ ngày',
+                  value: _formatDate(_startDate),
+                  isSelected: _startDate != null,
+                  onTap: () => _pickDate(isStart: true),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _DateSelectorTile(
+                  label: 'Đến ngày',
+                  value: _formatDate(_endDate),
+                  isSelected: _endDate != null,
+                  onTap: () => _pickDate(isStart: false),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusChipItem({
+    required String label,
+    required String? statusValue,
+    required Color color,
+  }) {
+    final isSelected = _status == statusValue;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              setState(() => _status = statusValue);
+              _loadTransactions(refresh: true);
+            },
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.primary
+                    : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isSelected
+                      ? AppColors.primary
+                      : const Color(0xFFE2E8F0),
+                ),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: isSelected ? Colors.white : color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.w500,
+                      color: isSelected
+                          ? Colors.white
+                          : AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryHeader() {
     num totalAmount = 0;
     if (widget.bookingData != null && widget.bookingData!['amountPaid'] != null) {
       final amt = widget.bookingData!['amountPaid'];
@@ -285,19 +544,29 @@ class _TransactionListPageState extends State<TransactionListPage> {
         }
       }
     }
-  
-      return Container(
+
+    return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF0EAE1)),
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFFFFF0F5),
+            Colors.white,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.primaryLight.withValues(alpha: 0.8),
+          width: 1.2,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: AppColors.primary.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -306,12 +575,19 @@ class _TransactionListPageState extends State<TransactionListPage> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(14),
+              gradient: AppColors.quizGradient,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.35),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: const Icon(
               Icons.account_balance_wallet_rounded,
-              color: AppColors.primary,
+              color: Colors.white,
               size: 24,
             ),
           ),
@@ -324,34 +600,39 @@ class _TransactionListPageState extends State<TransactionListPage> {
                   'Tổng tiền giao dịch',
                   style: TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF64748B),
+                    letterSpacing: 0.2,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   PriceFormatter.format(totalAmount),
                   style: const TextStyle(
-                    fontSize: 18,
+                    fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.primary,
+                    color: AppColors.primaryDark,
+                    letterSpacing: -0.5,
                   ),
                 ),
               ],
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
+              color: AppColors.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.2),
+              ),
             ),
             child: Text(
               '${_transactions.length} giao dịch',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primaryDark,
               ),
             ),
           ),
@@ -383,7 +664,6 @@ class _TransactionListPageState extends State<TransactionListPage> {
 
     bool isFullRefund = true;
 
-    // Priority 1: Check by amount ratio if both amounts exist
     if (depositTx != null && depositTx['amount'] != null && refundTx['amount'] != null) {
       final depAmt = (depositTx['amount'] as num).toDouble();
       final refAmt = (refundTx['amount'] as num).toDouble();
@@ -396,7 +676,6 @@ class _TransactionListPageState extends State<TransactionListPage> {
         }
       }
     } else {
-      // Priority 2: Check by timestamp comparison
       DateTime? bookingTime;
       if (widget.bookingData != null) {
         final bDateRaw = widget.bookingData!['bookingDate'] ??
@@ -436,15 +715,17 @@ class _TransactionListPageState extends State<TransactionListPage> {
         ? PriceFormatter.format(refundTx['amount'])
         : '';
 
+    final primaryColor = isFullRefund ? const Color(0xFF059669) : const Color(0xFFD97706);
+    final bgColor = isFullRefund ? const Color(0xFFECFDF5) : const Color(0xFFFFFBEB);
+    final borderColor = isFullRefund ? const Color(0xFFA7F3D0) : const Color(0xFFFDE68A);
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: 16),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: isFullRefund ? const Color(0xFFECFDF5) : const Color(0xFFFFFBEB),
+        color: bgColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isFullRefund ? const Color(0xFFA7F3D0) : const Color(0xFFFDE68A),
-        ),
+        border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -453,132 +734,71 @@ class _TransactionListPageState extends State<TransactionListPage> {
           ),
         ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: isFullRefund
-                  ? const Color(0xFF10B981).withValues(alpha: 0.15)
-                  : const Color(0xFFF59E0B).withValues(alpha: 0.15),
-              shape: BoxShape.circle,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              width: 4,
+              color: primaryColor,
             ),
-            child: Icon(
-              isFullRefund ? Icons.verified_rounded : Icons.info_rounded,
-              color: isFullRefund ? const Color(0xFF059669) : const Color(0xFFD97706),
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isFullRefund
-                      ? 'Thông báo: Hoàn tiền 100% cọc'
-                      : 'Thông báo: Hoàn tiền 80% cọc',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: isFullRefund
-                        ? const Color(0xFF065F46)
-                        : const Color(0xFF92400E),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  isFullRefund
-                      ? 'Hủy lịch trước thời gian đặt lịch 24 tiếng. Hệ thống đã hoàn trả 100% tiền cọc ($refundAmountStr) vào ví của bạn.'
-                      : 'Hủy lịch trong thời gian đặt lịch 24 tiếng. Theo chính sách quy định, bạn được hoàn trả 80% tiền cọc ($refundAmountStr) vào ví.',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    color: isFullRefund
-                        ? const Color(0xFF047857)
-                        : const Color(0xFFB45309),
-                    height: 1.35,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilters() {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderLight),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: _FilterButton(
-                  label: 'Từ ngày',
-                  value: _formatDate(_startDate),
-                  onTap: () => _pickDate(isStart: true),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _FilterButton(
-                  label: 'Đến ngày',
-                  value: _formatDate(_endDate),
-                  onTap: () => _pickDate(isStart: false),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  initialValue: _status,
-                  isExpanded: true,
-                  decoration: InputDecoration(
-                    labelText: 'Trạng thái',
-                    isDense: true,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: primaryColor.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isFullRefund ? Icons.verified_rounded : Icons.info_rounded,
+                        color: primaryColor,
+                        size: 20,
+                      ),
                     ),
-                  ),
-                  items: [
-                    const DropdownMenuItem<String>(
-                      value: null,
-                      child: Text('Tất cả'),
-                    ),
-                    ...transactionStatusOptions.map(
-                      (status) => DropdownMenuItem<String>(
-                        value: status,
-                        child: Text(transactionStatusView(status).label),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isFullRefund
+                                ? 'Thông báo: Hoàn tiền 100% cọc'
+                                : 'Thông báo: Hoàn tiền 80% cọc',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: isFullRefund
+                                  ? const Color(0xFF065F46)
+                                  : const Color(0xFF92400E),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            isFullRefund
+                                ? 'Hủy lịch trước thời gian đặt lịch 24 tiếng. Hệ thống đã hoàn trả 100% tiền cọc ($refundAmountStr) vào ví của bạn.'
+                                : 'Hủy lịch trong thời gian đặt lịch 24 tiếng. Theo chính sách quy định, bạn được hoàn trả 80% tiền cọc ($refundAmountStr) vào ví.',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              color: isFullRefund
+                                  ? const Color(0xFF047857)
+                                  : const Color(0xFFB45309),
+                              height: 1.35,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
-                  onChanged: (value) {
-                    setState(() => _status = value);
-                    _loadTransactions(refresh: true);
-                  },
                 ),
               ),
-              const SizedBox(width: 8),
-              IconButton(
-                tooltip: 'Xóa lọc',
-                onPressed: _clearFilters,
-                icon: const Icon(Icons.filter_alt_off_outlined),
-              ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -592,31 +812,37 @@ class _TransactionListPageState extends State<TransactionListPage> {
     final orderCode = transaction['orderCode']?.toString();
     final amount = transaction['amount'] ?? 0;
 
+    final rawDesc = orderCode ?? transaction['description'];
+    final cleanDesc = formatTransactionDescription(rawDesc);
+    final isPureNumber = RegExp(r'^\d+$').hasMatch(cleanDesc);
+    final invoiceText = cleanDesc.isNotEmpty
+        ? (isPureNumber ? 'Mã HĐ: #$cleanDesc' : cleanDesc)
+        : null;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF0EAE1), width: 1.2),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFF1F5F9), width: 1.2),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap:
-              transactionId == null && (orderCode == null || orderCode.isEmpty)
+          borderRadius: BorderRadius.circular(18),
+          onTap: transactionId == null && (orderCode == null || orderCode.isEmpty)
               ? null
               : () => context.push('/transaction-detail', extra: transaction),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(15),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -624,11 +850,11 @@ class _TransactionListPageState extends State<TransactionListPage> {
                 Row(
                   children: [
                     Container(
-                      width: 42,
-                      height: 42,
+                      width: 44,
+                      height: 44,
                       decoration: BoxDecoration(
-                        color: statusView.color.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
+                        color: statusView.color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(14),
                       ),
                       child: Icon(
                         statusView.icon,
@@ -645,30 +871,36 @@ class _TransactionListPageState extends State<TransactionListPage> {
                             salonName.isNotEmpty ? salonName : 'Nailify Salon',
                             style: const TextStyle(
                               fontSize: 15,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w700,
                               color: AppColors.textPrimary,
+                              letterSpacing: -0.2,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          () {
-                            final rawDesc = orderCode ?? transaction['description'];
-                            final cleanDesc = formatTransactionDescription(rawDesc);
-                            final isPureNumber = RegExp(r'^\d+$').hasMatch(cleanDesc);
-                            if (cleanDesc.isEmpty) return const SizedBox.shrink();
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 2),
+                          if (invoiceText != null) ...[
+                            const SizedBox(height: 3),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
                               child: Text(
-                                isPureNumber ? 'Mã HĐ: #$cleanDesc' : cleanDesc,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade600,
+                                invoiceText,
+                                style: const TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFF64748B),
                                 ),
-                                maxLines: 2,
+                                maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                            );
-                          }(),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -678,26 +910,29 @@ class _TransactionListPageState extends State<TransactionListPage> {
                 ),
 
                 const SizedBox(height: 12),
-                Divider(height: 1, color: Colors.grey.shade200),
+                Container(
+                  height: 1,
+                  color: const Color(0xFFF1F5F9),
+                ),
                 const SizedBox(height: 12),
 
-                // Bottom row: Date/Time + Amount + Chevron
+                // Bottom row: Date/Time + Amount + Arrow
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.access_time_rounded,
                           size: 14,
-                          color: Colors.grey.shade500,
+                          color: Color(0xFF94A3B8),
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 5),
                         Text(
                           createdAt,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 12,
-                            color: Colors.grey.shade600,
+                            color: Color(0xFF64748B),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -708,16 +943,23 @@ class _TransactionListPageState extends State<TransactionListPage> {
                         Text(
                           PriceFormatter.format(amount),
                           style: const TextStyle(
-                            color: AppColors.primary,
+                            color: AppColors.primaryDark,
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.chevron_right_rounded,
-                          size: 18,
-                          color: Colors.grey.shade400,
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFF8FAFC),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            size: 11,
+                            color: Color(0xFF94A3B8),
+                          ),
                         ),
                       ],
                     ),
@@ -731,8 +973,90 @@ class _TransactionListPageState extends State<TransactionListPage> {
     );
   }
 
+  Widget _buildSkeletonLoader() {
+    return AnimatedBuilder(
+      animation: _shimmerController,
+      builder: (context, child) {
+        final opacity = 0.3 + (_shimmerController.value * 0.4);
+        return Column(
+          children: List.generate(
+            3,
+            (index) => Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: opacity),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFFF1F5F9)),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 140,
+                              height: 14,
+                              color: Colors.grey.shade300,
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              width: 90,
+                              height: 10,
+                              color: Colors.grey.shade300,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        width: 70,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        width: 100,
+                        height: 12,
+                        color: Colors.grey.shade300,
+                      ),
+                      Container(
+                        width: 80,
+                        height: 16,
+                        color: Colors.grey.shade300,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   String _formatDate(DateTime? date) {
-    if (date == null) return 'Không chọn';
+    if (date == null) return 'Chọn ngày';
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
@@ -749,33 +1073,79 @@ class _TransactionListPageState extends State<TransactionListPage> {
   }
 }
 
-class _FilterButton extends StatelessWidget {
+class _DateSelectorTile extends StatelessWidget {
   final String label;
   final String value;
+  final bool isSelected;
   final VoidCallback onTap;
 
-  const _FilterButton({
+  const _DateSelectorTile({
     required this.label,
     required this.value,
+    required this.isSelected,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return OutlinedButton(
-      onPressed: onTap,
-      style: OutlinedButton.styleFrom(
-        alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 11)),
-          const SizedBox(height: 2),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
-        ],
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppColors.primary.withValues(alpha: 0.06)
+                : const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected
+                  ? AppColors.primary.withValues(alpha: 0.5)
+                  : const Color(0xFFE2E8F0),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.calendar_today_rounded,
+                size: 16,
+                color: isSelected ? AppColors.primary : const Color(0xFF94A3B8),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 10.5,
+                        color: Color(0xFF64748B),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      value,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.w600,
+                        color: isSelected
+                            ? AppColors.primaryDark
+                            : AppColors.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -794,7 +1164,7 @@ class _StatusChip extends StatelessWidget {
         color: statusView.color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: statusView.color.withValues(alpha: 0.2),
+          color: statusView.color.withValues(alpha: 0.25),
           width: 1,
         ),
       ),
@@ -814,8 +1184,8 @@ class _StatusChip extends StatelessWidget {
             statusView.label,
             style: TextStyle(
               color: statusView.color,
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -840,9 +1210,10 @@ class _MessageState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 80),
+      padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 24),
       child: Center(
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
               padding: const EdgeInsets.all(20),
@@ -850,7 +1221,7 @@ class _MessageState extends StatelessWidget {
                 color: AppColors.primary.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, size: 40, color: AppColors.primary),
+              child: Icon(icon, size: 44, color: AppColors.primary),
             ),
             const SizedBox(height: 16),
             Text(
@@ -860,6 +1231,7 @@ class _MessageState extends StatelessWidget {
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
+                height: 1.4,
               ),
             ),
             if (actionLabel != null && onAction != null) ...[
@@ -869,12 +1241,20 @@ class _MessageState extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
                   ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  elevation: 2,
                 ),
                 icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: Text(actionLabel!),
+                label: Text(
+                  actionLabel!,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ],

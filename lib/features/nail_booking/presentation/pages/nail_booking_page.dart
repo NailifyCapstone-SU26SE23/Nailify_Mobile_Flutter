@@ -1457,7 +1457,7 @@ class _NailBookingPageState extends State<NailBookingPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Dòng 1: Icon Salon + Tên chi nhánh + Nút Đổi lịch ──
+          // ── Dòng 1: Icon Salon + Tên chi nhánh ──
           Row(
             children: [
               Container(
@@ -1483,35 +1483,6 @@ class _NailBookingPageState extends State<NailBookingPage> {
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              InkWell(
-                onTap: () => setState(() => _currentStep = 1),
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Text(
-                        'Đổi lịch',
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFFE02B6D),
-                        ),
-                      ),
-                      SizedBox(width: 2),
-                      Icon(
-                        Icons.chevron_right_rounded,
-                        size: 16,
-                        color: Color(0xFFE02B6D),
-                      ),
-                    ],
-                  ),
                 ),
               ),
             ],
@@ -3160,18 +3131,18 @@ class _PriceTableHeader extends StatelessWidget {
       fontWeight: FontWeight.bold,
     );
     return const Padding(
-      padding: EdgeInsets.only(left: 12, top: 4),
+      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       child: Row(
         children: [
-          Expanded(flex: 5, child: Text('Thành phần', style: style)),
+          Expanded(child: Text('Thành phần', style: style)),
           SizedBox(
-            width: 38,
+            width: 36,
             child: Text('SL', style: style, textAlign: TextAlign.center),
           ),
-          SizedBox(width: 10),
+          SizedBox(width: 8),
           SizedBox(
-            width: 92,
-            child: Text('Giá', style: style, textAlign: TextAlign.right),
+            width: 115,
+            child: Text('Giá', style: style, textAlign: TextAlign.right),
           ),
         ],
       ),

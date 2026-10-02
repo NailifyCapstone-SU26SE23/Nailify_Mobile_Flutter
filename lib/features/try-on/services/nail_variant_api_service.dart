@@ -40,7 +40,7 @@ class NailVariantApiService {
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonBody = jsonDecode(response.body);
         final List<dynamic> items = jsonBody['data']['items'] ?? [];
-        return items.map((i) => NailVariantModel.fromJson(i)).toList();
+        return items.map((i) => NailVariantModel.fromJson(i as Map<String, dynamic>)).toList();
       }
     } catch (e) {
       debugPrint("⚠️ Lỗi fetch NailVariants: $e");
@@ -61,7 +61,7 @@ class NailVariantApiService {
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonBody = jsonDecode(response.body);
         final List<dynamic> items = jsonBody['data']['items'] ?? [];
-        return items.map((i) => NailShape.fromJson(i)).toList();
+        return items.map((i) => NailShape.fromJson(i as Map<String, dynamic>)).toList();
       }
     } catch (e) {
       debugPrint("⚠️ Lỗi fetch NailShapes: $e");

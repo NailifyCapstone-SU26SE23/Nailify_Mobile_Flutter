@@ -387,17 +387,17 @@ class NailVariantModel {
             '{}',
       ),
       nailShape: NailShape.fromJson(
-        json['nailShape'] ?? json['NailShape'] ?? {},
+        (json['nailShape'] ?? json['NailShape']) as Map<String, dynamic>? ?? <String, dynamic>{},
       ),
       nailSurface: NailSurface.fromJson(
-        json['nailSurface'] ?? json['NailSurface'] ?? {},
+        (json['nailSurface'] ?? json['NailSurface']) as Map<String, dynamic>? ?? <String, dynamic>{},
       ),
-      nailComponents: (json['nailComponents'] ??
+      nailComponents: ((json['nailComponents'] ??
               json['NailComponents'] ??
               json['customerNailComponents'] ??
-              json['CustomerNailComponents'] as List<dynamic>? ??
+              json['CustomerNailComponents']) as List<dynamic>? ??
               [])
-          .map((c) => NailComponentItem.fromJson(c))
+          .map((c) => NailComponentItem.fromJson(c as Map<String, dynamic>))
           .toList(),
     );
   }

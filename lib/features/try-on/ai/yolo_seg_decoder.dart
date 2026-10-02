@@ -42,6 +42,7 @@ class YoloSegDecoder {
     double confThreshold = 0.50,
     double iouThreshold = 0.45,
     double maskThreshold = 0.5,
+    double minHardConfidence = 0.50,
   }) {
     if (rawOutputs.pred == null) return [];
 

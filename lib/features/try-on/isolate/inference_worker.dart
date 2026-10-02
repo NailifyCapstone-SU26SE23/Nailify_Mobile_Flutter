@@ -43,6 +43,7 @@ class InferenceWorker {
     double confThreshold = 0.60,
     double iouThreshold = 0.45,
     double maskThreshold = 0.5,
+    double minHardConfidence = 0.50,
   }) async {
     final stopwatch = Stopwatch()..start();
     await init();
@@ -57,7 +58,9 @@ class InferenceWorker {
       confThreshold: confThreshold,
       iouThreshold: iouThreshold,
       maskThreshold: maskThreshold,
+      minHardConfidence: minHardConfidence,
     );
+    final polygons = results.map((r) => r.polygon).toList();
 
     final polygons = segResults.map((r) => r.polygon).toList();
     final rawLabels = segResults.map((r) => r.fingerLabel).toList();
@@ -142,6 +145,7 @@ class InferenceWorker {
     double confThreshold = 0.60,
     double iouThreshold = 0.45,
     double maskThreshold = 0.5,
+    double minHardConfidence = 0.50,
   }) async {
     final stopwatch = Stopwatch()..start();
     await init();
@@ -160,6 +164,7 @@ class InferenceWorker {
         confThreshold: confThreshold,
         iouThreshold: iouThreshold,
         maskThreshold: maskThreshold,
+        minHardConfidence: minHardConfidence,
       ),
     );
     final polygons = segResults.map((r) => r.polygon).toList();
@@ -211,12 +216,14 @@ class InferenceWorker {
     double confThreshold = 0.35,
     double iouThreshold = 0.45,
     double maskThreshold = 0.5,
+    double minHardConfidence = 0.50,
   }) {
     return processCameraFrame(
       rawFrame,
       confThreshold: confThreshold,
       iouThreshold: iouThreshold,
       maskThreshold: maskThreshold,
+      minHardConfidence: minHardConfidence,
     );
   }
 

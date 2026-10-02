@@ -13,6 +13,10 @@ class DecodeInput {
   final double iouThreshold;
   final double maskThreshold;
 
+  /// Hard-delete floor: detections with score < this are dropped.
+  /// Default 0.0 (no hard delete); recommended > 0.5 for production.
+  final double minHardConfidence;
+
   DecodeInput({
     required this.pred,
     required this.proto,
@@ -20,6 +24,7 @@ class DecodeInput {
     required this.confThreshold,
     required this.iouThreshold,
     required this.maskThreshold,
+    this.minHardConfidence = 0.50,
   });
 }
 
@@ -40,5 +45,7 @@ List<NailSegResult> decodePolygons(DecodeInput input) {
     confThreshold: input.confThreshold,
     iouThreshold: input.iouThreshold,
     maskThreshold: input.maskThreshold,
+    minHardConfidence: input.minHardConfidence,
   );
+  return results.map((r) => r.polygon).toList();
 }

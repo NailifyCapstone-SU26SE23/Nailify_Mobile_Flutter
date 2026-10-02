@@ -995,98 +995,57 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
                               ),
                             ),
                           ),
-                           if (_selectedFingerIndex != -1)
-                            Positioned(
-                              top: 12,
-                              left: 12,
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    _selectedFingerIndex = -1;
-                                    _selectedComponentId = null;
-                                  });
-                                  _zoomToFinger(-1);
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.95),
-                                    borderRadius: BorderRadius.circular(20),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.1),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
+                          Positioned(
+                            top: 12,
+                            right: 12,
+                            child: Column(
+                              children: [
+                                if (_nailPolygons.isNotEmpty) ...[
+                                  GestureDetector(
+                                    onTap: () {
+                                      setState(() => _selectedFingerIndex = -1);
+                                      _zoomToFinger(-1);
+                                    },
+                                    child: Container(
+                                      width: 36,
+                                      height: 36,
+                                      margin: const EdgeInsets.only(bottom: 12),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withValues(alpha: 0.35),
+                                        shape: BoxShape.circle,
                                       ),
-                                    ],
+                                      child: const Icon(Icons.center_focus_strong, color: Colors.white, size: 18),
+                                    ),
                                   ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(Icons.arrow_back_rounded, size: 14, color: AppColors.primary),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        _getFingerName(_selectedFingerIndex),
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColors.primary,
-                                        ),
-                                      ),
-                                    ],
+                                ],
+                                GestureDetector(
+                                  onTap: () => _pickImage(ImageSource.camera),
+                                  child: Container(
+                                    width: 36,
+                                    height: 36,
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(alpha: 0.35),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.cameraswitch_outlined, color: Colors.white, size: 18),
                                   ),
                                 ),
-                              ),
+                                GestureDetector(
+                                  onTap: () => _pickImage(ImageSource.gallery),
+                                  child: Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(alpha: 0.35),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.photo_library_outlined, color: Colors.white, size: 18),
+                                  ),
+                                ),
+                              ],
                             ),
-                          if (_nailPolygons.isNotEmpty) ...[
-                            Positioned(
-                              top: 12,
-                              right: 12,
-                              child: FloatingActionButton.small(
-                                heroTag: 'resetZoomBtn',
-                                backgroundColor: Colors.white.withValues(
-                                  alpha: 0.9,
-                                ),
-                                foregroundColor: AppColors.primary,
-                                elevation: 2,
-                                onPressed: () {
-                                  setState(() {
-                                    _selectedFingerIndex = -1;
-                                    _selectedComponentId = null;
-                                  });
-                                  _zoomToFinger(-1);
-                                },
-                                child: const Icon(
-                                  Icons.center_focus_strong,
-                                  size: 20,
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 12,
-                              right: 12,
-                              child: FloatingActionButton.small(
-                                heroTag: 'togglePanelBtn',
-                                backgroundColor: Colors.white.withValues(
-                                  alpha: 0.95,
-                                ),
-                                foregroundColor: AppColors.primary,
-                                elevation: 3,
-                                onPressed: () {
-                                  setState(() {
-                                    _isCustomPanelCollapsed =
-                                        !_isCustomPanelCollapsed;
-                                  });
-                                },
-                                child: Icon(
-                                  _isCustomPanelCollapsed
-                                      ? Icons.unfold_more_rounded
-                                      : Icons.unfold_less_rounded,
-                                  size: 20,
-                                ),
-                              ),
-                            ),
-                          ],
+                          ),
                         ],
                       ),
               ),
@@ -1182,183 +1141,34 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
                       ),
                     ),
 
-                    AnimatedSize(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOutCubic,
-                      child: _isCustomPanelCollapsed
-                          ? const SizedBox.shrink()
-                          : DefaultTabController(
-                              length: widget.lockVariantSelection ? 3 : 4,
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  TabBar(
-                                    labelColor: AppColors.primary,
-                                    unselectedLabelColor: Colors.black54,
-                                    indicatorColor: AppColors.primary,
-                                    indicatorSize: TabBarIndicatorSize.label,
-                                    labelStyle: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
-                                    ),
-                                    unselectedLabelStyle:
-                                        const TextStyle(fontSize: 13),
-                                    tabs: [
-                                      if (!widget.lockVariantSelection)
-                                        const Tab(text: "Mẫu"),
-                                      const Tab(text: "Dáng móng"),
-                                      const Tab(text: "Bề mặt"),
-                                      const Tab(text: "Phụ kiện"),
-                                    ],
-                                  ),
-                                  SizedBox(
-                                    height: 155,
-                                    child: TabBarView(
-                                      children: [
-                                        if (!widget.lockVariantSelection)
-                                          _buildVariantsList(),
-                                        _buildShapesList(),
-                                        _buildSurfacesList(),
-                                        _buildComponentsList(),
-                                      ],
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.fromLTRB(
-                                      16,
-                                      8,
-                                      16,
-                                      12,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          child: FilledButton.icon(
-                                            onPressed: () =>
-                                                _pickImage(ImageSource.camera),
-                                            icon: const Icon(
-                                              Icons.camera_alt_outlined,
-                                              size: 20,
-                                            ),
-                                            label: const Text(
-                                              'Chụp ảnh',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            style: FilledButton.styleFrom(
-                                              backgroundColor:
-                                                  AppColors.primary,
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    vertical: 14,
-                                                  ),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(16),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: OutlinedButton.icon(
-                                            onPressed: () =>
-                                                _pickImage(ImageSource.gallery),
-                                            icon: const Icon(
-                                              Icons.photo_library_outlined,
-                                              size: 20,
-                                            ),
-                                            label: const Text(
-                                              'Chọn từ máy',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            style: OutlinedButton.styleFrom(
-                                              foregroundColor:
-                                                  AppColors.primary,
-                                              side: const BorderSide(
-                                                color: AppColors.primary,
-                                                width: 1.5,
-                                              ),
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    vertical: 14,
-                                                  ),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(16),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
+                    // 3. Nút Lưu / Hành động chính
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: () {
+                             ScaffoldMessenger.of(context).showSnackBar(
+                               const SnackBar(content: Text('Chức năng đang được phát triển')),
+                             );
+                          },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            'Lưu thiết kế & Đặt lịch',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.2,
                             ),
                           ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProcessingLoadingScreen() {
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      color: const Color(0xFFFFFDF9),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Spacer(flex: 2),
-          TweenAnimationBuilder<double>(
-            duration: const Duration(milliseconds: 1200),
-            tween: Tween<double>(begin: 0.95, end: 1.05),
-            curve: Curves.easeInOut,
-            builder: (context, scale, child) {
-              return Transform.scale(
-                scale: scale,
-                child: Container(
-                  width: 150,
-                  height: 150,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFDE8F3).withValues(alpha: 0.5),
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Container(
-                    width: 115,
-                    height: 115,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFCE4EC),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.15),
-                          blurRadius: 20,
-                          spreadRadius: 2,
                         ),
-                      ],
-                    ),
-                    alignment: Alignment.center,
-                    child: Container(
-                      width: 85,
-                      height: 85,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFFF0F5),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.auto_awesome_rounded,
-                        size: 42,
-                        color: AppColors.primary,
                       ),
                     ),
                   ),
@@ -1673,49 +1483,78 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        width: 80,
         margin: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 12.0),
-        padding: const EdgeInsets.all(4.0),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? const Color(0xFFFF4081) : Colors.grey.shade300,
-            width: isSelected ? 2.5 : 1.0,
+            color: isSelected ? AppColors.primary : Colors.grey.shade200,
+            width: isSelected ? 1.5 : 1.0,
           ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (imageUrl != null && imageUrl.isNotEmpty)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: Image.network(
-                  imageUrl,
-                  width: 45,
-                  height: 45,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.image_not_supported, size: 30),
-                ),
-              )
-            else if (icon != null)
-              Icon(icon, size: 40, color: Colors.pink.shade300)
-            else
-              const Icon(Icons.brush, size: 40),
-            const SizedBox(height: 4),
-            SizedBox(
-              width: 70,
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
+          boxShadow: [
+            if (isSelected)
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.15),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
+                    child: (imageUrl != null && imageUrl.isNotEmpty)
+                        ? Image.network(
+                            imageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(Icons.image_not_supported, size: 30),
+                          )
+                        : Container(
+                            color: Colors.grey.shade50,
+                            child: icon != null
+                                ? Icon(icon, size: 30, color: AppColors.primary.withValues(alpha: 0.6))
+                                : const Icon(Icons.brush, size: 30, color: Colors.grey),
+                          ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                  alignment: Alignment.center,
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      color: isSelected ? AppColors.primary : Colors.black87,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    height: 1.1,
+                  ),
+                ),
+              ],
             ),
+            if (isSelected)
+              Positioned(
+                top: 4,
+                right: 4,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: const BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.check, size: 10, color: Colors.white),
+                ),
+              ),
           ],
         ),
       ),

@@ -7,6 +7,15 @@ import 'nms.dart';
 import 'onnx_service.dart';
 import 'polygon_resampler.dart';
 
+/// Result of [YoloSegDecoder.decode]. Each entry holds the polygon and the
+/// confidence score from the YOLO model.
+class YoloSegResult {
+  final List<Offset> polygon;
+  final double score;
+
+  const YoloSegResult({required this.polygon, required this.score});
+}
+
 class YoloSegDecoder {
   static double _sigmoid(double x) => 1.0 / (1.0 + exp(-x));
 
@@ -21,16 +30,25 @@ class YoloSegDecoder {
     return names[classId] ?? 'nail';
   }
 
-  /// Master Ultralytics Decoder: Anchor Parsing -> NMS -> ROI Reconstruct -> Contour -> Undo Letterbox
-  static List<List<Offset>> decode({
+  /// Master Ultralytics Decoder: Anchor Parsing -> NMS -> ROI Reconstruct -> Contour -> Undo Letterbox.
+  ///
+  /// [confThreshold] — minimum score required to keep a candidate (pre-NMS filter).
+  ///                   Default 0.60. Higher = fewer detections but more precise.
+  ///
+  /// [minHardConfidence] — hard-delete floor. Any detection with score below this
+  ///                       is dropped regardless of NMS. Default 0.50 (50%).
+  ///                       Set to 0.0 to disable hard filtering, or > 0.90 for
+  ///                       very strict filtering.
+  static List<YoloSegResult> decode({
     required YoloSegOutputs rawOutputs,
     double confThreshold = 0.60,
     double iouThreshold = 0.45,
     double maskThreshold = 0.5,
+    double minHardConfidence = 0.50,
   }) {
     if (rawOutputs.pred == null) return [];
 
-    final List<List<Offset>> resultPolygons = [];
+    final List<YoloSegResult> resultPolygons = [];
 
     // Step 1: Parse prediction anchors
     final candidates = _parseOutput0(rawOutputs.pred, confThreshold);
@@ -68,7 +86,19 @@ class YoloSegDecoder {
     final double imgH = rawOutputs.letterbox.originalHeight.toDouble();
 
     // Step 3 & 4: Mask ROI Reconstruction & Marching Squares Contour Extraction
+    int hardFiltered = 0;
     for (var det in nmsDetections) {
+      // HARD DELETE: drop any detection whose score is below the floor,
+      // even if it survived NMS. This is a final safety net against
+      // uncertain detections that slip past the looser `confThreshold`.
+      if (det.score < minHardConfidence) {
+        hardFiltered++;
+        debugPrint(
+          "   🚫 Hard delete: ${getClassName(det.classId)} score=${(det.score * 100).toStringAsFixed(1)}% < ${(minHardConfidence * 100).toStringAsFixed(0)}%",
+        );
+        continue;
+      }
+
       LocalizedMaskRoi? maskRoi;
       if (rawOutputs.proto != null) {
         maskRoi = MaskReconstructionProcessor.reconstructRoiMask(
@@ -108,8 +138,14 @@ class YoloSegDecoder {
       }
 
       if (origPolygon.length >= 3) {
-        resultPolygons.add(origPolygon);
+        resultPolygons.add(YoloSegResult(polygon: origPolygon, score: det.score));
       }
+    }
+
+    if (hardFiltered > 0) {
+      debugPrint(
+        "🚫 [HARD DELETE] Đã loại $hardFiltered móng có độ tin cậy < ${(minHardConfidence * 100).toStringAsFixed(0)}%",
+      );
     }
 
     return resultPolygons;

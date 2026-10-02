@@ -39,6 +39,7 @@ class InferenceWorker {
     double confThreshold = 0.60,
     double iouThreshold = 0.45,
     double maskThreshold = 0.5,
+    double minHardConfidence = 0.50,
   }) async {
     final stopwatch = Stopwatch()..start();
     await init();
@@ -47,12 +48,14 @@ class InferenceWorker {
       frameImage,
       useArModel: false,
     );
-    final polygons = YoloSegDecoder.decode(
+    final results = YoloSegDecoder.decode(
       rawOutputs: rawOutputs,
       confThreshold: confThreshold,
       iouThreshold: iouThreshold,
       maskThreshold: maskThreshold,
+      minHardConfidence: minHardConfidence,
     );
+    final polygons = results.map((r) => r.polygon).toList();
 
     final rawPoses = await _onnxService.runPoseInferenceOnTensor(
       rawOutputs.letterbox,
@@ -128,6 +131,7 @@ class InferenceWorker {
     double confThreshold = 0.60,
     double iouThreshold = 0.45,
     double maskThreshold = 0.5,
+    double minHardConfidence = 0.50,
   }) async {
     final stopwatch = Stopwatch()..start();
     await init();
@@ -145,6 +149,7 @@ class InferenceWorker {
         confThreshold: confThreshold,
         iouThreshold: iouThreshold,
         maskThreshold: maskThreshold,
+        minHardConfidence: minHardConfidence,
       ),
     );
     final List<NailPoseKeypoints?> matchedPoses = List.filled(
@@ -190,12 +195,14 @@ class InferenceWorker {
     double confThreshold = 0.35,
     double iouThreshold = 0.45,
     double maskThreshold = 0.5,
+    double minHardConfidence = 0.50,
   }) {
     return processCameraFrame(
       rawFrame,
       confThreshold: confThreshold,
       iouThreshold: iouThreshold,
       maskThreshold: maskThreshold,
+      minHardConfidence: minHardConfidence,
     );
   }
 

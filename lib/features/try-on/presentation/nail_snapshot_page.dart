@@ -852,6 +852,8 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
       final result = await _worker.processFrame(
         decodedImage,
         confThreshold: 0.20,
+        // thamm số hard del
+        minHardConfidence: 0.50,
       );
 
       if (!mounted) return;

@@ -14,6 +14,10 @@ class DecodeInput {
   final double iouThreshold;
   final double maskThreshold;
 
+  /// Hard-delete floor: detections with score < this are dropped.
+  /// Default 0.0 (no hard delete); recommended > 0.5 for production.
+  final double minHardConfidence;
+
   DecodeInput({
     required this.pred,
     required this.proto,
@@ -21,6 +25,7 @@ class DecodeInput {
     required this.confThreshold,
     required this.iouThreshold,
     required this.maskThreshold,
+    this.minHardConfidence = 0.50,
   });
 }
 
@@ -29,7 +34,7 @@ class DecodeInput {
 /// Pure Dart / pure math — no plugin or platform-channel calls, so it is
 /// always safe off the UI isolate.
 List<List<Offset>> decodePolygons(DecodeInput input) {
-  return YoloSegDecoder.decode(
+  final results = YoloSegDecoder.decode(
     rawOutputs: YoloSegOutputs(
       pred: input.pred,
       proto: input.proto,
@@ -38,5 +43,7 @@ List<List<Offset>> decodePolygons(DecodeInput input) {
     confThreshold: input.confThreshold,
     iouThreshold: input.iouThreshold,
     maskThreshold: input.maskThreshold,
+    minHardConfidence: input.minHardConfidence,
   );
+  return results.map((r) => r.polygon).toList();
 }

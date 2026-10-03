@@ -1,136 +1,174 @@
-// lib/features/home/presentation/widgets/home_banner.dart
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/auth_guard.dart';
+import '../../../../generated/l10n.dart';
 
+/// Hero Banner ngang tinh gọn cho Màn hình Trang Chủ (Height max ~135px):
+/// - Bên trái: Tiêu đề thanh lịch & nút "Đặt Lịch" dạng pill gradient nhỏ gọn
+/// - Bên phải: Ảnh móng tay chìm mượt vào nền
+/// - Toàn bộ banner là vùng tương tác chạm (InkWell ripple effect)
 class HomeBanner extends StatelessWidget {
   const HomeBanner({super.key});
 
-  // chưa có page booking nên chèn đỡ
-  void _showBookingPopup(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.event_available, color: Color(0xFFFF66C4)),
-            SizedBox(width: 8),
-            Text('Thông báo'),
-          ],
-        ),
-        content: const Text('Tính năng "Book Now" đang được phát triển. Vui lòng quay lại sau!'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Đóng', style: TextStyle(color: Colors.black87)),
-          ),
-        ],
-      ),
-    );
+  void _onBannerTap(BuildContext context) {
+    AuthGuard.check(context, () {
+      context.push('/home-booking');
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Container(
-        // Cấu hình khung và bo góc
-        decoration: BoxDecoration(
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => _onBannerTap(context),
           borderRadius: BorderRadius.circular(20),
-          // Mã màu Gradient
-          gradient: const LinearGradient(
-            colors: [
-              Color(0xFFFF66C4), // Hồng
-              Color(0xFFFFDE59), // Vàng
-            ],
-            // Với bố cục dọc
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+          child: Container(
+            height: 135,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFFFFF5F7), // Hồng phấn thương hiệu
+                  Color(0xFFFFE3ED), // Hồng san hô mượt
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.9),
+                width: 1.5,
+              ),
+            ),
+            child: Stack(
+              children: [
+                // Ảnh bên phải chìm nhẹ vào nền
+                Positioned(
+                  right: -10,
+                  top: -10,
+                  bottom: -10,
+                  width: 160,
+                  child: ShaderMask(
+                    shaderCallback: (rect) {
+                      return const LinearGradient(
+                        colors: [Colors.transparent, Colors.black],
+                        stops: [0.0, 0.4],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ).createShader(rect);
+                    },
+                    blendMode: BlendMode.dstIn,
+                    child: Image.asset(
+                      'assets/images/Ellipse 1.png',
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: Colors.pink.shade50.withValues(alpha: 0.5),
+                        child: const Icon(
+                          Icons.spa_outlined,
+                          color: Color(0xFFFF527B),
+                          size: 40,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Nội dung bên trái
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 14, 150, 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Tiêu đề thanh lịch
+                      Text(
+                        S.of(context).homeBannerTitle,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontFamily: 'serif',
+                          fontStyle: FontStyle.italic,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFE02B6D), // Màu hồng dâu thương hiệu
+                          height: 1.15,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        S.of(context).homeBannerSubtitle,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                          height: 1.25,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Nút "Đặt Lịch" nhỏ gọn dạng pill
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFF527B), Color(0xFFFF7E53)],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(
+                                0xFFFF527B,
+                              ).withValues(alpha: 0.3),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.calendar_month_rounded,
+                              size: 13,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              S.of(context).bookAppointment,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFFF66C4).withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 32.0, horizontal: 24.0),
-        // SỬ DỤNG COLUMN ĐỂ CHIA 2 MẢNG TRÊN/DƯỚI VÀ KÉO DÀI BANNER
-        child: Column(
-          mainAxisSize: MainAxisSize.min, // Tự động kéo dài theo nội dung
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-          //ảnh
-            ClipRRect(
-              borderRadius: BorderRadius.circular(20), // Bo góc cho ảnh
-              child: Image.asset(
-                'assets/images/Ellipse 1.png',
-                width: 140, //banner dọc
-                height: 140,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  width: 140,
-                  height: 140,
-                  color: Colors.white.withOpacity(0.3),
-                  child: const Icon(Icons.image_not_supported, color: Colors.white, size: 40),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 24), // Khoảng cách giữa hình và chữ
-
-            // 2. MẢNG DƯỚI: Chữ
-            const Text(
-              'Beauty on\nyour\nfingerlips',
-              textAlign: TextAlign.center, // Căn giữa chữ
-              style: TextStyle(
-                fontSize: 42,
-                fontFamily: "Dancing Script",
-                //fontWeight: FontWeight.bold,
-                color: const Color(0xFFFF66C4),
-                height: 1.3,
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            const Text(
-              'Discover effortless elegance\nwith every touch',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.black,
-                height: 1.4, // Tạo khoảng cách dòng
-              ),
-            ),
-            const SizedBox(height: 32),
-
-            // Nút Book Now
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: () => _showBookingPopup(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF66C4),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                ),
-                child: const Text(
-                  'Book Now',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
-            ),
-          ],
-
         ),
       ),
     );

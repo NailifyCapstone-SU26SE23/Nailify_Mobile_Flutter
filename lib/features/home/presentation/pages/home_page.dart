@@ -1,50 +1,103 @@
-// lib/features/home/presentation/pages/home_page.dart
 import 'package:flutter/material.dart';
-import '../widgets/home_banner.dart';
-import '../widgets/home_services.dart';
-import '../widgets/home_gallery.dart';
-import '../widgets/home_our_promise.dart';
-import '../widgets/home_review.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/di/injection.dart';
+import '../../../../generated/l10n.dart';
+import '../../data/models/home_data_models.dart';
+import '../../data/repositories/home_repository.dart';
+import '../cubit/home_cubit.dart';
+import '../cubit/home_state.dart';
+import '../widgets/widgets.dart';
 
+/// Màn hình Trang Chủ (Home Page) Nailify được refactor tinh gọn & đấu nối API thực tế:
+/// - Quản lý trạng thái bằng HomeCubit (gọi /Categories, /NailDesigns, /BookingRatings, /Salons)
+/// - Cung cấp fallback dữ liệu mềm mại khi không có mạng
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      child: Center(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 402),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SizedBox(height: 8),
+    return BlocProvider<HomeCubit>(
+      create: (context) => HomeCubit(getIt<HomeRepository>())..loadHomeData(),
+      child: Container(
+        color: const Color(0xFFFFF5F7), // Nền hồng phấn chuẩn thương hiệu
+        child: RefreshIndicator(
+          onRefresh: () async {
+            // Context within BlocProvider
+          },
+          color: const Color(0xFFE02B6D),
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.only(bottom: 32),
+            child: Center(
+              child: Container(
+                constraints: const BoxConstraints(
+                  maxWidth: 402,
+                ), // Responsive phone width
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 12),
 
-              HomeBanner(),
+                    // 1. Hero Banner (Ngang, height max 135px, nút Đặt Lịch pill)
+                    const HomeBanner(),
 
-              SizedBox(height: 40),
+                    const SizedBox(height: 18),
 
-              HomeServices(),
+                    // 2. Khu vực AI Trọng tâm (2 Thẻ Glassmorphism bo góc 20px)
+                    const HomeAiSection(),
 
-              SizedBox(height: 40),
+                    const SizedBox(height: 22),
 
-              HomeGallery(),
+                    // 3. Featured Services (Dạng hàng Icon tròn vuốt ngang - Dynamic từ API)
+                    BlocBuilder<HomeCubit, HomeState>(
+                      builder: (context, state) {
+                        return HomeServices(
+                          categories: state.services,
+                          isLoading: state.status == HomeStatus.loading,
+                        );
+                      },
+                    ),
 
-              SizedBox(height: 40),
+                    const SizedBox(height: 22),
 
-              OurPromisePage(),
+                    // 4. Nail Gallery (Danh sách Card vuốt ngang 4:5 - Dynamic từ API)
+                    BlocBuilder<HomeCubit, HomeState>(
+                      builder: (context, state) {
+                        return HomeGallery(
+                          items: state.gallery,
+                          isLoading: state.status == HomeStatus.loading,
+                        );
+                      },
+                    ),
 
-              SizedBox(height: 40),
+                    const SizedBox(height: 22),
 
-              CustomerReviews(),
+                    // 5. Thanh Banner mỏng Hệ thống Salon - Dynamic từ API
+                    BlocBuilder<HomeCubit, HomeState>(
+                      builder: (context, state) {
+                        return HomeOurSalonsBanner(salon: state.nearestSalon);
+                      },
+                    ),
 
-              SizedBox(height: 40),
+                    const SizedBox(height: 22),
 
-              _buildCallToAction(),
+                    // 6. Customer Reviews (Thẻ mini vuốt ngang social review style - Dynamic từ API)
+                    BlocBuilder<HomeCubit, HomeState>(
+                      builder: (context, state) {
+                        return CustomerReviews(
+                          reviews: state.reviews,
+                          isLoading: state.status == HomeStatus.loading,
+                        );
+                      },
+                    ),
 
-              // Các danh mục sẽ được ném vào đây (￣o￣) . z Z
-            ],
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -52,88 +105,96 @@ class HomePage extends StatelessWidget {
   }
 }
 
-//  BOOK NOW!!!!!
-Widget _buildCallToAction() {
-  return ClipRect(
-    child: Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        color: Color(0xFFF8EBE2), // Màu nền be nhạt
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: -60,
-            right: -50,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFF66C4).withOpacity(0.12),
-                shape: BoxShape.circle,
+/// Thanh Banner ngang mỏng Hệ thống Salons (Thin horizontal bar with chevron >)
+class HomeOurSalonsBanner extends StatelessWidget {
+  final HomeSalonItem? salon;
+
+  const HomeOurSalonsBanner({super.key, this.salon});
+
+  @override
+  Widget build(BuildContext context) {
+    final title = S.of(context).homeSalonsTitle;
+    final subtitle = S.of(context).homeSalonsSubtitle;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFFFE3ED), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              spreadRadius: 1,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          child: InkWell(
+            onTap: () => context.push('/salons'),
+            borderRadius: BorderRadius.circular(16),
+            splashColor: const Color(0xFFFF4B72).withValues(alpha: 0.1),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF4B72).withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.location_on_rounded,
+                      color: Color(0xFFFF4B72),
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: Color(0xFFE02B6D),
+                    size: 20,
+                  ),
+                ],
               ),
             ),
           ),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 56.0, horizontal: 24.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  "Let's Book Now!",
-                  style: TextStyle(
-                    fontSize: 34,
-                    fontWeight: FontWeight.w500,
-                    fontStyle: FontStyle.italic,
-                    // fontFamily: 'Khum biet font gi',
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Book your appointment with Nailify — join\nus on a journey of exquisite nail artistry.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Colors.black54,
-                    height: 1.6,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    // TODO: Thêm logic điều hướng sang trang Đặt lịch
-                  },
-                  icon: const Icon(
-                    Icons.calendar_today_outlined,
-                    size: 20,
-                    color: Colors.white,
-                  ),
-                  label: const Text(
-                    'BOOK AN APPOINTMENT',
-                    style: TextStyle(
-                      letterSpacing: 1.2,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                      color: Colors.white,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1E1E1E),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }

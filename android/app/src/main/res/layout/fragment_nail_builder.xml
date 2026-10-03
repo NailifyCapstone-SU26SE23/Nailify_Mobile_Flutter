@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="#FFFFFF">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Nail Builder"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_gravity="center"
+        android:layout_marginBottom="24dp" />
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:scrollbars="none">
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/fingerChipGroup"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:singleSelection="true"
+            xmlns:app="http://schemas.android.com/apk/res-auto">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipAllFingers"
+                style="@style/Widget.MaterialComponents.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="All Five" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipThumb"
+                style="@style/Widget.MaterialComponents.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Thumb" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipIndex"
+                style="@style/Widget.MaterialComponents.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Index" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipMiddle"
+                style="@style/Widget.MaterialComponents.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Middle" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipRing"
+                style="@style/Widget.MaterialComponents.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Ring" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipPinky"
+                style="@style/Widget.MaterialComponents.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Pinky" />
+        </com.google.android.material.chip.ChipGroup>
+    </HorizontalScrollView>
+
+    <LinearLayout
+        android:id="@+id/globalControls"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+    <!-- Shape Selection -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Shape"
+        android:textStyle="bold" />
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp">
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <Button android:id="@+id/shapeBallerina" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Ballerina" />
+            <Button android:id="@+id/shapeSquoval" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Squoval" />
+            <Button android:id="@+id/shapeStiletto" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Stiletto" />
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <!-- Length Selection -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Length"
+        android:textStyle="bold" />
+    <RadioGroup
+        android:id="@+id/lengthGroup"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="16dp">
+        <RadioButton android:id="@+id/lengthShort" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Short" />
+        <RadioButton android:id="@+id/lengthMedium" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Medium" android:checked="true" />
+        <RadioButton android:id="@+id/lengthLong" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Long" />
+    </RadioGroup>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Material"
+        android:textStyle="bold" />
+
+    <Button
+        android:id="@+id/btnUploadSurface"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:text="Finish"
+        android:textSize="10sp" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/fingerControls"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+    <!-- Color Selection -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Color"
+        android:textStyle="bold" />
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp">
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <View android:id="@+id/colorRed" android:layout_width="40dp" android:layout_height="40dp" android:background="#FF0000" android:layout_margin="4dp" />
+            <View android:id="@+id/colorBlue" android:layout_width="40dp" android:layout_height="40dp" android:background="#0000FF" android:layout_margin="4dp" />
+            <View android:id="@+id/colorNude" android:layout_width="40dp" android:layout_height="40dp" android:background="#F5CBA7" android:layout_margin="4dp" />
+            <View android:id="@+id/colorPink" android:layout_width="40dp" android:layout_height="40dp" android:background="#FF4081" android:layout_margin="4dp" />
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <!-- Other Options (Uploads) -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Design Extras (Upload PNGs)"
+        android:textStyle="bold" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="24dp">
+        <Button android:id="@+id/btnUploadPattern" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Pattern" android:textSize="10sp" />
+        <Button android:id="@+id/btnUploadGem" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Gem" android:textSize="10sp" />
+    </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Preview Area -->
+    <FrameLayout
+        android:id="@+id/previewContainer"
+        android:layout_width="120dp"
+        android:layout_height="180dp"
+        android:layout_gravity="center"
+        android:background="#F0F0F0"
+        android:layout_marginBottom="32dp">
+        
+        <ImageView
+            android:id="@+id/previewShape"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter" />
+        <ImageView
+            android:id="@+id/previewPattern"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:visibility="gone" />
+        <ImageView
+            android:id="@+id/previewSurface"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:visibility="gone" />
+        <ImageView
+            android:id="@+id/previewGem"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter"
+            android:visibility="gone" />
+    </FrameLayout>
+
+    <Button
+        android:id="@+id/btnUploadNailImage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="UPLOAD CUSTOM NAIL IMAGE"
+        android:backgroundTint="#FF9800"
+        android:layout_marginBottom="16dp" />
+
+    <Button
+        android:id="@+id/btnSaveDesign"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="SAVE"
+        android:backgroundTint="#00C853"
+        android:textColor="#FFFFFF"
+        android:layout_marginBottom="16dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btnArTryOn"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="64dp"
+            android:text="AR LIVE"
+            android:backgroundTint="#FF4081"
+            android:textColor="#FFFFFF"
+            android:layout_marginEnd="8dp" />
+
+        <Button
+            android:id="@+id/btnImageTryOn"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="64dp"
+            android:text="FROM IMAGE"
+            android:backgroundTint="#3F51B5"
+            android:textColor="#FFFFFF" />
+    </LinearLayout>
+
+</LinearLayout>

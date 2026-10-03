@@ -6,10 +6,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/constants/app_constants.dart';
 import 'core/di/injection.dart';
+import 'core/network/signalr_service.dart';
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
-import 'core/localization/app_localizations.dart';
+import 'core/widgets/global_signalr_listener.dart';
+import 'generated/l10n.dart';
 import 'core/localization/locale_service.dart';
+import 'core/utils/token_utils.dart';
 
 void main() async {
   // Đảm bảo Flutter framework được nạp xong trước khi cấu hình hệ thống ngoài
@@ -28,17 +31,27 @@ void main() async {
   try {
     await configureDependencies();
   } catch (e) {
-    print('Lỗi cấu hình Dependency Injection: $e');
+    debugPrint('Lỗi cấu hình Dependency Injection: $e');
+  }
+
+  // Kiểm tra token khi mở app: nếu hết hạn thì tự động xóa
+  final prefs = await SharedPreferences.getInstance();
+  final tokenValid = TokenUtils.validateAndCleanToken(prefs);
+
+  // Nếu token còn hiệu lực -> kết nối SignalR ngay khi mở app
+  if (tokenValid) {
+    final token = prefs.getString(AppConstants.authTokenKey) ?? '';
+    // Không await — kết nối ngầm, không chặn UI
+    getIt<SignalRService>().connect(token).catchError((e) {
+      debugPrint('[Main] SignalR auto-connect failed: $e');
+    });
   }
 
   // Khởi tạo dịch vụ ngôn ngữ dựa trên SharedPreferences
-  final localeService = LocaleService(await SharedPreferences.getInstance());
+  final localeService = LocaleService(prefs);
 
   runApp(
-    ChangeNotifierProvider.value(
-      value: localeService,
-      child: const CoreApp(),
-    ),
+    ChangeNotifierProvider.value(value: localeService, child: const CoreApp()),
   );
 }
 
@@ -56,20 +69,22 @@ class CoreApp extends StatelessWidget {
           // Cấu hình Theme hệ thống
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
-          themeMode: ThemeMode.system,
+          themeMode: ThemeMode.light,
 
           // Đa ngôn ngữ cơ bản, chưa cần dùng
           localizationsDelegates: const [
-            AppLocalizations.delegate,
+            S.delegate,
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: AppLocalizations.supportedLocales,
+          supportedLocales: S.supportedLocales,
           locale: localeService.currentLocale,
 
           // Cấu hình định tuyến trung tâm GoRouter
           routerConfig: AppRouter.router,
+          builder: (context, child) =>
+              GlobalSignalRListener(child: child ?? const SizedBox.shrink()),
         );
       },
     );

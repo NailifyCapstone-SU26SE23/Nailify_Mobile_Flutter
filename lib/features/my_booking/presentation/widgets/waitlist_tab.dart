@@ -1,0 +1,235 @@
+// ====================================================================
+// FILE: lib/features/my_booking/presentation/widgets/waitlist_tab.dart
+// Mô tả: Tab "Lịch chờ" — Quản lý danh sách Waitlist với API thật
+// ====================================================================
+
+import 'dart:async';
+import 'package:flutter/material.dart';
+
+import '../../../../core/constants/app_colors.dart';
+import '../../../../generated/l10n.dart';
+import '../../data/datasources/waitlist_api_service.dart';
+import '../../data/models/waitlist_model.dart';
+import 'waitlist_card.dart';
+import 'waitlist_checkout_sheet.dart';
+
+class WaitlistTab extends StatefulWidget {
+  final VoidCallback onRefreshBookings;
+
+  const WaitlistTab({super.key, required this.onRefreshBookings});
+
+  @override
+  State<WaitlistTab> createState() => _WaitlistTabState();
+}
+
+class _WaitlistTabState extends State<WaitlistTab> {
+  final WaitlistApiService _apiService = WaitlistApiService();
+
+  List<WaitlistModel> _waitlist = [];
+  bool _isLoading = true;
+  String? _error;
+  Timer? _pollingTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchWaitlists();
+    // Polling ngầm mỗi 10 giây để cập nhật trạng thái mới nhất khi người dùng treo màn hình
+    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      _silentFetchWaitlists();
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _silentFetchWaitlists() async {
+    try {
+      final apiItems = await _apiService.getMyWaitlists();
+      final models = apiItems.map((e) => WaitlistModel.fromApi(e)).toList();
+      models.sort((a, b) {
+        if (a.status == WaitlistStatus.opened &&
+            b.status != WaitlistStatus.opened) {
+          return -1;
+        }
+        if (a.status != WaitlistStatus.opened &&
+            b.status == WaitlistStatus.opened) {
+          return 1;
+        }
+        return 0;
+      });
+      if (mounted) setState(() => _waitlist = models);
+    } catch (e) {
+      debugPrint('==== LỖI SILENT FETCH WAITLIST: $e ====');
+    }
+  }
+
+  Future<void> _fetchWaitlists() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final apiItems = await _apiService.getMyWaitlists();
+      // Map API models sang WaitlistModel và sort: opened trước
+      final models = apiItems.map((e) => WaitlistModel.fromApi(e)).toList();
+      models.sort((a, b) {
+        if (a.status == WaitlistStatus.opened &&
+            b.status != WaitlistStatus.opened) {
+          return -1;
+        }
+        if (a.status != WaitlistStatus.opened &&
+            b.status == WaitlistStatus.opened) {
+          return 1;
+        }
+        return 0;
+      });
+      if (mounted) setState(() => _waitlist = models);
+    } catch (e) {
+      if (mounted) setState(() => _error = e.toString());
+      debugPrint('==== LỖI API WAITLIST: $e ====');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _cancelWaitlist(String id) async {
+    try {
+      final success = await _apiService.cancelWaitlist(id);
+      if (!mounted) return;
+      if (success) {
+        setState(() => _waitlist.removeWhere((e) => e.id == id));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(S.of(context).waitlistCancelSuccess),
+            backgroundColor: Colors.grey.shade800,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(S.of(context).waitlistCancelError(e.toString())),
+        ),
+      );
+    }
+  }
+
+  void _openCheckoutSheet(WaitlistModel item) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => WaitlistCheckoutSheet(
+        waitlist: item,
+        onSuccess: () {
+          setState(() => _waitlist.removeWhere((e) => e.id == item.id));
+        },
+      ),
+    );
+  }
+
+  void _declineOpened(String id) => _cancelWaitlist(id);
+
+  Future<void> _handleRefresh() async {
+    widget.onRefreshBookings();
+    await _fetchWaitlists();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) return const Center(child: CircularProgressIndicator());
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 52, color: Colors.red.shade300),
+            const SizedBox(height: 12),
+            Text(
+              S.of(context).waitlistLoadError,
+              style: TextStyle(color: Colors.grey.shade700),
+            ),
+            const SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: _fetchWaitlists,
+              icon: const Icon(Icons.refresh),
+              label: Text(S.of(context).retry),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final hasWaitlist = _waitlist.isNotEmpty;
+
+    if (!hasWaitlist) return _buildEmptyState();
+
+    return RefreshIndicator(
+      onRefresh: _handleRefresh,
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
+        itemCount: _waitlist.length,
+        itemBuilder: (context, index) {
+          final item = _waitlist[index];
+          return WaitlistCard(
+            key: ValueKey(item.id),
+            item: item,
+            onCancel: () => _cancelWaitlist(item.id),
+            onConfirmBook: () => _openCheckoutSheet(item),
+            onDecline: () => _declineOpened(item.id),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.notifications_off_outlined,
+              size: 52,
+              color: Colors.grey.shade400,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            S.of(context).waitlistEmpty,
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            S.of(context).waitlistEmptyDesc,
+            style: TextStyle(color: Colors.grey.shade500, height: 1.5),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}

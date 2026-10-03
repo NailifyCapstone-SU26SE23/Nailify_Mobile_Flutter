@@ -14,7 +14,12 @@ import '../widgets/reschedule_booking_dialog.dart';
 
 class MyBookingListPage extends StatefulWidget {
   final int initialTab;
-  const MyBookingListPage({super.key, this.initialTab = 0});
+  final String? targetBookingId;
+  const MyBookingListPage({
+    super.key,
+    this.initialTab = 0,
+    this.targetBookingId,
+  });
 
   @override
   State<MyBookingListPage> createState() => _MyBookingListPageState();
@@ -58,6 +63,9 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     {'key': 'Cancelled', 'label': S.of(context).statusCancelled},
   ];
 
+  String? _highlightedBookingId;
+  final Map<String, GlobalKey> _bookingCardKeys = {};
+
   @override
   void initState() {
     super.initState();
@@ -68,7 +76,12 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     );
 
     _bookingScrollController.addListener(_onBookingScroll);
-    _fetchBookings(refresh: true);
+    _fetchBookings(refresh: true).then((_) {
+      if (widget.targetBookingId != null &&
+          widget.targetBookingId!.isNotEmpty) {
+        _scrollToBooking(widget.targetBookingId!);
+      }
+    });
 
     final signalR = getIt<SignalRService>();
     _rescheduleSub = signalR.onBookingRescheduled.listen((event) {
@@ -128,6 +141,89 @@ class _MyBookingListPageState extends State<MyBookingListPage>
     if (widget.initialTab != oldWidget.initialTab) {
       _tabController.animateTo(widget.initialTab.clamp(0, 2));
       _fetchBookings(); // Reload lại dữ liệu để hiển thị booking mới
+    }
+    if (widget.targetBookingId != null &&
+        widget.targetBookingId != oldWidget.targetBookingId) {
+      _fetchBookings(refresh: true).then((_) {
+        _scrollToBooking(widget.targetBookingId!);
+      });
+    }
+  }
+
+  Future<void> _scrollToBooking(String targetBookingId) async {
+    if (!mounted || targetBookingId.isEmpty) return;
+
+    setState(() {
+      _highlightedBookingId = targetBookingId;
+    });
+
+    Timer(const Duration(seconds: 3), () {
+      if (mounted && _highlightedBookingId == targetBookingId) {
+        setState(() {
+          _highlightedBookingId = null;
+        });
+      }
+    });
+
+    if (_tabController.index != 0) {
+      _tabController.animateTo(0);
+      await Future.delayed(const Duration(milliseconds: 200));
+    }
+
+    // Kiểm tra xem booking có bị ẩn bởi filter hiện tại không
+    final isInFiltered = _filteredBookings.any((b) {
+      final id = (b['bookingId'] ?? b['id'] ?? b['booking_id'])?.toString();
+      return id == targetBookingId;
+    });
+
+    if (!isInFiltered && _allBookings.isNotEmpty) {
+      setState(() {
+        _selectedStatus = 'Tất cả';
+        _selectedDate = null;
+      });
+    }
+
+    final targetIndex = _filteredBookings.indexWhere((b) {
+      final id = (b['bookingId'] ?? b['id'] ?? b['booking_id'])?.toString();
+      return id == targetBookingId;
+    });
+
+    if (targetIndex == -1) return;
+
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
+
+    final key = _bookingCardKeys[targetBookingId];
+    if (key?.currentContext != null) {
+      await Scrollable.ensureVisible(
+        key!.currentContext!,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOutCubic,
+        alignment: 0.15,
+      );
+    } else if (_bookingScrollController.hasClients) {
+      final targetOffset = (targetIndex * 280.0).clamp(
+        0.0,
+        _bookingScrollController.position.maxScrollExtent,
+      );
+      await _bookingScrollController.animateTo(
+        targetOffset,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
+
+      final mountedKey = _bookingCardKeys[targetBookingId];
+      if (mountedKey?.currentContext != null) {
+        await Scrollable.ensureVisible(
+          mountedKey!.currentContext!,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOutCubic,
+          alignment: 0.15,
+        );
+      }
     }
   }
 
@@ -650,15 +746,30 @@ class _MyBookingListPageState extends State<MyBookingListPage>
         _readBool(booking['isWarrantied'] ?? booking['IsWarrantied']) ||
         _hasWarranty(bookingIdStr);
 
+    final isHighlighted = _highlightedBookingId == bookingIdStr;
+    final cardKey = _bookingCardKeys.putIfAbsent(
+      bookingIdStr,
+      () => GlobalKey(),
+    );
+
     return GestureDetector(
+      key: cardKey,
       onTap: () async {
         if (bookingIdStr.isNotEmpty) {
           final res = await context.push(
             '/my-bookings/detail',
             extra: bookingIdStr,
           );
-          if (res == true && mounted) {
-            _fetchBookings(refresh: true);
+          if (res != null && mounted) {
+            final shouldReload =
+                res == true || (res is Map && res['reload'] == true);
+            if (shouldReload) {
+              final targetId = (res is Map && res['bookingId'] != null)
+                  ? res['bookingId'].toString()
+                  : bookingIdStr;
+              await _fetchBookings(refresh: true);
+              _scrollToBooking(targetId);
+            }
           }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -666,17 +777,23 @@ class _MyBookingListPageState extends State<MyBookingListPage>
           );
         }
       },
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 350),
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isHighlighted ? const Color(0xFFFFF5F8) : Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.borderLight),
+          border: Border.all(
+            color: isHighlighted ? AppColors.primary : AppColors.borderLight,
+            width: isHighlighted ? 2.0 : 1.0,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 12,
+              color: isHighlighted
+                  ? AppColors.primary.withValues(alpha: 0.18)
+                  : Colors.black.withValues(alpha: 0.03),
+              blurRadius: isHighlighted ? 16 : 12,
               offset: const Offset(0, 4),
             ),
           ],
@@ -883,8 +1000,19 @@ class _MyBookingListPageState extends State<MyBookingListPage>
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: () =>
-                      context.push('/my-bookings/rate', extra: bookingIdStr),
+                  onPressed: () async {
+                    final res = await context.push(
+                      '/my-bookings/rate',
+                      extra: bookingIdStr,
+                    );
+                    if (res != null && mounted) {
+                      final targetId = (res is Map && res['bookingId'] != null)
+                          ? res['bookingId'].toString()
+                          : bookingIdStr;
+                      await _fetchBookings(refresh: true);
+                      _scrollToBooking(targetId);
+                    }
+                  },
                   icon: const Icon(Icons.star_border, size: 18),
                   label: const Text('Đánh giá'),
                   style: OutlinedButton.styleFrom(

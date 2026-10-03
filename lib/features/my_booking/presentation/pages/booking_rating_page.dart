@@ -156,7 +156,10 @@ class _BookingRatingPageState extends State<BookingRatingPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Đã xóa đánh giá thành công!')),
       );
-      context.pop(true);
+      context.pop({
+        'reload': true,
+        'bookingId': widget.bookingId,
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
@@ -202,7 +205,10 @@ class _BookingRatingPageState extends State<BookingRatingPage> {
           const SnackBar(content: Text('Đã cập nhật đánh giá thành công!')),
         );
       }
-      context.pop(true); // Return true to indicate reload needed
+      context.pop({
+        'reload': true,
+        'bookingId': widget.bookingId,
+      }); // Return reload needed with bookingId
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);

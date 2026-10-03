@@ -1247,22 +1247,55 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
             // Mã QR CODE
             if (isRated) ...[
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Container(
-                    width: 4,
-                    height: 18,
-                    decoration: BoxDecoration(
-                      color: Colors.amber,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        width: 4,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          color: Colors.amber,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        S.of(context).bookingYourRating,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    S.of(context).bookingYourRating,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
+                  TextButton.icon(
+                    onPressed: () async {
+                      final res = await context.push(
+                        '/my-bookings/rate',
+                        extra: widget.bookingId,
+                      );
+                      if (res == null || !mounted) return;
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context, {
+                          'reload': true,
+                          'bookingId': widget.bookingId,
+                        });
+                      } else {
+                        context.go('/my-bookings', extra: {
+                          'targetBookingId': widget.bookingId,
+                        });
+                      }
+                    },
+                    icon: const Icon(Icons.edit, size: 16, color: AppColors.primary),
+                    label: Text(
+                      S.of(context).editRating,
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
@@ -1591,10 +1624,23 @@ class _MyBookingDetailPageState extends State<MyBookingDetailPage> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () => context.push(
-                    '/my-bookings/rate',
-                    extra: widget.bookingId,
-                  ),
+                  onPressed: () async {
+                    final res = await context.push(
+                      '/my-bookings/rate',
+                      extra: widget.bookingId,
+                    );
+                    if (res == null || !mounted) return;
+                    if (Navigator.canPop(context)) {
+                      Navigator.pop(context, {
+                        'reload': true,
+                        'bookingId': widget.bookingId,
+                      });
+                    } else {
+                      context.go('/my-bookings', extra: {
+                        'targetBookingId': widget.bookingId,
+                      });
+                    }
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.amber.shade700,
                     foregroundColor: Colors.white,

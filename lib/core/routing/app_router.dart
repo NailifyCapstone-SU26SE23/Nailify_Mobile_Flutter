@@ -352,12 +352,19 @@ class AppRouter {
             path: '/my-bookings',
             builder: (context, state) {
               int initialTab = 0;
+              String? targetBookingId;
               if (state.extra is Map) {
-                initialTab = (state.extra as Map)['initialTab'] ?? 0;
+                final map = state.extra as Map;
+                initialTab = map['initialTab'] ?? 0;
+                targetBookingId = map['targetBookingId']?.toString() ??
+                    map['bookingId']?.toString();
               } else if (state.extra is int) {
                 initialTab = state.extra as int;
               }
-              return MyBookingListPage(initialTab: initialTab);
+              return MyBookingListPage(
+                initialTab: initialTab,
+                targetBookingId: targetBookingId,
+              );
             },
           ),
           GoRoute(

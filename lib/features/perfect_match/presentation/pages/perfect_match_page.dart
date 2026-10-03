@@ -199,7 +199,7 @@ class _PerfectMatchPageState extends State<PerfectMatchPage> {
                     crossAxisCount: 2,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 14,
-                    childAspectRatio: 0.68,
+                    childAspectRatio: 0.55,
                   ),
                 ),
               ),
@@ -981,7 +981,8 @@ class SuggestionCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Image
-              Expanded(
+              AspectRatio(
+                aspectRatio: 1.1,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -1005,7 +1006,7 @@ class SuggestionCard extends StatelessWidget {
 
               // Text area
               Padding(
-                padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1246,8 +1247,8 @@ class _MatchBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: large ? 14 : 8,
-        vertical: large ? 7 : 4,
+        horizontal: large ? 16 : 10,
+        vertical: large ? 8 : 5,
       ),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -1255,10 +1256,10 @@ class _MatchBadge extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(large ? 20 : 10),
+        borderRadius: BorderRadius.circular(large ? 20 : 12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.12),
+            color: Colors.black.withOpacity(0.15),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -1268,7 +1269,7 @@ class _MatchBadge extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (large) ...[
-            const Icon(Icons.stars_rounded, color: Colors.white, size: 13),
+            const Icon(Icons.stars_rounded, color: Colors.white, size: 15),
             const SizedBox(width: 4),
           ],
           Text(
@@ -1276,7 +1277,7 @@ class _MatchBadge extends StatelessWidget {
             style: TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w900,
-              fontSize: large ? 12 : 9,
+              fontSize: large ? 14 : 12,
               letterSpacing: 0.3,
             ),
           ),

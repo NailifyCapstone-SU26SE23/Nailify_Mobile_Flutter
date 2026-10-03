@@ -68,15 +68,13 @@ class AdvancedNailPainter extends CustomPainter {
 
     // 2. Estimate palm origin & thumb reference centroid
     final palmInfo = _estimatePalmCenter(polygons, across);
+    final List<int> uniqueIndices = resolveUniqueFingerIndices(polygons, labels);
 
     for (int i = 0; i < polygons.length; i++) {
       final poly = polygons[i];
       if (poly.length < 3) continue;
 
-      int fingerIndex = i + 1; // Default 1: Thumb ... 5: Pinky
-      if (labels != null && i < labels!.length) {
-        fingerIndex = _labelToFingerIndex(labels![i], defaultIdx: fingerIndex);
-      }
+      final int fingerIndex = uniqueIndices[i];
 
       NailPoseKeypoints? poseKpt;
       if (poseKeypoints != null && i < poseKeypoints!.length) {
@@ -96,6 +94,47 @@ class AdvancedNailPainter extends CustomPainter {
     }
   }
 
+  /// Resolves strictly unique 1-based finger indices (1..5) for each polygon,
+  /// preventing AI classification duplicates (e.g. ['index', 'middle', 'index']) from causing
+  /// two nails to share the same finger index and synchronize their accessory editing.
+  static List<int> resolveUniqueFingerIndices(
+    List<List<Offset>> polys,
+    List<String>? labels,
+  ) {
+    final int count = polys.length;
+    if (count == 0) return [];
+
+    final List<int> result = [];
+    final Set<int> used = {};
+
+    for (int i = 0; i < count; i++) {
+      int cand = (i + 1).clamp(1, 5);
+      if (labels != null && i < labels.length) {
+        cand = labelToFingerIndex(labels[i], defaultIdx: cand);
+      }
+      if (!used.contains(cand)) {
+        result.add(cand);
+        used.add(cand);
+      } else {
+        int fallback = -1;
+        if (!used.contains(i + 1) && (i + 1) <= 5) {
+          fallback = i + 1;
+        } else {
+          for (int f = 1; f <= 5; f++) {
+            if (!used.contains(f)) {
+              fallback = f;
+              break;
+            }
+          }
+        }
+        if (fallback == -1) fallback = (i + 1);
+        result.add(fallback);
+        used.add(fallback);
+      }
+    }
+    return result;
+  }
+
   static int labelToFingerIndex(String? label, {required int defaultIdx}) {
     if (label == null) return defaultIdx;
     final l = label.toLowerCase();
@@ -107,8 +146,6 @@ class AdvancedNailPainter extends CustomPainter {
     return defaultIdx;
   }
 
-  static int _labelToFingerIndex(String? label, {required int defaultIdx}) =>
-      labelToFingerIndex(label, defaultIdx: defaultIdx);
 
   /// Computes the true fingertip direction unit vector for a nail polygon.
   static Offset getNailDirection({
@@ -259,6 +296,7 @@ class AdvancedNailPainter extends CustomPainter {
     final List<Offset> centroids = [];
     Offset sumUpAxis = Offset.zero;
 
+    final List<int> uniqueIndices = resolveUniqueFingerIndices(polys, labels);
     for (int i = 0; i < polys.length; i++) {
       final poly = polys[i];
       if (poly.length < 3) continue;
@@ -268,10 +306,7 @@ class AdvancedNailPainter extends CustomPainter {
       meanY += c.dy;
       count++;
 
-      int fingerIdx = i + 1;
-      if (labels != null && i < labels.length) {
-        fingerIdx = _labelToFingerIndex(labels[i], defaultIdx: fingerIdx);
-      }
+      final int fingerIdx = uniqueIndices[i];
 
       if (fingerIdx == 2) {
         idxCentroid = c;
@@ -972,6 +1007,71 @@ class AdvancedNailPainter extends CustomPainter {
   }
 
   /// Renders Charms/Stickers from normalized posX/posY (-1 to 1)
+  /// Computes constrained charm dimensions & coordinates so an accessory NEVER exceeds the nail boundary.
+  static ({
+    double width,
+    double height,
+    double effWidth,
+    double effHeight,
+    double clampedPosX,
+    double clampedPosY,
+  }) computeConstrainedCharmDimensions({
+    required double baseWidth,
+    required double nailWidth,
+    required double nailHeight,
+    required double scale,
+    required double rotationDegrees,
+    required double aspectRatio,
+    required double posX,
+    required double posY,
+  }) {
+    double targetWidth = baseWidth * scale * accessoryScaleMultiplier;
+    double targetHeight = targetWidth * aspectRatio;
+
+    final double rad = (rotationDegrees * math.pi / 180.0).abs();
+    final double cosR = math.cos(rad).abs();
+    final double sinR = math.sin(rad).abs();
+
+    final double effWidth = targetWidth * cosR + targetHeight * sinR;
+    final double effHeight = targetWidth * sinR + targetHeight * cosR;
+
+    final double maxAllowedWidth = nailWidth * 0.95;
+    final double maxAllowedHeight = nailHeight * 0.95;
+
+    if (effWidth > maxAllowedWidth || effHeight > maxAllowedHeight) {
+      final double scaleFactor = math.min(
+        maxAllowedWidth / math.max(1.0, effWidth),
+        maxAllowedHeight / math.max(1.0, effHeight),
+      );
+      targetWidth *= scaleFactor;
+      targetHeight *= scaleFactor;
+    }
+
+    final double finalEffWidth = targetWidth * cosR + targetHeight * sinR;
+    final double finalEffHeight = targetWidth * sinR + targetHeight * cosR;
+
+    final double maxPosX = math.max(
+      0.0,
+      1.0 - (finalEffWidth / math.max(1.0, nailWidth)),
+    );
+    final double maxPosY = math.max(
+      0.0,
+      1.0 - (finalEffHeight / math.max(1.0, nailHeight)),
+    );
+
+    final double clampedPosX = posX.clamp(-maxPosX, maxPosX);
+    final double clampedPosY = posY.clamp(-maxPosY, maxPosY);
+
+    return (
+      width: targetWidth,
+      height: targetHeight,
+      effWidth: finalEffWidth,
+      effHeight: finalEffHeight,
+      clampedPosX: clampedPosX,
+      clampedPosY: clampedPosY,
+    );
+  }
+
   void _renderComponents(
     Canvas canvas,
     Offset center,
@@ -985,23 +1085,28 @@ class AdvancedNailPainter extends CustomPainter {
         : nailWidth;
 
     for (final compItem in variant.nailComponents) {
-      final int itemFinger =
-          compItem.fingerIndex != -1 ? compItem.fingerIndex : 1;
-      if (itemFinger != fingerIndex) {
+      if (compItem.fingerIndex != fingerIndex) {
         continue;
       }
 
       final ui.Image? charmImage =
           componentImages[compItem.component.componentId];
-      if (charmImage == null) continue;
+      if (charmImage == null || charmImage.width <= 0) continue;
 
-      final double charmPixelX = center.dx + compItem.posX * (nailWidth / 2);
-      final double charmPixelY = center.dy + compItem.posY * (nailHeight / 2);
-
-      final double charmTargetWidth =
-          baseWidth * compItem.scale * accessoryScaleMultiplier;
       final double charmAspectRatio = charmImage.height / charmImage.width;
-      final double charmTargetHeight = charmTargetWidth * charmAspectRatio;
+      final dim = computeConstrainedCharmDimensions(
+        baseWidth: baseWidth,
+        nailWidth: nailWidth,
+        nailHeight: nailHeight,
+        scale: compItem.scale,
+        rotationDegrees: compItem.rotation,
+        aspectRatio: charmAspectRatio,
+        posX: compItem.posX,
+        posY: compItem.posY,
+      );
+
+      final double charmPixelX = center.dx + dim.clampedPosX * (nailWidth / 2);
+      final double charmPixelY = center.dy + dim.clampedPosY * (nailHeight / 2);
 
       canvas.save();
       canvas.translate(charmPixelX, charmPixelY);
@@ -1017,8 +1122,8 @@ class AdvancedNailPainter extends CustomPainter {
         ),
         Rect.fromCenter(
           center: Offset.zero,
-          width: charmTargetWidth,
-          height: charmTargetHeight,
+          width: dim.width,
+          height: dim.height,
         ),
         Paint()..isAntiAlias = true,
       );
@@ -1047,20 +1152,23 @@ class AdvancedNailPainter extends CustomPainter {
     double? poseLength,
   }) {
     if (selectedComponentId == null) return;
+    if (selectedFingerIndex != null &&
+        selectedFingerIndex != -1 &&
+        selectedFingerIndex != fingerIndex) {
+      return;
+    }
 
     final double handRefWidth = _computeHandRefWidth();
 
     for (final compItem in variant.nailComponents) {
       if (compItem.nailComponentId != selectedComponentId) continue;
-      final int itemFinger =
-          compItem.fingerIndex != -1 ? compItem.fingerIndex : 1;
-      if (itemFinger != fingerIndex) {
+      if (compItem.fingerIndex != fingerIndex) {
         continue;
       }
 
       final ui.Image? charmImage =
           componentImages[compItem.component.componentId];
-      if (charmImage == null) continue;
+      if (charmImage == null || charmImage.width <= 0) continue;
 
       final double effectiveHeight = (poseLength != null && poseLength > 0)
           ? math.max(nb.height, poseLength)
@@ -1082,19 +1190,26 @@ class AdvancedNailPainter extends CustomPainter {
         fitHeight,
       );
 
-      final double charmPixelX =
-          dest.center.dx + compItem.posX * (dest.width / 2);
-      final double charmPixelY =
-          dest.center.dy + compItem.posY * (dest.height / 2);
-
       final double baseWidth = handRefWidth > 0
           ? math.max(dest.width, handRefWidth * 0.90)
           : dest.width;
 
-      final double charmTargetWidth =
-          baseWidth * compItem.scale * accessoryScaleMultiplier;
       final double charmAspectRatio = charmImage.height / charmImage.width;
-      final double charmTargetHeight = charmTargetWidth * charmAspectRatio;
+      final dim = computeConstrainedCharmDimensions(
+        baseWidth: baseWidth,
+        nailWidth: dest.width,
+        nailHeight: dest.height,
+        scale: compItem.scale,
+        rotationDegrees: compItem.rotation,
+        aspectRatio: charmAspectRatio,
+        posX: compItem.posX,
+        posY: compItem.posY,
+      );
+
+      final double charmPixelX =
+          dest.center.dx + dim.clampedPosX * (dest.width / 2);
+      final double charmPixelY =
+          dest.center.dy + dim.clampedPosY * (dest.height / 2);
 
       canvas.save();
       canvas.translate(charmPixelX, charmPixelY);
@@ -1102,8 +1217,8 @@ class AdvancedNailPainter extends CustomPainter {
 
       final Rect boxRect = Rect.fromCenter(
         center: Offset.zero,
-        width: charmTargetWidth + 6,
-        height: charmTargetHeight + 6,
+        width: dim.width + 6,
+        height: dim.height + 6,
       );
 
       final Paint boxPaint = Paint()
@@ -1167,15 +1282,13 @@ class AdvancedNailPainter extends CustomPainter {
     final Offset? across = _acrossHandAxis(polygons);
     final palmInfo = _estimatePalmCenter(polygons, across);
     final List<FingerTransformInfo> result = [];
+    final List<int> uniqueIndices = resolveUniqueFingerIndices(polygons, labels);
 
     for (int i = 0; i < polygons.length; i++) {
       final poly = polygons[i];
       if (poly.length < 3) continue;
 
-      int fingerIndex = i + 1;
-      if (labels != null && i < labels!.length) {
-        fingerIndex = _labelToFingerIndex(labels![i], defaultIdx: fingerIndex);
-      }
+      final int fingerIndex = uniqueIndices[i];
 
       NailPoseKeypoints? poseKpt;
       if (poseKeypoints != null && i < poseKeypoints!.length) {

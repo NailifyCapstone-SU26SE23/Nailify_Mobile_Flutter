@@ -450,7 +450,7 @@ class _UpdatePreferencesPageState extends State<UpdatePreferencesPage> {
         _fillForm(snapshot.data!);
         return _UpdatePageShell(
           title: 'Cập nhật sở thích',
-          subtitle: 'Thông số cá nhân hóa giúp Bloom AI đề xuất móng hoàn hảo',
+          subtitle: 'Thông số cá nhân hóa giúp Nailify AI đề xuất móng hoàn hảo',
           children: [
             Form(
               key: _formKey,

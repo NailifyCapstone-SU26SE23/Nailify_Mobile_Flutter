@@ -14,18 +14,50 @@ String? _cleanSignalRReason(String? rawReason) {
   if (lower == 'no_artist' || lower == 'no_artist_available') {
     return 'Không tìm thấy thợ phù hợp';
   }
-  return trimmed;
+  var cleaned = trimmed
+      .replaceAll(RegExp(r'\b(salon)(\s+salon)+\b', caseSensitive: false), 'Salon')
+      .replaceAll(RegExp(r'\b(tiệm)(\s+tiệm)+\b', caseSensitive: false), 'Tiệm')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+  return cleaned;
 }
 
 String _cleanSignalRMessage(String? rawMsg, String fallback) {
   if (rawMsg == null || rawMsg.trim().isEmpty) return fallback;
   var msg = rawMsg.trim();
-  return msg
+
+  final objectIdRegex = RegExp(r'#?[0-9a-fA-F]{24}');
+  final uuidRegex = RegExp(
+    r'#?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}',
+  );
+
+  msg = msg.replaceAll(uuidRegex, '').replaceAll(objectIdRegex, '');
+
+  msg = msg
       .replaceAll(RegExp(r'\bno_response\b', caseSensitive: false), 'Khách hàng không phản hồi')
       .replaceAll(RegExp(r'\bNO_RESPONSE\b', caseSensitive: false), 'Khách hàng không phản hồi')
       .replaceAll(RegExp(r'\bnoresponse\b', caseSensitive: false), 'Khách hàng không phản hồi')
       .replaceAll(RegExp(r'\bno_artist\b', caseSensitive: false), 'Không có thợ phù hợp')
       .replaceAll(RegExp(r'\bno_artist_available\b', caseSensitive: false), 'Không có thợ phù hợp');
+
+  // Xóa lặp từ: "Salon salon", "Salon Salon", "salon salon", "Tiệm tiệm"
+  msg = msg
+      .replaceAll(RegExp(r'\b(salon)(\s+salon)+\b', caseSensitive: false), 'Salon')
+      .replaceAll(RegExp(r'\b(tiệm)(\s+tiệm)+\b', caseSensitive: false), 'Tiệm');
+
+  msg = msg
+      .replaceAll(RegExp(r'\(\s*[Mm]ã\s*:\s*\)'), '')
+      .replaceAll(RegExp(r'\(\s*[Mm]ã\s*\)'), '')
+      .replaceAll(RegExp(r'\(\s*[Ii][Dd]\s*:\s*\)'), '')
+      .replaceAll(RegExp(r'\(\s*[Ii][Dd]\s*\)'), '')
+      .replaceAll(RegExp(r'\(\s*\)'), '')
+      .replaceAll(RegExp(r'\[\s*\]'), '');
+
+  msg = msg.replaceAll(RegExp(r'\s+'), ' ').trim();
+  if (msg.startsWith(':') || msg.startsWith('-') || msg.startsWith(',')) {
+    msg = msg.substring(1).trim();
+  }
+  return msg.isEmpty ? fallback : msg;
 }
 
 /// Sự kiện: Hàng chờ được đôn lên — có slot trống, user có 15 phút để xác nhận

@@ -42,10 +42,19 @@ class InAppNotificationStore extends ChangeNotifier {
     String? route,
     dynamic extra,
   }) {
+    final cleanTitle = title
+        .replaceAll(RegExp(r'\b(salon)(\s+salon)+\b', caseSensitive: false), 'Salon')
+        .replaceAll(RegExp(r'\b(tiệm)(\s+tiệm)+\b', caseSensitive: false), 'Tiệm')
+        .trim();
+    final cleanMessage = message
+        .replaceAll(RegExp(r'\b(salon)(\s+salon)+\b', caseSensitive: false), 'Salon')
+        .replaceAll(RegExp(r'\b(tiệm)(\s+tiệm)+\b', caseSensitive: false), 'Tiệm')
+        .trim();
+
     final item = InAppNotificationItem(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
-      title: title,
-      message: message,
+      title: cleanTitle,
+      message: cleanMessage,
       timestamp: DateTime.now(),
       icon: icon,
       color: color,

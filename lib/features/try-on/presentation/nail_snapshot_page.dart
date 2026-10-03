@@ -153,25 +153,51 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
   }
 
   Future<void> _onSelectVariant(NailVariantModel variant) async {
+    int idCounter = DateTime.now().microsecondsSinceEpoch;
+    final List<NailComponentItem> normalizedComponents = [];
+    for (final compItem in variant.nailComponents) {
+      if (compItem.fingerIndex == -1 || compItem.fingerIndex == 0) {
+        for (int f = 1; f <= 5; f++) {
+          normalizedComponents.add(
+            compItem.copyWith(
+              nailComponentId: ++idCounter,
+              fingerIndex: f,
+            ),
+          );
+        }
+      } else {
+        normalizedComponents.add(
+          compItem.copyWith(
+            nailComponentId: ++idCounter,
+          ),
+        );
+      }
+    }
+
+    final normalizedVariant = variant.copyWith(
+      nailComponents: normalizedComponents,
+    );
+
     setState(() {
-      _selectedVariant = variant;
+      _selectedVariant = normalizedVariant;
+      _selectedComponentId = null;
     });
 
     // 1. Load Nail Shape PNG Image (trimmed & background-removed for exact 1:1 fitting)
     ui.Image? shapeImg;
-    if (variant.nailShape.imageUrl.isNotEmpty) {
+    if (normalizedVariant.nailShape.imageUrl.isNotEmpty) {
       shapeImg =
           await NailVariantApiService.loadTrimmedUiImageFromUrl(
-            variant.nailShape.imageUrl,
+            normalizedVariant.nailShape.imageUrl,
           ) ??
           await NailVariantApiService.loadUiImageFromUrl(
-            variant.nailShape.imageUrl,
+            normalizedVariant.nailShape.imageUrl,
           );
     }
 
     // 2. Load Component Images (Charms/Stickers)
     Map<int, ui.Image> charmImgs = {};
-    for (final compItem in variant.nailComponents) {
+    for (final compItem in normalizedVariant.nailComponents) {
       final img = await NailVariantApiService.loadUiImageFromUrl(
         compItem.component.imageUrl,
       );
@@ -281,17 +307,11 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
     List<FingerTransformInfo> transforms,
   ) {
     if (transforms.isEmpty) return null;
-    if (comp.fingerIndex != -1) {
-      for (final t in transforms) {
-        if (t.fingerIndex == comp.fingerIndex) return t;
-      }
+    final int targetFinger = comp.fingerIndex;
+    for (final t in transforms) {
+      if (t.fingerIndex == targetFinger) return t;
     }
-    if (_selectedFingerIndex != -1) {
-      for (final t in transforms) {
-        if (t.fingerIndex == _selectedFingerIndex) return t;
-      }
-    }
-    return transforms.first;
+    return null;
   }
 
   void _zoomToFinger(int fingerIndex) {
@@ -390,32 +410,39 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
     if (_selectedComponentId != null) {
       for (final compItem in _selectedVariant!.nailComponents) {
         if (compItem.nailComponentId == _selectedComponentId) {
-          final int itemFinger =
-              compItem.fingerIndex != -1 ? compItem.fingerIndex : 1;
           if (_selectedFingerIndex != -1 &&
-              itemFinger != _selectedFingerIndex) {
+              compItem.fingerIndex != _selectedFingerIndex) {
             continue;
           }
           final info = _findTransformForComponent(compItem, transforms);
-          if (info != null) {
+          if (info != null && info.fingerIndex == compItem.fingerIndex) {
             final charmImage =
                 _selectedComponentImages[compItem.component.componentId];
+            final double charmAspect =
+                (charmImage != null && charmImage.width > 0)
+                    ? charmImage.height / charmImage.width
+                    : 1.0;
             final double baseWidth = handRefWidth > 0
                 ? math.max(info.destRect.width, handRefWidth * 0.90)
                 : info.destRect.width;
-            final double charmWidth = baseWidth *
-                compItem.scale *
-                AdvancedNailPainter.accessoryScaleMultiplier;
-            final double charmHeight = charmImage != null
-                ? charmWidth * (charmImage.height / charmImage.width)
-                : charmWidth;
+
+            final dim = AdvancedNailPainter.computeConstrainedCharmDimensions(
+              baseWidth: baseWidth,
+              nailWidth: info.destRect.width,
+              nailHeight: info.destRect.height,
+              scale: compItem.scale,
+              rotationDegrees: compItem.rotation,
+              aspectRatio: charmAspect,
+              posX: compItem.posX,
+              posY: compItem.posY,
+            );
 
             final double charmLocalX =
                 info.destRect.center.dx +
-                compItem.posX * (info.destRect.width / 2);
+                dim.clampedPosX * (info.destRect.width / 2);
             final double charmLocalY =
                 info.destRect.center.dy +
-                compItem.posY * (info.destRect.height / 2);
+                dim.clampedPosY * (info.destRect.height / 2);
             final Offset charmCanvasCenter = info.localToCanvas(
               Offset(charmLocalX, charmLocalY),
             );
@@ -424,15 +451,15 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
                 info.angle + compItem.rotation * math.pi / 180.0;
 
             final Offset blLocal = Offset(
-              -charmWidth / 2 - 4,
-              charmHeight / 2 + 4,
+              -dim.width / 2 - 4,
+              dim.height / 2 + 4,
             );
             final Offset deleteHandleCanvas =
                 charmCanvasCenter + _rotateVector(blLocal, totalAngle);
 
             final Offset trLocal = Offset(
-              charmWidth / 2 + 4,
-              -charmHeight / 2 - 4,
+              dim.width / 2 + 4,
+              -dim.height / 2 - 4,
             );
             final Offset trHandleCanvas =
                 charmCanvasCenter + _rotateVector(trLocal, totalAngle);
@@ -453,36 +480,45 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
 
     // Priority 2: Check any placed charm (accessory) on the zoomed finger
     for (final compItem in _selectedVariant!.nailComponents.reversed) {
-      final int itemFinger =
-          compItem.fingerIndex != -1 ? compItem.fingerIndex : 1;
-      if (_selectedFingerIndex != -1 && itemFinger != _selectedFingerIndex) {
+      if (_selectedFingerIndex != -1 &&
+          compItem.fingerIndex != _selectedFingerIndex) {
         continue;
       }
       final info = _findTransformForComponent(compItem, transforms);
-      if (info != null) {
+      if (info != null && info.fingerIndex == compItem.fingerIndex) {
         final charmImage =
             _selectedComponentImages[compItem.component.componentId];
+        final double charmAspect =
+            (charmImage != null && charmImage.width > 0)
+                ? charmImage.height / charmImage.width
+                : 1.0;
         final double baseWidth = handRefWidth > 0
             ? math.max(info.destRect.width, handRefWidth * 0.90)
             : info.destRect.width;
-        final double charmWidth = baseWidth *
-            compItem.scale *
-            AdvancedNailPainter.accessoryScaleMultiplier;
-        final double charmHeight = charmImage != null
-            ? charmWidth * (charmImage.height / charmImage.width)
-            : charmWidth;
+
+        final dim = AdvancedNailPainter.computeConstrainedCharmDimensions(
+          baseWidth: baseWidth,
+          nailWidth: info.destRect.width,
+          nailHeight: info.destRect.height,
+          scale: compItem.scale,
+          rotationDegrees: compItem.rotation,
+          aspectRatio: charmAspect,
+          posX: compItem.posX,
+          posY: compItem.posY,
+        );
 
         final double charmLocalX =
-            info.destRect.center.dx + compItem.posX * (info.destRect.width / 2);
+            info.destRect.center.dx +
+            dim.clampedPosX * (info.destRect.width / 2);
         final double charmLocalY =
             info.destRect.center.dy +
-            compItem.posY * (info.destRect.height / 2);
+            dim.clampedPosY * (info.destRect.height / 2);
         final Offset charmCanvasCenter = info.localToCanvas(
           Offset(charmLocalX, charmLocalY),
         );
 
         final double hitRadius = math.max(
-          math.max(charmWidth, charmHeight) * 0.8,
+          math.max(dim.width, dim.height) * 0.8,
           50.0,
         );
 
@@ -525,26 +561,40 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
 
     for (final compItem in _selectedVariant!.nailComponents) {
       if (compItem.nailComponentId == _selectedComponentId) {
+        if (_selectedFingerIndex != -1 &&
+            compItem.fingerIndex != _selectedFingerIndex) {
+          _dragMode = _DragMode.none;
+          return;
+        }
         final info = _findTransformForComponent(compItem, transforms);
-        if (info != null) {
+        if (info != null && info.fingerIndex == compItem.fingerIndex) {
           final charmImage =
               _selectedComponentImages[compItem.component.componentId];
+          final double charmAspect =
+              (charmImage != null && charmImage.width > 0)
+                  ? charmImage.height / charmImage.width
+                  : 1.0;
           final double baseWidth = handRefWidth > 0
               ? math.max(info.destRect.width, handRefWidth * 0.90)
               : info.destRect.width;
-          final double charmWidth = baseWidth *
-              compItem.scale *
-              AdvancedNailPainter.accessoryScaleMultiplier;
-          final double charmHeight = charmImage != null
-              ? charmWidth * (charmImage.height / charmImage.width)
-              : charmWidth;
+
+          final dim = AdvancedNailPainter.computeConstrainedCharmDimensions(
+            baseWidth: baseWidth,
+            nailWidth: info.destRect.width,
+            nailHeight: info.destRect.height,
+            scale: compItem.scale,
+            rotationDegrees: compItem.rotation,
+            aspectRatio: charmAspect,
+            posX: compItem.posX,
+            posY: compItem.posY,
+          );
 
           final double charmLocalX =
               info.destRect.center.dx +
-              compItem.posX * (info.destRect.width / 2);
+              dim.clampedPosX * (info.destRect.width / 2);
           final double charmLocalY =
               info.destRect.center.dy +
-              compItem.posY * (info.destRect.height / 2);
+              dim.clampedPosY * (info.destRect.height / 2);
           final Offset charmCanvasCenter = info.localToCanvas(
             Offset(charmLocalX, charmLocalY),
           );
@@ -552,8 +602,8 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
           final double totalAngle =
               info.angle + compItem.rotation * math.pi / 180.0;
           final Offset trLocal = Offset(
-            charmWidth / 2 + 4,
-            -charmHeight / 2 - 4,
+            dim.width / 2 + 4,
+            -dim.height / 2 - 4,
           );
           final Offset trHandleCanvas =
               charmCanvasCenter + _rotateVector(trLocal, totalAngle);
@@ -579,13 +629,20 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
     final transforms = _getFingerTransforms();
     final double handRefWidth = _getHandRefWidth(transforms);
     final int idx = _selectedVariant!.nailComponents.indexWhere(
-      (c) => c.nailComponentId == _selectedComponentId,
+      (c) =>
+          c.nailComponentId == _selectedComponentId &&
+          (_selectedFingerIndex == -1 || c.fingerIndex == _selectedFingerIndex),
     );
     if (idx == -1) return;
 
     final compItem = _selectedVariant!.nailComponents[idx];
+    if (_selectedFingerIndex != -1 &&
+        compItem.fingerIndex != _selectedFingerIndex) {
+      return;
+    }
+
     final info = _findTransformForComponent(compItem, transforms);
-    if (info == null) return;
+    if (info == null || info.fingerIndex != compItem.fingerIndex) return;
 
     final Offset currentPos = details.localPosition;
     final Offset delta = details.delta;
@@ -602,27 +659,6 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
         : info.destRect.width;
 
     if (_dragMode == _DragMode.move) {
-      final double charmWidth = baseWidth *
-          compItem.scale *
-          AdvancedNailPainter.accessoryScaleMultiplier;
-      final double charmHeight = charmWidth * charmAspect;
-
-      final double rad = (compItem.rotation * math.pi / 180.0).abs();
-      final double cosR = math.cos(rad).abs();
-      final double sinR = math.sin(rad).abs();
-
-      final double effWidth = charmWidth * cosR + charmHeight * sinR;
-      final double effHeight = charmWidth * sinR + charmHeight * cosR;
-
-      final double maxPosX = math.max(
-        0.0,
-        1.0 - (effWidth / info.destRect.width),
-      );
-      final double maxPosY = math.max(
-        0.0,
-        1.0 - (effHeight / info.destRect.height),
-      );
-
       final Offset localDelta =
           info.canvasToLocal(delta) - info.canvasToLocal(Offset.zero);
       final double candidatePosX =
@@ -630,10 +666,21 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
       final double candidatePosY =
           compItem.posY + localDelta.dy / (info.destRect.height / 2);
 
-      final double newPosX = candidatePosX.clamp(-maxPosX, maxPosX);
-      final double newPosY = candidatePosY.clamp(-maxPosY, maxPosY);
+      final dim = AdvancedNailPainter.computeConstrainedCharmDimensions(
+        baseWidth: baseWidth,
+        nailWidth: info.destRect.width,
+        nailHeight: info.destRect.height,
+        scale: compItem.scale,
+        rotationDegrees: compItem.rotation,
+        aspectRatio: charmAspect,
+        posX: candidatePosX,
+        posY: candidatePosY,
+      );
 
-      final updatedItem = compItem.copyWith(posX: newPosX, posY: newPosY);
+      final updatedItem = compItem.copyWith(
+        posX: dim.clampedPosX,
+        posY: dim.clampedPosY,
+      );
       final updatedList = List<NailComponentItem>.from(
         _selectedVariant!.nailComponents,
       );
@@ -669,40 +716,39 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
       final double cosR = math.cos(rad).abs();
       final double sinR = math.sin(rad).abs();
 
-      final double unitEffWidth = cosR + charmAspect * sinR;
-      final double unitEffHeight = sinR + charmAspect * cosR;
+      // Effective unit dimensions when scale = 1.0:
+      final double unitCharmWidth =
+          baseWidth * AdvancedNailPainter.accessoryScaleMultiplier;
+      final double unitCharmHeight = unitCharmWidth * charmAspect;
+      final double unitEffWidth = unitCharmWidth * cosR + unitCharmHeight * sinR;
+      final double unitEffHeight = unitCharmWidth * sinR + unitCharmHeight * cosR;
 
-      final double maxScaleX = 1.0 / math.max(0.001, unitEffWidth);
-      final double maxScaleY =
-          (info.destRect.height / info.destRect.width) /
-          math.max(0.001, unitEffHeight);
-      final double maxScale = math.min(1.0, math.min(maxScaleX, maxScaleY))
-          .clamp(0.15, 1.0);
+      // The accessory must NEVER exceed 95% of nail width and height:
+      final double maxAllowedWidth = info.destRect.width * 0.95;
+      final double maxAllowedHeight = info.destRect.height * 0.95;
 
-      final double newScale = rawScale.clamp(0.15, maxScale);
+      final double maxScaleX = maxAllowedWidth / math.max(0.001, unitEffWidth);
+      final double maxScaleY = maxAllowedHeight / math.max(0.001, unitEffHeight);
+      final double maxScale = math.min(maxScaleX, maxScaleY).clamp(0.08, 1.0);
 
-      final double charmWidth = info.destRect.width * newScale;
-      final double charmHeight = charmWidth * charmAspect;
-      final double effWidth = charmWidth * cosR + charmHeight * sinR;
-      final double effHeight = charmWidth * sinR + charmHeight * cosR;
+      final double newScale = rawScale.clamp(0.08, maxScale);
 
-      final double maxPosX = math.max(
-        0.0,
-        1.0 - (effWidth / info.destRect.width),
+      final dim = AdvancedNailPainter.computeConstrainedCharmDimensions(
+        baseWidth: baseWidth,
+        nailWidth: info.destRect.width,
+        nailHeight: info.destRect.height,
+        scale: newScale,
+        rotationDegrees: newRotation,
+        aspectRatio: charmAspect,
+        posX: compItem.posX,
+        posY: compItem.posY,
       );
-      final double maxPosY = math.max(
-        0.0,
-        1.0 - (effHeight / info.destRect.height),
-      );
-
-      final double newPosX = compItem.posX.clamp(-maxPosX, maxPosX);
-      final double newPosY = compItem.posY.clamp(-maxPosY, maxPosY);
 
       final updatedItem = compItem.copyWith(
         scale: newScale,
         rotation: newRotation,
-        posX: newPosX,
-        posY: newPosY,
+        posX: dim.clampedPosX,
+        posY: dim.clampedPosY,
       );
       final updatedList = List<NailComponentItem>.from(
         _selectedVariant!.nailComponents,
@@ -764,40 +810,56 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
   Future<void> _onSelectComponent(ComponentDetail newComponent) async {
     if (_selectedVariant == null) return;
 
-    final targetFinger = _selectedFingerIndex != -1 ? _selectedFingerIndex : 1;
-
-    final existingIdx = _selectedVariant!.nailComponents.indexWhere(
-      (c) => c.nailComponentId == _selectedComponentId,
+    int idCounter = DateTime.now().microsecondsSinceEpoch;
+    List<NailComponentItem> updatedComponents = List<NailComponentItem>.from(
+      _selectedVariant!.nailComponents,
     );
+    int? targetComponentId;
 
-    List<NailComponentItem> updatedComponents;
-    int targetComponentId;
-
-    if (existingIdx != -1) {
-      final existingItem = _selectedVariant!.nailComponents[existingIdx];
-      final updatedItem = existingItem.copyWith(
-        component: newComponent,
-        fingerIndex: targetFinger,
-      );
-      updatedComponents = List<NailComponentItem>.from(
-        _selectedVariant!.nailComponents,
-      );
-      updatedComponents[existingIdx] = updatedItem;
-      targetComponentId = existingItem.nailComponentId;
+    if (_selectedFingerIndex == -1) {
+      // Applied to all 5 fingers, each finger gets its own unique item ID
+      for (int f = 1; f <= 5; f++) {
+        final newItem = NailComponentItem(
+          nailComponentId: ++idCounter,
+          posX: 0.0,
+          posY: 0.0,
+          fingerIndex: f,
+          scale: 0.30,
+          rotation: 0.0,
+          component: newComponent,
+        );
+        updatedComponents.add(newItem);
+      }
+      targetComponentId = null;
     } else {
-      final newItem = NailComponentItem(
-        nailComponentId: DateTime.now().microsecondsSinceEpoch,
-        posX: 0.0,
-        posY: 0.0,
-        fingerIndex: targetFinger,
-        scale: 0.5,
-        rotation: 0.0,
-        component: newComponent,
+      final targetFinger = _selectedFingerIndex;
+      final existingIdx = updatedComponents.indexWhere(
+        (c) =>
+            c.nailComponentId == _selectedComponentId &&
+            c.fingerIndex == targetFinger,
       );
-      updatedComponents = List<NailComponentItem>.from(
-        _selectedVariant!.nailComponents,
-      )..add(newItem);
-      targetComponentId = newItem.nailComponentId;
+
+      if (existingIdx != -1) {
+        final existingItem = updatedComponents[existingIdx];
+        final updatedItem = existingItem.copyWith(
+          component: newComponent,
+          fingerIndex: targetFinger,
+        );
+        updatedComponents[existingIdx] = updatedItem;
+        targetComponentId = existingItem.nailComponentId;
+      } else {
+        final newItem = NailComponentItem(
+          nailComponentId: ++idCounter,
+          posX: 0.0,
+          posY: 0.0,
+          fingerIndex: targetFinger,
+          scale: 0.30,
+          rotation: 0.0,
+          component: newComponent,
+        );
+        updatedComponents.add(newItem);
+        targetComponentId = newItem.nailComponentId;
+      }
     }
 
     final updatedVariant = _selectedVariant!.copyWith(
@@ -807,12 +869,11 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
     setState(() {
       _selectedVariant = updatedVariant;
       _selectedComponentId = targetComponentId;
-      if (_selectedFingerIndex == -1) {
-        _selectedFingerIndex = targetFinger;
-      }
     });
 
-    _zoomToFinger(targetFinger);
+    if (_selectedFingerIndex != -1) {
+      _zoomToFinger(_selectedFingerIndex);
+    }
 
     final img = await NailVariantApiService.loadUiImageFromUrl(
       newComponent.imageUrl,
@@ -1188,7 +1249,8 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
                                               if (_nailPolygons.isNotEmpty)
                                                 Positioned.fill(
                                                   child: CustomPaint(
-                                                    painter: _selectedVariant != null
+                                                    painter: (_selectedVariant != null &&
+                                                            !_showDebugPreview)
                                                          ? AdvancedNailPainter(
                                                              polygons:
                                                                  _nailPolygons,
@@ -2307,7 +2369,10 @@ class _NailSnapshotPageState extends State<NailSnapshotPage>
       padding: const EdgeInsets.only(right: 6.0),
       child: InkWell(
         onTap: () {
-          setState(() => _selectedFingerIndex = fingerIdx);
+          setState(() {
+            _selectedFingerIndex = fingerIdx;
+            _selectedComponentId = null;
+          });
           _zoomToFinger(fingerIdx);
         },
         borderRadius: BorderRadius.circular(14),

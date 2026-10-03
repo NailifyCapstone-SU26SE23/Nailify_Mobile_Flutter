@@ -509,7 +509,7 @@ class SVi extends S {
 
   @override
   String get automaticFitDesignDesc =>
-      'Bloom sẽ tự động phân tích tông da, dáng tay, nghề nghiệp và sở thích từ bài trắc nghiệm cá tính trước đó của bạn để tạo ra cấu hình móng hoàn chỉnh 5 tầng.';
+      'Nailify sẽ tự động phân tích tông da, dáng tay, nghề nghiệp và sở thích từ bài trắc nghiệm cá tính trước đó của bạn để tạo ra cấu hình móng hoàn chỉnh 5 tầng.';
 
   @override
   String get designFeatureShape => 'Đề xuất dáng móng phù hợp cấu trúc tay';

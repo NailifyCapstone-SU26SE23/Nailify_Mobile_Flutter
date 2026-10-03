@@ -34,14 +34,14 @@ class NailDebugPainter extends CustomPainter {
     }
   }
 
-  String _viLabel(String? label) {
-    switch (label?.toLowerCase()) {
-      case 'thumb':  return 'Ngón cái';
-      case 'index':  return 'Ngón trỏ';
-      case 'middle': return 'Ngón giữa';
-      case 'ring':   return 'Ngón áp út';
-      case 'pinky':  return 'Ngón út';
-      default:       return label ?? 'Móng';
+  String _fingerNameFromIndex(int fingerIndex) {
+    switch (fingerIndex) {
+      case 1: return 'Ngón cái';
+      case 2: return 'Ngón trỏ';
+      case 3: return 'Ngón giữa';
+      case 4: return 'Ngón áp út';
+      case 5: return 'Ngón út';
+      default: return 'Móng $fingerIndex';
     }
   }
 
@@ -52,12 +52,15 @@ class NailDebugPainter extends CustomPainter {
     }
 
     // ── 1. Vẽ viền đa giác móng (Polygons từ best.onnx) ──────────────────────
+    final List<int> uniqueIndices =
+        AdvancedNailPainter.resolveUniqueFingerIndices(polygons, labels);
+
     for (int i = 0; i < polygons.length; i++) {
       final poly = polygons[i];
       if (poly.length < 3) continue;
 
-      final String? label = (labels != null && i < labels!.length) ? labels![i] : null;
-      final Color col = _colorForLabel(label, i);
+      final int fingerIndex = uniqueIndices[i];
+      final Color col = _fingerColors[(fingerIndex - 1).clamp(0, _fingerColors.length - 1)];
 
       final Paint fillPaint = Paint()
         ..color = col.withValues(alpha: 0.22)
@@ -87,13 +90,11 @@ class NailDebugPainter extends CustomPainter {
       }
 
       // ── Nhãn tên ngón tay ─────────────────────────────────────────────────
-      final String viLabel = _viLabel(label);
+      final String viLabel = _fingerNameFromIndex(fingerIndex);
       final Offset centroid = _centroid(poly);
       _drawLabel(canvas, viLabel, centroid - Offset(0, 22), col);
 
       // ── Mũi tên hướng móng (hướng áp dụng nail thực tế) ───────────────────
-      final int fingerIndex =
-          AdvancedNailPainter.labelToFingerIndex(label, defaultIdx: i + 1);
       final NailPoseKeypoints? poseKpt = (poseKeypoints != null &&
               i < poseKeypoints!.length)
           ? poseKeypoints![i]

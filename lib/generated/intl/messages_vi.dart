@@ -103,7 +103,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "THIẾT KẾ TỰ ĐỘNG PHÙ HỢP",
     ),
     "automaticFitDesignDesc": MessageLookupByLibrary.simpleMessage(
-      "Bloom sẽ tự động phân tích tông da, dáng tay, nghề nghiệp và sở thích từ bài trắc nghiệm cá tính trước đó của bạn để tạo ra cấu hình móng hoàn chỉnh 5 tầng.",
+      "Nailify sẽ tự động phân tích tông da, dáng tay, nghề nghiệp và sở thích từ bài trắc nghiệm cá tính trước đó của bạn để tạo ra cấu hình móng hoàn chỉnh 5 tầng.",
     ),
     "back": MessageLookupByLibrary.simpleMessage("Quay lại"),
     "bookAppointment": MessageLookupByLibrary.simpleMessage("Đặt Lịch"),

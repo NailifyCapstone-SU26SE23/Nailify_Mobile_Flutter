@@ -1036,7 +1036,7 @@ abstract class S {
   /// No description provided for @automaticFitDesignDesc.
   ///
   /// In en, this message translates to:
-  /// **'Bloom will automatically analyze your skin tone, hand shape, occupation, and preferences from your personality quiz to create a perfect 5-layer nail design.'**
+  /// **'Nailify will automatically analyze your skin tone, hand shape, occupation, and preferences from your personality quiz to create a perfect 5-layer nail design.'**
   String get automaticFitDesignDesc;
 
   /// No description provided for @designFeatureShape.

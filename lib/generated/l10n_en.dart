@@ -506,7 +506,7 @@ class SEn extends S {
 
   @override
   String get automaticFitDesignDesc =>
-      'Bloom will automatically analyze your skin tone, hand shape, occupation, and preferences from your personality quiz to create a perfect 5-layer nail design.';
+      'Nailify will automatically analyze your skin tone, hand shape, occupation, and preferences from your personality quiz to create a perfect 5-layer nail design.';
 
   @override
   String get designFeatureShape =>

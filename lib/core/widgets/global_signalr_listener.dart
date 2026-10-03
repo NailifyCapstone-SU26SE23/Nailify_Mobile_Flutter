@@ -60,9 +60,10 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
     final notificationStore = getIt<InAppNotificationStore>();
 
     _promotedSub = signalR.onWaitlistPromoted.listen((event) {
+      final cleanMsg = _cleanNotificationMessage(event.message);
       notificationStore.addNotification(
         title: 'Hàng chờ có slot trống!',
-        message: event.message,
+        message: cleanMsg,
         icon: Icons.notifications_active_rounded,
         color: Colors.amber.shade700,
         route: '/my-bookings',
@@ -71,13 +72,14 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
     });
 
     _confirmedSub = signalR.onBookingConfirmed.listen((event) {
-      debugPrint('[GlobalSignalRListener] 🟢 Nhận event BookingConfirmed: ${event.message}');
+      final cleanMsg = _cleanNotificationMessage(event.message);
+      debugPrint('[GlobalSignalRListener] 🟢 Nhận event BookingConfirmed: $cleanMsg');
       final route = event.bookingId.isNotEmpty ? '/my-bookings/detail' : '/my-bookings';
       final extra = event.bookingId.isNotEmpty ? event.bookingId : {'initialTab': 0};
 
       notificationStore.addNotification(
         title: 'Đơn đặt lịch được duyệt',
-        message: event.message,
+        message: cleanMsg,
         icon: Icons.check_circle_outline_rounded,
         color: Colors.green.shade600,
         route: route,
@@ -88,7 +90,7 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
         if (!currentCtx.mounted) return;
         _showStyledSnackBar(
           currentCtx,
-          message: event.message,
+          message: cleanMsg,
           icon: Icons.check_circle_outline_rounded,
           color: Colors.green.shade600,
           actionLabel: 'Xem lịch',
@@ -109,13 +111,14 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
     });
 
     _rejectedSub = signalR.onBookingRejected.listen((event) {
-      debugPrint('[GlobalSignalRListener] 🔴 Nhận event BookingRejected: ${event.message}');
+      final cleanMsg = _cleanNotificationMessage(event.message);
+      debugPrint('[GlobalSignalRListener] 🔴 Nhận event BookingRejected: $cleanMsg');
       final route = event.bookingId.isNotEmpty ? '/my-bookings/detail' : '/my-bookings';
       final extra = event.bookingId.isNotEmpty ? event.bookingId : {'initialTab': 0};
 
       notificationStore.addNotification(
         title: 'Đơn đặt lịch bị từ chối',
-        message: event.message,
+        message: cleanMsg,
         icon: Icons.cancel_outlined,
         color: Colors.red.shade400,
         route: route,
@@ -126,7 +129,7 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
         if (!currentCtx.mounted) return;
         _showStyledSnackBar(
           currentCtx,
-          message: event.message,
+          message: cleanMsg,
           icon: Icons.cancel_outlined,
           color: Colors.red.shade400,
           actionLabel: 'Xem lịch',
@@ -147,9 +150,10 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
     });
 
     _expiredSub = signalR.onWaitlistExpired.listen((event) {
+      final cleanMsg = _cleanNotificationMessage(event.message);
       notificationStore.addNotification(
         title: 'Lịch hàng chờ hết hạn',
-        message: event.message,
+        message: cleanMsg,
         icon: Icons.hourglass_bottom_rounded,
         color: Colors.orange.shade600,
         route: '/my-bookings',
@@ -160,7 +164,7 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
         if (currentCtx == null) return;
         _showStyledSnackBar(
           currentCtx,
-          message: event.message,
+          message: cleanMsg,
           icon: Icons.hourglass_bottom_rounded,
           color: Colors.orange.shade600,
           duration: const Duration(seconds: 5),
@@ -169,12 +173,13 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
     });
 
     _cancelledSub = signalR.onBookingCancelled.listen((event) {
+      final cleanMsg = _cleanNotificationMessage(event.message);
       final route = event.bookingId.isNotEmpty ? '/my-bookings/detail' : '/my-bookings';
       final extra = event.bookingId.isNotEmpty ? event.bookingId : {'initialTab': 0};
 
       notificationStore.addNotification(
         title: 'Lịch hẹn bị hủy',
-        message: event.message,
+        message: cleanMsg,
         icon: Icons.cancel_outlined,
         color: Colors.red.shade400,
         route: route,
@@ -185,7 +190,7 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
         if (currentCtx == null) return;
         _showStyledSnackBar(
           currentCtx,
-          message: event.message,
+          message: cleanMsg,
           icon: Icons.cancel_outlined,
           color: Colors.red.shade400,
           actionLabel: 'Xem lịch',
@@ -205,6 +210,7 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
     });
 
     _rescheduleSub = signalR.onBookingRescheduled.listen((event) {
+      final cleanMsg = _cleanNotificationMessage(event.message);
       Color color = AppColors.primary;
       IconData icon = Icons.edit_calendar_outlined;
       String title = 'Cập nhật dời lịch hẹn';
@@ -231,7 +237,7 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
 
       notificationStore.addNotification(
         title: title,
-        message: event.message,
+        message: cleanMsg,
         icon: icon,
         color: color,
         route: route,
@@ -243,7 +249,7 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
         if (currentCtx == null) return;
         _showStyledSnackBar(
           currentCtx,
-          message: event.message,
+          message: cleanMsg,
           icon: icon,
           color: color,
           actionLabel: 'Xem lịch',
@@ -264,12 +270,13 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
     });
 
     _delayEtaSub = signalR.onDelayETA.listen((event) {
+      final cleanMsg = _cleanNotificationMessage(event.message);
       final route = event.bookingId.isNotEmpty ? '/my-bookings/detail' : '/my-bookings';
       final extra = event.bookingId.isNotEmpty ? event.bookingId : {'initialTab': 0};
 
       notificationStore.addNotification(
         title: 'Cập nhật thời gian dự kiến',
-        message: event.message,
+        message: cleanMsg,
         icon: Icons.access_time_filled_rounded,
         color: Colors.amber.shade700,
         route: route,
@@ -280,7 +287,7 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
         if (!currentCtx.mounted) return;
         _showStyledSnackBar(
           currentCtx,
-          message: event.message,
+          message: cleanMsg,
           icon: Icons.access_time_filled_rounded,
           color: Colors.amber.shade700,
           actionLabel: 'Xem lịch',
@@ -301,12 +308,13 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
     });
 
     _delayWarningSub = signalR.onDelayWarningWithAutonomy.listen((event) {
+      final cleanMsg = _cleanNotificationMessage(event.message);
       final route = event.bookingId.isNotEmpty ? '/my-bookings/detail' : '/my-bookings';
       final extra = event.bookingId.isNotEmpty ? event.bookingId : {'initialTab': 0};
 
       notificationStore.addNotification(
         title: 'Cảnh báo trễ ca lịch hẹn',
-        message: event.message,
+        message: cleanMsg,
         icon: Icons.warning_amber_rounded,
         color: Colors.amber.shade800,
         route: route,
@@ -320,12 +328,13 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
     });
 
     _customNailQuotedSub = signalR.onCustomNailQuoted.listen((event) {
+      final cleanMsg = _cleanNotificationMessage(event.message);
       final route = event.customerNailRequestId.isNotEmpty
           ? '/my-studio/${event.customerNailRequestId}'
           : '/my-studio';
       notificationStore.addNotification(
         title: 'Báo giá mẫu Nail Custom',
-        message: event.message,
+        message: cleanMsg,
         icon: Icons.monetization_on_rounded,
         color: Colors.amber.shade800,
         route: route,
@@ -338,12 +347,13 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
     });
 
     _customNailRejectedSub = signalR.onCustomNailRejected.listen((event) {
+      final cleanMsg = _cleanNotificationMessage(event.message);
       final route = event.customerNailRequestId.isNotEmpty
           ? '/my-studio/${event.customerNailRequestId}'
           : '/my-studio';
       notificationStore.addNotification(
         title: 'Mẫu Nail Custom bị từ chối',
-        message: event.message,
+        message: cleanMsg,
         icon: Icons.cancel_outlined,
         color: Colors.red.shade600,
         route: route,
@@ -358,12 +368,13 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
     _artistReassignedSub = signalR.onArtistReassigned.listen((event) {
       final route = event.bookingId.isNotEmpty ? '/my-bookings/detail' : '/my-bookings';
       final extra = event.bookingId.isNotEmpty ? event.bookingId : null;
-      final msg = event.message.isNotEmpty
+      final rawMsg = event.message.isNotEmpty
           ? event.message
           : 'Lịch hẹn đã được đổi sang thợ làm móng mới: ${event.newArtistName}';
+      final cleanMsg = _cleanNotificationMessage(rawMsg);
       notificationStore.addNotification(
         title: 'Thay đổi thợ phụ trách',
-        message: msg,
+        message: cleanMsg,
         icon: Icons.swap_horiz_rounded,
         color: Colors.blue.shade600,
         route: route,
@@ -372,10 +383,10 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final currentCtx = rootNavigatorKey.currentContext ?? context;
         if (!currentCtx.mounted) return;
-        final displayMsg = msg.toLowerCase().startsWith('lịch hẹn') ||
-                msg.toLowerCase().contains('chuyển sang thợ')
-            ? msg
-            : 'Thay đổi thợ: $msg';
+        final displayMsg = cleanMsg.toLowerCase().startsWith('lịch hẹn') ||
+                cleanMsg.toLowerCase().contains('chuyển sang thợ')
+            ? cleanMsg
+            : 'Thay đổi thợ: $cleanMsg';
         _showStyledSnackBar(
           currentCtx,
           message: displayMsg,
@@ -413,6 +424,11 @@ class _GlobalSignalRListenerState extends State<GlobalSignalRListener> {
         .replaceAll(RegExp(r'\bnoresponse\b', caseSensitive: false), 'Khách hàng không phản hồi')
         .replaceAll(RegExp(r'\bno_artist\b', caseSensitive: false), 'Không có thợ phù hợp')
         .replaceAll(RegExp(r'\bno_artist_available\b', caseSensitive: false), 'Không có thợ phù hợp');
+
+    // Xóa lặp từ: "Salon salon", "Salon Salon", "salon salon", "Tiệm tiệm"
+    cleaned = cleaned
+        .replaceAll(RegExp(r'\b(salon)(\s+salon)+\b', caseSensitive: false), 'Salon')
+        .replaceAll(RegExp(r'\b(tiệm)(\s+tiệm)+\b', caseSensitive: false), 'Tiệm');
 
     cleaned = cleaned
         .replaceAll(RegExp(r'\(\s*[Mm]ã\s*:\s*\)'), '')
